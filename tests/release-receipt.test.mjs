@@ -6,6 +6,8 @@ import { spawnSync } from "node:child_process";
 import { graphCoreNativeSupportedTargets, releaseReceiptPackageNames, validateReleaseReceipt } from "../packages/contracts/dist/index.js";
 import { withCompleteNativeArtifactFixtures } from "./native-artifact-fixture.mjs";
 
+const releaseDocsLockTimeoutMs = 900000;
+
 describe("release receipt gate", () => {
   it("emits validated #29 release receipt JSON", () => {
     withReleaseDocsLock(() => {
@@ -66,7 +68,7 @@ function withReleaseDocsLock(runLocked) {
     "docs/release/provenance-receipts.md",
     "docs/release/artifact-attestation.md"
   ];
-  const deadline = Date.now() + 300000;
+  const deadline = Date.now() + releaseDocsLockTimeoutMs;
   while (Date.now() < deadline) {
     try {
       mkdirSync(lockPath);

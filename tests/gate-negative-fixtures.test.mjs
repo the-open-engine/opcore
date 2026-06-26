@@ -13,6 +13,7 @@ import {
 } from "../packages/contracts/dist/index.js";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const releaseDocsLockTimeoutMs = 900000;
 const copiedRepoSkips = new Set([
   ".git",
   "node_modules",
@@ -477,7 +478,7 @@ function tempRepo(options = {}) {
 
 function withReleaseDocsLock(runLocked) {
   const lockPath = join(repoRoot, "docs/release/.receipt-test.lock");
-  const deadline = Date.now() + 300000;
+  const deadline = Date.now() + releaseDocsLockTimeoutMs;
   while (Date.now() < deadline) {
     try {
       mkdirSync(lockPath);

@@ -21,9 +21,9 @@ The scan writes only:
 
 ## Init
 
-`opcore init` is approval-gated. Without `--approve`, it returns a plan. With `--approve`, it writes additive `.opcore/config`, updates one delimited guidance block in existing agent files or creates `AGENTS.md`, and records `.opcore/init-undo.json`.
+`opcore init` is approval-gated. Without `--approve`, it returns a plan. With `--approve`, it writes additive `.opcore/config`, updates one delimited guidance block in existing agent files or creates `AGENTS.md`, appends one managed `.opcore/` line to `.gitignore` only in Git repos that do not already ignore it, and records `.opcore/init-undo.json`.
 
-Fail-closed hooks are created only with `--fail-closed-hook`.
+Fail-closed hooks are created only with `--fail-closed-hook`. Undo removes only the managed `.gitignore` line and deletes an init-created `.gitignore` only when it becomes empty.
 
 ## Private Provider Mode
 

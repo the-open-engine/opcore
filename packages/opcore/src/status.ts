@@ -16,7 +16,7 @@ declare const process: {
 };
 
 const helpArgs = new Set(["--help", "-h", "help"]);
-const skippedPathSegments = new Set([
+export const commonSkippedPathSegments = [
   ".git",
   "node_modules",
   ".pnpm",
@@ -28,7 +28,10 @@ const skippedPathSegments = new Set([
   ".lattice",
   ".opcore",
   ".rox-cache",
-  ".robustness-engine-cache",
+  ".robustness-engine-cache"
+] as const;
+const skippedPathSegments = new Set<string>([
+  ...commonSkippedPathSegments,
   ".venv",
   "venv",
   "env",
