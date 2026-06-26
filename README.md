@@ -36,7 +36,7 @@ Opcore report/history artifacts, and never edit source files.
 
 Opcore is an independently installed ASP provider and product surface. ASP is
 the host/protocol/manager surface that can enroll many providers. Opcore should
-work without ACE and without being provisioned by a downstream agent harness.
+work without being provisioned by a downstream agent harness.
 
 Normal users should not need to learn the ASP model before seeing value from
 Opcore.

@@ -13,9 +13,9 @@ conventions.
   docs in this repository.
 - Keep user-facing setup simple: scan first, then optional setup, then changed
   file checks and measurable deltas.
-- Opcore must remain independent from ACE. ACE can be one downstream client of
-  an ASP host, but it must not ship Opcore, provision providers, or own release
-  gates.
+- Opcore must remain independent from downstream harnesses. A harness can be
+  one downstream client of an ASP host, but it must not ship Opcore, provision
+  providers, or own release gates.
 - ASP is the host/protocol/manager layer. Opcore is one provider/product behind
   that layer, not the protocol, not the host, and not a privileged provider.
 
