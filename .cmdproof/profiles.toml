@@ -10,7 +10,7 @@ require.validator = "trusted-agent-or-ci"
 require.ci = "ci"
 
 [profile.ci-equivalent.workspace]
-include_untracked = false
+include_untracked = true
 generated = [
   "target/**",
   "node_modules/**",
