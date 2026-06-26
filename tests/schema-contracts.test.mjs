@@ -960,6 +960,7 @@ describe("lattice JSON schema wire constraints", () => {
     assert.equal(isValidDefinition("CommandRouterManifest", validRouterManifest()), true);
     assert.equal(isValidDefinition("ManagedToolDescriptor", validManagedToolDescriptor()), true);
     assert.equal(isValidDefinition("CommandRouterResult", validRouterResult()), true);
+    assert.equal(isValidDefinition("CommandRouterResult", { ...validRouterResult(), timing: validCommandTiming() }), true);
     assert.equal(
       isValidDefinition("CommandRouterResult", {
         ...validRouterResult(),
@@ -1674,6 +1675,87 @@ describe("lattice JSON schema wire constraints", () => {
     assert.equal(isValidDefinition("OpcoreMeasureDelta", { ...validOpcoreMeasureDelta(), blendedScore: 99 }), false);
   });
 
+  it("accepts latency telemetry and budget schemas", () => {
+    assert.equal(isValidDefinition("CommandTiming", validCommandTiming()), true);
+    assert.equal(isValidDefinition("RepoShapeFingerprint", validRepoShapeFingerprint()), true);
+    assert.equal(isValidDefinition("CommandLatencyRecord", validCommandLatencyRecord()), true);
+    assert.equal(isValidDefinition("LatencyBudget", validLatencyBudget()), true);
+    assert.equal(isValidDefinition("LatencyBudgetResult", validLatencyBudgetResult()), true);
+    assert.equal(isValidDefinition("LatencyBudgetResult", validLatencyBudgetResult({ status: "over" })), true);
+    assert.equal(
+      isValidDefinition("LatencyTelemetryArtifactPolicy", {
+        path: ".opcore/telemetry.jsonl",
+        maxRecords: 500,
+        maxBytes: 1048576,
+        rotation: "ring_buffer"
+      }),
+      true
+    );
+    assert.equal(
+      isValidDefinition("CommandLatencyRecord", {
+        ...validCommandLatencyRecord(),
+        repo: { ...validRepoShapeFingerprint(), path: "src/index.ts" }
+      }),
+      false
+    );
+    assert.equal(
+      isValidDefinition("CommandLatencyRecord", {
+        ...validCommandLatencyRecord(),
+        bin: "/tmp/project/node_modules/.bin/opcore"
+      }),
+      false
+    );
+    assert.equal(
+      isValidDefinition("CommandLatencyRecord", {
+        ...validCommandLatencyRecord(),
+        canonicalCommand: ["opcore", "check", "files", "src/secret.ts"]
+      }),
+      false
+    );
+    assert.equal(
+      isValidDefinition("LatencyBudget", {
+        ...validLatencyBudget(),
+        canonicalCommand: ["opcore", "check", "files", "src/secret.ts"]
+      }),
+      false
+    );
+    assert.equal(
+      isValidDefinition("LatencyBudget", {
+        ...validLatencyBudget(),
+        canonicalCommand: ["opcore", "check", "files", "Secret.TS"]
+      }),
+      false
+    );
+    assert.equal(
+      isValidDefinition("LatencyBudgetResult", {
+        ...validLatencyBudgetResult(),
+        observed: {
+          ...validLatencyBudgetResult().observed,
+          canonicalCommand: ["opcore", "check", "files", "src/secret.ts"]
+        }
+      }),
+      false
+    );
+    assert.equal(
+      isValidDefinition("CommandLatencyRecord", {
+        ...validCommandLatencyRecord(),
+        timing: { ...validCommandTiming(), phases: [{ ...validCommandTiming().phases[0], content: "source" }] }
+      }),
+      false
+    );
+    assert.equal(isValidDefinition("LatencyBudget", { ...validLatencyBudget(), secret: "token" }), false);
+    assert.equal(isValidDefinition("LatencyBudget", { ...validLatencyBudget(), score: 99 }), false);
+    assert.equal(
+      isValidDefinition("LatencyTelemetryArtifactPolicy", {
+        path: ".opcore/telemetry.jsonl",
+        maxRecords: 501,
+        maxBytes: 1048576,
+        rotation: "ring_buffer"
+      }),
+      false
+    );
+  });
+
   it("accepts command adapter request schemas", () => {
     assert.equal(isValidDefinition("CommandAdapterRequest", validCommandAdapterRequest()), true);
     assert.equal(
@@ -2364,6 +2446,104 @@ function validOpcoreRepoState() {
     warnings: ["Unsupported stacks: Python"],
     blockers: [],
     nextActions: ["lattice check changed --repo /repo --json"]
+  };
+}
+
+function validCommandTiming(overrides = {}) {
+  return {
+    durationMs: 42,
+    phases: [
+      {
+        phase: "validation",
+        durationMs: 35,
+        fileCount: 2
+      }
+    ],
+    processState: "warm",
+    degradations: ["no_paths"],
+    ...overrides
+  };
+}
+
+function validRepoShapeFingerprint(overrides = {}) {
+  return {
+    totalFiles: 3,
+    languages: [
+      {
+        language: "TypeScript",
+        files: 2
+      },
+      {
+        language: "Python",
+        files: 1
+      }
+    ],
+    graph: {
+      supportedFiles: 2,
+      unsupportedFiles: 1
+    },
+    git: {
+      available: true,
+      clean: false
+    },
+    ...overrides
+  };
+}
+
+function validCommandLatencyRecord(overrides = {}) {
+  return {
+    schemaVersion: 1,
+    recordedAt: "2026-06-26T17:00:00.000Z",
+    bin: "opcore",
+    canonicalCommand: ["opcore", "check", "changed"],
+    owner: "validation",
+    status: "ok",
+    exitCode: 0,
+    repo: validRepoShapeFingerprint(),
+    timing: validCommandTiming(),
+    opcoreVersion: "0.1.0-alpha.0",
+    ...overrides
+  };
+}
+
+function validLatencyBudget(overrides = {}) {
+  return {
+    schemaVersion: 1,
+    canonicalCommand: ["opcore", "check", "changed"],
+    scope: "changed",
+    repoShapeBucket: "small_ts",
+    budgetMs: 100,
+    phaseBudgets: [
+      {
+        phase: "validation",
+        budgetMs: 75
+      }
+    ],
+    ...overrides
+  };
+}
+
+function validLatencyBudgetResult(overrides = {}) {
+  const status = overrides.status ?? "pass";
+  const observedMs = status === "over" ? 125 : 42;
+  return {
+    schemaVersion: 1,
+    status,
+    budget: validLatencyBudget(),
+    observed: {
+      canonicalCommand: ["opcore", "check", "changed"],
+      phase: "total",
+      durationMs: observedMs
+    },
+    evidence: {
+      canonicalCommand: ["opcore", "check", "changed"],
+      phase: "total",
+      repoShapeBucket: "small_ts",
+      observedMs,
+      budgetMs: 100,
+      overByMs: Math.max(0, observedMs - 100)
+    },
+    ...overrides
   };
 }
 
