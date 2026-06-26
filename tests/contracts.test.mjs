@@ -3,6 +3,9 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
   GRAPH_SCHEMA_VERSION,
+  commandLatencyTelemetryArtifactPolicy,
+  commandTimingDegradationReasons,
+  commandTimingProcessStates,
   commandExitCodeForStatus,
   commandExitSemantics,
   commandGroupByName,
@@ -22,6 +25,7 @@ import {
   graphReleaseDirectSqliteQueryIds,
   graphReleaseHandoffIssues,
   graphReleaseOptionalAnalysisSurfaces,
+  latencyBudgetResultStatuses,
   releaseReceiptCommandGroups,
   releaseReceiptPackageNames,
   releaseReceiptReportIds,
@@ -44,7 +48,9 @@ import {
   validationResultStatuses,
   validationSkippedCheckReasons,
   validateCommandAdapterRequest,
+  validateCommandLatencyRecord,
   validateProviderStatus,
+  validateCommandTiming,
   validateCommandRouterManifest,
   validateCommandRouterResult,
   validateGraphDaemonRequest,
@@ -67,11 +73,14 @@ import {
   validateGraphReferenceEvidenceManifest,
   validateInspectRouteResult,
   validateManagedToolDescriptor,
+  validateLatencyBudget,
+  validateLatencyBudgetResult,
   validateOpcoreInitPlanPayload,
   validateOpcoreMeasureDelta,
   validateOpcoreMetricHistoryEntry,
   validateOpcoreMetricReport,
   validateOpcoreTryPayload,
+  validateRepoShapeFingerprint,
   validateEditCommandResult,
   validateEditPlanPayload,
   validateRepoIdentity,
@@ -1346,6 +1355,163 @@ describe("lattice shared contracts", () => {
     );
   });
 
+  it("validates latency telemetry contracts and router timing", () => {
+    assert.deepEqual(commandTimingProcessStates, ["cold", "warm"]);
+    assert.deepEqual(commandTimingDegradationReasons, ["no_source", "no_paths"]);
+    assert.deepEqual(latencyBudgetResultStatuses, ["pass", "over"]);
+    assert.deepEqual(commandLatencyTelemetryArtifactPolicy, {
+      path: ".opcore/telemetry.jsonl",
+      maxRecords: 500,
+      maxBytes: 1048576,
+      rotation: "ring_buffer"
+    });
+
+    const timing = validateCommandTiming(validCommandTiming());
+    assert.equal(timing.processState, "warm");
+    assert.equal(validateRepoShapeFingerprint(validRepoShapeFingerprint()).graph.unsupportedFiles, 1);
+    assert.equal(validateCommandLatencyRecord(validCommandLatencyRecord()).repo.totalFiles, 3);
+    assert.equal(validateLatencyBudget(validLatencyBudget()).phaseBudgets[0].phase, "validation");
+    assert.equal(validateLatencyBudgetResult(validLatencyBudgetResult()).status, "pass");
+    assert.equal(validateLatencyBudgetResult(validLatencyBudgetResult({ status: "over" })).evidence.overByMs, 25);
+    assert.equal(
+      createCommandRouterResult({
+        bin: "opcore",
+        argv: ["check", "changed", "--json"],
+        canonicalCommand: ["opcore", "check", "changed"],
+        owner: "validation",
+        status: "ok",
+        json: true,
+        message: "check complete",
+        timing
+      }).timing.durationMs,
+      42
+    );
+
+    assert.throws(
+      () =>
+        validateCommandLatencyRecord({
+          ...validCommandLatencyRecord(),
+          repo: { ...validRepoShapeFingerprint(), path: "src/index.ts" }
+        }),
+      /source-safe/
+    );
+    assert.throws(
+      () =>
+        validateCommandLatencyRecord({
+          ...validCommandLatencyRecord(),
+          bin: "/tmp/project/node_modules/.bin/opcore"
+        }),
+      /source-safe command bin/
+    );
+    assert.throws(
+      () =>
+        validateCommandLatencyRecord({
+          ...validCommandLatencyRecord(),
+          canonicalCommand: ["opcore", "check", "files", "src/secret.ts"]
+        }),
+      /source-safe canonicalCommand/
+    );
+    assert.throws(
+      () =>
+        validateLatencyBudget({
+          ...validLatencyBudget(),
+          canonicalCommand: ["opcore", "check", "files", "src/secret.ts"]
+        }),
+      /source-safe canonicalCommand/
+    );
+    assert.throws(
+      () =>
+        validateLatencyBudget({
+          ...validLatencyBudget(),
+          canonicalCommand: ["opcore", "check", "files", "secret.ts"]
+        }),
+      /source-safe canonicalCommand/
+    );
+    assert.throws(
+      () =>
+        validateLatencyBudgetResult({
+          ...validLatencyBudgetResult(),
+          observed: {
+            ...validLatencyBudgetResult().observed,
+            canonicalCommand: ["opcore", "check", "files", "src/secret.ts"]
+          }
+        }),
+      /source-safe canonicalCommand/
+    );
+    assert.throws(
+      () =>
+        validateCommandLatencyRecord({
+          ...validCommandLatencyRecord(),
+          timing: { ...validCommandTiming(), phases: [{ ...validCommandTiming().phases[0], content: "source" }] }
+        }),
+      /source-safe/
+    );
+    assert.throws(
+      () => validateCommandTiming({ ...validCommandTiming(), score: 99 }),
+      /opaque score/
+    );
+    assert.throws(
+      () => validateRepoShapeFingerprint({ ...validRepoShapeFingerprint(), score: 99 }),
+      /opaque score/
+    );
+    assert.throws(
+      () => validateCommandLatencyRecord({ ...validCommandLatencyRecord(), score: 99 }),
+      /opaque score/
+    );
+    assert.throws(
+      () => validateLatencyBudget({ ...validLatencyBudget(), score: 99 }),
+      /opaque score/
+    );
+    assert.throws(
+      () =>
+        validateLatencyBudgetResult({
+          ...validLatencyBudgetResult(),
+          evidence: {
+            ...validLatencyBudgetResult().evidence,
+            observedMs: 1000,
+            budgetMs: 1000,
+            overByMs: 0
+          },
+          observed: {
+            ...validLatencyBudgetResult().observed,
+            durationMs: 1000
+          }
+        }),
+      /applied budget/
+    );
+    assert.throws(
+      () =>
+        validateLatencyBudgetResult({
+          ...validLatencyBudgetResult(),
+          observed: {
+            ...validLatencyBudgetResult().observed,
+            phase: "validation",
+            durationMs: 76
+          },
+          evidence: {
+            ...validLatencyBudgetResult().evidence,
+            phase: "validation",
+            observedMs: 76,
+            budgetMs: 100,
+            overByMs: 0
+          }
+        }),
+      /applied budget/
+    );
+    assert.throws(
+      () => validateCommandLatencyRecord({ ...validCommandLatencyRecord(), exitCode: 1 }),
+      /ok status/
+    );
+    assert.throws(
+      () =>
+        validateCommandTiming({
+          ...validCommandTiming(),
+          phases: [{ ...validCommandTiming().phases[0], phase: "graph.build" }]
+        }),
+      /stable latency id/
+    );
+  });
+
   it("validates Opcore init plans and router payloads", () => {
     const plan = validateOpcoreInitPlanPayload(validOpcoreInitPlan());
     assert.equal(plan.actions[0].path, ".opcore/config");
@@ -2481,6 +2647,104 @@ function validOpcoreRepoState() {
     warnings: ["Unsupported stacks: Python"],
     blockers: [],
     nextActions: ["lattice check changed --repo /repo --json"]
+  };
+}
+
+function validCommandTiming(overrides = {}) {
+  return {
+    durationMs: 42,
+    phases: [
+      {
+        phase: "validation",
+        durationMs: 35,
+        fileCount: 2
+      }
+    ],
+    processState: "warm",
+    degradations: ["no_paths"],
+    ...overrides
+  };
+}
+
+function validRepoShapeFingerprint(overrides = {}) {
+  return {
+    totalFiles: 3,
+    languages: [
+      {
+        language: "TypeScript",
+        files: 2
+      },
+      {
+        language: "Python",
+        files: 1
+      }
+    ],
+    graph: {
+      supportedFiles: 2,
+      unsupportedFiles: 1
+    },
+    git: {
+      available: true,
+      clean: false
+    },
+    ...overrides
+  };
+}
+
+function validCommandLatencyRecord(overrides = {}) {
+  return {
+    schemaVersion: 1,
+    recordedAt: "2026-06-26T17:00:00.000Z",
+    bin: "opcore",
+    canonicalCommand: ["opcore", "check", "changed"],
+    owner: "validation",
+    status: "ok",
+    exitCode: 0,
+    repo: validRepoShapeFingerprint(),
+    timing: validCommandTiming(),
+    opcoreVersion: "0.1.0-alpha.0",
+    ...overrides
+  };
+}
+
+function validLatencyBudget(overrides = {}) {
+  return {
+    schemaVersion: 1,
+    canonicalCommand: ["opcore", "check", "changed"],
+    scope: "changed",
+    repoShapeBucket: "small_ts",
+    budgetMs: 100,
+    phaseBudgets: [
+      {
+        phase: "validation",
+        budgetMs: 75
+      }
+    ],
+    ...overrides
+  };
+}
+
+function validLatencyBudgetResult(overrides = {}) {
+  const status = overrides.status ?? "pass";
+  const observedMs = status === "over" ? 125 : 42;
+  return {
+    schemaVersion: 1,
+    status,
+    budget: validLatencyBudget(),
+    observed: {
+      canonicalCommand: ["opcore", "check", "changed"],
+      phase: "total",
+      durationMs: observedMs
+    },
+    evidence: {
+      canonicalCommand: ["opcore", "check", "changed"],
+      phase: "total",
+      repoShapeBucket: "small_ts",
+      observedMs,
+      budgetMs: 100,
+      overByMs: Math.max(0, observedMs - 100)
+    },
+    ...overrides
   };
 }
 
