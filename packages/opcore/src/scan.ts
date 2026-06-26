@@ -11,23 +11,10 @@ import { createValidationRunner, type ValidationWorkspace } from "@the-open-engi
 import { readdir, readFile } from "node:fs/promises";
 import { join, relative, resolve, sep } from "node:path";
 import { createOpcoreMetricReport, writeOpcoreMetricArtifacts } from "./reporting.js";
-import { createRepoState, parseOpcoreRepoArgs, type RepoResolution, resolveRepo } from "./status.js";
+import { commonSkippedPathSegments, createRepoState, parseOpcoreRepoArgs, type RepoResolution, resolveRepo } from "./status.js";
 import { createOpcoreValidationGraphProviderClient, defaultValidationChecks } from "./validation-composition.js";
 
-const skippedPathSegments = new Set([
-  ".git",
-  "node_modules",
-  ".pnpm",
-  "vendor",
-  "dist",
-  "target",
-  ".ace",
-  ".asp",
-  ".lattice",
-  ".opcore",
-  ".rox-cache",
-  ".robustness-engine-cache"
-]);
+const skippedPathSegments = new Set<string>(commonSkippedPathSegments);
 
 export interface OpcoreScanAnalysis {
   repoState: OpcoreRepoStatePayload;
