@@ -35,6 +35,7 @@ describe("graph pipeline CLI", () => {
         "symbol",
         "test",
         "File",
+        "Module",
         "Class",
         "Function",
         "Variable",
@@ -252,16 +253,16 @@ describe("graph pipeline CLI", () => {
         ["lib/site-packages/pkg", "ignored.py"]
       ]) {
         mkdirSync(join(temp, directory), { recursive: true });
-        writeFileSync(join(temp, directory, file), "export const value = true;\n");
+        writeFileSync(join(temp, directory, file), file.endsWith(".py") ? "def value():\n    return True\n" : "export const value = true;\n");
       }
 
       const build = run(latticeBin, ["graph", "build", "--repo", temp, "--json"]);
       assert.equal(build.providerStatus.state, "available");
       assert.equal(build.graphPipeline.summary.discoveredFiles, 2);
-      assert.equal(build.graphPipeline.summary.parsedFiles, 1);
+      assert.equal(build.graphPipeline.summary.parsedFiles, 2);
       assert.deepEqual(build.graphPipeline.summary.changedFiles, ["src/app.ts", "src/tool.py"]);
       using db = new DatabaseSync(join(temp, ".lattice/graph/graph.db"));
-      assert.equal(db.prepare("select count(*) as count from nodes where path = ?").get("src/tool.py").count, 0);
+      assert.equal(db.prepare("select count(*) as count from nodes where path = ?").get("src/tool.py").count > 0, true);
     } finally {
       rmSync(temp, { recursive: true, force: true });
     }

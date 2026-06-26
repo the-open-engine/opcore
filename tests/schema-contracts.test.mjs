@@ -2677,7 +2677,7 @@ function validHandshake() {
     artifactVersion: "0.1.0-alpha.0",
     targetPlatform: "test",
     supportedOperations: ["build", "update", "watch", "status", "query", "ping", "health", "shutdown"],
-    nodeKinds: ["repo", "package", "file", "symbol", "test", "File", "Class", "Function", "Type", "Test", "Variable"],
+    nodeKinds: ["repo", "package", "file", "symbol", "test", "File", "Module", "Class", "Function", "Type", "Test", "Variable"],
     edgeKinds: [
       "CONTAINS",
       "DECLARES",

@@ -75,7 +75,7 @@ const scenarioSeeds: readonly TryScenarioSeed[] = [
     title: "Repo with unsupported files counted honestly",
     write(repoRoot) {
       mkdirSync(join(repoRoot, "scripts"), { recursive: true });
-      writeFileSync(join(repoRoot, "scripts/task.py"), "def run():\n    return 'unsupported day-one stack'\n");
+      writeFileSync(join(repoRoot, "scripts/task.go"), "package scripts\n\nfunc Run() string { return \"unsupported day-one stack\" }\n");
     }
   }
 ];

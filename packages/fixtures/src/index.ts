@@ -13,6 +13,7 @@ export const fixtureIds = [
   "command-router-v1",
   "graph-core-artifact-handshake-v1",
   "source-extraction-wave1-v1",
+  "source-extraction-python-v1",
   "command-adapter-v1",
   "graph-pipeline-v1",
   "graph-query-v1",
@@ -59,6 +60,7 @@ export interface SyntheticFixtureMetadata {
     | "validation_contract"
     | "graph_core_artifact_handshake"
     | "source_extraction_wave1"
+    | "source_extraction_python"
     | "installed_artifact_smoke"
     | "graph_reference_evidence_manifest"
     | "graph_reference_evidence_sqlite_fixture"
@@ -533,6 +535,24 @@ export const conformanceFixtureMetadata = [
       nodeKinds: ["File", "Class", "Function", "Type", "Test", "Variable"],
       edgeKinds: ["CONTAINS", "IMPORTS_FROM", "DEPENDS_ON", "CALLS", "TESTED_BY", "INHERITS", "IMPLEMENTS"],
       diagnostics: []
+    }
+  },
+  {
+    origin: fixtureOrigin,
+    containsSourceCode: true,
+    issue: "#17",
+    schemaVersion: 1,
+    id: "source-extraction-python-v1",
+    packageTrack: "fixtures",
+    status: "source_extraction_python",
+    dataFile: "packages/fixtures/source-extraction/python/python.expected.json",
+    sourceExtraction: {
+      fixtureRoot: "packages/fixtures/source-extraction/python",
+      expectedFile: "packages/fixtures/source-extraction/python/python.expected.json",
+      languages: ["py", "pyi"],
+      nodeKinds: ["File", "Module", "Class", "Function", "Variable"],
+      edgeKinds: ["CONTAINS", "IMPORTS_FROM", "DEPENDS_ON", "CALLS", "TESTED_BY", "INHERITS"],
+      diagnostics: ["unresolved_import"]
     }
   },
   {

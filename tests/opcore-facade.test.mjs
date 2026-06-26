@@ -64,7 +64,7 @@ describe("opcore public facade", () => {
     });
   });
 
-  it("reports Python sources as extraction-pending without graph or validation support", () => {
+  it("reports Python sources as graph-supported without validation support", () => {
     const temp = mkdtempSync(join(tmpdir(), "opcore-python-status-"));
     try {
       for (const [directory, file] of [
@@ -93,21 +93,18 @@ describe("opcore public facade", () => {
 
       assert.equal(coverage.totalFiles, 2);
       assert.deepEqual(coverage.languages, [
-        { language: "Python", files: 2, graphSupported: false, validationSupported: false }
+        { language: "Python", files: 2, graphSupported: true, validationSupported: false }
       ]);
-      assert.equal(coverage.graph.supportedFiles, 0);
+      assert.equal(coverage.graph.supportedFiles, 2);
       assert.equal(coverage.validation.supportedFiles, 0);
-      assert.equal(coverage.unsupported.totalFiles, 2);
+      assert.equal(coverage.unsupported.totalFiles, 0);
       assert.deepEqual(
         coverage.unsupported.stacks.map((stack) => ({
           extension: stack.extension,
           language: stack.language,
           count: stack.count
         })),
-        [
-          { extension: ".py", language: "Python", count: 1 },
-          { extension: ".pyi", language: "Python", count: 1 }
-        ]
+        []
       );
     } finally {
       rmSync(temp, { recursive: true, force: true });

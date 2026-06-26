@@ -1,6 +1,8 @@
 use super::diagnostics::error;
 use super::discovery::DiscoveredSource;
+use super::python_imports;
 use super::tsconfig::{resolve_import, TsConfig};
+use super::SourceLanguage;
 use crate::protocol::{
     GraphExtractionDiagnostic, GraphExtractionDiagnosticCategory, GraphFactEdge, GraphFactNode,
 };
@@ -8,6 +10,7 @@ use oxc_ast::ast::Program;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 mod collector;
+mod python;
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -48,6 +51,7 @@ pub struct ReExportFact {
 pub struct ReferenceFact {
     pub from: String,
     pub name: String,
+    pub is_test: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -86,6 +90,13 @@ impl<'a> EdgeDraft<'a> {
 }
 
 pub fn file_node(source: &DiscoveredSource) -> GraphFactNode {
+    let parser = match source.language {
+        SourceLanguage::Python => "tree_sitter_python",
+        SourceLanguage::TypeScript
+        | SourceLanguage::TypeScriptJsx
+        | SourceLanguage::JavaScript
+        | SourceLanguage::JavaScriptJsx => "oxc_parser",
+    };
     GraphFactNode {
         id: file_id(&source.relative_path),
         kind: "File".to_string(),
@@ -94,7 +105,7 @@ pub fn file_node(source: &DiscoveredSource) -> GraphFactNode {
         attributes: Some(json!({
             "language": source.language.as_str(),
             "sha256": source.sha256,
-            "parser": "oxc_parser"
+            "parser": parser
         })),
     }
 }
@@ -114,12 +125,21 @@ pub fn file_facts_without_ast(source: &DiscoveredSource, file_node: GraphFactNod
     }
 }
 
-pub fn extract_file_facts(
+pub fn extract_oxc_file_facts(
     source: &DiscoveredSource,
     file_node: GraphFactNode,
     program: &Program<'_>,
 ) -> FileFacts {
     collector::collect_file_facts(source.relative_path.clone(), file_node, program)
+}
+
+pub fn extract_python_file_facts(
+    source: &DiscoveredSource,
+    file_node: GraphFactNode,
+    source_text: &str,
+    tree: &tree_sitter::Tree,
+) -> FileFacts {
+    python::collect_file_facts(source.relative_path.clone(), file_node, source_text, tree)
 }
 
 pub fn finalize_facts(
@@ -149,7 +169,11 @@ struct ImportResolutionContext<'a> {
 
 impl ImportResolutionContext<'_> {
     fn resolve(&mut self, specifier: &str, path: &str) -> Option<String> {
-        let resolution = resolve_import(specifier, path, self.known_files, self.tsconfig);
+        let resolution = if is_python_source_path(path) {
+            python_imports::resolve_import(specifier, path, self.known_files)
+        } else {
+            resolve_import(specifier, path, self.known_files, self.tsconfig)
+        };
         self.diagnostics.extend(resolution.diagnostics);
         resolution.resolved_path
     }
@@ -312,7 +336,7 @@ impl FactFinalizer {
                     &mut self.edges,
                     EdgeDraft::new("CALLS", &reference.from, &target),
                 );
-                if reference.from.starts_with("test:") {
+                if reference.is_test || reference.from.starts_with("test:") {
                     insert_edge(
                         &mut self.edges,
                         EdgeDraft::new("TESTED_BY", &target, &reference.from),
@@ -382,15 +406,15 @@ fn resolve_name(
     name: &str,
     context: &NameResolutionContext<'_>,
 ) -> Option<String> {
-    if name.contains('.') {
-        return None;
-    }
     if let Some(local) = context
         .declarations_by_file
         .get(file_path)
         .and_then(|declarations| declarations.get(name))
     {
         return Some(local.clone());
+    }
+    if name.contains('.') {
+        return resolve_dotted_name(file_path, name, context);
     }
     if let Some(target) = context
         .imports_by_file
@@ -406,6 +430,94 @@ fn resolve_name(
     None
 }
 
+fn resolve_dotted_name(
+    file_path: &str,
+    name: &str,
+    context: &NameResolutionContext<'_>,
+) -> Option<String> {
+    let parts = name.split('.').collect::<Vec<_>>();
+    let head = parts.first()?;
+    let target = context
+        .imports_by_file
+        .get(file_path)
+        .and_then(|imports| imports.get(*head))?;
+    if target.imported == "*" {
+        for candidate in namespace_import_member_candidates(&parts, &target.path) {
+            if let Some(target) = resolve_imported_name(&target.path, &candidate, context) {
+                return Some(target);
+            }
+        }
+        return None;
+    }
+    resolve_imported_name(&target.path, &target.imported, context)
+}
+
+fn namespace_import_member_candidates(parts: &[&str], target_path: &str) -> Vec<String> {
+    let mut candidates = Vec::new();
+    let module_parts = module_parts_for_path(target_path);
+    if let Some(consumed) = longest_module_prefix_match(parts, &module_parts) {
+        if let Some(candidate) = parts.get(consumed..) {
+            candidates.push(candidate.join("."));
+        }
+    }
+    if let Some(candidate) = parts.get(1..) {
+        candidates.push(candidate.join("."));
+    }
+    if let Some(last) = parts.last() {
+        candidates.push((*last).to_string());
+    }
+    deduplicate(candidates)
+}
+
+fn longest_module_prefix_match(parts: &[&str], module_parts: &[String]) -> Option<usize> {
+    let max_len = parts.len().min(module_parts.len());
+    (1..=max_len).rev().find(|len| {
+        let len = *len;
+        let Some(start) = module_parts.len().checked_sub(len) else {
+            return false;
+        };
+        let Some(module_suffix) = module_parts.get(start..) else {
+            return false;
+        };
+        let Some(parts_prefix) = parts.get(..len) else {
+            return false;
+        };
+        module_suffix
+            .iter()
+            .map(String::as_str)
+            .eq(parts_prefix.iter().copied())
+    })
+}
+
+fn module_parts_for_path(path: &str) -> Vec<String> {
+    let without_extension = path
+        .strip_suffix(".py")
+        .or_else(|| path.strip_suffix(".pyi"))
+        .or_else(|| path.strip_suffix(".ts"))
+        .or_else(|| path.strip_suffix(".tsx"))
+        .or_else(|| path.strip_suffix(".js"))
+        .or_else(|| path.strip_suffix(".jsx"))
+        .unwrap_or(path);
+    let mut parts = without_extension
+        .split('/')
+        .filter(|part| !part.is_empty())
+        .map(ToString::to_string)
+        .collect::<Vec<_>>();
+    if parts.last().is_some_and(|part| part == "__init__") {
+        parts.pop();
+    }
+    parts
+}
+
+fn deduplicate(values: Vec<String>) -> Vec<String> {
+    values.into_iter().fold(Vec::new(), |mut unique, value| {
+        if !value.is_empty() && !unique.contains(&value) {
+            unique.push(value);
+        }
+        unique
+    })
+}
+
 fn resolve_imported_name(
     target_path: &str,
     imported: &str,
@@ -416,4 +528,8 @@ fn resolve_imported_name(
         .get(target_path)
         .and_then(|aliases| aliases.get(imported))
         .cloned()
+}
+
+fn is_python_source_path(path: &str) -> bool {
+    path.ends_with(".py") || path.ends_with(".pyi")
 }

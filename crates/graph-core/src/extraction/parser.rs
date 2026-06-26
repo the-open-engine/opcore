@@ -1,15 +1,22 @@
-use super::diagnostics::error;
+use super::diagnostics::{error, warning};
 use super::discovery::DiscoveredSource;
+use super::SourceLanguage;
 use crate::protocol::{GraphExtractionDiagnostic, GraphExtractionDiagnosticCategory};
 use oxc_allocator::Allocator;
 use oxc_ast::ast::Program;
 use oxc_parser::{Parser, ParserReturn};
 use oxc_span::SourceType;
 use std::path::Path;
+use tree_sitter::Tree;
 
 pub struct ParsedSource<'a> {
-    pub program: Option<Program<'a>>,
+    pub program: Option<ParsedProgram<'a>>,
     pub diagnostics: Vec<GraphExtractionDiagnostic>,
+}
+
+pub enum ParsedProgram<'a> {
+    Oxc(Program<'a>),
+    Python(Tree),
 }
 
 pub fn parse_source<'a>(
@@ -26,6 +33,17 @@ pub fn parse_source<'a>(
         );
     }
 
+    if source.language == SourceLanguage::Python {
+        return parse_python(source_text, source);
+    }
+    parse_oxc(allocator, source_text, source)
+}
+
+fn parse_oxc<'a>(
+    allocator: &'a Allocator,
+    source_text: &'a str,
+    source: &DiscoveredSource,
+) -> ParsedSource<'a> {
     let source_type = match source_type_for_source(source) {
         Ok(source_type) => source_type,
         Err(diagnostic) => return ParsedSource::from(diagnostic),
@@ -40,8 +58,41 @@ pub fn parse_source<'a>(
     }
 
     ParsedSource {
-        program: Some(parsed.program),
+        program: Some(ParsedProgram::Oxc(parsed.program)),
         diagnostics: Vec::new(),
+    }
+}
+
+fn parse_python<'a>(source_text: &str, source: &DiscoveredSource) -> ParsedSource<'a> {
+    let mut parser = tree_sitter::Parser::new();
+    let language = tree_sitter_python::LANGUAGE;
+    if let Err(error_value) = parser.set_language(&language.into()) {
+        return diagnostic_result(
+            source,
+            GraphExtractionDiagnosticCategory::MissingParser,
+            format!("failed to load Python parser: {error_value}"),
+        );
+    }
+    let Some(tree) = parser.parse(source_text, None) else {
+        return diagnostic_result(
+            source,
+            GraphExtractionDiagnosticCategory::ParseError,
+            "Python parser returned no syntax tree",
+        );
+    };
+    let diagnostics = if tree.root_node().has_error() {
+        vec![warning(
+            GraphExtractionDiagnosticCategory::ParseError,
+            "Python parser recovered from syntax errors; graph facts may be partial",
+            Some(source.relative_path.clone()),
+            Some(source.language.as_str().to_string()),
+        )]
+    } else {
+        Vec::new()
+    };
+    ParsedSource {
+        program: Some(ParsedProgram::Python(tree)),
+        diagnostics,
     }
 }
 
