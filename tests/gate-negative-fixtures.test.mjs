@@ -169,6 +169,18 @@ describe("negative gate fixtures", () => {
     assert.match(stderrAndStdout(result), /forbidden old public bin crg/);
   });
 
+  it("rejects canonical ASP server manifest launch claim overreach", () => {
+    const repo = tempRepo({ includeDist: true });
+    const manifestPath = join(repo, "packages/asp-provider/dist/manifests/asp-server.json");
+    const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+    manifest.provenance.source = "ASP is a public standard now with provider authority";
+    writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+
+    const result = run(repo, "node", ["scripts/check-release-hygiene.mjs"], { expectFailure: true });
+    assert.match(stderrAndStdout(result), /Launch-facing claim scrub failed/);
+    assert.match(stderrAndStdout(result), /packages\/asp-provider\/dist\/manifests\/asp-server\.json/);
+  });
+
   it("rejects bad descriptor artifact references in release descriptor inspection", () => {
     const repo = tempRepo({ includeDist: true });
     const descriptorPath = join(repo, "packages/opcore/dist/descriptors/lattice.managed-tool.json");
@@ -562,7 +574,8 @@ function minimalCutoverReceipt(repo, commandOverrides = {}) {
               : packageName === "@the-open-engine/opcore-asp-provider"
                 ? { "opcore-asp-provider": "dist/index.js" }
                 : {}
-        }
+        },
+        installedFiles: installedFilesFor(packageName)
       })),
     descriptor: {
       path: "node_modules/@the-open-engine/opcore/dist/descriptors/lattice.managed-tool.json",
@@ -602,6 +615,15 @@ function minimalCutoverReceipt(repo, commandOverrides = {}) {
       { issue: "#58", path: "docs/integration/pre-write-validation.md", checksumSha256: "6".repeat(64) }
     ]
   };
+}
+
+function installedFilesFor(packageName) {
+  const paths = [
+    "package.json",
+    ...(packageName === "@the-open-engine/opcore" ? ["dist/index.js", "dist/lattice/index.js"] : []),
+    ...(packageName === "@the-open-engine/opcore-asp-provider" ? ["dist/index.js", "dist/manifests/asp-server.json"] : [])
+  ];
+  return paths.map((path) => ({ path: `node_modules/${packageName}/${path}`, sha256: "4".repeat(64) }));
 }
 
 function cutoverCommandExpectations() {

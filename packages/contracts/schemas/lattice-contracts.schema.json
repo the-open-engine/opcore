@@ -11778,7 +11778,8 @@
         "packageName",
         "version",
         "tarball",
-        "installedManifest"
+        "installedManifest",
+        "installedFiles"
       ],
       "properties": {
         "packageName": {
@@ -11848,6 +11849,41 @@
               }
             }
           }
+        },
+        "installedFiles": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "path",
+              "sha256"
+            ],
+            "properties": {
+              "path": {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "^node_modules/.+/.+$"
+              },
+              "sha256": {
+                "$ref": "#/$defs/Sha256"
+              }
+            }
+          },
+          "contains": {
+            "type": "object",
+            "required": [
+              "path"
+            ],
+            "properties": {
+              "path": {
+                "pattern": "node_modules/.+/package\\.json$"
+              }
+            }
+          },
+          "minContains": 1
         }
       },
       "allOf": [
@@ -11870,6 +11906,33 @@
                     ]
                   }
                 }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "packageName": {
+                "const": "@the-open-engine/opcore-asp-provider"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "installedFiles": {
+                "contains": {
+                  "type": "object",
+                  "required": [
+                    "path"
+                  ],
+                  "properties": {
+                    "path": {
+                      "const": "node_modules/@the-open-engine/opcore-asp-provider/dist/manifests/asp-server.json"
+                    }
+                  }
+                },
+                "minContains": 1
               }
             }
           }

@@ -11,6 +11,7 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
+    "./manifests/asp-server.json": "./dist/manifests/asp-server.json",
     "./manifests/opcore-asp-provider.provisional.json": "./dist/manifests/opcore-asp-provider.provisional.json"
   },
   "files": [

@@ -67,7 +67,8 @@ function installedPackagesFixture() {
     packageName,
     version: "0.1.0-alpha.0",
     tarball: { filename: `${packageName.split("/").pop()}-0.1.0-alpha.0.tgz`, sha256: "1".repeat(64) },
-    installedManifest: { path: `node_modules/${packageName}/package.json`, sha256: "2".repeat(64), bins: binsFor(packageName) }
+    installedManifest: { path: `node_modules/${packageName}/package.json`, sha256: "2".repeat(64), bins: binsFor(packageName) },
+    installedFiles: installedFilesFor(packageName)
   }));
 }
 
@@ -75,6 +76,15 @@ function binsFor(packageName) {
   if (packageName === "@the-open-engine/opcore") return { opcore: "dist/index.js", lattice: "dist/lattice/index.js" };
   if (packageName === "@the-open-engine/opcore-asp-provider") return { "opcore-asp-provider": "dist/index.js" };
   return {};
+}
+
+function installedFilesFor(packageName) {
+  const paths = [
+    "package.json",
+    ...(packageName === "@the-open-engine/opcore" ? ["dist/index.js", "dist/lattice/index.js"] : []),
+    ...(packageName === "@the-open-engine/opcore-asp-provider" ? ["dist/index.js", "dist/manifests/asp-server.json"] : [])
+  ];
+  return paths.map((path) => ({ path: `node_modules/${packageName}/${path}`, sha256: "3".repeat(64) }));
 }
 
 function managerFixture() {

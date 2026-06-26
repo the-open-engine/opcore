@@ -36,7 +36,7 @@ Opcore is the code-intelligence and robustness monorepo for graph context, edit 
 | Opcore product facade | @packages/opcore/ |
 | Opcore scan report seam | `packages/opcore/src/reporting.ts` |
 | ASP Core check provider facade | @packages/asp-provider/ |
-| ASP provider manifest generator | `scripts/write-asp-provider-manifest.mjs` |
+| ASP provider manifest generator | `scripts/write-asp-provider-manifest.mjs` writes canonical `asp-server.json` plus retained provisional install metadata. |
 | Golden fixtures and reference evidence | @packages/fixtures/ |
 | Graph reference evidence manifest | `packages/fixtures/graph-reference-evidence/manifest.json` |
 | Graph release fixture | `packages/fixtures/graph-release/release-readiness-fixture.json` |
@@ -123,8 +123,9 @@ Opcore is the code-intelligence and robustness monorepo for graph context, edit 
 - ALWAYS update `packages/opcore/src/lattice/descriptor.ts`, `scripts/write-cli-descriptor.mjs`, descriptor fixtures, package packlists, and descriptor validation together when changing ACE acquisition metadata - WHY: ACE must consume installed lattice release artifacts, not workspace-local paths.
 - ALWAYS update release receipt contracts, `scripts/generate-release-receipt.mjs`, docs/release receipts, CI, and package/provenance/secret negative tests together when changing release evidence ownership - WHY: #29 is the maintainer release proof gate for the alpha line.
 - ALWAYS update cutover receipt contracts, `scripts/generate-cutover-receipt.mjs`, docs/release cutover receipts, CI, and cutover negative tests together when changing installed-artifact release behavior - WHY: #30 proves canonical lattice artifacts replace current external dev tools without fallback.
+- ALWAYS record installed package file paths and checksums in cutover receipts, including ASP provider manifests - WHY: cutover proof must show packaged artifacts survived installation, not only tarball and package.json evidence.
 - ALWAYS keep ASP dogfood advisory/shadow and isolated to temp `ASP_HOME`; co-record `current-tools:validate-changed` and `current-tools:validate-rust-graph`, keep `oldToolReplacementClaimed: false`, and represent inspect/edit gaps as degraded or retained blockers - WHY: #120 proves standalone ASP manager integration without authorizing rollout or retiring Rox/CRG/CIX.
-- ALWAYS update `packages/asp-provider/src/manifest.ts`, `scripts/write-asp-provider-manifest.mjs`, package packlists, release receipts, and installed-bin tests together when changing ASP provider install metadata - WHY: the provisional manifest is install metadata only and must not imply trust, authority, or gate permission.
+- ALWAYS update `packages/asp-provider/src/manifest.ts`, `scripts/write-asp-provider-manifest.mjs`, package exports/packlists, release receipts, installed-bin tests, and claim scrub together when changing ASP provider manifest/install metadata - WHY: canonical `asp-server.json` and retained provisional metadata must not imply trust, authority, gate permission, or host apply permission.
 - ALWAYS treat `darwin-arm64`, `darwin-x64`, and `linux-x64` as the only supported Opcore alpha graph-core native targets until CI aggregate evidence expands the set - WHY: local single-platform builds cannot prove clean public installs for other targets.
 - ALWAYS require the release dry-run aggregate workflow to download all three Opcore native package artifacts before release receipts or cutover receipts claim cross-platform graph-core readiness - WHY: release receipts must record real per-target checksums, not local fallback or fabricated binaries.
 - ALWAYS keep `@the-open-engine/opcore` launch-facing help, README snippets, smoke output, and JSON named Opcore while preserving transitional `lattice status` compatibility - WHY: first-run activation must not leak internal or old-tool names into the public readiness flow.
@@ -180,7 +181,7 @@ Opcore is the code-intelligence and robustness monorepo for graph context, edit 
 - `npm run ci` - portable GitHub/npm gate.
 - `npm run graph:artifact` - build `crates/graph-core` release sidecar for the current supported target and copy it to the matching `packages/opcore-graph-core-<target>/` package with metadata and checksum.
 - `npm run descriptor:artifact` - write the validated aggregate lattice ACE descriptor to `packages/opcore/dist/descriptors/lattice.managed-tool.json`.
-- `npm run asp-provider:manifest` - write `packages/asp-provider/dist/manifests/opcore-asp-provider.provisional.json`.
+- `npm run asp-provider:manifest` - write canonical `packages/asp-provider/dist/manifests/asp-server.json` and retained `packages/asp-provider/dist/manifests/opcore-asp-provider.provisional.json`.
 - `npm run graph-release:check` - generate and validate the #17 graph release readiness receipt in temp/check mode.
 - `npm run graph-release:receipt` - write `docs/release/graph-release-receipt.json`, `docs/release/graph-release-receipt.payload.json`, and `docs/release/graph-release-handoff.md`.
 - `npm run release-receipt:check` - generate and validate the #29 repo-wide release receipt in check mode.

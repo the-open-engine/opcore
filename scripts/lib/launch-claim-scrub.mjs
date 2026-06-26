@@ -36,6 +36,7 @@ export function launchClaimScrubFiles(repoRoot) {
     "docs/examples.md",
     "docs/agent-integration.md",
     "docs/demo.md",
+    "packages/asp-provider/dist/manifests/asp-server.json",
     "packages/opcore/package.json"
   ];
   const packagesDir = join(repoRoot, "packages");
