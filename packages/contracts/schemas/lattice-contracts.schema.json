@@ -14160,6 +14160,7 @@
         "installedPackages",
         "manager",
         "aspHome",
+        "hostFixture",
         "provider",
         "managerState",
         "repoEnrollment",
@@ -14495,6 +14496,53 @@
             },
             "aceRuntimeBinExcluded": {
               "const": true
+            }
+          }
+        },
+        "hostFixture": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "repo",
+            "temp",
+            "sourceRepoMutated",
+            "baselineCommitted",
+            "changedPaths"
+          ],
+          "properties": {
+            "repo": {
+              "type": "string",
+              "minLength": 1
+            },
+            "temp": {
+              "const": true
+            },
+            "sourceRepoMutated": {
+              "const": false
+            },
+            "baselineCommitted": {
+              "const": true
+            },
+            "changedPaths": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "not": {
+                  "anyOf": [
+                    {
+                      "pattern": "^[\\\\/]"
+                    },
+                    {
+                      "pattern": "^[A-Za-z]:[\\\\/]"
+                    },
+                    {
+                      "pattern": "(^|/)\\.\\.(/|$)"
+                    }
+                  ]
+                }
+              }
             }
           }
         },

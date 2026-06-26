@@ -12,6 +12,7 @@ import {
   binPath,
   collectInstalledPackages,
   collectParityBlockers,
+  createAspHostFixtureRepo,
   locateAspManager,
   maybeRunCiVerify,
   packWorkspace,
@@ -66,9 +67,10 @@ async function generateReceipt() {
     const manager = locateAspManager();
     const aspHome = mkdtempSync(join(tempRoot, "asp-home-"));
     const env = aspEnv(install.project, aspHome);
-    const flow = runAspFlow(manager, env, provider.manifest.manifestPath);
+    const fixture = createAspHostFixtureRepo(tempRoot);
+    const flow = runAspFlow(manager, env, provider.manifest.manifestPath, fixture);
     const probe = await runProviderProbe(binPath(install.project, "opcore-asp-provider"));
-    return sanitizeReceiptForProvenance(buildReceipt({ install, provider, manager, aspHome, flow, probe }));
+    return sanitizeReceiptForProvenance(buildReceipt({ install, provider, manager, aspHome, fixture, flow, probe }));
   } finally {
     rmSync(tempRoot, { recursive: true, force: true });
   }
@@ -116,33 +118,52 @@ function providerEvidence(tempRoot, project) {
   };
 }
 
-function runAspFlow(manager, env, manifestPath) {
-  const asp = (id, canonicalArgs) => runAspCommand({ repoRoot, asp: manager, id, canonicalArgs, env });
+function runAspFlow(manager, env, manifestPath, fixture) {
+  const asp = (id, canonicalArgs, cwd = repoRoot) => runAspCommand({ repoRoot: cwd, asp: manager, id, canonicalArgs, env });
   const managerState = {
     status: asp("asp-status", ["status", "--json"]),
     serverAdd: asp("asp-server-add", ["server", "add", "--manifest", manifestPath, "--json"]),
     serverStatus: asp("asp-server-status", ["server", "status", "opcore", "--json"])
   };
   const repoEnrollment = {
-    repoAdd: asp("asp-repo-add", ["repo", "add", repoRoot, "--json"]),
-    repoEnable: asp("asp-repo-enable", ["repo", "enable", "opcore", "--repo", repoRoot, "--mode", "advisory", "--json"]),
-    repoStatus: asp("asp-repo-status", ["repo", "status", repoRoot, "--json"])
+    repoAdd: asp("asp-repo-add", ["repo", "add", fixture.repo, "--json"], fixture.repo),
+    repoEnable: asp("asp-repo-enable", ["repo", "enable", "opcore", "--repo", fixture.repo, "--mode", "advisory", "--json"], fixture.repo),
+    repoStatus: asp("asp-repo-status", ["repo", "status", fixture.repo, "--json"], fixture.repo)
   };
-  const check = asp("asp-check-changed", ["check", "--repo", repoRoot, "--changed", "--call-site", "interactive", "--json"]);
+  const check = asp("asp-check-changed", ["check", "--repo", fixture.repo, "--changed", "--call-site", "interactive", "--json"], fixture.repo);
   const checkOutput = requireObject(check.output, "asp check output");
   const hostDecision = requireObject(checkOutput.hostDecision, "asp check hostDecision");
   const receipt = requireObject(checkOutput.receipt, "asp check receipt");
+  assertHostEvaluationRecorded(hostDecision, receipt, checkOutput);
   return {
     managerState,
     repoEnrollment,
     hostEvaluation: {
       check: { ...check, hostDecision, receipt, assurance: assuranceFromHost(hostDecision, receipt) },
-      ciVerify: maybeRunCiVerify(repoRoot, manager, env)
+      ciVerify: maybeRunCiVerify(fixture.repo, manager, env)
     }
   };
 }
 
-function buildReceipt({ install, provider, manager, aspHome, flow, probe }) {
+function assertHostEvaluationRecorded(hostDecision, receipt, checkOutput) {
+  if (Array.isArray(hostDecision.authorityEvidence) && hostDecision.authorityEvidence.length > 0) return;
+  throw new Error(
+    `ASP dogfood host check did not record provider authority evidence: ${JSON.stringify(
+      {
+        decision: hostDecision.decision,
+        authorityEvidenceLength: hostDecision.authorityEvidence?.length ?? 0,
+        receiptAuthorityEvidenceLength: receipt.authorityEvidence?.length ?? 0,
+        receiptProviderProvenanceLength: receipt.providerProvenance?.length ?? 0,
+        coverage: checkOutput.coverage ?? hostDecision.coverage ?? receipt.coverage,
+        providerIds: receipt.providerIds
+      },
+      null,
+      2
+    )}`
+  );
+}
+
+function buildReceipt({ install, provider, manager, aspHome, fixture, flow, probe }) {
   return {
     schemaVersion: 1,
     issue: "#120",
@@ -155,9 +176,10 @@ function buildReceipt({ install, provider, manager, aspHome, flow, probe }) {
     installedPackages: install.installedPackages,
     manager,
     aspHome: aspHomeEvidence(aspHome),
+    hostFixture: fixture,
     provider,
     managerState: flow.managerState,
-    repoEnrollment: { repo: repoRoot, mode: "advisory", ...flow.repoEnrollment },
+    repoEnrollment: { repo: fixture.repo, mode: "advisory", ...flow.repoEnrollment },
     hostEvaluation: flow.hostEvaluation.ciVerify
       ? flow.hostEvaluation
       : { check: flow.hostEvaluation.check },

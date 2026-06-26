@@ -13,6 +13,7 @@ export function validAspDogfoodReceipt() {
     installedPackages: installedPackagesFixture(),
     manager: managerFixture(),
     aspHome: aspHomeFixture(),
+    hostFixture: hostFixtureFixture(),
     provider: providerFixture(),
     managerState: managerStateFixture(),
     repoEnrollment: repoEnrollmentFixture(),
@@ -35,6 +36,8 @@ export function invalidAspDogfoodCases(receipt) {
     ["failed ASP server add", failedManagerServerAdd(receipt), /manager server add status must be passed/],
     ["failed ASP repo enable", failedRepoEnable(receipt), /repo enable status must be passed/],
     ["failed ASP host check", failedHostCheck(receipt), /host check status must be passed/],
+    ["missing host fixture evidence", missingHostFixture(receipt), /host fixture evidence/],
+    ["host fixture mutates source repo", sourceMutatingHostFixture(receipt), /source repo/],
     ["failed provider probe", failedProviderProbe(receipt), /provider probe status must be passed/],
     ["failed required old-tool guardrail", failedRequiredGuardrail(receipt), /required guardrail current-tools-validate-changed must pass/],
     ["missing host receipt authority evidence", missingHostAuthority(receipt), /authorityEvidence/],
@@ -109,6 +112,16 @@ function aspHomeFixture() {
   };
 }
 
+function hostFixtureFixture() {
+  return {
+    repo: "/tmp/opcore-asp-dogfood/asp-host-fixture",
+    temp: true,
+    sourceRepoMutated: false,
+    baselineCommitted: true,
+    changedPaths: ["src/dogfood.ts"]
+  };
+}
+
 function providerFixture() {
   return {
     providerId: "opcore",
@@ -155,24 +168,26 @@ function managerStateFixture() {
 }
 
 function repoEnrollmentFixture() {
+  const repo = hostFixtureFixture().repo;
   return {
-    repo: "/repo/lattice",
+    repo,
     mode: "advisory",
-    repoAdd: command("asp-repo-add", ["asp", "repo", "add", "/repo/lattice", "--json"]),
-    repoEnable: command("asp-repo-enable", ["asp", "repo", "enable", "opcore", "--repo", "/repo/lattice", "--mode", "advisory", "--json"]),
-    repoStatus: command("asp-repo-status", ["asp", "repo", "status", "/repo/lattice", "--json"])
+    repoAdd: command("asp-repo-add", ["asp", "repo", "add", repo, "--json"]),
+    repoEnable: command("asp-repo-enable", ["asp", "repo", "enable", "opcore", "--repo", repo, "--mode", "advisory", "--json"]),
+    repoStatus: command("asp-repo-status", ["asp", "repo", "status", repo, "--json"])
   };
 }
 
 function hostEvaluationFixture(hostDecision) {
+  const repo = hostFixtureFixture().repo;
   return {
     check: {
-      ...command("asp-check-changed", ["asp", "check", "--repo", "/repo/lattice", "--changed", "--call-site", "interactive", "--json"]),
+      ...command("asp-check-changed", ["asp", "check", "--repo", repo, "--changed", "--call-site", "interactive", "--json"]),
       hostDecision,
       receipt: hostDecision.receipt,
       assurance: { mode: "gated", transactionGuarantee: "none" }
     },
-    ciVerify: command("asp-ci-verify", ["asp", "ci", "verify", "--repo", "/repo/lattice", "--changed-from", "HEAD", "--json"])
+    ciVerify: command("asp-ci-verify", ["asp", "ci", "verify", "--repo", repo, "--changed-from", "main", "--json"])
   };
 }
 
@@ -263,6 +278,16 @@ function failedHostCheck(receipt) {
       check: failedCommand(receipt.hostEvaluation.check)
     }
   };
+}
+
+function missingHostFixture(receipt) {
+  const { hostFixture, ...withoutHostFixture } = receipt;
+  void hostFixture;
+  return withoutHostFixture;
+}
+
+function sourceMutatingHostFixture(receipt) {
+  return { ...receipt, hostFixture: { ...receipt.hostFixture, sourceRepoMutated: true } };
 }
 
 function failedProviderProbe(receipt) {

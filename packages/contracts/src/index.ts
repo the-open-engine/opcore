@@ -2693,6 +2693,14 @@ export interface AspDogfoodAspHomeEvidence {
   aceRuntimeBinExcluded: true;
 }
 
+export interface AspDogfoodHostFixtureEvidence {
+  repo: string;
+  temp: true;
+  sourceRepoMutated: false;
+  baselineCommitted: true;
+  changedPaths: readonly string[];
+}
+
 export interface AspDogfoodCommandRunReceipt {
   id: string;
   command: readonly string[];
@@ -2805,6 +2813,7 @@ export interface AspDogfoodReceipt {
   installedPackages: readonly ReleaseCutoverInstalledPackageEvidence[];
   manager: AspDogfoodManagerEvidence;
   aspHome: AspDogfoodAspHomeEvidence;
+  hostFixture: AspDogfoodHostFixtureEvidence;
   provider: AspDogfoodProviderEvidence;
   managerState: AspDogfoodManagerStateEvidence;
   repoEnrollment: AspDogfoodRepoEnrollmentEvidence;
@@ -2958,13 +2967,9 @@ export async function runCommandAdapterCli(options: RunCommandAdapterCliOptions)
     ...options,
     argv
   });
-  if (routed.json) {
-    stdout(`${JSON.stringify(routed)}\n`);
-  } else if (routed.status === "ok") {
-    stdout(`${routed.message}\n`);
-  } else {
-    stderr(`${routed.message}\n`);
-  }
+  const text = routed.json ? JSON.stringify(routed) : routed.message;
+  const write = routed.json || routed.status === "ok" ? stdout : stderr;
+  write(`${text}\n`);
   return routed.exitCode;
 }
 
@@ -4313,6 +4318,7 @@ export function validateAspDogfoodReceipt(receipt: AspDogfoodReceipt): AspDogfoo
   validateReleaseCutoverInstalledPackages(receipt.installedPackages);
   validateAspDogfoodManager(receipt.manager);
   validateAspDogfoodAspHome(receipt.aspHome);
+  validateAspDogfoodHostFixture(receipt.hostFixture);
   validateAspDogfoodProvider(receipt.provider);
   validateAspDogfoodManagerState(receipt.managerState);
   validateAspDogfoodRepoEnrollment(receipt.repoEnrollment);
@@ -7055,6 +7061,16 @@ function validateAspDogfoodAspHome(aspHome: AspDogfoodAspHomeEvidence): void {
   if (aspHome.sharedStateMutated !== false) throw new Error("ASP dogfood shared ASP state must not be mutated");
   if (aspHome.pathSanitized !== true) throw new Error("ASP dogfood PATH must be sanitized for manager execution");
   if (aspHome.aceRuntimeBinExcluded !== true) throw new Error("ASP dogfood manager PATH must exclude .ace/runtime");
+}
+
+function validateAspDogfoodHostFixture(fixture: AspDogfoodHostFixtureEvidence): void {
+  if (!fixture || typeof fixture !== "object") throw new Error("ASP dogfood host fixture evidence is required");
+  validateNonEmptyString(fixture.repo, "ASP dogfood host fixture repo");
+  if (fixture.temp !== true) throw new Error("ASP dogfood host fixture repo must be temporary");
+  if (fixture.sourceRepoMutated !== false) throw new Error("ASP dogfood host fixture must not mutate the source repo");
+  if (fixture.baselineCommitted !== true) throw new Error("ASP dogfood host fixture must commit a baseline");
+  validateStringArray(fixture.changedPaths, "ASP dogfood host fixture changedPaths", { allowEmpty: false });
+  for (const path of fixture.changedPaths) validateRepoRelativePath(path);
 }
 
 function validateAspDogfoodProvider(provider: AspDogfoodProviderEvidence): void {
