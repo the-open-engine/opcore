@@ -9,6 +9,8 @@ import { graphProviderBuild, graphProviderQuery } from "../packages/graph/dist/i
 const repoRoot = dirname(fileURLToPath(import.meta.url));
 const sourceFixtureRoot = resolve(repoRoot, "../packages/fixtures/source-extraction/wave1");
 const expected = JSON.parse(readFileSync(resolve(sourceFixtureRoot, "wave1.expected.json"), "utf8"));
+const pythonFixtureRoot = resolve(repoRoot, "../packages/fixtures/source-extraction/python");
+const pythonExpected = JSON.parse(readFileSync(resolve(pythonFixtureRoot, "python.expected.json"), "utf8"));
 
 describe("graph source extraction conformance", () => {
   it("extracts Wave 1 TS/JS/TSX/JSX facts through the GraphProvider wrapper", () => {
@@ -36,13 +38,31 @@ describe("graph source extraction conformance", () => {
       assert.deepEqual(nodeAttributes(result.nodes), expected.nodeAttributes);
     });
   });
+
+  it("extracts Python facts through the GraphProvider wrapper", () => {
+    withFixtureCopy(pythonFixtureRoot, "python", (fixtureRoot) => {
+      assert.equal(graphProviderBuild({ repoRoot: fixtureRoot }).status.state, "available");
+      const result = graphProviderQuery({ repoRoot: fixtureRoot });
+      assert.equal(result.status.state, "available");
+      assert.deepEqual(sortedUnique(result.metadata.nodeKinds), pythonExpected.nodeKinds);
+      assert.deepEqual(sortedUnique(result.metadata.edgeKinds), pythonExpected.edgeKinds);
+      assert.deepEqual(result.nodes.map((node) => node.id).sort(), pythonExpected.nodeIds);
+      assert.deepEqual(edgeTriples(result.edges), pythonExpected.edgeTriples.sort(compareTuple));
+      assert.deepEqual(nodeAttributes(result.nodes), pythonExpected.nodeAttributes);
+      assert.deepEqual(fileExports(result.nodes), pythonExpected.fileExports);
+      assert.deepEqual(result.diagnostics ?? [], pythonExpected.diagnostics);
+    });
+  });
 });
 
-function withFixtureCopy(run) {
-  const temp = mkdtempSync(join(tmpdir(), "lattice-wave1-"));
-  const fixtureRoot = join(temp, "wave1");
+function withFixtureCopy(rootOrRun, nameOrRun, maybeRun) {
+  const root = typeof rootOrRun === "string" ? rootOrRun : sourceFixtureRoot;
+  const name = typeof nameOrRun === "string" ? nameOrRun : "wave1";
+  const run = maybeRun ?? rootOrRun;
+  const temp = mkdtempSync(join(tmpdir(), `lattice-${name}-`));
+  const fixtureRoot = join(temp, name);
   try {
-    cpSync(sourceFixtureRoot, fixtureRoot, { recursive: true, filter: skipGeneratedStore });
+    cpSync(root, fixtureRoot, { recursive: true, filter: skipGeneratedStore });
     run(fixtureRoot);
   } finally {
     rmSync(temp, { recursive: true, force: true });

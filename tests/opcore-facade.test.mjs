@@ -65,7 +65,7 @@ describe("opcore public facade", () => {
     });
   });
 
-  it("reports Python sources as extraction-pending without graph or validation support", () => {
+  it("reports Python sources as graph-supported without validation support", () => {
     const temp = mkdtempSync(join(tmpdir(), "opcore-python-status-"));
     try {
       for (const [directory, file] of [
@@ -94,21 +94,18 @@ describe("opcore public facade", () => {
 
       assert.equal(coverage.totalFiles, 2);
       assert.deepEqual(coverage.languages, [
-        { language: "Python", files: 2, graphSupported: false, validationSupported: false }
+        { language: "Python", files: 2, graphSupported: true, validationSupported: false }
       ]);
-      assert.equal(coverage.graph.supportedFiles, 0);
+      assert.equal(coverage.graph.supportedFiles, 2);
       assert.equal(coverage.validation.supportedFiles, 0);
-      assert.equal(coverage.unsupported.totalFiles, 2);
+      assert.equal(coverage.unsupported.totalFiles, 0);
       assert.deepEqual(
         coverage.unsupported.stacks.map((stack) => ({
           extension: stack.extension,
           language: stack.language,
           count: stack.count
         })),
-        [
-          { extension: ".py", language: "Python", count: 1 },
-          { extension: ".pyi", language: "Python", count: 1 }
-        ]
+        []
       );
     } finally {
       rmSync(temp, { recursive: true, force: true });
@@ -327,7 +324,7 @@ describe("opcore public facade", () => {
       {
         name: "python",
         files: [["scripts/app.py", "print('unsupported')\n"]],
-        expect: { totalFiles: 1, languages: ["Python"], unsupportedFiles: 1 }
+        expect: { totalFiles: 1, languages: ["Python"], unsupportedFiles: 0 }
       },
       {
         name: "fresh-git",
@@ -352,8 +349,12 @@ describe("opcore public facade", () => {
         assert.equal(result.opcoreInit.scan.diagnosticCount >= 0, true, fixture.name);
         assert.equal(existsSync(join(temp, ".opcore")), false, fixture.name);
         if (fixture.name === "python") {
-          assert.equal(result.opcoreInit.scan.unsupportedStacks[0].language, "Python");
+          assert.equal(result.opcoreInit.scan.graphSupportedFiles, 1);
+          assert.equal(result.opcoreInit.scan.validationSupportedFiles, 0);
+          assert.deepEqual(result.opcoreInit.scan.unsupportedStacks, []);
           assert.equal(result.opcoreInit.settings.languages[0].state, "unsupported");
+          assert.equal(result.opcoreInit.settings.languages[0].graph, "supported");
+          assert.equal(result.opcoreInit.settings.languages[0].validation, "unsupported");
           assert.equal(result.opcoreInit.scan.diagnosticCount, 0);
         }
         if (fixture.name === "mixed-cargo-lock-only") {

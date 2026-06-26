@@ -1,0 +1,518 @@
+{
+  "schemaVersion": 1,
+  "fixture": "source-extraction-python",
+  "nodeKinds": [
+    "Class",
+    "File",
+    "Function",
+    "Module",
+    "Variable"
+  ],
+  "edgeKinds": [
+    "CALLS",
+    "CONTAINS",
+    "DEPENDS_ON",
+    "IMPORTS_FROM",
+    "INHERITS",
+    "TESTED_BY"
+  ],
+  "nodeIds": [
+    "class:src/pkg/base.py#BaseModel",
+    "class:src/pkg/models.py#PublicModel",
+    "class:tests/test_models.py#TestPublicModel",
+    "file:src/pkg/__init__.py",
+    "file:src/pkg/base.py",
+    "file:src/pkg/helpers.py",
+    "file:src/pkg/models.py",
+    "file:src/pkg/stubs.pyi",
+    "file:src/pkg/uses_stub.py",
+    "file:tests/test_models.py",
+    "function:src/pkg/helpers.py#build_name",
+    "function:src/pkg/models.py#PublicModel.from_value",
+    "function:src/pkg/models.py#PublicModel.render",
+    "function:src/pkg/models.py#_hidden",
+    "function:src/pkg/models.py#make_model",
+    "function:src/pkg/stubs.pyi#stubbed",
+    "function:src/pkg/uses_stub.py#call_stub",
+    "function:tests/test_models.py#TestPublicModel.test_render",
+    "function:tests/test_models.py#test_make_model",
+    "module:src/pkg/__init__.py#src.pkg",
+    "module:src/pkg/base.py#src.pkg.base",
+    "module:src/pkg/helpers.py#src.pkg.helpers",
+    "module:src/pkg/models.py#src.pkg.models",
+    "module:src/pkg/stubs.pyi#src.pkg.stubs",
+    "module:src/pkg/uses_stub.py#src.pkg.uses_stub",
+    "module:tests/test_models.py#tests.test_models",
+    "variable:src/pkg/__init__.py#PACKAGE_VALUE",
+    "variable:src/pkg/models.py#_private"
+  ],
+  "edgeTriples": [
+    [
+      "CALLS",
+      "function:src/pkg/models.py#_hidden",
+      "class:src/pkg/models.py#PublicModel"
+    ],
+    [
+      "CALLS",
+      "function:src/pkg/models.py#make_model",
+      "class:src/pkg/models.py#PublicModel"
+    ],
+    [
+      "CALLS",
+      "function:src/pkg/models.py#PublicModel.from_value",
+      "function:src/pkg/helpers.py#build_name"
+    ],
+    [
+      "CALLS",
+      "function:src/pkg/models.py#PublicModel.render",
+      "function:src/pkg/helpers.py#build_name"
+    ],
+    [
+      "CALLS",
+      "function:src/pkg/uses_stub.py#call_stub",
+      "function:src/pkg/stubs.pyi#stubbed"
+    ],
+    [
+      "CALLS",
+      "function:tests/test_models.py#test_make_model",
+      "class:src/pkg/models.py#PublicModel"
+    ],
+    [
+      "CALLS",
+      "function:tests/test_models.py#test_make_model",
+      "function:src/pkg/models.py#make_model"
+    ],
+    [
+      "CALLS",
+      "function:tests/test_models.py#TestPublicModel.test_render",
+      "class:src/pkg/models.py#PublicModel"
+    ],
+    [
+      "CALLS",
+      "variable:src/pkg/__init__.py#PACKAGE_VALUE",
+      "class:src/pkg/models.py#PublicModel"
+    ],
+    [
+      "CONTAINS",
+      "class:src/pkg/models.py#PublicModel",
+      "function:src/pkg/models.py#PublicModel.from_value"
+    ],
+    [
+      "CONTAINS",
+      "class:src/pkg/models.py#PublicModel",
+      "function:src/pkg/models.py#PublicModel.render"
+    ],
+    [
+      "CONTAINS",
+      "class:tests/test_models.py#TestPublicModel",
+      "function:tests/test_models.py#TestPublicModel.test_render"
+    ],
+    [
+      "CONTAINS",
+      "file:src/pkg/__init__.py",
+      "module:src/pkg/__init__.py#src.pkg"
+    ],
+    [
+      "CONTAINS",
+      "file:src/pkg/base.py",
+      "module:src/pkg/base.py#src.pkg.base"
+    ],
+    [
+      "CONTAINS",
+      "file:src/pkg/helpers.py",
+      "module:src/pkg/helpers.py#src.pkg.helpers"
+    ],
+    [
+      "CONTAINS",
+      "file:src/pkg/models.py",
+      "module:src/pkg/models.py#src.pkg.models"
+    ],
+    [
+      "CONTAINS",
+      "file:src/pkg/stubs.pyi",
+      "module:src/pkg/stubs.pyi#src.pkg.stubs"
+    ],
+    [
+      "CONTAINS",
+      "file:src/pkg/uses_stub.py",
+      "module:src/pkg/uses_stub.py#src.pkg.uses_stub"
+    ],
+    [
+      "CONTAINS",
+      "file:tests/test_models.py",
+      "module:tests/test_models.py#tests.test_models"
+    ],
+    [
+      "CONTAINS",
+      "module:src/pkg/__init__.py#src.pkg",
+      "variable:src/pkg/__init__.py#PACKAGE_VALUE"
+    ],
+    [
+      "CONTAINS",
+      "module:src/pkg/base.py#src.pkg.base",
+      "class:src/pkg/base.py#BaseModel"
+    ],
+    [
+      "CONTAINS",
+      "module:src/pkg/helpers.py#src.pkg.helpers",
+      "function:src/pkg/helpers.py#build_name"
+    ],
+    [
+      "CONTAINS",
+      "module:src/pkg/models.py#src.pkg.models",
+      "class:src/pkg/models.py#PublicModel"
+    ],
+    [
+      "CONTAINS",
+      "module:src/pkg/models.py#src.pkg.models",
+      "function:src/pkg/models.py#_hidden"
+    ],
+    [
+      "CONTAINS",
+      "module:src/pkg/models.py#src.pkg.models",
+      "function:src/pkg/models.py#make_model"
+    ],
+    [
+      "CONTAINS",
+      "module:src/pkg/models.py#src.pkg.models",
+      "variable:src/pkg/models.py#_private"
+    ],
+    [
+      "CONTAINS",
+      "module:src/pkg/stubs.pyi#src.pkg.stubs",
+      "function:src/pkg/stubs.pyi#stubbed"
+    ],
+    [
+      "CONTAINS",
+      "module:src/pkg/uses_stub.py#src.pkg.uses_stub",
+      "function:src/pkg/uses_stub.py#call_stub"
+    ],
+    [
+      "CONTAINS",
+      "module:tests/test_models.py#tests.test_models",
+      "class:tests/test_models.py#TestPublicModel"
+    ],
+    [
+      "CONTAINS",
+      "module:tests/test_models.py#tests.test_models",
+      "function:tests/test_models.py#test_make_model"
+    ],
+    [
+      "DEPENDS_ON",
+      "file:src/pkg/__init__.py",
+      "file:src/pkg/models.py"
+    ],
+    [
+      "DEPENDS_ON",
+      "file:src/pkg/models.py",
+      "file:src/pkg/base.py"
+    ],
+    [
+      "DEPENDS_ON",
+      "file:src/pkg/models.py",
+      "file:src/pkg/helpers.py"
+    ],
+    [
+      "DEPENDS_ON",
+      "file:src/pkg/uses_stub.py",
+      "file:src/pkg/stubs.pyi"
+    ],
+    [
+      "DEPENDS_ON",
+      "file:tests/test_models.py",
+      "file:src/pkg/__init__.py"
+    ],
+    [
+      "DEPENDS_ON",
+      "file:tests/test_models.py",
+      "file:src/pkg/models.py"
+    ],
+    [
+      "IMPORTS_FROM",
+      "file:src/pkg/__init__.py",
+      "file:src/pkg/models.py"
+    ],
+    [
+      "IMPORTS_FROM",
+      "file:src/pkg/models.py",
+      "file:src/pkg/base.py"
+    ],
+    [
+      "IMPORTS_FROM",
+      "file:src/pkg/models.py",
+      "file:src/pkg/helpers.py"
+    ],
+    [
+      "IMPORTS_FROM",
+      "file:src/pkg/uses_stub.py",
+      "file:src/pkg/stubs.pyi"
+    ],
+    [
+      "IMPORTS_FROM",
+      "file:tests/test_models.py",
+      "file:src/pkg/__init__.py"
+    ],
+    [
+      "IMPORTS_FROM",
+      "file:tests/test_models.py",
+      "file:src/pkg/models.py"
+    ],
+    [
+      "INHERITS",
+      "class:src/pkg/models.py#PublicModel",
+      "class:src/pkg/base.py#BaseModel"
+    ],
+    [
+      "TESTED_BY",
+      "class:src/pkg/models.py#PublicModel",
+      "function:tests/test_models.py#test_make_model"
+    ],
+    [
+      "TESTED_BY",
+      "class:src/pkg/models.py#PublicModel",
+      "function:tests/test_models.py#TestPublicModel.test_render"
+    ],
+    [
+      "TESTED_BY",
+      "function:src/pkg/models.py#make_model",
+      "function:tests/test_models.py#test_make_model"
+    ]
+  ],
+  "nodeAttributes": {
+    "class:src/pkg/base.py#BaseModel": {
+      "decorators": [],
+      "exportKind": "named",
+      "exportName": "BaseModel",
+      "exportPolicy": "underscore_convention",
+      "exported": true,
+      "isTest": false
+    },
+    "class:src/pkg/models.py#PublicModel": {
+      "decorators": [],
+      "exportKind": "named",
+      "exportName": "PublicModel",
+      "exportPolicy": "__all__",
+      "exported": true,
+      "isTest": false
+    },
+    "class:tests/test_models.py#TestPublicModel": {
+      "decorators": [],
+      "exportKind": "named",
+      "exportName": "TestPublicModel",
+      "exportPolicy": "underscore_convention",
+      "exported": true,
+      "isTest": true
+    },
+    "function:src/pkg/helpers.py#build_name": {
+      "async": false,
+      "decorators": [],
+      "exportKind": "named",
+      "exportName": "build_name",
+      "exportPolicy": "underscore_convention",
+      "exported": true,
+      "isTest": false
+    },
+    "function:src/pkg/models.py#_hidden": {
+      "async": false,
+      "decorators": [],
+      "exportPolicy": "__all__",
+      "exported": false,
+      "isTest": false
+    },
+    "function:src/pkg/models.py#make_model": {
+      "async": false,
+      "decorators": [],
+      "exportKind": "named",
+      "exportName": "make_model",
+      "exportPolicy": "__all__",
+      "exported": true,
+      "isTest": false
+    },
+    "function:src/pkg/models.py#PublicModel.from_value": {
+      "async": false,
+      "decorators": [
+        "classmethod"
+      ],
+      "exportPolicy": "not_module_level",
+      "exported": false,
+      "isTest": false
+    },
+    "function:src/pkg/models.py#PublicModel.render": {
+      "async": false,
+      "decorators": [],
+      "exportPolicy": "not_module_level",
+      "exported": false,
+      "isTest": false
+    },
+    "function:src/pkg/stubs.pyi#stubbed": {
+      "async": false,
+      "decorators": [],
+      "exportKind": "named",
+      "exportName": "stubbed",
+      "exportPolicy": "underscore_convention",
+      "exported": true,
+      "isTest": false
+    },
+    "function:src/pkg/uses_stub.py#call_stub": {
+      "async": false,
+      "decorators": [],
+      "exportKind": "named",
+      "exportName": "call_stub",
+      "exportPolicy": "underscore_convention",
+      "exported": true,
+      "isTest": false
+    },
+    "function:tests/test_models.py#test_make_model": {
+      "async": false,
+      "decorators": [],
+      "exportKind": "named",
+      "exportName": "test_make_model",
+      "exportPolicy": "underscore_convention",
+      "exported": true,
+      "isTest": true
+    },
+    "function:tests/test_models.py#TestPublicModel.test_render": {
+      "async": false,
+      "decorators": [],
+      "exportPolicy": "not_module_level",
+      "exported": false,
+      "isTest": true
+    },
+    "module:src/pkg/__init__.py#src.pkg": {
+      "dottedName": "src.pkg"
+    },
+    "module:src/pkg/base.py#src.pkg.base": {
+      "dottedName": "src.pkg.base"
+    },
+    "module:src/pkg/helpers.py#src.pkg.helpers": {
+      "dottedName": "src.pkg.helpers"
+    },
+    "module:src/pkg/models.py#src.pkg.models": {
+      "dottedName": "src.pkg.models"
+    },
+    "module:src/pkg/stubs.pyi#src.pkg.stubs": {
+      "dottedName": "src.pkg.stubs"
+    },
+    "module:src/pkg/uses_stub.py#src.pkg.uses_stub": {
+      "dottedName": "src.pkg.uses_stub"
+    },
+    "module:tests/test_models.py#tests.test_models": {
+      "dottedName": "tests.test_models"
+    },
+    "variable:src/pkg/__init__.py#PACKAGE_VALUE": {
+      "exportKind": "named",
+      "exportName": "PACKAGE_VALUE",
+      "exportPolicy": "__all__",
+      "exported": true
+    },
+    "variable:src/pkg/models.py#_private": {
+      "exportPolicy": "__all__",
+      "exported": false
+    }
+  },
+  "fileExports": {
+    "file:src/pkg/__init__.py": [
+      {
+        "exported": "PACKAGE_VALUE",
+        "kind": "named",
+        "local": "PACKAGE_VALUE",
+        "policy": "__all__",
+        "source": null,
+        "supportedSymbol": true
+      },
+      {
+        "exported": "PublicModel",
+        "kind": "named",
+        "local": "PublicModel",
+        "policy": "__all__",
+        "source": null,
+        "supportedSymbol": false
+      }
+    ],
+    "file:src/pkg/base.py": [
+      {
+        "exported": "BaseModel",
+        "kind": "named",
+        "local": "BaseModel",
+        "policy": "underscore_convention",
+        "source": null,
+        "supportedSymbol": true
+      }
+    ],
+    "file:src/pkg/helpers.py": [
+      {
+        "exported": "build_name",
+        "kind": "named",
+        "local": "build_name",
+        "policy": "underscore_convention",
+        "source": null,
+        "supportedSymbol": true
+      }
+    ],
+    "file:src/pkg/models.py": [
+      {
+        "exported": "PublicModel",
+        "kind": "named",
+        "local": "PublicModel",
+        "policy": "__all__",
+        "source": null,
+        "supportedSymbol": true
+      },
+      {
+        "exported": "make_model",
+        "kind": "named",
+        "local": "make_model",
+        "policy": "__all__",
+        "source": null,
+        "supportedSymbol": true
+      }
+    ],
+    "file:src/pkg/stubs.pyi": [
+      {
+        "exported": "stubbed",
+        "kind": "named",
+        "local": "stubbed",
+        "policy": "underscore_convention",
+        "source": null,
+        "supportedSymbol": true
+      }
+    ],
+    "file:src/pkg/uses_stub.py": [
+      {
+        "exported": "call_stub",
+        "kind": "named",
+        "local": "call_stub",
+        "policy": "underscore_convention",
+        "source": null,
+        "supportedSymbol": true
+      }
+    ],
+    "file:tests/test_models.py": [
+      {
+        "exported": "test_make_model",
+        "kind": "named",
+        "local": "test_make_model",
+        "policy": "underscore_convention",
+        "source": null,
+        "supportedSymbol": true
+      },
+      {
+        "exported": "TestPublicModel",
+        "kind": "named",
+        "local": "TestPublicModel",
+        "policy": "underscore_convention",
+        "source": null,
+        "supportedSymbol": true
+      }
+    ]
+  },
+  "diagnostics": [
+    {
+      "category": "unresolved_import",
+      "severity": "warning",
+      "message": "unresolved Python import .missing",
+      "path": "src/pkg/models.py",
+      "language": "python"
+    }
+  ]
+}

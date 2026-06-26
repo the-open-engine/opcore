@@ -241,15 +241,19 @@ function repoState(overrides = {}) {
       git: { available: false }
     },
     coverage: {
-      totalFiles: 8,
+      totalFiles: 10,
       languages: [
+        { language: "Go", files: 2, graphSupported: false, validationSupported: false },
         { language: "TypeScript", files: 4, graphSupported: true, validationSupported: true },
         { language: "Rust", files: 2, graphSupported: false, validationSupported: true },
-        { language: "Python", files: 2, graphSupported: false, validationSupported: false }
+        { language: "Python", files: 2, graphSupported: true, validationSupported: false }
       ],
       graph: {
-        supportedFiles: 4,
-        extensions: [{ extension: ".ts", count: 4 }]
+        supportedFiles: 6,
+        extensions: [
+          { extension: ".py", count: 2 },
+          { extension: ".ts", count: 4 }
+        ]
       },
       validation: {
         supportedFiles: 6,
@@ -261,7 +265,7 @@ function repoState(overrides = {}) {
       },
       unsupported: {
         totalFiles: 2,
-        stacks: [{ extension: ".py", language: "Python", count: 2, examples: ["scripts/a.py", "scripts/b.py"] }]
+        stacks: [{ extension: ".go", language: "Go", count: 2, examples: ["cmd/a.go", "cmd/b.go"] }]
       }
     },
     graph: {
@@ -305,7 +309,7 @@ function repoState(overrides = {}) {
         paths: []
       }
     },
-    warnings: ["Unsupported stacks: Python"],
+    warnings: ["Unsupported stacks: Go"],
     blockers: [],
     nextActions: ["lattice check changed --repo /repo --json"]
   };

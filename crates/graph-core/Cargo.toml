@@ -28,6 +28,8 @@ sha2 = "0.11.0"
 rusqlite = { version = "0.32.1", features = ["bundled"] }
 thiserror = "2.0.18"
 time = { version = "0.3.36", features = ["formatting", "parsing"] }
+tree-sitter = "0.26.9"
+tree-sitter-python = "0.25.0"
 walkdir = "2.5.0"
 ctrlc = { version = "3.5.1", features = ["termination"] }
 
