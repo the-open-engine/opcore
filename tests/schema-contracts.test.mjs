@@ -2156,6 +2156,20 @@ describe("lattice JSON schema wire constraints", () => {
     assert.equal(
       isValidDefinition("AspDogfoodReceipt", {
         ...receipt,
+        hostFixture: { ...receipt.hostFixture, changedPaths: [] }
+      }),
+      false
+    );
+    assert.equal(
+      isValidDefinition("AspDogfoodReceipt", {
+        ...receipt,
+        hostFixture: { ...receipt.hostFixture, sourceRepoMutated: true }
+      }),
+      false
+    );
+    assert.equal(
+      isValidDefinition("AspDogfoodReceipt", {
+        ...receipt,
         provider: { ...receipt.provider, command: ["lattice", "asp", "serve"] }
       }),
       false
@@ -3856,6 +3870,7 @@ function validAspDogfoodReceipt() {
   const cutover = validReleaseCutoverReceipt();
   const markers = ["lattice asp serve", "lattice asp", "dist/bin/lattice", ".ace/runtime"];
   const aspRepo = covibesPath("agent-server-protocol");
+  const hostFixtureRepo = "/tmp/opcore-asp-dogfood/asp-host-fixture";
   const command = (id, commandParts, output = {}) => ({
     id,
     command: commandParts,
@@ -3920,6 +3935,13 @@ function validAspDogfoodReceipt() {
       pathSanitized: true,
       aceRuntimeBinExcluded: true
     },
+    hostFixture: {
+      repo: hostFixtureRepo,
+      temp: true,
+      sourceRepoMutated: false,
+      baselineCommitted: true,
+      changedPaths: ["src/dogfood.ts"]
+    },
     provider: {
       providerId: "opcore",
       packageName: "@the-open-engine/opcore-asp-provider",
@@ -3940,20 +3962,20 @@ function validAspDogfoodReceipt() {
       serverStatus: command("asp-server-status", ["asp", "server", "status", "opcore", "--json"])
     },
     repoEnrollment: {
-      repo: "/repo/lattice",
+      repo: hostFixtureRepo,
       mode: "advisory",
-      repoAdd: command("asp-repo-add", ["asp", "repo", "add", "/repo/lattice", "--json"]),
-      repoEnable: command("asp-repo-enable", ["asp", "repo", "enable", "opcore", "--repo", "/repo/lattice", "--mode", "advisory", "--json"]),
-      repoStatus: command("asp-repo-status", ["asp", "repo", "status", "/repo/lattice", "--json"])
+      repoAdd: command("asp-repo-add", ["asp", "repo", "add", hostFixtureRepo, "--json"]),
+      repoEnable: command("asp-repo-enable", ["asp", "repo", "enable", "opcore", "--repo", hostFixtureRepo, "--mode", "advisory", "--json"]),
+      repoStatus: command("asp-repo-status", ["asp", "repo", "status", hostFixtureRepo, "--json"])
     },
     hostEvaluation: {
       check: {
-        ...command("asp-check-changed", ["asp", "check", "--repo", "/repo/lattice", "--changed", "--call-site", "interactive", "--json"]),
+        ...command("asp-check-changed", ["asp", "check", "--repo", hostFixtureRepo, "--changed", "--call-site", "interactive", "--json"]),
         hostDecision,
         receipt: hostDecision.receipt,
         assurance: { mode: "gated", transactionGuarantee: "none" }
       },
-      ciVerify: command("asp-ci-verify", ["asp", "ci", "verify", "--repo", "/repo/lattice", "--changed-from", "HEAD", "--json"])
+      ciVerify: command("asp-ci-verify", ["asp", "ci", "verify", "--repo", hostFixtureRepo, "--changed-from", "main", "--json"])
     },
     providerProbe: {
       ...command("provider-probe", ["opcore-asp-provider", "--stdio"]),

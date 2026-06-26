@@ -5,6 +5,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { createAspHostFixtureRepo } from "../scripts/asp-dogfood-receipt-support.mjs";
 import { validateAspDogfoodReceipt } from "../packages/contracts/dist/index.js";
 import { invalidAspDogfoodCases, validAspDogfoodReceipt } from "./helpers/asp-dogfood-fixture.mjs";
 
@@ -40,5 +41,25 @@ describe("ASP dogfood receipt", () => {
     const ciVerify = receipt.hostEvaluation.ciVerify;
     receipt.hostEvaluation.ciVerify = { ...ciVerify, status: "failed", exitCode: 1, assertion: "asp ci verify failed evidence recorded" };
     assert.equal(validateAspDogfoodReceipt(receipt).issue, "#120");
+  });
+
+  it("creates an isolated changed fixture repo for clean-tree host dogfood", () => {
+    const temp = mkdtempSync(join(tmpdir(), "lattice-asp-dogfood-fixture-test-"));
+    try {
+      const fixture = createAspHostFixtureRepo(temp);
+      const diff = spawnSync("git", ["diff", "--name-only", "HEAD", "--"], {
+        cwd: fixture.repo,
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "pipe"]
+      });
+      assert.equal(diff.status, 0, diff.stderr);
+      assert.deepEqual(diff.stdout.trim().split(/\r?\n/), ["src/dogfood.ts"]);
+      assert.equal(fixture.temp, true);
+      assert.equal(fixture.sourceRepoMutated, false);
+      assert.equal(fixture.baselineCommitted, true);
+      assert.deepEqual(fixture.changedPaths, ["src/dogfood.ts"]);
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
   });
 });
