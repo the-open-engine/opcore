@@ -61,6 +61,15 @@ declare module "node:os" {
   export function tmpdir(): string;
 }
 
+declare module "node:readline/promises" {
+  export interface Interface {
+    question(query: string): Promise<string>;
+    close(): void;
+  }
+
+  export function createInterface(options: { input: unknown; output: unknown }): Interface;
+}
+
 declare module "node:path" {
   export function basename(path: string): string;
   export function dirname(path: string): string;

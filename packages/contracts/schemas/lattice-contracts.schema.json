@@ -6043,6 +6043,310 @@
         }
       ]
     },
+    "OpcoreInitScanSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "totalFiles",
+        "graphSupportedFiles",
+        "validationSupportedFiles",
+        "validationRetainedFiles",
+        "unsupportedFiles",
+        "languages",
+        "unsupportedStacks",
+        "degradedRustTools",
+        "diagnosticCount",
+        "validationStatus",
+        "failedChecks",
+        "graphState",
+        "activationLevel"
+      ],
+      "properties": {
+        "totalFiles": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "graphSupportedFiles": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "validationSupportedFiles": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "validationRetainedFiles": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unsupportedFiles": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "languages": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "language",
+              "files",
+              "graphSupported",
+              "validationSupported"
+            ],
+            "properties": {
+              "language": {
+                "type": "string",
+                "minLength": 1
+              },
+              "files": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "graphSupported": {
+                "type": "boolean"
+              },
+              "validationSupported": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        "unsupportedStacks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "extension",
+              "language",
+              "count",
+              "examples"
+            ],
+            "properties": {
+              "extension": {
+                "type": "string",
+                "minLength": 1
+              },
+              "language": {
+                "type": "string",
+                "minLength": 1
+              },
+              "count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "examples": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          }
+        },
+        "degradedRustTools": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "adapter",
+              "tool"
+            ],
+            "properties": {
+              "adapter": {
+                "type": "string",
+                "minLength": 1
+              },
+              "tool": {
+                "type": "string",
+                "minLength": 1
+              },
+              "failureMessage": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        "diagnosticCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "validationStatus": {
+          "enum": [
+            "passed",
+            "policy_failure",
+            "infrastructure_failure",
+            "provider_failure",
+            "unsupported_request",
+            "invalid_payload",
+            "skipped",
+            "refused"
+          ]
+        },
+        "failedChecks": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9]*(?:[._:-][a-z0-9]+)*$"
+          }
+        },
+        "graphState": {
+          "enum": [
+            "available",
+            "warming",
+            "skipped",
+            "required_missing",
+            "stale",
+            "schema_mismatch",
+            "daemon_unavailable",
+            "error"
+          ]
+        },
+        "activationLevel": {
+          "enum": [
+            "ready",
+            "degraded",
+            "blocked"
+          ]
+        }
+      }
+    },
+    "OpcoreInitLanguageSetting": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "language",
+        "files",
+        "state",
+        "graph",
+        "validation",
+        "checks",
+        "notes"
+      ],
+      "properties": {
+        "language": {
+          "type": "string",
+          "minLength": 1
+        },
+        "files": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "state": {
+          "enum": [
+            "supported",
+            "retained",
+            "unsupported",
+            "degraded"
+          ]
+        },
+        "graph": {
+          "enum": [
+            "supported",
+            "unsupported"
+          ]
+        },
+        "validation": {
+          "enum": [
+            "supported",
+            "retained",
+            "unsupported",
+            "degraded"
+          ]
+        },
+        "checks": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9]*(?:[._:-][a-z0-9]+)*$"
+          }
+        },
+        "notes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "OpcoreInitSettings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "languages"
+      ],
+      "properties": {
+        "languages": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/OpcoreInitLanguageSetting"
+          }
+        }
+      }
+    },
+    "OpcoreInitInteraction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "tty",
+        "promptState"
+      ],
+      "properties": {
+        "tty": {
+          "type": "boolean"
+        },
+        "promptState": {
+          "enum": [
+            "not_requested",
+            "requested",
+            "approved",
+            "declined"
+          ]
+        }
+      }
+    },
+    "OpcoreInitTiming": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scanMs",
+        "planMs",
+        "promptMs",
+        "applyMs",
+        "totalMs",
+        "firstOutputMs"
+      ],
+      "properties": {
+        "scanMs": {
+          "type": "number",
+          "minimum": 0
+        },
+        "planMs": {
+          "type": "number",
+          "minimum": 0
+        },
+        "promptMs": {
+          "type": "number",
+          "minimum": 0
+        },
+        "applyMs": {
+          "type": "number",
+          "minimum": 0
+        },
+        "totalMs": {
+          "type": "number",
+          "minimum": 0
+        },
+        "firstOutputMs": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
     "OpcoreInitPlanPayload": {
       "type": "object",
       "additionalProperties": false,
@@ -6056,7 +6360,11 @@
         "actions",
         "warnings",
         "nextActions",
-        "undoAvailable"
+        "undoAvailable",
+        "scan",
+        "settings",
+        "interaction",
+        "timings"
       ],
       "properties": {
         "schemaVersion": {
@@ -6136,6 +6444,18 @@
         },
         "undoAvailable": {
           "type": "boolean"
+        },
+        "scan": {
+          "$ref": "#/$defs/OpcoreInitScanSummary"
+        },
+        "settings": {
+          "$ref": "#/$defs/OpcoreInitSettings"
+        },
+        "interaction": {
+          "$ref": "#/$defs/OpcoreInitInteraction"
+        },
+        "timings": {
+          "$ref": "#/$defs/OpcoreInitTiming"
         }
       },
       "allOf": [

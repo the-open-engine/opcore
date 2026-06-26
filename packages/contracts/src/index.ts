@@ -1789,6 +1789,64 @@ export interface OpcoreInitAction {
   outsideOpcore: boolean;
 }
 
+export interface OpcoreInitScanSummary {
+  totalFiles: number;
+  graphSupportedFiles: number;
+  validationSupportedFiles: number;
+  validationRetainedFiles: number;
+  unsupportedFiles: number;
+  languages: readonly {
+    language: string;
+    files: number;
+    graphSupported: boolean;
+    validationSupported: boolean;
+  }[];
+  unsupportedStacks: readonly {
+    extension: string;
+    language: string;
+    count: number;
+    examples: readonly string[];
+  }[];
+  degradedRustTools: readonly {
+    adapter: string;
+    tool: string;
+    failureMessage?: string;
+  }[];
+  diagnosticCount: number;
+  validationStatus: ValidationResultStatus;
+  failedChecks: readonly string[];
+  graphState: GraphProviderStatusState;
+  activationLevel: "ready" | "degraded" | "blocked";
+}
+
+export interface OpcoreInitLanguageSetting {
+  language: string;
+  files: number;
+  state: "supported" | "retained" | "unsupported" | "degraded";
+  graph: "supported" | "unsupported";
+  validation: "supported" | "retained" | "unsupported" | "degraded";
+  checks: readonly string[];
+  notes: readonly string[];
+}
+
+export interface OpcoreInitSettings {
+  languages: readonly OpcoreInitLanguageSetting[];
+}
+
+export interface OpcoreInitInteraction {
+  tty: boolean;
+  promptState: "not_requested" | "requested" | "approved" | "declined";
+}
+
+export interface OpcoreInitTiming {
+  scanMs: number;
+  planMs: number;
+  promptMs: number;
+  applyMs: number;
+  totalMs: number;
+  firstOutputMs: number;
+}
+
 export interface OpcoreInitPlanPayload {
   schemaVersion: 1;
   mode: "plan" | "apply" | "undo";
@@ -1806,6 +1864,10 @@ export interface OpcoreInitPlanPayload {
   warnings: readonly string[];
   nextActions: readonly string[];
   undoAvailable: boolean;
+  scan: OpcoreInitScanSummary;
+  settings: OpcoreInitSettings;
+  interaction: OpcoreInitInteraction;
+  timings: OpcoreInitTiming;
 }
 
 export interface OpcoreMetricEvidence {
@@ -3609,7 +3671,106 @@ export function validateOpcoreInitPlanPayload(payload: OpcoreInitPlanPayload): O
   if (typeof payload.undoAvailable !== "boolean") {
     throw new Error("Opcore init undoAvailable must be boolean");
   }
+  validateOpcoreInitScanSummary(payload.scan);
+  validateOpcoreInitSettings(payload.settings);
+  validateOpcoreInitInteraction(payload.interaction);
+  validateOpcoreInitTiming(payload.timings);
   return payload;
+}
+
+function validateOpcoreInitScanSummary(scan: OpcoreInitScanSummary): OpcoreInitScanSummary {
+  if (!scan || typeof scan !== "object") {
+    throw new Error("Opcore init scan summary is required");
+  }
+  validateNonNegativeInteger(scan.totalFiles, "Opcore init scan totalFiles");
+  validateNonNegativeInteger(scan.graphSupportedFiles, "Opcore init scan graphSupportedFiles");
+  validateNonNegativeInteger(scan.validationSupportedFiles, "Opcore init scan validationSupportedFiles");
+  validateNonNegativeInteger(scan.validationRetainedFiles, "Opcore init scan validationRetainedFiles");
+  validateNonNegativeInteger(scan.unsupportedFiles, "Opcore init scan unsupportedFiles");
+  validateOpcoreCoverageLanguages(scan.languages, "Opcore init scan");
+  validateOpcoreUnsupportedStacks(scan.unsupportedStacks, "Opcore init scan");
+  if (!Array.isArray(scan.degradedRustTools)) {
+    throw new Error("Opcore init scan degradedRustTools must be an array");
+  }
+  for (const tool of scan.degradedRustTools) {
+    if (!tool || typeof tool !== "object") {
+      throw new Error("Opcore init scan degraded Rust tool is required");
+    }
+    validateNonEmptyString(tool.adapter, "Opcore init scan degraded Rust adapter");
+    validateNonEmptyString(tool.tool, "Opcore init scan degraded Rust tool");
+    if (tool.failureMessage !== undefined) validateNonEmptyString(tool.failureMessage, "Opcore init scan degraded Rust failureMessage");
+  }
+  validateNonNegativeInteger(scan.diagnosticCount, "Opcore init scan diagnosticCount");
+  if (!includesString(validationResultStatuses, scan.validationStatus)) {
+    throw new Error(`Unknown Opcore init scan validationStatus: ${String(scan.validationStatus)}`);
+  }
+  validateStringArray(scan.failedChecks, "Opcore init scan failedChecks", { allowEmpty: true });
+  if (!includesString(graphProviderStatusStates, scan.graphState)) {
+    throw new Error(`Unknown Opcore init scan graphState: ${String(scan.graphState)}`);
+  }
+  if (!includesString(["ready", "degraded", "blocked"] as const, scan.activationLevel)) {
+    throw new Error(`Unknown Opcore init scan activationLevel: ${String(scan.activationLevel)}`);
+  }
+  return scan;
+}
+
+function validateOpcoreInitSettings(settings: OpcoreInitSettings): OpcoreInitSettings {
+  if (!settings || typeof settings !== "object") {
+    throw new Error("Opcore init settings are required");
+  }
+  if (!Array.isArray(settings.languages)) {
+    throw new Error("Opcore init settings languages must be an array");
+  }
+  for (const language of settings.languages) {
+    validateOpcoreInitLanguageSetting(language);
+  }
+  return settings;
+}
+
+function validateOpcoreInitLanguageSetting(setting: OpcoreInitLanguageSetting): OpcoreInitLanguageSetting {
+  if (!setting || typeof setting !== "object") {
+    throw new Error("Opcore init language setting is required");
+  }
+  validateNonEmptyString(setting.language, "Opcore init language setting language");
+  validateNonNegativeInteger(setting.files, "Opcore init language setting files");
+  if (!includesString(["supported", "retained", "unsupported", "degraded"] as const, setting.state)) {
+    throw new Error(`Unknown Opcore init language setting state: ${String(setting.state)}`);
+  }
+  if (!includesString(["supported", "unsupported"] as const, setting.graph)) {
+    throw new Error(`Unknown Opcore init language setting graph: ${String(setting.graph)}`);
+  }
+  if (!includesString(["supported", "retained", "unsupported", "degraded"] as const, setting.validation)) {
+    throw new Error(`Unknown Opcore init language setting validation: ${String(setting.validation)}`);
+  }
+  validateValidationChecks(setting.checks, "Opcore init language setting checks");
+  validateStringArray(setting.notes, "Opcore init language setting notes", { allowEmpty: true });
+  return setting;
+}
+
+function validateOpcoreInitInteraction(interaction: OpcoreInitInteraction): OpcoreInitInteraction {
+  if (!interaction || typeof interaction !== "object") {
+    throw new Error("Opcore init interaction is required");
+  }
+  if (typeof interaction.tty !== "boolean") {
+    throw new Error("Opcore init interaction tty must be boolean");
+  }
+  if (!includesString(["not_requested", "requested", "approved", "declined"] as const, interaction.promptState)) {
+    throw new Error(`Unknown Opcore init interaction promptState: ${String(interaction.promptState)}`);
+  }
+  return interaction;
+}
+
+function validateOpcoreInitTiming(timing: OpcoreInitTiming): OpcoreInitTiming {
+  if (!timing || typeof timing !== "object") {
+    throw new Error("Opcore init timings are required");
+  }
+  validateNonNegativeNumber(timing.scanMs, "Opcore init timing scanMs");
+  validateNonNegativeNumber(timing.planMs, "Opcore init timing planMs");
+  validateNonNegativeNumber(timing.promptMs, "Opcore init timing promptMs");
+  validateNonNegativeNumber(timing.applyMs, "Opcore init timing applyMs");
+  validateNonNegativeNumber(timing.totalMs, "Opcore init timing totalMs");
+  validateNonNegativeNumber(timing.firstOutputMs, "Opcore init timing firstOutputMs");
+  return timing;
 }
 
 function validateOpcoreInitAction(action: OpcoreInitAction): OpcoreInitAction {
@@ -3816,27 +3977,48 @@ function validateOpcoreMetricCoverage(coverage: OpcoreRepoStatePayload["coverage
     throw new Error(`${label} is required`);
   }
   validateNonNegativeInteger(coverage.totalFiles, `${label} totalFiles`);
-  if (!Array.isArray(coverage.languages)) {
+  validateOpcoreCoverageLanguages(coverage.languages, label);
+  validateOpcoreCoverageCounts(coverage.graph, "graph");
+  validateOpcoreCoverageCounts(coverage.validation, "validation");
+  validateNonNegativeInteger(coverage.validation.retainedFiles, `${label} validation retainedFiles`);
+  validateOpcoreUnsupportedSection(coverage.unsupported, label);
+}
+
+function validateOpcoreCoverageLanguages(
+  languages: OpcoreRepoStatePayload["coverage"]["languages"],
+  label: string
+): void {
+  if (!Array.isArray(languages)) {
     throw new Error(`${label} languages must be an array`);
   }
-  for (const language of coverage.languages) {
+  for (const language of languages) {
     validateNonEmptyString(language.language, `${label} language`);
     validateNonNegativeInteger(language.files, `${label} language files`);
     if (typeof language.graphSupported !== "boolean" || typeof language.validationSupported !== "boolean") {
       throw new Error(`${label} language support flags must be boolean`);
     }
   }
-  validateOpcoreCoverageCounts(coverage.graph, "graph");
-  validateOpcoreCoverageCounts(coverage.validation, "validation");
-  validateNonNegativeInteger(coverage.validation.retainedFiles, `${label} validation retainedFiles`);
-  if (!coverage.unsupported || typeof coverage.unsupported !== "object") {
+}
+
+function validateOpcoreUnsupportedSection(
+  unsupported: OpcoreRepoStatePayload["coverage"]["unsupported"],
+  label: string
+): void {
+  if (!unsupported || typeof unsupported !== "object") {
     throw new Error(`${label} unsupported is required`);
   }
-  validateNonNegativeInteger(coverage.unsupported.totalFiles, `${label} unsupported totalFiles`);
-  if (!Array.isArray(coverage.unsupported.stacks)) {
+  validateNonNegativeInteger(unsupported.totalFiles, `${label} unsupported totalFiles`);
+  validateOpcoreUnsupportedStacks(unsupported.stacks, label);
+}
+
+function validateOpcoreUnsupportedStacks(
+  stacks: OpcoreRepoStatePayload["coverage"]["unsupported"]["stacks"],
+  label: string
+): void {
+  if (!Array.isArray(stacks)) {
     throw new Error(`${label} unsupported stacks must be an array`);
   }
-  for (const stack of coverage.unsupported.stacks) {
+  for (const stack of stacks) {
     validateNonEmptyString(stack.extension, `${label} unsupported extension`);
     validateNonEmptyString(stack.language, `${label} unsupported language`);
     validateNonNegativeInteger(stack.count, `${label} unsupported count`);

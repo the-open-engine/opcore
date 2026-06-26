@@ -1,8 +1,21 @@
-import type { CommandRouterResult, OpcoreInitAction, OpcoreInitPlanPayload, ParsedCommandArgv } from "@the-open-engine/opcore-contracts";
+import type {
+  CommandRouterResult,
+  OpcoreInitAction,
+  OpcoreInitInteraction,
+  OpcoreInitLanguageSetting,
+  OpcoreInitPlanPayload,
+  OpcoreInitScanSummary,
+  OpcoreInitSettings,
+  OpcoreInitTiming,
+  OpcoreRepoStatePayload,
+  ParsedCommandArgv,
+  ValidationResult
+} from "@the-open-engine/opcore-contracts";
 import { createCommandRouterResult } from "@the-open-engine/opcore-contracts";
 import { chmodSync, lstatSync, mkdirSync, readFileSync, realpathSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
-import { createRepoState, resolveRepo } from "./status.js";
+import { createOpcoreScanAnalysis } from "./scan.js";
+import { resolveRepo } from "./status.js";
 
 declare const process: {
   cwd(): string;
@@ -24,6 +37,7 @@ const configPath = ".opcore/config";
 const undoPath = ".opcore/init-undo.json";
 const hookPath = ".opcore/hooks/pre-commit-opcore-check.sh";
 const allowedUndoPaths = new Set<string>([configPath, undoPath, hookPath, ...AGENT_FILE_CANDIDATES]);
+const rustActiveValidationKinds = new Set([".rs", ".inc", "Cargo.toml"]);
 
 interface ParsedInitArgs {
   repo: string;
@@ -31,6 +45,27 @@ interface ParsedInitArgs {
   dryRun: boolean;
   failClosedHook: boolean;
   undo: boolean;
+}
+
+export interface OpcoreInitRuntime {
+  stdinIsTTY?: boolean;
+  stdoutIsTTY?: boolean;
+  readLine?: (prompt: string) => Promise<string>;
+}
+
+interface InitContext {
+  scan: OpcoreInitScanSummary;
+  settings: OpcoreInitSettings;
+  interaction: OpcoreInitInteraction;
+  timings: OpcoreInitTiming;
+}
+
+interface TimingState {
+  startedAt: number;
+  scanMs: number;
+  planMs: number;
+  promptMs: number;
+  applyMs: number;
 }
 
 interface PlannedInit {
@@ -57,7 +92,11 @@ interface UndoEntry {
   content?: string;
 }
 
-export function routeOpcoreInit(argv: readonly string[], parsed: ParsedCommandArgv): CommandRouterResult {
+export async function routeOpcoreInit(
+  argv: readonly string[],
+  parsed: ParsedCommandArgv,
+  runtime: OpcoreInitRuntime = {}
+): Promise<CommandRouterResult> {
   const rest = parsed.args.slice(1);
   if (rest.some((arg) => helpArgs.has(arg))) {
     return createInitRouterResult(argv, parsed.json, "ok", opcoreInitHelpMessage(), ["opcore", "init", "help"]);
@@ -73,17 +112,48 @@ export function routeOpcoreInit(argv: readonly string[], parsed: ParsedCommandAr
   }
 
   try {
+    const timing: TimingState = {
+      startedAt: nowMs(),
+      scanMs: 0,
+      planMs: 0,
+      promptMs: 0,
+      applyMs: 0
+    };
+    const scanStartedAt = nowMs();
+    const analysis = await createOpcoreScanAnalysis(resolution.resolution);
+    timing.scanMs = elapsedMs(scanStartedAt);
+    const context: InitContext = {
+      scan: createInitScanSummary(analysis.repoState, analysis.validationResult),
+      settings: createInitSettings(analysis.repoState),
+      interaction: {
+        tty: isInteractiveRuntime(runtime),
+        promptState: "not_requested"
+      },
+      timings: finalizeTimings(timing)
+    };
+
     if (parsedInit.args.undo) {
-      return routeOpcoreInitUndo(argv, parsed.json, resolution.resolution.root, resolution.resolution.requestedPath, parsedInit.args);
+      return routeOpcoreInitUndo(
+        argv,
+        parsed.json,
+        resolution.resolution.root,
+        resolution.resolution.requestedPath,
+        parsedInit.args,
+        context,
+        timing
+      );
     }
 
-    return routeOpcoreInitPlanOrApply(
+    return await routeOpcoreInitPlanOrApply(
       argv,
       parsed.json,
       resolution.resolution.root,
       resolution.resolution.requestedPath,
       resolution.resolution.git,
-      parsedInit.args
+      parsedInit.args,
+      context,
+      timing,
+      runtime
     );
   } catch (error) {
     return createInitRouterResult(argv, parsed.json, "error", `opcore init failed: ${errorMessage(error)}`);
@@ -95,28 +165,69 @@ function routeOpcoreInitUndo(
   json: boolean,
   repoRoot: string,
   requestedPath: string,
-  options: ParsedInitArgs
+  options: ParsedInitArgs,
+  context: InitContext,
+  timing: TimingState
 ): CommandRouterResult {
-  const undo = planUndo(repoRoot, requestedPath, options);
+  const planStartedAt = nowMs();
+  const undo = planUndo(repoRoot, requestedPath, options, context);
+  timing.planMs = elapsedMs(planStartedAt);
   const approved = options.approved && !options.dryRun;
-  if (approved) applyUndo(repoRoot, undo);
-  const payload = approved ? appliedUndoPayload(undo, repoRoot) : undo;
+  if (approved) {
+    const applyStartedAt = nowMs();
+    applyUndo(repoRoot, undo);
+    timing.applyMs = elapsedMs(applyStartedAt);
+  }
+  const payload = withContext(approved ? appliedUndoPayload(undo, repoRoot) : undo, context, timing);
   return createInitRouterResult(argv, json, "ok", formatInitPlan(payload, approved), ["opcore", "init"], payload);
 }
 
-function routeOpcoreInitPlanOrApply(
+async function routeOpcoreInitPlanOrApply(
   argv: readonly string[],
   json: boolean,
   repoRoot: string,
   requestedPath: string,
   git: boolean,
-  options: ParsedInitArgs
-): CommandRouterResult {
-  const planned = planInit(repoRoot, requestedPath, git, options);
-  const approved = options.approved && !options.dryRun;
-  if (approved) applyInit(repoRoot, planned.writes);
-  const payload = approved ? appliedInitPayload(planned.payload, repoRoot) : planned.payload;
-  return createInitRouterResult(argv, json, "ok", formatInitPlan(payload, approved), ["opcore", "init"], payload);
+  options: ParsedInitArgs,
+  context: InitContext,
+  timing: TimingState,
+  runtime: OpcoreInitRuntime
+): Promise<CommandRouterResult> {
+  const planStartedAt = nowMs();
+  const planned = planInit(repoRoot, requestedPath, git, options, context);
+  timing.planMs = elapsedMs(planStartedAt);
+  let payload = withContext(planned.payload, context, timing);
+  let approved = options.approved && !options.dryRun;
+  let prompted = false;
+
+  if (shouldPromptForApproval(json, options, runtime)) {
+    prompted = true;
+    context.interaction = { tty: true, promptState: "requested" };
+    payload = withContext(payload, context, timing);
+    const promptStartedAt = nowMs();
+    const answer = await runtime.readLine(`${formatInitPlan(payload, false)}\nApply setup? [y/N] `);
+    timing.promptMs = elapsedMs(promptStartedAt);
+    if (isExplicitYes(answer)) {
+      approved = true;
+      context.interaction = { tty: true, promptState: "approved" };
+    } else {
+      context.interaction = { tty: true, promptState: "declined" };
+      payload = {
+        ...payload,
+        nextActions: ["No files written. Rerun opcore init when ready."]
+      };
+    }
+  }
+
+  if (approved) {
+    const applyStartedAt = nowMs();
+    applyInit(repoRoot, planned.writes);
+    timing.applyMs = elapsedMs(applyStartedAt);
+  }
+  payload = approved ? appliedInitPayload(payload, repoRoot) : payload;
+  payload = withContext(payload, context, timing);
+  const message = prompted ? formatInteractiveOutcome(payload) : formatInitPlan(payload, approved);
+  return createInitRouterResult(argv, json, "ok", message, ["opcore", "init"], payload);
 }
 
 function createInitRouterResult(
@@ -137,6 +248,160 @@ function createInitRouterResult(
     message,
     opcoreInit
   });
+}
+
+function createInitScanSummary(repoState: OpcoreRepoStatePayload, validationResult: ValidationResult): OpcoreInitScanSummary {
+  const failedChecks = validationResult.manifest?.runs
+    ?.filter((run) => run.status !== "passed")
+    .map((run) => run.checkId) ?? [];
+  return {
+    totalFiles: repoState.coverage.totalFiles,
+    graphSupportedFiles: repoState.coverage.graph.supportedFiles,
+    validationSupportedFiles: repoState.coverage.validation.supportedFiles,
+    validationRetainedFiles: repoState.coverage.validation.retainedFiles,
+    unsupportedFiles: repoState.coverage.unsupported.totalFiles,
+    languages: repoState.coverage.languages,
+    unsupportedStacks: repoState.coverage.unsupported.stacks,
+    degradedRustTools: repoState.validation.degradedToolchains,
+    diagnosticCount: validationResult.diagnostics.length,
+    validationStatus: validationResult.status,
+    failedChecks,
+    graphState: repoState.graph.state,
+    activationLevel: repoState.activation.level
+  };
+}
+
+function createInitSettings(repoState: OpcoreRepoStatePayload): OpcoreInitSettings {
+  const unsupportedLanguages = new Set(repoState.coverage.unsupported.stacks.map((stack) => stack.language));
+  const degradedRustTools = repoState.validation.degradedToolchains.map((tool) => tool.tool);
+  const rustHasActiveValidationInput = repoState.coverage.validation.extensions.some((entry) =>
+    rustActiveValidationKinds.has(entry.extension)
+  );
+  return {
+    languages: repoState.coverage.languages.map((language): OpcoreInitLanguageSetting => {
+      const rustRetainedOnly =
+        language.language === "Rust" &&
+        !rustHasActiveValidationInput &&
+        repoState.coverage.validation.retainedFiles > 0;
+      const rustDegraded = language.language === "Rust" && degradedRustTools.length > 0 && language.validationSupported && !rustRetainedOnly;
+      const unsupported = unsupportedLanguages.has(language.language) && !language.validationSupported;
+      const validation = unsupported
+        ? "unsupported"
+        : rustRetainedOnly
+          ? "retained"
+          : rustDegraded
+            ? "degraded"
+            : language.validationSupported
+              ? "supported"
+              : "unsupported";
+      const state = validation === "unsupported"
+        ? "unsupported"
+        : validation === "retained"
+          ? "retained"
+          : validation === "degraded"
+            ? "degraded"
+            : "supported";
+      return {
+        language: language.language,
+        files: language.files,
+        state,
+        graph: language.graphSupported ? "supported" : "unsupported",
+        validation,
+        checks: checksForLanguage(language.language, validation),
+        notes: notesForLanguage(language.language, validation, degradedRustTools)
+      };
+    })
+  };
+}
+
+function checksForLanguage(language: string, validation: OpcoreInitLanguageSetting["validation"]): string[] {
+  if (validation === "unsupported" || validation === "retained") return [];
+  if (language === "TypeScript" || language === "JavaScript") {
+    return [
+      "typescript.syntax",
+      "typescript.types",
+      "typescript.import-graph",
+      "typescript.dead-code",
+      "typescript.relevant-tests"
+    ];
+  }
+  if (language === "Rust") {
+    return [
+      "rust.source-hygiene",
+      "rust.fmt",
+      "rust.cargo-check",
+      "rust.clippy",
+      "rust.rustdoc",
+      "rust.import-graph",
+      "rust.dead-code",
+      "rust.unused-deps",
+      "rust.file-length",
+      "rust.function-metrics"
+    ];
+  }
+  return [];
+}
+
+function notesForLanguage(
+  language: string,
+  validation: OpcoreInitLanguageSetting["validation"],
+  degradedRustTools: readonly string[]
+): string[] {
+  if (validation === "unsupported") return ["Unsupported stack counted without fabricated checks."];
+  if (validation === "retained") return ["Retained for compatibility; no active checks configured."];
+  if (language === "Rust" && validation === "degraded") return [`Rust toolchain degraded: ${degradedRustTools.join(", ")}.`];
+  return [];
+}
+
+function withContext(payload: OpcoreInitPlanPayload, context: InitContext, timing: TimingState): OpcoreInitPlanPayload {
+  return {
+    ...payload,
+    scan: context.scan,
+    settings: context.settings,
+    interaction: context.interaction,
+    timings: finalizeTimings(timing)
+  };
+}
+
+function shouldPromptForApproval(json: boolean, options: ParsedInitArgs, runtime: OpcoreInitRuntime): runtime is OpcoreInitRuntime & {
+  readLine: (prompt: string) => Promise<string>;
+} {
+  return (
+    !json &&
+    !options.approved &&
+    !options.dryRun &&
+    !options.undo &&
+    isInteractiveRuntime(runtime) &&
+    typeof runtime.readLine === "function"
+  );
+}
+
+function isInteractiveRuntime(runtime: OpcoreInitRuntime): boolean {
+  return runtime.stdinIsTTY === true && runtime.stdoutIsTTY === true;
+}
+
+function isExplicitYes(answer: string): boolean {
+  const normalized = answer.trim().toLowerCase();
+  return normalized === "y" || normalized === "yes";
+}
+
+function nowMs(): number {
+  return Date.now();
+}
+
+function elapsedMs(startedAt: number): number {
+  return Math.max(0, Date.now() - startedAt);
+}
+
+function finalizeTimings(timing: TimingState): OpcoreInitTiming {
+  return {
+    scanMs: timing.scanMs,
+    planMs: timing.planMs,
+    promptMs: timing.promptMs,
+    applyMs: timing.applyMs,
+    totalMs: elapsedMs(timing.startedAt),
+    firstOutputMs: timing.scanMs
+  };
 }
 
 function parseOpcoreInitArgs(args: readonly string[]): { ok: true; args: ParsedInitArgs } | { ok: false; message: string } {
@@ -183,10 +448,16 @@ function parseOpcoreInitArgs(args: readonly string[]): { ok: true; args: ParsedI
   return { ok: true, args: parsed };
 }
 
-function planInit(repoRoot: string, requestedPath: string, git: boolean, options: ParsedInitArgs): PlannedInit {
-  const repoState = createRepoState({ root: repoRoot, requestedPath, git });
+function planInit(
+  repoRoot: string,
+  requestedPath: string,
+  git: boolean,
+  options: ParsedInitArgs,
+  context: InitContext
+): PlannedInit {
+  void git;
   const agentFiles = detectAgentFiles(repoRoot);
-  const config = createConfig(repoRoot, options.failClosedHook);
+  const config = createConfig(repoRoot, options.failClosedHook, context.scan, context.settings);
   const writes: PlannedWrite[] = [
     {
       path: configPath,
@@ -221,11 +492,15 @@ function planInit(repoRoot: string, requestedPath: string, git: boolean, options
       },
       agentFiles,
       actions,
-      warnings: initWarnings(repoState),
+      warnings: initWarnings(context.scan),
       nextActions: options.dryRun
         ? ["Run opcore init --approve to apply this plan."]
         : ["Review this plan, then run opcore init --approve to write repo setup."],
-      undoAvailable: repoPathExists(repoRoot, undoPath)
+      undoAvailable: repoPathExists(repoRoot, undoPath),
+      scan: context.scan,
+      settings: context.settings,
+      interaction: context.interaction,
+      timings: context.timings
     }
   };
 }
@@ -240,7 +515,7 @@ function appliedInitPayload(payload: OpcoreInitPlanPayload, repoRoot: string): O
   };
 }
 
-function planUndo(repoRoot: string, requestedPath: string, options: ParsedInitArgs): OpcoreInitPlanPayload {
+function planUndo(repoRoot: string, requestedPath: string, options: ParsedInitArgs, context: InitContext): OpcoreInitPlanPayload {
   const metadata = readUndoMetadata(repoRoot);
   return {
     schemaVersion: 1,
@@ -268,7 +543,11 @@ function planUndo(repoRoot: string, requestedPath: string, options: ParsedInitAr
     nextActions: options.approved && !options.dryRun
       ? ["Opcore init metadata was restored or removed; rerun opcore init to recreate setup."]
       : ["Run opcore init --undo --approve to restore or remove recorded setup files."],
-    undoAvailable: true
+    undoAvailable: true,
+    scan: context.scan,
+    settings: context.settings,
+    interaction: context.interaction,
+    timings: context.timings
   };
 }
 
@@ -376,14 +655,26 @@ function guidanceBlock(): string {
   ].join("\n");
 }
 
-function createConfig(repoRoot: string, failClosedHook: boolean): Record<string, unknown> {
+function createConfig(
+  repoRoot: string,
+  failClosedHook: boolean,
+  scan: OpcoreInitScanSummary,
+  settings: OpcoreInitSettings
+): Record<string, unknown> {
   const existing = readJsonObject(repoRoot, configPath);
   const existingHooks = isPlainObject(existing.hooks) ? existing.hooks : {};
   const existingGuidance = isPlainObject(existing.guidance) ? existing.guidance : {};
+  const existingOnboarding = isPlainObject(existing.onboarding) ? existing.onboarding : {};
   return {
     ...existing,
     schemaVersion: 1,
     kind: "opcore_init_config",
+    onboarding: {
+      ...existingOnboarding,
+      scan,
+      languages: settings.languages,
+      timingPayload: true
+    },
     guidance: {
       ...existingGuidance,
       checkCommand: "opcore check --changed",
@@ -398,8 +689,14 @@ function createConfig(repoRoot: string, failClosedHook: boolean): Record<string,
   };
 }
 
-function initWarnings(repoState: ReturnType<typeof createRepoState>): string[] {
-  const warnings = [...repoState.warnings];
+function initWarnings(scan: OpcoreInitScanSummary): string[] {
+  const warnings: string[] = [];
+  if (scan.unsupportedStacks.length > 0) {
+    warnings.push(`Unsupported stacks: ${scan.unsupportedStacks.map((stack) => `${stack.language} (${stack.count})`).join(", ")}`);
+  }
+  if (scan.degradedRustTools.length > 0) {
+    warnings.push(`Degraded Rust tools: ${scan.degradedRustTools.map((tool) => tool.tool).join(", ")}`);
+  }
   warnings.push("Do not weaken existing lint, test, CI, pre-commit, or agent guardrails.");
   warnings.push("Fail-closed hooks are opt-in and are not created unless --fail-closed-hook is approved.");
   return warnings;
@@ -620,22 +917,57 @@ function uniqueStrings(values: readonly string[]): string[] {
 }
 
 function formatInitPlan(payload: OpcoreInitPlanPayload, applied: boolean): string {
-  const heading = payload.mode === "undo" ? "opcore init undo plan" : applied ? "opcore init applied" : "opcore init plan";
+  const heading = payload.mode === "undo" ? "Undo:" : "Setup:";
   const actionLines = payload.actions.map((action) => `- ${action.kind} ${action.path}: ${action.summary}`);
-  const approvalLine = applied
+  const approvalLine = payload.interaction.promptState === "requested"
+    ? "Approval: awaiting TTY response."
+    : payload.interaction.promptState === "declined"
+      ? "Approval: declined; no files written."
+      : applied
     ? "Approval: applied."
     : payload.mode === "undo"
       ? "Approval: required; rerun with --undo --approve to restore/remove recorded files."
       : "Approval: required; rerun with --approve to write this setup.";
+  const languages = payload.scan.languages.length === 0
+    ? "none"
+    : payload.scan.languages.map((entry) => `${entry.language} ${entry.files}`).join(", ");
+  const unsupported = payload.scan.unsupportedStacks.length === 0
+    ? "none"
+    : payload.scan.unsupportedStacks.map((stack) => `${stack.language} ${stack.count}`).join(", ");
+  const degradedRustTools = payload.scan.degradedRustTools.length === 0
+    ? "none"
+    : payload.scan.degradedRustTools.map((tool) => `${tool.adapter}:${tool.tool}`).join(", ");
   return [
+    "Coverage:",
+    `  files=${payload.scan.totalFiles}`,
+    `  graph-supported-ts-js=${payload.scan.graphSupportedFiles}`,
+    `  validation-supported=${payload.scan.validationSupportedFiles}`,
+    `  validation-retained=${payload.scan.validationRetainedFiles}`,
+    `  unsupported=${unsupported}`,
+    `  languages=${languages}`,
+    `  degraded-rust-tools=${degradedRustTools}`,
+    "Findings:",
+    `  diagnostics=${payload.scan.diagnosticCount}`,
+    `  validation=${payload.scan.validationStatus}`,
+    `  failed-checks=${payload.scan.failedChecks.length === 0 ? "none" : payload.scan.failedChecks.join(", ")}`,
+    `  graph=${payload.scan.graphState}`,
+    `  activation=${payload.scan.activationLevel}`,
     heading,
     `Repo: ${payload.repo.root}`,
     `Mode: ${payload.mode}`,
     `Approved: ${payload.approved ? "yes" : "no"}`,
     "Actions:",
     ...actionLines,
-    approvalLine
+    approvalLine,
+    "Timing:",
+    `  first-output-ms=${payload.timings.firstOutputMs} scan-ms=${payload.timings.scanMs} total-ms=${payload.timings.totalMs}`
   ].join("\n");
+}
+
+function formatInteractiveOutcome(payload: OpcoreInitPlanPayload): string {
+  return payload.approved
+    ? "opcore init applied\nApproval: applied."
+    : "opcore init declined\nApproval: declined; no files written.";
 }
 
 function opcoreInitHelpMessage(): string {
