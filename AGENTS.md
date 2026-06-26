@@ -71,6 +71,7 @@ Opcore is the code-intelligence and robustness monorepo for graph context, edit 
 - `ace.json` routes the code-review graph MCP through `.ace/runtime/bin/crg serve --repo "$repo_root"`; update `ace.json`, `scripts/setup-current-tools.sh`, and this file together when tool acquisition changes.
 - Use current external `crg` for discovery before broad text scans, current external `cix` for cohesive symbol/edit deltas, and current external `rox` for staged/changed/repo validation. These are dev validation helpers, not lattice release surfaces.
 - `npm run current-tools:validate-changed` runs `scripts/ci/run-rox-clean-changed-gate.mjs`: it stops Rox, clears `.rox-cache` and `.robustness-engine-cache`, runs daemon-free changed-file Rox, and fails non-baseline findings while retaining legacy code-quality findings already present on the base tree.
+- `scripts/ci/run-local-ci-equivalent.sh` uses a docs/agent-guidance fast path when the only changed files are launch docs or agent guidance: setup tools, shell syntax, release hygiene, workspace, provenance, and changed-file Rox. CI-wrapper, source, package, native artifact, release evidence, and other implementation changes still run `npm run ci`, `npm run current-tools:validate-all`, and `npm run current-tools:validate-rust-graph` - WHY: doc-only handoff proofs must fit the cmdproof timeout without letting CI-wrapper changes approve themselves.
 - Root `.npmrc` sets `loglevel=silent` - WHY: JSON-emitting npm scripts such as `npm run asp-dogfood:check -- --json` must write parseable JSON to redirected stdout without npm lifecycle preambles.
 - Graph-owned transitional `lattice graph serve --repo <repo>` starts the graph package stdio/MCP bridge over graph-core JSONL; `--repo` defaults to cwd, supports ping/status/query/search/shutdown, injects missing nested query repos, and returns typed startup/frame/provider failures.
 - #126 ships graph-core through optional Opcore native packages `@the-open-engine/opcore-graph-core-darwin-arm64`, `@the-open-engine/opcore-graph-core-darwin-x64`, and `@the-open-engine/opcore-graph-core-linux-x64`; `packages/graph` resolves only matching package metadata and never probes `packages/graph/dist/native`, sibling checkouts, `.ace/runtime`, or PATH.
@@ -175,7 +176,7 @@ Opcore is the code-intelligence and robustness monorepo for graph context, edit 
 - Keep release hygiene, conformance metadata, and package packlist gates executable when changing package or release surfaces - WHY: maintainer release receipts must fail before public alpha assumptions drift.
 - Add #29 negative fixtures for release evidence regressions: Python code-review-graph provenance, high-confidence secrets, unexpected package files, old public bins, descriptor artifact drift, and missing native checksum evidence.
 - Add #30 negative fixtures for cutover regressions: current-tool descriptor markers, advertised placeholder command receipts, missing cutover command receipts, and old bin fallback in installed projects.
-- Local proof for agent work is `npm run ci:local`; it regenerates current-tool wrappers, runs `npm run ci`, runs repo-wide Rox, then runs the Rust graph function-metrics check. GitHub Actions run Node and Rust gates while current external ACE tools remain local-worktree dependencies.
+- Local proof for agent work is `npm run ci:local`; for source/package/native/release changes it regenerates current-tool wrappers, runs `npm run ci`, runs repo-wide Rox, then runs the Rust graph function-metrics check. For docs/agent-guidance-only changes it uses the local CI fast path described above. GitHub Actions run Node and Rust gates while current external ACE tools remain local-worktree dependencies.
 
 ## Commands
 
@@ -206,7 +207,7 @@ Opcore is the code-intelligence and robustness monorepo for graph context, edit 
 - `opcore check --changed --json` - run the changed-file agent validation gate with default `--base HEAD`.
 - `opcore-asp-provider --stdio` - launch the standalone ASP Core check provider process.
 - Targeted `node --test tests/...` suites cover graph extraction/store/pipeline/query/search/serve, validation overlays/graph-client/typescript, ASP provider, and edit behavior; run the relevant suite for scoped changes.
-- `npm run ci:local` or `npm run verify` - local agent gate with setup:tools, `npm run ci`, repo-wide current `rox`, and Rust graph function metrics.
+- `npm run ci:local` or `npm run verify` - local agent gate; source/package/native/release changes run setup:tools, `npm run ci`, repo-wide current `rox`, and Rust graph function metrics, while docs/agent-guidance-only changes run the focused local CI fast path.
 - `lattice status --json` - inspect the package router health surface after building @packages/opcore/src/lattice.
 - `npm run release:hygiene` - verify public docs, community files, and release command anchors.
 - `npm run conformance:check` - verify concrete synthetic fixture metadata for #3 contracts.
