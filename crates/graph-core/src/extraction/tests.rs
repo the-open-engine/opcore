@@ -1173,6 +1173,12 @@ fn repo_with_tsconfig() -> Result<TempDir, std::io::Error> {
 }
 
 fn write_python_graph_fixture(repo: &TempDir) -> TestResult {
+    write_python_package_fixture(repo)?;
+    write_python_test_fixture(repo)?;
+    Ok(())
+}
+
+fn write_python_package_fixture(repo: &TempDir) -> TestResult {
     write(
         repo,
         "src/pkg/__init__.py",
@@ -1236,6 +1242,10 @@ def call_stub():
     return stubbed()
 "#,
     )?;
+    Ok(())
+}
+
+fn write_python_test_fixture(repo: &TempDir) -> TestResult {
     write(
         repo,
         "tests/test_models.py",
