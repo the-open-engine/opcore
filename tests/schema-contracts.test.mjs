@@ -278,8 +278,8 @@ const graphMetadata = {
     ageMs: 0,
     stale: false
   },
-  nodeKinds: ["repo", "file"],
-  edgeKinds: ["CONTAINS"]
+  nodeKinds: ["File", "Module", "Struct", "Function", "Test"],
+  edgeKinds: ["CONTAINS", "IMPORTS_FROM", "CALLS", "IMPLEMENTS", "DEPENDS_ON", "INHERITS"]
 };
 
 describe("lattice JSON schema wire constraints", () => {
@@ -736,6 +736,25 @@ describe("lattice JSON schema wire constraints", () => {
         metadata: graphMetadata,
         nodes: [],
         edges: []
+      }),
+      true
+    );
+  });
+
+  it("accepts Rust graph fact kinds while keeping graph kind strings open", () => {
+    assert.equal(isValidDefinition("GraphFactNode", { id: "struct:src/lib.rs#Widget", kind: "Struct", path: "src/lib.rs", name: "Widget" }), true);
+    assert.equal(isValidDefinition("GraphFactEdge", { kind: "IMPLEMENTS", from: "impl:src/lib.rs#Widget.Display", to: "trait:src/lib.rs#Display" }), true);
+    assert.equal(isValidDefinition("GraphFactNode", { id: "custom:src/lib.rs#Thing", kind: "CustomRustKind" }), true);
+    assert.equal(isValidDefinition("GraphFactEdge", { kind: "CUSTOM_RUST_EDGE", from: "a", to: "b" }), true);
+    assert.equal(isValidDefinition("GraphSnapshotMetadata", graphMetadata), true);
+    assert.equal(
+      isValidDefinition("GraphFactQueryRequest", {
+        ...validGraphFactQueryRequest(),
+        selector: {
+          kind: "nodes",
+          nodeKinds: ["Module", "Struct", "CustomRustKind"],
+          edgeKinds: ["IMPLEMENTS", "CUSTOM_RUST_EDGE"]
+        }
       }),
       true
     );
@@ -2677,7 +2696,29 @@ function validHandshake() {
     artifactVersion: "0.1.0-alpha.0",
     targetPlatform: "test",
     supportedOperations: ["build", "update", "watch", "status", "query", "ping", "health", "shutdown"],
-    nodeKinds: ["repo", "package", "file", "symbol", "test", "File", "Class", "Function", "Type", "Test", "Variable"],
+    nodeKinds: [
+      "repo",
+      "package",
+      "file",
+      "symbol",
+      "test",
+      "File",
+      "Class",
+      "Function",
+      "Type",
+      "Test",
+      "Variable",
+      "Module",
+      "Struct",
+      "Enum",
+      "Trait",
+      "Impl",
+      "Method",
+      "TypeAlias",
+      "Const",
+      "Static",
+      "Macro"
+    ],
     edgeKinds: [
       "CONTAINS",
       "DECLARES",
@@ -3027,8 +3068,8 @@ function validGraphReferenceEvidenceManifest() {
         tables: ["metadata", "nodes", "edges"],
         indexes: ["idx_nodes_file"],
         metadataKeys: ["schema_version"],
-        nodeKinds: ["File"],
-        edgeKinds: ["CALLS"],
+        nodeKinds: ["File", "Function", "Test", "Module", "Struct", "Enum", "Trait", "Impl", "Method", "TypeAlias", "Const", "Static", "Macro"],
+        edgeKinds: ["CALLS", "CONTAINS", "IMPORTS_FROM", "TESTED_BY", "IMPLEMENTS", "DEPENDS_ON", "INHERITS"],
         directReaderQueries: ["status-counts"],
         fixtures: ["sqlite-fixtures"]
       }

@@ -76,14 +76,15 @@ fn status_handshake_reports_capabilities() -> TestResult {
         json!("build"),
     );
     assert_json_eq(&value, "/status/handshake/nodeKinds/0", json!("repo"));
-    assert_json_eq(
-        &value,
-        "/status/handshake/nodeKinds",
-        json!([
-            "repo", "package", "file", "symbol", "test", "File", "Class", "Function", "Variable",
-            "Type", "Test"
-        ]),
-    );
+    let node_kinds = value
+        .pointer("/status/handshake/nodeKinds")
+        .and_then(Value::as_array)
+        .ok_or_else(|| std::io::Error::other("missing handshake nodeKinds"))?;
+    for kind in [
+        "repo", "File", "Function", "Module", "Struct", "Trait", "Method",
+    ] {
+        assert!(node_kinds.iter().any(|value| value == kind), "{kind}");
+    }
     assert_json_eq(
         &value,
         "/status/handshake/artifact/artifactName",

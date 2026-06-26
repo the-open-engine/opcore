@@ -39,7 +39,17 @@ describe("graph pipeline CLI", () => {
         "Function",
         "Variable",
         "Type",
-        "Test"
+        "Test",
+        "Module",
+        "Struct",
+        "Enum",
+        "Trait",
+        "Impl",
+        "Method",
+        "TypeAlias",
+        "Const",
+        "Static",
+        "Macro"
       ]);
       assert.equal(repeatBuild.providerStatus.state, "available");
       assert.equal(build.graphPipeline.summary.operation, "build");

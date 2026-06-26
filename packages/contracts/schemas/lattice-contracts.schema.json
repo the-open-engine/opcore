@@ -392,16 +392,14 @@
           "type": "array",
           "minItems": 1,
           "items": {
-            "type": "string",
-            "minLength": 1
+            "$ref": "#/$defs/GraphNodeKind"
           }
         },
         "edgeKinds": {
           "type": "array",
           "minItems": 1,
           "items": {
-            "type": "string",
-            "minLength": 1
+            "$ref": "#/$defs/GraphEdgeKind"
           }
         },
         "queryKinds": {
@@ -758,6 +756,47 @@
         }
       ]
     },
+    "GraphNodeKind": {
+      "type": "string",
+      "minLength": 1,
+      "x-canonicalValues": [
+        "repo",
+        "package",
+        "file",
+        "symbol",
+        "test",
+        "File",
+        "Class",
+        "Function",
+        "Variable",
+        "Type",
+        "Test",
+        "Module",
+        "Struct",
+        "Enum",
+        "Trait",
+        "Impl",
+        "Method",
+        "TypeAlias",
+        "Const",
+        "Static",
+        "Macro"
+      ]
+    },
+    "GraphEdgeKind": {
+      "type": "string",
+      "minLength": 1,
+      "x-canonicalValues": [
+        "CONTAINS",
+        "DECLARES",
+        "IMPORTS_FROM",
+        "CALLS",
+        "TESTED_BY",
+        "INHERITS",
+        "IMPLEMENTS",
+        "DEPENDS_ON"
+      ]
+    },
     "GraphFactNode": {
       "type": "object",
       "additionalProperties": false,
@@ -771,8 +810,7 @@
           "minLength": 1
         },
         "kind": {
-          "type": "string",
-          "minLength": 1
+          "$ref": "#/$defs/GraphNodeKind"
         },
         "path": {
           "$ref": "#/$defs/RepoRelativePath"
@@ -799,8 +837,7 @@
           "type": "string"
         },
         "kind": {
-          "type": "string",
-          "minLength": 1
+          "$ref": "#/$defs/GraphEdgeKind"
         },
         "from": {
           "type": "string",
@@ -848,13 +885,13 @@
         "nodeKinds": {
           "type": "array",
           "items": {
-            "type": "string"
+            "$ref": "#/$defs/GraphNodeKind"
           }
         },
         "edgeKinds": {
           "type": "array",
           "items": {
-            "type": "string"
+            "$ref": "#/$defs/GraphEdgeKind"
           }
         }
       }
@@ -903,13 +940,13 @@
             "nodeKinds": {
               "type": "array",
               "items": {
-                "type": "string"
+                "$ref": "#/$defs/GraphNodeKind"
               }
             },
             "edgeKinds": {
               "type": "array",
               "items": {
-                "type": "string"
+                "$ref": "#/$defs/GraphEdgeKind"
               }
             },
             "ids": {
@@ -9839,10 +9876,18 @@
           "$ref": "#/$defs/GraphReferenceEvidenceStringArray"
         },
         "nodeKinds": {
-          "$ref": "#/$defs/GraphReferenceEvidenceStringArray"
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/GraphNodeKind"
+          }
         },
         "edgeKinds": {
-          "$ref": "#/$defs/GraphReferenceEvidenceStringArray"
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/GraphEdgeKind"
+          }
         },
         "directReaderQueries": {
           "$ref": "#/$defs/GraphReferenceEvidenceStringArray"
