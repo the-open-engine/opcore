@@ -73,9 +73,10 @@ npx @the-open-engine/opcore@<ver> init
   → prints Coverage before Findings (deep TS/JS graph; Rust validation/toolchain;
     unsupported-language counts — honest, never faked)
   → proposes additive setup (.opcore/config, delimited agent-guidance block,
-    optional opt-in hooks, .opcore/ gitignore line)
+    optional opt-in hooks, .opcore/ gitignore line in Git repos)
   → asks on a TTY (or applies deterministically with --approve)
-  → writes only approved files; records undo metadata (.opcore/init-undo.json)
+  → writes only approved files; skips .gitignore outside Git; records undo metadata (.opcore/init-undo.json)
+  → undo removes only the managed .gitignore line
 ```
 
 `opcore init --json` previews without writing (release-gate invariant). On an unsupported

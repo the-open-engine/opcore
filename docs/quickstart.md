@@ -13,7 +13,7 @@ What this shows:
 
 - `opcore try` generates local TS, Rust, mixed, and unsupported-file samples, then runs the loop without publishing anything.
 - `opcore --repo .` scans read-only, prints Coverage before Findings, and writes `.opcore/report.json` plus `.opcore/history.jsonl`.
-- `opcore init --approve` writes additive `.opcore/config` and delimited agent guidance; hooks stay opt-in.
+- `opcore init --approve` writes additive `.opcore/config`, delimited agent guidance, and a managed `.opcore/` `.gitignore` line in Git repos; hooks stay opt-in.
 - `opcore check --changed --json` validates changed files and defaults to `--base HEAD`.
 - `opcore measure` reads metric artifacts and prints named deltas, not a score.
 
@@ -59,7 +59,7 @@ opcore init
 opcore init --approve
 ```
 
-`opcore init` runs the read-only scan first, prints coverage before findings, shows the additive setup plan, and prompts on a TTY. `opcore init --json` previews without writing. Approved init may add `.opcore/config`, delimited agent guidance, mirrors for existing agent files, undo metadata, and optional hooks only when explicitly requested. JSON output includes scan, language settings, interaction, and timing fields.
+`opcore init` runs the read-only scan first, prints coverage before findings, shows the additive setup plan, and prompts on a TTY. `opcore init --json` previews without writing. Approved init may add `.opcore/config`, delimited agent guidance, mirrors for existing agent files, undo metadata, a managed `.opcore/` `.gitignore` line in Git repos, and optional hooks only when explicitly requested. Non-Git repos skip `.gitignore`; undo removes only the managed line. JSON output includes scan, language settings, interaction, and timing fields.
 
 ## Coverage Honesty
 

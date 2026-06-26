@@ -68,13 +68,9 @@ export async function runOpcoreCli(options: RunOpcoreCliOptions): Promise<number
     stdoutIsTTY: options.stdoutIsTTY ?? process.stdout.isTTY === true,
     readLine: options.readLine ?? createReadLine()
   });
-  if (routed.json) {
-    stdout(`${JSON.stringify(routed)}\n`);
-  } else if (routed.status === "ok") {
-    stdout(`${routed.message}\n`);
-  } else {
-    stderr(`${routed.message}\n`);
-  }
+  const output = routed.json ? JSON.stringify(routed) : routed.message;
+  const write = routed.json || routed.status === "ok" ? stdout : stderr;
+  write(`${output}\n`);
   return routed.exitCode;
 }
 
