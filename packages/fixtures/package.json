@@ -36,7 +36,10 @@
     "./source-extraction/wave1/src/components/GreetingCard.tsx": "./source-extraction/wave1/src/components/GreetingCard.tsx",
     "./source-extraction/wave1/src/math.js": "./source-extraction/wave1/src/math.js",
     "./source-extraction/wave1/src/legacy-widget.jsx": "./source-extraction/wave1/src/legacy-widget.jsx",
-    "./source-extraction/wave1/src/__tests__/greeting.test.ts": "./source-extraction/wave1/src/__tests__/greeting.test.ts"
+    "./source-extraction/wave1/src/__tests__/greeting.test.ts": "./source-extraction/wave1/src/__tests__/greeting.test.ts",
+    "./source-extraction/rust-basic/Cargo.toml": "./source-extraction/rust-basic/Cargo.toml",
+    "./source-extraction/rust-basic/src/lib.rs": "./source-extraction/rust-basic/src/lib.rs",
+    "./source-extraction/rust-basic/src/helpers.rs": "./source-extraction/rust-basic/src/helpers.rs"
   },
   "files": [
     "dist",

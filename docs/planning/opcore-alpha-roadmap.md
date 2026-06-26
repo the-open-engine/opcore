@@ -49,7 +49,7 @@ Opcore alpha must provide value quickly and honestly:
 - Scan/check/measure/status are read-only with respect to source files.
 - Scan may write `.opcore/report.json` and `.opcore/history.jsonl`.
 - Init may write `.opcore/config`, AGENTS.md guidance, mirrors, undo metadata, and optional hooks only after a visible approval step.
-- Reports must state coverage before findings: deep TypeScript/JavaScript graph support, Rust validation/toolchain support, and unsupported-language counts.
+- Reports must state coverage before findings: deep TypeScript/JavaScript graph support, syn-backed Rust graph extraction, Rust validation/toolchain support, and unsupported-language counts.
 - Metrics are named, drillable counts and deltas, not a blended quality score.
 - Current Rox/CRG/CIX guardrails remain retained until explicit replacement evidence says otherwise.
 
@@ -60,6 +60,7 @@ Ship only signals the engine can defend:
 - TypeScript/JavaScript type and syntax errors.
 - TypeScript/JavaScript graph-backed untested surface.
 - TypeScript/JavaScript structural/fan-in hotspots and dead exports.
+- Rust graph facts for modules, declarations, imports, calls, trait impls, Cargo dependency edges, signatures, spans, and exported visibility.
 - Rust source-hygiene and suppression-abuse checks.
 - Rust oversized files.
 - Rust module cycles, orphans, and unresolved module evidence.
@@ -88,7 +89,7 @@ Do not call the alpha ready until current evidence proves:
 Use:
 
 - "Opcore is the robustness loop for agent-era repos."
-- "Deep for TypeScript/JavaScript and useful for Rust in alpha; unsupported stacks are counted and reported honestly."
+- "Deep for TypeScript/JavaScript, source-aware for Rust in alpha, and honest about unsupported stacks."
 - "ASP is an optional private host/provider seam until the protocol has independent interoperability evidence."
 
 Avoid:

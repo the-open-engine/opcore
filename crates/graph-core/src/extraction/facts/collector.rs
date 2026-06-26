@@ -106,9 +106,12 @@ impl FileFactCollector {
             nodes: self.nodes,
             edges: self.edges,
             declarations: self.declarations,
+            qualified_declarations: BTreeMap::new(),
+            rust_package_root: None,
             export_aliases: self.export_aliases,
             re_exports: self.re_exports,
             imports: self.imports,
+            rust_imports: Vec::new(),
             references: self.references,
             heritage: self.heritage,
         }

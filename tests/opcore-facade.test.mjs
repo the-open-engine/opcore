@@ -114,6 +114,30 @@ describe("opcore public facade", () => {
     }
   });
 
+  it("reports Rust rs sources as graph and validation supported", () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-rust-status-"));
+    try {
+      mkdirSync(join(temp, "src"), { recursive: true });
+      writeFileSync(join(temp, "Cargo.toml"), "[package]\nname = \"opcore-rust-status\"\nversion = \"0.1.0\"\nedition = \"2021\"\n");
+      writeFileSync(join(temp, "src/lib.rs"), "pub fn value() -> u64 { 1 }\n");
+
+      const result = parseJson(runOpcore(["status", "--repo", temp, "--json"], temp, 0).stdout);
+      const coverage = result.repoState.coverage;
+
+      assert.equal(coverage.totalFiles, 2);
+      assert.deepEqual(coverage.languages, [
+        { language: "Rust", files: 2, graphSupported: true, validationSupported: true }
+      ]);
+      assert.equal(coverage.graph.supportedFiles, 1);
+      assert.deepEqual(coverage.graph.extensions, [{ extension: ".rs", count: 1 }]);
+      assert.equal(coverage.validation.supportedFiles, 2);
+      assert.equal(coverage.unsupported.totalFiles, 0);
+      assert.deepEqual(coverage.unsupported.stacks, []);
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
   it("runs check --changed with default HEAD base and stable agent exit codes", () => {
     withFixtureCopy((fixtureRoot) => {
       initGitFixture(fixtureRoot);

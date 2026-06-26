@@ -18,9 +18,15 @@ pub struct FileFacts {
     pub nodes: BTreeMap<String, GraphFactNode>,
     pub edges: BTreeMap<String, GraphFactEdge>,
     pub declarations: BTreeMap<String, String>,
+    #[serde(default)]
+    pub qualified_declarations: BTreeMap<String, String>,
+    #[serde(default)]
+    pub rust_package_root: Option<String>,
     pub export_aliases: BTreeMap<String, String>,
     pub re_exports: Vec<ReExportFact>,
     pub imports: Vec<ImportFact>,
+    #[serde(default)]
+    pub rust_imports: Vec<RustImportFact>,
     pub references: Vec<ReferenceFact>,
     pub heritage: Vec<HeritageFact>,
 }
@@ -35,6 +41,14 @@ pub struct ImportFact {
 pub struct ImportBinding {
     pub local: String,
     pub imported: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RustImportFact {
+    pub target: String,
+    #[serde(default)]
+    pub local: Option<String>,
+    pub dependency: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -60,9 +74,14 @@ pub struct HeritageFact {
 type DeclarationsByFile = BTreeMap<String, BTreeMap<String, String>>;
 type ExportAliasesByFile = BTreeMap<String, BTreeMap<String, String>>;
 type ImportsByFile = BTreeMap<String, BTreeMap<String, ImportTarget>>;
+type QualifiedDeclarations = BTreeMap<String, String>;
+type QualifiedDeclarationsByPackage = BTreeMap<String, QualifiedDeclarations>;
+type RustPackageByFile = BTreeMap<String, String>;
 
 struct NameResolutionContext<'a> {
     declarations_by_file: &'a DeclarationsByFile,
+    qualified_declarations_by_rust_package: &'a QualifiedDeclarationsByPackage,
+    rust_package_by_file: &'a RustPackageByFile,
     export_aliases_by_file: &'a ExportAliasesByFile,
     imports_by_file: &'a ImportsByFile,
 }
@@ -73,14 +92,14 @@ struct ImportTarget {
     imported: String,
 }
 
-struct EdgeDraft<'a> {
+pub(super) struct EdgeDraft<'a> {
     kind: &'a str,
     from: &'a str,
     to: &'a str,
 }
 
 impl<'a> EdgeDraft<'a> {
-    fn new(kind: &'a str, from: &'a str, to: &'a str) -> Self {
+    pub(super) fn new(kind: &'a str, from: &'a str, to: &'a str) -> Self {
         Self { kind, from, to }
     }
 }
@@ -94,8 +113,15 @@ pub fn file_node(source: &DiscoveredSource) -> GraphFactNode {
         attributes: Some(json!({
             "language": source.language.as_str(),
             "sha256": source.sha256,
-            "parser": "oxc_parser"
+            "parser": parser_name(source)
         })),
+    }
+}
+
+fn parser_name(source: &DiscoveredSource) -> &'static str {
+    match source.language {
+        super::SourceLanguage::Rust => "syn",
+        _ => "oxc_parser",
     }
 }
 
@@ -106,9 +132,12 @@ pub fn file_facts_without_ast(source: &DiscoveredSource, file_node: GraphFactNod
         nodes: BTreeMap::new(),
         edges: BTreeMap::new(),
         declarations: BTreeMap::new(),
+        qualified_declarations: BTreeMap::new(),
+        rust_package_root: None,
         export_aliases: BTreeMap::new(),
         re_exports: Vec::new(),
         imports: Vec::new(),
+        rust_imports: Vec::new(),
         references: Vec::new(),
         heritage: Vec::new(),
     }
@@ -159,6 +188,8 @@ struct FactFinalizer {
     nodes: BTreeMap<String, GraphFactNode>,
     edges: BTreeMap<String, GraphFactEdge>,
     declarations_by_file: DeclarationsByFile,
+    qualified_declarations_by_rust_package: QualifiedDeclarationsByPackage,
+    rust_package_by_file: RustPackageByFile,
     export_aliases_by_file: ExportAliasesByFile,
     imports_by_file: ImportsByFile,
 }
@@ -169,6 +200,8 @@ impl FactFinalizer {
             nodes: BTreeMap::new(),
             edges: BTreeMap::new(),
             declarations_by_file: BTreeMap::new(),
+            qualified_declarations_by_rust_package: BTreeMap::new(),
+            rust_package_by_file: BTreeMap::new(),
             export_aliases_by_file: BTreeMap::new(),
             imports_by_file: BTreeMap::new(),
         };
@@ -183,6 +216,15 @@ impl FactFinalizer {
             .insert(facts.file_node.id.clone(), facts.file_node.clone());
         self.declarations_by_file
             .insert(facts.path.clone(), facts.declarations.clone());
+        if !facts.qualified_declarations.is_empty() {
+            let package_root = facts.rust_package_root.clone().unwrap_or_default();
+            self.rust_package_by_file
+                .insert(facts.path.clone(), package_root.clone());
+            self.qualified_declarations_by_rust_package
+                .entry(package_root)
+                .or_default()
+                .extend(facts.qualified_declarations.clone());
+        }
         self.export_aliases_by_file
             .insert(facts.path.clone(), facts.export_aliases.clone());
         self.nodes.extend(facts.nodes.clone());
@@ -195,6 +237,9 @@ impl FactFinalizer {
                 if let Some(target_path) = imports.resolve(&import.specifier, &facts.path) {
                     self.register_import(facts, import, target_path);
                 }
+            }
+            for import in &facts.rust_imports {
+                self.register_rust_import(facts, import);
             }
         }
     }
@@ -213,6 +258,62 @@ impl FactFinalizer {
                     ImportTarget {
                         path: target_path.clone(),
                         imported: binding.imported.clone(),
+                    },
+                );
+        }
+    }
+
+    fn register_rust_import(&mut self, facts: &FileFacts, import: &RustImportFact) {
+        let from = file_id(&facts.path);
+        if let Some(dependency) = &import.dependency {
+            let package_id = format!("package:{dependency}");
+            self.nodes
+                .entry(package_id.clone())
+                .or_insert_with(|| GraphFactNode {
+                    id: package_id.clone(),
+                    kind: "package".to_string(),
+                    path: None,
+                    name: Some(dependency.clone()),
+                    attributes: Some(json!({
+                        "language": "rust"
+                    })),
+                });
+            insert_edge(
+                &mut self.edges,
+                EdgeDraft::new("DEPENDS_ON", &from, &package_id),
+            );
+            return;
+        }
+
+        let target_id = {
+            let context = self.name_resolution_context();
+            resolve_qualified_name_for_file(&facts.path, &import.target, &context)
+        };
+        let Some(target_id) = target_id else { return };
+        let target_path = self
+            .nodes
+            .get(&target_id)
+            .and_then(|node| node.path.as_ref())
+            .cloned();
+        let Some(target_path) = target_path else {
+            return;
+        };
+        let to = file_id(&target_path);
+        insert_edge(&mut self.edges, EdgeDraft::new("IMPORTS_FROM", &from, &to));
+        insert_edge(&mut self.edges, EdgeDraft::new("DEPENDS_ON", &from, &to));
+        if let Some(local) = import
+            .local
+            .clone()
+            .or_else(|| rust_import_local_name(&import.target))
+        {
+            self.imports_by_file
+                .entry(facts.path.clone())
+                .or_default()
+                .insert(
+                    local,
+                    ImportTarget {
+                        path: target_path,
+                        imported: import.target.clone(),
                     },
                 );
         }
@@ -325,6 +426,8 @@ impl FactFinalizer {
     fn name_resolution_context(&self) -> NameResolutionContext<'_> {
         NameResolutionContext {
             declarations_by_file: &self.declarations_by_file,
+            qualified_declarations_by_rust_package: &self.qualified_declarations_by_rust_package,
+            rust_package_by_file: &self.rust_package_by_file,
             export_aliases_by_file: &self.export_aliases_by_file,
             imports_by_file: &self.imports_by_file,
         }
@@ -363,7 +466,7 @@ pub fn file_id(path: &str) -> String {
     format!("file:{path}")
 }
 
-fn insert_edge(edges: &mut BTreeMap<String, GraphFactEdge>, edge: EdgeDraft<'_>) {
+pub(super) fn insert_edge(edges: &mut BTreeMap<String, GraphFactEdge>, edge: EdgeDraft<'_>) {
     if edge.from == edge.to {
         return;
     }
@@ -385,6 +488,9 @@ fn resolve_name(
     if name.contains('.') {
         return None;
     }
+    if name.contains("::") {
+        return resolve_rust_path_name(file_path, name, context);
+    }
     if let Some(local) = context
         .declarations_by_file
         .get(file_path)
@@ -398,6 +504,9 @@ fn resolve_name(
         .and_then(|imports| imports.get(name))
     {
         if target.imported != "*" {
+            if target.imported.contains("::") {
+                return resolve_qualified_name_for_file(&target.path, &target.imported, context);
+            }
             if let Some(target) = resolve_imported_name(&target.path, &target.imported, context) {
                 return Some(target);
             }
@@ -411,9 +520,87 @@ fn resolve_imported_name(
     imported: &str,
     context: &NameResolutionContext<'_>,
 ) -> Option<String> {
+    if imported.contains("::") {
+        return resolve_qualified_name_for_file(target_path, imported, context);
+    }
     context
         .export_aliases_by_file
         .get(target_path)
         .and_then(|aliases| aliases.get(imported))
         .cloned()
+}
+
+fn resolve_rust_path_name(
+    file_path: &str,
+    name: &str,
+    context: &NameResolutionContext<'_>,
+) -> Option<String> {
+    if let Some((alias, rest)) = split_first_rust_path_segment(name) {
+        if let Some(import) = context
+            .imports_by_file
+            .get(file_path)
+            .and_then(|imports| imports.get(alias))
+        {
+            let target_name = append_rust_path(&import.imported, rest);
+            if let Some(target) =
+                resolve_qualified_name_for_file(&import.path, &target_name, context)
+            {
+                return Some(target);
+            }
+        }
+    }
+    resolve_qualified_name_for_file(file_path, name, context)
+}
+
+fn resolve_qualified_name_for_file(
+    file_path: &str,
+    name: &str,
+    context: &NameResolutionContext<'_>,
+) -> Option<String> {
+    let package_root = context
+        .rust_package_by_file
+        .get(file_path)
+        .map(String::as_str)
+        .unwrap_or_default();
+    let declarations = context
+        .qualified_declarations_by_rust_package
+        .get(package_root)?;
+    resolve_qualified_name_in_package(name, declarations)
+}
+
+fn resolve_qualified_name_in_package(
+    name: &str,
+    declarations: &QualifiedDeclarations,
+) -> Option<String> {
+    if let Some(target) = declarations.get(name) {
+        return Some(target.clone());
+    }
+    let crate_name = format!("crate::{name}");
+    if let Some(target) = declarations.get(&crate_name) {
+        return Some(target.clone());
+    }
+    let suffix = format!("::{name}");
+    declarations
+        .iter()
+        .find_map(|(qualified, id)| qualified.ends_with(&suffix).then(|| id.clone()))
+}
+
+fn split_first_rust_path_segment(name: &str) -> Option<(&str, &str)> {
+    name.split_once("::").filter(|(first, _)| !first.is_empty())
+}
+
+fn append_rust_path(base: &str, rest: &str) -> String {
+    if rest.is_empty() {
+        base.to_string()
+    } else {
+        format!("{base}::{rest}")
+    }
+}
+
+fn rust_import_local_name(target: &str) -> Option<String> {
+    target
+        .split("::")
+        .filter(|segment| !segment.is_empty())
+        .last()
+        .map(ToString::to_string)
 }

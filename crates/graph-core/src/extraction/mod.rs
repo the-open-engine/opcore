@@ -3,6 +3,7 @@ mod discovery;
 mod facts;
 mod language;
 mod parser;
+mod rust;
 mod tsconfig;
 
 #[cfg(test)]
@@ -128,16 +129,48 @@ pub fn collect_file_facts_for_sources(
     if has_error(diagnostics) {
         return Vec::new();
     }
+    let rust_manifest = match rust_manifest_for_sources(options, sources, diagnostics) {
+        Some(manifest) => manifest,
+        None => return Vec::new(),
+    };
     sources
         .iter()
         .filter(|source| source.language.is_graph_extractable())
-        .map(|source| collect_file_fact(source, options.force_missing_parser, diagnostics))
+        .map(|source| {
+            collect_file_fact(
+                source,
+                options.force_missing_parser,
+                &rust_manifest,
+                diagnostics,
+            )
+        })
         .collect()
+}
+
+fn rust_manifest_for_sources(
+    options: &ExtractionOptions,
+    sources: &[DiscoveredSource],
+    diagnostics: &mut Vec<GraphExtractionDiagnostic>,
+) -> Option<rust::manifest::RustManifest> {
+    if !sources
+        .iter()
+        .any(|source| source.language == SourceLanguage::Rust)
+    {
+        return Some(rust::manifest::RustManifest::default());
+    }
+    match rust::manifest::RustManifest::load(&options.repo_root) {
+        Ok(manifest) => Some(manifest),
+        Err(diagnostic) => {
+            diagnostics.push(diagnostic);
+            None
+        }
+    }
 }
 
 fn collect_file_fact(
     source: &DiscoveredSource,
     force_missing_parser: bool,
+    rust_manifest: &rust::manifest::RustManifest,
     diagnostics: &mut Vec<GraphExtractionDiagnostic>,
 ) -> facts::FileFacts {
     let file_node = facts::file_node(source);
@@ -148,6 +181,7 @@ fn collect_file_fact(
                 file_node,
                 source_text: &source_text,
                 force_missing_parser,
+                rust_manifest,
             },
             diagnostics,
         ),
@@ -168,12 +202,27 @@ struct ParseFileFact<'a> {
     file_node: GraphFactNode,
     source_text: &'a str,
     force_missing_parser: bool,
+    rust_manifest: &'a rust::manifest::RustManifest,
 }
 
 fn parse_file_fact(
     input: ParseFileFact<'_>,
     diagnostics: &mut Vec<GraphExtractionDiagnostic>,
 ) -> facts::FileFacts {
+    if input.source.language == SourceLanguage::Rust {
+        return match rust::extract_file_facts(
+            input.source,
+            input.file_node.clone(),
+            input.source_text,
+            input.rust_manifest,
+        ) {
+            Ok(facts) => facts,
+            Err(diagnostic) => {
+                diagnostics.push(diagnostic);
+                rust::file_facts_without_ast(input.source, input.file_node)
+            }
+        };
+    }
     let allocator = oxc_allocator::Allocator::default();
     let parsed = parser::parse_source(
         &allocator,
@@ -195,7 +244,15 @@ pub fn finalize_discovered_sources(
     file_facts: Vec<FileFacts>,
     mut diagnostics: Vec<GraphExtractionDiagnostic>,
 ) -> ExtractionResult {
-    let tsconfig = load_tsconfig_if_ready(&discovery.repo_root, &mut diagnostics);
+    let tsconfig = if discovery
+        .sources
+        .iter()
+        .any(|source| tsconfig_backed_language(source.language))
+    {
+        load_tsconfig_if_ready(&discovery.repo_root, &mut diagnostics)
+    } else {
+        None
+    };
     let (nodes, edges) = finalize_file_facts(&file_facts, tsconfig.as_ref(), &mut diagnostics);
     let metadata = metadata(&discovery.repo_root_display, &nodes, &edges);
     ExtractionResult {
@@ -206,6 +263,16 @@ pub fn finalize_discovered_sources(
         file_hashes: source_file_hashes(&discovery.sources),
         file_facts,
     }
+}
+
+fn tsconfig_backed_language(language: SourceLanguage) -> bool {
+    matches!(
+        language,
+        SourceLanguage::TypeScript
+            | SourceLanguage::TypeScriptJsx
+            | SourceLanguage::JavaScript
+            | SourceLanguage::JavaScriptJsx
+    )
 }
 
 fn finalize_file_facts(
@@ -271,5 +338,5 @@ pub fn boundary_name() -> &'static str {
 }
 
 pub fn behavior_status() -> &'static str {
-    "wave1: staged TypeScript/JavaScript source extraction"
+    "wave1: staged TypeScript/JavaScript plus Rust source extraction"
 }

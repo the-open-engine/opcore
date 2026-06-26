@@ -1,0 +1,2253 @@
+{
+  "schemaVersion": 1,
+  "issue": "#29",
+  "origin": "covibes-authored-release-proof",
+  "generatedAt": "2026-06-26T23:11:35.750Z",
+  "commitSha": "a7d3132d576d0988110131bfa12a434cb3e4995c",
+  "privateRepo": true,
+  "packageNames": [
+    "@the-open-engine/opcore-contracts",
+    "@the-open-engine/opcore",
+    "@the-open-engine/opcore-graph",
+    "@the-open-engine/opcore-graph-core-darwin-arm64",
+    "@the-open-engine/opcore-graph-core-darwin-x64",
+    "@the-open-engine/opcore-graph-core-linux-x64",
+    "@the-open-engine/opcore-edit",
+    "@the-open-engine/opcore-validation",
+    "@the-open-engine/opcore-validation-rust",
+    "@the-open-engine/opcore-validation-typescript",
+    "@the-open-engine/opcore-asp-provider"
+  ],
+  "commandGroups": [
+    "graph",
+    "inspect",
+    "edit",
+    "check",
+    "validate",
+    "status",
+    "doctor"
+  ],
+  "packages": [
+    {
+      "packageName": "@the-open-engine/opcore-contracts",
+      "packageRoot": "packages/contracts",
+      "version": "0.1.0-alpha.0",
+      "manifest": {
+        "name": "@the-open-engine/opcore-contracts",
+        "version": "0.1.0-alpha.0",
+        "license": "MIT",
+        "main": "dist/index.js",
+        "types": "dist/index.d.ts",
+        "files": [
+          "dist",
+          "schemas",
+          "README.md"
+        ],
+        "bins": {},
+        "dependencies": {},
+        "bundledDependencies": []
+      },
+      "tarball": {
+        "filename": "the-open-engine-opcore-contracts-0.1.0-alpha.0.tgz",
+        "path": ".lattice/release/packages/the-open-engine-opcore-contracts-0.1.0-alpha.0.tgz",
+        "sha256": "4c9f21ea2a09097e74dcf10ce9e09e800672bdedf1c69883c88ce38265f35170",
+        "integrity": "sha512-rA8cTBxO5RfnUhbh7yARpP84/BVWF7kumV/Y6zwuOy0fby//GcYz1Xmz/LGkTTvmh6C3AIc/HE+WOQ7YN7QHpw==",
+        "shasum": "794183e3d75b00bcf34c5a88c34780980a0e99b4"
+      },
+      "files": [
+        "README.md",
+        "dist/index.d.ts",
+        "dist/index.d.ts.map",
+        "dist/index.js",
+        "package.json",
+        "schemas/lattice-contracts.schema.json"
+      ],
+      "fileCount": 6,
+      "expectedFiles": [
+        "README.md",
+        "dist/index.d.ts",
+        "dist/index.d.ts.map",
+        "dist/index.js",
+        "package.json",
+        "schemas/lattice-contracts.schema.json"
+      ],
+      "expectedFileCount": 6,
+      "bins": {},
+      "descriptorReferences": [
+        {
+          "id": "contracts-schema",
+          "packageName": "@the-open-engine/opcore-contracts",
+          "path": "schemas/lattice-contracts.schema.json",
+          "type": "schema",
+          "required": true
+        }
+      ],
+      "nativeArtifacts": []
+    },
+    {
+      "packageName": "@the-open-engine/opcore",
+      "packageRoot": "packages/opcore",
+      "version": "0.1.0-alpha.0",
+      "manifest": {
+        "name": "@the-open-engine/opcore",
+        "version": "0.1.0-alpha.0",
+        "license": "MIT",
+        "main": "dist/index.js",
+        "types": "dist/index.d.ts",
+        "files": [
+          "dist",
+          "README.md"
+        ],
+        "bins": {
+          "opcore": "dist/index.js",
+          "lattice": "dist/lattice/index.js"
+        },
+        "dependencies": {
+          "@the-open-engine/opcore-edit": "0.1.0-alpha.0",
+          "@the-open-engine/opcore-contracts": "0.1.0-alpha.0",
+          "@the-open-engine/opcore-graph": "0.1.0-alpha.0",
+          "@the-open-engine/opcore-validation": "0.1.0-alpha.0",
+          "@the-open-engine/opcore-validation-rust": "0.1.0-alpha.0",
+          "@the-open-engine/opcore-validation-typescript": "0.1.0-alpha.0",
+          "ts-morph": "^28.0.0"
+        },
+        "bundledDependencies": []
+      },
+      "tarball": {
+        "filename": "the-open-engine-opcore-0.1.0-alpha.0.tgz",
+        "path": ".lattice/release/packages/the-open-engine-opcore-0.1.0-alpha.0.tgz",
+        "sha256": "61871b8f813396d98f422be479319010cb6da0ab5b4cd7114b6529f7d49be7b3",
+        "integrity": "sha512-OVLU/ktmpSmCyoiHDnpPcDtw7nTTllj6gn5IVbebxl5ni+yjbfKTPjMx8mGrcFbqZy306g5LHQeok/RaH+BR2Q==",
+        "shasum": "945c21692259a0b787463c24a734e975772e19fa"
+      },
+      "files": [
+        "README.md",
+        "dist/check.d.ts",
+        "dist/check.d.ts.map",
+        "dist/check.js",
+        "dist/descriptors/lattice.managed-tool.json",
+        "dist/graph-provider-client.d.ts",
+        "dist/graph-provider-client.d.ts.map",
+        "dist/graph-provider-client.js",
+        "dist/index.d.ts",
+        "dist/index.d.ts.map",
+        "dist/index.js",
+        "dist/init.d.ts",
+        "dist/init.d.ts.map",
+        "dist/init.js",
+        "dist/lattice/descriptor.d.ts",
+        "dist/lattice/descriptor.d.ts.map",
+        "dist/lattice/descriptor.js",
+        "dist/lattice/edit-composition.d.ts",
+        "dist/lattice/edit-composition.d.ts.map",
+        "dist/lattice/edit-composition.js",
+        "dist/lattice/graph-provider-client.d.ts",
+        "dist/lattice/graph-provider-client.d.ts.map",
+        "dist/lattice/graph-provider-client.js",
+        "dist/lattice/index.d.ts",
+        "dist/lattice/index.d.ts.map",
+        "dist/lattice/index.js",
+        "dist/lattice/inspect-adapter.d.ts",
+        "dist/lattice/inspect-adapter.d.ts.map",
+        "dist/lattice/inspect-adapter.js",
+        "dist/lattice/inspect-language-service.d.ts",
+        "dist/lattice/inspect-language-service.d.ts.map",
+        "dist/lattice/inspect-language-service.js",
+        "dist/lattice/manifest.d.ts",
+        "dist/lattice/manifest.d.ts.map",
+        "dist/lattice/manifest.js",
+        "dist/lattice/router.d.ts",
+        "dist/lattice/router.d.ts.map",
+        "dist/lattice/router.js",
+        "dist/lattice/validation-composition.d.ts",
+        "dist/lattice/validation-composition.d.ts.map",
+        "dist/lattice/validation-composition.js",
+        "dist/reporting.d.ts",
+        "dist/reporting.d.ts.map",
+        "dist/reporting.js",
+        "dist/router.d.ts",
+        "dist/router.d.ts.map",
+        "dist/router.js",
+        "dist/scan.d.ts",
+        "dist/scan.d.ts.map",
+        "dist/scan.js",
+        "dist/status.d.ts",
+        "dist/status.d.ts.map",
+        "dist/status.js",
+        "dist/try.d.ts",
+        "dist/try.d.ts.map",
+        "dist/try.js",
+        "dist/validation-composition.d.ts",
+        "dist/validation-composition.d.ts.map",
+        "dist/validation-composition.js",
+        "package.json"
+      ],
+      "fileCount": 60,
+      "expectedFiles": [
+        "README.md",
+        "dist/check.d.ts",
+        "dist/check.d.ts.map",
+        "dist/check.js",
+        "dist/descriptors/lattice.managed-tool.json",
+        "dist/graph-provider-client.d.ts",
+        "dist/graph-provider-client.d.ts.map",
+        "dist/graph-provider-client.js",
+        "dist/index.d.ts",
+        "dist/index.d.ts.map",
+        "dist/index.js",
+        "dist/init.d.ts",
+        "dist/init.d.ts.map",
+        "dist/init.js",
+        "dist/lattice/descriptor.d.ts",
+        "dist/lattice/descriptor.d.ts.map",
+        "dist/lattice/descriptor.js",
+        "dist/lattice/edit-composition.d.ts",
+        "dist/lattice/edit-composition.d.ts.map",
+        "dist/lattice/edit-composition.js",
+        "dist/lattice/graph-provider-client.d.ts",
+        "dist/lattice/graph-provider-client.d.ts.map",
+        "dist/lattice/graph-provider-client.js",
+        "dist/lattice/index.d.ts",
+        "dist/lattice/index.d.ts.map",
+        "dist/lattice/index.js",
+        "dist/lattice/inspect-adapter.d.ts",
+        "dist/lattice/inspect-adapter.d.ts.map",
+        "dist/lattice/inspect-adapter.js",
+        "dist/lattice/inspect-language-service.d.ts",
+        "dist/lattice/inspect-language-service.d.ts.map",
+        "dist/lattice/inspect-language-service.js",
+        "dist/lattice/manifest.d.ts",
+        "dist/lattice/manifest.d.ts.map",
+        "dist/lattice/manifest.js",
+        "dist/lattice/router.d.ts",
+        "dist/lattice/router.d.ts.map",
+        "dist/lattice/router.js",
+        "dist/lattice/validation-composition.d.ts",
+        "dist/lattice/validation-composition.d.ts.map",
+        "dist/lattice/validation-composition.js",
+        "dist/reporting.d.ts",
+        "dist/reporting.d.ts.map",
+        "dist/reporting.js",
+        "dist/router.d.ts",
+        "dist/router.d.ts.map",
+        "dist/router.js",
+        "dist/scan.d.ts",
+        "dist/scan.d.ts.map",
+        "dist/scan.js",
+        "dist/status.d.ts",
+        "dist/status.d.ts.map",
+        "dist/status.js",
+        "dist/try.d.ts",
+        "dist/try.d.ts.map",
+        "dist/try.js",
+        "dist/validation-composition.d.ts",
+        "dist/validation-composition.d.ts.map",
+        "dist/validation-composition.js",
+        "package.json"
+      ],
+      "expectedFileCount": 60,
+      "bins": {
+        "opcore": "dist/index.js",
+        "lattice": "dist/lattice/index.js"
+      },
+      "descriptorReferences": [
+        {
+          "id": "cli-entrypoint",
+          "packageName": "@the-open-engine/opcore",
+          "path": "dist/lattice/index.js",
+          "type": "entrypoint",
+          "required": true
+        },
+        {
+          "id": "descriptor",
+          "packageName": "@the-open-engine/opcore",
+          "path": "dist/descriptors/lattice.managed-tool.json",
+          "type": "descriptor",
+          "required": true
+        }
+      ],
+      "nativeArtifacts": []
+    },
+    {
+      "packageName": "@the-open-engine/opcore-graph",
+      "packageRoot": "packages/graph",
+      "version": "0.1.0-alpha.0",
+      "manifest": {
+        "name": "@the-open-engine/opcore-graph",
+        "version": "0.1.0-alpha.0",
+        "license": "MIT",
+        "main": "dist/index.js",
+        "types": "dist/index.d.ts",
+        "files": [
+          "dist",
+          "README.md"
+        ],
+        "bins": {},
+        "dependencies": {
+          "@the-open-engine/opcore-contracts": "0.1.0-alpha.0"
+        },
+        "optionalDependencies": {
+          "@the-open-engine/opcore-graph-core-darwin-arm64": "0.1.0-alpha.0",
+          "@the-open-engine/opcore-graph-core-darwin-x64": "0.1.0-alpha.0",
+          "@the-open-engine/opcore-graph-core-linux-x64": "0.1.0-alpha.0"
+        },
+        "bundledDependencies": []
+      },
+      "tarball": {
+        "filename": "the-open-engine-opcore-graph-0.1.0-alpha.0.tgz",
+        "path": ".lattice/release/packages/the-open-engine-opcore-graph-0.1.0-alpha.0.tgz",
+        "sha256": "99b3543204a1919e261820d4e70522643e96e690d5caf7586ef1e0ac95c7e1d7",
+        "integrity": "sha512-AAOh62CB97sZi2TZchRFzhpMR4LaWbA/eSpX3H7jk7UeWeccrSc8GD57CajGqPV0zk7hVPqq3LwrLwQ8TQfl+g==",
+        "shasum": "8cb1eab17fc0f814ddc0b822486f69809c67829b"
+      },
+      "files": [
+        "README.md",
+        "dist/artifact.d.ts",
+        "dist/artifact.d.ts.map",
+        "dist/artifact.js",
+        "dist/index.d.ts",
+        "dist/index.d.ts.map",
+        "dist/index.js",
+        "dist/native-targets.d.ts",
+        "dist/native-targets.d.ts.map",
+        "dist/native-targets.js",
+        "dist/serve.d.ts",
+        "dist/serve.d.ts.map",
+        "dist/serve.js",
+        "dist/sidecar.d.ts",
+        "dist/sidecar.d.ts.map",
+        "dist/sidecar.js",
+        "package.json"
+      ],
+      "fileCount": 17,
+      "expectedFiles": [
+        "README.md",
+        "dist/artifact.d.ts",
+        "dist/artifact.d.ts.map",
+        "dist/artifact.js",
+        "dist/index.d.ts",
+        "dist/index.d.ts.map",
+        "dist/index.js",
+        "dist/native-targets.d.ts",
+        "dist/native-targets.d.ts.map",
+        "dist/native-targets.js",
+        "dist/serve.d.ts",
+        "dist/serve.d.ts.map",
+        "dist/serve.js",
+        "dist/sidecar.d.ts",
+        "dist/sidecar.d.ts.map",
+        "dist/sidecar.js",
+        "package.json"
+      ],
+      "expectedFileCount": 17,
+      "bins": {},
+      "descriptorReferences": [],
+      "nativeArtifacts": []
+    },
+    {
+      "packageName": "@the-open-engine/opcore-graph-core-darwin-arm64",
+      "packageRoot": "packages/opcore-graph-core-darwin-arm64",
+      "version": "0.1.0-alpha.0",
+      "manifest": {
+        "name": "@the-open-engine/opcore-graph-core-darwin-arm64",
+        "version": "0.1.0-alpha.0",
+        "license": "MIT",
+        "files": [
+          "lattice-graph-core",
+          "lattice-graph-core.sha256",
+          "metadata.json",
+          "README.md"
+        ],
+        "bins": {},
+        "dependencies": {},
+        "os": [
+          "darwin"
+        ],
+        "cpu": [
+          "arm64"
+        ],
+        "bundledDependencies": []
+      },
+      "tarball": {
+        "filename": "the-open-engine-opcore-graph-core-darwin-arm64-0.1.0-alpha.0.tgz",
+        "path": ".lattice/release/packages/the-open-engine-opcore-graph-core-darwin-arm64-0.1.0-alpha.0.tgz",
+        "sha256": "007edb46750c3586b41cb31a33e0ef285b7dea401b2065b27f68bf17be56a349",
+        "integrity": "sha512-mRT+1XdqhTe6WiFgpNX1bygF/w2FzfC5HoRDmEbttlsyR4g1dCa5CqILfIHqhSbMiFSfkKCL584ToEiC/T/wSA==",
+        "shasum": "a5259e716001c49df577cb857dd12c29c2eeef6c"
+      },
+      "files": [
+        "README.md",
+        "lattice-graph-core",
+        "lattice-graph-core.sha256",
+        "metadata.json",
+        "package.json"
+      ],
+      "fileCount": 5,
+      "expectedFiles": [
+        "README.md",
+        "lattice-graph-core",
+        "lattice-graph-core.sha256",
+        "metadata.json",
+        "package.json"
+      ],
+      "expectedFileCount": 5,
+      "bins": {},
+      "descriptorReferences": [
+        {
+          "id": "graph-core-binary-darwin-arm64",
+          "packageName": "@the-open-engine/opcore-graph-core-darwin-arm64",
+          "path": "lattice-graph-core",
+          "type": "native_binary",
+          "required": true,
+          "checksumRef": "graph-core-binary-sha256-darwin-arm64"
+        },
+        {
+          "id": "graph-core-metadata-darwin-arm64",
+          "packageName": "@the-open-engine/opcore-graph-core-darwin-arm64",
+          "path": "metadata.json",
+          "type": "manifest",
+          "required": true
+        },
+        {
+          "id": "graph-core-checksum-darwin-arm64",
+          "packageName": "@the-open-engine/opcore-graph-core-darwin-arm64",
+          "path": "lattice-graph-core.sha256",
+          "type": "checksum",
+          "required": true
+        }
+      ],
+      "nativeArtifacts": [
+        {
+          "packageName": "@the-open-engine/opcore-graph-core-darwin-arm64",
+          "targetPlatform": "darwin-arm64",
+          "metadata": {
+            "artifactName": "lattice-graph-core",
+            "artifactVersion": "0.1.0-alpha.0",
+            "targetPlatform": "darwin-arm64",
+            "binaryPath": "lattice-graph-core",
+            "checksumPath": "lattice-graph-core.sha256",
+            "checksumSha256": "a36a81b37ce522cf0c05aa57adf3e3c8b7ff3e50f345ee75d14f44b8d629fbb3",
+            "buildProfile": "release"
+          },
+          "binaryPath": "lattice-graph-core",
+          "checksumPath": "lattice-graph-core.sha256",
+          "metadataPath": "metadata.json",
+          "binarySha256": "a36a81b37ce522cf0c05aa57adf3e3c8b7ff3e50f345ee75d14f44b8d629fbb3",
+          "checksumFileSha256": "84e16a56bed420279a438bac16532ca4caccf62f9499d61b8acb43daa65b19ca",
+          "metadataSha256": "1d580c4841ffe87bdf6f12d69631e7795bb859480e13c7d7d23846c7f3cb13b9",
+          "descriptorArtifactId": "graph-core-binary-darwin-arm64",
+          "descriptorChecksumId": "graph-core-binary-sha256-darwin-arm64"
+        }
+      ]
+    },
+    {
+      "packageName": "@the-open-engine/opcore-graph-core-darwin-x64",
+      "packageRoot": "packages/opcore-graph-core-darwin-x64",
+      "version": "0.1.0-alpha.0",
+      "manifest": {
+        "name": "@the-open-engine/opcore-graph-core-darwin-x64",
+        "version": "0.1.0-alpha.0",
+        "license": "MIT",
+        "files": [
+          "lattice-graph-core",
+          "lattice-graph-core.sha256",
+          "metadata.json",
+          "README.md"
+        ],
+        "bins": {},
+        "dependencies": {},
+        "os": [
+          "darwin"
+        ],
+        "cpu": [
+          "x64"
+        ],
+        "bundledDependencies": []
+      },
+      "tarball": {
+        "filename": "the-open-engine-opcore-graph-core-darwin-x64-0.1.0-alpha.0.tgz",
+        "path": ".lattice/release/packages/the-open-engine-opcore-graph-core-darwin-x64-0.1.0-alpha.0.tgz",
+        "sha256": "368d60f892c079481dff9af24ef8ed3280a2ee3774ce3b464a245d99ef2c0e38",
+        "integrity": "sha512-NdtMzUyMVNr/XPB5mRGDXhA+1wzscqvMOP7foQ81yQZFK1D2tQhAINZDGYXvASwPb2R/3XOTL/iF+RtpsVLJKw==",
+        "shasum": "712e71c092f667afc3913263566d3246c78eb054"
+      },
+      "files": [
+        "README.md",
+        "lattice-graph-core",
+        "lattice-graph-core.sha256",
+        "metadata.json",
+        "package.json"
+      ],
+      "fileCount": 5,
+      "expectedFiles": [
+        "README.md",
+        "lattice-graph-core",
+        "lattice-graph-core.sha256",
+        "metadata.json",
+        "package.json"
+      ],
+      "expectedFileCount": 5,
+      "bins": {},
+      "descriptorReferences": [
+        {
+          "id": "graph-core-binary-darwin-x64",
+          "packageName": "@the-open-engine/opcore-graph-core-darwin-x64",
+          "path": "lattice-graph-core",
+          "type": "native_binary",
+          "required": true,
+          "checksumRef": "graph-core-binary-sha256-darwin-x64"
+        },
+        {
+          "id": "graph-core-metadata-darwin-x64",
+          "packageName": "@the-open-engine/opcore-graph-core-darwin-x64",
+          "path": "metadata.json",
+          "type": "manifest",
+          "required": true
+        },
+        {
+          "id": "graph-core-checksum-darwin-x64",
+          "packageName": "@the-open-engine/opcore-graph-core-darwin-x64",
+          "path": "lattice-graph-core.sha256",
+          "type": "checksum",
+          "required": true
+        }
+      ],
+      "nativeArtifacts": [
+        {
+          "packageName": "@the-open-engine/opcore-graph-core-darwin-x64",
+          "targetPlatform": "darwin-x64",
+          "metadata": {
+            "artifactName": "lattice-graph-core",
+            "artifactVersion": "0.1.0-alpha.0",
+            "targetPlatform": "darwin-x64",
+            "binaryPath": "lattice-graph-core",
+            "checksumPath": "lattice-graph-core.sha256",
+            "checksumSha256": "6652d43eec8f39e7c1b930b92e032eb268d1e4263454a89614e0d8299fc3b4e7",
+            "buildProfile": "release"
+          },
+          "binaryPath": "lattice-graph-core",
+          "checksumPath": "lattice-graph-core.sha256",
+          "metadataPath": "metadata.json",
+          "binarySha256": "6652d43eec8f39e7c1b930b92e032eb268d1e4263454a89614e0d8299fc3b4e7",
+          "checksumFileSha256": "1dec7f16ea99ceb1f7c1c7798b2841b77328d7546ab7eef09e90c898f83eea74",
+          "metadataSha256": "090548988a137c9f3f900fb736f3ae1176a2fd438742975dcb3eba04f827f413",
+          "descriptorArtifactId": "graph-core-binary-darwin-x64",
+          "descriptorChecksumId": "graph-core-binary-sha256-darwin-x64"
+        }
+      ]
+    },
+    {
+      "packageName": "@the-open-engine/opcore-graph-core-linux-x64",
+      "packageRoot": "packages/opcore-graph-core-linux-x64",
+      "version": "0.1.0-alpha.0",
+      "manifest": {
+        "name": "@the-open-engine/opcore-graph-core-linux-x64",
+        "version": "0.1.0-alpha.0",
+        "license": "MIT",
+        "files": [
+          "lattice-graph-core",
+          "lattice-graph-core.sha256",
+          "metadata.json",
+          "README.md"
+        ],
+        "bins": {},
+        "dependencies": {},
+        "os": [
+          "linux"
+        ],
+        "cpu": [
+          "x64"
+        ],
+        "bundledDependencies": []
+      },
+      "tarball": {
+        "filename": "the-open-engine-opcore-graph-core-linux-x64-0.1.0-alpha.0.tgz",
+        "path": ".lattice/release/packages/the-open-engine-opcore-graph-core-linux-x64-0.1.0-alpha.0.tgz",
+        "sha256": "0257eec51dc2b82bba564f1aa528aeb09a890ed38c272639ddb7fe19225e4d48",
+        "integrity": "sha512-sdk4AIKbDREelV0oBfZ4DpRUM7gPbI+nx7ILbRInDwYQFRBq4E0Kx9ZLPSkR9xU3K000enXx/JFzXX3FH3D0BQ==",
+        "shasum": "b25e04abac17e58e18eb03d35e3c10cb0a4ad05e"
+      },
+      "files": [
+        "README.md",
+        "lattice-graph-core",
+        "lattice-graph-core.sha256",
+        "metadata.json",
+        "package.json"
+      ],
+      "fileCount": 5,
+      "expectedFiles": [
+        "README.md",
+        "lattice-graph-core",
+        "lattice-graph-core.sha256",
+        "metadata.json",
+        "package.json"
+      ],
+      "expectedFileCount": 5,
+      "bins": {},
+      "descriptorReferences": [
+        {
+          "id": "graph-core-binary-linux-x64",
+          "packageName": "@the-open-engine/opcore-graph-core-linux-x64",
+          "path": "lattice-graph-core",
+          "type": "native_binary",
+          "required": true,
+          "checksumRef": "graph-core-binary-sha256-linux-x64"
+        },
+        {
+          "id": "graph-core-metadata-linux-x64",
+          "packageName": "@the-open-engine/opcore-graph-core-linux-x64",
+          "path": "metadata.json",
+          "type": "manifest",
+          "required": true
+        },
+        {
+          "id": "graph-core-checksum-linux-x64",
+          "packageName": "@the-open-engine/opcore-graph-core-linux-x64",
+          "path": "lattice-graph-core.sha256",
+          "type": "checksum",
+          "required": true
+        }
+      ],
+      "nativeArtifacts": [
+        {
+          "packageName": "@the-open-engine/opcore-graph-core-linux-x64",
+          "targetPlatform": "linux-x64",
+          "metadata": {
+            "artifactName": "lattice-graph-core",
+            "artifactVersion": "0.1.0-alpha.0",
+            "targetPlatform": "linux-x64",
+            "binaryPath": "lattice-graph-core",
+            "checksumPath": "lattice-graph-core.sha256",
+            "checksumSha256": "4654c6ba6383886e759fe3c805ec8c0df3b31d2e1db9d5c18626de6b2cfe758a",
+            "buildProfile": "release"
+          },
+          "binaryPath": "lattice-graph-core",
+          "checksumPath": "lattice-graph-core.sha256",
+          "metadataPath": "metadata.json",
+          "binarySha256": "4654c6ba6383886e759fe3c805ec8c0df3b31d2e1db9d5c18626de6b2cfe758a",
+          "checksumFileSha256": "d2b196e6c2bd94f803d77741de855779347b2704634b5ca06a2ab0ad4fe3d14e",
+          "metadataSha256": "bbe9341144b043ae9828d7c75fee71696281b9280bf3443831c61ef2cf56a07f",
+          "descriptorArtifactId": "graph-core-binary-linux-x64",
+          "descriptorChecksumId": "graph-core-binary-sha256-linux-x64"
+        }
+      ]
+    },
+    {
+      "packageName": "@the-open-engine/opcore-edit",
+      "packageRoot": "packages/edit",
+      "version": "0.1.0-alpha.0",
+      "manifest": {
+        "name": "@the-open-engine/opcore-edit",
+        "version": "0.1.0-alpha.0",
+        "license": "MIT",
+        "main": "dist/index.js",
+        "types": "dist/index.d.ts",
+        "files": [
+          "dist",
+          "README.md"
+        ],
+        "bins": {},
+        "dependencies": {
+          "@the-open-engine/opcore-contracts": "0.1.0-alpha.0",
+          "ts-morph": "^28.0.0"
+        },
+        "bundledDependencies": []
+      },
+      "tarball": {
+        "filename": "the-open-engine-opcore-edit-0.1.0-alpha.0.tgz",
+        "path": ".lattice/release/packages/the-open-engine-opcore-edit-0.1.0-alpha.0.tgz",
+        "sha256": "644a11cd599d33fedc3ba880b782d3256b2b7a9580c9863e34f50b7a0a98bfa8",
+        "integrity": "sha512-4lvXfV7xZpMyrEBO+AP66nHmSsE2/KY1eH8hdJznZnxhFrj1uqn5VGtxOlp7dACXTsvPokD4DYiMU8Ptby/mZQ==",
+        "shasum": "8cb383281136f6e0dafeb162e59cdff01dac220f"
+      },
+      "files": [
+        "README.md",
+        "dist/atomic-writer.d.ts",
+        "dist/atomic-writer.d.ts.map",
+        "dist/atomic-writer.js",
+        "dist/codex-patch-parser.d.ts",
+        "dist/codex-patch-parser.d.ts.map",
+        "dist/codex-patch-parser.js",
+        "dist/codex-patch-planner.d.ts",
+        "dist/codex-patch-planner.d.ts.map",
+        "dist/codex-patch-planner.js",
+        "dist/command-adapter.d.ts",
+        "dist/command-adapter.d.ts.map",
+        "dist/command-adapter.js",
+        "dist/command-parser.d.ts",
+        "dist/command-parser.d.ts.map",
+        "dist/command-parser.js",
+        "dist/content-policy.d.ts",
+        "dist/content-policy.d.ts.map",
+        "dist/content-policy.js",
+        "dist/hash.d.ts",
+        "dist/hash.d.ts.map",
+        "dist/hash.js",
+        "dist/index.d.ts",
+        "dist/index.d.ts.map",
+        "dist/index.js",
+        "dist/language-service.d.ts",
+        "dist/language-service.d.ts.map",
+        "dist/language-service.js",
+        "dist/operations.d.ts",
+        "dist/operations.d.ts.map",
+        "dist/operations.js",
+        "dist/patch-parser.d.ts",
+        "dist/patch-parser.d.ts.map",
+        "dist/patch-parser.js",
+        "dist/patch-tree-command.d.ts",
+        "dist/patch-tree-command.d.ts.map",
+        "dist/patch-tree-command.js",
+        "dist/path-policy.d.ts",
+        "dist/path-policy.d.ts.map",
+        "dist/path-policy.js",
+        "dist/planner.d.ts",
+        "dist/planner.d.ts.map",
+        "dist/planner.js",
+        "dist/symbol-command.d.ts",
+        "dist/symbol-command.d.ts.map",
+        "dist/symbol-command.js",
+        "dist/symbol-graph.d.ts",
+        "dist/symbol-graph.d.ts.map",
+        "dist/symbol-graph.js",
+        "dist/symbol-preview.d.ts",
+        "dist/symbol-preview.d.ts.map",
+        "dist/symbol-preview.js",
+        "dist/symbol-requests.d.ts",
+        "dist/symbol-requests.d.ts.map",
+        "dist/symbol-requests.js",
+        "dist/tree-planner.d.ts",
+        "dist/tree-planner.d.ts.map",
+        "dist/tree-planner.js",
+        "dist/validated-apply.d.ts",
+        "dist/validated-apply.d.ts.map",
+        "dist/validated-apply.js",
+        "dist/validation-request.d.ts",
+        "dist/validation-request.d.ts.map",
+        "dist/validation-request.js",
+        "dist/validation.d.ts",
+        "dist/validation.d.ts.map",
+        "dist/validation.js",
+        "dist/workspace.d.ts",
+        "dist/workspace.d.ts.map",
+        "dist/workspace.js",
+        "package.json"
+      ],
+      "fileCount": 71,
+      "expectedFiles": [
+        "README.md",
+        "dist/atomic-writer.d.ts",
+        "dist/atomic-writer.d.ts.map",
+        "dist/atomic-writer.js",
+        "dist/codex-patch-parser.d.ts",
+        "dist/codex-patch-parser.d.ts.map",
+        "dist/codex-patch-parser.js",
+        "dist/codex-patch-planner.d.ts",
+        "dist/codex-patch-planner.d.ts.map",
+        "dist/codex-patch-planner.js",
+        "dist/command-adapter.d.ts",
+        "dist/command-adapter.d.ts.map",
+        "dist/command-adapter.js",
+        "dist/command-parser.d.ts",
+        "dist/command-parser.d.ts.map",
+        "dist/command-parser.js",
+        "dist/content-policy.d.ts",
+        "dist/content-policy.d.ts.map",
+        "dist/content-policy.js",
+        "dist/hash.d.ts",
+        "dist/hash.d.ts.map",
+        "dist/hash.js",
+        "dist/index.d.ts",
+        "dist/index.d.ts.map",
+        "dist/index.js",
+        "dist/language-service.d.ts",
+        "dist/language-service.d.ts.map",
+        "dist/language-service.js",
+        "dist/operations.d.ts",
+        "dist/operations.d.ts.map",
+        "dist/operations.js",
+        "dist/patch-parser.d.ts",
+        "dist/patch-parser.d.ts.map",
+        "dist/patch-parser.js",
+        "dist/patch-tree-command.d.ts",
+        "dist/patch-tree-command.d.ts.map",
+        "dist/patch-tree-command.js",
+        "dist/path-policy.d.ts",
+        "dist/path-policy.d.ts.map",
+        "dist/path-policy.js",
+        "dist/planner.d.ts",
+        "dist/planner.d.ts.map",
+        "dist/planner.js",
+        "dist/symbol-command.d.ts",
+        "dist/symbol-command.d.ts.map",
+        "dist/symbol-command.js",
+        "dist/symbol-graph.d.ts",
+        "dist/symbol-graph.d.ts.map",
+        "dist/symbol-graph.js",
+        "dist/symbol-preview.d.ts",
+        "dist/symbol-preview.d.ts.map",
+        "dist/symbol-preview.js",
+        "dist/symbol-requests.d.ts",
+        "dist/symbol-requests.d.ts.map",
+        "dist/symbol-requests.js",
+        "dist/tree-planner.d.ts",
+        "dist/tree-planner.d.ts.map",
+        "dist/tree-planner.js",
+        "dist/validated-apply.d.ts",
+        "dist/validated-apply.d.ts.map",
+        "dist/validated-apply.js",
+        "dist/validation-request.d.ts",
+        "dist/validation-request.d.ts.map",
+        "dist/validation-request.js",
+        "dist/validation.d.ts",
+        "dist/validation.d.ts.map",
+        "dist/validation.js",
+        "dist/workspace.d.ts",
+        "dist/workspace.d.ts.map",
+        "dist/workspace.js",
+        "package.json"
+      ],
+      "expectedFileCount": 71,
+      "bins": {},
+      "descriptorReferences": [],
+      "nativeArtifacts": []
+    },
+    {
+      "packageName": "@the-open-engine/opcore-validation",
+      "packageRoot": "packages/validation",
+      "version": "0.1.0-alpha.0",
+      "manifest": {
+        "name": "@the-open-engine/opcore-validation",
+        "version": "0.1.0-alpha.0",
+        "license": "MIT",
+        "main": "dist/index.js",
+        "types": "dist/index.d.ts",
+        "files": [
+          "dist",
+          "README.md"
+        ],
+        "bins": {},
+        "dependencies": {
+          "@the-open-engine/opcore-contracts": "0.1.0-alpha.0"
+        },
+        "bundledDependencies": []
+      },
+      "tarball": {
+        "filename": "the-open-engine-opcore-validation-0.1.0-alpha.0.tgz",
+        "path": ".lattice/release/packages/the-open-engine-opcore-validation-0.1.0-alpha.0.tgz",
+        "sha256": "196a250ddb3fee9d1083f56b3f3a8a1e0319db52ee5a65a4730629e7a66d8549",
+        "integrity": "sha512-RuYjYaVXg3jalcco0Sc/KxWKIsxpw4fa0rnTdbtoMA0bJ4niZ4A/VV2dWXc/7NH2KKWX3LBtGl1ctYSBcKsHaQ==",
+        "shasum": "c5eede9ae0659ca2845db146a590a5cc3b597e43"
+      },
+      "files": [
+        "README.md",
+        "dist/aggregation.d.ts",
+        "dist/aggregation.d.ts.map",
+        "dist/aggregation.js",
+        "dist/command-adapter.d.ts",
+        "dist/command-adapter.d.ts.map",
+        "dist/command-adapter.js",
+        "dist/command-options.d.ts",
+        "dist/command-options.d.ts.map",
+        "dist/command-options.js",
+        "dist/graph-client.d.ts",
+        "dist/graph-client.d.ts.map",
+        "dist/graph-client.js",
+        "dist/index.d.ts",
+        "dist/index.d.ts.map",
+        "dist/index.js",
+        "dist/overlays.d.ts",
+        "dist/overlays.d.ts.map",
+        "dist/overlays.js",
+        "dist/registry.d.ts",
+        "dist/registry.d.ts.map",
+        "dist/registry.js",
+        "dist/request.d.ts",
+        "dist/request.d.ts.map",
+        "dist/request.js",
+        "dist/runner.d.ts",
+        "dist/runner.d.ts.map",
+        "dist/runner.js",
+        "dist/scope.d.ts",
+        "dist/scope.d.ts.map",
+        "dist/scope.js",
+        "dist/status-payload.d.ts",
+        "dist/status-payload.d.ts.map",
+        "dist/status-payload.js",
+        "dist/workspace.d.ts",
+        "dist/workspace.d.ts.map",
+        "dist/workspace.js",
+        "package.json"
+      ],
+      "fileCount": 38,
+      "expectedFiles": [
+        "README.md",
+        "dist/aggregation.d.ts",
+        "dist/aggregation.d.ts.map",
+        "dist/aggregation.js",
+        "dist/command-adapter.d.ts",
+        "dist/command-adapter.d.ts.map",
+        "dist/command-adapter.js",
+        "dist/command-options.d.ts",
+        "dist/command-options.d.ts.map",
+        "dist/command-options.js",
+        "dist/graph-client.d.ts",
+        "dist/graph-client.d.ts.map",
+        "dist/graph-client.js",
+        "dist/index.d.ts",
+        "dist/index.d.ts.map",
+        "dist/index.js",
+        "dist/overlays.d.ts",
+        "dist/overlays.d.ts.map",
+        "dist/overlays.js",
+        "dist/registry.d.ts",
+        "dist/registry.d.ts.map",
+        "dist/registry.js",
+        "dist/request.d.ts",
+        "dist/request.d.ts.map",
+        "dist/request.js",
+        "dist/runner.d.ts",
+        "dist/runner.d.ts.map",
+        "dist/runner.js",
+        "dist/scope.d.ts",
+        "dist/scope.d.ts.map",
+        "dist/scope.js",
+        "dist/status-payload.d.ts",
+        "dist/status-payload.d.ts.map",
+        "dist/status-payload.js",
+        "dist/workspace.d.ts",
+        "dist/workspace.d.ts.map",
+        "dist/workspace.js",
+        "package.json"
+      ],
+      "expectedFileCount": 38,
+      "bins": {},
+      "descriptorReferences": [],
+      "nativeArtifacts": []
+    },
+    {
+      "packageName": "@the-open-engine/opcore-validation-rust",
+      "packageRoot": "packages/validation-rust",
+      "version": "0.1.0-alpha.0",
+      "manifest": {
+        "name": "@the-open-engine/opcore-validation-rust",
+        "version": "0.1.0-alpha.0",
+        "license": "MIT",
+        "main": "dist/index.js",
+        "types": "dist/index.d.ts",
+        "files": [
+          "dist",
+          "README.md"
+        ],
+        "bins": {},
+        "dependencies": {
+          "@the-open-engine/opcore-contracts": "0.1.0-alpha.0",
+          "@the-open-engine/opcore-validation": "0.1.0-alpha.0"
+        },
+        "bundledDependencies": []
+      },
+      "tarball": {
+        "filename": "the-open-engine-opcore-validation-rust-0.1.0-alpha.0.tgz",
+        "path": ".lattice/release/packages/the-open-engine-opcore-validation-rust-0.1.0-alpha.0.tgz",
+        "sha256": "d24a401104a220ab3951f6395edd4bd809a77a13661830be58391315dba77c40",
+        "integrity": "sha512-cXvSj5o0TLonU/JN1r/LI+2NdWs/epWUx/ktkXobLQ/sMet9Kx7yov1efir/AhY9MjmKwySKgXgr2AzdVZXe2g==",
+        "shasum": "dd7dcb33ff78a477fb21015775f6d56087329f0e"
+      },
+      "files": [
+        "README.md",
+        "dist/cargo-check.d.ts",
+        "dist/cargo-check.d.ts.map",
+        "dist/cargo-check.js",
+        "dist/cargo-metadata.d.ts",
+        "dist/cargo-metadata.d.ts.map",
+        "dist/cargo-metadata.js",
+        "dist/check-constants.d.ts",
+        "dist/check-constants.d.ts.map",
+        "dist/check-constants.js",
+        "dist/check-ids.d.ts",
+        "dist/check-ids.d.ts.map",
+        "dist/check-ids.js",
+        "dist/diagnostics.d.ts",
+        "dist/diagnostics.d.ts.map",
+        "dist/diagnostics.js",
+        "dist/file-length-check.d.ts",
+        "dist/file-length-check.d.ts.map",
+        "dist/file-length-check.js",
+        "dist/fmt-check.d.ts",
+        "dist/fmt-check.d.ts.map",
+        "dist/fmt-check.js",
+        "dist/function-metrics-check.d.ts",
+        "dist/function-metrics-check.d.ts.map",
+        "dist/function-metrics-check.js",
+        "dist/import-graph-check.d.ts",
+        "dist/import-graph-check.d.ts.map",
+        "dist/import-graph-check.js",
+        "dist/index.d.ts",
+        "dist/index.d.ts.map",
+        "dist/index.js",
+        "dist/materialize.d.ts",
+        "dist/materialize.d.ts.map",
+        "dist/materialize.js",
+        "dist/process.d.ts",
+        "dist/process.d.ts.map",
+        "dist/process.js",
+        "dist/retained-compatibility.d.ts",
+        "dist/retained-compatibility.d.ts.map",
+        "dist/retained-compatibility.js",
+        "dist/source-files.d.ts",
+        "dist/source-files.d.ts.map",
+        "dist/source-files.js",
+        "dist/source-hygiene-check.d.ts",
+        "dist/source-hygiene-check.d.ts.map",
+        "dist/source-hygiene-check.js",
+        "dist/toolchain.d.ts",
+        "dist/toolchain.d.ts.map",
+        "dist/toolchain.js",
+        "dist/unused-deps-check.d.ts",
+        "dist/unused-deps-check.d.ts.map",
+        "dist/unused-deps-check.js",
+        "package.json"
+      ],
+      "fileCount": 53,
+      "expectedFiles": [
+        "README.md",
+        "dist/cargo-check.d.ts",
+        "dist/cargo-check.d.ts.map",
+        "dist/cargo-check.js",
+        "dist/cargo-metadata.d.ts",
+        "dist/cargo-metadata.d.ts.map",
+        "dist/cargo-metadata.js",
+        "dist/check-constants.d.ts",
+        "dist/check-constants.d.ts.map",
+        "dist/check-constants.js",
+        "dist/check-ids.d.ts",
+        "dist/check-ids.d.ts.map",
+        "dist/check-ids.js",
+        "dist/diagnostics.d.ts",
+        "dist/diagnostics.d.ts.map",
+        "dist/diagnostics.js",
+        "dist/file-length-check.d.ts",
+        "dist/file-length-check.d.ts.map",
+        "dist/file-length-check.js",
+        "dist/fmt-check.d.ts",
+        "dist/fmt-check.d.ts.map",
+        "dist/fmt-check.js",
+        "dist/function-metrics-check.d.ts",
+        "dist/function-metrics-check.d.ts.map",
+        "dist/function-metrics-check.js",
+        "dist/import-graph-check.d.ts",
+        "dist/import-graph-check.d.ts.map",
+        "dist/import-graph-check.js",
+        "dist/index.d.ts",
+        "dist/index.d.ts.map",
+        "dist/index.js",
+        "dist/materialize.d.ts",
+        "dist/materialize.d.ts.map",
+        "dist/materialize.js",
+        "dist/process.d.ts",
+        "dist/process.d.ts.map",
+        "dist/process.js",
+        "dist/retained-compatibility.d.ts",
+        "dist/retained-compatibility.d.ts.map",
+        "dist/retained-compatibility.js",
+        "dist/source-files.d.ts",
+        "dist/source-files.d.ts.map",
+        "dist/source-files.js",
+        "dist/source-hygiene-check.d.ts",
+        "dist/source-hygiene-check.d.ts.map",
+        "dist/source-hygiene-check.js",
+        "dist/toolchain.d.ts",
+        "dist/toolchain.d.ts.map",
+        "dist/toolchain.js",
+        "dist/unused-deps-check.d.ts",
+        "dist/unused-deps-check.d.ts.map",
+        "dist/unused-deps-check.js",
+        "package.json"
+      ],
+      "expectedFileCount": 53,
+      "bins": {},
+      "descriptorReferences": [],
+      "nativeArtifacts": []
+    },
+    {
+      "packageName": "@the-open-engine/opcore-validation-typescript",
+      "packageRoot": "packages/validation-typescript",
+      "version": "0.1.0-alpha.0",
+      "manifest": {
+        "name": "@the-open-engine/opcore-validation-typescript",
+        "version": "0.1.0-alpha.0",
+        "license": "MIT",
+        "main": "dist/index.js",
+        "types": "dist/index.d.ts",
+        "files": [
+          "dist",
+          "README.md"
+        ],
+        "bins": {},
+        "dependencies": {
+          "@the-open-engine/opcore-contracts": "0.1.0-alpha.0",
+          "@the-open-engine/opcore-validation": "0.1.0-alpha.0",
+          "typescript": "^5.9.3"
+        },
+        "bundledDependencies": []
+      },
+      "tarball": {
+        "filename": "the-open-engine-opcore-validation-typescript-0.1.0-alpha.0.tgz",
+        "path": ".lattice/release/packages/the-open-engine-opcore-validation-typescript-0.1.0-alpha.0.tgz",
+        "sha256": "67fc29226b6509fd28290f6c86c75fdf6ba229c1599121baa3b5a01cb664a1af",
+        "integrity": "sha512-2eAGFx8qovgeYw4fuG+bbifv8Fh7MnEzWLGfqmnVgiTq2kLvI3J3ag4xu80Ml4i3vkmbEjqsMfqUE7PfQC2qhA==",
+        "shasum": "c2d2fd0c6c56151dddfe161bb3e336fac31cf564"
+      },
+      "files": [
+        "README.md",
+        "dist/check-constants.d.ts",
+        "dist/check-constants.d.ts.map",
+        "dist/check-constants.js",
+        "dist/check-ids.d.ts",
+        "dist/check-ids.d.ts.map",
+        "dist/check-ids.js",
+        "dist/compiler-host.d.ts",
+        "dist/compiler-host.d.ts.map",
+        "dist/compiler-host.js",
+        "dist/compiler-options.d.ts",
+        "dist/compiler-options.d.ts.map",
+        "dist/compiler-options.js",
+        "dist/dead-code-check.d.ts",
+        "dist/dead-code-check.d.ts.map",
+        "dist/dead-code-check.js",
+        "dist/diagnostics.d.ts",
+        "dist/diagnostics.d.ts.map",
+        "dist/diagnostics.js",
+        "dist/graph-requirements.d.ts",
+        "dist/graph-requirements.d.ts.map",
+        "dist/graph-requirements.js",
+        "dist/import-graph-check.d.ts",
+        "dist/import-graph-check.d.ts.map",
+        "dist/import-graph-check.js",
+        "dist/index.d.ts",
+        "dist/index.d.ts.map",
+        "dist/index.js",
+        "dist/relevant-tests-check.d.ts",
+        "dist/relevant-tests-check.d.ts.map",
+        "dist/relevant-tests-check.js",
+        "dist/source-files.d.ts",
+        "dist/source-files.d.ts.map",
+        "dist/source-files.js",
+        "dist/syntax-check.d.ts",
+        "dist/syntax-check.d.ts.map",
+        "dist/syntax-check.js",
+        "dist/type-check.d.ts",
+        "dist/type-check.d.ts.map",
+        "dist/type-check.js",
+        "package.json"
+      ],
+      "fileCount": 41,
+      "expectedFiles": [
+        "README.md",
+        "dist/check-constants.d.ts",
+        "dist/check-constants.d.ts.map",
+        "dist/check-constants.js",
+        "dist/check-ids.d.ts",
+        "dist/check-ids.d.ts.map",
+        "dist/check-ids.js",
+        "dist/compiler-host.d.ts",
+        "dist/compiler-host.d.ts.map",
+        "dist/compiler-host.js",
+        "dist/compiler-options.d.ts",
+        "dist/compiler-options.d.ts.map",
+        "dist/compiler-options.js",
+        "dist/dead-code-check.d.ts",
+        "dist/dead-code-check.d.ts.map",
+        "dist/dead-code-check.js",
+        "dist/diagnostics.d.ts",
+        "dist/diagnostics.d.ts.map",
+        "dist/diagnostics.js",
+        "dist/graph-requirements.d.ts",
+        "dist/graph-requirements.d.ts.map",
+        "dist/graph-requirements.js",
+        "dist/import-graph-check.d.ts",
+        "dist/import-graph-check.d.ts.map",
+        "dist/import-graph-check.js",
+        "dist/index.d.ts",
+        "dist/index.d.ts.map",
+        "dist/index.js",
+        "dist/relevant-tests-check.d.ts",
+        "dist/relevant-tests-check.d.ts.map",
+        "dist/relevant-tests-check.js",
+        "dist/source-files.d.ts",
+        "dist/source-files.d.ts.map",
+        "dist/source-files.js",
+        "dist/syntax-check.d.ts",
+        "dist/syntax-check.d.ts.map",
+        "dist/syntax-check.js",
+        "dist/type-check.d.ts",
+        "dist/type-check.d.ts.map",
+        "dist/type-check.js",
+        "package.json"
+      ],
+      "expectedFileCount": 41,
+      "bins": {},
+      "descriptorReferences": [],
+      "nativeArtifacts": []
+    },
+    {
+      "packageName": "@the-open-engine/opcore-asp-provider",
+      "packageRoot": "packages/asp-provider",
+      "version": "0.1.0-alpha.0",
+      "manifest": {
+        "name": "@the-open-engine/opcore-asp-provider",
+        "version": "0.1.0-alpha.0",
+        "license": "MIT",
+        "main": "dist/index.js",
+        "types": "dist/index.d.ts",
+        "files": [
+          "dist",
+          "README.md"
+        ],
+        "bins": {
+          "opcore-asp-provider": "dist/index.js"
+        },
+        "dependencies": {
+          "@the-open-engine/opcore-contracts": "0.1.0-alpha.0",
+          "@the-open-engine/opcore-graph": "0.1.0-alpha.0",
+          "@the-open-engine/opcore-validation": "0.1.0-alpha.0",
+          "@the-open-engine/opcore-validation-rust": "0.1.0-alpha.0",
+          "@the-open-engine/opcore-validation-typescript": "0.1.0-alpha.0"
+        },
+        "bundledDependencies": []
+      },
+      "tarball": {
+        "filename": "the-open-engine-opcore-asp-provider-0.1.0-alpha.0.tgz",
+        "path": ".lattice/release/packages/the-open-engine-opcore-asp-provider-0.1.0-alpha.0.tgz",
+        "sha256": "8d5f39f48d6c74aded4ab7b9811526a3f9e24c1b06f941295ca98ceb5420fb4c",
+        "integrity": "sha512-9/1Qr6DzKO6P3JWeUau0Kc+3nj1nlTHo0BDb/wZYNtr2e0lJgwOuFAW2s94GdJN08PsiiOzlD3JXdxbBS+JOtg==",
+        "shasum": "e6944b2b3b10a241b60836d801b590b89046b08b"
+      },
+      "files": [
+        "README.md",
+        "dist/digests.d.ts",
+        "dist/digests.d.ts.map",
+        "dist/digests.js",
+        "dist/index.d.ts",
+        "dist/index.d.ts.map",
+        "dist/index.js",
+        "dist/json-rpc.d.ts",
+        "dist/json-rpc.d.ts.map",
+        "dist/json-rpc.js",
+        "dist/manifest.d.ts",
+        "dist/manifest.d.ts.map",
+        "dist/manifest.js",
+        "dist/manifests/opcore-asp-provider.provisional.json",
+        "dist/mapping.d.ts",
+        "dist/mapping.d.ts.map",
+        "dist/mapping.js",
+        "dist/protocol.d.ts",
+        "dist/protocol.d.ts.map",
+        "dist/protocol.js",
+        "dist/validation-composition.d.ts",
+        "dist/validation-composition.d.ts.map",
+        "dist/validation-composition.js",
+        "dist/workspace.d.ts",
+        "dist/workspace.d.ts.map",
+        "dist/workspace.js",
+        "package.json"
+      ],
+      "fileCount": 27,
+      "expectedFiles": [
+        "README.md",
+        "dist/digests.d.ts",
+        "dist/digests.d.ts.map",
+        "dist/digests.js",
+        "dist/index.d.ts",
+        "dist/index.d.ts.map",
+        "dist/index.js",
+        "dist/json-rpc.d.ts",
+        "dist/json-rpc.d.ts.map",
+        "dist/json-rpc.js",
+        "dist/manifest.d.ts",
+        "dist/manifest.d.ts.map",
+        "dist/manifest.js",
+        "dist/manifests/opcore-asp-provider.provisional.json",
+        "dist/mapping.d.ts",
+        "dist/mapping.d.ts.map",
+        "dist/mapping.js",
+        "dist/protocol.d.ts",
+        "dist/protocol.d.ts.map",
+        "dist/protocol.js",
+        "dist/validation-composition.d.ts",
+        "dist/validation-composition.d.ts.map",
+        "dist/validation-composition.js",
+        "dist/workspace.d.ts",
+        "dist/workspace.d.ts.map",
+        "dist/workspace.js",
+        "package.json"
+      ],
+      "expectedFileCount": 27,
+      "bins": {
+        "opcore-asp-provider": "dist/index.js"
+      },
+      "descriptorReferences": [],
+      "nativeArtifacts": []
+    }
+  ],
+  "descriptor": {
+    "path": "packages/opcore/dist/descriptors/lattice.managed-tool.json",
+    "packageName": "@the-open-engine/opcore",
+    "checksumSha256": "274f1e3cd81c7c8d6445610158f2ceda142f67727c0f5b4b8130371c481d0fc7",
+    "descriptor": {
+      "schemaVersion": 1,
+      "descriptorKind": "aggregate_lattice",
+      "aggregateIdentity": {
+        "name": "lattice",
+        "releaseLine": "lattice",
+        "packageName": "@the-open-engine/opcore",
+        "version": "0.1.0-alpha.0"
+      },
+      "packageIdentity": {
+        "packageName": "@the-open-engine/opcore",
+        "artifactName": "@the-open-engine/opcore",
+        "version": "0.1.0-alpha.0"
+      },
+      "entrypoints": [
+        {
+          "bin": "lattice",
+          "packageName": "@the-open-engine/opcore",
+          "path": "dist/lattice/index.js",
+          "command": [
+            "lattice"
+          ]
+        }
+      ],
+      "commandGroups": [
+        {
+          "name": "graph",
+          "canonicalCommand": [
+            "lattice",
+            "graph"
+          ],
+          "commands": [
+            "build",
+            "update",
+            "watch",
+            "status",
+            "query",
+            "serve",
+            "impact",
+            "review-context",
+            "detect-changes",
+            "search"
+          ],
+          "packageName": "@the-open-engine/opcore-graph"
+        },
+        {
+          "name": "inspect",
+          "canonicalCommand": [
+            "lattice",
+            "inspect"
+          ],
+          "commands": [
+            "symbols",
+            "definition",
+            "references",
+            "signature",
+            "implementations",
+            "search"
+          ],
+          "packageName": "@the-open-engine/opcore"
+        },
+        {
+          "name": "edit",
+          "canonicalCommand": [
+            "lattice",
+            "edit"
+          ],
+          "commands": [
+            "exact",
+            "multi",
+            "search-replace",
+            "check",
+            "apply",
+            "patch",
+            "tree",
+            "rename",
+            "move",
+            "signature"
+          ],
+          "packageName": "@the-open-engine/opcore-edit"
+        },
+        {
+          "name": "check",
+          "canonicalCommand": [
+            "lattice",
+            "check"
+          ],
+          "commands": [
+            "files",
+            "staged",
+            "changed",
+            "tree",
+            "all",
+            "manifest"
+          ],
+          "packageName": "@the-open-engine/opcore-validation"
+        },
+        {
+          "name": "validate",
+          "canonicalCommand": [
+            "lattice",
+            "validate"
+          ],
+          "commands": [
+            "request",
+            "hypothetical",
+            "pre-write",
+            "manifest"
+          ],
+          "packageName": "@the-open-engine/opcore-validation"
+        },
+        {
+          "name": "status",
+          "canonicalCommand": [
+            "lattice",
+            "status"
+          ],
+          "commands": [
+            "status"
+          ],
+          "packageName": "@the-open-engine/opcore"
+        },
+        {
+          "name": "doctor",
+          "canonicalCommand": [
+            "lattice",
+            "doctor"
+          ],
+          "commands": [
+            "doctor"
+          ],
+          "packageName": "@the-open-engine/opcore"
+        }
+      ],
+      "healthProbes": [
+        {
+          "id": "status-json",
+          "command": [
+            "lattice",
+            "status",
+            "--json"
+          ],
+          "expectedExitCode": 0,
+          "output": "json"
+        },
+        {
+          "id": "doctor-json",
+          "command": [
+            "lattice",
+            "doctor",
+            "--json"
+          ],
+          "expectedExitCode": 0,
+          "output": "json"
+        },
+        {
+          "id": "graph-status-json",
+          "command": [
+            "lattice",
+            "graph",
+            "status",
+            "--json"
+          ],
+          "expectedExitCode": 0,
+          "output": "json"
+        },
+        {
+          "id": "check-manifest-json",
+          "command": [
+            "lattice",
+            "check",
+            "manifest",
+            "--json"
+          ],
+          "expectedExitCode": 0,
+          "output": "json"
+        },
+        {
+          "id": "validate-manifest-json",
+          "command": [
+            "lattice",
+            "validate",
+            "manifest",
+            "--json"
+          ],
+          "expectedExitCode": 0,
+          "output": "json"
+        }
+      ],
+      "capabilities": {
+        "graph": {
+          "provider": "lattice-graph",
+          "schemaVersion": 1,
+          "commands": [
+            "build",
+            "update",
+            "watch",
+            "status",
+            "query",
+            "impact",
+            "review-context",
+            "detect-changes",
+            "search",
+            "serve"
+          ],
+          "queryKinds": [
+            "nodes",
+            "edges",
+            "neighbors",
+            "symbols",
+            "impact",
+            "callers_of",
+            "callees_of",
+            "importers_of",
+            "imports_of",
+            "tests_for",
+            "children_of",
+            "file_summary",
+            "review_context",
+            "detect_changes",
+            "search"
+          ],
+          "daemonOperations": [
+            "ping",
+            "status",
+            "query",
+            "search",
+            "shutdown"
+          ],
+          "nativeArtifacts": [
+            {
+              "targetPlatform": "darwin-arm64",
+              "packageName": "@the-open-engine/opcore-graph-core-darwin-arm64",
+              "binaryPath": "lattice-graph-core",
+              "metadataPath": "metadata.json",
+              "checksumPath": "lattice-graph-core.sha256",
+              "artifactIds": {
+                "binaryArtifactId": "graph-core-binary-darwin-arm64",
+                "metadataArtifactId": "graph-core-metadata-darwin-arm64",
+                "checksumArtifactId": "graph-core-checksum-darwin-arm64",
+                "checksumId": "graph-core-binary-sha256-darwin-arm64"
+              }
+            },
+            {
+              "targetPlatform": "darwin-x64",
+              "packageName": "@the-open-engine/opcore-graph-core-darwin-x64",
+              "binaryPath": "lattice-graph-core",
+              "metadataPath": "metadata.json",
+              "checksumPath": "lattice-graph-core.sha256",
+              "artifactIds": {
+                "binaryArtifactId": "graph-core-binary-darwin-x64",
+                "metadataArtifactId": "graph-core-metadata-darwin-x64",
+                "checksumArtifactId": "graph-core-checksum-darwin-x64",
+                "checksumId": "graph-core-binary-sha256-darwin-x64"
+              }
+            },
+            {
+              "targetPlatform": "linux-x64",
+              "packageName": "@the-open-engine/opcore-graph-core-linux-x64",
+              "binaryPath": "lattice-graph-core",
+              "metadataPath": "metadata.json",
+              "checksumPath": "lattice-graph-core.sha256",
+              "artifactIds": {
+                "binaryArtifactId": "graph-core-binary-linux-x64",
+                "metadataArtifactId": "graph-core-metadata-linux-x64",
+                "checksumArtifactId": "graph-core-checksum-linux-x64",
+                "checksumId": "graph-core-binary-sha256-linux-x64"
+              }
+            }
+          ]
+        },
+        "edit": {
+          "commands": [
+            "exact",
+            "multi",
+            "search-replace",
+            "patch",
+            "tree",
+            "rename",
+            "move",
+            "signature",
+            "check",
+            "apply"
+          ],
+          "safeEditModes": [
+            "exact",
+            "multi",
+            "search-replace",
+            "patch",
+            "tree"
+          ],
+          "symbolEditModes": [
+            "rename",
+            "move",
+            "signature"
+          ],
+          "validationRequiredForApply": true,
+          "dryRun": true
+        },
+        "validation": {
+          "checkRoutes": [
+            "files",
+            "staged",
+            "changed",
+            "tree",
+            "all",
+            "manifest"
+          ],
+          "validateRoutes": [
+            "request",
+            "hypothetical",
+            "pre-write",
+            "manifest"
+          ],
+          "scopeModes": [
+            "files",
+            "changed",
+            "staged",
+            "tree",
+            "all",
+            "repo",
+            "package"
+          ],
+          "graphModes": [
+            "optional",
+            "required"
+          ],
+          "hypothetical": true,
+          "statusSurfaces": [
+            "status",
+            "doctor"
+          ],
+          "checkIds": [
+            "typescript.syntax",
+            "typescript.types",
+            "typescript.import-graph",
+            "typescript.dead-code",
+            "typescript.relevant-tests",
+            "rust.source-hygiene",
+            "rust.fmt",
+            "rust.cargo-check",
+            "rust.clippy",
+            "rust.rustdoc",
+            "rust.import-graph",
+            "rust.dead-code",
+            "rust.unused-deps",
+            "rust.file-length",
+            "rust.function-metrics"
+          ]
+        }
+      },
+      "artifacts": [
+        {
+          "id": "cli-entrypoint",
+          "packageName": "@the-open-engine/opcore",
+          "path": "dist/lattice/index.js",
+          "type": "entrypoint",
+          "required": true
+        },
+        {
+          "id": "descriptor",
+          "packageName": "@the-open-engine/opcore",
+          "path": "dist/descriptors/lattice.managed-tool.json",
+          "type": "descriptor",
+          "required": true
+        },
+        {
+          "id": "contracts-schema",
+          "packageName": "@the-open-engine/opcore-contracts",
+          "path": "schemas/lattice-contracts.schema.json",
+          "type": "schema",
+          "required": true
+        },
+        {
+          "id": "graph-core-binary-darwin-arm64",
+          "packageName": "@the-open-engine/opcore-graph-core-darwin-arm64",
+          "path": "lattice-graph-core",
+          "type": "native_binary",
+          "required": true,
+          "checksumRef": "graph-core-binary-sha256-darwin-arm64"
+        },
+        {
+          "id": "graph-core-metadata-darwin-arm64",
+          "packageName": "@the-open-engine/opcore-graph-core-darwin-arm64",
+          "path": "metadata.json",
+          "type": "manifest",
+          "required": true
+        },
+        {
+          "id": "graph-core-checksum-darwin-arm64",
+          "packageName": "@the-open-engine/opcore-graph-core-darwin-arm64",
+          "path": "lattice-graph-core.sha256",
+          "type": "checksum",
+          "required": true
+        },
+        {
+          "id": "graph-core-binary-darwin-x64",
+          "packageName": "@the-open-engine/opcore-graph-core-darwin-x64",
+          "path": "lattice-graph-core",
+          "type": "native_binary",
+          "required": true,
+          "checksumRef": "graph-core-binary-sha256-darwin-x64"
+        },
+        {
+          "id": "graph-core-metadata-darwin-x64",
+          "packageName": "@the-open-engine/opcore-graph-core-darwin-x64",
+          "path": "metadata.json",
+          "type": "manifest",
+          "required": true
+        },
+        {
+          "id": "graph-core-checksum-darwin-x64",
+          "packageName": "@the-open-engine/opcore-graph-core-darwin-x64",
+          "path": "lattice-graph-core.sha256",
+          "type": "checksum",
+          "required": true
+        },
+        {
+          "id": "graph-core-binary-linux-x64",
+          "packageName": "@the-open-engine/opcore-graph-core-linux-x64",
+          "path": "lattice-graph-core",
+          "type": "native_binary",
+          "required": true,
+          "checksumRef": "graph-core-binary-sha256-linux-x64"
+        },
+        {
+          "id": "graph-core-metadata-linux-x64",
+          "packageName": "@the-open-engine/opcore-graph-core-linux-x64",
+          "path": "metadata.json",
+          "type": "manifest",
+          "required": true
+        },
+        {
+          "id": "graph-core-checksum-linux-x64",
+          "packageName": "@the-open-engine/opcore-graph-core-linux-x64",
+          "path": "lattice-graph-core.sha256",
+          "type": "checksum",
+          "required": true
+        }
+      ],
+      "checksums": [
+        {
+          "id": "graph-core-binary-sha256-darwin-arm64",
+          "packageName": "@the-open-engine/opcore-graph-core-darwin-arm64",
+          "path": "lattice-graph-core.sha256",
+          "algorithm": "sha256",
+          "artifactRef": "graph-core-binary-darwin-arm64",
+          "required": true
+        },
+        {
+          "id": "graph-core-binary-sha256-darwin-x64",
+          "packageName": "@the-open-engine/opcore-graph-core-darwin-x64",
+          "path": "lattice-graph-core.sha256",
+          "algorithm": "sha256",
+          "artifactRef": "graph-core-binary-darwin-x64",
+          "required": true
+        },
+        {
+          "id": "graph-core-binary-sha256-linux-x64",
+          "packageName": "@the-open-engine/opcore-graph-core-linux-x64",
+          "path": "lattice-graph-core.sha256",
+          "algorithm": "sha256",
+          "artifactRef": "graph-core-binary-linux-x64",
+          "required": true
+        }
+      ],
+      "provenanceHooks": [
+        {
+          "id": "pack-check",
+          "command": [
+            "npm",
+            "run",
+            "pack:check"
+          ],
+          "expectedExitCode": 0
+        },
+        {
+          "id": "provenance-check",
+          "command": [
+            "npm",
+            "run",
+            "provenance:check"
+          ],
+          "expectedExitCode": 0
+        }
+      ],
+      "optionalSurfaces": [
+        {
+          "issue": "#13",
+          "id": "coverage",
+          "classification": "deferred",
+          "status": "deferred"
+        },
+        {
+          "issue": "#14",
+          "id": "flows",
+          "classification": "optional",
+          "status": "deferred"
+        },
+        {
+          "issue": "#15",
+          "id": "communities",
+          "classification": "optional",
+          "status": "deferred"
+        },
+        {
+          "issue": "#16",
+          "id": "read_only_suggestions",
+          "classification": "supporting",
+          "status": "deferred"
+        }
+      ]
+    },
+    "commandGroups": [
+      {
+        "name": "graph",
+        "canonicalCommand": [
+          "lattice",
+          "graph"
+        ],
+        "packageName": "@the-open-engine/opcore-graph"
+      },
+      {
+        "name": "inspect",
+        "canonicalCommand": [
+          "lattice",
+          "inspect"
+        ],
+        "packageName": "@the-open-engine/opcore"
+      },
+      {
+        "name": "edit",
+        "canonicalCommand": [
+          "lattice",
+          "edit"
+        ],
+        "packageName": "@the-open-engine/opcore-edit"
+      },
+      {
+        "name": "check",
+        "canonicalCommand": [
+          "lattice",
+          "check"
+        ],
+        "packageName": "@the-open-engine/opcore-validation"
+      },
+      {
+        "name": "validate",
+        "canonicalCommand": [
+          "lattice",
+          "validate"
+        ],
+        "packageName": "@the-open-engine/opcore-validation"
+      },
+      {
+        "name": "status",
+        "canonicalCommand": [
+          "lattice",
+          "status"
+        ],
+        "packageName": "@the-open-engine/opcore"
+      },
+      {
+        "name": "doctor",
+        "canonicalCommand": [
+          "lattice",
+          "doctor"
+        ],
+        "packageName": "@the-open-engine/opcore"
+      }
+    ],
+    "resolvedArtifacts": [
+      {
+        "id": "cli-entrypoint",
+        "packageName": "@the-open-engine/opcore",
+        "path": "dist/lattice/index.js",
+        "type": "entrypoint",
+        "required": true,
+        "packageFile": true
+      },
+      {
+        "id": "descriptor",
+        "packageName": "@the-open-engine/opcore",
+        "path": "dist/descriptors/lattice.managed-tool.json",
+        "type": "descriptor",
+        "required": true,
+        "packageFile": true
+      },
+      {
+        "id": "contracts-schema",
+        "packageName": "@the-open-engine/opcore-contracts",
+        "path": "schemas/lattice-contracts.schema.json",
+        "type": "schema",
+        "required": true,
+        "packageFile": true
+      },
+      {
+        "id": "graph-core-binary-darwin-arm64",
+        "packageName": "@the-open-engine/opcore-graph-core-darwin-arm64",
+        "path": "lattice-graph-core",
+        "type": "native_binary",
+        "required": true,
+        "packageFile": true,
+        "checksumRef": "graph-core-binary-sha256-darwin-arm64"
+      },
+      {
+        "id": "graph-core-metadata-darwin-arm64",
+        "packageName": "@the-open-engine/opcore-graph-core-darwin-arm64",
+        "path": "metadata.json",
+        "type": "manifest",
+        "required": true,
+        "packageFile": true
+      },
+      {
+        "id": "graph-core-checksum-darwin-arm64",
+        "packageName": "@the-open-engine/opcore-graph-core-darwin-arm64",
+        "path": "lattice-graph-core.sha256",
+        "type": "checksum",
+        "required": true,
+        "packageFile": true
+      },
+      {
+        "id": "graph-core-binary-darwin-x64",
+        "packageName": "@the-open-engine/opcore-graph-core-darwin-x64",
+        "path": "lattice-graph-core",
+        "type": "native_binary",
+        "required": true,
+        "packageFile": true,
+        "checksumRef": "graph-core-binary-sha256-darwin-x64"
+      },
+      {
+        "id": "graph-core-metadata-darwin-x64",
+        "packageName": "@the-open-engine/opcore-graph-core-darwin-x64",
+        "path": "metadata.json",
+        "type": "manifest",
+        "required": true,
+        "packageFile": true
+      },
+      {
+        "id": "graph-core-checksum-darwin-x64",
+        "packageName": "@the-open-engine/opcore-graph-core-darwin-x64",
+        "path": "lattice-graph-core.sha256",
+        "type": "checksum",
+        "required": true,
+        "packageFile": true
+      },
+      {
+        "id": "graph-core-binary-linux-x64",
+        "packageName": "@the-open-engine/opcore-graph-core-linux-x64",
+        "path": "lattice-graph-core",
+        "type": "native_binary",
+        "required": true,
+        "packageFile": true,
+        "checksumRef": "graph-core-binary-sha256-linux-x64"
+      },
+      {
+        "id": "graph-core-metadata-linux-x64",
+        "packageName": "@the-open-engine/opcore-graph-core-linux-x64",
+        "path": "metadata.json",
+        "type": "manifest",
+        "required": true,
+        "packageFile": true
+      },
+      {
+        "id": "graph-core-checksum-linux-x64",
+        "packageName": "@the-open-engine/opcore-graph-core-linux-x64",
+        "path": "lattice-graph-core.sha256",
+        "type": "checksum",
+        "required": true,
+        "packageFile": true
+      }
+    ],
+    "resolvedChecksums": [
+      {
+        "id": "graph-core-binary-sha256-darwin-arm64",
+        "packageName": "@the-open-engine/opcore-graph-core-darwin-arm64",
+        "path": "lattice-graph-core.sha256",
+        "algorithm": "sha256",
+        "artifactRef": "graph-core-binary-darwin-arm64",
+        "required": true,
+        "packageFile": true,
+        "value": "a36a81b37ce522cf0c05aa57adf3e3c8b7ff3e50f345ee75d14f44b8d629fbb3"
+      },
+      {
+        "id": "graph-core-binary-sha256-darwin-x64",
+        "packageName": "@the-open-engine/opcore-graph-core-darwin-x64",
+        "path": "lattice-graph-core.sha256",
+        "algorithm": "sha256",
+        "artifactRef": "graph-core-binary-darwin-x64",
+        "required": true,
+        "packageFile": true,
+        "value": "6652d43eec8f39e7c1b930b92e032eb268d1e4263454a89614e0d8299fc3b4e7"
+      },
+      {
+        "id": "graph-core-binary-sha256-linux-x64",
+        "packageName": "@the-open-engine/opcore-graph-core-linux-x64",
+        "path": "lattice-graph-core.sha256",
+        "algorithm": "sha256",
+        "artifactRef": "graph-core-binary-linux-x64",
+        "required": true,
+        "packageFile": true,
+        "value": "4654c6ba6383886e759fe3c805ec8c0df3b31d2e1db9d5c18626de6b2cfe758a"
+      }
+    ]
+  },
+  "nativeArtifacts": [
+    {
+      "packageName": "@the-open-engine/opcore-graph-core-darwin-arm64",
+      "targetPlatform": "darwin-arm64",
+      "metadata": {
+        "artifactName": "lattice-graph-core",
+        "artifactVersion": "0.1.0-alpha.0",
+        "targetPlatform": "darwin-arm64",
+        "binaryPath": "lattice-graph-core",
+        "checksumPath": "lattice-graph-core.sha256",
+        "checksumSha256": "a36a81b37ce522cf0c05aa57adf3e3c8b7ff3e50f345ee75d14f44b8d629fbb3",
+        "buildProfile": "release"
+      },
+      "binaryPath": "lattice-graph-core",
+      "checksumPath": "lattice-graph-core.sha256",
+      "metadataPath": "metadata.json",
+      "binarySha256": "a36a81b37ce522cf0c05aa57adf3e3c8b7ff3e50f345ee75d14f44b8d629fbb3",
+      "checksumFileSha256": "84e16a56bed420279a438bac16532ca4caccf62f9499d61b8acb43daa65b19ca",
+      "metadataSha256": "1d580c4841ffe87bdf6f12d69631e7795bb859480e13c7d7d23846c7f3cb13b9",
+      "descriptorArtifactId": "graph-core-binary-darwin-arm64",
+      "descriptorChecksumId": "graph-core-binary-sha256-darwin-arm64"
+    },
+    {
+      "packageName": "@the-open-engine/opcore-graph-core-darwin-x64",
+      "targetPlatform": "darwin-x64",
+      "metadata": {
+        "artifactName": "lattice-graph-core",
+        "artifactVersion": "0.1.0-alpha.0",
+        "targetPlatform": "darwin-x64",
+        "binaryPath": "lattice-graph-core",
+        "checksumPath": "lattice-graph-core.sha256",
+        "checksumSha256": "6652d43eec8f39e7c1b930b92e032eb268d1e4263454a89614e0d8299fc3b4e7",
+        "buildProfile": "release"
+      },
+      "binaryPath": "lattice-graph-core",
+      "checksumPath": "lattice-graph-core.sha256",
+      "metadataPath": "metadata.json",
+      "binarySha256": "6652d43eec8f39e7c1b930b92e032eb268d1e4263454a89614e0d8299fc3b4e7",
+      "checksumFileSha256": "1dec7f16ea99ceb1f7c1c7798b2841b77328d7546ab7eef09e90c898f83eea74",
+      "metadataSha256": "090548988a137c9f3f900fb736f3ae1176a2fd438742975dcb3eba04f827f413",
+      "descriptorArtifactId": "graph-core-binary-darwin-x64",
+      "descriptorChecksumId": "graph-core-binary-sha256-darwin-x64"
+    },
+    {
+      "packageName": "@the-open-engine/opcore-graph-core-linux-x64",
+      "targetPlatform": "linux-x64",
+      "metadata": {
+        "artifactName": "lattice-graph-core",
+        "artifactVersion": "0.1.0-alpha.0",
+        "targetPlatform": "linux-x64",
+        "binaryPath": "lattice-graph-core",
+        "checksumPath": "lattice-graph-core.sha256",
+        "checksumSha256": "4654c6ba6383886e759fe3c805ec8c0df3b31d2e1db9d5c18626de6b2cfe758a",
+        "buildProfile": "release"
+      },
+      "binaryPath": "lattice-graph-core",
+      "checksumPath": "lattice-graph-core.sha256",
+      "metadataPath": "metadata.json",
+      "binarySha256": "4654c6ba6383886e759fe3c805ec8c0df3b31d2e1db9d5c18626de6b2cfe758a",
+      "checksumFileSha256": "d2b196e6c2bd94f803d77741de855779347b2704634b5ca06a2ab0ad4fe3d14e",
+      "metadataSha256": "bbe9341144b043ae9828d7c75fee71696281b9280bf3443831c61ef2cf56a07f",
+      "descriptorArtifactId": "graph-core-binary-linux-x64",
+      "descriptorChecksumId": "graph-core-binary-sha256-linux-x64"
+    }
+  ],
+  "license": {
+    "reportPath": "docs/release/license-report.md",
+    "reportSha256": "3515d1c895d2486baad3d81dcb0808ccbe236c25b7a5ef45061ded725048f607",
+    "productionDependencyCount": 11,
+    "bundledDependencyCount": 0,
+    "workspacePackageCount": 11,
+    "unresolvedLicenseCount": 0,
+    "packages": [
+      {
+        "name": "@ts-morph/common",
+        "version": "0.29.0",
+        "license": "MIT",
+        "source": "node_modules/@ts-morph/common",
+        "bundled": false
+      },
+      {
+        "name": "balanced-match",
+        "version": "4.0.4",
+        "license": "MIT",
+        "source": "node_modules/balanced-match",
+        "bundled": false
+      },
+      {
+        "name": "brace-expansion",
+        "version": "5.0.6",
+        "license": "MIT",
+        "source": "node_modules/brace-expansion",
+        "bundled": false
+      },
+      {
+        "name": "code-block-writer",
+        "version": "13.0.3",
+        "license": "MIT",
+        "source": "node_modules/code-block-writer",
+        "bundled": false
+      },
+      {
+        "name": "fdir",
+        "version": "6.5.0",
+        "license": "MIT",
+        "source": "node_modules/fdir",
+        "bundled": false
+      },
+      {
+        "name": "minimatch",
+        "version": "10.2.5",
+        "license": "BlueOak-1.0.0",
+        "source": "node_modules/minimatch",
+        "bundled": false
+      },
+      {
+        "name": "path-browserify",
+        "version": "1.0.1",
+        "license": "MIT",
+        "source": "node_modules/path-browserify",
+        "bundled": false
+      },
+      {
+        "name": "picomatch",
+        "version": "4.0.4",
+        "license": "MIT",
+        "source": "node_modules/picomatch",
+        "bundled": false
+      },
+      {
+        "name": "tinyglobby",
+        "version": "0.2.17",
+        "license": "MIT",
+        "source": "node_modules/tinyglobby",
+        "bundled": false
+      },
+      {
+        "name": "ts-morph",
+        "version": "28.0.0",
+        "license": "MIT",
+        "source": "node_modules/ts-morph",
+        "bundled": false
+      },
+      {
+        "name": "typescript",
+        "version": "5.9.3",
+        "license": "Apache-2.0",
+        "source": "node_modules/typescript",
+        "bundled": false
+      }
+    ]
+  },
+  "provenance": {
+    "reportPath": "docs/release/provenance-receipts.md",
+    "reportSha256": "a4b840039db7593c7c0ebc474080801c2610127b50d20a81024d111a1feabf57",
+    "scannedFileCount": 387,
+    "historyCommitCount": 60,
+    "findingCount": 0,
+    "findings": []
+  },
+  "secretHistory": {
+    "allowlistPath": "docs/release/secret-scan-allowlist.json",
+    "allowlistSha256": "7060c267c912e3156b87c646e3bc970eac1ac8bdd964cf0a794b83e6f1250614",
+    "currentTreeScannedFileCount": 386,
+    "gitHistoryScannedCommitCount": 61,
+    "findingCount": 0,
+    "findings": []
+  },
+  "reports": [
+    {
+      "id": "package-inspection",
+      "command": [
+        "node",
+        "scripts/generate-release-receipt.mjs",
+        "--inspect-packages-only"
+      ],
+      "status": "passed",
+      "exitCode": 0,
+      "path": "docs/release/release-receipt.json",
+      "summary": "npm pack package inspection passed"
+    },
+    {
+      "id": "license",
+      "command": [
+        "node",
+        "scripts/license-report.mjs",
+        "--json"
+      ],
+      "status": "passed",
+      "exitCode": 0,
+      "path": "docs/release/license-report.md",
+      "checksumSha256": "3515d1c895d2486baad3d81dcb0808ccbe236c25b7a5ef45061ded725048f607",
+      "summary": "11 production dependencies, 0 unresolved"
+    },
+    {
+      "id": "provenance",
+      "command": [
+        "node",
+        "scripts/check-provenance.mjs",
+        "--json"
+      ],
+      "status": "passed",
+      "exitCode": 0,
+      "path": "docs/release/provenance-receipts.md",
+      "checksumSha256": "a4b840039db7593c7c0ebc474080801c2610127b50d20a81024d111a1feabf57",
+      "summary": "387 files, 60 commits scanned"
+    },
+    {
+      "id": "release-hygiene",
+      "command": [
+        "node",
+        "scripts/check-release-hygiene.mjs"
+      ],
+      "status": "passed",
+      "exitCode": 0,
+      "path": "docs/release/artifact-attestation.md",
+      "checksumSha256": "a0e67a9211179dd385f995d9ba6fa8db787da285dc6dd89fef6c90d10cfa8765",
+      "summary": "release hygiene check passed"
+    },
+    {
+      "id": "graph-release",
+      "command": [
+        "node",
+        "scripts/generate-graph-release-receipt.mjs",
+        "--json"
+      ],
+      "status": "passed",
+      "exitCode": 0,
+      "path": "docs/release/graph-release-receipt.json",
+      "checksumSha256": "96bd45bb9b77afd8a290521e105e13ddac0367870f5a850f98414a14136ad3a2",
+      "summary": "graph release receipt #17 validated as input evidence"
+    },
+    {
+      "id": "secret-history",
+      "command": [
+        "node",
+        "scripts/generate-release-receipt.mjs",
+        "--scan-secrets-only"
+      ],
+      "status": "passed",
+      "exitCode": 0,
+      "path": "docs/release/secret-scan-allowlist.json",
+      "checksumSha256": "7060c267c912e3156b87c646e3bc970eac1ac8bdd964cf0a794b83e6f1250614",
+      "summary": "386 files, 61 commits scanned"
+    }
+  ],
+  "graphReleaseReceipt": {
+    "path": "docs/release/graph-release-receipt.json",
+    "issue": "#17",
+    "checksumSha256": "96bd45bb9b77afd8a290521e105e13ddac0367870f5a850f98414a14136ad3a2"
+  }
+}
