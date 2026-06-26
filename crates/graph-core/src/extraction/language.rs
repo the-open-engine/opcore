@@ -6,6 +6,7 @@ pub enum SourceLanguage {
     TypeScriptJsx,
     JavaScript,
     JavaScriptJsx,
+    Python,
 }
 
 impl SourceLanguage {
@@ -15,17 +16,24 @@ impl SourceLanguage {
             Some("tsx") => Some(Self::TypeScriptJsx),
             Some("js") => Some(Self::JavaScript),
             Some("jsx") => Some(Self::JavaScriptJsx),
+            Some("py") | Some("pyi") => Some(Self::Python),
             _ => None,
         }
+    }
+
+    pub fn is_graph_extractable(self) -> bool {
+        matches!(
+            self,
+            Self::TypeScript | Self::TypeScriptJsx | Self::JavaScript | Self::JavaScriptJsx
+        )
     }
 
     pub fn unsupported_source_extension(path: &Path) -> Option<String> {
         let extension = path.extension()?.to_str()?;
         match extension {
-            "py" | "rs" | "mjs" | "cjs" | "mts" | "cts" | "vue" | "svelte" | "go" | "java"
-            | "rb" | "php" | "swift" | "kt" | "cs" | "cpp" | "c" | "h" | "hpp" => {
-                Some(extension.to_string())
-            }
+            "rs" | "mjs" | "cjs" | "mts" | "cts" | "vue" | "svelte" | "go" | "java" | "rb"
+            | "php" | "swift" | "kt" | "kts" | "scala" | "lua" | "cs" | "c" | "cc" | "cpp"
+            | "h" | "hpp" => Some(extension.to_string()),
             _ => None,
         }
     }
@@ -36,6 +44,7 @@ impl SourceLanguage {
             Self::TypeScriptJsx => "tsx",
             Self::JavaScript => "javascript",
             Self::JavaScriptJsx => "jsx",
+            Self::Python => "python",
         }
     }
 }

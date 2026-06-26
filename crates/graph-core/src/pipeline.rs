@@ -223,22 +223,33 @@ fn incremental_file_facts(
     let store = GraphStore::open(StorePaths::for_repo_root(&context.options.repo_root))?;
     let delta = source_delta(&store.file_hashes()?, context.current_hashes);
     let changed_sources = sources_for_paths(&context.discovery.sources, &delta.changed_files);
+    let changed_extractable_sources = graph_extractable_sources(&changed_sources);
     let parsed = timed("extraction", || {
-        collect_file_facts_for_sources(context.extraction_options, &changed_sources, diagnostics)
+        collect_file_facts_for_sources(
+            context.extraction_options,
+            &changed_extractable_sources,
+            diagnostics,
+        )
     });
-    let cache = CachedFacts::new(cached, context.current_hashes, &delta.changed_files);
+    let cache = CachedFacts::new(
+        cached,
+        context.current_hashes,
+        &context.discovery.sources,
+        &delta.changed_files,
+    );
     if cache.missing_unchanged_file() {
         return Ok(full_file_facts(context, diagnostics, true));
     }
     let unchanged_files = cache.unchanged_files();
+    let parsed_files = changed_extractable_sources.len();
     Ok(FileFactPlan {
         file_facts: cache.merge(parsed.value),
-        parsed_files: changed_sources.len(),
+        parsed_files,
         changed_files: delta.changed_files,
         deleted_files: delta.deleted_files,
         unchanged_files,
         full_rebuild_required: false,
-        timing: with_file_count(parsed.timing, changed_sources.len()),
+        timing: with_file_count(parsed.timing, parsed_files),
     })
 }
 
@@ -247,16 +258,18 @@ fn full_file_facts(
     diagnostics: &mut Vec<GraphExtractionDiagnostic>,
     full_rebuild_required: bool,
 ) -> FileFactPlan {
+    let extractable_sources = graph_extractable_sources(&context.discovery.sources);
     let parsed = timed("extraction", || {
         collect_file_facts_for_sources(
             context.extraction_options,
-            &context.discovery.sources,
+            &extractable_sources,
             diagnostics,
         )
     });
+    let parsed_files = extractable_sources.len();
     FileFactPlan {
         file_facts: parsed.value,
-        parsed_files: context.discovery.sources.len(),
+        parsed_files,
         changed_files: context
             .current_hashes
             .iter()
@@ -265,13 +278,13 @@ fn full_file_facts(
         deleted_files: Vec::new(),
         unchanged_files: 0,
         full_rebuild_required,
-        timing: with_file_count(parsed.timing, context.discovery.sources.len()),
+        timing: with_file_count(parsed.timing, parsed_files),
     }
 }
 
 struct CachedFacts {
     by_path: BTreeMap<String, FileFacts>,
-    current_paths: BTreeSet<String>,
+    current_fact_paths: BTreeSet<String>,
     changed_paths: BTreeSet<String>,
     current_count: usize,
 }
@@ -280,6 +293,7 @@ impl CachedFacts {
     fn new(
         cached: Vec<FileFacts>,
         current_hashes: &[crate::extraction::SourceFileHash],
+        current_sources: &[DiscoveredSource],
         changed_files: &[String],
     ) -> Self {
         Self {
@@ -287,9 +301,10 @@ impl CachedFacts {
                 .into_iter()
                 .map(|facts| (facts.path.clone(), facts))
                 .collect(),
-            current_paths: current_hashes
+            current_fact_paths: current_sources
                 .iter()
-                .map(|hash| hash.relative_path.clone())
+                .filter(|source| source.language.is_graph_extractable())
+                .map(|source| source.relative_path.clone())
                 .collect(),
             changed_paths: changed_files.iter().cloned().collect(),
             current_count: current_hashes.len(),
@@ -297,7 +312,7 @@ impl CachedFacts {
     }
 
     fn missing_unchanged_file(&self) -> bool {
-        self.current_paths
+        self.current_fact_paths
             .iter()
             .any(|path| !self.changed_paths.contains(path) && !self.by_path.contains_key(path))
     }
@@ -311,7 +326,7 @@ impl CachedFacts {
             .by_path
             .into_iter()
             .filter(|(path, _)| {
-                self.current_paths.contains(path) && !self.changed_paths.contains(path)
+                self.current_fact_paths.contains(path) && !self.changed_paths.contains(path)
             })
             .map(|(_, facts)| facts)
             .collect::<Vec<_>>();
@@ -412,6 +427,14 @@ fn sources_for_paths(sources: &[DiscoveredSource], paths: &[String]) -> Vec<Disc
     sources
         .iter()
         .filter(|source| wanted.contains(source.relative_path.as_str()))
+        .cloned()
+        .collect()
+}
+
+fn graph_extractable_sources(sources: &[DiscoveredSource]) -> Vec<DiscoveredSource> {
+    sources
+        .iter()
+        .filter(|source| source.language.is_graph_extractable())
         .cloned()
         .collect()
 }

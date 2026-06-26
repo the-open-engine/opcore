@@ -130,6 +130,7 @@ pub fn collect_file_facts_for_sources(
     }
     sources
         .iter()
+        .filter(|source| source.language.is_graph_extractable())
         .map(|source| collect_file_fact(source, options.force_missing_parser, diagnostics))
         .collect()
 }

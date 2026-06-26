@@ -64,6 +64,56 @@ describe("opcore public facade", () => {
     });
   });
 
+  it("reports Python sources as extraction-pending without graph or validation support", () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-python-status-"));
+    try {
+      for (const [directory, file] of [
+        ["", "app.py"],
+        ["types", "typings.pyi"],
+        [".venv/lib/python3.12/site-packages/pkg", "ignored.py"],
+        ["venv/lib/python3.12/site-packages/pkg", "ignored.py"],
+        ["env/lib/python3.12/site-packages/pkg", "ignored.py"],
+        ["src/__pycache__", "ignored.py"],
+        [".eggs/pkg", "ignored.py"],
+        ["build/lib", "ignored.py"],
+        [".tox/py", "ignored.py"],
+        [".mypy_cache", "ignored.py"],
+        [".pytest_cache", "ignored.py"],
+        [".ruff_cache", "ignored.py"],
+        ["pkg.egg-info", "ignored.py"],
+        ["pkg.dist-info", "ignored.py"],
+        ["lib/site-packages/pkg", "ignored.py"]
+      ]) {
+        mkdirSync(join(temp, directory), { recursive: true });
+        writeFileSync(join(temp, directory, file), "def value():\n    return True\n");
+      }
+
+      const result = parseJson(runOpcore(["status", "--repo", temp, "--json"], temp, 0).stdout);
+      const coverage = result.repoState.coverage;
+
+      assert.equal(coverage.totalFiles, 2);
+      assert.deepEqual(coverage.languages, [
+        { language: "Python", files: 2, graphSupported: false, validationSupported: false }
+      ]);
+      assert.equal(coverage.graph.supportedFiles, 0);
+      assert.equal(coverage.validation.supportedFiles, 0);
+      assert.equal(coverage.unsupported.totalFiles, 2);
+      assert.deepEqual(
+        coverage.unsupported.stacks.map((stack) => ({
+          extension: stack.extension,
+          language: stack.language,
+          count: stack.count
+        })),
+        [
+          { extension: ".py", language: "Python", count: 1 },
+          { extension: ".pyi", language: "Python", count: 1 }
+        ]
+      );
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
   it("runs check --changed with default HEAD base and stable agent exit codes", () => {
     withFixtureCopy((fixtureRoot) => {
       initGitFixture(fixtureRoot);
