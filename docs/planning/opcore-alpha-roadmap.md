@@ -34,7 +34,7 @@ The Opcore alpha issue tree is closed:
 | #127 TS/JS exports | closed | Graph-core emits export metadata for dead-export metrics. |
 | #128 Status | closed | `opcore status` is repo-aware, fast, and read-only. |
 | #129 Product facade | closed | `@the-open-engine/opcore` owns the public `opcore` bin, zero-command scan, and agent check wrapper. |
-| #130 Metrics/history | closed | Named drillable signals, `.opcore/report.json`, `.opcore/history.jsonl`, and `opcore measure` landed. |
+| #130 Metrics/history | closed | Named drillable metric signals and `opcore measure` landed. |
 | #131 Init | closed | `opcore init` is plan-first, additive, approval-gated, and undo-aware. |
 | #132 Install skill | closed | `opcore-install` skill exists as a thin wrapper over the CLI. |
 | #133 Launch docs/demo | closed | `opcore try`, demo docs, quickstart, and claim scrub landed. |
@@ -47,7 +47,10 @@ Opcore alpha must provide value quickly and honestly:
 
 - Time to first useful output should be under 10 minutes.
 - Scan/check/measure/status are read-only with respect to source files.
-- Scan may write `.opcore/report.json` and `.opcore/history.jsonl`.
+- Scan artifact allowlist:
+  `.opcore/report.json`;
+  `.opcore/history.jsonl`;
+  bounded `.opcore/telemetry.jsonl` capped at 500 records or 1 MiB.
 - Init runs a read-only scan first, shows coverage before findings, then may write `.opcore/config`, AGENTS.md guidance, mirrors, undo metadata, and optional hooks only after explicit approval.
 - Reports must state coverage before findings: deep TypeScript/JavaScript graph support, Rust validation/toolchain support, and unsupported-language counts.
 - Init JSON includes scan, per-language onboarding settings, interaction state, and timing fields for time-to-first-output checks.
@@ -78,11 +81,14 @@ Do not call the alpha ready until current evidence proves:
 - `npm run provenance:check` passes and finds no forbidden public-surface claims.
 - `npm run cutover:check` proves installed `opcore` scan/status/check/measure flows and keeps `oldToolReplacementClaimed: false`.
 - `opcore try --json` returns `opcoreTry.published:false`.
-- `opcore --repo . --json` writes only `.opcore/report.json` and `.opcore/history.jsonl`.
+- `opcore --repo . --json` emits the scan artifact allowlist:
+  `.opcore/report.json`;
+  `.opcore/history.jsonl`;
+  bounded `.opcore/telemetry.jsonl` capped at 500 records or 1 MiB.
 - `opcore status --repo . --json` does not build graphs, run checks, run setup, install packages, use ACE/current-tool wrappers, or write files.
 - `opcore init --repo . --json` previews setup without writing.
 - TTY `opcore init --repo .` prompts after the scan and setup plan; declining writes nothing.
-- `opcore init --repo . --approve --json` applies additive setup without prompting and still avoids scan report/history writes.
+- `opcore init --repo . --approve --json` applies additive setup without prompting and still avoids scan artifact writes.
 - `opcore check --changed --json` has stable agent exit codes.
 - Public docs and package output contain no ASP-standard, old-tool replacement, security/SAST, all-stack, AI-authorship, automatic-fix, or blended-score overclaims.
 

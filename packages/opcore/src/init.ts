@@ -36,7 +36,9 @@ const endMarker = "<!-- END OPCORE INIT -->";
 const configPath = ".opcore/config";
 const undoPath = ".opcore/init-undo.json";
 const hookPath = ".opcore/hooks/pre-commit-opcore-check.sh";
-const allowedUndoPaths = new Set<string>([configPath, undoPath, hookPath, ...AGENT_FILE_CANDIDATES]);
+const gitignorePath = ".gitignore";
+const telemetryIgnoreEntry = ".opcore/telemetry.jsonl";
+const allowedUndoPaths = new Set<string>([configPath, undoPath, hookPath, gitignorePath, ...AGENT_FILE_CANDIDATES]);
 const rustActiveValidationKinds = new Set([".rs", ".inc", "Cargo.toml"]);
 
 interface ParsedInitArgs {
@@ -455,7 +457,6 @@ function planInit(
   options: ParsedInitArgs,
   context: InitContext
 ): PlannedInit {
-  void git;
   const agentFiles = detectAgentFiles(repoRoot);
   const config = createConfig(repoRoot, options.failClosedHook, context.scan, context.settings);
   const writes: PlannedWrite[] = [
@@ -468,6 +469,12 @@ function planInit(
       content: upsertOpcoreBlock(readOptionalRepoFile(repoRoot, path))
     }))
   ];
+  if (git) {
+    writes.push({
+      path: gitignorePath,
+      content: upsertGitignoreTelemetry(readOptionalRepoFile(repoRoot, gitignorePath))
+    });
+  }
   if (options.failClosedHook) {
     writes.push({
       path: hookPath,
@@ -475,7 +482,7 @@ function planInit(
       executable: true
     });
   }
-  const actions = createInitActions(agentFiles, options.failClosedHook);
+  const actions = createInitActions(agentFiles, options.failClosedHook, git);
   return {
     writes,
     payload: {
@@ -592,7 +599,7 @@ function applyUndo(repoRoot: string, payload: OpcoreInitPlanPayload): void {
   void payload;
 }
 
-function createInitActions(agentFiles: readonly string[], failClosedHook: boolean): OpcoreInitAction[] {
+function createInitActions(agentFiles: readonly string[], failClosedHook: boolean, git: boolean): OpcoreInitAction[] {
   const actions: OpcoreInitAction[] = [
     {
       kind: "write",
@@ -609,6 +616,15 @@ function createInitActions(agentFiles: readonly string[], failClosedHook: boolea
       outsideOpcore: true
     }))
   ];
+  if (git) {
+    actions.push({
+      kind: "upsert_block",
+      path: gitignorePath,
+      summary: "Ignore bounded Opcore command telemetry.",
+      requiresApproval: true,
+      outsideOpcore: true
+    });
+  }
   if (failClosedHook) {
     actions.push({
       kind: "create_hook",
@@ -640,6 +656,12 @@ function upsertOpcoreBlock(existing: string | undefined): string {
     return `${trimRightPreserve(existing.slice(0, begin))}\n\n${block}\n${trimLeftPreserve(existing.slice(replacementEnd))}`.replace(/\n{3,}/g, "\n\n");
   }
   return `${trimRightPreserve(existing)}\n\n${block}\n`;
+}
+
+function upsertGitignoreTelemetry(existing: string | undefined): string {
+  if (existing === undefined || existing.length === 0) return `${telemetryIgnoreEntry}\n`;
+  if (existing.split(/\r?\n/).some((line) => line.trim() === telemetryIgnoreEntry)) return existing;
+  return `${trimRightPreserve(existing)}\n${telemetryIgnoreEntry}\n`;
 }
 
 function guidanceBlock(): string {

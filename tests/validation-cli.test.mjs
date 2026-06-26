@@ -46,6 +46,7 @@ describe("validation CLI", () => {
       assert.equal(result.repoState.validation.checkCount, defaultCheckIds.length);
       assert.equal(Object.hasOwn(result, "validationResult"), false);
       assert.equal(Object.hasOwn(result, "validationStatus"), false);
+      assertCommandTiming(result);
 
       const compatible = run(["status", "--json"]);
       assert.deepEqual(compatible.canonicalCommand, ["lattice", "status"]);
@@ -369,7 +370,15 @@ function run(args, expectedExitCodes = [0], options = {}) {
   assert.equal(result.stderr, "");
   const parsed = JSON.parse(result.stdout);
   assert.equal(parsed.exitCode, result.status);
+  assertCommandTiming(parsed);
   return parsed;
+}
+
+function assertCommandTiming(result) {
+  assert.equal(typeof result.timing?.durationMs, "number");
+  assert.equal(result.timing.durationMs >= 0, true);
+  assert.equal(Array.isArray(result.timing.phases), true);
+  assert.equal(["cold", "warm"].includes(result.timing.processState), true);
 }
 
 function chmodAll(paths) {

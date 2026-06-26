@@ -11,6 +11,7 @@ import { graphCommandAdapter } from "@the-open-engine/opcore-graph";
 import { editCommandAdapter } from "./edit-composition.js";
 import { inspectCommandAdapter } from "./inspect-adapter.js";
 import { commandRouterManifest } from "./manifest.js";
+import { timeCommand } from "../timing.js";
 import {
   checkCommandAdapter,
   createDefaultValidationStatusPayload,
@@ -46,18 +47,20 @@ validateCommandRouterManifest(commandRouterManifest);
 export async function routeCommand(argv: readonly string[], bin: string): Promise<CommandRouterResult> {
   const parsed = parseCommandArgv(argv);
   const normalizedBin = normalizeCommandBin(bin);
-  if (normalizedBin !== "lattice") {
-    return createCommandRouterResult({
-      bin: normalizedBin,
-      argv,
-      canonicalCommand: ["lattice", "unsupported"],
-      owner: "runtime",
-      status: "unsupported",
-      json: parsed.json,
-      message: `Unsupported command entrypoint: ${normalizedBin}`
-    });
-  }
-  return routeLattice(argv, parsed);
+  return timeCommand(async () => {
+    if (normalizedBin !== "lattice") {
+      return createCommandRouterResult({
+        bin: normalizedBin,
+        argv,
+        canonicalCommand: ["lattice", "unsupported"],
+        owner: "runtime",
+        status: "unsupported",
+        json: parsed.json,
+        message: `Unsupported command entrypoint: ${normalizedBin}`
+      });
+    }
+    return routeLattice(argv, parsed);
+  });
 }
 
 export async function runCli(options: RunCliOptions): Promise<number> {

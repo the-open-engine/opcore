@@ -12,7 +12,7 @@ opcore measure --repo .
 What this shows:
 
 - `opcore try` generates local TS, Rust, mixed, and unsupported-file samples, then runs the loop without publishing anything.
-- `opcore --repo .` scans read-only, prints Coverage before Findings, and writes `.opcore/report.json` plus `.opcore/history.jsonl`.
+- `opcore --repo .` scans source files without mutating them, prints Coverage before Findings, and writes `.opcore/report.json`, `.opcore/history.jsonl`, plus bounded `.opcore/telemetry.jsonl` capped at 500 records or 1 MiB.
 - `opcore init --approve` writes additive `.opcore/config` and delimited agent guidance; hooks stay opt-in.
 - `opcore check --changed --json` validates changed files and defaults to `--base HEAD`.
 - `opcore measure` reads metric artifacts and prints named deltas, not a score.

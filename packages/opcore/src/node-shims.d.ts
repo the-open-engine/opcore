@@ -80,3 +80,7 @@ declare module "node:path" {
   export function resolve(...parts: string[]): string;
   export const sep: string;
 }
+
+declare module "node:url" {
+  export function fileURLToPath(url: string | URL): string;
+}

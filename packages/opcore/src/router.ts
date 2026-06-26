@@ -5,11 +5,13 @@ import {
   createOpcoreMeasureDelta,
   formatOpcoreMeasureHuman,
   readOpcoreMetricHistory,
-  readOpcoreMetricReport
+  readOpcoreMetricReport,
+  writeCommandLatencyTelemetry
 } from "./reporting.js";
 import { routeOpcoreInit, type OpcoreInitRuntime } from "./init.js";
 import { routeOpcoreScan } from "./scan.js";
 import { parseOpcoreRepoArgs, resolveRepo, routeOpcoreStatus } from "./status.js";
+import { createCommandLatencyRecord, timeCommand } from "./timing.js";
 import { routeOpcoreTry } from "./try.js";
 
 declare const process: {
@@ -46,18 +48,24 @@ export async function routeOpcoreCommand(
 ): Promise<CommandRouterResult> {
   const parsed = parseCommandArgv(argv);
   const normalizedBin = normalizeCommandBin(bin);
-  if (normalizedBin !== "opcore") {
-    return createCommandRouterResult({
-      bin: normalizedBin,
-      argv,
-      canonicalCommand: ["opcore", "unsupported"],
-      owner: "runtime",
-      status: "unsupported",
-      json: parsed.json,
-      message: `Unsupported command entrypoint: ${normalizedBin}`
-    });
+  const routed = await timeCommand(async () => {
+    if (normalizedBin !== "opcore") {
+      return createCommandRouterResult({
+        bin: normalizedBin,
+        argv,
+        canonicalCommand: ["opcore", "unsupported"],
+        owner: "runtime",
+        status: "unsupported",
+        json: parsed.json,
+        message: `Unsupported command entrypoint: ${normalizedBin}`
+      });
+    }
+    return routeOpcoreParsed(argv, parsed, runtime);
+  });
+  if (shouldWriteLatencyTelemetry(routed)) {
+    writeCommandLatencyTelemetry(routed.repoState.repo.root, createCommandLatencyRecord(routed));
   }
-  return routeOpcoreParsed(argv, parsed, runtime);
+  return routed;
 }
 
 export async function runOpcoreCli(options: RunOpcoreCliOptions): Promise<number> {
@@ -210,6 +218,17 @@ function opcoreHelpMessage(): string {
     "",
     "Exit codes: 0 passed, 1 findings or errors, 64 unsupported."
   ].join("\n");
+}
+
+function shouldWriteLatencyTelemetry(result: CommandRouterResult): result is CommandRouterResult & { repoState: NonNullable<CommandRouterResult["repoState"]> } {
+  return (
+    result.bin === "opcore" &&
+    result.status === "ok" &&
+    result.repoState !== undefined &&
+    result.canonicalCommand.length >= 2 &&
+    result.canonicalCommand[0] === "opcore" &&
+    result.canonicalCommand[1] === "scan"
+  );
 }
 
 function errorMessage(error: unknown): string {

@@ -22,12 +22,14 @@ opcore measure --repo .
 ```
 
 The first command should work in an existing project without setup. It should
-detect what Opcore can analyze, say what it cannot analyze, write only local
-Opcore report/history artifacts, and never edit source files.
+detect what Opcore can analyze, say what it cannot analyze, and limit file
+writes to local Opcore artifacts: `.opcore/report.json`,
+`.opcore/history.jsonl`, and bounded `.opcore/telemetry.jsonl` capped at 500
+records or 1 MiB. Source files remain untouched.
 
 `opcore init` is scan-first and ask-before-write on a TTY: it prints coverage
-before findings, shows the additive setup plan, then writes only after an
-explicit yes. `opcore init --json` previews without writing; `opcore init
+before findings, shows the additive setup plan, then writes after an explicit
+yes. `opcore init --json` previews without writing; `opcore init
 --approve --json` applies additive setup without prompting and returns scan,
 language settings, interaction, and timing fields.
 

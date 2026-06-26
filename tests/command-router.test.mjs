@@ -80,6 +80,7 @@ describe("lattice command router", () => {
       assert.equal(routed.owner, "runtime");
       assert.equal(Object.hasOwn(routed, "alias"), false);
       assert.equal(Object.hasOwn(routed, removedLegacyCommandField), false);
+      assertCommandTiming(routed);
     }
   });
 
@@ -97,6 +98,7 @@ describe("lattice command router", () => {
         assert.equal(result.providerStatus.state, "available");
         assert.equal(Object.hasOwn(result, "alias"), false);
         assert.equal(Object.hasOwn(result, removedLegacyCommandField), false);
+        assertCommandTiming(result);
       }
       assert.deepEqual(status.canonicalCommand.slice(0, 3), ["lattice", "graph", "status"]);
       assert.deepEqual(query.canonicalCommand.slice(0, 3), ["lattice", "graph", "query"]);
@@ -114,12 +116,20 @@ describe("lattice command router", () => {
         assert.equal(routed.exitCode, 0);
         assert.equal(routed.providerStatus.state, "available");
         assert.equal(routed.graphPipeline.status.state, "available");
+        assertCommandTiming(routed);
+        if (command === "build") {
+          const phases = routed.timing.phases.map((phase) => phase.phase);
+          assert.equal(phases.includes("discovery"), true);
+          assert.equal(phases.includes("extraction"), true);
+          assert.equal(phases.includes("store"), true);
+        }
       });
     }
 
     const serve = await routeCommand(["graph", "serve", "--json"], "lattice");
     assert.equal(serve.status, "ok");
     assert.equal(serve.graphServe.state, "ready");
+    assertCommandTiming(serve);
   });
 
   it("returns graph adapter failures without throwing", async () => {
@@ -130,6 +140,7 @@ describe("lattice command router", () => {
     assert.equal(routed.providerStatus.provider, "lattice-graph");
     assert.equal(routed.providerStatus.state, "required_missing");
     assert.match(routed.message, /not a directory/);
+    assertCommandTiming(routed);
 
     for (const args of [
       ["graph", "impact", "--files", "--json"],
@@ -142,6 +153,7 @@ describe("lattice command router", () => {
       const malformed = await routeCommand(args, "lattice");
       assert.equal(malformed.status, "error", args.join(" "));
       assert.equal(malformed.exitCode, 1, args.join(" "));
+      assertCommandTiming(malformed);
     }
   });
 
@@ -180,6 +192,7 @@ describe("lattice command router", () => {
       ], "lattice");
       assert.equal(exact.status, "ok");
       assert.equal(exact.editPlan.changes[0].content, "new\n");
+      assertCommandTiming(exact);
       const patch = await routeCommand([
         "edit",
         "patch",
@@ -191,6 +204,7 @@ describe("lattice command router", () => {
       ], "lattice");
       assert.equal(patch.status, "ok");
       assert.equal(patch.editPlan.changes[0].content, "new\n");
+      assertCommandTiming(patch);
       const tree = await routeCommand([
         "edit",
         "tree",
@@ -202,9 +216,11 @@ describe("lattice command router", () => {
       ], "lattice");
       assert.equal(tree.status, "ok");
       assert.equal(tree.editPlan.changes[0].content, "tree\n");
+      assertCommandTiming(tree);
       writeFileSync(join(editRepo, "src/symbol.ts"), "export function oldName() {\n  return 1;\n}\nexport const useName = oldName();\n");
       const graphBuild = await routeCommand(["graph", "build", "--repo", editRepo, "--json"], "lattice");
       assert.equal(graphBuild.status, "ok");
+      assertCommandTiming(graphBuild);
       const rename = await routeCommand([
         "edit",
         "rename",
@@ -217,6 +233,7 @@ describe("lattice command router", () => {
       assert.equal(rename.status, "ok");
       assert.match(rename.editPlan.changes[0].content, /newName/);
       assert.equal(typeof exact.message, "string");
+      assertCommandTiming(rename);
     } finally {
       rmSync(editRepo, { recursive: true, force: true });
     }
@@ -225,6 +242,7 @@ describe("lattice command router", () => {
     assert.equal(validate.status, "ok");
     assert.equal(validate.exitCode, 0);
     assert.equal(validate.validationResult.manifest.entries.length, 15);
+    assertCommandTiming(validate);
     assert.equal(
       validate.validationResult.manifest.entries.some((entry) => entry.checkId === "rust.cargo-check"),
       true
@@ -273,6 +291,7 @@ describe("lattice command router", () => {
         assert.equal(result.status, "ok");
         assert.equal(result.exitCode, 0);
         assert.equal(result.providerStatus.state, "available");
+        assertCommandTiming(result);
       }
       assert.equal(signature.inspectResult.status, "ok");
       assert.equal(signature.inspectResult.signatures.length > 0, true);
@@ -321,19 +340,27 @@ describe("lattice command router", () => {
       assert.notEqual(signature.providerStatus.state, "available");
       assert.equal(signature.inspectResult.failure.category, "graph_unavailable");
       assert.equal(Object.hasOwn(signature.inspectResult, "signatures"), false);
+      assertCommandTiming(signature);
       assert.equal(implementations.owner, "inspect");
       assert.equal(implementations.status, "error");
       assert.equal(implementations.exitCode, 1);
       assert.notEqual(implementations.providerStatus.state, "available");
       assert.equal(implementations.inspectResult.failure.category, "graph_unavailable");
       assert.equal(Object.hasOwn(implementations.inspectResult, "implementations"), false);
+      assertCommandTiming(implementations);
     });
   });
 
   it("returns exit 0 for status and help surfaces", async () => {
-    assert.equal((await routeCommand(["status", "--json"], "lattice")).exitCode, 0);
-    assert.equal((await routeCommand(["doctor", "--json"], "lattice")).exitCode, 0);
-    assert.equal((await routeCommand(["--help", "--json"], "lattice")).exitCode, 0);
+    const statusJson = await routeCommand(["status", "--json"], "lattice");
+    const doctorJson = await routeCommand(["doctor", "--json"], "lattice");
+    const helpJson = await routeCommand(["--help", "--json"], "lattice");
+    assert.equal(statusJson.exitCode, 0);
+    assert.equal(doctorJson.exitCode, 0);
+    assert.equal(helpJson.exitCode, 0);
+    assertCommandTiming(statusJson);
+    assertCommandTiming(doctorJson);
+    assertCommandTiming(helpJson);
     const help = (await routeCommand(["--help"], "lattice")).message;
     assert.doesNotMatch(help, /Aliases:/);
     assert.match(help, /Local code intelligence and edit safety/);
@@ -357,6 +384,7 @@ describe("lattice command router", () => {
       assert.equal(routed.status, "unsupported");
       assert.equal(routed.exitCode, 64);
       assert.deepEqual(routed.canonicalCommand, ["lattice", command]);
+      assertCommandTiming(routed);
     }
   });
 
@@ -365,6 +393,7 @@ describe("lattice command router", () => {
     assert.equal(routed.status, "unsupported");
     assert.equal(routed.exitCode, 64);
     assert.deepEqual(routed.canonicalCommand, ["lattice", "status", "extra"]);
+    assertCommandTiming(routed);
   });
 
   it("emits stable JSON results from runCli", async () => {
@@ -382,6 +411,7 @@ describe("lattice command router", () => {
     assert.deepEqual(parsed.canonicalCommand, ["lattice", "status"]);
     assert.equal(Object.hasOwn(parsed, "alias"), false);
     assert.equal(Object.hasOwn(parsed, removedLegacyCommandField), false);
+    assertCommandTiming(parsed);
   });
 });
 
@@ -391,6 +421,13 @@ function pick(result) {
     status: result.status,
     exitCode: result.exitCode
   };
+}
+
+function assertCommandTiming(result) {
+  assert.equal(typeof result.timing?.durationMs, "number");
+  assert.equal(result.timing.durationMs >= 0, true);
+  assert.equal(Array.isArray(result.timing.phases), true);
+  assert.equal(["cold", "warm"].includes(result.timing.processState), true);
 }
 
 function patchFor(path, before, after) {

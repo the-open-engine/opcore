@@ -27,7 +27,8 @@ describe("opcore public facade", () => {
       assert.doesNotMatch(human.stdout, /\blattice\b|\bcrg\b|\bcix\b|\brox\b|ASP setup|ACE setup|sibling checkout/i);
       assert.equal(existsSync(join(fixtureRoot, ".opcore", "report.json")), true);
       assert.equal(existsSync(join(fixtureRoot, ".opcore", "history.jsonl")), true);
-      assert.deepEqual(readdirSync(join(fixtureRoot, ".opcore")).sort(), ["history.jsonl", "report.json"]);
+      assert.equal(existsSync(join(fixtureRoot, ".opcore", "telemetry.jsonl")), true);
+      assert.deepEqual(readdirSync(join(fixtureRoot, ".opcore")).sort(), ["history.jsonl", "report.json", "telemetry.jsonl"]);
       assert.equal(existsSync(join(fixtureRoot, ".lattice")), false);
       assert.equal(existsSync(join(fixtureRoot, ".ace")), false);
       assert.equal(existsSync(join(fixtureRoot, ".asp")), false);
@@ -42,6 +43,7 @@ describe("opcore public facade", () => {
       assert.equal(json.repoState.repo.root, realpathSync(fixtureRoot));
       assert.equal(Object.hasOwn(json, "validationResult"), true);
       assert.equal(json.validationResult.graphStatus.mode, json.repoState.graph.state === "available" ? "required" : "optional");
+      assertCommandTiming(json);
 
       const report = JSON.parse(readFileSync(join(fixtureRoot, ".opcore", "report.json"), "utf8"));
       assert.equal(report.schemaVersion, 1);
@@ -50,11 +52,13 @@ describe("opcore public facade", () => {
       assert.equal(Array.isArray(report.signals), true);
       assert.equal(Array.isArray(report.degradations), true);
       assert.equal(readFileSync(join(fixtureRoot, ".opcore", "history.jsonl"), "utf8").trim().split(/\r?\n/).length >= 2, true);
+      assert.equal(readFileSync(join(fixtureRoot, ".opcore", "telemetry.jsonl"), "utf8").trim().split(/\r?\n/).length >= 2, true);
     });
   });
 
-  it("returns repoState-only status JSON", () => {
+  it("returns repoState-only status JSON without writes", () => {
     withFixtureCopy((fixtureRoot) => {
+      const before = collectRepoPaths(fixtureRoot);
       const result = parseJson(runOpcore(["status", "--repo", fixtureRoot, "--json"], fixtureRoot, 0).stdout);
 
       assert.deepEqual(result.canonicalCommand, ["opcore", "status"]);
@@ -62,6 +66,8 @@ describe("opcore public facade", () => {
       assert.equal(Object.hasOwn(result, "repoState"), true);
       assert.equal(Object.hasOwn(result, "validationResult"), false);
       assert.equal(Object.hasOwn(result, "validationStatus"), false);
+      assertCommandTiming(result);
+      assert.deepEqual(collectRepoPaths(fixtureRoot), before);
     });
   });
 
@@ -110,6 +116,7 @@ describe("opcore public facade", () => {
           { extension: ".pyi", language: "Python", count: 1 }
         ]
       );
+      assertCommandTiming(result);
     } finally {
       rmSync(temp, { recursive: true, force: true });
     }
@@ -129,6 +136,7 @@ describe("opcore public facade", () => {
       assert.equal(result.validationResult.ok, true);
       assert.equal(result.validationResult.status, "passed");
       assert.equal(result.validationResult.manifest.runs[0].checkId, "typescript.syntax");
+      assertCommandTiming(result);
     });
   });
 
@@ -146,6 +154,7 @@ describe("opcore public facade", () => {
       assert.equal(result.validationResult.ok, true);
       assert.equal(result.validationResult.status, "passed");
       assert.equal(result.validationResult.manifest.runs[0].checkId, "typescript.syntax");
+      assertCommandTiming(result);
     });
   });
 
@@ -158,6 +167,8 @@ describe("opcore public facade", () => {
       writeOpcoreMetricArtifacts(temp, metricReport(temp, "2026-06-25T00:00:00.000Z", 1));
       const historyBefore = readFileSync(join(temp, ".opcore/history.jsonl"), "utf8");
       const reportBefore = readFileSync(join(temp, ".opcore/report.json"), "utf8");
+      const pathsBefore = collectRepoPaths(temp);
+      assert.equal(existsSync(join(temp, ".opcore/telemetry.jsonl")), false);
 
       const measure = parseJson(runOpcore(["measure", "--repo", temp, "--json"], temp, 0).stdout);
 
@@ -170,6 +181,9 @@ describe("opcore public facade", () => {
       assert.equal(Object.hasOwn(measure, "repoState"), false);
       assert.equal(readFileSync(join(temp, ".opcore/history.jsonl"), "utf8"), historyBefore);
       assert.equal(readFileSync(join(temp, ".opcore/report.json"), "utf8"), reportBefore);
+      assert.equal(existsSync(join(temp, ".opcore/telemetry.jsonl")), false);
+      assert.deepEqual(collectRepoPaths(temp), pathsBefore);
+      assertCommandTiming(measure);
 
       const human = runOpcore(["measure", "--repo", temp], temp, 0);
       assert.equal(human.message, undefined);
@@ -200,6 +214,7 @@ describe("opcore public facade", () => {
       assert.equal(result.message.indexOf("Findings:") < result.message.indexOf("Setup:"), true);
       assert.equal(existsSync(join(temp, ".opcore")), false);
       assert.equal(existsSync(join(temp, "AGENTS.md")), false);
+      assertCommandTiming(result);
     } finally {
       rmSync(temp, { recursive: true, force: true });
     }
@@ -221,7 +236,9 @@ describe("opcore public facade", () => {
       assert.equal(existsSync(join(temp, ".opcore", "init-undo.json")), true);
       assert.equal(existsSync(join(temp, ".opcore", "report.json")), false);
       assert.equal(existsSync(join(temp, ".opcore", "history.jsonl")), false);
+      assert.equal(existsSync(join(temp, ".opcore", "telemetry.jsonl")), false);
       assert.equal(existsSync(join(temp, ".opcore", "hooks", "pre-commit-opcore-check.sh")), false);
+      assert.equal(existsSync(join(temp, ".gitignore")), false);
       const config = JSON.parse(readFileSync(join(temp, ".opcore", "config"), "utf8"));
       assert.equal(config.schemaVersion, 1);
       assert.equal(config.guidance.checkCommand, "opcore check --changed");
@@ -233,8 +250,33 @@ describe("opcore public facade", () => {
       assert.match(agents, /preserve existing repo lint\/test\/CI\/pre-commit guardrails/i);
       assert.match(agents, /unsupported stacks and degraded tools/i);
       assert.match(agents, /Do not rely on ACE, Rox, CRG, CIX, or ASP host authority/i);
+      assertCommandTiming(result);
     } finally {
       rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("adds telemetry gitignore entry for approved Git init and undo restores it", () => {
+    const withoutExisting = mkdtempSync(join(tmpdir(), "opcore-init-gitignore-new-"));
+    const withExisting = mkdtempSync(join(tmpdir(), "opcore-init-gitignore-existing-"));
+    try {
+      initGitFixture(withoutExisting);
+      runOpcore(["init", "--repo", withoutExisting, "--approve", "--json"], withoutExisting, 0);
+      runOpcore(["init", "--repo", withoutExisting, "--approve", "--json"], withoutExisting, 0);
+      assert.equal(gitignoreTelemetryEntryCount(withoutExisting), 1);
+      runOpcore(["init", "--repo", withoutExisting, "--undo", "--approve", "--json"], withoutExisting, 0);
+      assert.equal(existsSync(join(withoutExisting, ".gitignore")), false);
+
+      initGitFixture(withExisting);
+      writeFileSync(join(withExisting, ".gitignore"), "node_modules\n");
+      runOpcore(["init", "--repo", withExisting, "--approve", "--json"], withExisting, 0);
+      assert.equal(gitignoreTelemetryEntryCount(withExisting), 1);
+      assert.match(readFileSync(join(withExisting, ".gitignore"), "utf8"), /^node_modules$/m);
+      runOpcore(["init", "--repo", withExisting, "--undo", "--approve", "--json"], withExisting, 0);
+      assert.equal(readFileSync(join(withExisting, ".gitignore"), "utf8"), "node_modules\n");
+    } finally {
+      rmSync(withoutExisting, { recursive: true, force: true });
+      rmSync(withExisting, { recursive: true, force: true });
     }
   });
 
@@ -362,6 +404,7 @@ describe("opcore public facade", () => {
           assert.equal(rust.validation, "retained");
           assert.deepEqual(rust.checks, []);
         }
+        assertCommandTiming(result);
       } finally {
         rmSync(temp, { recursive: true, force: true });
       }
@@ -416,6 +459,7 @@ describe("opcore public facade", () => {
       const hook = readFileSync(join(temp, ".opcore", "hooks", "pre-commit-opcore-check.sh"), "utf8");
       assert.equal(result.opcoreInit.options.failClosedHook, true);
       assert.match(hook, /opcore check --changed/);
+      assertCommandTiming(result);
     } finally {
       rmSync(temp, { recursive: true, force: true });
     }
@@ -666,10 +710,12 @@ describe("opcore public facade", () => {
       assert.equal(measure.status, "error");
       assert.deepEqual(measure.canonicalCommand, ["opcore", "measure"]);
       assert.match(measure.message, /\.opcore\/report\.json/);
+      assertCommandTiming(measure);
 
       const unknown = parseJson(runOpcore(["unknown", "--json"], temp, 64).stdout);
       assert.equal(unknown.status, "unsupported");
       assert.deepEqual(unknown.canonicalCommand, ["opcore", "unknown"]);
+      assertCommandTiming(unknown);
     } finally {
       rmSync(temp, { recursive: true, force: true });
     }
@@ -683,6 +729,7 @@ describe("opcore public facade", () => {
       cleanupRoots.push(jsonResult.opcoreTry.sampleRoot);
       assert.deepEqual(jsonResult.canonicalCommand, ["opcore", "try"]);
       assert.equal(jsonResult.owner, "runtime");
+      assertCommandTiming(jsonResult);
       assert.equal(jsonResult.opcoreTry.published, false);
       assert.deepEqual(
         jsonResult.opcoreTry.scenarios.map((scenario) => scenario.id).sort(),
@@ -831,6 +878,19 @@ function markerCount(text) {
 
 function endMarkerCount(text) {
   return (text.match(/END OPCORE INIT/g) ?? []).length;
+}
+
+function gitignoreTelemetryEntryCount(root) {
+  return readFileSync(join(root, ".gitignore"), "utf8")
+    .split(/\r?\n/)
+    .filter((line) => line.trim() === ".opcore/telemetry.jsonl").length;
+}
+
+function assertCommandTiming(result) {
+  assert.equal(typeof result.timing?.durationMs, "number");
+  assert.equal(result.timing.durationMs >= 0, true);
+  assert.equal(Array.isArray(result.timing.phases), true);
+  assert.equal(["cold", "warm"].includes(result.timing.processState), true);
 }
 
 function metricReport(repoRoot, generatedAt, typeErrorCount) {

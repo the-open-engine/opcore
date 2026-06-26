@@ -18,8 +18,15 @@ export {
   formatOpcoreReportHuman,
   readOpcoreMetricHistory,
   readOpcoreMetricReport,
+  writeCommandLatencyTelemetry,
   writeOpcoreMetricArtifacts
 } from "./reporting.js";
+export {
+  attachCommandTiming,
+  collectTimingPhases,
+  createCommandLatencyRecord,
+  timeCommand
+} from "./timing.js";
 
 if (isDirectExecution()) {
   process.exitCode = await runOpcoreCli({
