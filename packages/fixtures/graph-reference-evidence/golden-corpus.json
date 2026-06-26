@@ -1,0 +1,144 @@
+{
+  "schemaVersion": 1,
+  "issue": "#19",
+  "id": "graph-reference-evidence-golden-corpus-v1",
+  "origin": "covibes-authored-synthetic",
+  "containsSourceCode": false,
+  "description": "Synthetic graph reference corpus authored for Lattice contracts; file contents are descriptors, not upstream source.",
+  "files": [
+    {
+      "path": "src/auth.ts",
+      "language": "typescript",
+      "symbols": ["login", "logout"],
+      "hash": "sha256:synthetic-auth"
+    },
+    {
+      "path": "src/session.ts",
+      "language": "typescript",
+      "symbols": ["createSession"],
+      "hash": "sha256:synthetic-session"
+    },
+    {
+      "path": "tests/auth.test.ts",
+      "language": "typescript",
+      "symbols": ["login rejects invalid password"],
+      "hash": "sha256:synthetic-auth-test"
+    }
+  ],
+  "expectedFacts": {
+    "parser": {
+      "nodes": [
+        {
+          "id": "file:src/auth.ts",
+          "kind": "File",
+          "name": "src/auth.ts"
+        },
+        {
+          "id": "file:src/session.ts",
+          "kind": "File",
+          "name": "src/session.ts"
+        },
+        {
+          "id": "file:tests/auth.test.ts",
+          "kind": "File",
+          "name": "tests/auth.test.ts"
+        },
+        {
+          "id": "function:src/auth.ts#login",
+          "kind": "Function",
+          "name": "login",
+          "filePath": "src/auth.ts"
+        },
+        {
+          "id": "function:src/auth.ts#logout",
+          "kind": "Function",
+          "name": "logout",
+          "filePath": "src/auth.ts"
+        },
+        {
+          "id": "function:src/session.ts#createSession",
+          "kind": "Function",
+          "name": "createSession",
+          "filePath": "src/session.ts"
+        },
+        {
+          "id": "test:tests/auth.test.ts#login rejects invalid password",
+          "kind": "Test",
+          "name": "login rejects invalid password",
+          "filePath": "tests/auth.test.ts"
+        }
+      ]
+    },
+    "store": {
+      "metadata": {
+        "schema_version": "6",
+        "last_build_type": "full"
+      },
+      "edges": [
+        {
+          "kind": "CONTAINS",
+          "source": "file:src/auth.ts",
+          "target": "function:src/auth.ts#login"
+        },
+        {
+          "kind": "CONTAINS",
+          "source": "file:src/auth.ts",
+          "target": "function:src/auth.ts#logout"
+        },
+        {
+          "kind": "CONTAINS",
+          "source": "file:src/session.ts",
+          "target": "function:src/session.ts#createSession"
+        },
+        {
+          "kind": "CONTAINS",
+          "source": "file:tests/auth.test.ts",
+          "target": "test:tests/auth.test.ts#login rejects invalid password"
+        },
+        {
+          "kind": "CALLS",
+          "source": "function:src/auth.ts#login",
+          "target": "function:src/session.ts#createSession"
+        },
+        {
+          "kind": "TESTED_BY",
+          "source": "function:src/auth.ts#login",
+          "target": "test:tests/auth.test.ts#login rejects invalid password"
+        }
+      ]
+    },
+    "query": {
+      "pattern": "callers_of",
+      "target": "createSession",
+      "expectedResultIds": ["function:src/auth.ts#login"],
+      "expectedEdgeKinds": ["CALLS"]
+    },
+    "search": {
+      "query": "login",
+      "searchMode": "keyword",
+      "expectedResultIds": ["function:src/auth.ts#login", "test:tests/auth.test.ts#login rejects invalid password"],
+      "expectedHints": ["query_graph", "get_flow", "get_impact_radius"]
+    },
+    "freshness": {
+      "freshAfterBuild": true,
+      "staleWhenOlderThanMs": 60000,
+      "requiredMetadataKeys": ["schema_version", "last_updated", "last_build_type"]
+    },
+    "status": {
+      "totalNodes": 7,
+      "totalEdges": 6,
+      "nodesByKind": {
+        "File": 3,
+        "Function": 3,
+        "Test": 1
+      },
+      "edgesByKind": {
+        "CALLS": 1,
+        "CONTAINS": 4,
+        "TESTED_BY": 1
+      },
+      "languages": ["typescript"],
+      "embeddingsCount": 0
+    }
+  }
+}

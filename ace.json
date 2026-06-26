@@ -1,0 +1,56 @@
+{
+  "canonical": ".claude",
+  "providers": [
+    ".agents",
+    ".codex",
+    ".gemini",
+    ".opencode"
+  ],
+  "policy": "standard",
+  "sync": {
+    "skills": true,
+    "commands": false,
+    "hooks": true,
+    "contextDocs": true
+  },
+  "mcpServers": {
+    "code-review-graph": {
+      "command": "bash",
+      "args": [
+        "-lc",
+        "set -euo pipefail; repo_root=$(git rev-parse --show-toplevel 2>/dev/null || pwd); exec \"$repo_root/.ace/runtime/bin/crg\" serve --repo \"$repo_root\""
+      ]
+    }
+  },
+  "contextDocs": {
+    "source": "CLAUDE.md",
+    "ownershipPaths": [
+      "packages",
+      "scripts",
+      "tests",
+      ".github"
+    ],
+    "excludedPaths": [
+      "dist",
+      "node_modules",
+      "coverage",
+      ".changeset",
+      ".ace",
+      ".agents",
+      ".claude",
+      ".codex",
+      ".gemini",
+      ".opencode",
+      ".zeroshot/bin",
+      ".zeroshot/logs",
+      ".zeroshot/run",
+      ".code-review-graph",
+      ".rox-cache",
+      ".robustness-engine-cache"
+    ]
+  },
+  "gitSafe": false,
+  "preWriteQuality": {
+    "bash": false
+  }
+}

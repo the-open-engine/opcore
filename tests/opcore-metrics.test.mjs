@@ -1,0 +1,385 @@
+import { describe, it } from "node:test";
+import assert from "node:assert/strict";
+import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import {
+  createOpcoreMeasureDelta,
+  createOpcoreMetricReport,
+  formatOpcoreMeasureHuman,
+  readOpcoreMetricHistory,
+  writeOpcoreMetricArtifacts
+} from "../packages/opcore/dist/index.js";
+
+describe("Opcore metrics", () => {
+  it("maps validation diagnostics, graph structure facts, unsupported stacks, and degradations", () => {
+    const report = createOpcoreMetricReport({
+      repoState: repoState(),
+      validationResult: validationResult(),
+      graphFacts: graphFacts(),
+      generatedAt: "2026-06-25T00:00:00.000Z"
+    });
+
+    const signals = new Map(report.signals.map((signal) => [signal.id, signal]));
+    assert.equal(signals.get("typescript.syntax_errors").count, 1);
+    assert.equal(signals.get("typescript.type_errors").count, 1);
+    assert.equal(signals.get("typescript.untested_surface").count, 1);
+    assert.equal(signals.get("typescript.dead_exports").evidence[0].path, "src/dead.ts");
+    assert.equal(signals.get("typescript.structure.god_files").count, 1);
+    assert.equal(signals.get("typescript.structure.high_fan_in").count, 1);
+    assert.equal(signals.get("rust.source_hygiene").count, 1);
+    assert.equal(signals.get("rust.oversized_files").count, 1);
+    assert.equal(signals.get("rust.module_graph").count, 1);
+    assert.equal(signals.get("rust.toolchain_drift").count, 1);
+    assert.equal(signals.get("coverage.unsupported_stacks").count, 2);
+    assert.equal(report.signals.every((signal) => signal.count > 0 && signal.evidence.every((entry) => entry.path)), true);
+    assert.equal(report.degradations.some((entry) => entry.id === "typescript.dead_exports.unavailable"), true);
+    assert.equal(report.degradations.some((entry) => entry.id === "rust.tool.cargo.unavailable"), true);
+    assert.equal(JSON.stringify(report).includes("blendedScore"), false);
+    assert.equal(Object.hasOwn(report, "score"), false);
+  });
+
+  it("degrades missing graph facts and skipped graph checks without zero findings", () => {
+    const report = createOpcoreMetricReport({
+      repoState: repoState({ degradedToolchains: [] }),
+      validationResult: {
+        ok: false,
+        status: "skipped",
+        diagnostics: [],
+        manifest: {
+          schemaVersion: 1,
+          checks: ["typescript.relevant-tests"],
+          generatedAt: "2026-06-25T00:00:00.000Z",
+          skippedChecks: [
+            {
+              checkId: "typescript.relevant-tests",
+              reason: "graph_unavailable",
+              message: "Graph unavailable"
+            }
+          ]
+        }
+      },
+      generatedAt: "2026-06-25T00:00:00.000Z"
+    });
+
+    assert.equal(report.signals.some((signal) => signal.count === 0), false);
+    assert.equal(report.degradations.some((entry) => entry.id === "graph.facts.unavailable"), true);
+    assert.equal(report.degradations.some((entry) => entry.id === "validation.typescript_relevant_tests.skipped"), true);
+    assert.equal(report.degradations.some((entry) => entry.id === "typescript.dead_exports.not_run"), true);
+  });
+
+  it("maps raw rustc cargo-check diagnostics into Rust toolchain drift", () => {
+    const report = createOpcoreMetricReport({
+      repoState: repoState({ degradedToolchains: [] }),
+      validationResult: {
+        ok: false,
+        status: "policy_failure",
+        diagnostics: [
+          {
+            category: "types",
+            severity: "error",
+            path: "crates/app/src/lib.rs",
+            code: "E0308",
+            message: "mismatched types"
+          }
+        ],
+        manifest: {
+          schemaVersion: 1,
+          checks: ["rust.cargo-check"],
+          generatedAt: "2026-06-25T00:00:00.000Z"
+        }
+      },
+      graphFacts: graphFacts(),
+      generatedAt: "2026-06-25T00:00:00.000Z"
+    });
+
+    const signal = report.signals.find((entry) => entry.id === "rust.toolchain_drift");
+    assert.equal(signal?.count, 1);
+    assert.equal(signal?.evidence[0].path, "crates/app/src/lib.rs");
+    assert.equal(signal?.evidence[0].code, "E0308");
+  });
+
+  it("writes latest report and appends one history entry per call", () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-metrics-history-"));
+    try {
+      const report = createOpcoreMetricReport({
+        repoState: repoState(),
+        validationResult: validationResult(),
+        graphFacts: graphFacts(),
+        generatedAt: "2026-06-25T00:00:00.000Z"
+      });
+
+      writeOpcoreMetricArtifacts(temp, report);
+      writeOpcoreMetricArtifacts(temp, report);
+
+      assert.equal(existsSync(join(temp, ".opcore/report.json")), true);
+      assert.equal(JSON.parse(readFileSync(join(temp, ".opcore/report.json"), "utf8")).kind, "opcore_metric_report");
+      assert.equal(readFileSync(join(temp, ".opcore/history.jsonl"), "utf8").trim().split(/\r?\n/).length, 2);
+      assert.equal(readOpcoreMetricHistory(temp).length, 2);
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("computes concrete baseline and previous deltas and formats human sections in order", () => {
+    const baseline = reportWithSignals("2026-06-24T00:00:00.000Z", [
+      ["typescript.type_errors", "TS/JS type errors", 3],
+      ["rust.source_hygiene", "Rust source hygiene suppressions", 1]
+    ]);
+    const previous = reportWithSignals("2026-06-25T00:00:00.000Z", [["typescript.type_errors", "TS/JS type errors", 2]]);
+    const current = reportWithSignals("2026-06-25T01:00:00.000Z", [["typescript.type_errors", "TS/JS type errors", 1]]);
+    const delta = createOpcoreMeasureDelta({
+      current,
+      history: [
+        historyEntry("2026-06-24T00:00:01.000Z", baseline),
+        historyEntry("2026-06-25T00:00:01.000Z", previous)
+      ],
+      generatedAt: "2026-06-25T01:00:01.000Z"
+    });
+
+    assert.deepEqual(
+      delta.baseline.deltas.map((entry) => [entry.id, entry.currentCount, entry.comparisonCount, entry.delta]),
+      [
+        ["rust.source_hygiene", 0, 1, -1],
+        ["typescript.type_errors", 1, 3, -2]
+      ]
+    );
+    assert.deepEqual(delta.previous.deltas.map((entry) => [entry.id, entry.delta]), [["typescript.type_errors", -1]]);
+    const human = formatOpcoreMeasureHuman(delta);
+    assert.equal(human.indexOf("Coverage:"), 0);
+    assert.equal(human.indexOf("Signals:") > human.indexOf("Coverage:"), true);
+    assert.equal(human.indexOf("Warnings/degradations:") > human.indexOf("Signals:"), true);
+    assert.equal(human.indexOf("Next:") > human.indexOf("Warnings/degradations:"), true);
+    assert.doesNotMatch(human, /0-100|score/i);
+    assert.match(human, /baseline=-2/);
+    assert.match(human, /previous=-1/);
+  });
+});
+
+function validationResult() {
+  return {
+    ok: false,
+    status: "policy_failure",
+    diagnostics: [
+      { category: "syntax", severity: "error", path: "src/bad.ts", code: "TS1005", message: "Expected ';'." },
+      { category: "types", severity: "error", path: "src/bad.ts", code: "TS2322", message: "Type mismatch." },
+      {
+        category: "test",
+        severity: "info",
+        path: "src/untested.ts",
+        code: "TS_RELEVANT_TESTS_ABSENT",
+        message: "No TESTED_BY graph evidence found."
+      },
+      {
+        category: "graph",
+        severity: "warning",
+        path: "src/dead.ts",
+        code: "TS_DEAD_CODE_UNUSED_EXPORT",
+        message: "Exported symbol has no incoming CALLS graph evidence."
+      },
+      {
+        category: "graph",
+        severity: "info",
+        code: "TS_DEAD_CODE_UNSUPPORTED",
+        message: "Graph facts do not include CALLS edge coverage."
+      },
+      {
+        category: "policy",
+        severity: "error",
+        path: "crates/app/src/lib.rs",
+        code: "RUST_SOURCE_ALLOW_DEAD_CODE",
+        message: "allow(dead_code) suppressions are not allowed."
+      },
+      {
+        category: "policy",
+        severity: "error",
+        path: "crates/app/src/large.rs",
+        code: "RUST_FILE_LINES",
+        message: "Rust file has 501 lines; max is 500."
+      },
+      {
+        category: "graph",
+        severity: "error",
+        path: "crates/app/src/lib.rs",
+        code: "RUST_IMPORT_UNRESOLVED_MODULE",
+        message: "Rust module declaration has no file."
+      },
+      {
+        category: "lint",
+        severity: "error",
+        path: "crates/app/src/lib.rs",
+        code: "RUST_FMT_DRIFT",
+        message: "Rust formatting drift."
+      }
+    ],
+    manifest: {
+      schemaVersion: 1,
+      checks: [
+        "typescript.syntax",
+        "typescript.types",
+        "typescript.relevant-tests",
+        "typescript.dead-code",
+        "rust.source-hygiene",
+        "rust.file-length",
+        "rust.import-graph",
+        "rust.fmt"
+      ],
+      generatedAt: "2026-06-25T00:00:00.000Z"
+    }
+  };
+}
+
+function repoState(overrides = {}) {
+  const degradedToolchains = overrides.degradedToolchains ?? [
+    { adapter: "rust", tool: "cargo", failureMessage: "cargo unavailable" }
+  ];
+  return {
+    schemaVersion: 1,
+    repo: {
+      root: "/repo",
+      requestedPath: "/repo",
+      git: { available: false }
+    },
+    coverage: {
+      totalFiles: 8,
+      languages: [
+        { language: "TypeScript", files: 4, graphSupported: true, validationSupported: true },
+        { language: "Rust", files: 2, graphSupported: false, validationSupported: true },
+        { language: "Python", files: 2, graphSupported: false, validationSupported: false }
+      ],
+      graph: {
+        supportedFiles: 4,
+        extensions: [{ extension: ".ts", count: 4 }]
+      },
+      validation: {
+        supportedFiles: 6,
+        retainedFiles: 0,
+        extensions: [
+          { extension: ".ts", count: 4 },
+          { extension: ".rs", count: 2 }
+        ]
+      },
+      unsupported: {
+        totalFiles: 2,
+        stacks: [{ extension: ".py", language: "Python", count: 2, examples: ["scripts/a.py", "scripts/b.py"] }]
+      }
+    },
+    graph: {
+      state: "available",
+      mode: "optional",
+      provider: "lattice-graph",
+      action: "Graph is ready.",
+      status: {
+        state: "available",
+        mode: "optional",
+        provider: "lattice-graph",
+        schemaVersion: 1,
+        repo: { repoRoot: "/repo" },
+        freshness: {
+          generatedAt: "2026-06-25T00:00:00.000Z",
+          ageMs: 0,
+          stale: false
+        }
+      }
+    },
+    validation: {
+      ready: degradedToolchains.length === 0,
+      checkCount: 15,
+      adapters: [
+        {
+          adapter: "rust",
+          status: degradedToolchains.length === 0 ? "available" : "unavailable",
+          checkCount: 10,
+          degradedChecks: [],
+          missingTools: degradedToolchains.map((tool) => tool.tool)
+        }
+      ],
+      degradedToolchains
+    },
+    activation: {
+      ready: false,
+      level: "degraded",
+      summary: "Repo is degraded.",
+      asp: {
+        state: "not_enrolled",
+        paths: []
+      }
+    },
+    warnings: ["Unsupported stacks: Python"],
+    blockers: [],
+    nextActions: ["lattice check changed --repo /repo --json"]
+  };
+}
+
+function graphFacts() {
+  const nodes = [
+    { id: "file:src/god.ts", kind: "file", path: "src/god.ts" },
+    { id: "file:src/shared.ts", kind: "file", path: "src/shared.ts" },
+    ...Array.from({ length: 11 }, (_, index) => ({
+      id: `file:src/consumer-${index}.ts`,
+      kind: "file",
+      path: `src/consumer-${index}.ts`
+    }))
+  ];
+  const contains = Array.from({ length: 51 }, (_, index) => ({
+    kind: "CONTAINS",
+    from: "file:src/god.ts",
+    to: `function:src/god.ts#symbol${index}`
+  }));
+  const imports = Array.from({ length: 11 }, (_, index) => ({
+    kind: "IMPORTS_FROM",
+    from: `file:src/consumer-${index}.ts`,
+    to: "file:src/shared.ts"
+  }));
+  return {
+    nodes,
+    edges: [...contains, ...imports],
+    metadata: {
+      schemaVersion: 1,
+      provider: "lattice-graph",
+      repo: { repoRoot: "/repo" },
+      generatedAt: "2026-06-25T00:00:00.000Z",
+      freshness: {
+        generatedAt: "2026-06-25T00:00:00.000Z",
+        ageMs: 0,
+        stale: false
+      },
+      nodeKinds: ["file"],
+      edgeKinds: ["CONTAINS", "IMPORTS_FROM"]
+    }
+  };
+}
+
+function reportWithSignals(generatedAt, signalRows) {
+  return {
+    ...createOpcoreMetricReport({
+      repoState: repoState({ degradedToolchains: [] }),
+      validationResult: { ok: true, status: "passed", diagnostics: [] },
+      graphFacts: graphFacts(),
+      generatedAt
+    }),
+    signals: signalRows.map(([id, title, count]) => ({
+      id,
+      title,
+      category: id.startsWith("rust.") ? "rust" : "typescript",
+      severity: "warning",
+      count,
+      evidence: [
+        {
+          source: "validation_diagnostic",
+          path: id.startsWith("rust.") ? "crates/app/src/lib.rs" : "src/index.ts",
+          message: title
+        }
+      ]
+    }))
+  };
+}
+
+function historyEntry(recordedAt, report) {
+  return {
+    schemaVersion: 1,
+    kind: "opcore_metric_history_entry",
+    recordedAt,
+    report
+  };
+}

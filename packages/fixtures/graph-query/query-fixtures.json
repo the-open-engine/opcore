@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "fixture": "graph-query-v1",
+  "sourceFixture": "packages/fixtures/source-extraction/wave1",
+  "namedQueryKinds": [
+    "callers_of",
+    "callees_of",
+    "importers_of",
+    "imports_of",
+    "tests_for",
+    "children_of",
+    "file_summary"
+  ],
+  "impact": {
+    "changedFiles": [
+      "src/models.ts"
+    ],
+    "impactedFilesIncludes": [
+      "src/components/GreetingCard.tsx",
+      "src/__tests__/greeting.test.ts"
+    ],
+    "testsIncludes": [
+      "src/__tests__/greeting.test.ts"
+    ]
+  },
+  "failureStates": [
+    "required_missing",
+    "stale",
+    "schema_mismatch",
+    "daemon_unavailable",
+    "error"
+  ],
+  "edgeCases": [
+    "import_cycles",
+    "deleted_files",
+    "renamed_paths",
+    "missing_nodes",
+    "unsupported_named_query"
+  ],
+  "edgeCaseExpectations": {
+    "import_cycles": {
+      "queryKind": "importers_of",
+      "target": "src/a.ts",
+      "expectedNodes": [
+        "file:src/a.ts",
+        "file:src/b.ts",
+        "file:src/c.ts"
+      ],
+      "truncated": false
+    },
+    "deleted_files": {
+      "deletedFiles": [
+        "src/deleted.ts"
+      ],
+      "changedFiles": []
+    },
+    "renamed_paths": {
+      "fromPath": "src/old.ts",
+      "toPath": "src/new.ts"
+    },
+    "missing_nodes": {
+      "danglingEdgeTarget": "file:src/missing.ts",
+      "expectedMissingNodePayload": false
+    },
+    "unsupported_named_query": {
+      "status": "error",
+      "failureCategory": "unsupported_mode"
+    }
+  }
+}

@@ -1,0 +1,3437 @@
+{
+  "schemaVersion": 1,
+  "issue": "#120",
+  "origin": "covibes-authored-asp-dogfood-proof",
+  "generatedAt": "2026-06-26T10:43:57.261Z",
+  "commitSha": "f51e3ae668444c39c703db95a40b6b20de9a1c89",
+  "privateRepo": true,
+  "bootstrapSource": "local-sibling",
+  "packageNames": [
+    "@the-open-engine/lattice-contracts",
+    "@the-open-engine/opcore",
+    "@the-open-engine/lattice-cli",
+    "@the-open-engine/lattice-graph",
+    "@the-open-engine/opcore-graph-core-darwin-arm64",
+    "@the-open-engine/opcore-graph-core-darwin-x64",
+    "@the-open-engine/opcore-graph-core-linux-x64",
+    "@the-open-engine/lattice-edit",
+    "@the-open-engine/lattice-validation",
+    "@the-open-engine/lattice-validation-rust",
+    "@the-open-engine/lattice-validation-typescript",
+    "@the-open-engine/opcore-asp-provider"
+  ],
+  "installedPackages": [
+    {
+      "packageName": "@the-open-engine/lattice-contracts",
+      "version": "0.1.0-alpha.0",
+      "tarball": {
+        "filename": "the-open-engine-lattice-contracts-0.1.0-alpha.0.tgz",
+        "sha256": "6801e8dda1ed82724bfa95d70ab7b7c4af4f87016a7471eb4cdfb425dda382b5"
+      },
+      "installedManifest": {
+        "path": "node_modules/@the-open-engine/lattice-contracts/package.json",
+        "sha256": "e21cdd3056b5018d4667172a64083a5589fa388f2788cf413d4e6677dd337e2a",
+        "bins": {}
+      }
+    },
+    {
+      "packageName": "@the-open-engine/opcore",
+      "version": "0.1.0-alpha.0",
+      "tarball": {
+        "filename": "the-open-engine-opcore-0.1.0-alpha.0.tgz",
+        "sha256": "8d2858dad630606d3bd6984d9a13a547a04a2f469750172e031bb63577ac3e32"
+      },
+      "installedManifest": {
+        "path": "node_modules/@the-open-engine/opcore/package.json",
+        "sha256": "17d72ac4370f8746281377a6262260dc4686ff45ae1135357b37d020d12d7457",
+        "bins": {
+          "opcore": "dist/index.js"
+        }
+      }
+    },
+    {
+      "packageName": "@the-open-engine/lattice-cli",
+      "version": "0.1.0-alpha.0",
+      "tarball": {
+        "filename": "the-open-engine-lattice-cli-0.1.0-alpha.0.tgz",
+        "sha256": "b05924813e985235f383c994ceeb4633d0fb1058f7030e1a5492a7a003710998"
+      },
+      "installedManifest": {
+        "path": "node_modules/@the-open-engine/lattice-cli/package.json",
+        "sha256": "fd85c8247ff3f0065709e0a386c82214664cccf34c13f2e3ec01d06015e14bc2",
+        "bins": {
+          "lattice": "dist/index.js"
+        }
+      }
+    },
+    {
+      "packageName": "@the-open-engine/lattice-graph",
+      "version": "0.1.0-alpha.0",
+      "tarball": {
+        "filename": "the-open-engine-lattice-graph-0.1.0-alpha.0.tgz",
+        "sha256": "b3c0d26e66d9ff66d62890c77411c540d98892cefa320291f783d106517de7d6"
+      },
+      "installedManifest": {
+        "path": "node_modules/@the-open-engine/lattice-graph/package.json",
+        "sha256": "f108d94aaaf1126137505170954e4ed1b1a702e0f9a402a3c947bb4064ffc0f6",
+        "bins": {}
+      }
+    },
+    {
+      "packageName": "@the-open-engine/opcore-graph-core-darwin-arm64",
+      "version": "0.1.0-alpha.0",
+      "tarball": {
+        "filename": "the-open-engine-opcore-graph-core-darwin-arm64-0.1.0-alpha.0.tgz",
+        "sha256": "ac6c9c61a0bcd799973d871a39d7d694a45875aefda34dfb83754df0dd4795ad"
+      },
+      "installedManifest": {
+        "path": "node_modules/@the-open-engine/opcore-graph-core-darwin-arm64/package.json",
+        "sha256": "2c8d455aef6457fed9d65ddfe8cd93b6939ac28a4e65a629be8b7c563fcad771",
+        "bins": {}
+      }
+    },
+    {
+      "packageName": "@the-open-engine/lattice-edit",
+      "version": "0.1.0-alpha.0",
+      "tarball": {
+        "filename": "the-open-engine-lattice-edit-0.1.0-alpha.0.tgz",
+        "sha256": "43048ec715740e326b9fb58e5bbc57eca75aa0d32ce1a49b08d1a5ea603e0104"
+      },
+      "installedManifest": {
+        "path": "node_modules/@the-open-engine/lattice-edit/package.json",
+        "sha256": "416f9e4abb7d878a822ea18948d7522bb06387c6f3975e6392a3e1ad93f05451",
+        "bins": {}
+      }
+    },
+    {
+      "packageName": "@the-open-engine/lattice-validation",
+      "version": "0.1.0-alpha.0",
+      "tarball": {
+        "filename": "the-open-engine-lattice-validation-0.1.0-alpha.0.tgz",
+        "sha256": "1c79b723abd731e75981c0f0811eb4904e521254cd4b945da5bc49f33ec975ad"
+      },
+      "installedManifest": {
+        "path": "node_modules/@the-open-engine/lattice-validation/package.json",
+        "sha256": "89f431ed3ac7573128afec4e5fe71fe16f391267ca67a77e956c98cbd07173c9",
+        "bins": {}
+      }
+    },
+    {
+      "packageName": "@the-open-engine/lattice-validation-rust",
+      "version": "0.1.0-alpha.0",
+      "tarball": {
+        "filename": "the-open-engine-lattice-validation-rust-0.1.0-alpha.0.tgz",
+        "sha256": "be71165c1846d1f9d35eb1b3557b7a16386ced45d47ac8a82341dac0ed599d14"
+      },
+      "installedManifest": {
+        "path": "node_modules/@the-open-engine/lattice-validation-rust/package.json",
+        "sha256": "a51fb2949604b36ace098df205a3fd1288168f1f67c24c509de9ab4f8a83faaf",
+        "bins": {}
+      }
+    },
+    {
+      "packageName": "@the-open-engine/lattice-validation-typescript",
+      "version": "0.1.0-alpha.0",
+      "tarball": {
+        "filename": "the-open-engine-lattice-validation-typescript-0.1.0-alpha.0.tgz",
+        "sha256": "f56d255773f271c7574aab364e6de6e5f305c6a27c285945eca01e9b2e14d2d7"
+      },
+      "installedManifest": {
+        "path": "node_modules/@the-open-engine/lattice-validation-typescript/package.json",
+        "sha256": "ba72a99e7d102ff2ac7993cc403b21b08d29883b90776350cdadbcd0db309d0f",
+        "bins": {}
+      }
+    },
+    {
+      "packageName": "@the-open-engine/opcore-asp-provider",
+      "version": "0.1.0-alpha.0",
+      "tarball": {
+        "filename": "the-open-engine-opcore-asp-provider-0.1.0-alpha.0.tgz",
+        "sha256": "9367e33f76b7970fc40b9c1159e147467172e85fe10f2fd9575f9a3ee806d624"
+      },
+      "installedManifest": {
+        "path": "node_modules/@the-open-engine/opcore-asp-provider/package.json",
+        "sha256": "859e1b43299088b3971d9f970e90b7bbffdfa8d18db40d606678c9288fa36f76",
+        "bins": {
+          "opcore-asp-provider": "dist/index.js"
+        }
+      }
+    }
+  ],
+  "manager": {
+    "bootstrapSource": "local-sibling",
+    "aspRepoPath": "<covibes>/agent-server-protocol",
+    "aspBinPath": "<covibes>/agent-server-protocol/packages/asp/bin/asp",
+    "cliPath": "<covibes>/agent-server-protocol/packages/asp/dist/cli.js",
+    "commitSha": "5f96d77a20369342915673a1f4e8ad926ed2a57c"
+  },
+  "aspHome": {
+    "path": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-meG23U/asp-home-d31tSR",
+    "temp": true,
+    "isolated": true,
+    "sharedStateMutated": false,
+    "pathSanitized": true,
+    "aceRuntimeBinExcluded": true
+  },
+  "provider": {
+    "providerId": "opcore",
+    "packageName": "@the-open-engine/opcore-asp-provider",
+    "binPath": "node_modules/.bin/opcore-asp-provider",
+    "indexPath": "node_modules/@the-open-engine/opcore-asp-provider/dist/index.js",
+    "indexSha256": "545c630351d6f7754b0c7cc363b7a1122232426355ab5479972d378bc5bec167",
+    "command": [
+      "opcore-asp-provider",
+      "--stdio"
+    ],
+    "entrypoint": {
+      "transport": "stdio",
+      "bin": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-meG23U/project/node_modules/.bin/opcore-asp-provider",
+      "args": [
+        "--stdio"
+      ]
+    },
+    "manifest": {
+      "manifestPath": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-meG23U/asp-server.opcore.json",
+      "manifestSha256": "f02e88a861406fbd220b3dce26b7ec3e602466b7631e15f68b2071150240f445",
+      "manifest": {
+        "manifestVersion": "asp-server/0.1",
+        "server": {
+          "id": "opcore",
+          "name": "Opcore",
+          "version": "0.1.0-alpha.0"
+        },
+        "protocolVersions": [
+          "asp/0.1"
+        ],
+        "capabilities": [
+          "check"
+        ],
+        "capabilityProfiles": [
+          "core-check-provider",
+          "opcore-core-check"
+        ],
+        "entrypoint": {
+          "transport": "stdio",
+          "bin": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-meG23U/project/node_modules/.bin/opcore-asp-provider",
+          "args": [
+            "--stdio"
+          ]
+        },
+        "artifact": {
+          "fingerprint": "sha256:545c630351d6f7754b0c7cc363b7a1122232426355ab5479972d378bc5bec167",
+          "checksums": [
+            {
+              "path": "dist/index.js",
+              "sha256": "545c630351d6f7754b0c7cc363b7a1122232426355ab5479972d378bc5bec167"
+            }
+          ]
+        },
+        "provenance": {
+          "publisher": "the-open-engine",
+          "source": "https://github.com/the-open-engine/lattice",
+          "license": "MIT"
+        },
+        "accessExpectations": {
+          "filesystem": {
+            "read": [
+              "workspace:snapshot"
+            ],
+            "write": []
+          },
+          "network": {
+            "outbound": false,
+            "allowlist": []
+          },
+          "secrets": {
+            "names": []
+          },
+          "environment": {
+            "inherit": false,
+            "variables": [
+              "ASP_SESSION_ID",
+              "PATH"
+            ]
+          },
+          "dataClasses": [
+            "source-code",
+            "diff-metadata"
+          ]
+        }
+      }
+    }
+  },
+  "managerState": {
+    "status": {
+      "id": "asp-status",
+      "command": [
+        "asp",
+        "status",
+        "--json"
+      ],
+      "status": "passed",
+      "exitCode": 0,
+      "stdoutSha256": "1c0c265fa46463203e6412fd88a8ff9b1512e3a25e465c076056f41077e0a7fb",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "output": {
+        "schemaVersion": 1,
+        "manager": {
+          "state": "unavailable",
+          "aspHome": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-meG23U/asp-home-d31tSR",
+          "detail": "Manager daemon is not running."
+        },
+        "host": {
+          "state": "ready",
+          "detail": "ASP Core host runtime module is available; manager setup does not start a host.",
+          "authorityEffect": "none"
+        },
+        "servers": {
+          "state": "none_installed",
+          "installed": [],
+          "enrolled": [],
+          "degraded": [],
+          "detail": "No ASP servers are installed."
+        },
+        "agents": {
+          "state": "degraded",
+          "roots": [
+            {
+              "name": "codex",
+              "displayName": "Codex",
+              "root": "/Users/tom/Library/Application Support/orca/codex-runtime-home/home",
+              "source": "env",
+              "envVars": [
+                "CODEX_HOME"
+              ],
+              "state": "configured",
+              "detail": "Codex root is detected from env.",
+              "supportsGuidance": true,
+              "supportsHooks": true,
+              "guidanceRelativePath": "skills/asp/SKILL.md",
+              "hookConfigRelativePath": "hooks.json",
+              "hookEvent": "PreToolUse",
+              "hookFormat": "json-hooks"
+            },
+            {
+              "name": "claude",
+              "displayName": "Claude",
+              "root": "/Users/tom/.claude",
+              "source": "default",
+              "envVars": [
+                "CLAUDE_HOME",
+                "CLAUDE_CONFIG_DIR"
+              ],
+              "state": "configured",
+              "detail": "Claude root is detected from default.",
+              "supportsGuidance": true,
+              "supportsHooks": true,
+              "guidanceRelativePath": "ASP.md",
+              "hookConfigRelativePath": "settings.json",
+              "hookEvent": "PreToolUse",
+              "hookFormat": "json-hooks"
+            },
+            {
+              "name": "gemini",
+              "displayName": "Gemini",
+              "root": "/Users/tom/.gemini",
+              "source": "default",
+              "envVars": [
+                "GEMINI_HOME"
+              ],
+              "state": "configured",
+              "detail": "Gemini root is detected from default.",
+              "supportsGuidance": true,
+              "supportsHooks": true,
+              "guidanceRelativePath": "GEMINI.md",
+              "hookConfigRelativePath": "settings.json",
+              "hookEvent": "BeforeTool",
+              "hookFormat": "json-hooks"
+            },
+            {
+              "name": "opencode",
+              "displayName": "OpenCode",
+              "root": "/Users/tom/.opencode",
+              "source": "default",
+              "envVars": [
+                "OPENCODE_HOME"
+              ],
+              "state": "missing",
+              "detail": "OpenCode root was not found at /Users/tom/.opencode.",
+              "supportsGuidance": false,
+              "supportsHooks": false
+            },
+            {
+              "name": "orca",
+              "displayName": "Orca",
+              "root": "/Users/tom/.orca",
+              "source": "default",
+              "envVars": [
+                "ORCA_HOME"
+              ],
+              "state": "degraded",
+              "detail": "Orca root is detected from default, but ASP hook/guidance format support is not implemented.",
+              "supportsGuidance": false,
+              "supportsHooks": false
+            }
+          ],
+          "degraded": [
+            {
+              "name": "orca",
+              "displayName": "Orca",
+              "root": "/Users/tom/.orca",
+              "source": "default",
+              "envVars": [
+                "ORCA_HOME"
+              ],
+              "state": "degraded",
+              "detail": "Orca root is detected from default, but ASP hook/guidance format support is not implemented.",
+              "supportsGuidance": false,
+              "supportsHooks": false
+            }
+          ],
+          "detail": "3 agent root(s) configured; 1 agent root(s) degraded or unsupported."
+        },
+        "repos": {
+          "state": "none_enrolled",
+          "enrolled": [],
+          "degraded": [],
+          "detail": "No repositories are enrolled."
+        },
+        "authority": {
+          "managerGrantsGateAuthority": false,
+          "detail": "Manager installation and server discovery do not grant gate authority."
+        },
+        "degraded": [
+          {
+            "area": "agents",
+            "detail": "3 agent root(s) configured; 1 agent root(s) degraded or unsupported."
+          }
+        ]
+      },
+      "assertion": "asp-status completed through standalone ASP manager"
+    },
+    "serverAdd": {
+      "id": "asp-server-add",
+      "command": [
+        "asp",
+        "server",
+        "add",
+        "--manifest",
+        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-meG23U/asp-server.opcore.json",
+        "--json"
+      ],
+      "status": "passed",
+      "exitCode": 0,
+      "stdoutSha256": "42948f4d62a2836714c915568f17f2c87ece166014183fd0cd84904f66c7cf19",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "output": {
+        "schemaVersion": 1,
+        "action": "add",
+        "server": {
+          "id": "opcore",
+          "name": "Opcore",
+          "category": "local-dev",
+          "capabilities": [
+            "check"
+          ],
+          "capabilityProfiles": [
+            "core-check-provider",
+            "opcore-core-check"
+          ],
+          "source": {
+            "kind": "manifest",
+            "manifestSource": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-meG23U/asp-server.opcore.json"
+          },
+          "install": {
+            "state": "installed",
+            "detail": "Validated local asp-server.json manifest copied into manager-owned state."
+          },
+          "conformance": {
+            "status": "not_claimed",
+            "profiles": [
+              "core-check-provider",
+              "opcore-core-check"
+            ]
+          },
+          "access": {
+            "summary": "no outbound network requested; no filesystem writes requested; no secrets requested",
+            "filesystem": {
+              "read": [
+                "workspace:snapshot"
+              ],
+              "write": []
+            },
+            "network": {
+              "outbound": false,
+              "allowlist": []
+            },
+            "secrets": [],
+            "environment": {
+              "inherit": false,
+              "variables": [
+                "ASP_SESSION_ID",
+                "PATH"
+              ]
+            },
+            "dataClasses": [
+              "source-code",
+              "diff-metadata"
+            ]
+          },
+          "trust": {
+            "identity": "publisher:the-open-engine",
+            "integrity": "artifact checksums declared",
+            "conformance": "not_claimed",
+            "isolation": "access expectations declared",
+            "authority": "none",
+            "disclaimer": "Discovery, catalog listing, manifest presence, local install, paid status, support status, or conformance metadata does not grant gate authority."
+          },
+          "authority": {
+            "managerGrantsGateAuthority": false,
+            "gateAuthority": false,
+            "sharedPolicyMutated": false,
+            "ciEnforced": false,
+            "providerAutoLaunchForGates": false
+          },
+          "degraded": [],
+          "installedAt": "2026-06-26T10:43:52.539Z",
+          "manifestPath": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-meG23U/asp-home-d31tSR/servers/manifests/opcore/asp-server.json"
+        }
+      },
+      "assertion": "asp-server-add completed through standalone ASP manager"
+    },
+    "serverStatus": {
+      "id": "asp-server-status",
+      "command": [
+        "asp",
+        "server",
+        "status",
+        "opcore",
+        "--json"
+      ],
+      "status": "passed",
+      "exitCode": 0,
+      "stdoutSha256": "028e5a9910443919a4629377cd2ae4a3babeed064100345b796a4f23bf63274b",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "output": {
+        "schemaVersion": 1,
+        "server": {
+          "id": "opcore",
+          "name": "Opcore",
+          "category": "local-dev",
+          "capabilities": [
+            "check"
+          ],
+          "capabilityProfiles": [
+            "core-check-provider",
+            "opcore-core-check"
+          ],
+          "source": {
+            "kind": "manifest",
+            "manifestSource": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-meG23U/asp-server.opcore.json"
+          },
+          "install": {
+            "state": "installed",
+            "detail": "Validated local asp-server.json manifest copied into manager-owned state."
+          },
+          "conformance": {
+            "status": "not_claimed",
+            "profiles": [
+              "core-check-provider",
+              "opcore-core-check"
+            ]
+          },
+          "access": {
+            "summary": "no outbound network requested; no filesystem writes requested; no secrets requested",
+            "filesystem": {
+              "read": [
+                "workspace:snapshot"
+              ],
+              "write": []
+            },
+            "network": {
+              "outbound": false,
+              "allowlist": []
+            },
+            "secrets": [],
+            "environment": {
+              "inherit": false,
+              "variables": [
+                "ASP_SESSION_ID",
+                "PATH"
+              ]
+            },
+            "dataClasses": [
+              "source-code",
+              "diff-metadata"
+            ]
+          },
+          "trust": {
+            "identity": "publisher:the-open-engine",
+            "integrity": "artifact checksums declared",
+            "conformance": "not_claimed",
+            "isolation": "access expectations declared",
+            "authority": "none",
+            "disclaimer": "Discovery, catalog listing, manifest presence, local install, paid status, support status, or conformance metadata does not grant gate authority."
+          },
+          "authority": {
+            "managerGrantsGateAuthority": false,
+            "gateAuthority": false,
+            "sharedPolicyMutated": false,
+            "ciEnforced": false,
+            "providerAutoLaunchForGates": false
+          },
+          "degraded": [],
+          "installedAt": "2026-06-26T10:43:52.539Z",
+          "manifestPath": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-meG23U/asp-home-d31tSR/servers/manifests/opcore/asp-server.json"
+        },
+        "authority": {
+          "managerGrantsGateAuthority": false,
+          "gateAuthority": false,
+          "sharedPolicyMutated": false,
+          "ciEnforced": false,
+          "providerAutoLaunchForGates": false
+        }
+      },
+      "assertion": "asp-server-status completed through standalone ASP manager"
+    }
+  },
+  "repoEnrollment": {
+    "repo": "/Users/tom/.zeroshot/worktrees/cosmic-phoenix-47/",
+    "mode": "advisory",
+    "repoAdd": {
+      "id": "asp-repo-add",
+      "command": [
+        "asp",
+        "repo",
+        "add",
+        "/Users/tom/.zeroshot/worktrees/cosmic-phoenix-47/",
+        "--json"
+      ],
+      "status": "passed",
+      "exitCode": 0,
+      "stdoutSha256": "4e1848667806fdf3635715c7f044c4ab301d5f18106c0367808f7087dad5abe6",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "output": {
+        "schemaVersion": 1,
+        "action": "add",
+        "repo": {
+          "path": "/Users/tom/.zeroshot/worktrees/cosmic-phoenix-47",
+          "state": "ready",
+          "enrolled": true,
+          "identity": {
+            "kind": "git",
+            "value": "/Users/tom/.zeroshot/worktrees/cosmic-phoenix-47:f51e3ae668444c39c703db95a40b6b20de9a1c89"
+          },
+          "git": {
+            "topLevel": "/Users/tom/.zeroshot/worktrees/cosmic-phoenix-47",
+            "gitDir": "<covibes>/lattice/.git/worktrees/cosmic-phoenix-47",
+            "head": "zeroshot/cosmic-phoenix-47",
+            "commit": "f51e3ae668444c39c703db95a40b6b20de9a1c89"
+          },
+          "enabledServerIds": [],
+          "enabledServers": [],
+          "installedServers": [],
+          "missingServerIds": [],
+          "effectiveLocalMode": "advisory",
+          "localMode": "advisory",
+          "setup": {
+            "status": "recorded",
+            "detail": "Repository is recorded in manager-owned local enrollment state."
+          },
+          "gateReadiness": {
+            "ready": false,
+            "degraded": [
+              {
+                "code": "local_mode_not_gate",
+                "detail": "Local intended mode is advisory; CI gate readiness requires shared host authority evidence."
+              },
+              {
+                "code": "manager_state_not_authority",
+                "detail": "Local repo enrollment records intent only; shared gate authority must come from host authority evidence."
+              }
+            ],
+            "detail": "Manager-owned repo enrollment never grants shared gate authority by itself."
+          },
+          "authority": {
+            "managerGrantsGateAuthority": false,
+            "gateAuthority": false,
+            "sharedPolicyMutated": false,
+            "ciEnforced": false,
+            "providerAutoLaunchForGates": false
+          },
+          "updatedAt": "2026-06-26T10:43:52.663Z"
+        },
+        "authority": {
+          "managerGrantsGateAuthority": false,
+          "gateAuthority": false,
+          "sharedPolicyMutated": false,
+          "ciEnforced": false,
+          "providerAutoLaunchForGates": false
+        }
+      },
+      "assertion": "asp-repo-add completed through standalone ASP manager"
+    },
+    "repoEnable": {
+      "id": "asp-repo-enable",
+      "command": [
+        "asp",
+        "repo",
+        "enable",
+        "opcore",
+        "--repo",
+        "/Users/tom/.zeroshot/worktrees/cosmic-phoenix-47/",
+        "--mode",
+        "advisory",
+        "--json"
+      ],
+      "status": "passed",
+      "exitCode": 0,
+      "stdoutSha256": "c1e454bdbe85c4c7fe99ca3fc10c6951c1795a9c3da389ad668e3631b85f54cd",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "output": {
+        "schemaVersion": 1,
+        "action": "enable",
+        "repo": {
+          "path": "/Users/tom/.zeroshot/worktrees/cosmic-phoenix-47",
+          "state": "ready",
+          "enrolled": true,
+          "identity": {
+            "kind": "git",
+            "value": "/Users/tom/.zeroshot/worktrees/cosmic-phoenix-47:f51e3ae668444c39c703db95a40b6b20de9a1c89"
+          },
+          "git": {
+            "topLevel": "/Users/tom/.zeroshot/worktrees/cosmic-phoenix-47",
+            "gitDir": "<covibes>/lattice/.git/worktrees/cosmic-phoenix-47",
+            "head": "zeroshot/cosmic-phoenix-47",
+            "commit": "f51e3ae668444c39c703db95a40b6b20de9a1c89"
+          },
+          "enabledServerIds": [
+            "opcore"
+          ],
+          "enabledServers": [
+            {
+              "id": "opcore",
+              "mode": "advisory",
+              "enabledAt": "2026-06-26T10:43:52.729Z"
+            }
+          ],
+          "installedServers": [
+            {
+              "id": "opcore",
+              "name": "Opcore",
+              "category": "local-dev",
+              "capabilities": [
+                "check"
+              ],
+              "capabilityProfiles": [
+                "core-check-provider",
+                "opcore-core-check"
+              ],
+              "source": {
+                "kind": "manifest",
+                "manifestSource": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-meG23U/asp-server.opcore.json"
+              },
+              "install": {
+                "state": "installed",
+                "detail": "Validated local asp-server.json manifest copied into manager-owned state."
+              },
+              "conformance": {
+                "status": "not_claimed",
+                "profiles": [
+                  "core-check-provider",
+                  "opcore-core-check"
+                ]
+              },
+              "access": {
+                "summary": "no outbound network requested; no filesystem writes requested; no secrets requested",
+                "filesystem": {
+                  "read": [
+                    "workspace:snapshot"
+                  ],
+                  "write": []
+                },
+                "network": {
+                  "outbound": false,
+                  "allowlist": []
+                },
+                "secrets": [],
+                "environment": {
+                  "inherit": false,
+                  "variables": [
+                    "ASP_SESSION_ID",
+                    "PATH"
+                  ]
+                },
+                "dataClasses": [
+                  "source-code",
+                  "diff-metadata"
+                ]
+              },
+              "trust": {
+                "identity": "publisher:the-open-engine",
+                "integrity": "artifact checksums declared",
+                "conformance": "not_claimed",
+                "isolation": "access expectations declared",
+                "authority": "none",
+                "disclaimer": "Discovery, catalog listing, manifest presence, local install, paid status, support status, or conformance metadata does not grant gate authority."
+              },
+              "authority": {
+                "managerGrantsGateAuthority": false,
+                "gateAuthority": false,
+                "sharedPolicyMutated": false,
+                "ciEnforced": false,
+                "providerAutoLaunchForGates": false
+              },
+              "degraded": [],
+              "installedAt": "2026-06-26T10:43:52.539Z",
+              "manifestPath": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-meG23U/asp-home-d31tSR/servers/manifests/opcore/asp-server.json"
+            }
+          ],
+          "missingServerIds": [],
+          "effectiveLocalMode": "advisory",
+          "localMode": "advisory",
+          "setup": {
+            "status": "recorded",
+            "detail": "Repository is recorded in manager-owned local enrollment state."
+          },
+          "gateReadiness": {
+            "ready": false,
+            "degraded": [
+              {
+                "code": "local_mode_not_gate",
+                "detail": "Local intended mode is advisory; CI gate readiness requires shared host authority evidence."
+              },
+              {
+                "code": "manager_state_not_authority",
+                "detail": "Local repo enrollment records intent only; shared gate authority must come from host authority evidence."
+              }
+            ],
+            "detail": "Manager-owned repo enrollment never grants shared gate authority by itself."
+          },
+          "authority": {
+            "managerGrantsGateAuthority": false,
+            "gateAuthority": false,
+            "sharedPolicyMutated": false,
+            "ciEnforced": false,
+            "providerAutoLaunchForGates": false
+          },
+          "updatedAt": "2026-06-26T10:43:52.729Z"
+        },
+        "authority": {
+          "managerGrantsGateAuthority": false,
+          "gateAuthority": false,
+          "sharedPolicyMutated": false,
+          "ciEnforced": false,
+          "providerAutoLaunchForGates": false
+        }
+      },
+      "assertion": "asp-repo-enable completed through standalone ASP manager"
+    },
+    "repoStatus": {
+      "id": "asp-repo-status",
+      "command": [
+        "asp",
+        "repo",
+        "status",
+        "/Users/tom/.zeroshot/worktrees/cosmic-phoenix-47/",
+        "--json"
+      ],
+      "status": "passed",
+      "exitCode": 0,
+      "stdoutSha256": "5ac50769de2252b84576d9fb9da837ad5dfb2b9da21b220440cf8067b451f8ce",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "output": {
+        "schemaVersion": 1,
+        "action": "status",
+        "repo": {
+          "path": "/Users/tom/.zeroshot/worktrees/cosmic-phoenix-47",
+          "state": "ready",
+          "enrolled": true,
+          "identity": {
+            "kind": "git",
+            "value": "/Users/tom/.zeroshot/worktrees/cosmic-phoenix-47:f51e3ae668444c39c703db95a40b6b20de9a1c89"
+          },
+          "git": {
+            "topLevel": "/Users/tom/.zeroshot/worktrees/cosmic-phoenix-47",
+            "gitDir": "<covibes>/lattice/.git/worktrees/cosmic-phoenix-47",
+            "head": "zeroshot/cosmic-phoenix-47",
+            "commit": "f51e3ae668444c39c703db95a40b6b20de9a1c89"
+          },
+          "enabledServerIds": [
+            "opcore"
+          ],
+          "enabledServers": [
+            {
+              "id": "opcore",
+              "mode": "advisory",
+              "enabledAt": "2026-06-26T10:43:52.729Z"
+            }
+          ],
+          "installedServers": [
+            {
+              "id": "opcore",
+              "name": "Opcore",
+              "category": "local-dev",
+              "capabilities": [
+                "check"
+              ],
+              "capabilityProfiles": [
+                "core-check-provider",
+                "opcore-core-check"
+              ],
+              "source": {
+                "kind": "manifest",
+                "manifestSource": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-meG23U/asp-server.opcore.json"
+              },
+              "install": {
+                "state": "installed",
+                "detail": "Validated local asp-server.json manifest copied into manager-owned state."
+              },
+              "conformance": {
+                "status": "not_claimed",
+                "profiles": [
+                  "core-check-provider",
+                  "opcore-core-check"
+                ]
+              },
+              "access": {
+                "summary": "no outbound network requested; no filesystem writes requested; no secrets requested",
+                "filesystem": {
+                  "read": [
+                    "workspace:snapshot"
+                  ],
+                  "write": []
+                },
+                "network": {
+                  "outbound": false,
+                  "allowlist": []
+                },
+                "secrets": [],
+                "environment": {
+                  "inherit": false,
+                  "variables": [
+                    "ASP_SESSION_ID",
+                    "PATH"
+                  ]
+                },
+                "dataClasses": [
+                  "source-code",
+                  "diff-metadata"
+                ]
+              },
+              "trust": {
+                "identity": "publisher:the-open-engine",
+                "integrity": "artifact checksums declared",
+                "conformance": "not_claimed",
+                "isolation": "access expectations declared",
+                "authority": "none",
+                "disclaimer": "Discovery, catalog listing, manifest presence, local install, paid status, support status, or conformance metadata does not grant gate authority."
+              },
+              "authority": {
+                "managerGrantsGateAuthority": false,
+                "gateAuthority": false,
+                "sharedPolicyMutated": false,
+                "ciEnforced": false,
+                "providerAutoLaunchForGates": false
+              },
+              "degraded": [],
+              "installedAt": "2026-06-26T10:43:52.539Z",
+              "manifestPath": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-meG23U/asp-home-d31tSR/servers/manifests/opcore/asp-server.json"
+            }
+          ],
+          "missingServerIds": [],
+          "effectiveLocalMode": "advisory",
+          "localMode": "advisory",
+          "setup": {
+            "status": "recorded",
+            "detail": "Repository is recorded in manager-owned local enrollment state."
+          },
+          "gateReadiness": {
+            "ready": false,
+            "degraded": [
+              {
+                "code": "local_mode_not_gate",
+                "detail": "Local intended mode is advisory; CI gate readiness requires shared host authority evidence."
+              },
+              {
+                "code": "manager_state_not_authority",
+                "detail": "Local repo enrollment records intent only; shared gate authority must come from host authority evidence."
+              }
+            ],
+            "detail": "Manager-owned repo enrollment never grants shared gate authority by itself."
+          },
+          "authority": {
+            "managerGrantsGateAuthority": false,
+            "gateAuthority": false,
+            "sharedPolicyMutated": false,
+            "ciEnforced": false,
+            "providerAutoLaunchForGates": false
+          },
+          "updatedAt": "2026-06-26T10:43:52.729Z"
+        },
+        "authority": {
+          "managerGrantsGateAuthority": false,
+          "gateAuthority": false,
+          "sharedPolicyMutated": false,
+          "ciEnforced": false,
+          "providerAutoLaunchForGates": false
+        }
+      },
+      "assertion": "asp-repo-status completed through standalone ASP manager"
+    }
+  },
+  "hostEvaluation": {
+    "check": {
+      "id": "asp-check-changed",
+      "command": [
+        "asp",
+        "check",
+        "--repo",
+        "/Users/tom/.zeroshot/worktrees/cosmic-phoenix-47/",
+        "--changed",
+        "--call-site",
+        "interactive",
+        "--json"
+      ],
+      "status": "passed",
+      "exitCode": 0,
+      "stdoutSha256": "36fd426be1b246c559a93daaf619c4fdf6d8022eda88876230d772932bf8a090",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "output": {
+        "schemaVersion": 1,
+        "command": "check",
+        "repo": "/Users/tom/.zeroshot/worktrees/cosmic-phoenix-47",
+        "scope": "changed",
+        "baseRef": "HEAD",
+        "callSite": "interactive",
+        "repoEnrollment": {
+          "path": "/Users/tom/.zeroshot/worktrees/cosmic-phoenix-47",
+          "state": "ready",
+          "enrolled": true,
+          "identity": {
+            "kind": "git",
+            "value": "/Users/tom/.zeroshot/worktrees/cosmic-phoenix-47:f51e3ae668444c39c703db95a40b6b20de9a1c89"
+          },
+          "git": {
+            "topLevel": "/Users/tom/.zeroshot/worktrees/cosmic-phoenix-47",
+            "gitDir": "<covibes>/lattice/.git/worktrees/cosmic-phoenix-47",
+            "head": "zeroshot/cosmic-phoenix-47",
+            "commit": "f51e3ae668444c39c703db95a40b6b20de9a1c89"
+          },
+          "enabledServerIds": [
+            "opcore"
+          ],
+          "enabledServers": [
+            {
+              "id": "opcore",
+              "mode": "advisory",
+              "enabledAt": "2026-06-26T10:43:52.729Z"
+            }
+          ],
+          "installedServers": [
+            {
+              "id": "opcore",
+              "name": "Opcore",
+              "category": "local-dev",
+              "capabilities": [
+                "check"
+              ],
+              "capabilityProfiles": [
+                "core-check-provider",
+                "opcore-core-check"
+              ],
+              "source": {
+                "kind": "manifest",
+                "manifestSource": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-meG23U/asp-server.opcore.json"
+              },
+              "install": {
+                "state": "installed",
+                "detail": "Validated local asp-server.json manifest copied into manager-owned state."
+              },
+              "conformance": {
+                "status": "not_claimed",
+                "profiles": [
+                  "core-check-provider",
+                  "opcore-core-check"
+                ]
+              },
+              "access": {
+                "summary": "no outbound network requested; no filesystem writes requested; no secrets requested",
+                "filesystem": {
+                  "read": [
+                    "workspace:snapshot"
+                  ],
+                  "write": []
+                },
+                "network": {
+                  "outbound": false,
+                  "allowlist": []
+                },
+                "secrets": [],
+                "environment": {
+                  "inherit": false,
+                  "variables": [
+                    "ASP_SESSION_ID",
+                    "PATH"
+                  ]
+                },
+                "dataClasses": [
+                  "source-code",
+                  "diff-metadata"
+                ]
+              },
+              "trust": {
+                "identity": "publisher:the-open-engine",
+                "integrity": "artifact checksums declared",
+                "conformance": "not_claimed",
+                "isolation": "access expectations declared",
+                "authority": "none",
+                "disclaimer": "Discovery, catalog listing, manifest presence, local install, paid status, support status, or conformance metadata does not grant gate authority."
+              },
+              "authority": {
+                "managerGrantsGateAuthority": false,
+                "gateAuthority": false,
+                "sharedPolicyMutated": false,
+                "ciEnforced": false,
+                "providerAutoLaunchForGates": false
+              },
+              "degraded": [],
+              "installedAt": "2026-06-26T10:43:52.539Z",
+              "manifestPath": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-meG23U/asp-home-d31tSR/servers/manifests/opcore/asp-server.json"
+            }
+          ],
+          "missingServerIds": [],
+          "effectiveLocalMode": "advisory",
+          "localMode": "advisory",
+          "setup": {
+            "status": "recorded",
+            "detail": "Repository is recorded in manager-owned local enrollment state."
+          },
+          "gateReadiness": {
+            "ready": false,
+            "degraded": [
+              {
+                "code": "local_mode_not_gate",
+                "detail": "Local intended mode is advisory; CI gate readiness requires shared host authority evidence."
+              },
+              {
+                "code": "manager_state_not_authority",
+                "detail": "Local repo enrollment records intent only; shared gate authority must come from host authority evidence."
+              }
+            ],
+            "detail": "Manager-owned repo enrollment never grants shared gate authority by itself."
+          },
+          "authority": {
+            "managerGrantsGateAuthority": false,
+            "gateAuthority": false,
+            "sharedPolicyMutated": false,
+            "ciEnforced": false,
+            "providerAutoLaunchForGates": false
+          },
+          "updatedAt": "2026-06-26T10:43:52.729Z"
+        },
+        "changeset": {
+          "baseline": {
+            "rev": "tree:sha256:fc0d6acba639ac0b94de3692c709686ddb796fa60d0868c409f18626ddcaf2b1",
+            "stampedAt": "2026-06-26T10:43:54.350Z"
+          },
+          "changes": [
+            {
+              "kind": "modify",
+              "path": "AGENTS.md",
+              "before": "blob:sha256:8b49611066b8e608a74c9608209757dd45595e4dab223e71a89df8f6eaac1024",
+              "after": "blob:sha256:436998b45ea9182551ba0ee5a0439350b8333180ff59dd67b9c53c895e4734b1"
+            },
+            {
+              "kind": "modify",
+              "path": "CLAUDE.md",
+              "before": "blob:sha256:8b49611066b8e608a74c9608209757dd45595e4dab223e71a89df8f6eaac1024",
+              "after": "blob:sha256:bb68ab1b5fad46d60140fd9e056f6324d8457cee17b5ced4bc92c2c2f7527984"
+            },
+            {
+              "kind": "modify",
+              "path": "docs/architecture/runtime-cli-ard.md",
+              "before": "blob:sha256:0750ae0fbf4d849cf0dee2e42e21dcc65169a1b4a89f534091b486f41771bfc3",
+              "after": "blob:sha256:2644505a3248e2d57c00722ca83c91aaf14a92282018290436ef56bb5b8a9368"
+            },
+            {
+              "kind": "modify",
+              "path": "docs/release/artifact-attestation.md",
+              "before": "blob:sha256:581ca8b1c2c292a248ec54357b136b74ce1bd2a6df58d895e673b4161be4d3a1",
+              "after": "blob:sha256:1eacf13c0ffc89796ffd042ad94928c784e0513a06fd51b04ecea27db08b524a"
+            },
+            {
+              "kind": "modify",
+              "path": "docs/release/asp-dogfood-receipt.json",
+              "before": "blob:sha256:918a82f22a18cc56d4bab6177c98a8fdaf081d8e671d3b8c1f5789e57a784639",
+              "after": "blob:sha256:a16cf20461c3cdd5f3c459981d22c438f462b0e95566a08d5618aa7db2044934"
+            },
+            {
+              "kind": "modify",
+              "path": "docs/release/asp-dogfood-receipt.summary.md",
+              "before": "blob:sha256:dfa50b4acbfbbbd5a6331d1f8adc356806ce1e74569c2c331fe43b0e8b87add4",
+              "after": "blob:sha256:360770d6f9d667fccb825203efb2c5085532b48c142951d07483aba0c6a57a61"
+            },
+            {
+              "kind": "modify",
+              "path": "docs/release/cutover-receipt.json",
+              "before": "blob:sha256:6569a4a6428d4fb6a17cdeda3cc90a0b50986af1bff219d60eda0d0e5c761365",
+              "after": "blob:sha256:9aca9bbd1616dfbfe46312c258638240f0c16a9edf6082eb4b8b9532cac00cb5"
+            },
+            {
+              "kind": "modify",
+              "path": "docs/release/cutover-receipt.summary.md",
+              "before": "blob:sha256:71f15118468cb38971f5779dbcad6b5dedb8f7365ac69b33e674c68323e0c06d",
+              "after": "blob:sha256:7de918a4dce8273466e2a6d7b6c93344e9af9af8390a2643f87f894e258a7dae"
+            },
+            {
+              "kind": "modify",
+              "path": "docs/release/license-report.md",
+              "before": "blob:sha256:eb9558468a7dea65d46e97d500956bbb1e0ceee8337f140933fc48e12fcc9856",
+              "after": "blob:sha256:1d3f69b3e24fe8f231b86070b6f0d69a6896a4431d0c23c8ee6dce0d9b58799b"
+            },
+            {
+              "kind": "modify",
+              "path": "docs/release/provenance-receipts.md",
+              "before": "blob:sha256:768b900eea063e914caa948f7c0158bc9e19609aee0f7fda5260be181f1459f6",
+              "after": "blob:sha256:8195ffea373f98c4bc6d12d6397a2cbc9693b19cec003c4609f3d4a9d652834a"
+            },
+            {
+              "kind": "modify",
+              "path": "docs/release/release-receipt.json",
+              "before": "blob:sha256:2f302866b9d2fb1fbdfa21189bd840e8e0415db837babc5414c5e58ce0aef0e3",
+              "after": "blob:sha256:57396b28872224e8d395399f4e9487ad276212eda960b6e558ea656a0632d178"
+            },
+            {
+              "kind": "modify",
+              "path": "docs/release/release-receipt.summary.md",
+              "before": "blob:sha256:4b550ae475c7c233663e0017542c6d971c71e31a1f7a15e9b43657f53c2d8af4",
+              "after": "blob:sha256:4ac5572857d1ea9b39742428187336ae00470f2237c9305d082009769999e15b"
+            },
+            {
+              "kind": "modify",
+              "path": "package-lock.json",
+              "before": "blob:sha256:ca584cf0126edfe50ced4ac6c9376a01f99539fae750ac75a3a581322c25a3de",
+              "after": "blob:sha256:047c42704ca677d32166d3e4f73b57bf9b3ac46fc915f9b3e471a2fbb1b6db70"
+            },
+            {
+              "kind": "modify",
+              "path": "packages/asp-provider/package.json",
+              "before": "blob:sha256:81ac83f20cd91d0837aecbf8c5e058e021f2dbe1687a77ac811fe2f7e81ffb85",
+              "after": "blob:sha256:859e1b43299088b3971d9f970e90b7bbffdfa8d18db40d606678c9288fa36f76"
+            },
+            {
+              "kind": "modify",
+              "path": "packages/asp-provider/README.md",
+              "before": "blob:sha256:bf5dfe347867579e899d260ff4c9f5d4c2748484609299f58654000500fb0d42",
+              "after": "blob:sha256:6715002b8e5ee658f6871c7d68cd6788c17689b50f14ac3cac7ba380120ed83e"
+            },
+            {
+              "kind": "modify",
+              "path": "packages/asp-provider/src/index.ts",
+              "before": "blob:sha256:6be171b22ca67693f91bb93c7f805cdddcf37e51438703ac26973a9ea5a21470",
+              "after": "blob:sha256:e8e3a97a4e05d1889d48271cf1ce96d2295cfe15dc2965b501e9a288cc6f3778"
+            },
+            {
+              "kind": "modify",
+              "path": "packages/asp-provider/src/manifest.ts",
+              "before": "blob:sha256:cad5a5d09bec1f1817017c2acdc661fe7c1ae1c9e86da07c62790c37f7e4d954",
+              "after": "blob:sha256:2d88aec94b97fde5eb9bffc0661cf07d8026aece73ad9ffe7cbb3fac64e3e280"
+            },
+            {
+              "kind": "modify",
+              "path": "packages/asp-provider/src/mapping.ts",
+              "before": "blob:sha256:efc351a40d84ad1c02d56a6f9f029eeb299fda8685a8c8ce9d4517df40c7f860",
+              "after": "blob:sha256:113d6bfb20889c129dbf3b184d0c622876a2be4bae5025374eea8ceb88e1d8ca"
+            },
+            {
+              "kind": "modify",
+              "path": "packages/asp-provider/src/protocol.ts",
+              "before": "blob:sha256:2f8dc5e030452a6d292c6cc40f1eee72459972a7bcd611b1deb6441b90f8dc3f",
+              "after": "blob:sha256:b2e311d96b37abbff23c6ff0ab94bf7ed0cb0cae6e21e4f6f112056cb0d62448"
+            },
+            {
+              "kind": "modify",
+              "path": "packages/contracts/schemas/lattice-contracts.schema.json",
+              "before": "blob:sha256:8eee0097c2306d31bbe046261a3f06d2f0681533b9658696a05baffb82ebb6cd",
+              "after": "blob:sha256:9e41b11fd8746ad32d8aee17c018468ee8a74f17747a9ccd2740a69bf8e5cfdd"
+            },
+            {
+              "kind": "modify",
+              "path": "packages/contracts/src/index.ts",
+              "before": "blob:sha256:35e4c5216ecc18df74b4b43cafd3391595897a9c44d583fc5a53145984d21ed5",
+              "after": "blob:sha256:072158c20d8fe653f4fed447e441dcb3b4e1a2602cc03c627059d6ea6080195a"
+            },
+            {
+              "kind": "modify",
+              "path": "scripts/asp-dogfood-provider-probe.mjs",
+              "before": "blob:sha256:67c0d71733ca410f9b90f5fed1a207c553885adde4490e3eac57d71a13ee1028",
+              "after": "blob:sha256:af0fc58d551a87ee2321937bda5414438db265c47091095a20b638090ffa15d8"
+            },
+            {
+              "kind": "modify",
+              "path": "scripts/asp-dogfood-receipt-support.mjs",
+              "before": "blob:sha256:df706578f2208eb8f25ea236faa7eb79c1442e2eab44b55f67d8bf2d95fafd0d",
+              "after": "blob:sha256:da1397ef68be0065b12bedff278f472a70d2c2e52697453f9d4bef3239f7cb6f"
+            },
+            {
+              "kind": "modify",
+              "path": "scripts/check-packages.mjs",
+              "before": "blob:sha256:061c069803d10d8aabe1d370b5f95e0febec866735cc5779caa7e55b536e5340",
+              "after": "blob:sha256:3c0464fc1195b846613a5020d2a193ff90686584efff67e9da19e06804a90c19"
+            },
+            {
+              "kind": "modify",
+              "path": "scripts/check-provenance.mjs",
+              "before": "blob:sha256:42a0737ad10ff3d40205999b1d5564bd00a31d585fbd4a99bb35cab1ba46bfed",
+              "after": "blob:sha256:8521f3fc81d0db92d4ca141e88ab12826fca62e6ae5aaf43a334988d9eaec718"
+            },
+            {
+              "kind": "modify",
+              "path": "scripts/check-workspace.mjs",
+              "before": "blob:sha256:a743c532fbd4066c9ac31ecfd2baec6dafaea43409b22d2ea924fa82ac516728",
+              "after": "blob:sha256:6b6fab390d4c967519dae86a6ad5d4e2ea3bdc3c51a85e9a255ed369bf4c0c78"
+            },
+            {
+              "kind": "modify",
+              "path": "scripts/generate-asp-dogfood-receipt.mjs",
+              "before": "blob:sha256:3b6aee069385bd1c227748190bb810e701b4f05b8a3d539a16e6e05055890f71",
+              "after": "blob:sha256:7c8b3013e228c981c684b6e92ac2dc6bad4410d80a6a4e68eb23a34352d159cc"
+            },
+            {
+              "kind": "modify",
+              "path": "scripts/generate-cutover-receipt.mjs",
+              "before": "blob:sha256:6af60758e3c910ecb151f14032b21d400364b1225a337d0d573dd3d79f35ee26",
+              "after": "blob:sha256:e645d584314780db5080781cf2c86e91351002721069f5fdfde3b8f1636a0301"
+            },
+            {
+              "kind": "modify",
+              "path": "scripts/generate-release-receipt.mjs",
+              "before": "blob:sha256:938888ca70b98861eb94cfef528d78b9bee293707ca9712e5420d27e88c14095",
+              "after": "blob:sha256:33bd668b04c80c5fca6698c9f42b08f3709a06d8af330cddad921b2517e24ec8"
+            },
+            {
+              "kind": "modify",
+              "path": "scripts/release-dry-run.mjs",
+              "before": "blob:sha256:0ac5cd41a5cf2430cf93c3ac5401138319b0411b1451da7030f1a7cec91c0174",
+              "after": "blob:sha256:419491b59e75764d57b1bed1d524de2d388ab26cde4aa7fe5f69526d674e6f1a"
+            },
+            {
+              "kind": "modify",
+              "path": "scripts/release-package-dirs.mjs",
+              "before": "blob:sha256:f9f75076c6d2b8a86d40e427f6ee473529b695a07fa14a0b8610fec9482cb916",
+              "after": "blob:sha256:37e8349ffc115d6d2056c698b707251165fc6f69da951d9b54d0f8ef369af6fb"
+            },
+            {
+              "kind": "modify",
+              "path": "scripts/release-publish.mjs",
+              "before": "blob:sha256:0c24ad0c074629fde0f6ae71b5aaaf2aa1be886910848fa8ee7a08c543583d44",
+              "after": "blob:sha256:a510ed83a4e5a80d7b4094f4f89dcdacebf308186f35a75990dfea0d383e3766"
+            },
+            {
+              "kind": "modify",
+              "path": "scripts/write-asp-provider-manifest.mjs",
+              "before": "blob:sha256:b4d1d1ce19667042889d06449beae1d5c2efce1ee0c9fdec47aab06834b8808a",
+              "after": "blob:sha256:763be1fc1599841be307ef253783599e6ab6a9288ae5e845133ce9f122d5c6c4"
+            },
+            {
+              "kind": "modify",
+              "path": "tests/asp-provider.test.mjs",
+              "before": "blob:sha256:8fca8a919669dd6ef6c95dfb7004de7a09564f2912066ad26b6bd2ab6a9aa19d",
+              "after": "blob:sha256:7ddd3a996d2cce81f812fb99fb5defa78a648cf25938d095fe90d1c07552450a"
+            },
+            {
+              "kind": "modify",
+              "path": "tests/contracts.test.mjs",
+              "before": "blob:sha256:78b0f75b8f056e7dcd3d63a63a40cc485e531df92bfbb7a930d438d807d89a56",
+              "after": "blob:sha256:b3506395570c1f096dcf254c5ae67d3e2b139ced9a5e7b0d32fed390d5cc9760"
+            },
+            {
+              "kind": "modify",
+              "path": "tests/cutover-release.test.mjs",
+              "before": "blob:sha256:2a5a5a19a2b4128bce0adf0e7b0ad635a57fe3434126282b69f94023113da2c9",
+              "after": "blob:sha256:8aa26e4d3a337073ba3ffdbc3e2fd86f5aa8b65ca0c7c9bdae595b724ded3874"
+            },
+            {
+              "kind": "modify",
+              "path": "tests/fixtures/package-packlists.json",
+              "before": "blob:sha256:13d3d0e52a23cf66c9a87cc8b0fa76c52a8bc2e036aca5486af0d118c2a06f28",
+              "after": "blob:sha256:7726e17b8c6ff7a5e4e0680417a6a0d872a5b4fa2bd26dc05ba3f3159315dcab"
+            },
+            {
+              "kind": "modify",
+              "path": "tests/gate-negative-fixtures.test.mjs",
+              "before": "blob:sha256:a2e5481ab64d207064fd0d343c1979c4e6223d2a1cc2be47c3d1afb93d1e259e",
+              "after": "blob:sha256:1c4a45fe427f0462c3fb2992ee486bc3df01a5d42bd23232e2630292184557ae"
+            },
+            {
+              "kind": "modify",
+              "path": "tests/helpers/asp-dogfood-fixture.mjs",
+              "before": "blob:sha256:8915b62398df9d4a184e61b77cb1aeeca4826a231075f30d002bacc06dbed148",
+              "after": "blob:sha256:5a5acce892fb43825ead14748092b92df2e492a2d7ff42d63531cec1e911a4d4"
+            },
+            {
+              "kind": "modify",
+              "path": "tests/import-boundaries.test.mjs",
+              "before": "blob:sha256:3fbd2394ecf004a9fa0e74c7d701ca83c75020cc9f302c0d6d0f4a66fe86b788",
+              "after": "blob:sha256:8e47a66070f15fab0cec00a465905727b98a00c8fabd08a68139ec6ed211a587"
+            },
+            {
+              "kind": "modify",
+              "path": "tests/installed-bins.test.mjs",
+              "before": "blob:sha256:da6b9929bf3f1fe0a722aaa8473beb6607b07369c51f4b21dfddf083e9cca080",
+              "after": "blob:sha256:19555d0e28cc643b445503833f445598026644f6591d7d65a57b2eaa4ed9722f"
+            },
+            {
+              "kind": "modify",
+              "path": "tests/schema-contracts.test.mjs",
+              "before": "blob:sha256:28658b38f305ac572a6bdd1ffa029258bb0b0bfd08e0f0a5c1345fd2e8f391c1",
+              "after": "blob:sha256:e9e85edd078473f4bcf742cd3882659d743cd0d27ec00ecb8ae90f6daec92ca7"
+            }
+          ]
+        },
+        "hostDecision": {
+          "pass": true,
+          "decision": "allow",
+          "callSite": "interactive",
+          "changesetDigest": "sha256:ca3012e12aae01802b6f60761444a7f1e739303ba5590331551cb745cc40cd17",
+          "findings": [],
+          "coverage": {
+            "exhaustive": false,
+            "required": [],
+            "enrolled": [
+              "opcore/core-required-check"
+            ],
+            "ran": [
+              "opcore/core-required-check"
+            ],
+            "degraded": [
+              {
+                "source": "opcore/core-required-check",
+                "reason": "incomplete",
+                "requirement": "opcore/core-required-check",
+                "detail": "opcore returned an incomplete Assessment.",
+                "capability": "check",
+                "providerState": "degraded"
+              }
+            ]
+          },
+          "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
+          "authorityEvidence": [
+            {
+              "identity": "opcore",
+              "integrity": "artifact checksums declared",
+              "conformance": "not_claimed",
+              "isolation": "gated",
+              "authority": {
+                "granted": false,
+                "requirement": "opcore/core-required-check",
+                "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
+                "callSite": "gate"
+              }
+            }
+          ],
+          "validAsOf": {
+            "rev": "tree:sha256:fc0d6acba639ac0b94de3692c709686ddb796fa60d0868c409f18626ddcaf2b1",
+            "blobs": [
+              "blob:sha256:047c42704ca677d32166d3e4f73b57bf9b3ac46fc915f9b3e471a2fbb1b6db70",
+              "blob:sha256:061c069803d10d8aabe1d370b5f95e0febec866735cc5779caa7e55b536e5340",
+              "blob:sha256:072158c20d8fe653f4fed447e441dcb3b4e1a2602cc03c627059d6ea6080195a",
+              "blob:sha256:0750ae0fbf4d849cf0dee2e42e21dcc65169a1b4a89f534091b486f41771bfc3",
+              "blob:sha256:0ac5cd41a5cf2430cf93c3ac5401138319b0411b1451da7030f1a7cec91c0174",
+              "blob:sha256:0c24ad0c074629fde0f6ae71b5aaaf2aa1be886910848fa8ee7a08c543583d44",
+              "blob:sha256:113d6bfb20889c129dbf3b184d0c622876a2be4bae5025374eea8ceb88e1d8ca",
+              "blob:sha256:13d3d0e52a23cf66c9a87cc8b0fa76c52a8bc2e036aca5486af0d118c2a06f28",
+              "blob:sha256:19555d0e28cc643b445503833f445598026644f6591d7d65a57b2eaa4ed9722f",
+              "blob:sha256:1c4a45fe427f0462c3fb2992ee486bc3df01a5d42bd23232e2630292184557ae",
+              "blob:sha256:1ce7a7efd2a20e785b7073f7e38a4d1b3af33aa4449a6b99d76d15e814d94084",
+              "blob:sha256:1d3f69b3e24fe8f231b86070b6f0d69a6896a4431d0c23c8ee6dce0d9b58799b",
+              "blob:sha256:1eacf13c0ffc89796ffd042ad94928c784e0513a06fd51b04ecea27db08b524a",
+              "blob:sha256:234c5e119677003aa1123941646c0cd6412e58bde9db9cd1b61ab2803d7b2b06",
+              "blob:sha256:2644505a3248e2d57c00722ca83c91aaf14a92282018290436ef56bb5b8a9368",
+              "blob:sha256:28658b38f305ac572a6bdd1ffa029258bb0b0bfd08e0f0a5c1345fd2e8f391c1",
+              "blob:sha256:2a5a5a19a2b4128bce0adf0e7b0ad635a57fe3434126282b69f94023113da2c9",
+              "blob:sha256:2d88aec94b97fde5eb9bffc0661cf07d8026aece73ad9ffe7cbb3fac64e3e280",
+              "blob:sha256:2f302866b9d2fb1fbdfa21189bd840e8e0415db837babc5414c5e58ce0aef0e3",
+              "blob:sha256:2f8dc5e030452a6d292c6cc40f1eee72459972a7bcd611b1deb6441b90f8dc3f",
+              "blob:sha256:33bd668b04c80c5fca6698c9f42b08f3709a06d8af330cddad921b2517e24ec8",
+              "blob:sha256:35e4c5216ecc18df74b4b43cafd3391595897a9c44d583fc5a53145984d21ed5",
+              "blob:sha256:360770d6f9d667fccb825203efb2c5085532b48c142951d07483aba0c6a57a61",
+              "blob:sha256:37e8349ffc115d6d2056c698b707251165fc6f69da951d9b54d0f8ef369af6fb",
+              "blob:sha256:3b6aee069385bd1c227748190bb810e701b4f05b8a3d539a16e6e05055890f71",
+              "blob:sha256:3c0464fc1195b846613a5020d2a193ff90686584efff67e9da19e06804a90c19",
+              "blob:sha256:3fbd2394ecf004a9fa0e74c7d701ca83c75020cc9f302c0d6d0f4a66fe86b788",
+              "blob:sha256:419491b59e75764d57b1bed1d524de2d388ab26cde4aa7fe5f69526d674e6f1a",
+              "blob:sha256:42a0737ad10ff3d40205999b1d5564bd00a31d585fbd4a99bb35cab1ba46bfed",
+              "blob:sha256:436998b45ea9182551ba0ee5a0439350b8333180ff59dd67b9c53c895e4734b1",
+              "blob:sha256:4ac5572857d1ea9b39742428187336ae00470f2237c9305d082009769999e15b",
+              "blob:sha256:4b550ae475c7c233663e0017542c6d971c71e31a1f7a15e9b43657f53c2d8af4",
+              "blob:sha256:57396b28872224e8d395399f4e9487ad276212eda960b6e558ea656a0632d178",
+              "blob:sha256:581ca8b1c2c292a248ec54357b136b74ce1bd2a6df58d895e673b4161be4d3a1",
+              "blob:sha256:5a5acce892fb43825ead14748092b92df2e492a2d7ff42d63531cec1e911a4d4",
+              "blob:sha256:6569a4a6428d4fb6a17cdeda3cc90a0b50986af1bff219d60eda0d0e5c761365",
+              "blob:sha256:6715002b8e5ee658f6871c7d68cd6788c17689b50f14ac3cac7ba380120ed83e",
+              "blob:sha256:67c0d71733ca410f9b90f5fed1a207c553885adde4490e3eac57d71a13ee1028",
+              "blob:sha256:6af60758e3c910ecb151f14032b21d400364b1225a337d0d573dd3d79f35ee26",
+              "blob:sha256:6b6fab390d4c967519dae86a6ad5d4e2ea3bdc3c51a85e9a255ed369bf4c0c78",
+              "blob:sha256:6be171b22ca67693f91bb93c7f805cdddcf37e51438703ac26973a9ea5a21470",
+              "blob:sha256:71f15118468cb38971f5779dbcad6b5dedb8f7365ac69b33e674c68323e0c06d",
+              "blob:sha256:763be1fc1599841be307ef253783599e6ab6a9288ae5e845133ce9f122d5c6c4",
+              "blob:sha256:768b900eea063e914caa948f7c0158bc9e19609aee0f7fda5260be181f1459f6",
+              "blob:sha256:7726e17b8c6ff7a5e4e0680417a6a0d872a5b4fa2bd26dc05ba3f3159315dcab",
+              "blob:sha256:78b0f75b8f056e7dcd3d63a63a40cc485e531df92bfbb7a930d438d807d89a56",
+              "blob:sha256:7c8b3013e228c981c684b6e92ac2dc6bad4410d80a6a4e68eb23a34352d159cc",
+              "blob:sha256:7ddd3a996d2cce81f812fb99fb5defa78a648cf25938d095fe90d1c07552450a",
+              "blob:sha256:7de918a4dce8273466e2a6d7b6c93344e9af9af8390a2643f87f894e258a7dae",
+              "blob:sha256:8195ffea373f98c4bc6d12d6397a2cbc9693b19cec003c4609f3d4a9d652834a",
+              "blob:sha256:81ac83f20cd91d0837aecbf8c5e058e021f2dbe1687a77ac811fe2f7e81ffb85",
+              "blob:sha256:8521f3fc81d0db92d4ca141e88ab12826fca62e6ae5aaf43a334988d9eaec718",
+              "blob:sha256:859e1b43299088b3971d9f970e90b7bbffdfa8d18db40d606678c9288fa36f76",
+              "blob:sha256:87823b26762df130a3ee45deed1cd856daf54bc8cd0f60b9899a492cfea60263",
+              "blob:sha256:8915b62398df9d4a184e61b77cb1aeeca4826a231075f30d002bacc06dbed148",
+              "blob:sha256:8aa26e4d3a337073ba3ffdbc3e2fd86f5aa8b65ca0c7c9bdae595b724ded3874",
+              "blob:sha256:8b49611066b8e608a74c9608209757dd45595e4dab223e71a89df8f6eaac1024",
+              "blob:sha256:8e47a66070f15fab0cec00a465905727b98a00c8fabd08a68139ec6ed211a587",
+              "blob:sha256:8eee0097c2306d31bbe046261a3f06d2f0681533b9658696a05baffb82ebb6cd",
+              "blob:sha256:8fca8a919669dd6ef6c95dfb7004de7a09564f2912066ad26b6bd2ab6a9aa19d",
+              "blob:sha256:918a82f22a18cc56d4bab6177c98a8fdaf081d8e671d3b8c1f5789e57a784639",
+              "blob:sha256:938888ca70b98861eb94cfef528d78b9bee293707ca9712e5420d27e88c14095",
+              "blob:sha256:9aca9bbd1616dfbfe46312c258638240f0c16a9edf6082eb4b8b9532cac00cb5",
+              "blob:sha256:9e41b11fd8746ad32d8aee17c018468ee8a74f17747a9ccd2740a69bf8e5cfdd",
+              "blob:sha256:a16cf20461c3cdd5f3c459981d22c438f462b0e95566a08d5618aa7db2044934",
+              "blob:sha256:a2e5481ab64d207064fd0d343c1979c4e6223d2a1cc2be47c3d1afb93d1e259e",
+              "blob:sha256:a42aa1df08d56f7b020631262305dbd7bcdc18d100a2916b496a8e43367764b7",
+              "blob:sha256:a510ed83a4e5a80d7b4094f4f89dcdacebf308186f35a75990dfea0d383e3766",
+              "blob:sha256:a743c532fbd4066c9ac31ecfd2baec6dafaea43409b22d2ea924fa82ac516728",
+              "blob:sha256:af0fc58d551a87ee2321937bda5414438db265c47091095a20b638090ffa15d8",
+              "blob:sha256:b2e311d96b37abbff23c6ff0ab94bf7ed0cb0cae6e21e4f6f112056cb0d62448",
+              "blob:sha256:b3506395570c1f096dcf254c5ae67d3e2b139ced9a5e7b0d32fed390d5cc9760",
+              "blob:sha256:b4d1d1ce19667042889d06449beae1d5c2efce1ee0c9fdec47aab06834b8808a",
+              "blob:sha256:bb68ab1b5fad46d60140fd9e056f6324d8457cee17b5ced4bc92c2c2f7527984",
+              "blob:sha256:be2c1a446ba46a0499a8a4727d659b43d5d09fccdddc651422f2e31438764905",
+              "blob:sha256:bf5dfe347867579e899d260ff4c9f5d4c2748484609299f58654000500fb0d42",
+              "blob:sha256:ca584cf0126edfe50ced4ac6c9376a01f99539fae750ac75a3a581322c25a3de",
+              "blob:sha256:cad5a5d09bec1f1817017c2acdc661fe7c1ae1c9e86da07c62790c37f7e4d954",
+              "blob:sha256:da1397ef68be0065b12bedff278f472a70d2c2e52697453f9d4bef3239f7cb6f",
+              "blob:sha256:da6b9929bf3f1fe0a722aaa8473beb6607b07369c51f4b21dfddf083e9cca080",
+              "blob:sha256:df706578f2208eb8f25ea236faa7eb79c1442e2eab44b55f67d8bf2d95fafd0d",
+              "blob:sha256:dfa50b4acbfbbbd5a6331d1f8adc356806ce1e74569c2c331fe43b0e8b87add4",
+              "blob:sha256:e645d584314780db5080781cf2c86e91351002721069f5fdfde3b8f1636a0301",
+              "blob:sha256:e8e3a97a4e05d1889d48271cf1ce96d2295cfe15dc2965b501e9a288cc6f3778",
+              "blob:sha256:e9e85edd078473f4bcf742cd3882659d743cd0d27ec00ecb8ae90f6daec92ca7",
+              "blob:sha256:eb9558468a7dea65d46e97d500956bbb1e0ceee8337f140933fc48e12fcc9856",
+              "blob:sha256:efc351a40d84ad1c02d56a6f9f029eeb299fda8685a8c8ce9d4517df40c7f860",
+              "blob:sha256:f9f75076c6d2b8a86d40e427f6ee473529b695a07fa14a0b8610fec9482cb916"
+            ]
+          },
+          "assurance": {
+            "mode": "gated",
+            "transactionGuarantee": "none"
+          },
+          "receipt": {
+            "receiptId": "core-evaluate-allow-1782470635385",
+            "issuedAt": "2026-06-26T10:43:55.385Z",
+            "providerProvenance": [
+              {
+                "provider": "opcore",
+                "capability": "check",
+                "identity": "opcore",
+                "integrity": "artifact checksums declared",
+                "conformance": "not_claimed"
+              }
+            ],
+            "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
+            "baseline": {
+              "rev": "tree:sha256:fc0d6acba639ac0b94de3692c709686ddb796fa60d0868c409f18626ddcaf2b1",
+              "stampedAt": "2026-06-26T10:43:54.350Z"
+            },
+            "validAsOf": {
+              "rev": "tree:sha256:fc0d6acba639ac0b94de3692c709686ddb796fa60d0868c409f18626ddcaf2b1",
+              "blobs": [
+                "blob:sha256:047c42704ca677d32166d3e4f73b57bf9b3ac46fc915f9b3e471a2fbb1b6db70",
+                "blob:sha256:061c069803d10d8aabe1d370b5f95e0febec866735cc5779caa7e55b536e5340",
+                "blob:sha256:072158c20d8fe653f4fed447e441dcb3b4e1a2602cc03c627059d6ea6080195a",
+                "blob:sha256:0750ae0fbf4d849cf0dee2e42e21dcc65169a1b4a89f534091b486f41771bfc3",
+                "blob:sha256:0ac5cd41a5cf2430cf93c3ac5401138319b0411b1451da7030f1a7cec91c0174",
+                "blob:sha256:0c24ad0c074629fde0f6ae71b5aaaf2aa1be886910848fa8ee7a08c543583d44",
+                "blob:sha256:113d6bfb20889c129dbf3b184d0c622876a2be4bae5025374eea8ceb88e1d8ca",
+                "blob:sha256:13d3d0e52a23cf66c9a87cc8b0fa76c52a8bc2e036aca5486af0d118c2a06f28",
+                "blob:sha256:19555d0e28cc643b445503833f445598026644f6591d7d65a57b2eaa4ed9722f",
+                "blob:sha256:1c4a45fe427f0462c3fb2992ee486bc3df01a5d42bd23232e2630292184557ae",
+                "blob:sha256:1ce7a7efd2a20e785b7073f7e38a4d1b3af33aa4449a6b99d76d15e814d94084",
+                "blob:sha256:1d3f69b3e24fe8f231b86070b6f0d69a6896a4431d0c23c8ee6dce0d9b58799b",
+                "blob:sha256:1eacf13c0ffc89796ffd042ad94928c784e0513a06fd51b04ecea27db08b524a",
+                "blob:sha256:234c5e119677003aa1123941646c0cd6412e58bde9db9cd1b61ab2803d7b2b06",
+                "blob:sha256:2644505a3248e2d57c00722ca83c91aaf14a92282018290436ef56bb5b8a9368",
+                "blob:sha256:28658b38f305ac572a6bdd1ffa029258bb0b0bfd08e0f0a5c1345fd2e8f391c1",
+                "blob:sha256:2a5a5a19a2b4128bce0adf0e7b0ad635a57fe3434126282b69f94023113da2c9",
+                "blob:sha256:2d88aec94b97fde5eb9bffc0661cf07d8026aece73ad9ffe7cbb3fac64e3e280",
+                "blob:sha256:2f302866b9d2fb1fbdfa21189bd840e8e0415db837babc5414c5e58ce0aef0e3",
+                "blob:sha256:2f8dc5e030452a6d292c6cc40f1eee72459972a7bcd611b1deb6441b90f8dc3f",
+                "blob:sha256:33bd668b04c80c5fca6698c9f42b08f3709a06d8af330cddad921b2517e24ec8",
+                "blob:sha256:35e4c5216ecc18df74b4b43cafd3391595897a9c44d583fc5a53145984d21ed5",
+                "blob:sha256:360770d6f9d667fccb825203efb2c5085532b48c142951d07483aba0c6a57a61",
+                "blob:sha256:37e8349ffc115d6d2056c698b707251165fc6f69da951d9b54d0f8ef369af6fb",
+                "blob:sha256:3b6aee069385bd1c227748190bb810e701b4f05b8a3d539a16e6e05055890f71",
+                "blob:sha256:3c0464fc1195b846613a5020d2a193ff90686584efff67e9da19e06804a90c19",
+                "blob:sha256:3fbd2394ecf004a9fa0e74c7d701ca83c75020cc9f302c0d6d0f4a66fe86b788",
+                "blob:sha256:419491b59e75764d57b1bed1d524de2d388ab26cde4aa7fe5f69526d674e6f1a",
+                "blob:sha256:42a0737ad10ff3d40205999b1d5564bd00a31d585fbd4a99bb35cab1ba46bfed",
+                "blob:sha256:436998b45ea9182551ba0ee5a0439350b8333180ff59dd67b9c53c895e4734b1",
+                "blob:sha256:4ac5572857d1ea9b39742428187336ae00470f2237c9305d082009769999e15b",
+                "blob:sha256:4b550ae475c7c233663e0017542c6d971c71e31a1f7a15e9b43657f53c2d8af4",
+                "blob:sha256:57396b28872224e8d395399f4e9487ad276212eda960b6e558ea656a0632d178",
+                "blob:sha256:581ca8b1c2c292a248ec54357b136b74ce1bd2a6df58d895e673b4161be4d3a1",
+                "blob:sha256:5a5acce892fb43825ead14748092b92df2e492a2d7ff42d63531cec1e911a4d4",
+                "blob:sha256:6569a4a6428d4fb6a17cdeda3cc90a0b50986af1bff219d60eda0d0e5c761365",
+                "blob:sha256:6715002b8e5ee658f6871c7d68cd6788c17689b50f14ac3cac7ba380120ed83e",
+                "blob:sha256:67c0d71733ca410f9b90f5fed1a207c553885adde4490e3eac57d71a13ee1028",
+                "blob:sha256:6af60758e3c910ecb151f14032b21d400364b1225a337d0d573dd3d79f35ee26",
+                "blob:sha256:6b6fab390d4c967519dae86a6ad5d4e2ea3bdc3c51a85e9a255ed369bf4c0c78",
+                "blob:sha256:6be171b22ca67693f91bb93c7f805cdddcf37e51438703ac26973a9ea5a21470",
+                "blob:sha256:71f15118468cb38971f5779dbcad6b5dedb8f7365ac69b33e674c68323e0c06d",
+                "blob:sha256:763be1fc1599841be307ef253783599e6ab6a9288ae5e845133ce9f122d5c6c4",
+                "blob:sha256:768b900eea063e914caa948f7c0158bc9e19609aee0f7fda5260be181f1459f6",
+                "blob:sha256:7726e17b8c6ff7a5e4e0680417a6a0d872a5b4fa2bd26dc05ba3f3159315dcab",
+                "blob:sha256:78b0f75b8f056e7dcd3d63a63a40cc485e531df92bfbb7a930d438d807d89a56",
+                "blob:sha256:7c8b3013e228c981c684b6e92ac2dc6bad4410d80a6a4e68eb23a34352d159cc",
+                "blob:sha256:7ddd3a996d2cce81f812fb99fb5defa78a648cf25938d095fe90d1c07552450a",
+                "blob:sha256:7de918a4dce8273466e2a6d7b6c93344e9af9af8390a2643f87f894e258a7dae",
+                "blob:sha256:8195ffea373f98c4bc6d12d6397a2cbc9693b19cec003c4609f3d4a9d652834a",
+                "blob:sha256:81ac83f20cd91d0837aecbf8c5e058e021f2dbe1687a77ac811fe2f7e81ffb85",
+                "blob:sha256:8521f3fc81d0db92d4ca141e88ab12826fca62e6ae5aaf43a334988d9eaec718",
+                "blob:sha256:859e1b43299088b3971d9f970e90b7bbffdfa8d18db40d606678c9288fa36f76",
+                "blob:sha256:87823b26762df130a3ee45deed1cd856daf54bc8cd0f60b9899a492cfea60263",
+                "blob:sha256:8915b62398df9d4a184e61b77cb1aeeca4826a231075f30d002bacc06dbed148",
+                "blob:sha256:8aa26e4d3a337073ba3ffdbc3e2fd86f5aa8b65ca0c7c9bdae595b724ded3874",
+                "blob:sha256:8b49611066b8e608a74c9608209757dd45595e4dab223e71a89df8f6eaac1024",
+                "blob:sha256:8e47a66070f15fab0cec00a465905727b98a00c8fabd08a68139ec6ed211a587",
+                "blob:sha256:8eee0097c2306d31bbe046261a3f06d2f0681533b9658696a05baffb82ebb6cd",
+                "blob:sha256:8fca8a919669dd6ef6c95dfb7004de7a09564f2912066ad26b6bd2ab6a9aa19d",
+                "blob:sha256:918a82f22a18cc56d4bab6177c98a8fdaf081d8e671d3b8c1f5789e57a784639",
+                "blob:sha256:938888ca70b98861eb94cfef528d78b9bee293707ca9712e5420d27e88c14095",
+                "blob:sha256:9aca9bbd1616dfbfe46312c258638240f0c16a9edf6082eb4b8b9532cac00cb5",
+                "blob:sha256:9e41b11fd8746ad32d8aee17c018468ee8a74f17747a9ccd2740a69bf8e5cfdd",
+                "blob:sha256:a16cf20461c3cdd5f3c459981d22c438f462b0e95566a08d5618aa7db2044934",
+                "blob:sha256:a2e5481ab64d207064fd0d343c1979c4e6223d2a1cc2be47c3d1afb93d1e259e",
+                "blob:sha256:a42aa1df08d56f7b020631262305dbd7bcdc18d100a2916b496a8e43367764b7",
+                "blob:sha256:a510ed83a4e5a80d7b4094f4f89dcdacebf308186f35a75990dfea0d383e3766",
+                "blob:sha256:a743c532fbd4066c9ac31ecfd2baec6dafaea43409b22d2ea924fa82ac516728",
+                "blob:sha256:af0fc58d551a87ee2321937bda5414438db265c47091095a20b638090ffa15d8",
+                "blob:sha256:b2e311d96b37abbff23c6ff0ab94bf7ed0cb0cae6e21e4f6f112056cb0d62448",
+                "blob:sha256:b3506395570c1f096dcf254c5ae67d3e2b139ced9a5e7b0d32fed390d5cc9760",
+                "blob:sha256:b4d1d1ce19667042889d06449beae1d5c2efce1ee0c9fdec47aab06834b8808a",
+                "blob:sha256:bb68ab1b5fad46d60140fd9e056f6324d8457cee17b5ced4bc92c2c2f7527984",
+                "blob:sha256:be2c1a446ba46a0499a8a4727d659b43d5d09fccdddc651422f2e31438764905",
+                "blob:sha256:bf5dfe347867579e899d260ff4c9f5d4c2748484609299f58654000500fb0d42",
+                "blob:sha256:ca584cf0126edfe50ced4ac6c9376a01f99539fae750ac75a3a581322c25a3de",
+                "blob:sha256:cad5a5d09bec1f1817017c2acdc661fe7c1ae1c9e86da07c62790c37f7e4d954",
+                "blob:sha256:da1397ef68be0065b12bedff278f472a70d2c2e52697453f9d4bef3239f7cb6f",
+                "blob:sha256:da6b9929bf3f1fe0a722aaa8473beb6607b07369c51f4b21dfddf083e9cca080",
+                "blob:sha256:df706578f2208eb8f25ea236faa7eb79c1442e2eab44b55f67d8bf2d95fafd0d",
+                "blob:sha256:dfa50b4acbfbbbd5a6331d1f8adc356806ce1e74569c2c331fe43b0e8b87add4",
+                "blob:sha256:e645d584314780db5080781cf2c86e91351002721069f5fdfde3b8f1636a0301",
+                "blob:sha256:e8e3a97a4e05d1889d48271cf1ce96d2295cfe15dc2965b501e9a288cc6f3778",
+                "blob:sha256:e9e85edd078473f4bcf742cd3882659d743cd0d27ec00ecb8ae90f6daec92ca7",
+                "blob:sha256:eb9558468a7dea65d46e97d500956bbb1e0ceee8337f140933fc48e12fcc9856",
+                "blob:sha256:efc351a40d84ad1c02d56a6f9f029eeb299fda8685a8c8ce9d4517df40c7f860",
+                "blob:sha256:f9f75076c6d2b8a86d40e427f6ee473529b695a07fa14a0b8610fec9482cb916"
+              ]
+            },
+            "coverage": {
+              "exhaustive": false,
+              "required": [],
+              "enrolled": [
+                "opcore/core-required-check"
+              ],
+              "ran": [
+                "opcore/core-required-check"
+              ],
+              "degraded": [
+                {
+                  "source": "opcore/core-required-check",
+                  "reason": "incomplete",
+                  "requirement": "opcore/core-required-check",
+                  "detail": "opcore returned an incomplete Assessment.",
+                  "capability": "check",
+                  "providerState": "degraded"
+                }
+              ]
+            },
+            "authorityEvidence": [
+              {
+                "identity": "opcore",
+                "integrity": "artifact checksums declared",
+                "conformance": "not_claimed",
+                "isolation": "gated",
+                "authority": {
+                  "granted": false,
+                  "requirement": "opcore/core-required-check",
+                  "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
+                  "callSite": "gate"
+                }
+              }
+            ],
+            "assurance": {
+              "mode": "gated",
+              "transactionGuarantee": "none"
+            }
+          }
+        },
+        "receipt": {
+          "receiptId": "core-evaluate-allow-1782470635385",
+          "issuedAt": "2026-06-26T10:43:55.385Z",
+          "providerProvenance": [
+            {
+              "provider": "opcore",
+              "capability": "check",
+              "identity": "opcore",
+              "integrity": "artifact checksums declared",
+              "conformance": "not_claimed"
+            }
+          ],
+          "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
+          "baseline": {
+            "rev": "tree:sha256:fc0d6acba639ac0b94de3692c709686ddb796fa60d0868c409f18626ddcaf2b1",
+            "stampedAt": "2026-06-26T10:43:54.350Z"
+          },
+          "validAsOf": {
+            "rev": "tree:sha256:fc0d6acba639ac0b94de3692c709686ddb796fa60d0868c409f18626ddcaf2b1",
+            "blobs": [
+              "blob:sha256:047c42704ca677d32166d3e4f73b57bf9b3ac46fc915f9b3e471a2fbb1b6db70",
+              "blob:sha256:061c069803d10d8aabe1d370b5f95e0febec866735cc5779caa7e55b536e5340",
+              "blob:sha256:072158c20d8fe653f4fed447e441dcb3b4e1a2602cc03c627059d6ea6080195a",
+              "blob:sha256:0750ae0fbf4d849cf0dee2e42e21dcc65169a1b4a89f534091b486f41771bfc3",
+              "blob:sha256:0ac5cd41a5cf2430cf93c3ac5401138319b0411b1451da7030f1a7cec91c0174",
+              "blob:sha256:0c24ad0c074629fde0f6ae71b5aaaf2aa1be886910848fa8ee7a08c543583d44",
+              "blob:sha256:113d6bfb20889c129dbf3b184d0c622876a2be4bae5025374eea8ceb88e1d8ca",
+              "blob:sha256:13d3d0e52a23cf66c9a87cc8b0fa76c52a8bc2e036aca5486af0d118c2a06f28",
+              "blob:sha256:19555d0e28cc643b445503833f445598026644f6591d7d65a57b2eaa4ed9722f",
+              "blob:sha256:1c4a45fe427f0462c3fb2992ee486bc3df01a5d42bd23232e2630292184557ae",
+              "blob:sha256:1ce7a7efd2a20e785b7073f7e38a4d1b3af33aa4449a6b99d76d15e814d94084",
+              "blob:sha256:1d3f69b3e24fe8f231b86070b6f0d69a6896a4431d0c23c8ee6dce0d9b58799b",
+              "blob:sha256:1eacf13c0ffc89796ffd042ad94928c784e0513a06fd51b04ecea27db08b524a",
+              "blob:sha256:234c5e119677003aa1123941646c0cd6412e58bde9db9cd1b61ab2803d7b2b06",
+              "blob:sha256:2644505a3248e2d57c00722ca83c91aaf14a92282018290436ef56bb5b8a9368",
+              "blob:sha256:28658b38f305ac572a6bdd1ffa029258bb0b0bfd08e0f0a5c1345fd2e8f391c1",
+              "blob:sha256:2a5a5a19a2b4128bce0adf0e7b0ad635a57fe3434126282b69f94023113da2c9",
+              "blob:sha256:2d88aec94b97fde5eb9bffc0661cf07d8026aece73ad9ffe7cbb3fac64e3e280",
+              "blob:sha256:2f302866b9d2fb1fbdfa21189bd840e8e0415db837babc5414c5e58ce0aef0e3",
+              "blob:sha256:2f8dc5e030452a6d292c6cc40f1eee72459972a7bcd611b1deb6441b90f8dc3f",
+              "blob:sha256:33bd668b04c80c5fca6698c9f42b08f3709a06d8af330cddad921b2517e24ec8",
+              "blob:sha256:35e4c5216ecc18df74b4b43cafd3391595897a9c44d583fc5a53145984d21ed5",
+              "blob:sha256:360770d6f9d667fccb825203efb2c5085532b48c142951d07483aba0c6a57a61",
+              "blob:sha256:37e8349ffc115d6d2056c698b707251165fc6f69da951d9b54d0f8ef369af6fb",
+              "blob:sha256:3b6aee069385bd1c227748190bb810e701b4f05b8a3d539a16e6e05055890f71",
+              "blob:sha256:3c0464fc1195b846613a5020d2a193ff90686584efff67e9da19e06804a90c19",
+              "blob:sha256:3fbd2394ecf004a9fa0e74c7d701ca83c75020cc9f302c0d6d0f4a66fe86b788",
+              "blob:sha256:419491b59e75764d57b1bed1d524de2d388ab26cde4aa7fe5f69526d674e6f1a",
+              "blob:sha256:42a0737ad10ff3d40205999b1d5564bd00a31d585fbd4a99bb35cab1ba46bfed",
+              "blob:sha256:436998b45ea9182551ba0ee5a0439350b8333180ff59dd67b9c53c895e4734b1",
+              "blob:sha256:4ac5572857d1ea9b39742428187336ae00470f2237c9305d082009769999e15b",
+              "blob:sha256:4b550ae475c7c233663e0017542c6d971c71e31a1f7a15e9b43657f53c2d8af4",
+              "blob:sha256:57396b28872224e8d395399f4e9487ad276212eda960b6e558ea656a0632d178",
+              "blob:sha256:581ca8b1c2c292a248ec54357b136b74ce1bd2a6df58d895e673b4161be4d3a1",
+              "blob:sha256:5a5acce892fb43825ead14748092b92df2e492a2d7ff42d63531cec1e911a4d4",
+              "blob:sha256:6569a4a6428d4fb6a17cdeda3cc90a0b50986af1bff219d60eda0d0e5c761365",
+              "blob:sha256:6715002b8e5ee658f6871c7d68cd6788c17689b50f14ac3cac7ba380120ed83e",
+              "blob:sha256:67c0d71733ca410f9b90f5fed1a207c553885adde4490e3eac57d71a13ee1028",
+              "blob:sha256:6af60758e3c910ecb151f14032b21d400364b1225a337d0d573dd3d79f35ee26",
+              "blob:sha256:6b6fab390d4c967519dae86a6ad5d4e2ea3bdc3c51a85e9a255ed369bf4c0c78",
+              "blob:sha256:6be171b22ca67693f91bb93c7f805cdddcf37e51438703ac26973a9ea5a21470",
+              "blob:sha256:71f15118468cb38971f5779dbcad6b5dedb8f7365ac69b33e674c68323e0c06d",
+              "blob:sha256:763be1fc1599841be307ef253783599e6ab6a9288ae5e845133ce9f122d5c6c4",
+              "blob:sha256:768b900eea063e914caa948f7c0158bc9e19609aee0f7fda5260be181f1459f6",
+              "blob:sha256:7726e17b8c6ff7a5e4e0680417a6a0d872a5b4fa2bd26dc05ba3f3159315dcab",
+              "blob:sha256:78b0f75b8f056e7dcd3d63a63a40cc485e531df92bfbb7a930d438d807d89a56",
+              "blob:sha256:7c8b3013e228c981c684b6e92ac2dc6bad4410d80a6a4e68eb23a34352d159cc",
+              "blob:sha256:7ddd3a996d2cce81f812fb99fb5defa78a648cf25938d095fe90d1c07552450a",
+              "blob:sha256:7de918a4dce8273466e2a6d7b6c93344e9af9af8390a2643f87f894e258a7dae",
+              "blob:sha256:8195ffea373f98c4bc6d12d6397a2cbc9693b19cec003c4609f3d4a9d652834a",
+              "blob:sha256:81ac83f20cd91d0837aecbf8c5e058e021f2dbe1687a77ac811fe2f7e81ffb85",
+              "blob:sha256:8521f3fc81d0db92d4ca141e88ab12826fca62e6ae5aaf43a334988d9eaec718",
+              "blob:sha256:859e1b43299088b3971d9f970e90b7bbffdfa8d18db40d606678c9288fa36f76",
+              "blob:sha256:87823b26762df130a3ee45deed1cd856daf54bc8cd0f60b9899a492cfea60263",
+              "blob:sha256:8915b62398df9d4a184e61b77cb1aeeca4826a231075f30d002bacc06dbed148",
+              "blob:sha256:8aa26e4d3a337073ba3ffdbc3e2fd86f5aa8b65ca0c7c9bdae595b724ded3874",
+              "blob:sha256:8b49611066b8e608a74c9608209757dd45595e4dab223e71a89df8f6eaac1024",
+              "blob:sha256:8e47a66070f15fab0cec00a465905727b98a00c8fabd08a68139ec6ed211a587",
+              "blob:sha256:8eee0097c2306d31bbe046261a3f06d2f0681533b9658696a05baffb82ebb6cd",
+              "blob:sha256:8fca8a919669dd6ef6c95dfb7004de7a09564f2912066ad26b6bd2ab6a9aa19d",
+              "blob:sha256:918a82f22a18cc56d4bab6177c98a8fdaf081d8e671d3b8c1f5789e57a784639",
+              "blob:sha256:938888ca70b98861eb94cfef528d78b9bee293707ca9712e5420d27e88c14095",
+              "blob:sha256:9aca9bbd1616dfbfe46312c258638240f0c16a9edf6082eb4b8b9532cac00cb5",
+              "blob:sha256:9e41b11fd8746ad32d8aee17c018468ee8a74f17747a9ccd2740a69bf8e5cfdd",
+              "blob:sha256:a16cf20461c3cdd5f3c459981d22c438f462b0e95566a08d5618aa7db2044934",
+              "blob:sha256:a2e5481ab64d207064fd0d343c1979c4e6223d2a1cc2be47c3d1afb93d1e259e",
+              "blob:sha256:a42aa1df08d56f7b020631262305dbd7bcdc18d100a2916b496a8e43367764b7",
+              "blob:sha256:a510ed83a4e5a80d7b4094f4f89dcdacebf308186f35a75990dfea0d383e3766",
+              "blob:sha256:a743c532fbd4066c9ac31ecfd2baec6dafaea43409b22d2ea924fa82ac516728",
+              "blob:sha256:af0fc58d551a87ee2321937bda5414438db265c47091095a20b638090ffa15d8",
+              "blob:sha256:b2e311d96b37abbff23c6ff0ab94bf7ed0cb0cae6e21e4f6f112056cb0d62448",
+              "blob:sha256:b3506395570c1f096dcf254c5ae67d3e2b139ced9a5e7b0d32fed390d5cc9760",
+              "blob:sha256:b4d1d1ce19667042889d06449beae1d5c2efce1ee0c9fdec47aab06834b8808a",
+              "blob:sha256:bb68ab1b5fad46d60140fd9e056f6324d8457cee17b5ced4bc92c2c2f7527984",
+              "blob:sha256:be2c1a446ba46a0499a8a4727d659b43d5d09fccdddc651422f2e31438764905",
+              "blob:sha256:bf5dfe347867579e899d260ff4c9f5d4c2748484609299f58654000500fb0d42",
+              "blob:sha256:ca584cf0126edfe50ced4ac6c9376a01f99539fae750ac75a3a581322c25a3de",
+              "blob:sha256:cad5a5d09bec1f1817017c2acdc661fe7c1ae1c9e86da07c62790c37f7e4d954",
+              "blob:sha256:da1397ef68be0065b12bedff278f472a70d2c2e52697453f9d4bef3239f7cb6f",
+              "blob:sha256:da6b9929bf3f1fe0a722aaa8473beb6607b07369c51f4b21dfddf083e9cca080",
+              "blob:sha256:df706578f2208eb8f25ea236faa7eb79c1442e2eab44b55f67d8bf2d95fafd0d",
+              "blob:sha256:dfa50b4acbfbbbd5a6331d1f8adc356806ce1e74569c2c331fe43b0e8b87add4",
+              "blob:sha256:e645d584314780db5080781cf2c86e91351002721069f5fdfde3b8f1636a0301",
+              "blob:sha256:e8e3a97a4e05d1889d48271cf1ce96d2295cfe15dc2965b501e9a288cc6f3778",
+              "blob:sha256:e9e85edd078473f4bcf742cd3882659d743cd0d27ec00ecb8ae90f6daec92ca7",
+              "blob:sha256:eb9558468a7dea65d46e97d500956bbb1e0ceee8337f140933fc48e12fcc9856",
+              "blob:sha256:efc351a40d84ad1c02d56a6f9f029eeb299fda8685a8c8ce9d4517df40c7f860",
+              "blob:sha256:f9f75076c6d2b8a86d40e427f6ee473529b695a07fa14a0b8610fec9482cb916"
+            ]
+          },
+          "coverage": {
+            "exhaustive": false,
+            "required": [],
+            "enrolled": [
+              "opcore/core-required-check"
+            ],
+            "ran": [
+              "opcore/core-required-check"
+            ],
+            "degraded": [
+              {
+                "source": "opcore/core-required-check",
+                "reason": "incomplete",
+                "requirement": "opcore/core-required-check",
+                "detail": "opcore returned an incomplete Assessment.",
+                "capability": "check",
+                "providerState": "degraded"
+              }
+            ]
+          },
+          "authorityEvidence": [
+            {
+              "identity": "opcore",
+              "integrity": "artifact checksums declared",
+              "conformance": "not_claimed",
+              "isolation": "gated",
+              "authority": {
+                "granted": false,
+                "requirement": "opcore/core-required-check",
+                "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
+                "callSite": "gate"
+              }
+            }
+          ],
+          "assurance": {
+            "mode": "gated",
+            "transactionGuarantee": "none"
+          }
+        }
+      },
+      "assertion": "asp-check-changed completed through standalone ASP manager",
+      "hostDecision": {
+        "pass": true,
+        "decision": "allow",
+        "callSite": "interactive",
+        "changesetDigest": "sha256:ca3012e12aae01802b6f60761444a7f1e739303ba5590331551cb745cc40cd17",
+        "findings": [],
+        "coverage": {
+          "exhaustive": false,
+          "required": [],
+          "enrolled": [
+            "opcore/core-required-check"
+          ],
+          "ran": [
+            "opcore/core-required-check"
+          ],
+          "degraded": [
+            {
+              "source": "opcore/core-required-check",
+              "reason": "incomplete",
+              "requirement": "opcore/core-required-check",
+              "detail": "opcore returned an incomplete Assessment.",
+              "capability": "check",
+              "providerState": "degraded"
+            }
+          ]
+        },
+        "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
+        "authorityEvidence": [
+          {
+            "identity": "opcore",
+            "integrity": "artifact checksums declared",
+            "conformance": "not_claimed",
+            "isolation": "gated",
+            "authority": {
+              "granted": false,
+              "requirement": "opcore/core-required-check",
+              "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
+              "callSite": "gate"
+            }
+          }
+        ],
+        "validAsOf": {
+          "rev": "tree:sha256:fc0d6acba639ac0b94de3692c709686ddb796fa60d0868c409f18626ddcaf2b1",
+          "blobs": [
+            "blob:sha256:047c42704ca677d32166d3e4f73b57bf9b3ac46fc915f9b3e471a2fbb1b6db70",
+            "blob:sha256:061c069803d10d8aabe1d370b5f95e0febec866735cc5779caa7e55b536e5340",
+            "blob:sha256:072158c20d8fe653f4fed447e441dcb3b4e1a2602cc03c627059d6ea6080195a",
+            "blob:sha256:0750ae0fbf4d849cf0dee2e42e21dcc65169a1b4a89f534091b486f41771bfc3",
+            "blob:sha256:0ac5cd41a5cf2430cf93c3ac5401138319b0411b1451da7030f1a7cec91c0174",
+            "blob:sha256:0c24ad0c074629fde0f6ae71b5aaaf2aa1be886910848fa8ee7a08c543583d44",
+            "blob:sha256:113d6bfb20889c129dbf3b184d0c622876a2be4bae5025374eea8ceb88e1d8ca",
+            "blob:sha256:13d3d0e52a23cf66c9a87cc8b0fa76c52a8bc2e036aca5486af0d118c2a06f28",
+            "blob:sha256:19555d0e28cc643b445503833f445598026644f6591d7d65a57b2eaa4ed9722f",
+            "blob:sha256:1c4a45fe427f0462c3fb2992ee486bc3df01a5d42bd23232e2630292184557ae",
+            "blob:sha256:1ce7a7efd2a20e785b7073f7e38a4d1b3af33aa4449a6b99d76d15e814d94084",
+            "blob:sha256:1d3f69b3e24fe8f231b86070b6f0d69a6896a4431d0c23c8ee6dce0d9b58799b",
+            "blob:sha256:1eacf13c0ffc89796ffd042ad94928c784e0513a06fd51b04ecea27db08b524a",
+            "blob:sha256:234c5e119677003aa1123941646c0cd6412e58bde9db9cd1b61ab2803d7b2b06",
+            "blob:sha256:2644505a3248e2d57c00722ca83c91aaf14a92282018290436ef56bb5b8a9368",
+            "blob:sha256:28658b38f305ac572a6bdd1ffa029258bb0b0bfd08e0f0a5c1345fd2e8f391c1",
+            "blob:sha256:2a5a5a19a2b4128bce0adf0e7b0ad635a57fe3434126282b69f94023113da2c9",
+            "blob:sha256:2d88aec94b97fde5eb9bffc0661cf07d8026aece73ad9ffe7cbb3fac64e3e280",
+            "blob:sha256:2f302866b9d2fb1fbdfa21189bd840e8e0415db837babc5414c5e58ce0aef0e3",
+            "blob:sha256:2f8dc5e030452a6d292c6cc40f1eee72459972a7bcd611b1deb6441b90f8dc3f",
+            "blob:sha256:33bd668b04c80c5fca6698c9f42b08f3709a06d8af330cddad921b2517e24ec8",
+            "blob:sha256:35e4c5216ecc18df74b4b43cafd3391595897a9c44d583fc5a53145984d21ed5",
+            "blob:sha256:360770d6f9d667fccb825203efb2c5085532b48c142951d07483aba0c6a57a61",
+            "blob:sha256:37e8349ffc115d6d2056c698b707251165fc6f69da951d9b54d0f8ef369af6fb",
+            "blob:sha256:3b6aee069385bd1c227748190bb810e701b4f05b8a3d539a16e6e05055890f71",
+            "blob:sha256:3c0464fc1195b846613a5020d2a193ff90686584efff67e9da19e06804a90c19",
+            "blob:sha256:3fbd2394ecf004a9fa0e74c7d701ca83c75020cc9f302c0d6d0f4a66fe86b788",
+            "blob:sha256:419491b59e75764d57b1bed1d524de2d388ab26cde4aa7fe5f69526d674e6f1a",
+            "blob:sha256:42a0737ad10ff3d40205999b1d5564bd00a31d585fbd4a99bb35cab1ba46bfed",
+            "blob:sha256:436998b45ea9182551ba0ee5a0439350b8333180ff59dd67b9c53c895e4734b1",
+            "blob:sha256:4ac5572857d1ea9b39742428187336ae00470f2237c9305d082009769999e15b",
+            "blob:sha256:4b550ae475c7c233663e0017542c6d971c71e31a1f7a15e9b43657f53c2d8af4",
+            "blob:sha256:57396b28872224e8d395399f4e9487ad276212eda960b6e558ea656a0632d178",
+            "blob:sha256:581ca8b1c2c292a248ec54357b136b74ce1bd2a6df58d895e673b4161be4d3a1",
+            "blob:sha256:5a5acce892fb43825ead14748092b92df2e492a2d7ff42d63531cec1e911a4d4",
+            "blob:sha256:6569a4a6428d4fb6a17cdeda3cc90a0b50986af1bff219d60eda0d0e5c761365",
+            "blob:sha256:6715002b8e5ee658f6871c7d68cd6788c17689b50f14ac3cac7ba380120ed83e",
+            "blob:sha256:67c0d71733ca410f9b90f5fed1a207c553885adde4490e3eac57d71a13ee1028",
+            "blob:sha256:6af60758e3c910ecb151f14032b21d400364b1225a337d0d573dd3d79f35ee26",
+            "blob:sha256:6b6fab390d4c967519dae86a6ad5d4e2ea3bdc3c51a85e9a255ed369bf4c0c78",
+            "blob:sha256:6be171b22ca67693f91bb93c7f805cdddcf37e51438703ac26973a9ea5a21470",
+            "blob:sha256:71f15118468cb38971f5779dbcad6b5dedb8f7365ac69b33e674c68323e0c06d",
+            "blob:sha256:763be1fc1599841be307ef253783599e6ab6a9288ae5e845133ce9f122d5c6c4",
+            "blob:sha256:768b900eea063e914caa948f7c0158bc9e19609aee0f7fda5260be181f1459f6",
+            "blob:sha256:7726e17b8c6ff7a5e4e0680417a6a0d872a5b4fa2bd26dc05ba3f3159315dcab",
+            "blob:sha256:78b0f75b8f056e7dcd3d63a63a40cc485e531df92bfbb7a930d438d807d89a56",
+            "blob:sha256:7c8b3013e228c981c684b6e92ac2dc6bad4410d80a6a4e68eb23a34352d159cc",
+            "blob:sha256:7ddd3a996d2cce81f812fb99fb5defa78a648cf25938d095fe90d1c07552450a",
+            "blob:sha256:7de918a4dce8273466e2a6d7b6c93344e9af9af8390a2643f87f894e258a7dae",
+            "blob:sha256:8195ffea373f98c4bc6d12d6397a2cbc9693b19cec003c4609f3d4a9d652834a",
+            "blob:sha256:81ac83f20cd91d0837aecbf8c5e058e021f2dbe1687a77ac811fe2f7e81ffb85",
+            "blob:sha256:8521f3fc81d0db92d4ca141e88ab12826fca62e6ae5aaf43a334988d9eaec718",
+            "blob:sha256:859e1b43299088b3971d9f970e90b7bbffdfa8d18db40d606678c9288fa36f76",
+            "blob:sha256:87823b26762df130a3ee45deed1cd856daf54bc8cd0f60b9899a492cfea60263",
+            "blob:sha256:8915b62398df9d4a184e61b77cb1aeeca4826a231075f30d002bacc06dbed148",
+            "blob:sha256:8aa26e4d3a337073ba3ffdbc3e2fd86f5aa8b65ca0c7c9bdae595b724ded3874",
+            "blob:sha256:8b49611066b8e608a74c9608209757dd45595e4dab223e71a89df8f6eaac1024",
+            "blob:sha256:8e47a66070f15fab0cec00a465905727b98a00c8fabd08a68139ec6ed211a587",
+            "blob:sha256:8eee0097c2306d31bbe046261a3f06d2f0681533b9658696a05baffb82ebb6cd",
+            "blob:sha256:8fca8a919669dd6ef6c95dfb7004de7a09564f2912066ad26b6bd2ab6a9aa19d",
+            "blob:sha256:918a82f22a18cc56d4bab6177c98a8fdaf081d8e671d3b8c1f5789e57a784639",
+            "blob:sha256:938888ca70b98861eb94cfef528d78b9bee293707ca9712e5420d27e88c14095",
+            "blob:sha256:9aca9bbd1616dfbfe46312c258638240f0c16a9edf6082eb4b8b9532cac00cb5",
+            "blob:sha256:9e41b11fd8746ad32d8aee17c018468ee8a74f17747a9ccd2740a69bf8e5cfdd",
+            "blob:sha256:a16cf20461c3cdd5f3c459981d22c438f462b0e95566a08d5618aa7db2044934",
+            "blob:sha256:a2e5481ab64d207064fd0d343c1979c4e6223d2a1cc2be47c3d1afb93d1e259e",
+            "blob:sha256:a42aa1df08d56f7b020631262305dbd7bcdc18d100a2916b496a8e43367764b7",
+            "blob:sha256:a510ed83a4e5a80d7b4094f4f89dcdacebf308186f35a75990dfea0d383e3766",
+            "blob:sha256:a743c532fbd4066c9ac31ecfd2baec6dafaea43409b22d2ea924fa82ac516728",
+            "blob:sha256:af0fc58d551a87ee2321937bda5414438db265c47091095a20b638090ffa15d8",
+            "blob:sha256:b2e311d96b37abbff23c6ff0ab94bf7ed0cb0cae6e21e4f6f112056cb0d62448",
+            "blob:sha256:b3506395570c1f096dcf254c5ae67d3e2b139ced9a5e7b0d32fed390d5cc9760",
+            "blob:sha256:b4d1d1ce19667042889d06449beae1d5c2efce1ee0c9fdec47aab06834b8808a",
+            "blob:sha256:bb68ab1b5fad46d60140fd9e056f6324d8457cee17b5ced4bc92c2c2f7527984",
+            "blob:sha256:be2c1a446ba46a0499a8a4727d659b43d5d09fccdddc651422f2e31438764905",
+            "blob:sha256:bf5dfe347867579e899d260ff4c9f5d4c2748484609299f58654000500fb0d42",
+            "blob:sha256:ca584cf0126edfe50ced4ac6c9376a01f99539fae750ac75a3a581322c25a3de",
+            "blob:sha256:cad5a5d09bec1f1817017c2acdc661fe7c1ae1c9e86da07c62790c37f7e4d954",
+            "blob:sha256:da1397ef68be0065b12bedff278f472a70d2c2e52697453f9d4bef3239f7cb6f",
+            "blob:sha256:da6b9929bf3f1fe0a722aaa8473beb6607b07369c51f4b21dfddf083e9cca080",
+            "blob:sha256:df706578f2208eb8f25ea236faa7eb79c1442e2eab44b55f67d8bf2d95fafd0d",
+            "blob:sha256:dfa50b4acbfbbbd5a6331d1f8adc356806ce1e74569c2c331fe43b0e8b87add4",
+            "blob:sha256:e645d584314780db5080781cf2c86e91351002721069f5fdfde3b8f1636a0301",
+            "blob:sha256:e8e3a97a4e05d1889d48271cf1ce96d2295cfe15dc2965b501e9a288cc6f3778",
+            "blob:sha256:e9e85edd078473f4bcf742cd3882659d743cd0d27ec00ecb8ae90f6daec92ca7",
+            "blob:sha256:eb9558468a7dea65d46e97d500956bbb1e0ceee8337f140933fc48e12fcc9856",
+            "blob:sha256:efc351a40d84ad1c02d56a6f9f029eeb299fda8685a8c8ce9d4517df40c7f860",
+            "blob:sha256:f9f75076c6d2b8a86d40e427f6ee473529b695a07fa14a0b8610fec9482cb916"
+          ]
+        },
+        "assurance": {
+          "mode": "gated",
+          "transactionGuarantee": "none"
+        },
+        "receipt": {
+          "receiptId": "core-evaluate-allow-1782470635385",
+          "issuedAt": "2026-06-26T10:43:55.385Z",
+          "providerProvenance": [
+            {
+              "provider": "opcore",
+              "capability": "check",
+              "identity": "opcore",
+              "integrity": "artifact checksums declared",
+              "conformance": "not_claimed"
+            }
+          ],
+          "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
+          "baseline": {
+            "rev": "tree:sha256:fc0d6acba639ac0b94de3692c709686ddb796fa60d0868c409f18626ddcaf2b1",
+            "stampedAt": "2026-06-26T10:43:54.350Z"
+          },
+          "validAsOf": {
+            "rev": "tree:sha256:fc0d6acba639ac0b94de3692c709686ddb796fa60d0868c409f18626ddcaf2b1",
+            "blobs": [
+              "blob:sha256:047c42704ca677d32166d3e4f73b57bf9b3ac46fc915f9b3e471a2fbb1b6db70",
+              "blob:sha256:061c069803d10d8aabe1d370b5f95e0febec866735cc5779caa7e55b536e5340",
+              "blob:sha256:072158c20d8fe653f4fed447e441dcb3b4e1a2602cc03c627059d6ea6080195a",
+              "blob:sha256:0750ae0fbf4d849cf0dee2e42e21dcc65169a1b4a89f534091b486f41771bfc3",
+              "blob:sha256:0ac5cd41a5cf2430cf93c3ac5401138319b0411b1451da7030f1a7cec91c0174",
+              "blob:sha256:0c24ad0c074629fde0f6ae71b5aaaf2aa1be886910848fa8ee7a08c543583d44",
+              "blob:sha256:113d6bfb20889c129dbf3b184d0c622876a2be4bae5025374eea8ceb88e1d8ca",
+              "blob:sha256:13d3d0e52a23cf66c9a87cc8b0fa76c52a8bc2e036aca5486af0d118c2a06f28",
+              "blob:sha256:19555d0e28cc643b445503833f445598026644f6591d7d65a57b2eaa4ed9722f",
+              "blob:sha256:1c4a45fe427f0462c3fb2992ee486bc3df01a5d42bd23232e2630292184557ae",
+              "blob:sha256:1ce7a7efd2a20e785b7073f7e38a4d1b3af33aa4449a6b99d76d15e814d94084",
+              "blob:sha256:1d3f69b3e24fe8f231b86070b6f0d69a6896a4431d0c23c8ee6dce0d9b58799b",
+              "blob:sha256:1eacf13c0ffc89796ffd042ad94928c784e0513a06fd51b04ecea27db08b524a",
+              "blob:sha256:234c5e119677003aa1123941646c0cd6412e58bde9db9cd1b61ab2803d7b2b06",
+              "blob:sha256:2644505a3248e2d57c00722ca83c91aaf14a92282018290436ef56bb5b8a9368",
+              "blob:sha256:28658b38f305ac572a6bdd1ffa029258bb0b0bfd08e0f0a5c1345fd2e8f391c1",
+              "blob:sha256:2a5a5a19a2b4128bce0adf0e7b0ad635a57fe3434126282b69f94023113da2c9",
+              "blob:sha256:2d88aec94b97fde5eb9bffc0661cf07d8026aece73ad9ffe7cbb3fac64e3e280",
+              "blob:sha256:2f302866b9d2fb1fbdfa21189bd840e8e0415db837babc5414c5e58ce0aef0e3",
+              "blob:sha256:2f8dc5e030452a6d292c6cc40f1eee72459972a7bcd611b1deb6441b90f8dc3f",
+              "blob:sha256:33bd668b04c80c5fca6698c9f42b08f3709a06d8af330cddad921b2517e24ec8",
+              "blob:sha256:35e4c5216ecc18df74b4b43cafd3391595897a9c44d583fc5a53145984d21ed5",
+              "blob:sha256:360770d6f9d667fccb825203efb2c5085532b48c142951d07483aba0c6a57a61",
+              "blob:sha256:37e8349ffc115d6d2056c698b707251165fc6f69da951d9b54d0f8ef369af6fb",
+              "blob:sha256:3b6aee069385bd1c227748190bb810e701b4f05b8a3d539a16e6e05055890f71",
+              "blob:sha256:3c0464fc1195b846613a5020d2a193ff90686584efff67e9da19e06804a90c19",
+              "blob:sha256:3fbd2394ecf004a9fa0e74c7d701ca83c75020cc9f302c0d6d0f4a66fe86b788",
+              "blob:sha256:419491b59e75764d57b1bed1d524de2d388ab26cde4aa7fe5f69526d674e6f1a",
+              "blob:sha256:42a0737ad10ff3d40205999b1d5564bd00a31d585fbd4a99bb35cab1ba46bfed",
+              "blob:sha256:436998b45ea9182551ba0ee5a0439350b8333180ff59dd67b9c53c895e4734b1",
+              "blob:sha256:4ac5572857d1ea9b39742428187336ae00470f2237c9305d082009769999e15b",
+              "blob:sha256:4b550ae475c7c233663e0017542c6d971c71e31a1f7a15e9b43657f53c2d8af4",
+              "blob:sha256:57396b28872224e8d395399f4e9487ad276212eda960b6e558ea656a0632d178",
+              "blob:sha256:581ca8b1c2c292a248ec54357b136b74ce1bd2a6df58d895e673b4161be4d3a1",
+              "blob:sha256:5a5acce892fb43825ead14748092b92df2e492a2d7ff42d63531cec1e911a4d4",
+              "blob:sha256:6569a4a6428d4fb6a17cdeda3cc90a0b50986af1bff219d60eda0d0e5c761365",
+              "blob:sha256:6715002b8e5ee658f6871c7d68cd6788c17689b50f14ac3cac7ba380120ed83e",
+              "blob:sha256:67c0d71733ca410f9b90f5fed1a207c553885adde4490e3eac57d71a13ee1028",
+              "blob:sha256:6af60758e3c910ecb151f14032b21d400364b1225a337d0d573dd3d79f35ee26",
+              "blob:sha256:6b6fab390d4c967519dae86a6ad5d4e2ea3bdc3c51a85e9a255ed369bf4c0c78",
+              "blob:sha256:6be171b22ca67693f91bb93c7f805cdddcf37e51438703ac26973a9ea5a21470",
+              "blob:sha256:71f15118468cb38971f5779dbcad6b5dedb8f7365ac69b33e674c68323e0c06d",
+              "blob:sha256:763be1fc1599841be307ef253783599e6ab6a9288ae5e845133ce9f122d5c6c4",
+              "blob:sha256:768b900eea063e914caa948f7c0158bc9e19609aee0f7fda5260be181f1459f6",
+              "blob:sha256:7726e17b8c6ff7a5e4e0680417a6a0d872a5b4fa2bd26dc05ba3f3159315dcab",
+              "blob:sha256:78b0f75b8f056e7dcd3d63a63a40cc485e531df92bfbb7a930d438d807d89a56",
+              "blob:sha256:7c8b3013e228c981c684b6e92ac2dc6bad4410d80a6a4e68eb23a34352d159cc",
+              "blob:sha256:7ddd3a996d2cce81f812fb99fb5defa78a648cf25938d095fe90d1c07552450a",
+              "blob:sha256:7de918a4dce8273466e2a6d7b6c93344e9af9af8390a2643f87f894e258a7dae",
+              "blob:sha256:8195ffea373f98c4bc6d12d6397a2cbc9693b19cec003c4609f3d4a9d652834a",
+              "blob:sha256:81ac83f20cd91d0837aecbf8c5e058e021f2dbe1687a77ac811fe2f7e81ffb85",
+              "blob:sha256:8521f3fc81d0db92d4ca141e88ab12826fca62e6ae5aaf43a334988d9eaec718",
+              "blob:sha256:859e1b43299088b3971d9f970e90b7bbffdfa8d18db40d606678c9288fa36f76",
+              "blob:sha256:87823b26762df130a3ee45deed1cd856daf54bc8cd0f60b9899a492cfea60263",
+              "blob:sha256:8915b62398df9d4a184e61b77cb1aeeca4826a231075f30d002bacc06dbed148",
+              "blob:sha256:8aa26e4d3a337073ba3ffdbc3e2fd86f5aa8b65ca0c7c9bdae595b724ded3874",
+              "blob:sha256:8b49611066b8e608a74c9608209757dd45595e4dab223e71a89df8f6eaac1024",
+              "blob:sha256:8e47a66070f15fab0cec00a465905727b98a00c8fabd08a68139ec6ed211a587",
+              "blob:sha256:8eee0097c2306d31bbe046261a3f06d2f0681533b9658696a05baffb82ebb6cd",
+              "blob:sha256:8fca8a919669dd6ef6c95dfb7004de7a09564f2912066ad26b6bd2ab6a9aa19d",
+              "blob:sha256:918a82f22a18cc56d4bab6177c98a8fdaf081d8e671d3b8c1f5789e57a784639",
+              "blob:sha256:938888ca70b98861eb94cfef528d78b9bee293707ca9712e5420d27e88c14095",
+              "blob:sha256:9aca9bbd1616dfbfe46312c258638240f0c16a9edf6082eb4b8b9532cac00cb5",
+              "blob:sha256:9e41b11fd8746ad32d8aee17c018468ee8a74f17747a9ccd2740a69bf8e5cfdd",
+              "blob:sha256:a16cf20461c3cdd5f3c459981d22c438f462b0e95566a08d5618aa7db2044934",
+              "blob:sha256:a2e5481ab64d207064fd0d343c1979c4e6223d2a1cc2be47c3d1afb93d1e259e",
+              "blob:sha256:a42aa1df08d56f7b020631262305dbd7bcdc18d100a2916b496a8e43367764b7",
+              "blob:sha256:a510ed83a4e5a80d7b4094f4f89dcdacebf308186f35a75990dfea0d383e3766",
+              "blob:sha256:a743c532fbd4066c9ac31ecfd2baec6dafaea43409b22d2ea924fa82ac516728",
+              "blob:sha256:af0fc58d551a87ee2321937bda5414438db265c47091095a20b638090ffa15d8",
+              "blob:sha256:b2e311d96b37abbff23c6ff0ab94bf7ed0cb0cae6e21e4f6f112056cb0d62448",
+              "blob:sha256:b3506395570c1f096dcf254c5ae67d3e2b139ced9a5e7b0d32fed390d5cc9760",
+              "blob:sha256:b4d1d1ce19667042889d06449beae1d5c2efce1ee0c9fdec47aab06834b8808a",
+              "blob:sha256:bb68ab1b5fad46d60140fd9e056f6324d8457cee17b5ced4bc92c2c2f7527984",
+              "blob:sha256:be2c1a446ba46a0499a8a4727d659b43d5d09fccdddc651422f2e31438764905",
+              "blob:sha256:bf5dfe347867579e899d260ff4c9f5d4c2748484609299f58654000500fb0d42",
+              "blob:sha256:ca584cf0126edfe50ced4ac6c9376a01f99539fae750ac75a3a581322c25a3de",
+              "blob:sha256:cad5a5d09bec1f1817017c2acdc661fe7c1ae1c9e86da07c62790c37f7e4d954",
+              "blob:sha256:da1397ef68be0065b12bedff278f472a70d2c2e52697453f9d4bef3239f7cb6f",
+              "blob:sha256:da6b9929bf3f1fe0a722aaa8473beb6607b07369c51f4b21dfddf083e9cca080",
+              "blob:sha256:df706578f2208eb8f25ea236faa7eb79c1442e2eab44b55f67d8bf2d95fafd0d",
+              "blob:sha256:dfa50b4acbfbbbd5a6331d1f8adc356806ce1e74569c2c331fe43b0e8b87add4",
+              "blob:sha256:e645d584314780db5080781cf2c86e91351002721069f5fdfde3b8f1636a0301",
+              "blob:sha256:e8e3a97a4e05d1889d48271cf1ce96d2295cfe15dc2965b501e9a288cc6f3778",
+              "blob:sha256:e9e85edd078473f4bcf742cd3882659d743cd0d27ec00ecb8ae90f6daec92ca7",
+              "blob:sha256:eb9558468a7dea65d46e97d500956bbb1e0ceee8337f140933fc48e12fcc9856",
+              "blob:sha256:efc351a40d84ad1c02d56a6f9f029eeb299fda8685a8c8ce9d4517df40c7f860",
+              "blob:sha256:f9f75076c6d2b8a86d40e427f6ee473529b695a07fa14a0b8610fec9482cb916"
+            ]
+          },
+          "coverage": {
+            "exhaustive": false,
+            "required": [],
+            "enrolled": [
+              "opcore/core-required-check"
+            ],
+            "ran": [
+              "opcore/core-required-check"
+            ],
+            "degraded": [
+              {
+                "source": "opcore/core-required-check",
+                "reason": "incomplete",
+                "requirement": "opcore/core-required-check",
+                "detail": "opcore returned an incomplete Assessment.",
+                "capability": "check",
+                "providerState": "degraded"
+              }
+            ]
+          },
+          "authorityEvidence": [
+            {
+              "identity": "opcore",
+              "integrity": "artifact checksums declared",
+              "conformance": "not_claimed",
+              "isolation": "gated",
+              "authority": {
+                "granted": false,
+                "requirement": "opcore/core-required-check",
+                "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
+                "callSite": "gate"
+              }
+            }
+          ],
+          "assurance": {
+            "mode": "gated",
+            "transactionGuarantee": "none"
+          }
+        }
+      },
+      "receipt": {
+        "receiptId": "core-evaluate-allow-1782470635385",
+        "issuedAt": "2026-06-26T10:43:55.385Z",
+        "providerProvenance": [
+          {
+            "provider": "opcore",
+            "capability": "check",
+            "identity": "opcore",
+            "integrity": "artifact checksums declared",
+            "conformance": "not_claimed"
+          }
+        ],
+        "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
+        "baseline": {
+          "rev": "tree:sha256:fc0d6acba639ac0b94de3692c709686ddb796fa60d0868c409f18626ddcaf2b1",
+          "stampedAt": "2026-06-26T10:43:54.350Z"
+        },
+        "validAsOf": {
+          "rev": "tree:sha256:fc0d6acba639ac0b94de3692c709686ddb796fa60d0868c409f18626ddcaf2b1",
+          "blobs": [
+            "blob:sha256:047c42704ca677d32166d3e4f73b57bf9b3ac46fc915f9b3e471a2fbb1b6db70",
+            "blob:sha256:061c069803d10d8aabe1d370b5f95e0febec866735cc5779caa7e55b536e5340",
+            "blob:sha256:072158c20d8fe653f4fed447e441dcb3b4e1a2602cc03c627059d6ea6080195a",
+            "blob:sha256:0750ae0fbf4d849cf0dee2e42e21dcc65169a1b4a89f534091b486f41771bfc3",
+            "blob:sha256:0ac5cd41a5cf2430cf93c3ac5401138319b0411b1451da7030f1a7cec91c0174",
+            "blob:sha256:0c24ad0c074629fde0f6ae71b5aaaf2aa1be886910848fa8ee7a08c543583d44",
+            "blob:sha256:113d6bfb20889c129dbf3b184d0c622876a2be4bae5025374eea8ceb88e1d8ca",
+            "blob:sha256:13d3d0e52a23cf66c9a87cc8b0fa76c52a8bc2e036aca5486af0d118c2a06f28",
+            "blob:sha256:19555d0e28cc643b445503833f445598026644f6591d7d65a57b2eaa4ed9722f",
+            "blob:sha256:1c4a45fe427f0462c3fb2992ee486bc3df01a5d42bd23232e2630292184557ae",
+            "blob:sha256:1ce7a7efd2a20e785b7073f7e38a4d1b3af33aa4449a6b99d76d15e814d94084",
+            "blob:sha256:1d3f69b3e24fe8f231b86070b6f0d69a6896a4431d0c23c8ee6dce0d9b58799b",
+            "blob:sha256:1eacf13c0ffc89796ffd042ad94928c784e0513a06fd51b04ecea27db08b524a",
+            "blob:sha256:234c5e119677003aa1123941646c0cd6412e58bde9db9cd1b61ab2803d7b2b06",
+            "blob:sha256:2644505a3248e2d57c00722ca83c91aaf14a92282018290436ef56bb5b8a9368",
+            "blob:sha256:28658b38f305ac572a6bdd1ffa029258bb0b0bfd08e0f0a5c1345fd2e8f391c1",
+            "blob:sha256:2a5a5a19a2b4128bce0adf0e7b0ad635a57fe3434126282b69f94023113da2c9",
+            "blob:sha256:2d88aec94b97fde5eb9bffc0661cf07d8026aece73ad9ffe7cbb3fac64e3e280",
+            "blob:sha256:2f302866b9d2fb1fbdfa21189bd840e8e0415db837babc5414c5e58ce0aef0e3",
+            "blob:sha256:2f8dc5e030452a6d292c6cc40f1eee72459972a7bcd611b1deb6441b90f8dc3f",
+            "blob:sha256:33bd668b04c80c5fca6698c9f42b08f3709a06d8af330cddad921b2517e24ec8",
+            "blob:sha256:35e4c5216ecc18df74b4b43cafd3391595897a9c44d583fc5a53145984d21ed5",
+            "blob:sha256:360770d6f9d667fccb825203efb2c5085532b48c142951d07483aba0c6a57a61",
+            "blob:sha256:37e8349ffc115d6d2056c698b707251165fc6f69da951d9b54d0f8ef369af6fb",
+            "blob:sha256:3b6aee069385bd1c227748190bb810e701b4f05b8a3d539a16e6e05055890f71",
+            "blob:sha256:3c0464fc1195b846613a5020d2a193ff90686584efff67e9da19e06804a90c19",
+            "blob:sha256:3fbd2394ecf004a9fa0e74c7d701ca83c75020cc9f302c0d6d0f4a66fe86b788",
+            "blob:sha256:419491b59e75764d57b1bed1d524de2d388ab26cde4aa7fe5f69526d674e6f1a",
+            "blob:sha256:42a0737ad10ff3d40205999b1d5564bd00a31d585fbd4a99bb35cab1ba46bfed",
+            "blob:sha256:436998b45ea9182551ba0ee5a0439350b8333180ff59dd67b9c53c895e4734b1",
+            "blob:sha256:4ac5572857d1ea9b39742428187336ae00470f2237c9305d082009769999e15b",
+            "blob:sha256:4b550ae475c7c233663e0017542c6d971c71e31a1f7a15e9b43657f53c2d8af4",
+            "blob:sha256:57396b28872224e8d395399f4e9487ad276212eda960b6e558ea656a0632d178",
+            "blob:sha256:581ca8b1c2c292a248ec54357b136b74ce1bd2a6df58d895e673b4161be4d3a1",
+            "blob:sha256:5a5acce892fb43825ead14748092b92df2e492a2d7ff42d63531cec1e911a4d4",
+            "blob:sha256:6569a4a6428d4fb6a17cdeda3cc90a0b50986af1bff219d60eda0d0e5c761365",
+            "blob:sha256:6715002b8e5ee658f6871c7d68cd6788c17689b50f14ac3cac7ba380120ed83e",
+            "blob:sha256:67c0d71733ca410f9b90f5fed1a207c553885adde4490e3eac57d71a13ee1028",
+            "blob:sha256:6af60758e3c910ecb151f14032b21d400364b1225a337d0d573dd3d79f35ee26",
+            "blob:sha256:6b6fab390d4c967519dae86a6ad5d4e2ea3bdc3c51a85e9a255ed369bf4c0c78",
+            "blob:sha256:6be171b22ca67693f91bb93c7f805cdddcf37e51438703ac26973a9ea5a21470",
+            "blob:sha256:71f15118468cb38971f5779dbcad6b5dedb8f7365ac69b33e674c68323e0c06d",
+            "blob:sha256:763be1fc1599841be307ef253783599e6ab6a9288ae5e845133ce9f122d5c6c4",
+            "blob:sha256:768b900eea063e914caa948f7c0158bc9e19609aee0f7fda5260be181f1459f6",
+            "blob:sha256:7726e17b8c6ff7a5e4e0680417a6a0d872a5b4fa2bd26dc05ba3f3159315dcab",
+            "blob:sha256:78b0f75b8f056e7dcd3d63a63a40cc485e531df92bfbb7a930d438d807d89a56",
+            "blob:sha256:7c8b3013e228c981c684b6e92ac2dc6bad4410d80a6a4e68eb23a34352d159cc",
+            "blob:sha256:7ddd3a996d2cce81f812fb99fb5defa78a648cf25938d095fe90d1c07552450a",
+            "blob:sha256:7de918a4dce8273466e2a6d7b6c93344e9af9af8390a2643f87f894e258a7dae",
+            "blob:sha256:8195ffea373f98c4bc6d12d6397a2cbc9693b19cec003c4609f3d4a9d652834a",
+            "blob:sha256:81ac83f20cd91d0837aecbf8c5e058e021f2dbe1687a77ac811fe2f7e81ffb85",
+            "blob:sha256:8521f3fc81d0db92d4ca141e88ab12826fca62e6ae5aaf43a334988d9eaec718",
+            "blob:sha256:859e1b43299088b3971d9f970e90b7bbffdfa8d18db40d606678c9288fa36f76",
+            "blob:sha256:87823b26762df130a3ee45deed1cd856daf54bc8cd0f60b9899a492cfea60263",
+            "blob:sha256:8915b62398df9d4a184e61b77cb1aeeca4826a231075f30d002bacc06dbed148",
+            "blob:sha256:8aa26e4d3a337073ba3ffdbc3e2fd86f5aa8b65ca0c7c9bdae595b724ded3874",
+            "blob:sha256:8b49611066b8e608a74c9608209757dd45595e4dab223e71a89df8f6eaac1024",
+            "blob:sha256:8e47a66070f15fab0cec00a465905727b98a00c8fabd08a68139ec6ed211a587",
+            "blob:sha256:8eee0097c2306d31bbe046261a3f06d2f0681533b9658696a05baffb82ebb6cd",
+            "blob:sha256:8fca8a919669dd6ef6c95dfb7004de7a09564f2912066ad26b6bd2ab6a9aa19d",
+            "blob:sha256:918a82f22a18cc56d4bab6177c98a8fdaf081d8e671d3b8c1f5789e57a784639",
+            "blob:sha256:938888ca70b98861eb94cfef528d78b9bee293707ca9712e5420d27e88c14095",
+            "blob:sha256:9aca9bbd1616dfbfe46312c258638240f0c16a9edf6082eb4b8b9532cac00cb5",
+            "blob:sha256:9e41b11fd8746ad32d8aee17c018468ee8a74f17747a9ccd2740a69bf8e5cfdd",
+            "blob:sha256:a16cf20461c3cdd5f3c459981d22c438f462b0e95566a08d5618aa7db2044934",
+            "blob:sha256:a2e5481ab64d207064fd0d343c1979c4e6223d2a1cc2be47c3d1afb93d1e259e",
+            "blob:sha256:a42aa1df08d56f7b020631262305dbd7bcdc18d100a2916b496a8e43367764b7",
+            "blob:sha256:a510ed83a4e5a80d7b4094f4f89dcdacebf308186f35a75990dfea0d383e3766",
+            "blob:sha256:a743c532fbd4066c9ac31ecfd2baec6dafaea43409b22d2ea924fa82ac516728",
+            "blob:sha256:af0fc58d551a87ee2321937bda5414438db265c47091095a20b638090ffa15d8",
+            "blob:sha256:b2e311d96b37abbff23c6ff0ab94bf7ed0cb0cae6e21e4f6f112056cb0d62448",
+            "blob:sha256:b3506395570c1f096dcf254c5ae67d3e2b139ced9a5e7b0d32fed390d5cc9760",
+            "blob:sha256:b4d1d1ce19667042889d06449beae1d5c2efce1ee0c9fdec47aab06834b8808a",
+            "blob:sha256:bb68ab1b5fad46d60140fd9e056f6324d8457cee17b5ced4bc92c2c2f7527984",
+            "blob:sha256:be2c1a446ba46a0499a8a4727d659b43d5d09fccdddc651422f2e31438764905",
+            "blob:sha256:bf5dfe347867579e899d260ff4c9f5d4c2748484609299f58654000500fb0d42",
+            "blob:sha256:ca584cf0126edfe50ced4ac6c9376a01f99539fae750ac75a3a581322c25a3de",
+            "blob:sha256:cad5a5d09bec1f1817017c2acdc661fe7c1ae1c9e86da07c62790c37f7e4d954",
+            "blob:sha256:da1397ef68be0065b12bedff278f472a70d2c2e52697453f9d4bef3239f7cb6f",
+            "blob:sha256:da6b9929bf3f1fe0a722aaa8473beb6607b07369c51f4b21dfddf083e9cca080",
+            "blob:sha256:df706578f2208eb8f25ea236faa7eb79c1442e2eab44b55f67d8bf2d95fafd0d",
+            "blob:sha256:dfa50b4acbfbbbd5a6331d1f8adc356806ce1e74569c2c331fe43b0e8b87add4",
+            "blob:sha256:e645d584314780db5080781cf2c86e91351002721069f5fdfde3b8f1636a0301",
+            "blob:sha256:e8e3a97a4e05d1889d48271cf1ce96d2295cfe15dc2965b501e9a288cc6f3778",
+            "blob:sha256:e9e85edd078473f4bcf742cd3882659d743cd0d27ec00ecb8ae90f6daec92ca7",
+            "blob:sha256:eb9558468a7dea65d46e97d500956bbb1e0ceee8337f140933fc48e12fcc9856",
+            "blob:sha256:efc351a40d84ad1c02d56a6f9f029eeb299fda8685a8c8ce9d4517df40c7f860",
+            "blob:sha256:f9f75076c6d2b8a86d40e427f6ee473529b695a07fa14a0b8610fec9482cb916"
+          ]
+        },
+        "coverage": {
+          "exhaustive": false,
+          "required": [],
+          "enrolled": [
+            "opcore/core-required-check"
+          ],
+          "ran": [
+            "opcore/core-required-check"
+          ],
+          "degraded": [
+            {
+              "source": "opcore/core-required-check",
+              "reason": "incomplete",
+              "requirement": "opcore/core-required-check",
+              "detail": "opcore returned an incomplete Assessment.",
+              "capability": "check",
+              "providerState": "degraded"
+            }
+          ]
+        },
+        "authorityEvidence": [
+          {
+            "identity": "opcore",
+            "integrity": "artifact checksums declared",
+            "conformance": "not_claimed",
+            "isolation": "gated",
+            "authority": {
+              "granted": false,
+              "requirement": "opcore/core-required-check",
+              "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
+              "callSite": "gate"
+            }
+          }
+        ],
+        "assurance": {
+          "mode": "gated",
+          "transactionGuarantee": "none"
+        }
+      },
+      "assurance": {
+        "mode": "gated",
+        "transactionGuarantee": "none"
+      }
+    },
+    "ciVerify": {
+      "id": "asp-ci-verify",
+      "command": [
+        "asp",
+        "ci",
+        "verify",
+        "--repo",
+        "/Users/tom/.zeroshot/worktrees/cosmic-phoenix-47/",
+        "--changed-from",
+        "origin/main",
+        "--json"
+      ],
+      "status": "failed",
+      "exitCode": 1,
+      "stdoutSha256": "b550cd662282eb266c586114ddfdc407099c2406af51b7ba5f8436831500d0b0",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "output": {
+        "schemaVersion": 1,
+        "command": "ci.verify",
+        "repo": "/Users/tom/.zeroshot/worktrees/cosmic-phoenix-47",
+        "changedFrom": "origin/main",
+        "baseRef": "origin/main",
+        "repoEnrollment": {
+          "path": "/Users/tom/.zeroshot/worktrees/cosmic-phoenix-47",
+          "state": "ready",
+          "enrolled": true,
+          "identity": {
+            "kind": "git",
+            "value": "/Users/tom/.zeroshot/worktrees/cosmic-phoenix-47:f51e3ae668444c39c703db95a40b6b20de9a1c89"
+          },
+          "git": {
+            "topLevel": "/Users/tom/.zeroshot/worktrees/cosmic-phoenix-47",
+            "gitDir": "<covibes>/lattice/.git/worktrees/cosmic-phoenix-47",
+            "head": "zeroshot/cosmic-phoenix-47",
+            "commit": "f51e3ae668444c39c703db95a40b6b20de9a1c89"
+          },
+          "enabledServerIds": [
+            "opcore"
+          ],
+          "enabledServers": [
+            {
+              "id": "opcore",
+              "mode": "advisory",
+              "enabledAt": "2026-06-26T10:43:52.729Z"
+            }
+          ],
+          "installedServers": [
+            {
+              "id": "opcore",
+              "name": "Opcore",
+              "category": "local-dev",
+              "capabilities": [
+                "check"
+              ],
+              "capabilityProfiles": [
+                "core-check-provider",
+                "opcore-core-check"
+              ],
+              "source": {
+                "kind": "manifest",
+                "manifestSource": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-meG23U/asp-server.opcore.json"
+              },
+              "install": {
+                "state": "installed",
+                "detail": "Validated local asp-server.json manifest copied into manager-owned state."
+              },
+              "conformance": {
+                "status": "not_claimed",
+                "profiles": [
+                  "core-check-provider",
+                  "opcore-core-check"
+                ]
+              },
+              "access": {
+                "summary": "no outbound network requested; no filesystem writes requested; no secrets requested",
+                "filesystem": {
+                  "read": [
+                    "workspace:snapshot"
+                  ],
+                  "write": []
+                },
+                "network": {
+                  "outbound": false,
+                  "allowlist": []
+                },
+                "secrets": [],
+                "environment": {
+                  "inherit": false,
+                  "variables": [
+                    "ASP_SESSION_ID",
+                    "PATH"
+                  ]
+                },
+                "dataClasses": [
+                  "source-code",
+                  "diff-metadata"
+                ]
+              },
+              "trust": {
+                "identity": "publisher:the-open-engine",
+                "integrity": "artifact checksums declared",
+                "conformance": "not_claimed",
+                "isolation": "access expectations declared",
+                "authority": "none",
+                "disclaimer": "Discovery, catalog listing, manifest presence, local install, paid status, support status, or conformance metadata does not grant gate authority."
+              },
+              "authority": {
+                "managerGrantsGateAuthority": false,
+                "gateAuthority": false,
+                "sharedPolicyMutated": false,
+                "ciEnforced": false,
+                "providerAutoLaunchForGates": false
+              },
+              "degraded": [],
+              "installedAt": "2026-06-26T10:43:52.539Z",
+              "manifestPath": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-meG23U/asp-home-d31tSR/servers/manifests/opcore/asp-server.json"
+            }
+          ],
+          "missingServerIds": [],
+          "effectiveLocalMode": "advisory",
+          "localMode": "advisory",
+          "setup": {
+            "status": "recorded",
+            "detail": "Repository is recorded in manager-owned local enrollment state."
+          },
+          "gateReadiness": {
+            "ready": false,
+            "degraded": [
+              {
+                "code": "local_mode_not_gate",
+                "detail": "Local intended mode is advisory; CI gate readiness requires shared host authority evidence."
+              },
+              {
+                "code": "manager_state_not_authority",
+                "detail": "Local repo enrollment records intent only; shared gate authority must come from host authority evidence."
+              }
+            ],
+            "detail": "Manager-owned repo enrollment never grants shared gate authority by itself."
+          },
+          "authority": {
+            "managerGrantsGateAuthority": false,
+            "gateAuthority": false,
+            "sharedPolicyMutated": false,
+            "ciEnforced": false,
+            "providerAutoLaunchForGates": false
+          },
+          "updatedAt": "2026-06-26T10:43:52.729Z"
+        },
+        "verified": false,
+        "gatePassed": false,
+        "receiptValid": true,
+        "failures": [
+          {
+            "code": "missing-required-provider",
+            "detail": "Required provider did not run: core-required-check."
+          },
+          {
+            "code": "missing-required-provider",
+            "detail": "No required Core check provider is enrolled for the gate call-site."
+          },
+          {
+            "code": "missing-authority",
+            "detail": "Host decision has no authority evidence."
+          },
+          {
+            "code": "decision-not-allow",
+            "detail": "CI gate failed closed on indeterminate decision."
+          }
+        ],
+        "changeset": {
+          "baseline": {
+            "rev": "tree:sha256:fc0d6acba639ac0b94de3692c709686ddb796fa60d0868c409f18626ddcaf2b1",
+            "stampedAt": "2026-06-26T10:43:56.949Z"
+          },
+          "changes": [
+            {
+              "kind": "modify",
+              "path": "AGENTS.md",
+              "before": "blob:sha256:8b49611066b8e608a74c9608209757dd45595e4dab223e71a89df8f6eaac1024",
+              "after": "blob:sha256:436998b45ea9182551ba0ee5a0439350b8333180ff59dd67b9c53c895e4734b1"
+            },
+            {
+              "kind": "modify",
+              "path": "CLAUDE.md",
+              "before": "blob:sha256:8b49611066b8e608a74c9608209757dd45595e4dab223e71a89df8f6eaac1024",
+              "after": "blob:sha256:bb68ab1b5fad46d60140fd9e056f6324d8457cee17b5ced4bc92c2c2f7527984"
+            },
+            {
+              "kind": "modify",
+              "path": "docs/architecture/runtime-cli-ard.md",
+              "before": "blob:sha256:0750ae0fbf4d849cf0dee2e42e21dcc65169a1b4a89f534091b486f41771bfc3",
+              "after": "blob:sha256:2644505a3248e2d57c00722ca83c91aaf14a92282018290436ef56bb5b8a9368"
+            },
+            {
+              "kind": "modify",
+              "path": "docs/release/artifact-attestation.md",
+              "before": "blob:sha256:581ca8b1c2c292a248ec54357b136b74ce1bd2a6df58d895e673b4161be4d3a1",
+              "after": "blob:sha256:1eacf13c0ffc89796ffd042ad94928c784e0513a06fd51b04ecea27db08b524a"
+            },
+            {
+              "kind": "modify",
+              "path": "docs/release/asp-dogfood-receipt.json",
+              "before": "blob:sha256:918a82f22a18cc56d4bab6177c98a8fdaf081d8e671d3b8c1f5789e57a784639",
+              "after": "blob:sha256:a16cf20461c3cdd5f3c459981d22c438f462b0e95566a08d5618aa7db2044934"
+            },
+            {
+              "kind": "modify",
+              "path": "docs/release/asp-dogfood-receipt.summary.md",
+              "before": "blob:sha256:dfa50b4acbfbbbd5a6331d1f8adc356806ce1e74569c2c331fe43b0e8b87add4",
+              "after": "blob:sha256:360770d6f9d667fccb825203efb2c5085532b48c142951d07483aba0c6a57a61"
+            },
+            {
+              "kind": "modify",
+              "path": "docs/release/cutover-receipt.json",
+              "before": "blob:sha256:6569a4a6428d4fb6a17cdeda3cc90a0b50986af1bff219d60eda0d0e5c761365",
+              "after": "blob:sha256:9aca9bbd1616dfbfe46312c258638240f0c16a9edf6082eb4b8b9532cac00cb5"
+            },
+            {
+              "kind": "modify",
+              "path": "docs/release/cutover-receipt.summary.md",
+              "before": "blob:sha256:71f15118468cb38971f5779dbcad6b5dedb8f7365ac69b33e674c68323e0c06d",
+              "after": "blob:sha256:7de918a4dce8273466e2a6d7b6c93344e9af9af8390a2643f87f894e258a7dae"
+            },
+            {
+              "kind": "modify",
+              "path": "docs/release/license-report.md",
+              "before": "blob:sha256:eb9558468a7dea65d46e97d500956bbb1e0ceee8337f140933fc48e12fcc9856",
+              "after": "blob:sha256:1d3f69b3e24fe8f231b86070b6f0d69a6896a4431d0c23c8ee6dce0d9b58799b"
+            },
+            {
+              "kind": "modify",
+              "path": "docs/release/provenance-receipts.md",
+              "before": "blob:sha256:768b900eea063e914caa948f7c0158bc9e19609aee0f7fda5260be181f1459f6",
+              "after": "blob:sha256:8195ffea373f98c4bc6d12d6397a2cbc9693b19cec003c4609f3d4a9d652834a"
+            },
+            {
+              "kind": "modify",
+              "path": "docs/release/release-receipt.json",
+              "before": "blob:sha256:2f302866b9d2fb1fbdfa21189bd840e8e0415db837babc5414c5e58ce0aef0e3",
+              "after": "blob:sha256:57396b28872224e8d395399f4e9487ad276212eda960b6e558ea656a0632d178"
+            },
+            {
+              "kind": "modify",
+              "path": "docs/release/release-receipt.summary.md",
+              "before": "blob:sha256:4b550ae475c7c233663e0017542c6d971c71e31a1f7a15e9b43657f53c2d8af4",
+              "after": "blob:sha256:4ac5572857d1ea9b39742428187336ae00470f2237c9305d082009769999e15b"
+            },
+            {
+              "kind": "modify",
+              "path": "package-lock.json",
+              "before": "blob:sha256:ca584cf0126edfe50ced4ac6c9376a01f99539fae750ac75a3a581322c25a3de",
+              "after": "blob:sha256:047c42704ca677d32166d3e4f73b57bf9b3ac46fc915f9b3e471a2fbb1b6db70"
+            },
+            {
+              "kind": "modify",
+              "path": "packages/asp-provider/package.json",
+              "before": "blob:sha256:81ac83f20cd91d0837aecbf8c5e058e021f2dbe1687a77ac811fe2f7e81ffb85",
+              "after": "blob:sha256:859e1b43299088b3971d9f970e90b7bbffdfa8d18db40d606678c9288fa36f76"
+            },
+            {
+              "kind": "modify",
+              "path": "packages/asp-provider/README.md",
+              "before": "blob:sha256:bf5dfe347867579e899d260ff4c9f5d4c2748484609299f58654000500fb0d42",
+              "after": "blob:sha256:6715002b8e5ee658f6871c7d68cd6788c17689b50f14ac3cac7ba380120ed83e"
+            },
+            {
+              "kind": "modify",
+              "path": "packages/asp-provider/src/index.ts",
+              "before": "blob:sha256:6be171b22ca67693f91bb93c7f805cdddcf37e51438703ac26973a9ea5a21470",
+              "after": "blob:sha256:e8e3a97a4e05d1889d48271cf1ce96d2295cfe15dc2965b501e9a288cc6f3778"
+            },
+            {
+              "kind": "modify",
+              "path": "packages/asp-provider/src/manifest.ts",
+              "before": "blob:sha256:cad5a5d09bec1f1817017c2acdc661fe7c1ae1c9e86da07c62790c37f7e4d954",
+              "after": "blob:sha256:2d88aec94b97fde5eb9bffc0661cf07d8026aece73ad9ffe7cbb3fac64e3e280"
+            },
+            {
+              "kind": "modify",
+              "path": "packages/asp-provider/src/mapping.ts",
+              "before": "blob:sha256:efc351a40d84ad1c02d56a6f9f029eeb299fda8685a8c8ce9d4517df40c7f860",
+              "after": "blob:sha256:113d6bfb20889c129dbf3b184d0c622876a2be4bae5025374eea8ceb88e1d8ca"
+            },
+            {
+              "kind": "modify",
+              "path": "packages/asp-provider/src/protocol.ts",
+              "before": "blob:sha256:2f8dc5e030452a6d292c6cc40f1eee72459972a7bcd611b1deb6441b90f8dc3f",
+              "after": "blob:sha256:b2e311d96b37abbff23c6ff0ab94bf7ed0cb0cae6e21e4f6f112056cb0d62448"
+            },
+            {
+              "kind": "modify",
+              "path": "packages/contracts/schemas/lattice-contracts.schema.json",
+              "before": "blob:sha256:8eee0097c2306d31bbe046261a3f06d2f0681533b9658696a05baffb82ebb6cd",
+              "after": "blob:sha256:9e41b11fd8746ad32d8aee17c018468ee8a74f17747a9ccd2740a69bf8e5cfdd"
+            },
+            {
+              "kind": "modify",
+              "path": "packages/contracts/src/index.ts",
+              "before": "blob:sha256:35e4c5216ecc18df74b4b43cafd3391595897a9c44d583fc5a53145984d21ed5",
+              "after": "blob:sha256:072158c20d8fe653f4fed447e441dcb3b4e1a2602cc03c627059d6ea6080195a"
+            },
+            {
+              "kind": "modify",
+              "path": "scripts/asp-dogfood-provider-probe.mjs",
+              "before": "blob:sha256:67c0d71733ca410f9b90f5fed1a207c553885adde4490e3eac57d71a13ee1028",
+              "after": "blob:sha256:af0fc58d551a87ee2321937bda5414438db265c47091095a20b638090ffa15d8"
+            },
+            {
+              "kind": "modify",
+              "path": "scripts/asp-dogfood-receipt-support.mjs",
+              "before": "blob:sha256:df706578f2208eb8f25ea236faa7eb79c1442e2eab44b55f67d8bf2d95fafd0d",
+              "after": "blob:sha256:da1397ef68be0065b12bedff278f472a70d2c2e52697453f9d4bef3239f7cb6f"
+            },
+            {
+              "kind": "modify",
+              "path": "scripts/check-packages.mjs",
+              "before": "blob:sha256:061c069803d10d8aabe1d370b5f95e0febec866735cc5779caa7e55b536e5340",
+              "after": "blob:sha256:3c0464fc1195b846613a5020d2a193ff90686584efff67e9da19e06804a90c19"
+            },
+            {
+              "kind": "modify",
+              "path": "scripts/check-provenance.mjs",
+              "before": "blob:sha256:42a0737ad10ff3d40205999b1d5564bd00a31d585fbd4a99bb35cab1ba46bfed",
+              "after": "blob:sha256:8521f3fc81d0db92d4ca141e88ab12826fca62e6ae5aaf43a334988d9eaec718"
+            },
+            {
+              "kind": "modify",
+              "path": "scripts/check-workspace.mjs",
+              "before": "blob:sha256:a743c532fbd4066c9ac31ecfd2baec6dafaea43409b22d2ea924fa82ac516728",
+              "after": "blob:sha256:6b6fab390d4c967519dae86a6ad5d4e2ea3bdc3c51a85e9a255ed369bf4c0c78"
+            },
+            {
+              "kind": "modify",
+              "path": "scripts/generate-asp-dogfood-receipt.mjs",
+              "before": "blob:sha256:3b6aee069385bd1c227748190bb810e701b4f05b8a3d539a16e6e05055890f71",
+              "after": "blob:sha256:7c8b3013e228c981c684b6e92ac2dc6bad4410d80a6a4e68eb23a34352d159cc"
+            },
+            {
+              "kind": "modify",
+              "path": "scripts/generate-cutover-receipt.mjs",
+              "before": "blob:sha256:6af60758e3c910ecb151f14032b21d400364b1225a337d0d573dd3d79f35ee26",
+              "after": "blob:sha256:e645d584314780db5080781cf2c86e91351002721069f5fdfde3b8f1636a0301"
+            },
+            {
+              "kind": "modify",
+              "path": "scripts/generate-release-receipt.mjs",
+              "before": "blob:sha256:938888ca70b98861eb94cfef528d78b9bee293707ca9712e5420d27e88c14095",
+              "after": "blob:sha256:33bd668b04c80c5fca6698c9f42b08f3709a06d8af330cddad921b2517e24ec8"
+            },
+            {
+              "kind": "modify",
+              "path": "scripts/release-dry-run.mjs",
+              "before": "blob:sha256:0ac5cd41a5cf2430cf93c3ac5401138319b0411b1451da7030f1a7cec91c0174",
+              "after": "blob:sha256:419491b59e75764d57b1bed1d524de2d388ab26cde4aa7fe5f69526d674e6f1a"
+            },
+            {
+              "kind": "modify",
+              "path": "scripts/release-package-dirs.mjs",
+              "before": "blob:sha256:f9f75076c6d2b8a86d40e427f6ee473529b695a07fa14a0b8610fec9482cb916",
+              "after": "blob:sha256:37e8349ffc115d6d2056c698b707251165fc6f69da951d9b54d0f8ef369af6fb"
+            },
+            {
+              "kind": "modify",
+              "path": "scripts/release-publish.mjs",
+              "before": "blob:sha256:0c24ad0c074629fde0f6ae71b5aaaf2aa1be886910848fa8ee7a08c543583d44",
+              "after": "blob:sha256:a510ed83a4e5a80d7b4094f4f89dcdacebf308186f35a75990dfea0d383e3766"
+            },
+            {
+              "kind": "modify",
+              "path": "scripts/write-asp-provider-manifest.mjs",
+              "before": "blob:sha256:b4d1d1ce19667042889d06449beae1d5c2efce1ee0c9fdec47aab06834b8808a",
+              "after": "blob:sha256:763be1fc1599841be307ef253783599e6ab6a9288ae5e845133ce9f122d5c6c4"
+            },
+            {
+              "kind": "modify",
+              "path": "tests/asp-provider.test.mjs",
+              "before": "blob:sha256:8fca8a919669dd6ef6c95dfb7004de7a09564f2912066ad26b6bd2ab6a9aa19d",
+              "after": "blob:sha256:7ddd3a996d2cce81f812fb99fb5defa78a648cf25938d095fe90d1c07552450a"
+            },
+            {
+              "kind": "modify",
+              "path": "tests/contracts.test.mjs",
+              "before": "blob:sha256:78b0f75b8f056e7dcd3d63a63a40cc485e531df92bfbb7a930d438d807d89a56",
+              "after": "blob:sha256:b3506395570c1f096dcf254c5ae67d3e2b139ced9a5e7b0d32fed390d5cc9760"
+            },
+            {
+              "kind": "modify",
+              "path": "tests/cutover-release.test.mjs",
+              "before": "blob:sha256:2a5a5a19a2b4128bce0adf0e7b0ad635a57fe3434126282b69f94023113da2c9",
+              "after": "blob:sha256:8aa26e4d3a337073ba3ffdbc3e2fd86f5aa8b65ca0c7c9bdae595b724ded3874"
+            },
+            {
+              "kind": "modify",
+              "path": "tests/fixtures/package-packlists.json",
+              "before": "blob:sha256:13d3d0e52a23cf66c9a87cc8b0fa76c52a8bc2e036aca5486af0d118c2a06f28",
+              "after": "blob:sha256:7726e17b8c6ff7a5e4e0680417a6a0d872a5b4fa2bd26dc05ba3f3159315dcab"
+            },
+            {
+              "kind": "modify",
+              "path": "tests/gate-negative-fixtures.test.mjs",
+              "before": "blob:sha256:a2e5481ab64d207064fd0d343c1979c4e6223d2a1cc2be47c3d1afb93d1e259e",
+              "after": "blob:sha256:1c4a45fe427f0462c3fb2992ee486bc3df01a5d42bd23232e2630292184557ae"
+            },
+            {
+              "kind": "modify",
+              "path": "tests/helpers/asp-dogfood-fixture.mjs",
+              "before": "blob:sha256:8915b62398df9d4a184e61b77cb1aeeca4826a231075f30d002bacc06dbed148",
+              "after": "blob:sha256:5a5acce892fb43825ead14748092b92df2e492a2d7ff42d63531cec1e911a4d4"
+            },
+            {
+              "kind": "modify",
+              "path": "tests/import-boundaries.test.mjs",
+              "before": "blob:sha256:3fbd2394ecf004a9fa0e74c7d701ca83c75020cc9f302c0d6d0f4a66fe86b788",
+              "after": "blob:sha256:8e47a66070f15fab0cec00a465905727b98a00c8fabd08a68139ec6ed211a587"
+            },
+            {
+              "kind": "modify",
+              "path": "tests/installed-bins.test.mjs",
+              "before": "blob:sha256:da6b9929bf3f1fe0a722aaa8473beb6607b07369c51f4b21dfddf083e9cca080",
+              "after": "blob:sha256:19555d0e28cc643b445503833f445598026644f6591d7d65a57b2eaa4ed9722f"
+            },
+            {
+              "kind": "modify",
+              "path": "tests/schema-contracts.test.mjs",
+              "before": "blob:sha256:28658b38f305ac572a6bdd1ffa029258bb0b0bfd08e0f0a5c1345fd2e8f391c1",
+              "after": "blob:sha256:e9e85edd078473f4bcf742cd3882659d743cd0d27ec00ecb8ae90f6daec92ca7"
+            }
+          ]
+        },
+        "hostDecision": {
+          "pass": false,
+          "decision": "indeterminate",
+          "callSite": "gate",
+          "changesetDigest": "sha256:67724ac163afae6cce66ef0cd99f5bdf8e6ee0d088dd6bd86e31fa4df8b3d7d5",
+          "findings": [],
+          "coverage": {
+            "exhaustive": false,
+            "required": [
+              "core-required-check"
+            ],
+            "enrolled": [
+              "opcore/core-required-check"
+            ],
+            "ran": [],
+            "degraded": [
+              {
+                "source": "core-required-check",
+                "reason": "missing-required-provider",
+                "requirement": "core-required-check",
+                "detail": "No required Core check provider is enrolled for the gate call-site."
+              }
+            ]
+          },
+          "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
+          "authorityEvidence": [],
+          "validAsOf": {
+            "rev": "tree:sha256:fc0d6acba639ac0b94de3692c709686ddb796fa60d0868c409f18626ddcaf2b1"
+          },
+          "assurance": {
+            "mode": "gated",
+            "transactionGuarantee": "none"
+          },
+          "receipt": {
+            "receiptId": "core-evaluate-indeterminate-1782470636981",
+            "issuedAt": "2026-06-26T10:43:56.981Z",
+            "providerProvenance": [],
+            "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
+            "baseline": {
+              "rev": "tree:sha256:fc0d6acba639ac0b94de3692c709686ddb796fa60d0868c409f18626ddcaf2b1",
+              "stampedAt": "2026-06-26T10:43:56.949Z"
+            },
+            "validAsOf": {
+              "rev": "tree:sha256:fc0d6acba639ac0b94de3692c709686ddb796fa60d0868c409f18626ddcaf2b1"
+            },
+            "coverage": {
+              "exhaustive": false,
+              "required": [
+                "core-required-check"
+              ],
+              "enrolled": [
+                "opcore/core-required-check"
+              ],
+              "ran": [],
+              "degraded": [
+                {
+                  "source": "core-required-check",
+                  "reason": "missing-required-provider",
+                  "requirement": "core-required-check",
+                  "detail": "No required Core check provider is enrolled for the gate call-site."
+                }
+              ]
+            },
+            "authorityEvidence": [],
+            "assurance": {
+              "mode": "gated",
+              "transactionGuarantee": "none"
+            }
+          }
+        },
+        "receipt": {
+          "receiptId": "core-evaluate-indeterminate-1782470636981",
+          "issuedAt": "2026-06-26T10:43:56.981Z",
+          "providerProvenance": [],
+          "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
+          "baseline": {
+            "rev": "tree:sha256:fc0d6acba639ac0b94de3692c709686ddb796fa60d0868c409f18626ddcaf2b1",
+            "stampedAt": "2026-06-26T10:43:56.949Z"
+          },
+          "validAsOf": {
+            "rev": "tree:sha256:fc0d6acba639ac0b94de3692c709686ddb796fa60d0868c409f18626ddcaf2b1"
+          },
+          "coverage": {
+            "exhaustive": false,
+            "required": [
+              "core-required-check"
+            ],
+            "enrolled": [
+              "opcore/core-required-check"
+            ],
+            "ran": [],
+            "degraded": [
+              {
+                "source": "core-required-check",
+                "reason": "missing-required-provider",
+                "requirement": "core-required-check",
+                "detail": "No required Core check provider is enrolled for the gate call-site."
+              }
+            ]
+          },
+          "authorityEvidence": [],
+          "assurance": {
+            "mode": "gated",
+            "transactionGuarantee": "none"
+          }
+        }
+      },
+      "assertion": "ASP CI verifier output recorded as host-owned evidence, not old-tool replacement"
+    }
+  },
+  "providerProbe": {
+    "id": "provider-probe",
+    "command": [
+      "opcore-asp-provider",
+      "--stdio"
+    ],
+    "status": "passed",
+    "exitCode": 0,
+    "stdoutSha256": "5dca324f51c32d66e8ded8660fb036de7a860936e3e95837bb62205947ae85b6",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "output": {
+      "initialize": {
+        "serverInfo": {
+          "name": "opcore",
+          "version": "0.1.0-alpha.0",
+          "fingerprint": "sha256:2e69cf5ab21ef032d7a6faf6f0a1c1d945dac6a5a4187feb3f1c05270d92e9a6"
+        },
+        "capabilityFamilies": [
+          "check"
+        ],
+        "capabilities": {
+          "check": {
+            "diagnosticSources": [
+              "opcore"
+            ],
+            "rules": [
+              "typescript.syntax",
+              "typescript.types",
+              "typescript.import-graph",
+              "typescript.dead-code",
+              "typescript.relevant-tests",
+              "rust.source-hygiene",
+              "rust.fmt",
+              "rust.cargo-check",
+              "rust.clippy",
+              "rust.rustdoc",
+              "rust.import-graph",
+              "rust.dead-code",
+              "rust.unused-deps",
+              "rust.file-length",
+              "rust.function-metrics"
+            ],
+            "manifest": [
+              {
+                "checkId": "typescript.syntax",
+                "owner": "validation",
+                "adapter": "typescript",
+                "defaultSeverity": "error",
+                "supportedScopes": [
+                  "files",
+                  "changed",
+                  "staged",
+                  "tree",
+                  "all",
+                  "repo",
+                  "package"
+                ],
+                "requiresGraph": false
+              },
+              {
+                "checkId": "typescript.types",
+                "owner": "validation",
+                "adapter": "typescript",
+                "defaultSeverity": "error",
+                "supportedScopes": [
+                  "files",
+                  "changed",
+                  "staged",
+                  "tree",
+                  "all",
+                  "repo",
+                  "package"
+                ],
+                "requiresGraph": false
+              },
+              {
+                "checkId": "typescript.import-graph",
+                "owner": "validation",
+                "adapter": "typescript",
+                "defaultSeverity": "warning",
+                "supportedScopes": [
+                  "files",
+                  "changed",
+                  "staged",
+                  "tree",
+                  "all",
+                  "repo",
+                  "package"
+                ],
+                "requiresGraph": true
+              },
+              {
+                "checkId": "typescript.dead-code",
+                "owner": "validation",
+                "adapter": "typescript",
+                "defaultSeverity": "warning",
+                "supportedScopes": [
+                  "files",
+                  "changed",
+                  "staged",
+                  "tree",
+                  "all",
+                  "repo",
+                  "package"
+                ],
+                "requiresGraph": true
+              },
+              {
+                "checkId": "typescript.relevant-tests",
+                "owner": "validation",
+                "adapter": "typescript",
+                "defaultSeverity": "info",
+                "supportedScopes": [
+                  "files",
+                  "changed",
+                  "staged",
+                  "tree",
+                  "all",
+                  "repo",
+                  "package"
+                ],
+                "requiresGraph": true
+              },
+              {
+                "checkId": "rust.source-hygiene",
+                "owner": "validation",
+                "adapter": "rust",
+                "defaultSeverity": "error",
+                "supportedScopes": [
+                  "files",
+                  "changed",
+                  "staged",
+                  "tree",
+                  "all",
+                  "repo",
+                  "package"
+                ],
+                "requiresGraph": false
+              },
+              {
+                "checkId": "rust.fmt",
+                "owner": "validation",
+                "adapter": "rust",
+                "defaultSeverity": "error",
+                "supportedScopes": [
+                  "files",
+                  "changed",
+                  "staged",
+                  "tree",
+                  "all",
+                  "repo",
+                  "package"
+                ],
+                "requiresGraph": false
+              },
+              {
+                "checkId": "rust.cargo-check",
+                "owner": "validation",
+                "adapter": "rust",
+                "defaultSeverity": "error",
+                "supportedScopes": [
+                  "files",
+                  "changed",
+                  "staged",
+                  "tree",
+                  "all",
+                  "repo",
+                  "package"
+                ],
+                "requiresGraph": false
+              },
+              {
+                "checkId": "rust.clippy",
+                "owner": "validation",
+                "adapter": "rust",
+                "defaultSeverity": "error",
+                "supportedScopes": [
+                  "files",
+                  "changed",
+                  "staged",
+                  "tree",
+                  "all",
+                  "repo",
+                  "package"
+                ],
+                "requiresGraph": false
+              },
+              {
+                "checkId": "rust.rustdoc",
+                "owner": "validation",
+                "adapter": "rust",
+                "defaultSeverity": "error",
+                "supportedScopes": [
+                  "files",
+                  "changed",
+                  "staged",
+                  "tree",
+                  "all",
+                  "repo",
+                  "package"
+                ],
+                "requiresGraph": false
+              },
+              {
+                "checkId": "rust.import-graph",
+                "owner": "validation",
+                "adapter": "rust",
+                "defaultSeverity": "error",
+                "supportedScopes": [
+                  "files",
+                  "changed",
+                  "staged",
+                  "tree",
+                  "all",
+                  "repo",
+                  "package"
+                ],
+                "requiresGraph": false
+              },
+              {
+                "checkId": "rust.dead-code",
+                "owner": "validation",
+                "adapter": "rust",
+                "defaultSeverity": "error",
+                "supportedScopes": [
+                  "files",
+                  "changed",
+                  "staged",
+                  "tree",
+                  "all",
+                  "repo",
+                  "package"
+                ],
+                "requiresGraph": false
+              },
+              {
+                "checkId": "rust.unused-deps",
+                "owner": "validation",
+                "adapter": "rust",
+                "defaultSeverity": "error",
+                "supportedScopes": [
+                  "files",
+                  "changed",
+                  "staged",
+                  "tree",
+                  "all",
+                  "repo",
+                  "package"
+                ],
+                "requiresGraph": false
+              },
+              {
+                "checkId": "rust.file-length",
+                "owner": "validation",
+                "adapter": "rust",
+                "defaultSeverity": "error",
+                "supportedScopes": [
+                  "files",
+                  "changed",
+                  "staged",
+                  "tree",
+                  "all",
+                  "repo",
+                  "package"
+                ],
+                "requiresGraph": false
+              },
+              {
+                "checkId": "rust.function-metrics",
+                "owner": "validation",
+                "adapter": "rust",
+                "defaultSeverity": "error",
+                "supportedScopes": [
+                  "files",
+                  "changed",
+                  "staged",
+                  "tree",
+                  "all",
+                  "repo",
+                  "package"
+                ],
+                "requiresGraph": false
+              }
+            ],
+            "scopes": [
+              "changeset",
+              "paths"
+            ],
+            "comparisons": [
+              "all"
+            ],
+            "fixes": false
+          }
+        },
+        "requestedPermissions": {
+          "read": [
+            "**/*"
+          ],
+          "write": false,
+          "network": false
+        },
+        "provenance": {
+          "publisher": "the-open-engine",
+          "packageName": "@the-open-engine/opcore-asp-provider",
+          "version": "0.1.0-alpha.0",
+          "source": "opcore-validation"
+        }
+      }
+    },
+    "assertion": "Installed provider returned an ASP assessment without host decision authority fields",
+    "assessment": {
+      "status": "incomplete",
+      "diagnostics": [
+        {
+          "source": "opcore",
+          "code": "opcore/typescript.syntax/1109",
+          "severity": "error",
+          "message": "Expression expected.",
+          "location": {
+            "path": "src/probe.ts"
+          },
+          "fingerprint": "sha256:c8febe0f31140fde9ca9a5e0f24a8364094002ca11518c270f0aa1cc1e2f3571"
+        }
+      ],
+      "evidence": [
+        {
+          "kind": "message",
+          "message": "Opcore validation result mapped to ASP Core check assessment.",
+          "data": {
+            "validationStatus": "policy_failure",
+            "checkCount": 1,
+            "diagnosticCount": 1,
+            "failureCategory": "policy_failure",
+            "failureMessage": "Validation checks reported error diagnostics"
+          }
+        }
+      ],
+      "coverage": {
+        "requested": {
+          "scope": {
+            "paths": [
+              "src/probe.ts"
+            ]
+          },
+          "diagnosticSources": [
+            "opcore"
+          ],
+          "rules": [
+            "typescript.syntax"
+          ],
+          "comparison": "introduced"
+        },
+        "covered": {
+          "scope": {
+            "paths": [
+              "src/probe.ts"
+            ]
+          },
+          "diagnosticSources": [
+            "opcore"
+          ],
+          "rules": [
+            "typescript.syntax"
+          ],
+          "comparison": "all"
+        },
+        "degraded": [
+          {
+            "source": "opcore",
+            "reason": "unsupported",
+            "requirement": "comparison:introduced",
+            "detail": "Opcore ASP provider reports all-diagnostics coverage; introduced-only comparison is not supported in this facade."
+          }
+        ],
+        "unsupported": [],
+        "exhaustive": false,
+        "truncated": true
+      },
+      "validAsOf": {
+        "baseline": {
+          "rev": "tree:asp-dogfood-baseline",
+          "stampedAt": "2026-06-24T00:00:00.000Z"
+        },
+        "changesetDigest": "sha256:d69c09e092ca72e05949f1c54edbf2176a8cbb4e17d4444c1e10bca7ecd08d9e",
+        "blobs": [
+          "blob:sha256:5d8f65d2774e206bc9f7a7a4ad39ca2dc563b5c31e46ab57ef4874961237ce29",
+          "blob:sha256:ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+          "blob:sha256:cc78ba69680cfa4bec7fd42e1c6860f7b0c070437d339e4745d61951c4f95e36"
+        ]
+      },
+      "provider": {
+        "id": "opcore",
+        "version": "0.1.0-alpha.0",
+        "configDigest": "sha256:20d6b82c7fd843fd1c1d797d5c21fdcaa408488dcd67c71776fd75b24a884322",
+        "capabilityVersion": "check/0.1",
+        "buildDigest": "sha256:2e69cf5ab21ef032d7a6faf6f0a1c1d945dac6a5a4187feb3f1c05270d92e9a6",
+        "capabilityFamily": "check"
+      },
+      "timing": {
+        "startedAt": "2026-06-26T10:43:57.148Z",
+        "endedAt": "2026-06-26T10:43:57.260Z",
+        "elapsedMs": 112
+      },
+      "cache": {
+        "status": "disabled"
+      }
+    },
+    "validAsOf": {
+      "baseline": {
+        "rev": "tree:asp-dogfood-baseline",
+        "stampedAt": "2026-06-24T00:00:00.000Z"
+      },
+      "changesetDigest": "sha256:d69c09e092ca72e05949f1c54edbf2176a8cbb4e17d4444c1e10bca7ecd08d9e",
+      "blobs": [
+        "blob:sha256:5d8f65d2774e206bc9f7a7a4ad39ca2dc563b5c31e46ab57ef4874961237ce29",
+        "blob:sha256:ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+        "blob:sha256:cc78ba69680cfa4bec7fd42e1c6860f7b0c070437d339e4745d61951c4f95e36"
+      ]
+    },
+    "coverage": {
+      "requested": {
+        "scope": {
+          "paths": [
+            "src/probe.ts"
+          ]
+        },
+        "diagnosticSources": [
+          "opcore"
+        ],
+        "rules": [
+          "typescript.syntax"
+        ],
+        "comparison": "introduced"
+      },
+      "covered": {
+        "scope": {
+          "paths": [
+            "src/probe.ts"
+          ]
+        },
+        "diagnosticSources": [
+          "opcore"
+        ],
+        "rules": [
+          "typescript.syntax"
+        ],
+        "comparison": "all"
+      },
+      "degraded": [
+        {
+          "source": "opcore",
+          "reason": "unsupported",
+          "requirement": "comparison:introduced",
+          "detail": "Opcore ASP provider reports all-diagnostics coverage; introduced-only comparison is not supported in this facade."
+        }
+      ],
+      "unsupported": [],
+      "exhaustive": false,
+      "truncated": true
+    },
+    "diagnosticsCount": 1,
+    "hostOwnedFieldLeak": false
+  },
+  "currentToolGuardrails": [
+    {
+      "id": "current-tools-validate-changed",
+      "command": [
+        "npm",
+        "run",
+        "current-tools:validate-changed"
+      ],
+      "status": "passed",
+      "exitCode": 0,
+      "stdoutSha256": "b2849045edee44e1efef09dce443a439485c6f471c1480b6fc87b8d52ac8094e",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "assertion": "current-tools:validate-changed remains active",
+      "retained": true
+    },
+    {
+      "id": "current-tools-validate-rust-graph",
+      "command": [
+        "npm",
+        "run",
+        "current-tools:validate-rust-graph"
+      ],
+      "status": "passed",
+      "exitCode": 0,
+      "stdoutSha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "output": [],
+      "assertion": "current-tools:validate-rust-graph remains active",
+      "retained": true
+    },
+    {
+      "id": "current-tools-validate-all",
+      "command": [
+        "npm",
+        "run",
+        "current-tools:validate-all"
+      ],
+      "status": "retained-not-run",
+      "exitCode": null,
+      "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "retained": true,
+      "assertion": "Retained old-tool guardrail; omitted unless --include-current-tools-all is passed"
+    }
+  ],
+  "unsupportedSurfaces": [
+    {
+      "surface": "inspect",
+      "status": "parity-blocker",
+      "cleanCoverage": false,
+      "blocker": "ASP dogfood covers Core check/evaluate only; inspect request/response mapping remains outside #120."
+    },
+    {
+      "surface": "edit",
+      "status": "retained-old-tool-gate",
+      "cleanCoverage": false,
+      "blocker": "ASP dogfood does not authorize edits or apply behavior; edit parity remains covered by current old-tool and cutover gates."
+    }
+  ],
+  "parityBlockers": [
+    {
+      "source": "docs/validation/rust-adapter-parity.md:26",
+      "detail": "## Retained Compatibility Ledger"
+    },
+    {
+      "source": "docs/validation/rust-adapter-parity.md:28",
+      "detail": "`lattice status --json` and `lattice doctor --json` must report retained blockers in `degradedChecks` only when a"
+    },
+    {
+      "source": "docs/validation/rust-adapter-parity.md:29",
+      "detail": "supporting retained tool is missing. With `rustdoc`, `cargo-depgraph`, `cargo-udeps`, and `rust-code-analysis-cli`"
+    },
+    {
+      "source": "docs/validation/rust-adapter-parity.md:30",
+      "detail": "available, the Rust adapter is `available` with `degradedChecks: []`. Missing-tool entries are not passing no-op checks;"
+    },
+    {
+      "source": "docs/validation/rust-adapter-parity.md:31",
+      "detail": "they are machine-readable cutover blockers for #27/#28/#29."
+    },
+    {
+      "source": "docs/validation/rust-adapter-parity.md:33",
+      "detail": "| Check | Lattice | Orchestra | CoVibes | Gateway | Required tool when degraded | Follow-up |"
+    },
+    {
+      "source": "docs/validation/rust-adapter-parity.md:34",
+      "detail": "|---|---:|---:|---:|---:|---|---|"
+    },
+    {
+      "source": "docs/validation/rust-adapter-parity.md:35",
+      "detail": "| `rust.rustdoc` | no | yes | no | yes | `rustdoc` | #27/#28/#29 |"
+    },
+    {
+      "source": "docs/validation/rust-adapter-parity.md:36",
+      "detail": "| `rust.import-graph` | no | yes | no | yes | `cargo-depgraph` | #27/#28/#29 |"
+    },
+    {
+      "source": "docs/validation/rust-adapter-parity.md:37",
+      "detail": "| `rust.dead-code` | no | yes | no | yes | core `cargo` only | #27/#28/#29 |"
+    },
+    {
+      "source": "docs/validation/rust-adapter-parity.md:38",
+      "detail": "| `rust.unused-deps` | no | yes | no | yes | `cargo-udeps` | #27/#28/#29 |"
+    },
+    {
+      "source": "docs/validation/rust-adapter-parity.md:39",
+      "detail": "| `rust.function-metrics` | yes | yes | no | yes | `rust-code-analysis-cli` | #27/#28/#29 |"
+    },
+    {
+      "source": "docs/validation/rust-adapter-parity.md:41",
+      "detail": "Cargo.lock-only changes are retained compatibility too. Current native ownership covers `.rs`, `.inc`, and"
+    },
+    {
+      "source": "docs/validation/rust-adapter-parity.md:42",
+      "detail": "`Cargo.toml`; lockfile-only policy remains under #21 until an explicit cutover decision expands ownership."
+    },
+    {
+      "source": "docs/validation/rust-retained-tools-receipts-2026-06-23.md:59",
+      "detail": "## Guardrails"
+    },
+    {
+      "source": "docs/validation/rust-retained-tools-receipts-2026-06-23.md:61",
+      "detail": "- No validation daemon."
+    },
+    {
+      "source": "docs/validation/rust-retained-tools-receipts-2026-06-23.md:62",
+      "detail": "- No hidden validation cache."
+    },
+    {
+      "source": "docs/validation/rust-retained-tools-receipts-2026-06-23.md:63",
+      "detail": "- No Rox imports, Rox cache reads, or Rox shellouts from native Lattice checks."
+    },
+    {
+      "source": "docs/validation/rust-retained-tools-receipts-2026-06-23.md:64",
+      "detail": "- Current external Rox gates stay active until downstream #27/#28/#29 accept replacement evidence."
+    },
+    {
+      "source": "docs/validation/rust-retained-tools-receipts-2026-06-23.md:65",
+      "detail": "- Results are provider assessments only, not ASP host decisions or release authority."
+    }
+  ],
+  "authority": {
+    "hostOwnsDecisions": true,
+    "providerOutputIsHostDecision": false,
+    "localAuthorityOverride": {
+      "present": false,
+      "sharedAuthorityWeakened": false
+    }
+  },
+  "publicReleaseActions": [],
+  "oldToolReplacementClaimed": false,
+  "forbiddenMarkerScan": {
+    "scannedTextCount": 2,
+    "findingCount": 0,
+    "markersBlocked": [
+      "lattice asp serve",
+      "lattice asp",
+      "dist/bin/lattice",
+      ".ace/runtime"
+    ]
+  }
+}

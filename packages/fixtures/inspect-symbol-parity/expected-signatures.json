@@ -1,0 +1,279 @@
+{
+  "schemaVersion": 1,
+  "route": "signature",
+  "targets": [
+    {
+      "id": "class-ts",
+      "path": "src/models.ts",
+      "symbolName": "GreetingModel",
+      "line": 1,
+      "nodeId": "class:src/models.ts#GreetingModel",
+      "expectedSignatures": [
+        "export class GreetingModel implements Renderable",
+        "constructor(message: GreetingMessage)",
+        "render(): string"
+      ],
+      "expectedKinds": [
+        "class",
+        "constructor",
+        "method"
+      ],
+      "coverage": [
+        "class",
+        "constructor",
+        "method",
+        "interface-implementation"
+      ]
+    },
+    {
+      "id": "interface-ts",
+      "path": "src/models.ts",
+      "symbolName": "Renderable",
+      "line": 9,
+      "nodeId": "type:src/models.ts#Renderable",
+      "expectedSignatures": [
+        "export interface Renderable",
+        "render(): string"
+      ],
+      "expectedKinds": [
+        "interface",
+        "method"
+      ],
+      "coverage": [
+        "interface",
+        "interface-method"
+      ]
+    },
+    {
+      "id": "type-alias-ts",
+      "path": "src/models.ts",
+      "symbolName": "GreetingMessage",
+      "line": 13,
+      "nodeId": "type:src/models.ts#GreetingMessage",
+      "expectedSignatures": [
+        "export type GreetingMessage = { salutation: string; name: string; };"
+      ],
+      "expectedKinds": [
+        "type_alias"
+      ],
+      "coverage": [
+        "type-alias"
+      ]
+    },
+    {
+      "id": "function-ts",
+      "path": "src/models.ts",
+      "symbolName": "formatGreeting",
+      "line": 20,
+      "nodeId": "function:src/models.ts#formatGreeting",
+      "expectedSignatures": [
+        "formatGreeting(message: GreetingMessage): string"
+      ],
+      "expectedKinds": [
+        "function"
+      ],
+      "coverage": [
+        "function"
+      ]
+    },
+    {
+      "id": "async-generic-default",
+      "path": "src/models.ts",
+      "symbolName": "formatGreetingAsync",
+      "line": 28,
+      "nodeId": "function:src/models.ts#formatGreetingAsync",
+      "expectedSignatures": [
+        "async formatGreetingAsync<T extends GreetingMessage = GreetingMessage>(message: T, punctuation?: string = \"!\"): Promise<string>"
+      ],
+      "expectedKinds": [
+        "function"
+      ],
+      "expectedAsync": true,
+      "expectedReturnType": "Promise<string>",
+      "expectedTypeParameters": [
+        {
+          "name": "T",
+          "constraint": "GreetingMessage",
+          "default": "GreetingMessage"
+        }
+      ],
+      "expectedParameters": [
+        {
+          "name": "message",
+          "type": "T",
+          "optional": false
+        },
+        {
+          "name": "punctuation",
+          "type": "string",
+          "optional": true,
+          "defaultValue": "\"!\""
+        }
+      ],
+      "coverage": [
+        "async",
+        "generic",
+        "default-parameter",
+        "optional-parameter"
+      ]
+    },
+    {
+      "id": "variable-function",
+      "path": "src/models.ts",
+      "symbolName": "makeGreetingFormatter",
+      "line": 35,
+      "nodeId": "function:src/models.ts#makeGreetingFormatter",
+      "expectedSignatures": [
+        "makeGreetingFormatter(prefix?: string): ((message: GreetingMessage) => string)"
+      ],
+      "expectedKinds": [
+        "variable_function"
+      ],
+      "coverage": [
+        "variable-function",
+        "optional-parameter"
+      ]
+    },
+    {
+      "id": "component-tsx",
+      "path": "src/components/GreetingCard.tsx",
+      "symbolName": "GreetingCard",
+      "line": 11,
+      "nodeId": "function:src/components/GreetingCard.tsx#GreetingCard",
+      "expectedSignatures": [
+        "GreetingCard({ message }: { message: GreetingMessage }): any"
+      ],
+      "expectedKinds": [
+        "function"
+      ],
+      "coverage": [
+        "tsx",
+        "path-alias-import"
+      ]
+    },
+    {
+      "id": "alias-class",
+      "path": "src/aliases.ts",
+      "symbolName": "AliasGreetingModel",
+      "line": 3,
+      "nodeId": "class:src/aliases.ts#AliasGreetingModel",
+      "expectedSignatures": [
+        "export class AliasGreetingModel extends ImportedGreetingModel"
+      ],
+      "expectedKinds": [
+        "class"
+      ],
+      "coverage": [
+        "renamed-import",
+        "class"
+      ]
+    },
+    {
+      "id": "imported-alias",
+      "path": "src/aliases.ts",
+      "symbolName": "ImportedGreetingModel",
+      "line": 1,
+      "nodeId": "class:src/models.ts#GreetingModel",
+      "expectedSignatures": [
+        "export class GreetingModel implements Renderable",
+        "constructor(message: GreetingMessage)",
+        "render(): string"
+      ],
+      "expectedKinds": [
+        "class",
+        "constructor",
+        "method"
+      ],
+      "coverage": [
+        "imported-symbol",
+        "renamed-import",
+        "path-alias-import"
+      ]
+    },
+    {
+      "id": "overload",
+      "path": "src/overloads.ts",
+      "symbolName": "describeGreeting",
+      "line": 3,
+      "nodeId": "function:src/overloads.ts#describeGreeting",
+      "expectedSignatures": [
+        "describeGreeting(model: GreetingModel): string",
+        "describeGreeting(message: GreetingMessage): string"
+      ],
+      "expectedKinds": [
+        "function",
+        "function"
+      ],
+      "expectedOverloadIndexes": [
+        0,
+        1
+      ],
+      "coverage": [
+        "overload"
+      ]
+    },
+    {
+      "id": "same-name-disambiguation",
+      "path": "src/same-name.ts",
+      "symbolName": "duplicate",
+      "line": 11,
+      "column": 30,
+      "nodeId": "function:src/same-name.ts#duplicate",
+      "expectedSignatures": [
+        "duplicate(value: string): string"
+      ],
+      "expectedKinds": [
+        "function"
+      ],
+      "coverage": [
+        "same-name",
+        "line-column-disambiguation"
+      ]
+    },
+    {
+      "id": "js-class",
+      "path": "src/js-module.js",
+      "symbolName": "JsGreeter",
+      "line": 1,
+      "nodeId": "class:src/js-module.js#JsGreeter",
+      "expectedSignatures": [
+        "export class JsGreeter",
+        "constructor(name: any)",
+        "greet(): string"
+      ],
+      "expectedKinds": [
+        "class",
+        "constructor",
+        "method"
+      ],
+      "coverage": [
+        "js"
+      ]
+    },
+    {
+      "id": "jsx-function",
+      "path": "src/jsx-widget.jsx",
+      "symbolName": "JsxWidget",
+      "line": 1,
+      "nodeId": "function:src/jsx-widget.jsx#JsxWidget",
+      "expectedSignatures": [
+        "JsxWidget(props: any): any"
+      ],
+      "expectedKinds": [
+        "function"
+      ],
+      "coverage": [
+        "jsx"
+      ]
+    },
+    {
+      "id": "unsupported-markdown",
+      "path": "README.md",
+      "symbolName": "Heading",
+      "expectedFailure": "unsupported_language",
+      "coverage": [
+        "unsupported-degraded"
+      ]
+    }
+  ]
+}

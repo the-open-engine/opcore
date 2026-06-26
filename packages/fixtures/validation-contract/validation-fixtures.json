@@ -1,0 +1,277 @@
+{
+  "schemaVersion": 1,
+  "issue": "#25",
+  "origin": "covibes-authored-synthetic",
+  "validRequests": [
+    {
+      "id": "files-required-graph",
+      "request": {
+        "requestId": "validation-files-1",
+        "repo": {
+          "repoId": "lattice"
+        },
+        "scope": {
+          "kind": "files",
+          "files": [
+            "packages/contracts/src/index.ts"
+          ]
+        },
+        "graph": {
+          "mode": "required",
+          "provider": "lattice-graph",
+          "maxAgeMs": 60000
+        },
+        "overlays": [],
+        "checks": [
+          "types",
+          "contracts"
+        ]
+      }
+    },
+    {
+      "id": "package-optional-graph",
+      "request": {
+        "requestId": "validation-package-1",
+        "repo": {
+          "repoId": "lattice"
+        },
+        "scope": {
+          "kind": "package",
+          "packageName": "@the-open-engine/lattice-validation",
+          "packageRoot": "packages/validation"
+        },
+        "graph": {
+          "mode": "optional",
+          "provider": "lattice-graph"
+        },
+        "overlays": []
+      }
+    },
+    {
+      "id": "changed-staged-all-repo-modes",
+      "scopes": [
+        {
+          "kind": "changed",
+          "baseRef": "origin/main"
+        },
+        {
+          "kind": "staged"
+        },
+        {
+          "kind": "all"
+        },
+        {
+          "kind": "repo"
+        }
+      ]
+    }
+  ],
+  "malformedRequests": [
+    {
+      "id": "absolute-file-path",
+      "error": "Repo-relative path must not be absolute",
+      "request": {
+        "repo": {
+          "repoId": "lattice"
+        },
+        "scope": {
+          "kind": "files",
+          "files": [
+            "/tmp/index.ts"
+          ]
+        },
+        "graph": {
+          "mode": "required"
+        },
+        "overlays": []
+      }
+    },
+    {
+      "id": "duplicate-overlay-path",
+      "error": "Validation request overlays include duplicate path",
+      "request": {
+        "repo": {
+          "repoId": "lattice"
+        },
+        "scope": {
+          "kind": "files",
+          "files": [
+            "src/index.ts"
+          ]
+        },
+        "graph": {
+          "mode": "required"
+        },
+        "overlays": [
+          {
+            "path": "src/index.ts",
+            "action": "write",
+            "content": "export {};"
+          },
+          {
+            "path": "src/index.ts",
+            "action": "delete"
+          }
+        ]
+      }
+    },
+    {
+      "id": "delete-overlay-with-content",
+      "error": "Validation delete overlay must not include content",
+      "request": {
+        "repo": {
+          "repoId": "lattice"
+        },
+        "scope": {
+          "kind": "files",
+          "files": [
+            "src/index.ts"
+          ]
+        },
+        "graph": {
+          "mode": "required"
+        },
+        "overlays": [
+          {
+            "path": "src/index.ts",
+            "action": "delete",
+            "content": ""
+          }
+        ]
+      }
+    }
+  ],
+  "graphModes": {
+    "optionalSkip": {
+      "state": "skipped",
+      "mode": "optional",
+      "provider": "lattice-graph",
+      "schemaVersion": 1,
+      "failure": {
+        "category": "provider_missing",
+        "message": "Optional graph provider unavailable"
+      }
+    },
+    "requiredFailures": [
+      {
+        "state": "required_missing",
+        "mode": "required",
+        "provider": "lattice-graph",
+        "schemaVersion": 1,
+        "failure": {
+          "category": "provider_missing",
+          "message": "Required graph provider unavailable"
+        }
+      },
+      {
+        "state": "stale",
+        "mode": "required",
+        "provider": "lattice-graph",
+        "schemaVersion": 1,
+        "repo": {
+          "repoId": "lattice"
+        },
+        "freshness": {
+          "generatedAt": "2026-06-05T00:00:00.000Z",
+          "ageMs": 60001,
+          "maxAgeMs": 60000,
+          "stale": true,
+          "reason": "Snapshot exceeds maxAgeMs"
+        },
+        "failure": {
+          "category": "stale_snapshot",
+          "message": "Graph snapshot is stale"
+        }
+      },
+      {
+        "state": "schema_mismatch",
+        "mode": "required",
+        "provider": "lattice-graph",
+        "schemaVersion": 1,
+        "expectedSchemaVersion": 1,
+        "actualSchemaVersion": 2,
+        "failure": {
+          "category": "schema_mismatch",
+          "message": "Graph schema mismatch"
+        }
+      },
+      {
+        "state": "daemon_unavailable",
+        "mode": "required",
+        "provider": "lattice-graph",
+        "schemaVersion": 1,
+        "failure": {
+          "category": "daemon_unavailable",
+          "message": "Graph daemon unavailable"
+        }
+      },
+      {
+        "state": "error",
+        "mode": "required",
+        "provider": "lattice-graph",
+        "schemaVersion": 1,
+        "failure": {
+          "category": "incompatible_provider",
+          "message": "Provider handshake is incompatible"
+        }
+      },
+      {
+        "state": "error",
+        "mode": "required",
+        "provider": "lattice-graph",
+        "schemaVersion": 1,
+        "failure": {
+          "category": "provider_error",
+          "message": "Provider returned an error"
+        }
+      }
+    ]
+  },
+  "editHypotheticalOverlays": {
+    "representation": "Rename-style edits are represented as delete old path plus write new path until rename overlays become first-class.",
+    "request": {
+      "requestId": "edit-preflight-1",
+      "repo": {
+        "repoId": "lattice"
+      },
+      "scope": {
+        "kind": "files",
+        "files": [
+          "src/old.ts",
+          "src/new.ts"
+        ]
+      },
+      "graph": {
+        "mode": "required",
+        "provider": "lattice-graph"
+      },
+      "overlays": [
+        {
+          "path": "src/old.ts",
+          "action": "delete",
+          "checksumBefore": "sha256:old"
+        },
+        {
+          "path": "src/new.ts",
+          "action": "write",
+          "content": "export const renamed = true;",
+          "checksumBefore": "sha256:new"
+        }
+      ],
+      "checks": [
+        "types",
+        "edit_safety"
+      ]
+    }
+  },
+  "resultStatuses": [
+    "passed",
+    "policy_failure",
+    "infrastructure_failure",
+    "provider_failure",
+    "unsupported_request",
+    "invalid_payload",
+    "skipped",
+    "refused"
+  ]
+}

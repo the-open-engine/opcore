@@ -1,0 +1,43 @@
+{
+  "name": "@the-open-engine/lattice-contracts",
+  "version": "0.1.0-alpha.0",
+  "description": "Public contracts and JSON schema for Lattice graph, edit, validation, and CLI routes.",
+  "type": "module",
+  "license": "MIT",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./schemas/lattice-contracts.schema.json": "./schemas/lattice-contracts.schema.json"
+  },
+  "files": [
+    "dist",
+    "schemas",
+    "README.md"
+  ],
+  "keywords": [
+    "code-intelligence",
+    "coding-agents",
+    "static-analysis",
+    "typescript",
+    "cli",
+    "developer-tools"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/the-open-engine/lattice.git",
+    "directory": "packages/contracts"
+  }
+}

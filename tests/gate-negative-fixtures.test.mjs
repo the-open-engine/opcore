@@ -1,0 +1,708 @@
+import { describe, it } from "node:test";
+import assert from "node:assert/strict";
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join, relative, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { spawnSync } from "node:child_process";
+import {
+  graphCoreNativePackageNameForTarget,
+  graphCoreNativePackageNames,
+  releaseCutoverRequiredCommandIds,
+  releaseReceiptPackageNames
+} from "../packages/contracts/dist/index.js";
+
+const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const copiedRepoSkips = new Set([
+  ".git",
+  "node_modules",
+  "target",
+  ".ace",
+  ".agents",
+  ".claude",
+  ".codex",
+  ".gemini",
+  ".opencode",
+  ".lattice",
+  ".code-review-graph",
+  ".rox-cache",
+  ".robustness-engine-cache",
+  ".receipt-test.lock"
+]);
+
+describe("negative gate fixtures", () => {
+  it("rejects tracked TypeScript build info", () => {
+    const repo = tempRepo();
+    writeFileSync(join(repo, "packages/contracts/tsconfig.tsbuildinfo"), "{}\n");
+    run(repo, "git", ["add", "-f", "packages/contracts/tsconfig.tsbuildinfo"]);
+
+    const result = run(repo, "node", ["scripts/check-workspace.mjs"], { expectFailure: true });
+    assert.match(stderrAndStdout(result), /Generated TypeScript build info must not be checked in/);
+  });
+
+  it("rejects Python CRG provenance markers", () => {
+    const repo = tempRepo();
+    writeFileSync(join(repo, "pyproject.toml"), "[project]\nname = \"code-review-graph\"\n");
+    run(repo, "git", ["add", "pyproject.toml"]);
+
+    const result = run(repo, "node", ["scripts/check-provenance.mjs"], { expectFailure: true });
+    assert.match(stderrAndStdout(result), /Forbidden Python packaging file/);
+  });
+
+  it("rejects provenance receipt checks without build artifacts", () => {
+    const repo = tempRepo();
+    const workflowPath = join(repo, ".github/workflows/provenance.yml");
+    const workflow = readFileSync(workflowPath, "utf8")
+      .replace(/\n      - name: Setup Rust[\s\S]*?\n      - name: Install/, "\n      - name: Install")
+      .replace(/\n      - name: Build release artifacts[\s\S]*?\n      - name: Provenance checks/, "\n      - name: Provenance checks");
+    writeFileSync(workflowPath, workflow);
+
+    const result = run(repo, "node", ["scripts/check-workspace.mjs"], { expectFailure: true });
+    assert.match(stderrAndStdout(result), /provenance\.yml.*(build.*release receipt|release-receipt:check.*build)/i);
+  });
+
+  it("rejects high-confidence secrets in release receipt scan", () => {
+    const repo = tempRepo({ includeDist: true });
+    writeFileSync(join(repo, "secret.txt"), `OPENAI_API_KEY=${JSON.stringify(`sk-${"a".repeat(40)}`)}\n`);
+
+    const result = run(repo, "node", ["scripts/generate-release-receipt.mjs", "--scan-secrets-only"], { expectFailure: true });
+    assert.match(stderrAndStdout(result), /Secret\/history scan.*secret\.txt|openai_api_key/i);
+  });
+
+  it("allows reviewed path-scoped secret false positives", () => {
+    const repo = tempRepo({ includeDist: true });
+    writeFileSync(join(repo, "tmp-allowlisted-secret.txt"), ["token", " = ", JSON.stringify("documented-placeholder-value"), "\n"].join(""));
+    writeFileSync(
+      join(repo, "docs/release/secret-scan-allowlist.json"),
+      `${JSON.stringify(
+        {
+          schemaVersion: 1,
+          entries: [
+            {
+              scope: "current-tree",
+              kind: "credential_assignment",
+              path: "tmp-allowlisted-secret.txt",
+              reviewer: "validator-code",
+              reason: "false positive fixture",
+              expiresAt: "2999-01-01"
+            }
+          ]
+        },
+        null,
+        2
+      )}\n`
+    );
+
+    const result = run(repo, "node", ["scripts/generate-release-receipt.mjs", "--scan-secrets-only", "--json"]);
+    const scan = JSON.parse(result.stdout);
+    assert.equal(scan.findingCount, 0);
+  });
+
+  it("rejects secret allowlist entries without reviewed metadata", () => {
+    const repo = tempRepo({ includeDist: true });
+    writeFileSync(
+      join(repo, "docs/release/secret-scan-allowlist.json"),
+      `${JSON.stringify(
+        {
+          schemaVersion: 1,
+          entries: [
+            {
+              scope: "current-tree",
+              path: "tmp-allowlisted-secret.txt"
+            }
+          ]
+        },
+        null,
+        2
+      )}\n`
+    );
+
+    const result = run(repo, "node", ["scripts/generate-release-receipt.mjs", "--scan-secrets-only"], { expectFailure: true });
+    assert.match(stderrAndStdout(result), /allowlist.*reviewer|allowlist.*reason|allowlist.*expiresAt/i);
+  });
+
+  it("rejects secret allowlist entries without path or commit scope", () => {
+    const repo = tempRepo({ includeDist: true });
+    writeFileSync(
+      join(repo, "docs/release/secret-scan-allowlist.json"),
+      `${JSON.stringify(
+        {
+          schemaVersion: 1,
+          entries: [
+            {
+              scope: "current-tree",
+              reviewer: "validator-code",
+              reason: "missing path fixture",
+              expiresAt: "2999-01-01"
+            }
+          ]
+        },
+        null,
+        2
+      )}\n`
+    );
+
+    const result = run(repo, "node", ["scripts/generate-release-receipt.mjs", "--scan-secrets-only"], { expectFailure: true });
+    assert.match(stderrAndStdout(result), /allowlist.*path|allowlist.*commit/i);
+  });
+
+  it("rejects unexpected package files in release package inspection", () => {
+    const repo = tempRepo({ includeDist: true });
+    const manifestPath = join(repo, "packages/edit/package.json");
+    const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+    manifest.files = [...manifest.files, "EXTRA.md"];
+    writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+    writeFileSync(join(repo, "packages/edit/EXTRA.md"), "unexpected release file\n");
+
+    const result = run(repo, "node", ["scripts/generate-release-receipt.mjs", "--inspect-packages-only"], { expectFailure: true });
+    assert.match(stderrAndStdout(result), /packed files mismatch|EXTRA\.md/);
+  });
+
+  it("rejects old public bins in release package inspection", () => {
+    const repo = tempRepo({ includeDist: true });
+    const manifestPath = join(repo, "packages/cli/package.json");
+    const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+    manifest.bin.crg = "dist/index.js";
+    writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+
+    const result = run(repo, "node", ["scripts/generate-release-receipt.mjs", "--inspect-packages-only"], { expectFailure: true });
+    assert.match(stderrAndStdout(result), /forbidden old public bin crg/);
+  });
+
+  it("rejects bad descriptor artifact references in release descriptor inspection", () => {
+    const repo = tempRepo({ includeDist: true });
+    const descriptorPath = join(repo, "packages/cli/dist/descriptors/lattice.managed-tool.json");
+    const descriptor = JSON.parse(readFileSync(descriptorPath, "utf8"));
+    descriptor.artifacts = descriptor.artifacts.map((artifact) =>
+      artifact.id === "descriptor" ? { ...artifact, path: "dist/descriptors/missing.json" } : artifact
+    );
+    writeFileSync(descriptorPath, `${JSON.stringify(descriptor, null, 2)}\n`);
+
+    const result = run(repo, "node", ["scripts/generate-release-receipt.mjs", "--inspect-descriptor-only"], { expectFailure: true });
+    assert.match(stderrAndStdout(result), /packaged descriptor artifact|missing\.json/);
+  });
+
+  it("rejects missing native checksum evidence in release package inspection", () => {
+    const repo = tempRepo({ includeDist: true });
+    const packageName = graphCoreNativePackageNameForTarget(`${process.platform}-${process.arch}`);
+    const checksumPath = join(
+      repo,
+      "packages",
+      packageName.replace("@the-open-engine/", ""),
+      "lattice-graph-core.sha256"
+    );
+    rmSync(checksumPath, { force: true });
+
+    const result = run(repo, "node", ["scripts/generate-release-receipt.mjs", "--inspect-packages-only"], { expectFailure: true });
+    assert.match(stderrAndStdout(result), /packed files mismatch|checksum|sha256/);
+  });
+
+  it("rejects current-tool markers in cutover descriptor inspection", () => {
+    const repo = tempRepo({ includeDist: true });
+    const descriptorPath = join(repo, "packages/cli/dist/descriptors/lattice.managed-tool.json");
+    const descriptor = JSON.parse(readFileSync(descriptorPath, "utf8"));
+    descriptor.artifacts[0].path = ".ace/runtime/bin/lattice";
+    writeFileSync(descriptorPath, `${JSON.stringify(descriptor, null, 2)}\n`);
+
+    const result = run(repo, "node", ["scripts/generate-cutover-receipt.mjs", "--inspect-descriptor-only"], { expectFailure: true });
+    assert.match(stderrAndStdout(result), /private runtime|forbidden marker|\.ace/);
+  });
+
+  it("rejects cutover receipts with advertised not_implemented commands", () => {
+    const repo = tempRepo({ includeDist: true });
+    const receiptPath = join(repo, "bad-cutover-receipt.json");
+    writeFileSync(receiptPath, `${JSON.stringify(minimalCutoverReceipt(repo, { status: "not_implemented", exitCode: 2 }), null, 2)}\n`);
+
+    const result = run(repo, "node", ["scripts/generate-cutover-receipt.mjs", "--validate-receipt-file", "bad-cutover-receipt.json"], {
+      expectFailure: true
+    });
+    assert.match(stderrAndStdout(result), /not_implemented/);
+  });
+
+  it("rejects cutover receipts missing required command evidence", () => {
+    const repo = tempRepo({ includeDist: true });
+    const receiptPath = join(repo, "bad-cutover-missing-command.json");
+    const receipt = minimalCutoverReceipt(repo);
+    receipt.commandReceipts = receipt.commandReceipts.filter((entry) => entry.id !== "inspect-search");
+    writeFileSync(receiptPath, `${JSON.stringify(receipt, null, 2)}\n`);
+
+    const result = run(repo, "node", ["scripts/generate-cutover-receipt.mjs", "--validate-receipt-file", "bad-cutover-missing-command.json"], {
+      expectFailure: true
+    });
+    assert.match(stderrAndStdout(result), /command receipts.*inspect-search/);
+  });
+
+  it("rejects old bin fallback in installed cutover projects", () => {
+    const repo = tempRepo({ includeDist: true });
+    const project = join(repo, "tmp-installed-project");
+    mkdirSync(join(project, "node_modules/.bin"), { recursive: true });
+    writeFileSync(join(project, "node_modules/.bin/lattice"), "#!/bin/sh\n");
+    writeFileSync(join(project, "node_modules/.bin/opcore"), "#!/bin/sh\n");
+    writeFileSync(join(project, "node_modules/.bin/opcore-asp-provider"), "#!/bin/sh\n");
+    writeFileSync(join(project, "node_modules/.bin/crg"), "#!/bin/sh\n");
+
+    const result = run(repo, "node", ["scripts/generate-cutover-receipt.mjs", "--inspect-installed-bin-dir", "tmp-installed-project"], {
+      expectFailure: true
+    });
+    assert.match(stderrAndStdout(result), /old public bin.*crg/);
+  });
+
+  it("rejects sibling file dependencies", () => {
+    const repo = tempRepo();
+    const manifestPath = join(repo, "packages/graph/package.json");
+    const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+    manifest.dependencies["@covibes/covibes"] = "file:../../covibes";
+    writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+
+    const result = run(repo, "node", ["scripts/check-workspace.mjs"], { expectFailure: true });
+    assert.match(stderrAndStdout(result), /file dependencies must stay inside packages|must not reference sibling repo/);
+  });
+
+  it("rejects parent-directory TypeScript outputs", () => {
+    const repo = tempRepo();
+    const tsconfigPath = join(repo, "packages/validation/tsconfig.json");
+    const tsconfig = JSON.parse(readFileSync(tsconfigPath, "utf8"));
+    tsconfig.compilerOptions.outDir = "../dist";
+    writeFileSync(tsconfigPath, `${JSON.stringify(tsconfig, null, 2)}\n`);
+
+    const result = run(repo, "node", ["scripts/check-workspace.mjs"], { expectFailure: true });
+    assert.match(stderrAndStdout(result), /must not reference parent directories or absolute paths/);
+  });
+
+  it("rejects reserved graph implementation package paths", () => {
+    const repo = tempRepo();
+    const readmePath = join(repo, "reserved-graph-name.md");
+    writeFileSync(readmePath, `${["packages", "crg"].join("/")} is reserved for removed implementation references\n`);
+
+    const result = run(repo, "node", ["scripts/check-workspace.mjs"], { expectFailure: true });
+    assert.match(stderrAndStdout(result), /reserved graph naming references/);
+  });
+
+  it("rejects reserved graph implementation package names", () => {
+    const repo = tempRepo();
+    const manifestPath = join(repo, "packages/graph/package.json");
+    const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+    manifest.description = `Reserved ${`@the-open-engine/lattice-${"crg"}`} implementation name`;
+    writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+
+    const result = run(repo, "node", ["scripts/check-workspace.mjs"], { expectFailure: true });
+    assert.match(stderrAndStdout(result), /reserved graph naming references/);
+  });
+
+  it("rejects reserved graph provider literals", () => {
+    const repo = tempRepo();
+    const sourcePath = join(repo, "packages/graph/src/reserved-provider.ts");
+    writeFileSync(sourcePath, `export const status = { provider: ${JSON.stringify("crg")} };\n`);
+
+    const result = run(repo, "node", ["scripts/check-workspace.mjs"], { expectFailure: true });
+    assert.match(stderrAndStdout(result), /reserved graph naming references/);
+  });
+
+  it("rejects reserved graph providerName metadata", () => {
+    const repo = tempRepo();
+    const sourcePath = join(repo, "packages/graph/src/reserved-provider-name-metadata.ts");
+    writeFileSync(sourcePath, `export const status = { providerName: ${JSON.stringify("crg")} };\n`);
+
+    const result = run(repo, "node", ["scripts/check-workspace.mjs"], { expectFailure: true });
+    assert.match(stderrAndStdout(result), /reserved-provider-name-metadata\.ts/);
+    assert.match(stderrAndStdout(result), /legacy graph provider name metadata/);
+  });
+
+  it("rejects reserved graph provider name constants", () => {
+    const repo = tempRepo();
+    const sourcePath = join(repo, "packages/graph/src/bad-provider-name.ts");
+    const legacyGraphTool = "cr" + "g";
+    writeFileSync(sourcePath, `export const crgProviderName = ${JSON.stringify(legacyGraphTool)};\n`);
+
+    const result = run(repo, "node", ["scripts/check-workspace.mjs"], { expectFailure: true });
+    assert.match(stderrAndStdout(result), /bad-provider-name\.ts/);
+    assert.match(stderrAndStdout(result), /legacy graph provider name constant/);
+  });
+
+  it("rejects stale CONTRIBUTING graph naming", () => {
+    const repo = tempRepo();
+    const contributingPath = join(repo, "CONTRIBUTING.md");
+    const legacyGraphTool = "cr" + "g";
+    const content = readFileSync(contributingPath, "utf8")
+      .replace(
+        "Lattice is a public alpha for local code intelligence, edit planning, and pre-write validation for coding agents.",
+        `Lattice is a public alpha code-intelligence monorepo for \`${legacyGraphTool}\`, edit, and validation.`
+      )
+      .replace(
+        "Graph extraction, persistence, query, search, and impact belong in `@the-open-engine/lattice-graph`.",
+        `Graph extraction, persistence, query, search, and impact graph production belongs in \`${legacyGraphTool}\`.`
+      );
+    writeFileSync(contributingPath, content);
+
+    const result = run(repo, "node", ["scripts/check-workspace.mjs"], { expectFailure: true });
+    assert.match(stderrAndStdout(result), /CONTRIBUTING\.md/);
+    assert.match(stderrAndStdout(result), /reserved graph naming references/);
+  });
+
+  it("rejects edit importing graph-core native artifact loaders", () => {
+    const repo = tempRepo();
+    const sourcePath = join(repo, "packages/edit/src/bad-graph-loader.ts");
+    writeFileSync(sourcePath, `import { resolveGraphCoreArtifact } from "@the-open-engine/lattice-graph";\nvoid resolveGraphCoreArtifact;\n`);
+
+    const result = run(repo, "node", ["scripts/check-workspace.mjs"], { expectFailure: true });
+    assert.match(stderrAndStdout(result), /bad-graph-loader\.ts/);
+  });
+
+  it("rejects validation relying on graph sqlite internals", () => {
+    const repo = tempRepo();
+    const sourcePath = join(repo, "packages/validation/src/bad-graph-sqlite.ts");
+    writeFileSync(sourcePath, `export const graphSqliteInternal = "graph sqlite internal reader";\n`);
+
+    const result = run(repo, "node", ["scripts/check-workspace.mjs"], { expectFailure: true });
+    assert.match(stderrAndStdout(result), /bad-graph-sqlite\.ts/);
+  });
+
+  it("rejects Cargo package names containing crg", () => {
+    const repo = tempRepo();
+    const manifestPath = join(repo, "crates/graph-core/Cargo.toml");
+    const manifest = readFileSync(manifestPath, "utf8").replace(
+      'name = "lattice-graph-core"',
+      `name = "lattice-${"crg"}-core"`
+    );
+    writeFileSync(manifestPath, manifest);
+
+    const result = run(repo, "node", ["scripts/check-workspace.mjs"], { expectFailure: true });
+    assert.match(stderrAndStdout(result), /must not use crg in Rust package/);
+  });
+
+  it("rejects Rox code-quality coverage without all Rust crate paths", () => {
+    const repo = tempRepo();
+    const roxPath = join(repo, "rox.json");
+    const rox = JSON.parse(readFileSync(roxPath, "utf8"));
+    rox.checks.codeQuality.include = rox.checks.codeQuality.include.filter((entry) => entry !== "crates/");
+    writeFileSync(roxPath, `${JSON.stringify(rox, null, 2)}\n`);
+
+    const result = run(repo, "node", ["scripts/check-workspace.mjs"], { expectFailure: true });
+    assert.match(stderrAndStdout(result), /checks\.codeQuality\.include must include "crates\/"/);
+  });
+
+  it("rejects Rox code-quality coverage without existing TypeScript and script scopes", () => {
+    const repo = tempRepo();
+    const roxPath = join(repo, "rox.json");
+    const rox = JSON.parse(readFileSync(roxPath, "utf8"));
+    rox.checks.codeQuality.include = ["crates/"];
+    writeFileSync(roxPath, `${JSON.stringify(rox, null, 2)}\n`);
+
+    const result = run(repo, "node", ["scripts/check-workspace.mjs"], { expectFailure: true });
+    assert.match(stderrAndStdout(result), /checks\.codeQuality\.include must include "packages\/"/);
+  });
+
+  it("rejects scoped Rust quality scripts that run against the whole repo", () => {
+    const repo = tempRepo();
+    const manifestPath = join(repo, "package.json");
+    const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+    manifest.scripts["current-tools:validate-rust-graph"] = "./.ace/runtime/bin/rox check --all --no-daemon --checks functionMetrics";
+    writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+
+    const result = run(repo, "node", ["scripts/check-workspace.mjs"], { expectFailure: true });
+    assert.match(stderrAndStdout(result), /must run scoped Rust graph function metrics script/);
+  });
+
+  it("rejects repo-wide Rox without scoped Rust graph metrics", () => {
+    const repo = tempRepo();
+    const roxPath = join(repo, "rox.json");
+    const rox = JSON.parse(readFileSync(roxPath, "utf8"));
+    rox.extensions = rox.extensions.filter((entry) => entry !== "scripts/check-rust-graph-function-metrics.mjs");
+    writeFileSync(roxPath, `${JSON.stringify(rox, null, 2)}\n`);
+
+    const result = run(repo, "node", ["scripts/check-workspace.mjs"], { expectFailure: true });
+    assert.match(stderrAndStdout(result), /must run scoped Rust graph function metrics/);
+  });
+
+  it("rejects Rox all-mode Rust metrics without crate package scope", () => {
+    const repo = tempRepo();
+    const roxPath = join(repo, "rox.json");
+    const rox = JSON.parse(readFileSync(roxPath, "utf8"));
+    rox.packages = rox.packages.filter((entry) => entry !== "crates");
+    writeFileSync(roxPath, `${JSON.stringify(rox, null, 2)}\n`);
+
+    const result = run(repo, "node", ["scripts/check-workspace.mjs"], { expectFailure: true });
+    assert.match(stderrAndStdout(result), /packages must include "crates"/);
+  });
+
+  it("rejects Rox code-quality coverage without changed-file modes", () => {
+    const repo = tempRepo();
+    const roxPath = join(repo, "rox.json");
+    const rox = JSON.parse(readFileSync(roxPath, "utf8"));
+    rox.checks.codeQuality.when.modes = rox.checks.codeQuality.when.modes.filter((entry) => entry !== "changed");
+    writeFileSync(roxPath, `${JSON.stringify(rox, null, 2)}\n`);
+
+    const result = run(repo, "node", ["scripts/check-workspace.mjs"], { expectFailure: true });
+    assert.match(stderrAndStdout(result), /checks\.codeQuality\.when\.modes must include "changed"/);
+  });
+
+  it("rejects graph-core crates without workspace lint opt-in", () => {
+    const repo = tempRepo();
+    const manifestPath = join(repo, "crates/graph-core/Cargo.toml");
+    const manifest = readFileSync(manifestPath, "utf8").replace(/\n\[lints]\nworkspace = true\n?/, "\n");
+    writeFileSync(manifestPath, manifest);
+
+    const result = run(repo, "node", ["scripts/check-workspace.mjs"], { expectFailure: true });
+    assert.match(stderrAndStdout(result), /crates\/graph-core\/Cargo\.toml must include \[lints]/);
+  });
+
+  it("rejects Cargo workspace manifests without clippy lint policy", () => {
+    const repo = tempRepo();
+    const manifestPath = join(repo, "Cargo.toml");
+    const manifest = readFileSync(manifestPath, "utf8").replace(/\n\[workspace\.lints\.clippy][\s\S]*$/, "\n");
+    writeFileSync(manifestPath, manifest);
+
+    const result = run(repo, "node", ["scripts/check-workspace.mjs"], { expectFailure: true });
+    assert.match(stderrAndStdout(result), /Cargo\.toml must include \[workspace\.lints\.clippy]/);
+  });
+});
+
+function tempRepo(options = {}) {
+  const tempRoot = mkdtempSync(join(tmpdir(), "lattice-gate-"));
+  const repo = join(tempRoot, "repo");
+  withReleaseDocsLock(() => {
+    cpSync(repoRoot, repo, {
+      recursive: true,
+      filter(source) {
+        const rel = relative(repoRoot, source);
+        if (rel === "") return true;
+        return !rel.split(/[\\/]/).some((segment) => copiedRepoSkips.has(segment) || (segment === "dist" && !options.includeDist));
+      }
+    });
+  });
+  run(repo, "git", ["init", "--quiet"]);
+  run(repo, "git", ["add", "-A"]);
+  return repo;
+}
+
+function withReleaseDocsLock(runLocked) {
+  const lockPath = join(repoRoot, "docs/release/.receipt-test.lock");
+  const deadline = Date.now() + 300000;
+  while (Date.now() < deadline) {
+    try {
+      mkdirSync(lockPath);
+      try {
+        return runLocked();
+      } finally {
+        rmSync(lockPath, { recursive: true, force: true });
+      }
+    } catch (error) {
+      if (error?.code !== "EEXIST") throw error;
+      sleep(50);
+    }
+  }
+  throw new Error(`timed out waiting for ${lockPath}`);
+}
+
+function sleep(ms) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+
+function run(cwd, command, args, options = {}) {
+  const result = spawnSync(command, args, {
+    cwd,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"]
+  });
+  if (options.expectFailure) {
+    assert.notEqual(result.status, 0, `${command} ${args.join(" ")} should fail`);
+    return result;
+  }
+  assert.equal(result.status, 0, `${command} ${args.join(" ")} failed\n${stderrAndStdout(result)}`);
+  return result;
+}
+
+function stderrAndStdout(result) {
+  return `${result.stderr}\n${result.stdout}`;
+}
+
+function minimalCutoverReceipt(repo, commandOverrides = {}) {
+  const packageNames = releaseReceiptPackageNames;
+  const descriptor = JSON.parse(readFileSync(join(repo, "packages/fixtures/descriptors/lattice.managed-tool.json"), "utf8"));
+  const commandReceipts = cutoverCommandExpectations().map((expectation) => ({
+    id: expectation.id,
+    command: expectation.command,
+    canonicalCommand: expectation.command,
+    owner: expectation.owner,
+    status: expectation.status,
+    exitCode: expectation.exitCode,
+    binPath: `node_modules/.bin/${expectation.command[0]}`,
+    stdoutSha256: "1".repeat(64),
+    stderrSha256: "2".repeat(64),
+    assertion: `${expectation.id} passed`,
+    ...commandOverrides
+  }));
+  assert.deepEqual(
+    commandReceipts.map((entry) => entry.id),
+    releaseCutoverRequiredCommandIds
+  );
+  return {
+    schemaVersion: 1,
+    issue: "#30",
+    origin: "covibes-authored-cutover-proof",
+    generatedAt: "2026-06-05T00:00:00.000Z",
+    commitSha: "a".repeat(40),
+    privateRepo: true,
+    packageNames,
+    installedPackages: packageNames
+      .filter((packageName) => !graphCoreNativePackageNames.includes(packageName) || packageName === graphCoreNativePackageNames[0])
+      .map((packageName) => ({
+        packageName,
+        version: "0.1.0-alpha.0",
+        tarball: {
+          filename: `${packageName.replace("@the-open-engine/", "the-open-engine-").replace("/", "-")}-0.1.0-alpha.0.tgz`,
+          sha256: "1".repeat(64)
+        },
+        installedManifest: {
+          path: `node_modules/${packageName}/package.json`,
+          sha256: "3".repeat(64),
+          bins:
+            packageName === "@the-open-engine/lattice-cli"
+              ? { lattice: "dist/index.js" }
+              : packageName === "@the-open-engine/opcore"
+                ? { opcore: "dist/index.js" }
+              : packageName === "@the-open-engine/opcore-asp-provider"
+                ? { "opcore-asp-provider": "dist/index.js" }
+                : {}
+        }
+      })),
+    descriptor: {
+      path: "node_modules/@the-open-engine/lattice-cli/dist/descriptors/lattice.managed-tool.json",
+      packageName: "@the-open-engine/lattice-cli",
+      checksumSha256: "7".repeat(64),
+      descriptor,
+      resolvedArtifacts: descriptor.artifacts.map((artifact) => ({ ...artifact, packageFile: true })),
+      resolvedChecksums: descriptor.checksums.map((checksum) => ({ ...checksum, packageFile: true, value: "8".repeat(64) }))
+    },
+    environmentIsolation: {
+      currentToolEnvCleared: true,
+      clearedEnvVarCount: 5,
+      pathSanitized: true,
+      aceRuntimeBinExcluded: true,
+      siblingCovibesExcluded: true,
+      latticeBinOnly: true,
+      oldBinsAbsent: { crg: true, cix: true, rox: true }
+    },
+    commandReceipts,
+    negativeChecks: [
+      {
+        id: "missing-required-graph-check",
+        command: ["lattice", "check", "files", "src/index.ts", "--graph-mode", "required"],
+        status: "passed",
+        exitCode: 0,
+        assertion: "typed provider failure"
+      }
+    ],
+    forbiddenMarkerScan: {
+      scannedTextCount: 1,
+      findingCount: 0,
+      markersBlocked: ["private-runtime", "current-tool-env", "private-home", "old-tool-bins"]
+    },
+    inputEvidence: [
+      { issue: "#17", path: "docs/release/graph-release-receipt.json", checksumSha256: "4".repeat(64) },
+      { issue: "#29", path: "docs/release/release-receipt.json", checksumSha256: "5".repeat(64) },
+      { issue: "#58", path: "docs/integration/pre-write-validation.md", checksumSha256: "6".repeat(64) }
+    ]
+  };
+}
+
+function cutoverCommandExpectations() {
+  return [
+    ["opcore-scan", ["opcore", "scan"], "runtime"],
+    ["opcore-status", ["opcore", "status"], "runtime"],
+    ["opcore-check-changed", ["opcore", "check", "changed", "--base", "HEAD", "--checks", "typescript.syntax"], "validation"],
+    ["opcore-measure", ["opcore", "measure"], "runtime"],
+    ["opcore-try", ["opcore", "try"], "runtime"],
+    ["status", ["lattice", "status"], "runtime"],
+    ["doctor", ["lattice", "doctor"], "runtime", "ok", 0],
+    ["graph-build", ["lattice", "graph", "build"], "graph", "ok", 0],
+    ["graph-status", ["lattice", "graph", "status"], "graph", "ok", 0],
+    ["graph-query", ["lattice", "graph", "query"], "graph", "ok", 0],
+    ["graph-impact", ["lattice", "graph", "impact", "--files", "src/components/GreetingCard.tsx"], "graph", "ok", 0],
+    ["graph-review-context", ["lattice", "graph", "review-context", "--files", "src/components/GreetingCard.tsx"], "graph", "ok", 0],
+    ["graph-detect-changes", ["lattice", "graph", "detect-changes", "--files", "src/components/GreetingCard.tsx"], "graph", "ok", 0],
+    ["graph-search", ["lattice", "graph", "search", "Greeting", "--limit", "5"], "graph", "ok", 0],
+    ["graph-serve", ["lattice", "graph", "serve"], "graph", "ok", 0],
+    ["inspect-symbols", ["lattice", "inspect", "symbols", "Greeting", "--limit", "5"], "inspect", "ok", 0],
+    ["inspect-definition", ["lattice", "inspect", "definition", "GreetingCard"], "inspect", "ok", 0],
+    ["inspect-references", ["lattice", "inspect", "references", "function:src/components/GreetingCard.tsx#GreetingCard", "--limit", "5"], "inspect", "ok", 0],
+    ["inspect-signature", ["lattice", "inspect", "signature", "function:src/components/GreetingCard.tsx#GreetingCard"], "inspect", "ok", 0],
+    ["inspect-implementations", ["lattice", "inspect", "implementations", "class:src/models.ts#GreetingModel"], "inspect", "ok", 0],
+    ["inspect-search", ["lattice", "inspect", "search", "Greeting", "--limit", "5"], "inspect", "ok", 0],
+    [
+      "edit-preview",
+      [
+        "lattice",
+        "edit",
+        "exact",
+        "--path",
+        "src/cutover.ts",
+        "--expected",
+        "export const cutoverValue: number = 1;",
+        "--replacement",
+        "export const cutoverValue: number = 2;"
+      ],
+      "edit",
+      "ok",
+      0
+    ],
+    [
+      "edit-apply",
+      [
+        "lattice",
+        "edit",
+        "exact",
+        "--path",
+        "src/cutover.ts",
+        "--expected",
+        "export const cutoverValue: number = 1;",
+        "--replacement",
+        "export const cutoverValue: number = 2;",
+        "--apply"
+      ],
+      "edit",
+      "ok",
+      0
+    ],
+    [
+      "edit-refused",
+      [
+        "lattice",
+        "edit",
+        "exact",
+        "--path",
+        "src/cutover.ts",
+        "--expected",
+        "export const cutoverValue: number = 2;",
+        "--replacement",
+        "export const cutoverValue: number = missingCutoverSymbol;",
+        "--apply"
+      ],
+      "edit",
+      "error",
+      1
+    ],
+    ["check-files", ["lattice", "check", "files", "src/cutover.ts", "--checks", "typescript.syntax,typescript.types"], "validation", "ok", 0],
+    ["validate-request", ["lattice", "validate", "request", "--request-file", "/tmp/lattice-cutover/project/validate-request.json"], "validation", "ok", 0],
+    [
+      "validate-pre-write-pass",
+      ["lattice", "validate", "pre-write", "--request-file", "/tmp/lattice-cutover/project/pre-write-pass.json", "--timeout-ms", "30000"],
+      "validation",
+      "ok",
+      0
+    ],
+    [
+      "validate-pre-write-fail",
+      ["lattice", "validate", "pre-write", "--request-file", "/tmp/lattice-cutover/project/pre-write-fail.json", "--timeout-ms", "30000"],
+      "validation",
+      "error",
+      1
+    ]
+  ].map(([id, command, owner, status = "ok", exitCode = 0]) => ({
+    id,
+    command,
+    owner,
+    status,
+    exitCode
+  }));
+}

@@ -1,0 +1,71 @@
+{
+  "name": "@the-open-engine/lattice-fixtures",
+  "version": "0.1.0-alpha.0",
+  "private": true,
+  "description": "Internal fixtures and conformance inputs for Lattice tests and examples.",
+  "type": "module",
+  "license": "MIT",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./graph-release/release-readiness-fixture.json": "./graph-release/release-readiness-fixture.json",
+    "./descriptors/lattice.managed-tool.json": "./descriptors/lattice.managed-tool.json",
+    "./graph-search/search-fixtures.json": "./graph-search/search-fixtures.json",
+    "./graph-query/query-fixtures.json": "./graph-query/query-fixtures.json",
+    "./graph-pipeline/pipeline-fixtures.json": "./graph-pipeline/pipeline-fixtures.json",
+    "./validation-contract/validation-fixtures.json": "./validation-contract/validation-fixtures.json",
+    "./inspect-symbol-parity/expected-references.json": "./inspect-symbol-parity/expected-references.json",
+    "./inspect-symbol-parity/expected-signatures.json": "./inspect-symbol-parity/expected-signatures.json",
+    "./inspect-symbol-parity/expected-implementations.json": "./inspect-symbol-parity/expected-implementations.json",
+    "./inspect-symbol-parity/tsconfig.json": "./inspect-symbol-parity/tsconfig.json",
+    "./inspect-symbol-parity/src/models.ts": "./inspect-symbol-parity/src/models.ts",
+    "./inspect-symbol-parity/src/components/GreetingCard.tsx": "./inspect-symbol-parity/src/components/GreetingCard.tsx",
+    "./inspect-symbol-parity/src/aliases.ts": "./inspect-symbol-parity/src/aliases.ts",
+    "./inspect-symbol-parity/src/overloads.ts": "./inspect-symbol-parity/src/overloads.ts",
+    "./inspect-symbol-parity/src/inheritance.ts": "./inspect-symbol-parity/src/inheritance.ts",
+    "./inspect-symbol-parity/src/same-name.ts": "./inspect-symbol-parity/src/same-name.ts",
+    "./inspect-symbol-parity/src/js-module.js": "./inspect-symbol-parity/src/js-module.js",
+    "./inspect-symbol-parity/src/jsx-widget.jsx": "./inspect-symbol-parity/src/jsx-widget.jsx",
+    "./source-extraction/wave1/tsconfig.json": "./source-extraction/wave1/tsconfig.json",
+    "./source-extraction/wave1/wave1.expected.json": "./source-extraction/wave1/wave1.expected.json",
+    "./source-extraction/wave1/src/models.ts": "./source-extraction/wave1/src/models.ts",
+    "./source-extraction/wave1/src/components/GreetingCard.tsx": "./source-extraction/wave1/src/components/GreetingCard.tsx",
+    "./source-extraction/wave1/src/math.js": "./source-extraction/wave1/src/math.js",
+    "./source-extraction/wave1/src/legacy-widget.jsx": "./source-extraction/wave1/src/legacy-widget.jsx",
+    "./source-extraction/wave1/src/__tests__/greeting.test.ts": "./source-extraction/wave1/src/__tests__/greeting.test.ts"
+  },
+  "files": [
+    "dist",
+    "descriptors",
+    "graph-search",
+    "graph-release",
+    "graph-query",
+    "graph-pipeline",
+    "validation-contract",
+    "graph-reference-evidence",
+    "inspect-symbol-parity",
+    "source-extraction",
+    "README.md"
+  ],
+  "keywords": [
+    "code-intelligence",
+    "coding-agents",
+    "fixtures",
+    "developer-tools"
+  ],
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/the-open-engine/lattice.git",
+    "directory": "packages/fixtures"
+  }
+}

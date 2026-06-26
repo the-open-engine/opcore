@@ -1,0 +1,161 @@
+{
+  "schemaVersion": 1,
+  "issue": "#19",
+  "origin": "covibes-authored-synthetic",
+  "classification": "required",
+  "metadata": {
+    "schemaVersion": {
+      "key": "schema_version",
+      "value": "6"
+    },
+    "requiredKeys": [
+      "schema_version",
+      "last_updated",
+      "last_build_type"
+    ],
+    "freshnessKeys": [
+      "last_updated",
+      "last_build_type"
+    ]
+  },
+  "tables": [
+    {
+      "name": "metadata",
+      "columns": [
+        "key",
+        "value"
+      ]
+    },
+    {
+      "name": "nodes",
+      "columns": [
+        "id",
+        "kind",
+        "name",
+        "qualified_name",
+        "file_path",
+        "line_start",
+        "line_end",
+        "language",
+        "parent_name",
+        "params",
+        "return_type",
+        "modifiers",
+        "is_test",
+        "is_exported",
+        "file_hash",
+        "extra",
+        "updated_at",
+        "signature"
+      ]
+    },
+    {
+      "name": "edges",
+      "columns": [
+        "id",
+        "kind",
+        "source_qualified",
+        "target_qualified",
+        "file_path",
+        "line",
+        "extra",
+        "updated_at"
+      ]
+    },
+    {
+      "name": "nodes_fts",
+      "columns": [
+        "name",
+        "qualified_name",
+        "file_path",
+        "signature"
+      ]
+    }
+  ],
+  "indexes": [
+    "idx_nodes_file",
+    "idx_nodes_kind",
+    "idx_nodes_qualified",
+    "idx_edges_source",
+    "idx_edges_target",
+    "idx_edges_kind",
+    "idx_edges_file",
+    "idx_nodes_exported_name"
+  ],
+  "nodeKinds": [
+    "File",
+    "Function",
+    "Test"
+  ],
+  "edgeKinds": [
+    "CALLS",
+    "CONTAINS",
+    "IMPORTS_FROM",
+    "TESTED_BY"
+  ],
+  "directReaderQueries": [
+    {
+      "id": "status-counts",
+      "consumer": "validation graph-aware summaries",
+      "sql": "select kind, count(*) as count from nodes group by kind order by kind"
+    },
+    {
+      "id": "status-edge-counts",
+      "consumer": "Covibes agent status display",
+      "sql": "select kind, count(*) as count from edges group by kind order by kind"
+    },
+    {
+      "id": "impact-edges-from-file",
+      "consumer": "edit planning blast-radius preflight",
+      "sql": "select kind, source_qualified, target_qualified from edges where file_path = ?"
+    },
+    {
+      "id": "search-by-name",
+      "consumer": "ACE symbol search fallback",
+      "sql": "select qualified_name, kind, file_path, line_start, line_end from nodes where name like ? order by kind, qualified_name limit ?"
+    },
+    {
+      "id": "freshness-metadata",
+      "consumer": "Zeroshot local validation freshness gate",
+      "sql": "select key, value from metadata where key in ('schema_version', 'last_updated', 'last_build_type') order by key"
+    }
+  ],
+  "optionalAnalysisTables": [
+    {
+      "issue": "#14",
+      "id": "flows",
+      "classification": "optional",
+      "tables": [
+        "flows",
+        "flow_memberships"
+      ],
+      "indexes": [
+        "idx_flows_criticality",
+        "idx_flows_entry",
+        "idx_flow_memberships_node"
+      ]
+    },
+    {
+      "issue": "#15",
+      "id": "communities",
+      "classification": "optional",
+      "tables": [
+        "communities"
+      ],
+      "indexes": [
+        "idx_nodes_community",
+        "idx_communities_parent",
+        "idx_communities_cohesion"
+      ]
+    },
+    {
+      "issue": "#16",
+      "id": "embeddings",
+      "classification": "supporting",
+      "tables": [
+        "embeddings"
+      ],
+      "indexes": []
+    }
+  ]
+}

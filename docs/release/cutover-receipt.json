@@ -1,0 +1,1552 @@
+{
+  "schemaVersion": 1,
+  "issue": "#30",
+  "origin": "covibes-authored-cutover-proof",
+  "generatedAt": "2026-06-26T10:44:34.252Z",
+  "commitSha": "f51e3ae668444c39c703db95a40b6b20de9a1c89",
+  "privateRepo": true,
+  "packageNames": [
+    "@the-open-engine/lattice-contracts",
+    "@the-open-engine/opcore",
+    "@the-open-engine/lattice-cli",
+    "@the-open-engine/lattice-graph",
+    "@the-open-engine/opcore-graph-core-darwin-arm64",
+    "@the-open-engine/opcore-graph-core-darwin-x64",
+    "@the-open-engine/opcore-graph-core-linux-x64",
+    "@the-open-engine/lattice-edit",
+    "@the-open-engine/lattice-validation",
+    "@the-open-engine/lattice-validation-rust",
+    "@the-open-engine/lattice-validation-typescript",
+    "@the-open-engine/opcore-asp-provider"
+  ],
+  "installedPackages": [
+    {
+      "packageName": "@the-open-engine/lattice-contracts",
+      "version": "0.1.0-alpha.0",
+      "tarball": {
+        "filename": "the-open-engine-lattice-contracts-0.1.0-alpha.0.tgz",
+        "sha256": "6801e8dda1ed82724bfa95d70ab7b7c4af4f87016a7471eb4cdfb425dda382b5"
+      },
+      "installedManifest": {
+        "path": "node_modules/@the-open-engine/lattice-contracts/package.json",
+        "sha256": "e21cdd3056b5018d4667172a64083a5589fa388f2788cf413d4e6677dd337e2a",
+        "bins": {}
+      }
+    },
+    {
+      "packageName": "@the-open-engine/opcore",
+      "version": "0.1.0-alpha.0",
+      "tarball": {
+        "filename": "the-open-engine-opcore-0.1.0-alpha.0.tgz",
+        "sha256": "8d2858dad630606d3bd6984d9a13a547a04a2f469750172e031bb63577ac3e32"
+      },
+      "installedManifest": {
+        "path": "node_modules/@the-open-engine/opcore/package.json",
+        "sha256": "17d72ac4370f8746281377a6262260dc4686ff45ae1135357b37d020d12d7457",
+        "bins": {
+          "opcore": "dist/index.js"
+        }
+      }
+    },
+    {
+      "packageName": "@the-open-engine/lattice-cli",
+      "version": "0.1.0-alpha.0",
+      "tarball": {
+        "filename": "the-open-engine-lattice-cli-0.1.0-alpha.0.tgz",
+        "sha256": "b05924813e985235f383c994ceeb4633d0fb1058f7030e1a5492a7a003710998"
+      },
+      "installedManifest": {
+        "path": "node_modules/@the-open-engine/lattice-cli/package.json",
+        "sha256": "fd85c8247ff3f0065709e0a386c82214664cccf34c13f2e3ec01d06015e14bc2",
+        "bins": {
+          "lattice": "dist/index.js"
+        }
+      }
+    },
+    {
+      "packageName": "@the-open-engine/lattice-graph",
+      "version": "0.1.0-alpha.0",
+      "tarball": {
+        "filename": "the-open-engine-lattice-graph-0.1.0-alpha.0.tgz",
+        "sha256": "b3c0d26e66d9ff66d62890c77411c540d98892cefa320291f783d106517de7d6"
+      },
+      "installedManifest": {
+        "path": "node_modules/@the-open-engine/lattice-graph/package.json",
+        "sha256": "f108d94aaaf1126137505170954e4ed1b1a702e0f9a402a3c947bb4064ffc0f6",
+        "bins": {}
+      }
+    },
+    {
+      "packageName": "@the-open-engine/opcore-graph-core-darwin-arm64",
+      "version": "0.1.0-alpha.0",
+      "tarball": {
+        "filename": "the-open-engine-opcore-graph-core-darwin-arm64-0.1.0-alpha.0.tgz",
+        "sha256": "ac6c9c61a0bcd799973d871a39d7d694a45875aefda34dfb83754df0dd4795ad"
+      },
+      "installedManifest": {
+        "path": "node_modules/@the-open-engine/opcore-graph-core-darwin-arm64/package.json",
+        "sha256": "2c8d455aef6457fed9d65ddfe8cd93b6939ac28a4e65a629be8b7c563fcad771",
+        "bins": {}
+      }
+    },
+    {
+      "packageName": "@the-open-engine/lattice-edit",
+      "version": "0.1.0-alpha.0",
+      "tarball": {
+        "filename": "the-open-engine-lattice-edit-0.1.0-alpha.0.tgz",
+        "sha256": "43048ec715740e326b9fb58e5bbc57eca75aa0d32ce1a49b08d1a5ea603e0104"
+      },
+      "installedManifest": {
+        "path": "node_modules/@the-open-engine/lattice-edit/package.json",
+        "sha256": "416f9e4abb7d878a822ea18948d7522bb06387c6f3975e6392a3e1ad93f05451",
+        "bins": {}
+      }
+    },
+    {
+      "packageName": "@the-open-engine/lattice-validation",
+      "version": "0.1.0-alpha.0",
+      "tarball": {
+        "filename": "the-open-engine-lattice-validation-0.1.0-alpha.0.tgz",
+        "sha256": "1c79b723abd731e75981c0f0811eb4904e521254cd4b945da5bc49f33ec975ad"
+      },
+      "installedManifest": {
+        "path": "node_modules/@the-open-engine/lattice-validation/package.json",
+        "sha256": "89f431ed3ac7573128afec4e5fe71fe16f391267ca67a77e956c98cbd07173c9",
+        "bins": {}
+      }
+    },
+    {
+      "packageName": "@the-open-engine/lattice-validation-rust",
+      "version": "0.1.0-alpha.0",
+      "tarball": {
+        "filename": "the-open-engine-lattice-validation-rust-0.1.0-alpha.0.tgz",
+        "sha256": "be71165c1846d1f9d35eb1b3557b7a16386ced45d47ac8a82341dac0ed599d14"
+      },
+      "installedManifest": {
+        "path": "node_modules/@the-open-engine/lattice-validation-rust/package.json",
+        "sha256": "a51fb2949604b36ace098df205a3fd1288168f1f67c24c509de9ab4f8a83faaf",
+        "bins": {}
+      }
+    },
+    {
+      "packageName": "@the-open-engine/lattice-validation-typescript",
+      "version": "0.1.0-alpha.0",
+      "tarball": {
+        "filename": "the-open-engine-lattice-validation-typescript-0.1.0-alpha.0.tgz",
+        "sha256": "f56d255773f271c7574aab364e6de6e5f305c6a27c285945eca01e9b2e14d2d7"
+      },
+      "installedManifest": {
+        "path": "node_modules/@the-open-engine/lattice-validation-typescript/package.json",
+        "sha256": "ba72a99e7d102ff2ac7993cc403b21b08d29883b90776350cdadbcd0db309d0f",
+        "bins": {}
+      }
+    },
+    {
+      "packageName": "@the-open-engine/opcore-asp-provider",
+      "version": "0.1.0-alpha.0",
+      "tarball": {
+        "filename": "the-open-engine-opcore-asp-provider-0.1.0-alpha.0.tgz",
+        "sha256": "9367e33f76b7970fc40b9c1159e147467172e85fe10f2fd9575f9a3ee806d624"
+      },
+      "installedManifest": {
+        "path": "node_modules/@the-open-engine/opcore-asp-provider/package.json",
+        "sha256": "859e1b43299088b3971d9f970e90b7bbffdfa8d18db40d606678c9288fa36f76",
+        "bins": {
+          "opcore-asp-provider": "dist/index.js"
+        }
+      }
+    }
+  ],
+  "descriptor": {
+    "path": "node_modules/@the-open-engine/lattice-cli/dist/descriptors/lattice.managed-tool.json",
+    "packageName": "@the-open-engine/lattice-cli",
+    "checksumSha256": "013196fc075e784d3be4c0e7d5d9a1535b65a68a3d1ad7b97b0933fd1db43720",
+    "descriptor": {
+      "schemaVersion": 1,
+      "descriptorKind": "aggregate_lattice",
+      "aggregateIdentity": {
+        "name": "lattice",
+        "releaseLine": "lattice",
+        "packageName": "@the-open-engine/lattice-cli",
+        "version": "0.1.0-alpha.0"
+      },
+      "packageIdentity": {
+        "packageName": "@the-open-engine/lattice-cli",
+        "artifactName": "@the-open-engine/lattice-cli",
+        "version": "0.1.0-alpha.0"
+      },
+      "entrypoints": [
+        {
+          "bin": "lattice",
+          "packageName": "@the-open-engine/lattice-cli",
+          "path": "dist/index.js",
+          "command": [
+            "lattice"
+          ]
+        }
+      ],
+      "commandGroups": [
+        {
+          "name": "graph",
+          "canonicalCommand": [
+            "lattice",
+            "graph"
+          ],
+          "commands": [
+            "build",
+            "update",
+            "watch",
+            "status",
+            "query",
+            "serve",
+            "impact",
+            "review-context",
+            "detect-changes",
+            "search"
+          ],
+          "packageName": "@the-open-engine/lattice-graph"
+        },
+        {
+          "name": "inspect",
+          "canonicalCommand": [
+            "lattice",
+            "inspect"
+          ],
+          "commands": [
+            "symbols",
+            "definition",
+            "references",
+            "signature",
+            "implementations",
+            "search"
+          ],
+          "packageName": "@the-open-engine/lattice-cli"
+        },
+        {
+          "name": "edit",
+          "canonicalCommand": [
+            "lattice",
+            "edit"
+          ],
+          "commands": [
+            "exact",
+            "multi",
+            "search-replace",
+            "check",
+            "apply",
+            "patch",
+            "tree",
+            "rename",
+            "move",
+            "signature"
+          ],
+          "packageName": "@the-open-engine/lattice-edit"
+        },
+        {
+          "name": "check",
+          "canonicalCommand": [
+            "lattice",
+            "check"
+          ],
+          "commands": [
+            "files",
+            "staged",
+            "changed",
+            "tree",
+            "all",
+            "manifest"
+          ],
+          "packageName": "@the-open-engine/lattice-validation"
+        },
+        {
+          "name": "validate",
+          "canonicalCommand": [
+            "lattice",
+            "validate"
+          ],
+          "commands": [
+            "request",
+            "hypothetical",
+            "pre-write",
+            "manifest"
+          ],
+          "packageName": "@the-open-engine/lattice-validation"
+        },
+        {
+          "name": "status",
+          "canonicalCommand": [
+            "lattice",
+            "status"
+          ],
+          "commands": [
+            "status"
+          ],
+          "packageName": "@the-open-engine/lattice-cli"
+        },
+        {
+          "name": "doctor",
+          "canonicalCommand": [
+            "lattice",
+            "doctor"
+          ],
+          "commands": [
+            "doctor"
+          ],
+          "packageName": "@the-open-engine/lattice-cli"
+        }
+      ],
+      "healthProbes": [
+        {
+          "id": "status-json",
+          "command": [
+            "lattice",
+            "status",
+            "--json"
+          ],
+          "expectedExitCode": 0,
+          "output": "json"
+        },
+        {
+          "id": "doctor-json",
+          "command": [
+            "lattice",
+            "doctor",
+            "--json"
+          ],
+          "expectedExitCode": 0,
+          "output": "json"
+        },
+        {
+          "id": "graph-status-json",
+          "command": [
+            "lattice",
+            "graph",
+            "status",
+            "--json"
+          ],
+          "expectedExitCode": 0,
+          "output": "json"
+        },
+        {
+          "id": "check-manifest-json",
+          "command": [
+            "lattice",
+            "check",
+            "manifest",
+            "--json"
+          ],
+          "expectedExitCode": 0,
+          "output": "json"
+        },
+        {
+          "id": "validate-manifest-json",
+          "command": [
+            "lattice",
+            "validate",
+            "manifest",
+            "--json"
+          ],
+          "expectedExitCode": 0,
+          "output": "json"
+        }
+      ],
+      "capabilities": {
+        "graph": {
+          "provider": "lattice-graph",
+          "schemaVersion": 1,
+          "commands": [
+            "build",
+            "update",
+            "watch",
+            "status",
+            "query",
+            "impact",
+            "review-context",
+            "detect-changes",
+            "search",
+            "serve"
+          ],
+          "queryKinds": [
+            "nodes",
+            "edges",
+            "neighbors",
+            "symbols",
+            "impact",
+            "callers_of",
+            "callees_of",
+            "importers_of",
+            "imports_of",
+            "tests_for",
+            "children_of",
+            "file_summary",
+            "review_context",
+            "detect_changes",
+            "search"
+          ],
+          "daemonOperations": [
+            "ping",
+            "status",
+            "query",
+            "search",
+            "shutdown"
+          ],
+          "nativeArtifacts": [
+            {
+              "targetPlatform": "darwin-arm64",
+              "packageName": "@the-open-engine/opcore-graph-core-darwin-arm64",
+              "binaryPath": "lattice-graph-core",
+              "metadataPath": "metadata.json",
+              "checksumPath": "lattice-graph-core.sha256",
+              "artifactIds": {
+                "binaryArtifactId": "graph-core-binary-darwin-arm64",
+                "metadataArtifactId": "graph-core-metadata-darwin-arm64",
+                "checksumArtifactId": "graph-core-checksum-darwin-arm64",
+                "checksumId": "graph-core-binary-sha256-darwin-arm64"
+              }
+            },
+            {
+              "targetPlatform": "darwin-x64",
+              "packageName": "@the-open-engine/opcore-graph-core-darwin-x64",
+              "binaryPath": "lattice-graph-core",
+              "metadataPath": "metadata.json",
+              "checksumPath": "lattice-graph-core.sha256",
+              "artifactIds": {
+                "binaryArtifactId": "graph-core-binary-darwin-x64",
+                "metadataArtifactId": "graph-core-metadata-darwin-x64",
+                "checksumArtifactId": "graph-core-checksum-darwin-x64",
+                "checksumId": "graph-core-binary-sha256-darwin-x64"
+              }
+            },
+            {
+              "targetPlatform": "linux-x64",
+              "packageName": "@the-open-engine/opcore-graph-core-linux-x64",
+              "binaryPath": "lattice-graph-core",
+              "metadataPath": "metadata.json",
+              "checksumPath": "lattice-graph-core.sha256",
+              "artifactIds": {
+                "binaryArtifactId": "graph-core-binary-linux-x64",
+                "metadataArtifactId": "graph-core-metadata-linux-x64",
+                "checksumArtifactId": "graph-core-checksum-linux-x64",
+                "checksumId": "graph-core-binary-sha256-linux-x64"
+              }
+            }
+          ]
+        },
+        "edit": {
+          "commands": [
+            "exact",
+            "multi",
+            "search-replace",
+            "patch",
+            "tree",
+            "rename",
+            "move",
+            "signature",
+            "check",
+            "apply"
+          ],
+          "safeEditModes": [
+            "exact",
+            "multi",
+            "search-replace",
+            "patch",
+            "tree"
+          ],
+          "symbolEditModes": [
+            "rename",
+            "move",
+            "signature"
+          ],
+          "validationRequiredForApply": true,
+          "dryRun": true
+        },
+        "validation": {
+          "checkRoutes": [
+            "files",
+            "staged",
+            "changed",
+            "tree",
+            "all",
+            "manifest"
+          ],
+          "validateRoutes": [
+            "request",
+            "hypothetical",
+            "pre-write",
+            "manifest"
+          ],
+          "scopeModes": [
+            "files",
+            "changed",
+            "staged",
+            "tree",
+            "all",
+            "repo",
+            "package"
+          ],
+          "graphModes": [
+            "optional",
+            "required"
+          ],
+          "hypothetical": true,
+          "statusSurfaces": [
+            "status",
+            "doctor"
+          ],
+          "checkIds": [
+            "typescript.syntax",
+            "typescript.types",
+            "typescript.import-graph",
+            "typescript.dead-code",
+            "typescript.relevant-tests",
+            "rust.source-hygiene",
+            "rust.fmt",
+            "rust.cargo-check",
+            "rust.clippy",
+            "rust.rustdoc",
+            "rust.import-graph",
+            "rust.dead-code",
+            "rust.unused-deps",
+            "rust.file-length",
+            "rust.function-metrics"
+          ]
+        }
+      },
+      "artifacts": [
+        {
+          "id": "cli-entrypoint",
+          "packageName": "@the-open-engine/lattice-cli",
+          "path": "dist/index.js",
+          "type": "entrypoint",
+          "required": true
+        },
+        {
+          "id": "descriptor",
+          "packageName": "@the-open-engine/lattice-cli",
+          "path": "dist/descriptors/lattice.managed-tool.json",
+          "type": "descriptor",
+          "required": true
+        },
+        {
+          "id": "contracts-schema",
+          "packageName": "@the-open-engine/lattice-contracts",
+          "path": "schemas/lattice-contracts.schema.json",
+          "type": "schema",
+          "required": true
+        },
+        {
+          "id": "graph-core-binary-darwin-arm64",
+          "packageName": "@the-open-engine/opcore-graph-core-darwin-arm64",
+          "path": "lattice-graph-core",
+          "type": "native_binary",
+          "required": true,
+          "checksumRef": "graph-core-binary-sha256-darwin-arm64"
+        },
+        {
+          "id": "graph-core-metadata-darwin-arm64",
+          "packageName": "@the-open-engine/opcore-graph-core-darwin-arm64",
+          "path": "metadata.json",
+          "type": "manifest",
+          "required": true
+        },
+        {
+          "id": "graph-core-checksum-darwin-arm64",
+          "packageName": "@the-open-engine/opcore-graph-core-darwin-arm64",
+          "path": "lattice-graph-core.sha256",
+          "type": "checksum",
+          "required": true
+        },
+        {
+          "id": "graph-core-binary-darwin-x64",
+          "packageName": "@the-open-engine/opcore-graph-core-darwin-x64",
+          "path": "lattice-graph-core",
+          "type": "native_binary",
+          "required": true,
+          "checksumRef": "graph-core-binary-sha256-darwin-x64"
+        },
+        {
+          "id": "graph-core-metadata-darwin-x64",
+          "packageName": "@the-open-engine/opcore-graph-core-darwin-x64",
+          "path": "metadata.json",
+          "type": "manifest",
+          "required": true
+        },
+        {
+          "id": "graph-core-checksum-darwin-x64",
+          "packageName": "@the-open-engine/opcore-graph-core-darwin-x64",
+          "path": "lattice-graph-core.sha256",
+          "type": "checksum",
+          "required": true
+        },
+        {
+          "id": "graph-core-binary-linux-x64",
+          "packageName": "@the-open-engine/opcore-graph-core-linux-x64",
+          "path": "lattice-graph-core",
+          "type": "native_binary",
+          "required": true,
+          "checksumRef": "graph-core-binary-sha256-linux-x64"
+        },
+        {
+          "id": "graph-core-metadata-linux-x64",
+          "packageName": "@the-open-engine/opcore-graph-core-linux-x64",
+          "path": "metadata.json",
+          "type": "manifest",
+          "required": true
+        },
+        {
+          "id": "graph-core-checksum-linux-x64",
+          "packageName": "@the-open-engine/opcore-graph-core-linux-x64",
+          "path": "lattice-graph-core.sha256",
+          "type": "checksum",
+          "required": true
+        }
+      ],
+      "checksums": [
+        {
+          "id": "graph-core-binary-sha256-darwin-arm64",
+          "packageName": "@the-open-engine/opcore-graph-core-darwin-arm64",
+          "path": "lattice-graph-core.sha256",
+          "algorithm": "sha256",
+          "artifactRef": "graph-core-binary-darwin-arm64",
+          "required": true
+        },
+        {
+          "id": "graph-core-binary-sha256-darwin-x64",
+          "packageName": "@the-open-engine/opcore-graph-core-darwin-x64",
+          "path": "lattice-graph-core.sha256",
+          "algorithm": "sha256",
+          "artifactRef": "graph-core-binary-darwin-x64",
+          "required": true
+        },
+        {
+          "id": "graph-core-binary-sha256-linux-x64",
+          "packageName": "@the-open-engine/opcore-graph-core-linux-x64",
+          "path": "lattice-graph-core.sha256",
+          "algorithm": "sha256",
+          "artifactRef": "graph-core-binary-linux-x64",
+          "required": true
+        }
+      ],
+      "provenanceHooks": [
+        {
+          "id": "pack-check",
+          "command": [
+            "npm",
+            "run",
+            "pack:check"
+          ],
+          "expectedExitCode": 0
+        },
+        {
+          "id": "provenance-check",
+          "command": [
+            "npm",
+            "run",
+            "provenance:check"
+          ],
+          "expectedExitCode": 0
+        }
+      ],
+      "optionalSurfaces": [
+        {
+          "issue": "#13",
+          "id": "coverage",
+          "classification": "deferred",
+          "status": "deferred"
+        },
+        {
+          "issue": "#14",
+          "id": "flows",
+          "classification": "optional",
+          "status": "deferred"
+        },
+        {
+          "issue": "#15",
+          "id": "communities",
+          "classification": "optional",
+          "status": "deferred"
+        },
+        {
+          "issue": "#16",
+          "id": "read_only_suggestions",
+          "classification": "supporting",
+          "status": "deferred"
+        }
+      ]
+    },
+    "resolvedArtifacts": [
+      {
+        "id": "cli-entrypoint",
+        "packageName": "@the-open-engine/lattice-cli",
+        "path": "dist/index.js",
+        "type": "entrypoint",
+        "required": true,
+        "packageFile": true
+      },
+      {
+        "id": "descriptor",
+        "packageName": "@the-open-engine/lattice-cli",
+        "path": "dist/descriptors/lattice.managed-tool.json",
+        "type": "descriptor",
+        "required": true,
+        "packageFile": true
+      },
+      {
+        "id": "contracts-schema",
+        "packageName": "@the-open-engine/lattice-contracts",
+        "path": "schemas/lattice-contracts.schema.json",
+        "type": "schema",
+        "required": true,
+        "packageFile": true
+      },
+      {
+        "id": "graph-core-binary-darwin-arm64",
+        "packageName": "@the-open-engine/opcore-graph-core-darwin-arm64",
+        "path": "lattice-graph-core",
+        "type": "native_binary",
+        "required": true,
+        "packageFile": true,
+        "checksumRef": "graph-core-binary-sha256-darwin-arm64"
+      },
+      {
+        "id": "graph-core-metadata-darwin-arm64",
+        "packageName": "@the-open-engine/opcore-graph-core-darwin-arm64",
+        "path": "metadata.json",
+        "type": "manifest",
+        "required": true,
+        "packageFile": true
+      },
+      {
+        "id": "graph-core-checksum-darwin-arm64",
+        "packageName": "@the-open-engine/opcore-graph-core-darwin-arm64",
+        "path": "lattice-graph-core.sha256",
+        "type": "checksum",
+        "required": true,
+        "packageFile": true
+      },
+      {
+        "id": "graph-core-binary-darwin-x64",
+        "packageName": "@the-open-engine/opcore-graph-core-darwin-x64",
+        "path": "lattice-graph-core",
+        "type": "native_binary",
+        "required": true,
+        "packageFile": true,
+        "checksumRef": "graph-core-binary-sha256-darwin-x64"
+      },
+      {
+        "id": "graph-core-metadata-darwin-x64",
+        "packageName": "@the-open-engine/opcore-graph-core-darwin-x64",
+        "path": "metadata.json",
+        "type": "manifest",
+        "required": true,
+        "packageFile": true
+      },
+      {
+        "id": "graph-core-checksum-darwin-x64",
+        "packageName": "@the-open-engine/opcore-graph-core-darwin-x64",
+        "path": "lattice-graph-core.sha256",
+        "type": "checksum",
+        "required": true,
+        "packageFile": true
+      },
+      {
+        "id": "graph-core-binary-linux-x64",
+        "packageName": "@the-open-engine/opcore-graph-core-linux-x64",
+        "path": "lattice-graph-core",
+        "type": "native_binary",
+        "required": true,
+        "packageFile": true,
+        "checksumRef": "graph-core-binary-sha256-linux-x64"
+      },
+      {
+        "id": "graph-core-metadata-linux-x64",
+        "packageName": "@the-open-engine/opcore-graph-core-linux-x64",
+        "path": "metadata.json",
+        "type": "manifest",
+        "required": true,
+        "packageFile": true
+      },
+      {
+        "id": "graph-core-checksum-linux-x64",
+        "packageName": "@the-open-engine/opcore-graph-core-linux-x64",
+        "path": "lattice-graph-core.sha256",
+        "type": "checksum",
+        "required": true,
+        "packageFile": true
+      }
+    ],
+    "resolvedChecksums": [
+      {
+        "id": "graph-core-binary-sha256-darwin-arm64",
+        "packageName": "@the-open-engine/opcore-graph-core-darwin-arm64",
+        "path": "lattice-graph-core.sha256",
+        "algorithm": "sha256",
+        "artifactRef": "graph-core-binary-darwin-arm64",
+        "required": true,
+        "packageFile": true,
+        "value": "34bcd16b63011b1e360cf86457945d33749c18d71025f53c9937431c374691b4"
+      },
+      {
+        "id": "graph-core-binary-sha256-darwin-x64",
+        "packageName": "@the-open-engine/opcore-graph-core-darwin-x64",
+        "path": "lattice-graph-core.sha256",
+        "algorithm": "sha256",
+        "artifactRef": "graph-core-binary-darwin-x64",
+        "required": true,
+        "packageFile": true,
+        "value": "6652d43eec8f39e7c1b930b92e032eb268d1e4263454a89614e0d8299fc3b4e7"
+      },
+      {
+        "id": "graph-core-binary-sha256-linux-x64",
+        "packageName": "@the-open-engine/opcore-graph-core-linux-x64",
+        "path": "lattice-graph-core.sha256",
+        "algorithm": "sha256",
+        "artifactRef": "graph-core-binary-linux-x64",
+        "required": true,
+        "packageFile": true,
+        "value": "4654c6ba6383886e759fe3c805ec8c0df3b31d2e1db9d5c18626de6b2cfe758a"
+      }
+    ]
+  },
+  "environmentIsolation": {
+    "currentToolEnvCleared": true,
+    "clearedEnvVarCount": 5,
+    "pathSanitized": true,
+    "aceRuntimeBinExcluded": true,
+    "siblingCovibesExcluded": true,
+    "latticeBinOnly": true,
+    "oldBinsAbsent": {
+      "crg": true,
+      "cix": true,
+      "rox": true
+    }
+  },
+  "commandReceipts": [
+    {
+      "id": "opcore-scan",
+      "command": [
+        "opcore",
+        "scan"
+      ],
+      "canonicalCommand": [
+        "opcore",
+        "scan"
+      ],
+      "owner": "runtime",
+      "status": "ok",
+      "exitCode": 0,
+      "binPath": "node_modules/.bin/opcore",
+      "stdoutSha256": "84155addfaa3fa0707a6a6f86cd3f83769b7be3f4b18bc8401765811bc162246",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "assertion": "opcore scan wrote read-only report artifacts"
+    },
+    {
+      "id": "opcore-status",
+      "command": [
+        "opcore",
+        "status"
+      ],
+      "canonicalCommand": [
+        "opcore",
+        "status"
+      ],
+      "owner": "runtime",
+      "status": "ok",
+      "exitCode": 0,
+      "binPath": "node_modules/.bin/opcore",
+      "stdoutSha256": "30a3554bf6ec8eb68e360ff3feecc7e8df085a68b1259ffecf01adc65f546f5c",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "assertion": "opcore status returned repoState"
+    },
+    {
+      "id": "opcore-check-changed",
+      "command": [
+        "opcore",
+        "check",
+        "changed",
+        "--base",
+        "HEAD",
+        "--checks",
+        "typescript.syntax"
+      ],
+      "canonicalCommand": [
+        "opcore",
+        "check",
+        "changed",
+        "--base",
+        "HEAD",
+        "--checks",
+        "typescript.syntax"
+      ],
+      "owner": "validation",
+      "status": "ok",
+      "exitCode": 0,
+      "binPath": "node_modules/.bin/opcore",
+      "stdoutSha256": "b882a05dcc11caf3a614dc72212cce34b50361572fc41a79bc13b469e246d616",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "assertion": "opcore check changed defaulted base to HEAD"
+    },
+    {
+      "id": "opcore-measure",
+      "command": [
+        "opcore",
+        "measure"
+      ],
+      "canonicalCommand": [
+        "opcore",
+        "measure"
+      ],
+      "owner": "runtime",
+      "status": "ok",
+      "exitCode": 0,
+      "binPath": "node_modules/.bin/opcore",
+      "stdoutSha256": "2b7412dfc5662772be68ee345345fe8f6f4838d78ad3056fea49c98c24706c04",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "assertion": "opcore measure returned read-only report deltas"
+    },
+    {
+      "id": "opcore-try",
+      "command": [
+        "opcore",
+        "try"
+      ],
+      "canonicalCommand": [
+        "opcore",
+        "try"
+      ],
+      "owner": "runtime",
+      "status": "ok",
+      "exitCode": 0,
+      "binPath": "node_modules/.bin/opcore",
+      "stdoutSha256": "ae86b2accf17313ff09f5217cfc9521516b1dd6668686b61b272949f65ff3915",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "assertion": "opcore try generated local sample repos without publishing"
+    },
+    {
+      "id": "status",
+      "command": [
+        "lattice",
+        "status"
+      ],
+      "canonicalCommand": [
+        "lattice",
+        "status"
+      ],
+      "owner": "runtime",
+      "status": "ok",
+      "exitCode": 0,
+      "binPath": "node_modules/.bin/lattice",
+      "stdoutSha256": "8ac01fa151172488658f4d787eea630af1c9da99ec6b9124dd0cc138604c6fec",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "assertion": "runtime status reports validation readiness"
+    },
+    {
+      "id": "doctor",
+      "command": [
+        "lattice",
+        "doctor"
+      ],
+      "canonicalCommand": [
+        "lattice",
+        "doctor"
+      ],
+      "owner": "runtime",
+      "status": "ok",
+      "exitCode": 0,
+      "binPath": "node_modules/.bin/lattice",
+      "stdoutSha256": "cc91eb1e98134d12354a48c166858fd082e3a520313c907b3773b7913ccc0097",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "assertion": "runtime doctor reports validation readiness"
+    },
+    {
+      "id": "graph-build",
+      "command": [
+        "lattice",
+        "graph",
+        "build"
+      ],
+      "canonicalCommand": [
+        "lattice",
+        "graph",
+        "build"
+      ],
+      "owner": "graph",
+      "status": "ok",
+      "exitCode": 0,
+      "binPath": "node_modules/.bin/lattice",
+      "stdoutSha256": "0baadaebdb6b12b0bab1682f08475382ee92edfc5469afd0866bfe99ca499be1",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "assertion": "graph build completed with native artifact"
+    },
+    {
+      "id": "graph-status",
+      "command": [
+        "lattice",
+        "graph",
+        "status"
+      ],
+      "canonicalCommand": [
+        "lattice",
+        "graph",
+        "status"
+      ],
+      "owner": "graph",
+      "status": "ok",
+      "exitCode": 0,
+      "binPath": "node_modules/.bin/lattice",
+      "stdoutSha256": "a2cedb70c2e3f237dab1233209540c8066026f7fb4fb1a514430b4ccba33942f",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "assertion": "graph status available after build"
+    },
+    {
+      "id": "graph-query",
+      "command": [
+        "lattice",
+        "graph",
+        "query"
+      ],
+      "canonicalCommand": [
+        "lattice",
+        "graph",
+        "query"
+      ],
+      "owner": "graph",
+      "status": "ok",
+      "exitCode": 0,
+      "binPath": "node_modules/.bin/lattice",
+      "stdoutSha256": "02770b3f46822b136ea2731e3f881060de03cc3597201469647b5b48c04d13dc",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "assertion": "graph query returned facts"
+    },
+    {
+      "id": "graph-impact",
+      "command": [
+        "lattice",
+        "graph",
+        "impact",
+        "--files",
+        "src/components/GreetingCard.tsx"
+      ],
+      "canonicalCommand": [
+        "lattice",
+        "graph",
+        "impact",
+        "--files",
+        "src/components/GreetingCard.tsx"
+      ],
+      "owner": "graph",
+      "status": "ok",
+      "exitCode": 0,
+      "binPath": "node_modules/.bin/lattice",
+      "stdoutSha256": "afef98ed91350d208e897e4ed0bd4397946ec627d8015d6e38470d61af7864eb",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "assertion": "graph impact returned file impact"
+    },
+    {
+      "id": "graph-review-context",
+      "command": [
+        "lattice",
+        "graph",
+        "review-context",
+        "--files",
+        "src/components/GreetingCard.tsx"
+      ],
+      "canonicalCommand": [
+        "lattice",
+        "graph",
+        "review-context",
+        "--files",
+        "src/components/GreetingCard.tsx"
+      ],
+      "owner": "graph",
+      "status": "ok",
+      "exitCode": 0,
+      "binPath": "node_modules/.bin/lattice",
+      "stdoutSha256": "e9fec08cf3ca02feecca32cbba1d923d1531c0022dfd15c2736e1011ebe1260c",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "assertion": "graph review-context returned related facts"
+    },
+    {
+      "id": "graph-detect-changes",
+      "command": [
+        "lattice",
+        "graph",
+        "detect-changes",
+        "--files",
+        "src/components/GreetingCard.tsx"
+      ],
+      "canonicalCommand": [
+        "lattice",
+        "graph",
+        "detect-changes",
+        "--files",
+        "src/components/GreetingCard.tsx"
+      ],
+      "owner": "graph",
+      "status": "ok",
+      "exitCode": 0,
+      "binPath": "node_modules/.bin/lattice",
+      "stdoutSha256": "8dba1374fe097288a053bf67680d96dc14deb131a93235f2ee17f3e0ba8c5a4c",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "assertion": "graph detect-changes returned typed change data"
+    },
+    {
+      "id": "graph-search",
+      "command": [
+        "lattice",
+        "graph",
+        "search",
+        "Greeting",
+        "--limit",
+        "5"
+      ],
+      "canonicalCommand": [
+        "lattice",
+        "graph",
+        "search",
+        "Greeting",
+        "--limit",
+        "5"
+      ],
+      "owner": "graph",
+      "status": "ok",
+      "exitCode": 0,
+      "binPath": "node_modules/.bin/lattice",
+      "stdoutSha256": "d605444b7039824df299574f84b46b24520aa5bb1e7e55ffdd8cd91e241bec02",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "assertion": "graph search returned ranked results"
+    },
+    {
+      "id": "graph-serve",
+      "command": [
+        "lattice",
+        "graph",
+        "serve"
+      ],
+      "canonicalCommand": [
+        "lattice",
+        "graph",
+        "serve"
+      ],
+      "owner": "graph",
+      "status": "ok",
+      "exitCode": 0,
+      "binPath": "node_modules/.bin/lattice",
+      "stdoutSha256": "378b416cd0db3d0ca3ed8e1ef9e360b32a215aee5775d151e4d9b02de3b23452",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "assertion": "graph serve status route is ready"
+    },
+    {
+      "id": "inspect-symbols",
+      "command": [
+        "lattice",
+        "inspect",
+        "symbols",
+        "Greeting",
+        "--limit",
+        "5"
+      ],
+      "canonicalCommand": [
+        "lattice",
+        "inspect",
+        "symbols",
+        "Greeting",
+        "--limit",
+        "5"
+      ],
+      "owner": "inspect",
+      "status": "ok",
+      "exitCode": 0,
+      "binPath": "node_modules/.bin/lattice",
+      "stdoutSha256": "3d159a1f10703a0e6c4509dac8a43db87c78a8a35532183f66d36229ebaff715",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "assertion": "inspect symbols returned graph symbols"
+    },
+    {
+      "id": "inspect-definition",
+      "command": [
+        "lattice",
+        "inspect",
+        "definition",
+        "GreetingCard"
+      ],
+      "canonicalCommand": [
+        "lattice",
+        "inspect",
+        "definition",
+        "GreetingCard"
+      ],
+      "owner": "inspect",
+      "status": "ok",
+      "exitCode": 0,
+      "binPath": "node_modules/.bin/lattice",
+      "stdoutSha256": "375237c37511da89d490df62390931fe0229ff7d9ce8f3df0e1d157f4d5b199a",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "assertion": "inspect definition returned a symbol"
+    },
+    {
+      "id": "inspect-references",
+      "command": [
+        "lattice",
+        "inspect",
+        "references",
+        "function:src/components/GreetingCard.tsx#GreetingCard",
+        "--limit",
+        "5"
+      ],
+      "canonicalCommand": [
+        "lattice",
+        "inspect",
+        "references",
+        "function:src/components/GreetingCard.tsx#GreetingCard",
+        "--limit",
+        "5"
+      ],
+      "owner": "inspect",
+      "status": "ok",
+      "exitCode": 0,
+      "binPath": "node_modules/.bin/lattice",
+      "stdoutSha256": "f750cb70e898dd6bf296112e3e379a0a11c11b1c77ce6ddaf5896d05714d6a50",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "assertion": "inspect references returned callers"
+    },
+    {
+      "id": "inspect-signature",
+      "command": [
+        "lattice",
+        "inspect",
+        "signature",
+        "function:src/components/GreetingCard.tsx#GreetingCard"
+      ],
+      "canonicalCommand": [
+        "lattice",
+        "inspect",
+        "signature",
+        "function:src/components/GreetingCard.tsx#GreetingCard"
+      ],
+      "owner": "inspect",
+      "status": "ok",
+      "exitCode": 0,
+      "binPath": "node_modules/.bin/lattice",
+      "stdoutSha256": "2a0959f53df876a782292838a9e0a652bae94f73dcf5fcfbb11bcf313e27390c",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "assertion": "inspect signature returned read-only language-service signatures"
+    },
+    {
+      "id": "inspect-implementations",
+      "command": [
+        "lattice",
+        "inspect",
+        "implementations",
+        "class:src/models.ts#GreetingModel"
+      ],
+      "canonicalCommand": [
+        "lattice",
+        "inspect",
+        "implementations",
+        "class:src/models.ts#GreetingModel"
+      ],
+      "owner": "inspect",
+      "status": "ok",
+      "exitCode": 0,
+      "binPath": "node_modules/.bin/lattice",
+      "stdoutSha256": "f73a883c9fa07516ebdab876374ae177268bc53d0c94f90346ec96a0a70453c7",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "assertion": "inspect implementations returned implementation evidence"
+    },
+    {
+      "id": "inspect-search",
+      "command": [
+        "lattice",
+        "inspect",
+        "search",
+        "Greeting",
+        "--limit",
+        "5"
+      ],
+      "canonicalCommand": [
+        "lattice",
+        "inspect",
+        "search",
+        "Greeting",
+        "--limit",
+        "5"
+      ],
+      "owner": "inspect",
+      "status": "ok",
+      "exitCode": 0,
+      "binPath": "node_modules/.bin/lattice",
+      "stdoutSha256": "69ae4459af20aeee7a609d41b6dc46a988fc1e922f3736626c909c6e0e469734",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "assertion": "inspect search returned graph search results"
+    },
+    {
+      "id": "edit-preview",
+      "command": [
+        "lattice",
+        "edit",
+        "exact",
+        "--path",
+        "src/cutover.ts",
+        "--expected",
+        "export const cutoverValue: number = 1;",
+        "--replacement",
+        "export const cutoverValue: number = 2;"
+      ],
+      "canonicalCommand": [
+        "lattice",
+        "edit",
+        "exact",
+        "--path",
+        "src/cutover.ts",
+        "--expected",
+        "export const cutoverValue: number = 1;",
+        "--replacement",
+        "export const cutoverValue: number = 2;"
+      ],
+      "owner": "edit",
+      "status": "ok",
+      "exitCode": 0,
+      "binPath": "node_modules/.bin/lattice",
+      "stdoutSha256": "49514bafffc1beed8f791021aca3bf9799214dc4212c8444f7cf9246bbbb4f56",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "assertion": "safe edit preview produced a plan without writing"
+    },
+    {
+      "id": "edit-apply",
+      "command": [
+        "lattice",
+        "edit",
+        "exact",
+        "--path",
+        "src/cutover.ts",
+        "--expected",
+        "export const cutoverValue: number = 1;",
+        "--replacement",
+        "export const cutoverValue: number = 2;",
+        "--apply"
+      ],
+      "canonicalCommand": [
+        "lattice",
+        "edit",
+        "exact",
+        "--path",
+        "src/cutover.ts",
+        "--expected",
+        "export const cutoverValue: number = 1;",
+        "--replacement",
+        "export const cutoverValue: number = 2;",
+        "--apply"
+      ],
+      "owner": "edit",
+      "status": "ok",
+      "exitCode": 0,
+      "binPath": "node_modules/.bin/lattice",
+      "stdoutSha256": "30ad5887110a249ecafa471745e00982a3b5de37d821ae29bc14442a2b2fc463",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "assertion": "safe edit apply wrote after validation"
+    },
+    {
+      "id": "edit-refused",
+      "command": [
+        "lattice",
+        "edit",
+        "exact",
+        "--path",
+        "src/cutover.ts",
+        "--expected",
+        "export const cutoverValue: number = 2;",
+        "--replacement",
+        "export const cutoverValue: number = missingCutoverSymbol;",
+        "--apply"
+      ],
+      "canonicalCommand": [
+        "lattice",
+        "edit",
+        "exact",
+        "--path",
+        "src/cutover.ts",
+        "--expected",
+        "export const cutoverValue: number = 2;",
+        "--replacement",
+        "export const cutoverValue: number = missingCutoverSymbol;",
+        "--apply"
+      ],
+      "owner": "edit",
+      "status": "error",
+      "exitCode": 1,
+      "binPath": "node_modules/.bin/lattice",
+      "stdoutSha256": "eb56cbf8885dad191b30df982cfb3478c93f468afa09f21d224de2f3edebfb7e",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "assertion": "validation-refused edit left file unchanged"
+    },
+    {
+      "id": "check-files",
+      "command": [
+        "lattice",
+        "check",
+        "files",
+        "src/cutover.ts",
+        "--checks",
+        "typescript.syntax,typescript.types"
+      ],
+      "canonicalCommand": [
+        "lattice",
+        "check",
+        "files",
+        "src/cutover.ts",
+        "--checks",
+        "typescript.syntax,typescript.types"
+      ],
+      "owner": "validation",
+      "status": "ok",
+      "exitCode": 0,
+      "binPath": "node_modules/.bin/lattice",
+      "stdoutSha256": "148f9fb28ddd5298bd011bf4e64fc52e7a44177f84b2827f46f70230970fabf2",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "assertion": "check files passed syntax and type checks"
+    },
+    {
+      "id": "validate-request",
+      "command": [
+        "lattice",
+        "validate",
+        "request",
+        "--request-file",
+        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/lattice-cutover-ucCMcO/project/validate-request.json"
+      ],
+      "canonicalCommand": [
+        "lattice",
+        "validate",
+        "request",
+        "--request-file",
+        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/lattice-cutover-ucCMcO/project/validate-request.json"
+      ],
+      "owner": "validation",
+      "status": "ok",
+      "exitCode": 0,
+      "binPath": "node_modules/.bin/lattice",
+      "stdoutSha256": "0c4768700610edf0d66e8abfab23f0aec66666ab51c66aecef0c8ba4706b0e29",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "assertion": "validate request passed"
+    },
+    {
+      "id": "validate-pre-write-pass",
+      "command": [
+        "lattice",
+        "validate",
+        "pre-write",
+        "--request-file",
+        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/lattice-cutover-ucCMcO/project/pre-write-pass.json",
+        "--timeout-ms",
+        "30000"
+      ],
+      "canonicalCommand": [
+        "lattice",
+        "validate",
+        "pre-write",
+        "--request-file",
+        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/lattice-cutover-ucCMcO/project/pre-write-pass.json",
+        "--timeout-ms",
+        "30000"
+      ],
+      "owner": "validation",
+      "status": "ok",
+      "exitCode": 0,
+      "binPath": "node_modules/.bin/lattice",
+      "stdoutSha256": "e576abdbfbb6ca0b8332175231a4495ec789a1f5c4847da37b51657dc528fc91",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "assertion": "pre-write pass receipt was ok"
+    },
+    {
+      "id": "validate-pre-write-fail",
+      "command": [
+        "lattice",
+        "validate",
+        "pre-write",
+        "--request-file",
+        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/lattice-cutover-ucCMcO/project/pre-write-fail.json",
+        "--timeout-ms",
+        "30000"
+      ],
+      "canonicalCommand": [
+        "lattice",
+        "validate",
+        "pre-write",
+        "--request-file",
+        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/lattice-cutover-ucCMcO/project/pre-write-fail.json",
+        "--timeout-ms",
+        "30000"
+      ],
+      "owner": "validation",
+      "status": "error",
+      "exitCode": 1,
+      "binPath": "node_modules/.bin/lattice",
+      "stdoutSha256": "dfccf0df80ef32073c0b91aabc35f05f03184b6b44a2328b80ee80e7b84f5dcd",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "assertion": "pre-write failure receipt failed closed"
+    }
+  ],
+  "negativeChecks": [
+    {
+      "id": "missing-required-graph-check",
+      "command": [
+        "lattice",
+        "check",
+        "files",
+        "src/index.ts",
+        "--repo",
+        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/lattice-cutover-ucCMcO/missing-graph",
+        "--graph-mode",
+        "required",
+        "--checks",
+        "typescript.import-graph",
+        "--json"
+      ],
+      "status": "passed",
+      "exitCode": 0,
+      "assertion": "required graph provider failure stayed typed"
+    },
+    {
+      "id": "missing-required-graph-validate",
+      "command": [
+        "lattice",
+        "validate",
+        "request",
+        "--request-file",
+        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/lattice-cutover-ucCMcO/missing-graph/required-graph.json",
+        "--json"
+      ],
+      "status": "passed",
+      "exitCode": 0,
+      "assertion": "required graph provider failure stayed typed"
+    }
+  ],
+  "forbiddenMarkerScan": {
+    "scannedTextCount": 74,
+    "findingCount": 0,
+    "markersBlocked": [
+      "private-runtime",
+      "current-tool-env",
+      "private-home",
+      "old-tool-bins"
+    ]
+  },
+  "inputEvidence": [
+    {
+      "issue": "#17",
+      "path": "docs/release/graph-release-receipt.json",
+      "checksumSha256": "3eb840352a74cee3ee9a44cb26b58dd05dacc016662bfa0973d20de5b280a183"
+    },
+    {
+      "issue": "#29",
+      "path": "docs/release/release-receipt.json",
+      "checksumSha256": "c45da04b34794d940e4d1eefc8f4d1b18522318f4d750ba7df18267fe4929199"
+    },
+    {
+      "issue": "#58",
+      "path": "docs/integration/pre-write-validation.md",
+      "checksumSha256": "c7f40aeb71dd481072950ac43caacb129148d87b11c1430bc736a0825b030085"
+    }
+  ]
+}

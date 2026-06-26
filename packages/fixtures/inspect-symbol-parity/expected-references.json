@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "targets": [
+    {
+      "path": "src/models.ts",
+      "symbolName": "GreetingModel",
+      "line": 1,
+      "minimumReferences": 7
+    },
+    {
+      "path": "src/components/GreetingCard.tsx",
+      "symbolName": "GreetingCard",
+      "line": 11,
+      "minimumReferences": 2
+    },
+    {
+      "path": "src/aliases.ts",
+      "symbolName": "AliasGreetingModel",
+      "line": 3,
+      "minimumReferences": 3
+    },
+    {
+      "path": "src/overloads.ts",
+      "symbolName": "describeGreeting",
+      "line": 3,
+      "minimumReferences": 4
+    },
+    {
+      "path": "src/js-module.js",
+      "symbolName": "JsGreeter",
+      "line": 1,
+      "minimumReferences": 3
+    },
+    {
+      "path": "src/jsx-widget.jsx",
+      "symbolName": "JsxWidget",
+      "line": 1,
+      "minimumReferences": 2
+    }
+  ],
+  "ambiguousTargets": [
+    {
+      "path": "src/same-name.ts",
+      "symbolName": "duplicate"
+    }
+  ]
+}

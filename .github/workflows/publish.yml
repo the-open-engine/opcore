@@ -1,0 +1,50 @@
+name: publish
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to publish
+        required: true
+        default: 0.1.0-alpha.0
+      tag:
+        description: npm dist-tag
+        required: true
+        default: alpha
+      dry_run:
+        description: Run publish checks without publishing
+        required: true
+        default: "true"
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: publish
+    runs-on: ubuntu-latest
+    env:
+      NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      LATTICE_CONFIRM_PUBLISH: ${{ inputs.dry_run == 'true' && '' || inputs.version }}
+      LATTICE_PUBLISH_DRY_RUN: ${{ inputs.dry_run == 'true' && '1' || '' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          registry-url: https://registry.npmjs.org
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install
+        run: npm ci
+
+      - name: Publish
+        run: npm run release:publish -- --version "${{ inputs.version }}" --tag "${{ inputs.tag }}"

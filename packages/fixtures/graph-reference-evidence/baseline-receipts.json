@@ -1,0 +1,115 @@
+{
+  "schemaVersion": 1,
+  "issue": "#19",
+  "label": "reference_evidence_non_implementation_input",
+  "origin": "covibes-authored-synthetic",
+  "sourceTool": "current external graph dev wrapper",
+  "sourceAvailability": "available",
+  "collectedAt": "2026-06-04T10:00:25.536Z",
+  "receipts": [
+    {
+      "id": "baseline-install-setup",
+      "metric": "install_setup_ms",
+      "value": 109,
+      "unit": "ms",
+      "sourceAvailability": "available",
+      "nonImplementationInput": true,
+      "command": ".ace/runtime/bin/crg --help",
+      "exitCode": 0,
+      "stderr": ""
+    },
+    {
+      "id": "baseline-cold-build",
+      "metric": "cold_build_ms",
+      "value": 237,
+      "unit": "ms",
+      "sourceAvailability": "available",
+      "nonImplementationInput": true,
+      "command": ".ace/runtime/bin/crg build --repo . --json",
+      "exitCode": 0,
+      "stderr": "INFO: Progress: 24/24 files parsed"
+    },
+    {
+      "id": "baseline-incremental-update",
+      "metric": "incremental_update_ms",
+      "value": 169,
+      "unit": "ms",
+      "sourceAvailability": "available",
+      "nonImplementationInput": true,
+      "command": ".ace/runtime/bin/crg update --base HEAD --repo . --json",
+      "exitCode": 0,
+      "stderr": ""
+    },
+    {
+      "id": "baseline-impact-cold",
+      "metric": "impact_cold_ms",
+      "value": 164,
+      "unit": "ms",
+      "sourceAvailability": "available",
+      "nonImplementationInput": true,
+      "command": ".ace/runtime/bin/crg impact --files packages/contracts/src/index.ts --repo . --json",
+      "exitCode": 0,
+      "stderr": ""
+    },
+    {
+      "id": "baseline-impact-hot",
+      "metric": "impact_hot_ms",
+      "value": 172,
+      "unit": "ms",
+      "sourceAvailability": "available",
+      "nonImplementationInput": true,
+      "command": ".ace/runtime/bin/crg impact --files packages/contracts/src/index.ts --repo . --json",
+      "exitCode": 0,
+      "stderr": ""
+    },
+    {
+      "id": "baseline-search",
+      "metric": "search_ms",
+      "value": 170,
+      "unit": "ms",
+      "sourceAvailability": "available",
+      "nonImplementationInput": true,
+      "command": ".ace/runtime/bin/crg search GraphProvider --limit 5 --repo . --json",
+      "exitCode": 0,
+      "stderr": ""
+    },
+    {
+      "id": "baseline-db-size",
+      "metric": "db_size_bytes",
+      "value": 913408,
+      "unit": "bytes",
+      "sourceAvailability": "available",
+      "nonImplementationInput": true,
+      "command": "stat .code-review-graph/graph.db"
+    },
+    {
+      "id": "baseline-wal-size",
+      "metric": "wal_size_bytes",
+      "value": 1,
+      "unit": "bytes",
+      "sourceAvailability": "unavailable",
+      "nonImplementationInput": true,
+      "command": "stat .code-review-graph/graph.db-wal"
+    },
+    {
+      "id": "baseline-daemon-startup",
+      "metric": "daemon_startup_ms",
+      "value": 102,
+      "unit": "ms",
+      "sourceAvailability": "available",
+      "nonImplementationInput": true,
+      "command": ".ace/runtime/bin/crg serve --help",
+      "exitCode": 0,
+      "stderr": ""
+    },
+    {
+      "id": "baseline-daemon-query",
+      "metric": "daemon_query_ms",
+      "value": 1,
+      "unit": "ms",
+      "sourceAvailability": "available",
+      "nonImplementationInput": true,
+      "command": "lattice.graph.daemon synthetic query envelope"
+    }
+  ]
+}

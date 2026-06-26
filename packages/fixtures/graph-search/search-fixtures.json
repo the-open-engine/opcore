@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "fixture": "graph-search-v1",
+  "indexedNodeKinds": ["File", "Class", "Function", "Type", "Test", "Variable"],
+  "contextFiles": ["src/components/GreetingCard.tsx"],
+  "queries": {
+    "greeting": {
+      "query": "Greeting",
+      "limit": 5,
+      "expectedTopNodeIds": [
+        "function:src/components/GreetingCard.tsx#GreetingCard",
+        "class:src/models.ts#GreetingModel",
+        "class:src/models.ts#FriendlyGreetingModel"
+      ]
+    }
+  },
+  "failureStates": ["stale", "schema_mismatch", "daemon_unavailable", "error"],
+  "deterministicOrder": ["score_desc", "path_asc", "kind_asc", "qualifiedName_asc", "nodeId_asc"]
+}

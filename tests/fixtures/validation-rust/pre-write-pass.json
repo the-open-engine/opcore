@@ -1,0 +1,22 @@
+{
+  "requestId": "validation-rust-pre-write-pass",
+  "repo": {
+    "repoRoot": "."
+  },
+  "scope": {
+    "kind": "files",
+    "files": [
+      "Cargo.toml",
+      "crates/graph-core/src/lib.rs"
+    ]
+  },
+  "graph": {
+    "mode": "optional",
+    "provider": "lattice-graph"
+  },
+  "overlays": [],
+  "checks": [
+    "rust.source-hygiene",
+    "rust.cargo-check"
+  ]
+}

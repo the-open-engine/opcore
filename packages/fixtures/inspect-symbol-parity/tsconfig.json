@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "baseUrl": "src",
+    "checkJs": false,
+    "jsx": "preserve",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "paths": {
+      "@components/*": [
+        "components/*"
+      ],
+      "@models": [
+        "models.ts"
+      ],
+      "@utils/*": [
+        "utils/*"
+      ]
+    },
+    "strict": true,
+    "target": "ES2022"
+  },
+  "include": [
+    "src/**/*"
+  ]
+}

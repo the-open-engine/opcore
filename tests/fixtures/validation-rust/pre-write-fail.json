@@ -1,0 +1,28 @@
+{
+  "requestId": "validation-rust-pre-write-fail",
+  "repo": {
+    "repoRoot": "."
+  },
+  "scope": {
+    "kind": "files",
+    "files": [
+      "Cargo.toml",
+      "crates/graph-core/src/lib.rs"
+    ]
+  },
+  "graph": {
+    "mode": "optional",
+    "provider": "lattice-graph"
+  },
+  "overlays": [
+    {
+      "path": "crates/graph-core/src/lib.rs",
+      "action": "write",
+      "content": "#[allow(dead_code)]\npub fn blocked_for_source_hygiene() {}\n"
+    }
+  ],
+  "checks": [
+    "rust.source-hygiene",
+    "rust.cargo-check"
+  ]
+}

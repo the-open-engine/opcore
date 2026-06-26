@@ -1,0 +1,71 @@
+{
+  "name": "lattice",
+  "version": "0.1.0-alpha.0",
+  "private": true,
+  "description": "Local code intelligence, safe edits, and pre-write validation for coding agents.",
+  "type": "module",
+  "workspaces": [
+    "packages/contracts",
+    "packages/opcore",
+    "packages/cli",
+    "packages/graph",
+    "packages/edit",
+    "packages/validation",
+    "packages/validation-rust",
+    "packages/validation-typescript",
+    "packages/asp-provider",
+    "packages/fixtures"
+  ],
+  "scripts": {
+    "build": "tsc -b --pretty false && npm run graph:artifact && npm run descriptor:artifact && npm run asp-provider:manifest",
+    "asp-dogfood:check": "node scripts/generate-asp-dogfood-receipt.mjs --json",
+    "asp-dogfood:receipt": "node scripts/generate-asp-dogfood-receipt.mjs --write --json",
+    "asp-provider:manifest": "node scripts/write-asp-provider-manifest.mjs",
+    "baseline:graph-reference": "node scripts/measure-graph-reference-baselines.mjs",
+    "ci": "npm run lint && npm run rust:check && npm run build && npm test && npm run conformance:check && npm run pack:check && npm run graph-release:check && npm run release-receipt:check && npm run cutover:check && npm run release:hygiene && npm run provenance:check",
+    "ci:local": "bash ./scripts/ci/run-local-ci-equivalent.sh",
+    "conformance:check": "node --test tests/conformance.test.mjs",
+    "descriptor:artifact": "node scripts/write-cli-descriptor.mjs",
+    "graph:artifact": "node scripts/build-graph-core-artifact.mjs",
+    "graph-release:check": "node scripts/generate-graph-release-receipt.mjs",
+    "graph-release:receipt": "node scripts/generate-graph-release-receipt.mjs --write",
+    "release-receipt:check": "node scripts/generate-release-receipt.mjs",
+    "release-receipt:receipt": "node scripts/generate-release-receipt.mjs --write",
+    "release:dry-run": "node scripts/release-dry-run.mjs",
+    "release:publish": "node scripts/release-publish.mjs",
+    "cutover:check": "node scripts/generate-cutover-receipt.mjs",
+    "cutover:receipt": "node scripts/generate-cutover-receipt.mjs --write",
+    "license:report": "node scripts/license-report.mjs",
+    "lint": "node scripts/check-workspace.mjs",
+    "pack:check": "node scripts/check-packages.mjs",
+    "provenance:check": "node scripts/check-provenance.mjs",
+    "release:hygiene": "node scripts/check-release-hygiene.mjs",
+    "rust:check": "npm run rust:fmt && npm run rust:clippy && npm run rust:test",
+    "rust:clippy": "cargo clippy --all-targets --all-features -- -D warnings",
+    "rust:fmt": "cargo fmt --check",
+    "rust:test": "cargo test",
+    "setup": "npm ci && npm run setup:tools",
+    "setup:tools": "bash ./scripts/setup-current-tools.sh",
+    "test": "node --test tests/*.test.mjs",
+    "verify": "bash ./scripts/ci/run-local-ci-equivalent.sh",
+    "current-tools:validate-all": "./.ace/runtime/bin/rox check --all --no-daemon",
+    "current-tools:validate-rust-graph": "node scripts/check-rust-graph-function-metrics.mjs",
+    "current-tools:validate-changed": "node scripts/ci/run-rox-clean-changed-gate.mjs",
+    "current-tools:graph-status": "./.ace/runtime/bin/crg status --repo ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/the-open-engine/lattice.git"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  },
+  "optionalDependencies": {
+    "@the-open-engine/opcore-graph-core-darwin-arm64": "file:packages/opcore-graph-core-darwin-arm64",
+    "@the-open-engine/opcore-graph-core-darwin-x64": "file:packages/opcore-graph-core-darwin-x64",
+    "@the-open-engine/opcore-graph-core-linux-x64": "file:packages/opcore-graph-core-linux-x64"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "artifactName": "lattice-graph-core",
+  "artifactVersion": "0.1.0-alpha.0",
+  "targetPlatform": "darwin-x64",
+  "binaryPath": "lattice-graph-core",
+  "checksumPath": "lattice-graph-core.sha256",
+  "checksumSha256": "6652d43eec8f39e7c1b930b92e032eb268d1e4263454a89614e0d8299fc3b4e7",
+  "buildProfile": "release"
+}

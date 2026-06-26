@@ -1,0 +1,139 @@
+name: release-dry-run
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "packages/**"
+      - "crates/**"
+      - "scripts/**"
+      - "Cargo.*"
+      - "package*.json"
+      - ".github/workflows/release-dry-run.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "packages/**"
+      - "crates/**"
+      - "scripts/**"
+      - "Cargo.*"
+      - "package*.json"
+      - ".github/workflows/release-dry-run.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  native-artifact:
+    name: ${{ matrix.target }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: linux-x64
+            runner: ubuntu-latest
+            rust_target: x86_64-unknown-linux-musl
+          - target: darwin-x64
+            runner: macos-15-large
+            rust_target: x86_64-apple-darwin
+          - target: darwin-arm64
+            runner: macos-15-xlarge
+            rust_target: aarch64-apple-darwin
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust_target }}
+
+      - name: Setup Linux musl toolchain
+        if: matrix.target == 'linux-x64'
+        run: sudo apt-get update && sudo apt-get install -y musl-tools
+
+      - name: Install
+        run: npm ci
+
+      - name: Build native graph artifact
+        run: node scripts/build-graph-core-artifact.mjs --target ${{ matrix.target }}
+
+      - name: Release dry-run
+        run: npm run release:dry-run
+
+      - name: Archive graph artifacts
+        run: tar -C packages/opcore-graph-core-${{ matrix.target }} -czf "${RUNNER_TEMP}/opcore-graph-core-${{ matrix.target }}.tgz" .
+
+      - name: Upload graph artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: opcore-graph-core-${{ matrix.target }}
+          path: ${{ runner.temp }}/opcore-graph-core-${{ matrix.target }}.tgz
+
+  aggregate:
+    name: aggregate
+    runs-on: ubuntu-latest
+    needs: native-artifact
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Download darwin arm64 artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: opcore-graph-core-darwin-arm64
+          path: ${{ runner.temp }}/opcore-graph-core-darwin-arm64
+
+      - name: Download darwin x64 artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: opcore-graph-core-darwin-x64
+          path: ${{ runner.temp }}/opcore-graph-core-darwin-x64
+
+      - name: Download linux x64 artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: opcore-graph-core-linux-x64
+          path: ${{ runner.temp }}/opcore-graph-core-linux-x64
+
+      - name: Extract native graph artifacts
+        run: |
+          rm -rf packages/opcore-graph-core-darwin-arm64 packages/opcore-graph-core-darwin-x64 packages/opcore-graph-core-linux-x64
+          mkdir -p packages/opcore-graph-core-darwin-arm64 packages/opcore-graph-core-darwin-x64 packages/opcore-graph-core-linux-x64
+          tar -xzf "${RUNNER_TEMP}/opcore-graph-core-darwin-arm64/opcore-graph-core-darwin-arm64.tgz" -C packages/opcore-graph-core-darwin-arm64
+          tar -xzf "${RUNNER_TEMP}/opcore-graph-core-darwin-x64/opcore-graph-core-darwin-x64.tgz" -C packages/opcore-graph-core-darwin-x64
+          tar -xzf "${RUNNER_TEMP}/opcore-graph-core-linux-x64/opcore-graph-core-linux-x64.tgz" -C packages/opcore-graph-core-linux-x64
+
+      - name: Build JS artifacts
+        run: node node_modules/typescript/bin/tsc -b --pretty false && node scripts/write-cli-descriptor.mjs && node scripts/write-asp-provider-manifest.mjs
+
+      - name: Release dry-run
+        run: npm run release:dry-run
+        env:
+          LATTICE_REQUIRE_ALL_NATIVE_PACKAGES: "1"
+
+      - name: Pack, release, and cutover checks
+        run: npm run pack:check && npm run release-receipt:check && npm run cutover:check
+        env:
+          LATTICE_REQUIRE_ALL_NATIVE_PACKAGES: "1"

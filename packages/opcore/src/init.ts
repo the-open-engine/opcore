@@ -1,0 +1,654 @@
+import type { CommandRouterResult, OpcoreInitAction, OpcoreInitPlanPayload, ParsedCommandArgv } from "@the-open-engine/lattice-contracts";
+import { createCommandRouterResult } from "@the-open-engine/lattice-contracts";
+import { chmodSync, lstatSync, mkdirSync, readFileSync, realpathSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
+import { createRepoState, resolveRepo } from "./status.js";
+
+declare const process: {
+  cwd(): string;
+};
+
+const helpArgs = new Set(["--help", "-h", "help"]);
+export const AGENT_FILE_CANDIDATES = [
+  "AGENTS.md",
+  "CLAUDE.md",
+  "GEMINI.md",
+  ".github/copilot-instructions.md",
+  ".codex/AGENTS.md",
+  ".opencode/AGENTS.md"
+] as const;
+
+const beginMarker = "<!-- BEGIN OPCORE INIT -->";
+const endMarker = "<!-- END OPCORE INIT -->";
+const configPath = ".opcore/config";
+const undoPath = ".opcore/init-undo.json";
+const hookPath = ".opcore/hooks/pre-commit-opcore-check.sh";
+const allowedUndoPaths = new Set<string>([configPath, undoPath, hookPath, ...AGENT_FILE_CANDIDATES]);
+
+interface ParsedInitArgs {
+  repo: string;
+  approved: boolean;
+  dryRun: boolean;
+  failClosedHook: boolean;
+  undo: boolean;
+}
+
+interface PlannedInit {
+  payload: OpcoreInitPlanPayload;
+  writes: readonly PlannedWrite[];
+}
+
+interface PlannedWrite {
+  path: string;
+  content: string;
+  executable?: boolean;
+}
+
+interface UndoMetadata {
+  schemaVersion: 1;
+  kind: "opcore_init_undo";
+  repoRoot: string;
+  entries: readonly UndoEntry[];
+}
+
+interface UndoEntry {
+  path: string;
+  existed: boolean;
+  content?: string;
+}
+
+export function routeOpcoreInit(argv: readonly string[], parsed: ParsedCommandArgv): CommandRouterResult {
+  const rest = parsed.args.slice(1);
+  if (rest.some((arg) => helpArgs.has(arg))) {
+    return createInitRouterResult(argv, parsed.json, "ok", opcoreInitHelpMessage(), ["opcore", "init", "help"]);
+  }
+
+  const parsedInit = parseOpcoreInitArgs(rest);
+  if (!parsedInit.ok) {
+    return createInitRouterResult(argv, parsed.json, "error", parsedInit.message);
+  }
+  const resolution = resolveRepo(parsedInit.args.repo, "opcore init");
+  if (!resolution.ok) {
+    return createInitRouterResult(argv, parsed.json, "error", resolution.message);
+  }
+
+  try {
+    if (parsedInit.args.undo) {
+      return routeOpcoreInitUndo(argv, parsed.json, resolution.resolution.root, resolution.resolution.requestedPath, parsedInit.args);
+    }
+
+    return routeOpcoreInitPlanOrApply(
+      argv,
+      parsed.json,
+      resolution.resolution.root,
+      resolution.resolution.requestedPath,
+      resolution.resolution.git,
+      parsedInit.args
+    );
+  } catch (error) {
+    return createInitRouterResult(argv, parsed.json, "error", `opcore init failed: ${errorMessage(error)}`);
+  }
+}
+
+function routeOpcoreInitUndo(
+  argv: readonly string[],
+  json: boolean,
+  repoRoot: string,
+  requestedPath: string,
+  options: ParsedInitArgs
+): CommandRouterResult {
+  const undo = planUndo(repoRoot, requestedPath, options);
+  const approved = options.approved && !options.dryRun;
+  if (approved) applyUndo(repoRoot, undo);
+  const payload = approved ? appliedUndoPayload(undo, repoRoot) : undo;
+  return createInitRouterResult(argv, json, "ok", formatInitPlan(payload, approved), ["opcore", "init"], payload);
+}
+
+function routeOpcoreInitPlanOrApply(
+  argv: readonly string[],
+  json: boolean,
+  repoRoot: string,
+  requestedPath: string,
+  git: boolean,
+  options: ParsedInitArgs
+): CommandRouterResult {
+  const planned = planInit(repoRoot, requestedPath, git, options);
+  const approved = options.approved && !options.dryRun;
+  if (approved) applyInit(repoRoot, planned.writes);
+  const payload = approved ? appliedInitPayload(planned.payload, repoRoot) : planned.payload;
+  return createInitRouterResult(argv, json, "ok", formatInitPlan(payload, approved), ["opcore", "init"], payload);
+}
+
+function createInitRouterResult(
+  argv: readonly string[],
+  json: boolean,
+  status: "ok" | "error",
+  message: string,
+  canonicalCommand: readonly string[] = ["opcore", "init"],
+  opcoreInit?: OpcoreInitPlanPayload
+): CommandRouterResult {
+  return createCommandRouterResult({
+    bin: "opcore",
+    argv,
+    canonicalCommand,
+    owner: "runtime",
+    status,
+    json,
+    message,
+    opcoreInit
+  });
+}
+
+function parseOpcoreInitArgs(args: readonly string[]): { ok: true; args: ParsedInitArgs } | { ok: false; message: string } {
+  const parsed: ParsedInitArgs = {
+    repo: process.cwd(),
+    approved: false,
+    dryRun: false,
+    failClosedHook: false,
+    undo: false
+  };
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (arg === "--repo") {
+      const value = args[index + 1];
+      if (!value || value.startsWith("--")) return { ok: false, message: "opcore init: --repo requires a path" };
+      parsed.repo = value;
+      index += 1;
+      continue;
+    }
+    if (arg.startsWith("--repo=")) {
+      const value = arg.slice("--repo=".length);
+      if (!value) return { ok: false, message: "opcore init: --repo requires a path" };
+      parsed.repo = value;
+      continue;
+    }
+    if (arg === "--approve" || arg === "--yes") {
+      parsed.approved = true;
+      continue;
+    }
+    if (arg === "--dry-run") {
+      parsed.dryRun = true;
+      continue;
+    }
+    if (arg === "--fail-closed-hook") {
+      parsed.failClosedHook = true;
+      continue;
+    }
+    if (arg === "--undo") {
+      parsed.undo = true;
+      continue;
+    }
+    return { ok: false, message: `opcore init: unsupported argument ${arg}` };
+  }
+  return { ok: true, args: parsed };
+}
+
+function planInit(repoRoot: string, requestedPath: string, git: boolean, options: ParsedInitArgs): PlannedInit {
+  const repoState = createRepoState({ root: repoRoot, requestedPath, git });
+  const agentFiles = detectAgentFiles(repoRoot);
+  const config = createConfig(repoRoot, options.failClosedHook);
+  const writes: PlannedWrite[] = [
+    {
+      path: configPath,
+      content: `${JSON.stringify(config, null, 2)}\n`
+    },
+    ...agentFiles.map((path) => ({
+      path,
+      content: upsertOpcoreBlock(readOptionalRepoFile(repoRoot, path))
+    }))
+  ];
+  if (options.failClosedHook) {
+    writes.push({
+      path: hookPath,
+      content: failClosedHookContent(),
+      executable: true
+    });
+  }
+  const actions = createInitActions(agentFiles, options.failClosedHook);
+  return {
+    writes,
+    payload: {
+      schemaVersion: 1,
+      mode: "plan",
+      approved: false,
+      repo: {
+        root: repoRoot,
+        requestedPath
+      },
+      options: {
+        failClosedHook: options.failClosedHook,
+        dryRun: options.dryRun
+      },
+      agentFiles,
+      actions,
+      warnings: initWarnings(repoState),
+      nextActions: options.dryRun
+        ? ["Run opcore init --approve to apply this plan."]
+        : ["Review this plan, then run opcore init --approve to write repo setup."],
+      undoAvailable: repoPathExists(repoRoot, undoPath)
+    }
+  };
+}
+
+function appliedInitPayload(payload: OpcoreInitPlanPayload, repoRoot: string): OpcoreInitPlanPayload {
+  return {
+    ...payload,
+    mode: "apply",
+    approved: true,
+    nextActions: ["Run opcore init --undo --approve to restore or remove recorded setup files."],
+    undoAvailable: repoPathExists(repoRoot, undoPath)
+  };
+}
+
+function planUndo(repoRoot: string, requestedPath: string, options: ParsedInitArgs): OpcoreInitPlanPayload {
+  const metadata = readUndoMetadata(repoRoot);
+  return {
+    schemaVersion: 1,
+    mode: "undo",
+    approved: options.approved && !options.dryRun,
+    repo: {
+      root: repoRoot,
+      requestedPath
+    },
+    options: {
+      failClosedHook: options.failClosedHook,
+      dryRun: options.dryRun
+    },
+    agentFiles: metadata.entries
+      .map((entry) => entry.path)
+      .filter((path) => AGENT_FILE_CANDIDATES.includes(path as (typeof AGENT_FILE_CANDIDATES)[number])),
+    actions: metadata.entries.map((entry) => ({
+      kind: entry.existed ? "restore" : "remove",
+      path: entry.path,
+      summary: entry.existed ? `Restore ${entry.path} from Opcore init backup.` : `Remove ${entry.path} created by Opcore init.`,
+      requiresApproval: !entry.path.startsWith(".opcore/"),
+      outsideOpcore: !entry.path.startsWith(".opcore/")
+    })),
+    warnings: [],
+    nextActions: options.approved && !options.dryRun
+      ? ["Opcore init metadata was restored or removed; rerun opcore init to recreate setup."]
+      : ["Run opcore init --undo --approve to restore or remove recorded setup files."],
+    undoAvailable: true
+  };
+}
+
+function appliedUndoPayload(payload: OpcoreInitPlanPayload, repoRoot: string): OpcoreInitPlanPayload {
+  return {
+    ...payload,
+    approved: true,
+    nextActions: ["Opcore init metadata was restored or removed; rerun opcore init to recreate setup."],
+    undoAvailable: repoPathExists(repoRoot, undoPath)
+  };
+}
+
+function applyInit(repoRoot: string, writes: readonly PlannedWrite[]): void {
+  const previousMetadata = readUndoMetadataIfExists(repoRoot);
+  const touchedPaths = uniqueStrings([
+    ...(previousMetadata?.entries.map((entry) => entry.path) ?? []),
+    ...writes.map((write) => write.path),
+    undoPath
+  ]);
+  for (const path of touchedPaths) assertRepoMutationPath(repoRoot, path, "Opcore init target");
+  const metadata: UndoMetadata = {
+    schemaVersion: 1,
+    kind: "opcore_init_undo",
+    repoRoot,
+    entries: touchedPaths.map((path) => previousMetadata?.entries.find((entry) => entry.path === path) ?? priorEntry(repoRoot, path))
+  };
+  for (const write of writes) writeRepoFile(repoRoot, write);
+  writeRepoFile(repoRoot, {
+    path: undoPath,
+    content: `${JSON.stringify(metadata, null, 2)}\n`
+  });
+}
+
+function applyUndo(repoRoot: string, payload: OpcoreInitPlanPayload): void {
+  const metadata = readUndoMetadata(repoRoot);
+  for (const entry of metadata.entries) assertRepoMutationPath(repoRoot, entry.path, "Opcore init undo target");
+  for (const entry of metadata.entries.filter((entry) => entry.path !== undoPath)) restoreUndoEntry(repoRoot, entry);
+  const undoEntry = metadata.entries.find((entry) => entry.path === undoPath);
+  if (undoEntry) restoreUndoEntry(repoRoot, undoEntry);
+  else rmSync(resolveRepoPath(repoRoot, undoPath), { force: true });
+  removeEmptyOpcoreHookDir(repoRoot);
+  void payload;
+}
+
+function createInitActions(agentFiles: readonly string[], failClosedHook: boolean): OpcoreInitAction[] {
+  const actions: OpcoreInitAction[] = [
+    {
+      kind: "write",
+      path: configPath,
+      summary: "Write additive Opcore init config.",
+      requiresApproval: false,
+      outsideOpcore: false
+    },
+    ...agentFiles.map((path) => ({
+      kind: "upsert_block" as const,
+      path,
+      summary: "Add or update delimited Opcore agent guidance.",
+      requiresApproval: true,
+      outsideOpcore: true
+    }))
+  ];
+  if (failClosedHook) {
+    actions.push({
+      kind: "create_hook",
+      path: hookPath,
+      summary: "Create opt-in fail-closed pre-commit hook script.",
+      requiresApproval: false,
+      outsideOpcore: false
+    });
+  }
+  return actions;
+}
+
+function detectAgentFiles(repoRoot: string): string[] {
+  const existing = AGENT_FILE_CANDIDATES.filter((path) => repoPathExists(repoRoot, path));
+  for (const path of existing) assertExistingRepoPath(repoRoot, path, "Existing agent guidance file", "file");
+  return existing.length > 0 ? [...existing] : ["AGENTS.md"];
+}
+
+function upsertOpcoreBlock(existing: string | undefined): string {
+  const block = guidanceBlock();
+  if (existing === undefined || existing.length === 0) return `${block}\n`;
+  const begin = existing.indexOf(beginMarker);
+  const end = existing.indexOf(endMarker);
+  if ((begin === -1) !== (end === -1) || (begin !== -1 && end < begin)) {
+    throw new Error("existing Opcore init guidance markers are unbalanced");
+  }
+  if (begin !== -1) {
+    const replacementEnd = end + endMarker.length;
+    return `${trimRightPreserve(existing.slice(0, begin))}\n\n${block}\n${trimLeftPreserve(existing.slice(replacementEnd))}`.replace(/\n{3,}/g, "\n\n");
+  }
+  return `${trimRightPreserve(existing)}\n\n${block}\n`;
+}
+
+function guidanceBlock(): string {
+  return [
+    beginMarker,
+    "## Opcore",
+    "",
+    "- Run `opcore check --changed` before finalizing edits.",
+    "- Preserve existing repo lint/test/CI/pre-commit guardrails.",
+    "- Treat unsupported stacks and degraded tools honestly.",
+    "- Do not rely on ACE, Rox, CRG, CIX, or ASP host authority for direct Opcore.",
+    endMarker
+  ].join("\n");
+}
+
+function createConfig(repoRoot: string, failClosedHook: boolean): Record<string, unknown> {
+  const existing = readJsonObject(repoRoot, configPath);
+  const existingHooks = isPlainObject(existing.hooks) ? existing.hooks : {};
+  const existingGuidance = isPlainObject(existing.guidance) ? existing.guidance : {};
+  return {
+    ...existing,
+    schemaVersion: 1,
+    kind: "opcore_init_config",
+    guidance: {
+      ...existingGuidance,
+      checkCommand: "opcore check --changed",
+      preserveExistingGuardrails: true,
+      treatUnsupportedCoverageHonestly: true,
+      directProductAuthority: "opcore"
+    },
+    hooks: {
+      ...existingHooks,
+      failClosedPreCommit: existingHooks.failClosedPreCommit === true || failClosedHook
+    }
+  };
+}
+
+function initWarnings(repoState: ReturnType<typeof createRepoState>): string[] {
+  const warnings = [...repoState.warnings];
+  warnings.push("Do not weaken existing lint, test, CI, pre-commit, or agent guardrails.");
+  warnings.push("Fail-closed hooks are opt-in and are not created unless --fail-closed-hook is approved.");
+  return warnings;
+}
+
+function failClosedHookContent(): string {
+  return [
+    "#!/usr/bin/env sh",
+    "set -eu",
+    "opcore check --changed",
+    ""
+  ].join("\n");
+}
+
+function priorEntry(repoRoot: string, path: string): UndoEntry {
+  if (!repoPathExists(repoRoot, path)) return { path, existed: false };
+  return {
+    path,
+    existed: true,
+    content: readFileSync(assertExistingRepoPath(repoRoot, path, "Existing Opcore init target", "file"), "utf8")
+  };
+}
+
+function writeRepoFile(repoRoot: string, write: PlannedWrite): void {
+  const absolute = assertRepoMutationPath(repoRoot, write.path, "Opcore init write target");
+  mkdirSync(dirname(absolute), { recursive: true });
+  writeFileSync(absolute, write.content, "utf8");
+  if (write.executable) {
+    assertRepoMutationPath(repoRoot, write.path, "Opcore init chmod target");
+    chmodSync(absolute, 0o755);
+  }
+}
+
+function restoreUndoEntry(repoRoot: string, entry: UndoEntry): void {
+  const absolute = assertRepoMutationPath(repoRoot, entry.path, "Opcore init undo target");
+  if (!entry.existed) {
+    rmSync(absolute, { force: true });
+    return;
+  }
+  if (entry.content === undefined) {
+    throw new Error(`Undo entry for ${entry.path} is missing content`);
+  }
+  mkdirSync(dirname(absolute), { recursive: true });
+  writeFileSync(absolute, entry.content, "utf8");
+}
+
+function readUndoMetadata(repoRoot: string): UndoMetadata {
+  const raw = readFileSync(assertExistingRepoPath(repoRoot, undoPath, "Opcore init undo metadata", "file"), "utf8");
+  const parsed = JSON.parse(raw) as unknown;
+  if (!isPlainObject(parsed) || parsed.schemaVersion !== 1 || parsed.kind !== "opcore_init_undo" || !Array.isArray(parsed.entries)) {
+    throw new Error(".opcore/init-undo.json is not valid Opcore init undo metadata");
+  }
+  if (typeof parsed.repoRoot !== "string" || resolve(parsed.repoRoot) !== resolve(repoRoot)) {
+    throw new Error(".opcore/init-undo.json repoRoot does not match this repository");
+  }
+  const seenPaths = new Set<string>();
+  const entries: UndoEntry[] = [];
+  for (const entry of parsed.entries) {
+    if (!isPlainObject(entry) || typeof entry.path !== "string" || typeof entry.existed !== "boolean") {
+      throw new Error(".opcore/init-undo.json contains an invalid entry");
+    }
+    if (!allowedUndoPaths.has(entry.path)) {
+      throw new Error(`.opcore/init-undo.json contains unsupported path: ${entry.path}`);
+    }
+    if (seenPaths.has(entry.path)) {
+      throw new Error(`.opcore/init-undo.json contains duplicate path: ${entry.path}`);
+    }
+    seenPaths.add(entry.path);
+    if (entry.existed && typeof entry.content !== "string") {
+      throw new Error(`.opcore/init-undo.json restore entry for ${entry.path} is missing string content`);
+    }
+    if (!entry.existed && "content" in entry && entry.content !== undefined && typeof entry.content !== "string") {
+      throw new Error(`.opcore/init-undo.json remove entry for ${entry.path} has invalid content`);
+    }
+    resolveRepoPath(repoRoot, entry.path);
+    entries.push({
+      path: entry.path,
+      existed: entry.existed,
+      ...(typeof entry.content === "string" ? { content: entry.content } : {})
+    });
+  }
+  return {
+    schemaVersion: 1,
+    kind: "opcore_init_undo",
+    repoRoot: parsed.repoRoot,
+    entries
+  };
+}
+
+function readUndoMetadataIfExists(repoRoot: string): UndoMetadata | undefined {
+  if (!repoPathExists(repoRoot, undoPath)) return undefined;
+  return readUndoMetadata(repoRoot);
+}
+
+function readJsonObject(repoRoot: string, path: string): Record<string, unknown> {
+  const content = readOptionalRepoFile(repoRoot, path);
+  if (content === undefined) return {};
+  const parsed = JSON.parse(content) as unknown;
+  if (!isPlainObject(parsed)) throw new Error(`${path} must contain a JSON object`);
+  return parsed;
+}
+
+function readOptionalRepoFile(repoRoot: string, path: string): string | undefined {
+  if (!repoPathExists(repoRoot, path)) return undefined;
+  return readFileSync(assertExistingRepoPath(repoRoot, path, "Existing repo file", "file"), "utf8");
+}
+
+function resolveRepoPath(repoRoot: string, path: string): string {
+  if (path.length === 0 || path.includes("\0")) throw new Error(`Invalid repo path: ${path}`);
+  const absolute = resolve(repoRoot, path);
+  const normalized = relative(repoRoot, absolute);
+  if (normalized === "" || normalized.startsWith("..") || normalized.split(sep).includes("..")) {
+    throw new Error(`Repo-relative path escapes repository: ${path}`);
+  }
+  return absolute;
+}
+
+function assertRepoMutationPath(repoRoot: string, path: string, label: string): string {
+  const absolute = resolveRepoPath(repoRoot, path);
+  assertExistingAncestorInsideRepo(repoRoot, absolute, path, label);
+  if (lstatIfExists(absolute)) assertExistingRepoPath(repoRoot, path, label, "file");
+  return absolute;
+}
+
+function assertExistingRepoPath(repoRoot: string, path: string, label: string, expected: "file" | "directory"): string {
+  const absolute = resolveRepoPath(repoRoot, path);
+  assertExistingAncestorInsideRepo(repoRoot, absolute, path, label);
+  return assertExistingAbsolutePath(repoRoot, absolute, path, label, expected);
+}
+
+function assertExistingAbsolutePath(
+  repoRoot: string,
+  absolute: string,
+  displayPath: string,
+  label: string,
+  expected: "file" | "directory"
+): string {
+  const lstat = lstatIfExists(absolute);
+  if (!lstat) throw new Error(`${label} does not exist: ${displayPath}`);
+  if (lstat.isSymbolicLink()) throw new Error(`${label} must not be a symlink: ${displayPath}`);
+  let realPath: string;
+  try {
+    realPath = realpathSync(absolute);
+  } catch (error) {
+    throw new Error(`${label} symlink cannot be resolved for ${displayPath}: ${errorMessage(error)}`);
+  }
+  if (!isInsideRepo(repoRoot, realPath)) {
+    throw new Error(`${label} resolves outside repository through a symlink: ${displayPath}`);
+  }
+  const stat = statSync(absolute);
+  if (expected === "file" && !stat.isFile()) throw new Error(`${label} is not a file: ${displayPath}`);
+  if (expected === "directory" && !stat.isDirectory()) throw new Error(`${label} is not a directory: ${displayPath}`);
+  return absolute;
+}
+
+function assertExistingAncestorInsideRepo(repoRoot: string, absolutePath: string, path: string, label: string): void {
+  const relativeParent = relative(resolve(repoRoot), dirname(absolutePath));
+  if (relativeParent === "") return;
+  if (relativeParent.startsWith("..") || isAbsolute(relativeParent)) {
+    throw new Error(`${label} parent cannot be resolved inside repository: ${path}`);
+  }
+
+  let current = resolve(repoRoot);
+  for (const segment of relativeParent.split(sep)) {
+    if (!segment) continue;
+    current = resolve(current, segment);
+    if (!lstatIfExists(current)) return;
+    assertExistingAbsolutePath(repoRoot, current, repoRelativePath(repoRoot, current), `${label} parent`, "directory");
+  }
+}
+
+function repoPathExists(repoRoot: string, path: string): boolean {
+  return lstatIfExists(resolveRepoPath(repoRoot, path)) !== undefined;
+}
+
+function lstatIfExists(path: string): ReturnType<typeof lstatSync> | undefined {
+  try {
+    return lstatSync(path);
+  } catch (error) {
+    if (errorCode(error) === "ENOENT") return undefined;
+    throw error;
+  }
+}
+
+function isInsideRepo(repoRoot: string, path: string): boolean {
+  const normalized = relative(resolve(repoRoot), resolve(path));
+  return normalized === "" || (!normalized.startsWith("..") && !isAbsolute(normalized));
+}
+
+function repoRelativePath(repoRoot: string, absolutePath: string): string {
+  const normalized = relative(resolve(repoRoot), resolve(absolutePath));
+  return normalized === "" ? "." : normalized;
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function trimRightPreserve(text: string): string {
+  return text.replace(/\s+$/u, "");
+}
+
+function trimLeftPreserve(text: string): string {
+  return text.replace(/^\s+/u, "");
+}
+
+function removeEmptyOpcoreHookDir(repoRoot: string): void {
+  const hooksDir = resolveRepoPath(repoRoot, ".opcore/hooks");
+  if (!lstatIfExists(hooksDir)) return;
+  assertExistingRepoPath(repoRoot, ".opcore/hooks", "Opcore hooks directory", "directory");
+  if (readdirSync(hooksDir).length === 0) {
+    rmSync(hooksDir, { recursive: false, force: true });
+  }
+}
+
+function uniqueStrings(values: readonly string[]): string[] {
+  return [...new Set(values)];
+}
+
+function formatInitPlan(payload: OpcoreInitPlanPayload, applied: boolean): string {
+  const heading = payload.mode === "undo" ? "opcore init undo plan" : applied ? "opcore init applied" : "opcore init plan";
+  const actionLines = payload.actions.map((action) => `- ${action.kind} ${action.path}: ${action.summary}`);
+  const approvalLine = applied
+    ? "Approval: applied."
+    : payload.mode === "undo"
+      ? "Approval: required; rerun with --undo --approve to restore/remove recorded files."
+      : "Approval: required; rerun with --approve to write this setup.";
+  return [
+    heading,
+    `Repo: ${payload.repo.root}`,
+    `Mode: ${payload.mode}`,
+    `Approved: ${payload.approved ? "yes" : "no"}`,
+    "Actions:",
+    ...actionLines,
+    approvalLine
+  ].join("\n");
+}
+
+function opcoreInitHelpMessage(): string {
+  return [
+    "opcore init [--repo <path>] [--approve] [--json]",
+    "opcore init --undo --approve [--repo <path>] [--json]"
+  ].join("\n");
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+function errorCode(error: unknown): string | undefined {
+  return typeof error === "object" && error !== null && "code" in error ? String((error as { code?: unknown }).code) : undefined;
+}

@@ -1,0 +1,38 @@
+[package]
+name = "lattice-graph-core"
+description = "Rust sidecar boundary for the Lattice GraphProvider."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lib]
+name = "lattice_graph_core"
+path = "src/lib.rs"
+
+[[bin]]
+name = "lattice-graph-core"
+path = "src/main.rs"
+
+[dependencies]
+globset = "0.4.18"
+oxc_allocator = "0.133.0"
+oxc_ast = "0.133.0"
+oxc_ast_visit = "0.133.0"
+oxc_parser = "0.133.0"
+oxc_span = "0.133.0"
+oxc_syntax = "0.133.0"
+serde.workspace = true
+serde_json.workspace = true
+sha2 = "0.11.0"
+rusqlite = { version = "0.32.1", features = ["bundled"] }
+thiserror = "2.0.18"
+time = { version = "0.3.36", features = ["formatting", "parsing"] }
+walkdir = "2.5.0"
+ctrlc = { version = "3.5.1", features = ["termination"] }
+
+[dev-dependencies]
+tempfile = "3.27.0"
+
+[lints]
+workspace = true

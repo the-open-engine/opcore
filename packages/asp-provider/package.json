@@ -1,0 +1,52 @@
+{
+  "name": "@the-open-engine/opcore-asp-provider",
+  "version": "0.1.0-alpha.0",
+  "description": "Standalone ASP Core check provider facade for Opcore validation.",
+  "type": "module",
+  "license": "MIT",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./manifests/opcore-asp-provider.provisional.json": "./dist/manifests/opcore-asp-provider.provisional.json"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "keywords": [
+    "code-intelligence",
+    "coding-agents",
+    "static-analysis",
+    "asp",
+    "validation",
+    "developer-tools"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "bin": {
+    "opcore-asp-provider": "dist/index.js"
+  },
+  "dependencies": {
+    "@the-open-engine/lattice-contracts": "0.1.0-alpha.0",
+    "@the-open-engine/lattice-graph": "0.1.0-alpha.0",
+    "@the-open-engine/lattice-validation": "0.1.0-alpha.0",
+    "@the-open-engine/lattice-validation-rust": "0.1.0-alpha.0",
+    "@the-open-engine/lattice-validation-typescript": "0.1.0-alpha.0"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/the-open-engine/lattice.git",
+    "directory": "packages/asp-provider"
+  },
+  "scripts": {
+    "build": "tsc -b && node ../../scripts/write-asp-provider-manifest.mjs"
+  }
+}

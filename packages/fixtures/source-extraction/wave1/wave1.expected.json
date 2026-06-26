@@ -1,0 +1,561 @@
+{
+  "schemaVersion": 1,
+  "fixture": "source-extraction-wave1",
+  "nodeKinds": [
+    "Class",
+    "File",
+    "Function",
+    "Test",
+    "Type",
+    "Variable"
+  ],
+  "edgeKinds": [
+    "CALLS",
+    "CONTAINS",
+    "DEPENDS_ON",
+    "IMPLEMENTS",
+    "IMPORTS_FROM",
+    "INHERITS",
+    "TESTED_BY"
+  ],
+  "nodeIds": [
+    "class:src/default-model.ts#DefaultGreetingModel",
+    "class:src/legacy-widget.jsx#LegacyWidget",
+    "class:src/models.ts#FriendlyGreetingModel",
+    "class:src/models.ts#GreetingModel",
+    "class:src/models.ts#InternalGreetingModel",
+    "file:src/__tests__/greeting.test.ts",
+    "file:src/barrel.ts",
+    "file:src/components/GreetingCard.tsx",
+    "file:src/default-model.ts",
+    "file:src/default-value.ts",
+    "file:src/import-backed-barrel.js",
+    "file:src/legacy-widget.jsx",
+    "file:src/math.js",
+    "file:src/models.ts",
+    "function:src/components/GreetingCard.tsx#GreetingCard",
+    "function:src/legacy-widget.jsx#LegacyDefaultWidget",
+    "function:src/legacy-widget.jsx#LegacyWidgetView",
+    "function:src/legacy-widget.jsx#createLegacyMessage",
+    "function:src/math.js#add",
+    "function:src/math.js#double",
+    "function:src/math.js#scaledDouble",
+    "function:src/models.ts#formatGreeting",
+    "function:src/models.ts#makeGreetingModel",
+    "test:src/__tests__/greeting.test.ts#renders greeting cards",
+    "type:src/models.ts#GreetingMessage",
+    "type:src/models.ts#Renderable",
+    "variable:src/default-value.ts#defaultValue",
+    "variable:src/math.js#exportedOffset",
+    "variable:src/math.js#internalFactor",
+    "variable:src/models.ts#defaultGreetingModel",
+    "variable:src/models.ts#defaultMessage"
+  ],
+  "edgeTriples": [
+    [
+      "CALLS",
+      "class:src/legacy-widget.jsx#LegacyWidget",
+      "function:src/legacy-widget.jsx#createLegacyMessage"
+    ],
+    [
+      "CALLS",
+      "class:src/models.ts#GreetingModel",
+      "function:src/models.ts#formatGreeting"
+    ],
+    [
+      "CALLS",
+      "function:src/components/GreetingCard.tsx#GreetingCard",
+      "class:src/models.ts#GreetingModel"
+    ],
+    [
+      "CALLS",
+      "function:src/components/GreetingCard.tsx#GreetingCard",
+      "function:src/math.js#add"
+    ],
+    [
+      "CALLS",
+      "function:src/legacy-widget.jsx#createLegacyMessage",
+      "function:src/models.ts#formatGreeting"
+    ],
+    [
+      "CALLS",
+      "function:src/math.js#double",
+      "function:src/math.js#add"
+    ],
+    [
+      "CALLS",
+      "function:src/math.js#scaledDouble",
+      "function:src/math.js#double"
+    ],
+    [
+      "CALLS",
+      "function:src/models.ts#makeGreetingModel",
+      "class:src/models.ts#GreetingModel"
+    ],
+    [
+      "CALLS",
+      "test:src/__tests__/greeting.test.ts#renders greeting cards",
+      "class:src/models.ts#GreetingModel"
+    ],
+    [
+      "CALLS",
+      "test:src/__tests__/greeting.test.ts#renders greeting cards",
+      "function:src/components/GreetingCard.tsx#GreetingCard"
+    ],
+    [
+      "CALLS",
+      "test:src/__tests__/greeting.test.ts#renders greeting cards",
+      "function:src/math.js#add"
+    ],
+    [
+      "CALLS",
+      "test:src/__tests__/greeting.test.ts#renders greeting cards",
+      "function:src/models.ts#formatGreeting"
+    ],
+    [
+      "CALLS",
+      "variable:src/models.ts#defaultGreetingModel",
+      "function:src/models.ts#makeGreetingModel"
+    ],
+    [
+      "CONTAINS",
+      "file:src/__tests__/greeting.test.ts",
+      "test:src/__tests__/greeting.test.ts#renders greeting cards"
+    ],
+    [
+      "CONTAINS",
+      "file:src/components/GreetingCard.tsx",
+      "function:src/components/GreetingCard.tsx#GreetingCard"
+    ],
+    [
+      "CONTAINS",
+      "file:src/default-model.ts",
+      "class:src/default-model.ts#DefaultGreetingModel"
+    ],
+    [
+      "CONTAINS",
+      "file:src/default-value.ts",
+      "variable:src/default-value.ts#defaultValue"
+    ],
+    [
+      "CONTAINS",
+      "file:src/legacy-widget.jsx",
+      "class:src/legacy-widget.jsx#LegacyWidget"
+    ],
+    [
+      "CONTAINS",
+      "file:src/legacy-widget.jsx",
+      "function:src/legacy-widget.jsx#createLegacyMessage"
+    ],
+    [
+      "CONTAINS",
+      "file:src/legacy-widget.jsx",
+      "function:src/legacy-widget.jsx#LegacyDefaultWidget"
+    ],
+    [
+      "CONTAINS",
+      "file:src/legacy-widget.jsx",
+      "function:src/legacy-widget.jsx#LegacyWidgetView"
+    ],
+    [
+      "CONTAINS",
+      "file:src/math.js",
+      "function:src/math.js#add"
+    ],
+    [
+      "CONTAINS",
+      "file:src/math.js",
+      "function:src/math.js#double"
+    ],
+    [
+      "CONTAINS",
+      "file:src/math.js",
+      "function:src/math.js#scaledDouble"
+    ],
+    [
+      "CONTAINS",
+      "file:src/math.js",
+      "variable:src/math.js#exportedOffset"
+    ],
+    [
+      "CONTAINS",
+      "file:src/math.js",
+      "variable:src/math.js#internalFactor"
+    ],
+    [
+      "CONTAINS",
+      "file:src/models.ts",
+      "class:src/models.ts#FriendlyGreetingModel"
+    ],
+    [
+      "CONTAINS",
+      "file:src/models.ts",
+      "class:src/models.ts#GreetingModel"
+    ],
+    [
+      "CONTAINS",
+      "file:src/models.ts",
+      "class:src/models.ts#InternalGreetingModel"
+    ],
+    [
+      "CONTAINS",
+      "file:src/models.ts",
+      "function:src/models.ts#formatGreeting"
+    ],
+    [
+      "CONTAINS",
+      "file:src/models.ts",
+      "function:src/models.ts#makeGreetingModel"
+    ],
+    [
+      "CONTAINS",
+      "file:src/models.ts",
+      "type:src/models.ts#GreetingMessage"
+    ],
+    [
+      "CONTAINS",
+      "file:src/models.ts",
+      "type:src/models.ts#Renderable"
+    ],
+    [
+      "CONTAINS",
+      "file:src/models.ts",
+      "variable:src/models.ts#defaultGreetingModel"
+    ],
+    [
+      "CONTAINS",
+      "file:src/models.ts",
+      "variable:src/models.ts#defaultMessage"
+    ],
+    [
+      "DEPENDS_ON",
+      "file:src/__tests__/greeting.test.ts",
+      "file:src/components/GreetingCard.tsx"
+    ],
+    [
+      "DEPENDS_ON",
+      "file:src/__tests__/greeting.test.ts",
+      "file:src/math.js"
+    ],
+    [
+      "DEPENDS_ON",
+      "file:src/__tests__/greeting.test.ts",
+      "file:src/models.ts"
+    ],
+    [
+      "DEPENDS_ON",
+      "file:src/barrel.ts",
+      "file:src/math.js"
+    ],
+    [
+      "DEPENDS_ON",
+      "file:src/barrel.ts",
+      "file:src/models.ts"
+    ],
+    [
+      "DEPENDS_ON",
+      "file:src/components/GreetingCard.tsx",
+      "file:src/math.js"
+    ],
+    [
+      "DEPENDS_ON",
+      "file:src/components/GreetingCard.tsx",
+      "file:src/models.ts"
+    ],
+    [
+      "DEPENDS_ON",
+      "file:src/import-backed-barrel.js",
+      "file:src/default-model.ts"
+    ],
+    [
+      "DEPENDS_ON",
+      "file:src/import-backed-barrel.js",
+      "file:src/math.js"
+    ],
+    [
+      "DEPENDS_ON",
+      "file:src/legacy-widget.jsx",
+      "file:src/components/GreetingCard.tsx"
+    ],
+    [
+      "DEPENDS_ON",
+      "file:src/legacy-widget.jsx",
+      "file:src/models.ts"
+    ],
+    [
+      "IMPLEMENTS",
+      "class:src/models.ts#FriendlyGreetingModel",
+      "type:src/models.ts#Renderable"
+    ],
+    [
+      "IMPLEMENTS",
+      "class:src/models.ts#GreetingModel",
+      "type:src/models.ts#Renderable"
+    ],
+    [
+      "IMPORTS_FROM",
+      "file:src/__tests__/greeting.test.ts",
+      "file:src/components/GreetingCard.tsx"
+    ],
+    [
+      "IMPORTS_FROM",
+      "file:src/__tests__/greeting.test.ts",
+      "file:src/math.js"
+    ],
+    [
+      "IMPORTS_FROM",
+      "file:src/__tests__/greeting.test.ts",
+      "file:src/models.ts"
+    ],
+    [
+      "IMPORTS_FROM",
+      "file:src/barrel.ts",
+      "file:src/math.js"
+    ],
+    [
+      "IMPORTS_FROM",
+      "file:src/barrel.ts",
+      "file:src/models.ts"
+    ],
+    [
+      "IMPORTS_FROM",
+      "file:src/components/GreetingCard.tsx",
+      "file:src/math.js"
+    ],
+    [
+      "IMPORTS_FROM",
+      "file:src/components/GreetingCard.tsx",
+      "file:src/models.ts"
+    ],
+    [
+      "IMPORTS_FROM",
+      "file:src/import-backed-barrel.js",
+      "file:src/default-model.ts"
+    ],
+    [
+      "IMPORTS_FROM",
+      "file:src/import-backed-barrel.js",
+      "file:src/math.js"
+    ],
+    [
+      "IMPORTS_FROM",
+      "file:src/legacy-widget.jsx",
+      "file:src/components/GreetingCard.tsx"
+    ],
+    [
+      "IMPORTS_FROM",
+      "file:src/legacy-widget.jsx",
+      "file:src/models.ts"
+    ],
+    [
+      "INHERITS",
+      "class:src/models.ts#FriendlyGreetingModel",
+      "class:src/models.ts#GreetingModel"
+    ],
+    [
+      "INHERITS",
+      "class:src/models.ts#InternalGreetingModel",
+      "class:src/models.ts#GreetingModel"
+    ],
+    [
+      "TESTED_BY",
+      "class:src/models.ts#GreetingModel",
+      "test:src/__tests__/greeting.test.ts#renders greeting cards"
+    ],
+    [
+      "TESTED_BY",
+      "function:src/components/GreetingCard.tsx#GreetingCard",
+      "test:src/__tests__/greeting.test.ts#renders greeting cards"
+    ],
+    [
+      "TESTED_BY",
+      "function:src/math.js#add",
+      "test:src/__tests__/greeting.test.ts#renders greeting cards"
+    ],
+    [
+      "TESTED_BY",
+      "function:src/models.ts#formatGreeting",
+      "test:src/__tests__/greeting.test.ts#renders greeting cards"
+    ]
+  ],
+  "nodeAttributes": {
+    "class:src/default-model.ts#DefaultGreetingModel": {
+      "exportKind": "default",
+      "exportName": "default",
+      "exported": true
+    },
+    "class:src/legacy-widget.jsx#LegacyWidget": {
+      "exportKind": "named",
+      "exportName": "LegacyWidget",
+      "exported": true
+    },
+    "class:src/models.ts#FriendlyGreetingModel": {
+      "exportKind": "named",
+      "exportName": "FriendlyGreetingModel",
+      "exported": true
+    },
+    "class:src/models.ts#GreetingModel": {
+      "exportKind": "named",
+      "exportName": "GreetingModel",
+      "exported": true
+    },
+    "class:src/models.ts#InternalGreetingModel": {
+      "exported": false
+    },
+    "function:src/components/GreetingCard.tsx#GreetingCard": {
+      "exportKind": "named",
+      "exportName": "GreetingCard",
+      "exported": true
+    },
+    "function:src/legacy-widget.jsx#createLegacyMessage": {
+      "exportKind": "named",
+      "exportName": "createLegacyMessage",
+      "exported": true
+    },
+    "function:src/legacy-widget.jsx#LegacyDefaultWidget": {
+      "exportKind": "default",
+      "exportName": "default",
+      "exported": true
+    },
+    "function:src/legacy-widget.jsx#LegacyWidgetView": {
+      "exportKind": "named",
+      "exportName": "LegacyWidgetView",
+      "exported": true
+    },
+    "function:src/math.js#add": {
+      "exportKind": "named",
+      "exportName": "add",
+      "exported": true
+    },
+    "function:src/math.js#double": {
+      "exportKind": "named",
+      "exportName": "double",
+      "exported": true
+    },
+    "function:src/math.js#scaledDouble": {
+      "exportKind": "named",
+      "exportName": "scaledDouble",
+      "exported": true
+    },
+    "function:src/models.ts#formatGreeting": {
+      "exportKind": "named",
+      "exportName": "formatGreeting",
+      "exported": true
+    },
+    "function:src/models.ts#makeGreetingModel": {
+      "exportKind": "named",
+      "exportName": "makeGreetingModel",
+      "exported": true
+    },
+    "test:src/__tests__/greeting.test.ts#renders greeting cards": {},
+    "type:src/models.ts#GreetingMessage": {
+      "exportKind": "named",
+      "exportName": "GreetingMessage",
+      "exported": true
+    },
+    "type:src/models.ts#Renderable": {
+      "exportKind": "named",
+      "exportName": "Renderable",
+      "exported": true
+    },
+    "variable:src/default-value.ts#defaultValue": {
+      "exportKind": "default",
+      "exportName": "default",
+      "exported": true
+    },
+    "variable:src/math.js#exportedOffset": {
+      "exportKind": "named",
+      "exportName": "exportedOffset",
+      "exported": true
+    },
+    "variable:src/math.js#internalFactor": {
+      "exported": false
+    },
+    "variable:src/models.ts#defaultGreetingModel": {
+      "exportKind": "named",
+      "exportName": "defaultGreetingModel",
+      "exported": true
+    },
+    "variable:src/models.ts#defaultMessage": {
+      "exported": false
+    }
+  },
+  "fileExports": {
+    "file:src/barrel.ts": [
+      {
+        "exported": "addFromBarrel",
+        "imported": "add",
+        "kind": "named",
+        "local": "add",
+        "source": "./math.js",
+        "supportedSymbol": true
+      },
+      {
+        "exported": "exportedOffset",
+        "imported": "exportedOffset",
+        "kind": "named",
+        "local": "exportedOffset",
+        "source": "./math.js",
+        "supportedSymbol": true
+      },
+      {
+        "exported": "*",
+        "kind": "all",
+        "source": "./models",
+        "supportedSymbol": false
+      },
+      {
+        "exported": "models",
+        "kind": "namespace",
+        "source": "./models",
+        "supportedSymbol": false
+      }
+    ],
+    "file:src/default-model.ts": [
+      {
+        "exported": "default",
+        "kind": "default",
+        "local": "DefaultGreetingModel",
+        "source": null,
+        "supportedSymbol": true
+      }
+    ],
+    "file:src/default-value.ts": [
+      {
+        "exported": "default",
+        "kind": "default",
+        "local": "defaultValue",
+        "source": null,
+        "supportedSymbol": true
+      }
+    ],
+    "file:src/import-backed-barrel.js": [
+      {
+        "exported": "exportedOffset",
+        "imported": "exportedOffset",
+        "kind": "named",
+        "local": "exportedOffset",
+        "source": "./math.js",
+        "supportedSymbol": false
+      },
+      {
+        "exported": "default",
+        "imported": "default",
+        "kind": "default",
+        "local": "DefaultGreetingModel",
+        "source": "./default-model",
+        "supportedSymbol": false
+      }
+    ],
+    "file:src/legacy-widget.jsx": [
+      {
+        "exported": "default",
+        "kind": "default",
+        "local": "LegacyDefaultWidget",
+        "source": null,
+        "supportedSymbol": true
+      }
+    ]
+  },
+  "diagnostics": []
+}

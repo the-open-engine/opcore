@@ -1,0 +1,112 @@
+{
+  "$warning": "DO NOT relax thresholds to make checks pass. Fix code or narrow the check owner.",
+  "adapters": [
+    "typescript",
+    "rust"
+  ],
+  "extensions": [
+    "scripts/check-rust-graph-function-metrics.mjs"
+  ],
+  "extensionConfig": {
+    "rustGates": {
+      "workspace": "Cargo.toml",
+      "package": "lattice-graph-core",
+      "commands": [
+        "cargo fmt --check",
+        "cargo clippy --all-targets --all-features -- -D warnings",
+        "cargo test"
+      ]
+    }
+  },
+  "checks": {
+    "lint": false,
+    "semanticDiagnostics": false,
+    "deadCode": false,
+    "importGraph": false,
+    "cloneIndex": {
+      "windowSize": 10,
+      "minLines": 10,
+      "threshold": 5,
+      "exclude": [
+        "node_modules",
+        "dist",
+        "coverage",
+        ".ace",
+        ".agents",
+        ".claude",
+        ".codex",
+        ".gemini",
+        ".opencode",
+        ".zeroshot"
+      ],
+      "when": {
+        "modes": [
+          "staged",
+          "changed",
+          "files"
+        ]
+      }
+    },
+    "contextDocs": {
+      "filenames": [
+        "CLAUDE.md",
+        "AGENTS.md"
+      ],
+      "existence": true,
+      "freshness": true,
+      "staleness": false,
+      "length": true,
+      "requireRoot": true,
+      "requiredPaths": [
+        "."
+      ],
+      "maxLines": 220,
+      "maxSectionLines": 80
+    },
+    "codeQuality": {
+      "maxFileLines": 500,
+      "maxFunctionLines": 80,
+      "maxComplexity": 10,
+      "maxParams": 4,
+      "include": [
+        "packages/",
+        "scripts/",
+        "tests/",
+        "crates/"
+      ],
+      "when": {
+        "modes": [
+          "staged",
+          "changed",
+          "files"
+        ]
+      }
+    }
+  },
+  "packages": [
+    "crates",
+    "packages",
+    "scripts",
+    "tests"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "build",
+    "coverage",
+    ".changeset",
+    ".ace",
+    ".agents",
+    ".claude",
+    ".codex",
+    ".gemini",
+    ".opencode",
+    ".zeroshot/bin",
+    ".zeroshot/logs",
+    ".zeroshot/run",
+    ".code-review-graph",
+    ".rox-cache",
+    ".robustness-engine-cache"
+  ],
+  "timeoutMs": 120000
+}

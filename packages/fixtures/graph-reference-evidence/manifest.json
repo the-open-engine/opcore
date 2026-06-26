@@ -1,0 +1,679 @@
+{
+  "schemaVersion": 1,
+  "issue": "#19",
+  "origin": "covibes-authored-synthetic",
+  "fixtureRefs": [
+    "packages/fixtures/graph-reference-evidence/sqlite-fixtures.json",
+    "packages/fixtures/graph-reference-evidence/daemon-socket-fixtures.json",
+    "packages/fixtures/graph-reference-evidence/golden-corpus.json",
+    "packages/fixtures/graph-reference-evidence/baseline-receipts.json"
+  ],
+  "commandSurfaces": [
+    {
+      "id": "graph-reference-build",
+      "classification": "required",
+      "referenceTool": "crg",
+      "referenceCommand": [
+        "build"
+      ],
+      "canonicalCommand": [
+        "lattice",
+        "graph",
+        "build"
+      ],
+      "flags": [
+        "--repo",
+        "--json"
+      ],
+      "positionals": [],
+      "fixtures": [
+        "build-json",
+        "graph-reference-evidence-golden-corpus-v1",
+        "baseline-cold-build"
+      ],
+      "exitSemantics": {
+        "success": 0,
+        "failure": "nonzero on parse, IO, or graph store failure"
+      }
+    },
+    {
+      "id": "graph-reference-update",
+      "classification": "required",
+      "referenceTool": "crg",
+      "referenceCommand": [
+        "update"
+      ],
+      "canonicalCommand": [
+        "lattice",
+        "graph",
+        "update"
+      ],
+      "flags": [
+        "--base",
+        "--repo",
+        "--json"
+      ],
+      "positionals": [],
+      "fixtures": [
+        "update-json",
+        "freshness-fixture",
+        "baseline-incremental-update"
+      ],
+      "exitSemantics": {
+        "success": 0,
+        "failure": "nonzero on diff, parse, IO, or graph store failure"
+      }
+    },
+    {
+      "id": "graph-reference-watch",
+      "classification": "required",
+      "referenceTool": "crg",
+      "referenceCommand": [
+        "watch"
+      ],
+      "canonicalCommand": [
+        "lattice",
+        "graph",
+        "watch"
+      ],
+      "flags": [
+        "--repo"
+      ],
+      "positionals": [],
+      "fixtures": [
+        "daemon-health-status"
+      ],
+      "exitSemantics": {
+        "success": 0,
+        "failure": "nonzero on watcher setup or graph refresh failure"
+      }
+    },
+    {
+      "id": "graph-reference-status",
+      "classification": "required",
+      "referenceTool": "crg",
+      "referenceCommand": [
+        "status"
+      ],
+      "canonicalCommand": [
+        "lattice",
+        "graph",
+        "status"
+      ],
+      "flags": [
+        "--repo",
+        "--json"
+      ],
+      "positionals": [],
+      "fixtures": [
+        "status-json",
+        "sqlite-required-views",
+        "status-expected-facts"
+      ],
+      "exitSemantics": {
+        "success": 0,
+        "failure": "nonzero when graph metadata or database cannot be read"
+      }
+    },
+    {
+      "id": "graph-reference-query",
+      "classification": "required",
+      "referenceTool": "crg",
+      "referenceCommand": [
+        "query"
+      ],
+      "canonicalCommand": [
+        "lattice",
+        "graph",
+        "query"
+      ],
+      "flags": [
+        "--repo",
+        "--json"
+      ],
+      "positionals": [
+        "pattern",
+        "target"
+      ],
+      "fixtures": [
+        "query-json",
+        "daemon-query-request",
+        "query-expected-facts"
+      ],
+      "exitSemantics": {
+        "success": 0,
+        "failure": "nonzero on unsupported pattern, stale graph policy failure, or query execution failure"
+      }
+    },
+    {
+      "id": "graph-reference-impact",
+      "classification": "required",
+      "referenceTool": "crg",
+      "referenceCommand": [
+        "impact"
+      ],
+      "canonicalCommand": [
+        "lattice",
+        "graph",
+        "impact"
+      ],
+      "flags": [
+        "--base",
+        "--max-depth",
+        "--files",
+        "--repo",
+        "--json"
+      ],
+      "positionals": [],
+      "fixtures": [
+        "impact-json",
+        "daemon-impact-request",
+        "baseline-impact-hot",
+        "baseline-impact-cold"
+      ],
+      "exitSemantics": {
+        "success": 0,
+        "failure": "nonzero on diff, traversal, stale graph policy, or store read failure"
+      }
+    },
+    {
+      "id": "graph-reference-search",
+      "classification": "required",
+      "referenceTool": "crg",
+      "referenceCommand": [
+        "search"
+      ],
+      "canonicalCommand": [
+        "lattice",
+        "graph",
+        "search"
+      ],
+      "flags": [
+        "--kind",
+        "--limit",
+        "--model",
+        "--repo",
+        "--json"
+      ],
+      "positionals": [
+        "query"
+      ],
+      "fixtures": [
+        "search-json",
+        "search-expected-facts",
+        "baseline-search"
+      ],
+      "exitSemantics": {
+        "success": 0,
+        "failure": "nonzero on invalid kind, embedding model mismatch, or graph read failure"
+      }
+    },
+    {
+      "id": "graph-reference-serve",
+      "classification": "required",
+      "referenceTool": "crg",
+      "referenceCommand": [
+        "serve"
+      ],
+      "canonicalCommand": [
+        "lattice",
+        "graph",
+        "serve"
+      ],
+      "flags": [
+        "--repo"
+      ],
+      "positionals": [],
+      "fixtures": [
+        "serve-jsonl-ping",
+        "serve-jsonl-status",
+        "serve-jsonl-query",
+        "serve-jsonl-search",
+        "serve-jsonl-shutdown",
+        "mcp-initialize",
+        "mcp-status",
+        "reference-mcp-stdio-baseline"
+      ],
+      "exitSemantics": {
+        "success": 0,
+        "failure": "nonzero on daemon transport setup failure"
+      }
+    },
+    {
+      "id": "lattice-graph-inspect",
+      "classification": "deferred",
+      "referenceTool": "crg",
+      "referenceCommand": [],
+      "canonicalCommand": [
+        "lattice",
+        "graph",
+        "inspect"
+      ],
+      "flags": [],
+      "positionals": [],
+      "fixtures": [
+        "inspect-deferred-marker"
+      ],
+      "exitSemantics": {
+        "success": 0,
+        "failure": "deferred canonical-only command remains out of #19 implementation scope"
+      }
+    }
+  ],
+  "jsonOutputSurfaces": [
+    {
+      "id": "build-json",
+      "command": "build",
+      "classification": "required",
+      "requiredFields": [
+        "files_parsed",
+        "total_nodes",
+        "total_edges",
+        "errors"
+      ],
+      "fixtures": [
+        "graph-reference-evidence-golden-corpus-v1"
+      ],
+      "exitSemantics": {
+        "success": 0,
+        "failure": "nonzero with stderr diagnostics"
+      }
+    },
+    {
+      "id": "update-json",
+      "command": "update",
+      "classification": "required",
+      "requiredFields": [
+        "files_updated",
+        "total_nodes",
+        "total_edges",
+        "changed_files",
+        "dependent_files"
+      ],
+      "fixtures": [
+        "freshness-expected-facts"
+      ],
+      "exitSemantics": {
+        "success": 0,
+        "failure": "nonzero with stderr diagnostics"
+      }
+    },
+    {
+      "id": "status-json",
+      "command": "status",
+      "classification": "required",
+      "requiredFields": [
+        "status",
+        "summary",
+        "total_nodes",
+        "total_edges",
+        "nodes_by_kind",
+        "edges_by_kind",
+        "languages",
+        "files_count",
+        "last_updated"
+      ],
+      "fixtures": [
+        "status-expected-facts",
+        "sqlite-required-views"
+      ],
+      "exitSemantics": {
+        "success": 0,
+        "failure": "nonzero with stderr diagnostics"
+      }
+    },
+    {
+      "id": "query-json",
+      "command": "query",
+      "classification": "required",
+      "requiredFields": [
+        "status",
+        "pattern",
+        "target",
+        "description",
+        "summary",
+        "results",
+        "edges"
+      ],
+      "fixtures": [
+        "query-expected-facts",
+        "daemon-query-request"
+      ],
+      "exitSemantics": {
+        "success": 0,
+        "failure": "nonzero with JSON error or stderr diagnostics"
+      }
+    },
+    {
+      "id": "impact-json",
+      "command": "impact",
+      "classification": "required",
+      "requiredFields": [
+        "status",
+        "summary",
+        "changed_files",
+        "changed_nodes",
+        "impacted_nodes",
+        "impacted_files",
+        "edges",
+        "truncated",
+        "total_impacted"
+      ],
+      "fixtures": [
+        "impact-expected-facts",
+        "daemon-impact-request"
+      ],
+      "exitSemantics": {
+        "success": 0,
+        "failure": "nonzero with JSON error or stderr diagnostics"
+      }
+    },
+    {
+      "id": "search-json",
+      "command": "search",
+      "classification": "required",
+      "requiredFields": [
+        "status",
+        "query",
+        "search_mode",
+        "summary",
+        "results",
+        "_hints"
+      ],
+      "fixtures": [
+        "search-expected-facts"
+      ],
+      "exitSemantics": {
+        "success": 0,
+        "failure": "nonzero with JSON error or stderr diagnostics"
+      }
+    }
+  ],
+  "sqliteFixtures": [
+    {
+      "id": "sqlite-required-views",
+      "classification": "required",
+      "fixture": "packages/fixtures/graph-reference-evidence/sqlite-fixtures.json",
+      "tables": [
+        "metadata",
+        "nodes",
+        "edges",
+        "nodes_fts"
+      ],
+      "indexes": [
+        "idx_nodes_file",
+        "idx_nodes_kind",
+        "idx_nodes_qualified",
+        "idx_edges_source",
+        "idx_edges_target",
+        "idx_edges_kind",
+        "idx_edges_file",
+        "idx_nodes_exported_name"
+      ],
+      "metadataKeys": [
+        "schema_version",
+        "last_updated",
+        "last_build_type"
+      ],
+      "nodeKinds": [
+        "File",
+        "Function",
+        "Test"
+      ],
+      "edgeKinds": [
+        "CALLS",
+        "CONTAINS",
+        "IMPORTS_FROM",
+        "TESTED_BY"
+      ],
+      "directReaderQueries": [
+        "status-counts",
+        "status-edge-counts",
+        "impact-edges-from-file",
+        "search-by-name",
+        "freshness-metadata"
+      ],
+      "fixtures": [
+        "packages/fixtures/graph-reference-evidence/sqlite-fixtures.json"
+      ]
+    }
+  ],
+  "daemonFixtures": [
+    {
+      "id": "daemon-hot-query",
+      "classification": "required",
+      "fixture": "packages/fixtures/graph-reference-evidence/daemon-socket-fixtures.json",
+      "protocol": "lattice.graph.daemon",
+      "envelopes": [
+        "ping-request",
+        "ping-response",
+        "health-status-request",
+        "health-status-response",
+        "query-request",
+        "impact-request",
+        "success-response",
+        "serve-jsonl-ping",
+        "serve-jsonl-status",
+        "serve-jsonl-query",
+        "serve-jsonl-search",
+        "serve-jsonl-shutdown",
+        "serve-invalid-repo",
+        "serve-schema-mismatch",
+        "mcp-initialize",
+        "mcp-status",
+        "stale-response",
+        "schema-mismatch-response",
+        "daemon-unavailable-response"
+      ],
+      "fixtures": [
+        "packages/fixtures/graph-reference-evidence/daemon-socket-fixtures.json"
+      ]
+    }
+  ],
+  "baselineReceipts": [
+    {
+      "id": "baseline-install-setup",
+      "metric": "install_setup_ms",
+      "classification": "required",
+      "receipt": "packages/fixtures/graph-reference-evidence/baseline-receipts.json",
+      "label": "reference_evidence_non_implementation_input",
+      "sourceAvailability": "available",
+      "nonImplementationInput": true,
+      "fixtures": [
+        "baseline-receipts"
+      ]
+    },
+    {
+      "id": "baseline-cold-build",
+      "metric": "cold_build_ms",
+      "classification": "required",
+      "receipt": "packages/fixtures/graph-reference-evidence/baseline-receipts.json",
+      "label": "reference_evidence_non_implementation_input",
+      "sourceAvailability": "available",
+      "nonImplementationInput": true,
+      "fixtures": [
+        "baseline-receipts"
+      ]
+    },
+    {
+      "id": "baseline-incremental-update",
+      "metric": "incremental_update_ms",
+      "classification": "required",
+      "receipt": "packages/fixtures/graph-reference-evidence/baseline-receipts.json",
+      "label": "reference_evidence_non_implementation_input",
+      "sourceAvailability": "available",
+      "nonImplementationInput": true,
+      "fixtures": [
+        "baseline-receipts"
+      ]
+    },
+    {
+      "id": "baseline-impact-cold",
+      "metric": "impact_cold_ms",
+      "classification": "required",
+      "receipt": "packages/fixtures/graph-reference-evidence/baseline-receipts.json",
+      "label": "reference_evidence_non_implementation_input",
+      "sourceAvailability": "available",
+      "nonImplementationInput": true,
+      "fixtures": [
+        "baseline-receipts"
+      ]
+    },
+    {
+      "id": "baseline-impact-hot",
+      "metric": "impact_hot_ms",
+      "classification": "required",
+      "receipt": "packages/fixtures/graph-reference-evidence/baseline-receipts.json",
+      "label": "reference_evidence_non_implementation_input",
+      "sourceAvailability": "available",
+      "nonImplementationInput": true,
+      "fixtures": [
+        "baseline-receipts"
+      ]
+    },
+    {
+      "id": "baseline-search",
+      "metric": "search_ms",
+      "classification": "required",
+      "receipt": "packages/fixtures/graph-reference-evidence/baseline-receipts.json",
+      "label": "reference_evidence_non_implementation_input",
+      "sourceAvailability": "available",
+      "nonImplementationInput": true,
+      "fixtures": [
+        "baseline-receipts"
+      ]
+    },
+    {
+      "id": "baseline-db-size",
+      "metric": "db_size_bytes",
+      "classification": "required",
+      "receipt": "packages/fixtures/graph-reference-evidence/baseline-receipts.json",
+      "label": "reference_evidence_non_implementation_input",
+      "sourceAvailability": "available",
+      "nonImplementationInput": true,
+      "fixtures": [
+        "baseline-receipts"
+      ]
+    },
+    {
+      "id": "baseline-wal-size",
+      "metric": "wal_size_bytes",
+      "classification": "required",
+      "receipt": "packages/fixtures/graph-reference-evidence/baseline-receipts.json",
+      "label": "reference_evidence_non_implementation_input",
+      "sourceAvailability": "unavailable",
+      "nonImplementationInput": true,
+      "fixtures": [
+        "baseline-receipts"
+      ]
+    },
+    {
+      "id": "baseline-daemon-startup",
+      "metric": "daemon_startup_ms",
+      "classification": "required",
+      "receipt": "packages/fixtures/graph-reference-evidence/baseline-receipts.json",
+      "label": "reference_evidence_non_implementation_input",
+      "sourceAvailability": "available",
+      "nonImplementationInput": true,
+      "fixtures": [
+        "baseline-receipts"
+      ]
+    },
+    {
+      "id": "baseline-daemon-query",
+      "metric": "daemon_query_ms",
+      "classification": "required",
+      "receipt": "packages/fixtures/graph-reference-evidence/baseline-receipts.json",
+      "label": "reference_evidence_non_implementation_input",
+      "sourceAvailability": "available",
+      "nonImplementationInput": true,
+      "fixtures": [
+        "baseline-receipts"
+      ]
+    }
+  ],
+  "optionalAnalysisSurfaces": [
+    {
+      "issue": "#13",
+      "id": "coverage",
+      "classification": "deferred",
+      "status": "deferred",
+      "fixtures": [
+        "coverage-deferred-marker"
+      ]
+    },
+    {
+      "issue": "#14",
+      "id": "flows",
+      "classification": "optional",
+      "status": "deferred",
+      "fixtures": [
+        "sqlite-flows",
+        "reference-command-flows"
+      ]
+    },
+    {
+      "issue": "#15",
+      "id": "communities",
+      "classification": "optional",
+      "status": "deferred",
+      "fixtures": [
+        "sqlite-communities",
+        "reference-command-communities"
+      ]
+    },
+    {
+      "issue": "#16",
+      "id": "read_only_suggestions",
+      "classification": "supporting",
+      "status": "deferred",
+      "fixtures": [
+        "read-only-refactor-baseline"
+      ]
+    }
+  ],
+  "goldenCorpus": {
+    "id": "graph-reference-evidence-golden-corpus-v1",
+    "classification": "required",
+    "fixture": "packages/fixtures/graph-reference-evidence/golden-corpus.json",
+    "covers": [
+      "parser",
+      "store",
+      "query",
+      "search",
+      "freshness",
+      "status",
+      "code-review-graph-cli-surface",
+      "crg-watch-roots-ignore-reconcile",
+      "crg-wal-health-checkpoint-pressure",
+      "crg-hot-query-socket",
+      "crg-mcp-tool-surface",
+      "crg-impact-query-review-search",
+      "lattice-native-graph-provider-surfaces",
+      "lattice-current-tools-graph-status",
+      "lattice-crg-reference-baseline-release-fixtures",
+      "covibes-crg-watch-ci-unit-gate",
+      "covibes-push-ready-crg-freshness-impact-gate",
+      "covibes-agent-guidance-crg-watch-and-reads",
+      "mcp-server-name-code-review-graph-compatibility"
+    ],
+    "fixtures": [
+      "packages/fixtures/graph-reference-evidence/golden-corpus.json"
+    ]
+  },
+  "provenance": {
+    "containsPythonCrgSource": false,
+    "containsPackageMetadata": false,
+    "containsGitHistory": false,
+    "referenceReceiptsAreImplementationInput": false,
+    "implementationPackageNames": [
+      "@the-open-engine/lattice-graph",
+      "@the-open-engine/lattice-contracts",
+      "@the-open-engine/lattice-fixtures"
+    ],
+    "allowedMentionPaths": [
+      "docs/graph-reference-evidence/",
+      "packages/fixtures/graph-reference-evidence/"
+    ]
+  }
+}

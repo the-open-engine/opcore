@@ -1,0 +1,87 @@
+{
+  "schemaVersion": 1,
+  "issue": "#10",
+  "origin": "covibes-authored-synthetic",
+  "fixtures": [
+    {
+      "id": "graph-pipeline-full-build-v1",
+      "operation": "build",
+      "expectedStatus": "available",
+      "changedFiles": [
+        "src/__tests__/greeting.test.ts",
+        "src/components/GreetingCard.tsx",
+        "src/legacy-widget.jsx",
+        "src/math.js",
+        "src/models.ts"
+      ],
+      "deletedFiles": [],
+      "requiredPhaseTimings": ["discovery", "extraction", "store"]
+    },
+    {
+      "id": "graph-pipeline-one-file-update-v1",
+      "operation": "update",
+      "expectedStatus": "available",
+      "changedFiles": ["src/math.js"],
+      "deletedFiles": [],
+      "fullRebuildRequired": false
+    },
+    {
+      "id": "graph-pipeline-deletion-v1",
+      "operation": "update",
+      "expectedStatus": "available",
+      "changedFiles": [],
+      "deletedFiles": ["src/legacy-widget.jsx"],
+      "deletedNodeQueryCount": 0
+    },
+    {
+      "id": "graph-pipeline-dirty-file-v1",
+      "operation": "status",
+      "expectedStatus": "stale",
+      "reasonContains": "hash changed"
+    },
+    {
+      "id": "graph-pipeline-ignore-file-v1",
+      "operation": "build",
+      "ignoreFiles": [".gitignore", ".code-review-graphignore"],
+      "excludedFiles": ["ignored/generated.ts", "ignored/crg.ts"]
+    },
+    {
+      "id": "graph-pipeline-schema-mismatch-v1",
+      "operation": "status",
+      "expectedStatus": "schema_mismatch"
+    },
+    {
+      "id": "graph-pipeline-daemon-unavailable-v1",
+      "operation": "status",
+      "expectedStatus": "daemon_unavailable"
+    },
+    {
+      "id": "graph-pipeline-watch-lifecycle-v1",
+      "operation": "watch",
+      "expectedStatus": "available",
+      "artifacts": [
+        ".lattice/graph/daemon/pid",
+        ".lattice/graph/daemon/state.json",
+        ".lattice/graph/daemon/daemon.log"
+      ]
+    },
+    {
+      "id": "graph-pipeline-daemon-health-v1",
+      "operation": "health",
+      "expectedProtocol": "lattice.graph.daemon",
+      "expectedStatus": "available"
+    },
+    {
+      "id": "graph-pipeline-phase-timing-v1",
+      "operation": "build",
+      "requiredPhaseTimings": ["discovery", "extraction", "store"]
+    },
+    {
+      "id": "graph-pipeline-wal-churn-v1",
+      "operation": "watch",
+      "walCheckpoint": {
+        "checkpointedWhenOverBudget": true
+      }
+    }
+  ]
+}

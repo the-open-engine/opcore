@@ -1,0 +1,482 @@
+{
+  "schemaVersion": 1,
+  "issue": "#19",
+  "origin": "covibes-authored-synthetic",
+  "classification": "required",
+  "serveTransportIssue": "#47",
+  "protocols": ["lattice.graph.daemon", "jsonrpc-2.0", "reference-mcp-stdio-baseline-only"],
+  "envelopes": [
+    {
+      "id": "ping-request",
+      "direction": "client_to_daemon",
+      "protocol": "lattice.graph.daemon",
+      "payload": {
+        "protocol": "lattice.graph.daemon",
+        "requestId": "req-ping-1",
+        "schemaVersion": 1,
+        "operation": "status",
+        "repo": {
+          "repoId": "synthetic-reference"
+        }
+      }
+    },
+    {
+      "id": "ping-response",
+      "direction": "daemon_to_client",
+      "protocol": "lattice.graph.daemon",
+      "payload": {
+        "protocol": "lattice.graph.daemon",
+        "requestId": "req-ping-1",
+        "schemaVersion": 1,
+        "status": {
+          "state": "available",
+          "mode": "required",
+          "provider": "lattice-graph",
+          "schemaVersion": 1,
+          "repo": {
+            "repoId": "synthetic-reference"
+          },
+          "freshness": {
+            "generatedAt": "2026-06-04T00:00:00.000Z",
+            "ageMs": 0,
+            "stale": false
+          }
+        }
+      }
+    },
+    {
+      "id": "health-status-request",
+      "direction": "client_to_daemon",
+      "protocol": "lattice.graph.daemon",
+      "payload": {
+        "protocol": "lattice.graph.daemon",
+        "requestId": "req-health-1",
+        "schemaVersion": 1,
+        "operation": "status",
+        "repo": {
+          "repoId": "synthetic-reference"
+        }
+      }
+    },
+    {
+      "id": "health-status-response",
+      "direction": "daemon_to_client",
+      "protocol": "lattice.graph.daemon",
+      "payload": {
+        "protocol": "lattice.graph.daemon",
+        "requestId": "req-health-1",
+        "schemaVersion": 1,
+        "status": {
+          "state": "available",
+          "mode": "required",
+          "provider": "lattice-graph",
+          "schemaVersion": 1,
+          "repo": {
+            "repoId": "synthetic-reference"
+          },
+          "freshness": {
+            "generatedAt": "2026-06-04T00:00:00.000Z",
+            "ageMs": 25,
+            "maxAgeMs": 60000,
+            "stale": false
+          },
+          "capabilities": ["status", "query", "impact"]
+        }
+      }
+    },
+    {
+      "id": "query-request",
+      "direction": "client_to_daemon",
+      "protocol": "lattice.graph.daemon",
+      "payload": {
+        "protocol": "lattice.graph.daemon",
+        "requestId": "req-query-1",
+        "schemaVersion": 1,
+        "operation": "query",
+        "repo": {
+          "repoId": "synthetic-reference"
+        },
+        "query": {
+          "requestId": "query-1",
+          "repo": {
+            "repoId": "synthetic-reference"
+          },
+          "schemaVersion": 1,
+          "mode": "required",
+          "selector": {
+            "kind": "symbols",
+            "text": "login",
+            "limit": 20
+          }
+        }
+      }
+    },
+    {
+      "id": "impact-request",
+      "direction": "client_to_daemon",
+      "protocol": "lattice.graph.daemon",
+      "payload": {
+        "protocol": "lattice.graph.daemon",
+        "requestId": "req-impact-1",
+        "schemaVersion": 1,
+        "operation": "query",
+        "repo": {
+          "repoId": "synthetic-reference"
+        },
+        "query": {
+          "requestId": "impact-1",
+          "repo": {
+            "repoId": "synthetic-reference"
+          },
+          "schemaVersion": 1,
+          "mode": "required",
+          "selector": {
+            "kind": "impact",
+            "ids": ["file:src/auth.ts"],
+            "limit": 50
+          }
+        }
+      }
+    },
+    {
+      "id": "success-response",
+      "direction": "daemon_to_client",
+      "protocol": "lattice.graph.daemon",
+      "payload": {
+        "protocol": "lattice.graph.daemon",
+        "requestId": "req-query-1",
+        "schemaVersion": 1,
+        "status": {
+          "state": "available",
+          "mode": "required",
+          "provider": "lattice-graph",
+          "schemaVersion": 1,
+          "repo": {
+            "repoId": "synthetic-reference"
+          },
+          "freshness": {
+            "generatedAt": "2026-06-04T00:00:00.000Z",
+            "ageMs": 30,
+            "stale": false
+          }
+        },
+        "result": {
+          "requestId": "query-1",
+          "status": {
+            "state": "available",
+            "mode": "required",
+            "provider": "lattice-graph",
+            "schemaVersion": 1,
+            "repo": {
+              "repoId": "synthetic-reference"
+            },
+            "freshness": {
+              "generatedAt": "2026-06-04T00:00:00.000Z",
+              "ageMs": 30,
+              "stale": false
+            }
+          },
+          "metadata": {
+            "schemaVersion": 1,
+            "provider": "lattice-graph",
+            "repo": {
+              "repoId": "synthetic-reference"
+            },
+            "generatedAt": "2026-06-04T00:00:00.000Z",
+            "freshness": {
+              "generatedAt": "2026-06-04T00:00:00.000Z",
+              "ageMs": 30,
+              "stale": false
+            },
+            "nodeKinds": ["file", "symbol", "test"],
+            "edgeKinds": ["CONTAINS", "DECLARES", "IMPORTS_FROM", "CALLS", "TESTED_BY"]
+          },
+          "nodes": [
+            {
+              "id": "symbol:src/auth.ts#login",
+              "kind": "symbol",
+              "path": "src/auth.ts",
+              "name": "login"
+            }
+          ],
+          "edges": [
+            {
+              "kind": "DECLARES",
+              "from": "file:src/auth.ts",
+              "to": "symbol:src/auth.ts#login"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "stale-response",
+      "direction": "daemon_to_client",
+      "protocol": "lattice.graph.daemon",
+      "payload": {
+        "protocol": "lattice.graph.daemon",
+        "requestId": "req-query-stale",
+        "schemaVersion": 1,
+        "status": {
+          "state": "stale",
+          "mode": "required",
+          "provider": "lattice-graph",
+          "schemaVersion": 1,
+          "repo": {
+            "repoId": "synthetic-reference"
+          },
+          "freshness": {
+            "generatedAt": "2026-06-03T23:00:00.000Z",
+            "ageMs": 3600000,
+            "maxAgeMs": 60000,
+            "stale": true,
+            "reason": "snapshot older than freshness policy"
+          },
+          "failure": {
+            "category": "stale_snapshot",
+            "message": "Graph snapshot is stale",
+            "retryable": true
+          }
+        }
+      }
+    },
+    {
+      "id": "schema-mismatch-response",
+      "direction": "daemon_to_client",
+      "protocol": "lattice.graph.daemon",
+      "payload": {
+        "protocol": "lattice.graph.daemon",
+        "requestId": "req-schema-mismatch",
+        "schemaVersion": 1,
+        "status": {
+          "state": "schema_mismatch",
+          "mode": "required",
+          "provider": "lattice-graph",
+          "schemaVersion": 1,
+          "expectedSchemaVersion": 1,
+          "actualSchemaVersion": 0,
+          "failure": {
+            "category": "schema_mismatch",
+            "message": "Graph schema version is incompatible",
+            "retryable": false
+          }
+        }
+      }
+    },
+    {
+      "id": "daemon-unavailable-response",
+      "direction": "client_error",
+      "protocol": "lattice.graph.daemon",
+      "payload": {
+        "protocol": "lattice.graph.daemon",
+        "requestId": "req-daemon-unavailable",
+        "schemaVersion": 1,
+        "status": {
+          "state": "daemon_unavailable",
+          "mode": "required",
+          "provider": "lattice-graph",
+          "schemaVersion": 1,
+          "failure": {
+            "category": "daemon_unavailable",
+            "message": "Graph daemon socket is unavailable",
+            "retryable": true
+          }
+        }
+      }
+    },
+    {
+      "id": "serve-jsonl-ping",
+      "direction": "client_to_daemon",
+      "protocol": "lattice.graph.daemon",
+      "issue": "#47",
+      "payload": {
+        "protocol": "lattice.graph.daemon",
+        "requestId": "serve-ping-1",
+        "schemaVersion": 1,
+        "operation": "ping",
+        "repo": {
+          "repoId": "synthetic-reference"
+        }
+      }
+    },
+    {
+      "id": "serve-jsonl-status",
+      "direction": "client_to_daemon",
+      "protocol": "lattice.graph.daemon",
+      "issue": "#47",
+      "payload": {
+        "protocol": "lattice.graph.daemon",
+        "requestId": "serve-status-1",
+        "schemaVersion": 1,
+        "operation": "status",
+        "repo": {
+          "repoId": "synthetic-reference"
+        }
+      }
+    },
+    {
+      "id": "serve-jsonl-query",
+      "direction": "client_to_daemon",
+      "protocol": "lattice.graph.daemon",
+      "issue": "#47",
+      "payload": {
+        "protocol": "lattice.graph.daemon",
+        "requestId": "serve-query-1",
+        "schemaVersion": 1,
+        "operation": "query",
+        "repo": {
+          "repoId": "synthetic-reference"
+        },
+        "query": {
+          "requestId": "serve-query-1",
+          "repo": {
+            "repoId": "synthetic-reference"
+          },
+          "schemaVersion": 1,
+          "mode": "required",
+          "selector": {
+            "kind": "nodes",
+            "limit": 10
+          }
+        }
+      }
+    },
+    {
+      "id": "serve-jsonl-search",
+      "direction": "client_to_daemon",
+      "protocol": "lattice.graph.daemon",
+      "issue": "#47",
+      "payload": {
+        "protocol": "lattice.graph.daemon",
+        "requestId": "serve-search-1",
+        "schemaVersion": 1,
+        "operation": "query",
+        "repo": {
+          "repoId": "synthetic-reference"
+        },
+        "search": {
+          "requestId": "serve-search-1",
+          "repo": {
+            "repoId": "synthetic-reference"
+          },
+          "schemaVersion": 1,
+          "mode": "required",
+          "query": "Greeting",
+          "limit": 5
+        }
+      }
+    },
+    {
+      "id": "serve-jsonl-shutdown",
+      "direction": "client_to_daemon",
+      "protocol": "lattice.graph.daemon",
+      "issue": "#47",
+      "payload": {
+        "protocol": "lattice.graph.daemon",
+        "requestId": "serve-shutdown-1",
+        "schemaVersion": 1,
+        "operation": "shutdown",
+        "repo": {
+          "repoId": "synthetic-reference"
+        }
+      }
+    },
+    {
+      "id": "serve-invalid-repo",
+      "direction": "daemon_to_client",
+      "protocol": "lattice.graph.daemon",
+      "issue": "#47",
+      "payload": {
+        "protocol": "lattice.graph.daemon",
+        "requestId": "serve-invalid-repo-1",
+        "schemaVersion": 1,
+        "status": {
+          "state": "required_missing",
+          "mode": "required",
+          "provider": "lattice-graph",
+          "schemaVersion": 1,
+          "failure": {
+            "category": "provider_missing",
+            "message": "repoRoot is not a directory"
+          }
+        }
+      }
+    },
+    {
+      "id": "serve-schema-mismatch",
+      "direction": "daemon_to_client",
+      "protocol": "lattice.graph.daemon",
+      "issue": "#47",
+      "payload": {
+        "protocol": "lattice.graph.daemon",
+        "requestId": "serve-schema-mismatch-1",
+        "schemaVersion": 1,
+        "status": {
+          "state": "schema_mismatch",
+          "mode": "required",
+          "provider": "lattice-graph",
+          "schemaVersion": 1,
+          "expectedSchemaVersion": 1,
+          "actualSchemaVersion": 2,
+          "failure": {
+            "category": "schema_mismatch",
+            "message": "Graph daemon request schemaVersion mismatch"
+          }
+        }
+      }
+    },
+    {
+      "id": "mcp-initialize",
+      "direction": "client_to_daemon",
+      "protocol": "jsonrpc-2.0",
+      "issue": "#47",
+      "payload": {
+        "jsonrpc": "2.0",
+        "id": "mcp-init-1",
+        "method": "initialize",
+        "params": {
+          "protocolVersion": "2024-11-05"
+        }
+      }
+    },
+    {
+      "id": "mcp-initialized-notification",
+      "direction": "client_to_daemon",
+      "protocol": "jsonrpc-2.0",
+      "issue": "#47",
+      "expectResponse": false,
+      "payload": {
+        "jsonrpc": "2.0",
+        "method": "notifications/initialized",
+        "params": {}
+      }
+    },
+    {
+      "id": "mcp-status",
+      "direction": "client_to_daemon",
+      "protocol": "jsonrpc-2.0",
+      "issue": "#47",
+      "payload": {
+        "jsonrpc": "2.0",
+        "id": "mcp-status-1",
+        "method": "lattice.graph/status",
+        "params": {
+          "repo": {
+            "repoId": "synthetic-reference"
+          }
+        }
+      }
+    },
+    {
+      "id": "reference-mcp-stdio-baseline",
+      "direction": "baseline_only",
+      "protocol": "reference-mcp-stdio-baseline-only",
+      "baselineOnly": true,
+      "payload": {
+        "transport": "stdio",
+        "command": ["crg", "serve", "--repo", "."],
+        "note": "Captured only to preserve downstream transport expectations; not a Lattice-owned daemon protocol."
+      }
+    }
+  ]
+}

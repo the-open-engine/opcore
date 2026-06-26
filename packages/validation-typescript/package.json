@@ -1,0 +1,46 @@
+{
+  "name": "@the-open-engine/lattice-validation-typescript",
+  "version": "0.1.0-alpha.0",
+  "description": "TypeScript syntax, type, and graph-aware validation checks for Lattice.",
+  "type": "module",
+  "license": "MIT",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "keywords": [
+    "code-intelligence",
+    "coding-agents",
+    "static-analysis",
+    "typescript",
+    "cli",
+    "developer-tools"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@the-open-engine/lattice-contracts": "0.1.0-alpha.0",
+    "@the-open-engine/lattice-validation": "0.1.0-alpha.0",
+    "typescript": "^5.9.3"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/the-open-engine/lattice.git",
+    "directory": "packages/validation-typescript"
+  },
+  "scripts": {
+    "build": "tsc -b"
+  }
+}

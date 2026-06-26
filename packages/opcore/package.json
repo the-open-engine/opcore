@@ -1,0 +1,51 @@
+{
+  "name": "@the-open-engine/opcore",
+  "version": "0.1.0-alpha.0",
+  "description": "Opcore CLI for read-only scans, setup guidance, validation gates, and metric deltas.",
+  "type": "module",
+  "license": "MIT",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "keywords": [
+    "code-intelligence",
+    "coding-agents",
+    "robustness",
+    "validation",
+    "cli",
+    "developer-tools"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "bin": {
+    "opcore": "dist/index.js"
+  },
+  "dependencies": {
+    "@the-open-engine/lattice-contracts": "0.1.0-alpha.0",
+    "@the-open-engine/lattice-graph": "0.1.0-alpha.0",
+    "@the-open-engine/lattice-validation": "0.1.0-alpha.0",
+    "@the-open-engine/lattice-validation-rust": "0.1.0-alpha.0",
+    "@the-open-engine/lattice-validation-typescript": "0.1.0-alpha.0"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/the-open-engine/lattice.git",
+    "directory": "packages/opcore"
+  },
+  "scripts": {
+    "build": "tsc -b"
+  }
+}

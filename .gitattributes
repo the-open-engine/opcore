@@ -1,0 +1,15 @@
+# Keep GitHub language stats focused on implementation source.
+# Harness, support scripts, and repo metadata are not release language surface.
+*.json linguist-detectable=false
+*.yml linguist-detectable=false
+*.yaml linguist-detectable=false
+scripts/*.mjs linguist-detectable=false
+scripts/*.sh linguist-detectable=false
+scripts/ci/*.sh linguist-detectable=false
+tests/*.mjs linguist-detectable=false
+packages/fixtures/source-extraction/wave1/src/*.js linguist-detectable=false
+packages/fixtures/source-extraction/wave1/src/*.jsx linguist-detectable=false
+
+# Node shebangs make Linguist classify these TypeScript entrypoints as JavaScript.
+packages/cli/src/index.ts linguist-language=TypeScript
+packages/graph/src/index.ts linguist-language=TypeScript

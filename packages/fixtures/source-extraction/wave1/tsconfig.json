@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@models": ["src/models.ts"],
+      "@math": ["src/math.js"],
+      "@components/*": ["src/components/*"]
+    }
+  }
+}

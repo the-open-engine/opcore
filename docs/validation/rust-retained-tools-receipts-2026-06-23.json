@@ -1,0 +1,235 @@
+{
+  "schemaVersion": 1,
+  "issue": "#61",
+  "origin": "covibes-authored-retained-rust-parity-proof",
+  "generatedAt": "2026-06-23T22:18:30.000Z",
+  "runtimeDecision": {
+    "issue": "#21",
+    "decision": "no validation daemon and no hidden validation cache for initial Lattice cutover",
+    "providerOnly": true
+  },
+  "nativeRetainedChecks": [
+    "rust.rustdoc",
+    "rust.import-graph",
+    "rust.dead-code",
+    "rust.unused-deps",
+    "rust.function-metrics"
+  ],
+  "lattice": {
+    "launchGate": {
+      "fileLengthBaselinePresent": true,
+      "evidence": [
+        "packages/validation-rust/src/file-length-check.ts exists",
+        "packages/validation-rust/src/check-ids.ts exports rust.file-length",
+        "check manifest, validate manifest, status, and doctor include rust.file-length"
+      ]
+    },
+    "statusReceipts": [
+      {
+        "command": "node packages/cli/dist/index.js status --json",
+        "exitCode": 0,
+        "rustAdapterStatus": "degraded",
+        "degradedChecks": [
+          {
+            "checkId": "rust.import-graph",
+            "requiredTool": "cargo-depgraph",
+            "reason": "optional_tool_unavailable"
+          }
+        ]
+      },
+      {
+        "command": "node packages/cli/dist/index.js doctor --json",
+        "exitCode": 0,
+        "rustAdapterStatus": "degraded",
+        "degradedChecks": [
+          {
+            "checkId": "rust.import-graph",
+            "requiredTool": "cargo-depgraph",
+            "reason": "optional_tool_unavailable"
+          }
+        ]
+      }
+    ],
+    "nativeToolAvailableReceipt": {
+      "command": "node --test tests/validation-rust.test.mjs tests/validation-cli.test.mjs",
+      "assertion": "fake full Rust toolchain reports Rust adapter available with degradedChecks []",
+      "exitCode": 0
+    },
+    "nativeCheckReceipts": [
+      {
+        "checkId": "rust.rustdoc",
+        "coverage": [
+          "cargo doc JSON diagnostics become blocking policy failures",
+          "missing rustdoc returns unsupported_request"
+        ]
+      },
+      {
+        "checkId": "rust.import-graph",
+        "coverage": [
+          "unresolved mod declarations",
+          "unresolved crate/self/super use paths",
+          "orphan Rust source files",
+          "module cycles",
+          "overlay write/delete after-state reads"
+        ]
+      },
+      {
+        "checkId": "rust.dead-code",
+        "coverage": [
+          "cargo check dead_code JSON diagnostics",
+          "native orphan-source dead-code evidence"
+        ]
+      },
+      {
+        "checkId": "rust.unused-deps",
+        "coverage": [
+          "cargo-udeps workspace/package scoping",
+          "deterministic RUST_UNUSED_DEPENDENCY diagnostics",
+          "missing cargo-udeps unsupported_request"
+        ]
+      },
+      {
+        "checkId": "rust.function-metrics",
+        "coverage": [
+          "rust-code-analysis object and array JSON",
+          "function line, complexity, and parameter thresholds",
+          "repo and package scopes",
+          "missing rust-code-analysis-cli unsupported_request"
+        ]
+      }
+    ],
+    "verification": [
+      {
+        "command": "npm run build",
+        "exitCode": 0
+      },
+      {
+        "command": "node --test tests/validation-rust.test.mjs tests/validation-rust-package-scope.test.mjs tests/validation-rust-regressions.test.mjs tests/validation-cli.test.mjs tests/validation-command-adapter.test.mjs tests/contracts.test.mjs tests/schema-contracts.test.mjs tests/gate-negative-fixtures.test.mjs",
+        "exitCode": 0,
+        "tests": 127
+      },
+      {
+        "command": "npm run rust:check",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run ci",
+        "exitCode": 0,
+        "tests": 423
+      },
+      {
+        "command": "npm run setup:tools",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run current-tools:validate-rust-graph",
+        "exitCode": 0,
+        "summary": "[]"
+      },
+      {
+        "command": "npm run current-tools:validate-changed",
+        "exitCode": 0,
+        "summary": "Rox changed gate passed with 6 baseline-equivalent legacy code-quality findings retained."
+      },
+      {
+        "command": "npm run current-tools:validate-all",
+        "exitCode": 0,
+        "summary": "No issues found"
+      }
+    ]
+  },
+  "orchestra": {
+    "repo": "covibes/orchestra",
+    "oldToolReceipts": [
+      {
+        "command": "npm run rox:ci",
+        "exitCode": 0,
+        "summary": "No issues found"
+      },
+      {
+        "command": "npm run rox:repo",
+        "exitCode": 0,
+        "summary": "No issues found"
+      },
+      {
+        "command": "npm run rox:check",
+        "exitCode": 0,
+        "summary": "No issues found"
+      }
+    ]
+  },
+  "gateway": {
+    "repo": "covibes/covibes/gateway",
+    "oldToolReceipt": {
+      "command": "NODE_NO_WARNINGS=1 ../.ace/runtime/bin/rox check --all --no-daemon",
+      "exitCode": 2,
+      "retainedFindingCount": 11,
+      "retainedFindings": [
+        {
+          "path": "crates/preview-router/src/ext_proc.rs",
+          "code": "code-quality/file-length",
+          "message": "File too long (1591 lines, max 600)"
+        },
+        {
+          "path": "crates/preview-router/src/proto.rs",
+          "code": "rust-adapter/no-broad-lint-suppression",
+          "message": "Broad Rust lint suppression is forbidden"
+        },
+        {
+          "path": "crates/preview-router/tests/golden_vectors.rs",
+          "code": "rust-adapter/no-rox-owned-lint-suppression",
+          "message": "Suppressing Rust lints owned by rox is forbidden"
+        },
+        {
+          "path": null,
+          "code": "rust-adapter/import-graph-error",
+          "message": "rustdoc import graph failed for preview-router test cache_load"
+        },
+        {
+          "path": "crates/preview-router/src/config.rs:136",
+          "code": "rust-adapter/cyclomatic-complexity",
+          "message": "Function from_lookup complexity 11 exceeds max 10"
+        },
+        {
+          "path": "crates/preview-router/src/identity.rs:97",
+          "code": "rust-adapter/cyclomatic-complexity",
+          "message": "Function parse_preview_host_identity complexity 16 exceeds max 10"
+        },
+        {
+          "path": "crates/preview-router/src/metadata.rs:58",
+          "code": "rust-adapter/cyclomatic-complexity",
+          "message": "Function parse_deployment_metadata complexity 11 exceeds max 10"
+        },
+        {
+          "path": "crates/preview-router/src/postgres_provider.rs:167",
+          "code": "rust-adapter/cyclomatic-complexity",
+          "message": "Function decode_row complexity 15 exceeds max 10"
+        },
+        {
+          "path": "crates/preview-router/src/router.rs:86",
+          "code": "rust-adapter/cyclomatic-complexity",
+          "message": "Function route complexity 11 exceeds max 10"
+        },
+        {
+          "path": "crates/preview-router/tests/golden_vectors.rs:170",
+          "code": "rust-adapter/cyclomatic-complexity",
+          "message": "Function all_golden_vectors_pass complexity 13 exceeds max 10"
+        },
+        {
+          "path": null,
+          "code": "rust-adapter/dead-code-error",
+          "message": "rustdoc orphan-source reachability failed for preview-router test cache_load"
+        }
+      ]
+    }
+  },
+  "guardrails": {
+    "noValidationDaemon": true,
+    "noHiddenValidationCache": true,
+    "noRoxImports": true,
+    "noRoxCacheReads": true,
+    "noRoxShelloutsFromNativeChecks": true,
+    "oldRoxGatesRemainActive": true,
+    "providerAssessmentsOnly": true
+  }
+}
