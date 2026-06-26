@@ -260,8 +260,12 @@ describe("graph pipeline CLI", () => {
       assert.equal(build.graphPipeline.summary.discoveredFiles, 2);
       assert.equal(build.graphPipeline.summary.parsedFiles, 1);
       assert.deepEqual(build.graphPipeline.summary.changedFiles, ["src/app.ts", "src/tool.py"]);
-      using db = new DatabaseSync(join(temp, ".lattice/graph/graph.db"));
-      assert.equal(db.prepare("select count(*) as count from nodes where path = ?").get("src/tool.py").count, 0);
+      const db = new DatabaseSync(join(temp, ".lattice/graph/graph.db"));
+      try {
+        assert.equal(db.prepare("select count(*) as count from nodes where path = ?").get("src/tool.py").count, 0);
+      } finally {
+        db.close();
+      }
     } finally {
       rmSync(temp, { recursive: true, force: true });
     }
