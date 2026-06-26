@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { routeCommand } from "../packages/cli/dist/index.js";
+import { routeCommand } from "../packages/opcore/dist/lattice/index.js";
 import { calculateEditChecksum, createEditCommandAdapter } from "../packages/edit/dist/index.js";
 
 describe("lattice edit CLI", () => {

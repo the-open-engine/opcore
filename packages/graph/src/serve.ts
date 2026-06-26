@@ -9,13 +9,13 @@ import type {
   GraphServeTransportStatus,
   JsonValue,
   RepoIdentity
-} from "@the-open-engine/lattice-contracts";
+} from "@the-open-engine/opcore-contracts";
 import {
   createCommandRouterResult,
   validateGraphDaemonRequest,
   validateGraphDaemonResponse,
   validateGraphServeTransportStatus
-} from "@the-open-engine/lattice-contracts";
+} from "@the-open-engine/opcore-contracts";
 import { spawn } from "node:child_process";
 import { resolve } from "node:path";
 import { providerFailureStatus, resolveGraphCoreArtifact, schemaMismatchStatus } from "./artifact.js";

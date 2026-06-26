@@ -106,7 +106,7 @@ export interface SyntheticFixtureMetadata {
   descriptor?: {
     dataFile?: string;
     descriptorKind?: "aggregate_lattice";
-    packageName?: "@the-open-engine/lattice-cli";
+    packageName?: "@the-open-engine/opcore";
     entrypoints: readonly string[];
     commandGroups: readonly string[];
     healthProbes: readonly string[];
@@ -139,7 +139,7 @@ export interface SyntheticFixtureMetadata {
   };
   graphCore?: {
     artifactName: "lattice-graph-core";
-    packageName: "@the-open-engine/lattice-graph" | "@the-open-engine/opcore-graph-core-<target>";
+    packageName: "@the-open-engine/opcore-graph" | "@the-open-engine/opcore-graph-core-<target>";
     supportedTargets?: readonly string[];
     nativePath: string;
     metadataPath: string;
@@ -388,7 +388,7 @@ export const conformanceFixtureMetadata = [
     descriptor: {
       dataFile: "packages/fixtures/descriptors/lattice.managed-tool.json",
       descriptorKind: "aggregate_lattice",
-      packageName: "@the-open-engine/lattice-cli",
+      packageName: "@the-open-engine/opcore",
       entrypoints: ["lattice"],
       commandGroups: [
         "lattice graph",
@@ -446,9 +446,9 @@ export const conformanceFixtureMetadata = [
       ],
       provenanceHooks: ["npm run pack:check", "npm run provenance:check"],
       artifactPackages: [
-        "@the-open-engine/lattice-cli",
-        "@the-open-engine/lattice-contracts",
-        "@the-open-engine/lattice-graph",
+        "@the-open-engine/opcore",
+        "@the-open-engine/opcore-contracts",
+        "@the-open-engine/opcore-graph",
         "@the-open-engine/opcore-graph-core-darwin-arm64",
         "@the-open-engine/opcore-graph-core-darwin-x64",
         "@the-open-engine/opcore-graph-core-linux-x64"
@@ -718,7 +718,7 @@ export const conformanceFixtureMetadata = [
     descriptor: {
       dataFile: "packages/fixtures/descriptors/lattice.managed-tool.json",
       descriptorKind: "aggregate_lattice",
-      packageName: "@the-open-engine/lattice-cli",
+      packageName: "@the-open-engine/opcore",
       entrypoints: ["lattice"],
       commandGroups: [
         "lattice graph",
@@ -745,8 +745,8 @@ export const conformanceFixtureMetadata = [
       ],
       provenanceHooks: ["npm pack --dry-run", "npm run provenance:check"],
       artifactPackages: [
-        "@the-open-engine/lattice-cli",
-        "@the-open-engine/lattice-graph",
+        "@the-open-engine/opcore",
+        "@the-open-engine/opcore-graph",
         "@the-open-engine/opcore-graph-core-darwin-arm64",
         "@the-open-engine/opcore-graph-core-darwin-x64",
         "@the-open-engine/opcore-graph-core-linux-x64"

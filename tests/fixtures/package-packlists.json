@@ -1,5 +1,5 @@
 {
-  "@the-open-engine/lattice-contracts": {
+  "@the-open-engine/opcore-contracts": {
     "directory": "packages/contracts",
     "expectedFiles": [
       "package.json",
@@ -25,6 +25,16 @@
       "dist/status.js",
       "dist/try.js",
       "dist/validation-composition.js",
+      "dist/descriptors/lattice.managed-tool.json",
+      "dist/lattice/descriptor.js",
+      "dist/lattice/edit-composition.js",
+      "dist/lattice/graph-provider-client.js",
+      "dist/lattice/inspect-adapter.js",
+      "dist/lattice/inspect-language-service.js",
+      "dist/lattice/index.js",
+      "dist/lattice/manifest.js",
+      "dist/lattice/router.js",
+      "dist/lattice/validation-composition.js",
       "dist/check.d.ts",
       "dist/check.d.ts.map",
       "dist/graph-provider-client.d.ts",
@@ -44,45 +54,28 @@
       "dist/try.d.ts",
       "dist/try.d.ts.map",
       "dist/validation-composition.d.ts",
-      "dist/validation-composition.d.ts.map"
+      "dist/validation-composition.d.ts.map",
+      "dist/lattice/descriptor.d.ts",
+      "dist/lattice/descriptor.d.ts.map",
+      "dist/lattice/edit-composition.d.ts",
+      "dist/lattice/edit-composition.d.ts.map",
+      "dist/lattice/graph-provider-client.d.ts",
+      "dist/lattice/graph-provider-client.d.ts.map",
+      "dist/lattice/inspect-adapter.d.ts",
+      "dist/lattice/inspect-adapter.d.ts.map",
+      "dist/lattice/inspect-language-service.d.ts",
+      "dist/lattice/inspect-language-service.d.ts.map",
+      "dist/lattice/index.d.ts",
+      "dist/lattice/index.d.ts.map",
+      "dist/lattice/manifest.d.ts",
+      "dist/lattice/manifest.d.ts.map",
+      "dist/lattice/router.d.ts",
+      "dist/lattice/router.d.ts.map",
+      "dist/lattice/validation-composition.d.ts",
+      "dist/lattice/validation-composition.d.ts.map"
     ]
   },
-  "@the-open-engine/lattice-cli": {
-    "directory": "packages/cli",
-    "expectedFiles": [
-      "package.json",
-      "README.md",
-      "dist/descriptor.js",
-      "dist/descriptors/lattice.managed-tool.json",
-      "dist/edit-composition.js",
-      "dist/graph-provider-client.js",
-      "dist/inspect-adapter.js",
-      "dist/inspect-language-service.js",
-      "dist/index.js",
-      "dist/manifest.js",
-      "dist/router.js",
-      "dist/validation-composition.js",
-      "dist/descriptor.d.ts",
-      "dist/descriptor.d.ts.map",
-      "dist/edit-composition.d.ts",
-      "dist/edit-composition.d.ts.map",
-      "dist/graph-provider-client.d.ts",
-      "dist/graph-provider-client.d.ts.map",
-      "dist/inspect-adapter.d.ts",
-      "dist/inspect-adapter.d.ts.map",
-      "dist/inspect-language-service.d.ts",
-      "dist/inspect-language-service.d.ts.map",
-      "dist/index.d.ts",
-      "dist/index.d.ts.map",
-      "dist/manifest.d.ts",
-      "dist/manifest.d.ts.map",
-      "dist/router.d.ts",
-      "dist/router.d.ts.map",
-      "dist/validation-composition.d.ts",
-      "dist/validation-composition.d.ts.map"
-    ]
-  },
-  "@the-open-engine/lattice-graph": {
+  "@the-open-engine/opcore-graph": {
     "directory": "packages/graph",
     "expectedFiles": [
       "package.json",
@@ -134,7 +127,7 @@
       "metadata.json"
     ]
   },
-  "@the-open-engine/lattice-edit": {
+  "@the-open-engine/opcore-edit": {
     "directory": "packages/edit",
     "expectedFiles": [
       "package.json",
@@ -210,7 +203,7 @@
       "dist/workspace.d.ts.map"
     ]
   },
-  "@the-open-engine/lattice-validation": {
+  "@the-open-engine/opcore-validation": {
     "directory": "packages/validation",
     "expectedFiles": [
       "package.json",
@@ -253,7 +246,7 @@
       "dist/workspace.d.ts.map"
     ]
   },
-  "@the-open-engine/lattice-validation-rust": {
+  "@the-open-engine/opcore-validation-rust": {
     "directory": "packages/validation-rust",
     "expectedFiles": [
       "package.json",
@@ -311,7 +304,7 @@
       "dist/unused-deps-check.d.ts.map"
     ]
   },
-  "@the-open-engine/lattice-validation-typescript": {
+  "@the-open-engine/opcore-validation-typescript": {
     "directory": "packages/validation-typescript",
     "expectedFiles": [
       "package.json",
@@ -389,7 +382,7 @@
       "dist/manifests/opcore-asp-provider.provisional.json"
     ]
   },
-  "@the-open-engine/lattice-fixtures": {
+  "@the-open-engine/opcore-fixtures": {
     "directory": "packages/fixtures",
     "expectedFiles": [
       "package.json",

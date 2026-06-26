@@ -26,7 +26,7 @@ import { releasePackageDirForName } from "./release-package-dirs.mjs";
 
 const repoRoot = fileURLToPath(new URL("..", import.meta.url));
 const packlistsPath = "tests/fixtures/package-packlists.json";
-const descriptorPath = "packages/cli/dist/descriptors/lattice.managed-tool.json";
+const descriptorPath = "packages/opcore/dist/descriptors/lattice.managed-tool.json";
 const releaseReceiptPath = "docs/release/release-receipt.json";
 const releaseSummaryPath = "docs/release/release-receipt.summary.md";
 const licenseReportPath = "docs/release/license-report.md";
@@ -248,7 +248,7 @@ function collectDescriptorEvidence(descriptor, packages) {
   });
   return {
     path: descriptorPath,
-    packageName: "@the-open-engine/lattice-cli",
+    packageName: "@the-open-engine/opcore",
     checksumSha256: sha256File(descriptorAbsolutePath),
     descriptor,
     commandGroups,
@@ -684,8 +684,7 @@ function validateNoOldPublicIdentity(packageName, manifest, bins) {
   for (const bin of Object.keys(bins)) {
     if (["crg", "cix", "rox"].includes(bin)) throw new Error(`${packageName} exposes forbidden old public bin ${bin}`);
   }
-  if (packageName === "@the-open-engine/lattice-cli") assertSameSet(Object.keys(bins), ["lattice"], `${packageName} bins`);
-  else if (packageName === "@the-open-engine/opcore") assertSameSet(Object.keys(bins), ["opcore"], `${packageName} bins`);
+  if (packageName === "@the-open-engine/opcore") assertSameSet(Object.keys(bins), ["lattice", "opcore"], `${packageName} bins`);
   else if (packageName === "@the-open-engine/opcore-asp-provider") {
     assertSameSet(Object.keys(bins), ["opcore-asp-provider"], `${packageName} bins`);
   }

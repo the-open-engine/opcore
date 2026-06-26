@@ -4,16 +4,15 @@ import { isAbsolute, join, normalize } from "node:path";
 
 const requiredContextHeader = "UPDATE THIS FILE when making architectural changes, adding patterns, or changing conventions.";
 const packageTracks = [
-  { dir: "contracts", name: "@the-open-engine/lattice-contracts" },
+  { dir: "contracts", name: "@the-open-engine/opcore-contracts" },
   { dir: "opcore", name: "@the-open-engine/opcore", bin: "opcore" },
-  { dir: "cli", name: "@the-open-engine/lattice-cli", bin: "lattice" },
-  { dir: "graph", name: "@the-open-engine/lattice-graph" },
-  { dir: "edit", name: "@the-open-engine/lattice-edit" },
-  { dir: "validation", name: "@the-open-engine/lattice-validation" },
-  { dir: "validation-rust", name: "@the-open-engine/lattice-validation-rust" },
-  { dir: "validation-typescript", name: "@the-open-engine/lattice-validation-typescript" },
+  { dir: "graph", name: "@the-open-engine/opcore-graph" },
+  { dir: "edit", name: "@the-open-engine/opcore-edit" },
+  { dir: "validation", name: "@the-open-engine/opcore-validation" },
+  { dir: "validation-rust", name: "@the-open-engine/opcore-validation-rust" },
+  { dir: "validation-typescript", name: "@the-open-engine/opcore-validation-typescript" },
   { dir: "asp-provider", name: "@the-open-engine/opcore-asp-provider", bin: "opcore-asp-provider" },
-  { dir: "fixtures", name: "@the-open-engine/lattice-fixtures" }
+  { dir: "fixtures", name: "@the-open-engine/opcore-fixtures" }
 ];
 const releaseVersion = "0.1.0-alpha.0";
 const packageNames = new Set(packageTracks.map((entry) => entry.name));
@@ -335,10 +334,8 @@ function validatePackageManifest(packagePath, manifest, track) {
   if (manifest.name.includes("code-review-graph") || manifest.name.includes("gungnir")) {
     fail(`${manifest.name} uses a forbidden public package name`);
   }
-  if (track.dir === "cli") {
-    assertDeepEqual(manifest.bin, { lattice: "dist/index.js" }, `${manifest.name} bin`);
-  } else if (track.dir === "opcore") {
-    assertDeepEqual(manifest.bin, { opcore: "dist/index.js" }, `${manifest.name} bin`);
+  if (track.dir === "opcore") {
+    assertDeepEqual(manifest.bin, { opcore: "dist/index.js", lattice: "dist/lattice/index.js" }, `${manifest.name} bin`);
   } else if (track.dir === "asp-provider") {
     assertDeepEqual(manifest.bin, { "opcore-asp-provider": "dist/index.js" }, `${manifest.name} bin`);
   } else if (hasOwn(manifest, "bin")) {
@@ -458,7 +455,7 @@ function requireCommandBefore(path, content, earlier, later, reason) {
 
 function validateReservedGraphNaming() {
   const legacyPackagePath = ["packages", "crg"].join("/");
-  const legacyPackageName = `@the-open-engine/lattice-${"crg"}`;
+  const legacyPackageName = `@the-open-engine/opcore-${"crg"}`;
   const legacyProviderName = ["cr", "g"].join("");
   const quotedLegacyProviderName = `["']${escapeRegExp(legacyProviderName)}["']`;
   const providerLiteralPattern = new RegExp(
@@ -511,7 +508,7 @@ function validateRustGraphCoreNaming() {
 
 function validateGraphConsumerBoundaries() {
   const forbidden = [
-    /@the-open-engine\/lattice-graph/,
+    /@the-open-engine\/opcore-graph/,
     /graph-core/i,
     /lattice-graph-core/i,
     /resolveGraphCoreArtifact/i,

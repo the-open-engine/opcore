@@ -5,12 +5,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
-import { routeCommand } from "../packages/cli/dist/index.js";
+import { routeCommand } from "../packages/opcore/dist/lattice/index.js";
 import { routeOpcoreCommand } from "../packages/opcore/dist/index.js";
 import { fakeCargoScript, writeFakeRustToolchain } from "./helpers/validation-rust-fixtures.mjs";
 
 const repoRoot = fileURLToPath(new URL("..", import.meta.url));
-const latticeBin = fileURLToPath(new URL("../packages/cli/dist/index.js", import.meta.url));
+const latticeBin = fileURLToPath(new URL("../packages/opcore/dist/lattice/index.js", import.meta.url));
 const typeScriptCheckIds = [
   "typescript.syntax",
   "typescript.types",

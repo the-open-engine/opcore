@@ -110,9 +110,9 @@ describe("graph-core native artifact", () => {
     assert.ok(currentNativePackage, `unsupported local graph-core target ${currentTarget}`);
     const temp = mkdtempSync(join(tmpdir(), "lattice-graph-core-artifact-"));
     try {
-      const contracts = packWorkspace("@the-open-engine/lattice-contracts", temp);
+      const contracts = packWorkspace("@the-open-engine/opcore-contracts", temp);
       const native = packWorkspace(currentNativePackage, temp);
-      const graph = packWorkspace("@the-open-engine/lattice-graph", temp);
+      const graph = packWorkspace("@the-open-engine/opcore-graph", temp);
       const project = join(temp, "project");
       const fixtureRoot = join(temp, "wave1");
       cpSync(sourceFixtureRoot, fixtureRoot, { recursive: true, filter: skipGeneratedStore });

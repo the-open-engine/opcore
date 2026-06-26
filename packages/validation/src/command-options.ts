@@ -1,5 +1,5 @@
-import type { GraphProviderMode, ValidationRequest, ValidationScope } from "@the-open-engine/lattice-contracts";
-import { validateRepoRelativePath } from "@the-open-engine/lattice-contracts";
+import type { GraphProviderMode, ValidationRequest, ValidationScope } from "@the-open-engine/opcore-contracts";
+import { validateRepoRelativePath } from "@the-open-engine/opcore-contracts";
 
 export type ValidationCommandKind = "check" | "validate";
 export type CheckCommandRoute = "files" | "staged" | "changed" | "tree" | "all" | "manifest";

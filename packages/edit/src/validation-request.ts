@@ -4,12 +4,12 @@ import type {
   RepoIdentity,
   RepoRelativeChange,
   ValidationRequest
-} from "@the-open-engine/lattice-contracts";
+} from "@the-open-engine/opcore-contracts";
 import {
   validateRepoIdentity,
   validateRepoRelativePath,
   validateValidationRequestPayload
-} from "@the-open-engine/lattice-contracts";
+} from "@the-open-engine/opcore-contracts";
 
 export type EditPlanAfterState = Readonly<Record<string, string | null>>;
 

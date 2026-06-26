@@ -160,7 +160,7 @@ describe("negative gate fixtures", () => {
 
   it("rejects old public bins in release package inspection", () => {
     const repo = tempRepo({ includeDist: true });
-    const manifestPath = join(repo, "packages/cli/package.json");
+    const manifestPath = join(repo, "packages/opcore/package.json");
     const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
     manifest.bin.crg = "dist/index.js";
     writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
@@ -171,7 +171,7 @@ describe("negative gate fixtures", () => {
 
   it("rejects bad descriptor artifact references in release descriptor inspection", () => {
     const repo = tempRepo({ includeDist: true });
-    const descriptorPath = join(repo, "packages/cli/dist/descriptors/lattice.managed-tool.json");
+    const descriptorPath = join(repo, "packages/opcore/dist/descriptors/lattice.managed-tool.json");
     const descriptor = JSON.parse(readFileSync(descriptorPath, "utf8"));
     descriptor.artifacts = descriptor.artifacts.map((artifact) =>
       artifact.id === "descriptor" ? { ...artifact, path: "dist/descriptors/missing.json" } : artifact
@@ -199,7 +199,7 @@ describe("negative gate fixtures", () => {
 
   it("rejects current-tool markers in cutover descriptor inspection", () => {
     const repo = tempRepo({ includeDist: true });
-    const descriptorPath = join(repo, "packages/cli/dist/descriptors/lattice.managed-tool.json");
+    const descriptorPath = join(repo, "packages/opcore/dist/descriptors/lattice.managed-tool.json");
     const descriptor = JSON.parse(readFileSync(descriptorPath, "utf8"));
     descriptor.artifacts[0].path = ".ace/runtime/bin/lattice";
     writeFileSync(descriptorPath, `${JSON.stringify(descriptor, null, 2)}\n`);
@@ -282,7 +282,7 @@ describe("negative gate fixtures", () => {
     const repo = tempRepo();
     const manifestPath = join(repo, "packages/graph/package.json");
     const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
-    manifest.description = `Reserved ${`@the-open-engine/lattice-${"crg"}`} implementation name`;
+    manifest.description = `Reserved ${`@the-open-engine/opcore-${"crg"}`} implementation name`;
     writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
 
     const result = run(repo, "node", ["scripts/check-workspace.mjs"], { expectFailure: true });
@@ -329,7 +329,7 @@ describe("negative gate fixtures", () => {
         `Lattice is a public alpha code-intelligence monorepo for \`${legacyGraphTool}\`, edit, and validation.`
       )
       .replace(
-        "Graph extraction, persistence, query, search, and impact belong in `@the-open-engine/lattice-graph`.",
+        "Graph extraction, persistence, query, search, and impact belong in `@the-open-engine/opcore-graph`.",
         `Graph extraction, persistence, query, search, and impact graph production belongs in \`${legacyGraphTool}\`.`
       );
     writeFileSync(contributingPath, content);
@@ -342,7 +342,7 @@ describe("negative gate fixtures", () => {
   it("rejects edit importing graph-core native artifact loaders", () => {
     const repo = tempRepo();
     const sourcePath = join(repo, "packages/edit/src/bad-graph-loader.ts");
-    writeFileSync(sourcePath, `import { resolveGraphCoreArtifact } from "@the-open-engine/lattice-graph";\nvoid resolveGraphCoreArtifact;\n`);
+    writeFileSync(sourcePath, `import { resolveGraphCoreArtifact } from "@the-open-engine/opcore-graph";\nvoid resolveGraphCoreArtifact;\n`);
 
     const result = run(repo, "node", ["scripts/check-workspace.mjs"], { expectFailure: true });
     assert.match(stderrAndStdout(result), /bad-graph-loader\.ts/);
@@ -557,18 +557,16 @@ function minimalCutoverReceipt(repo, commandOverrides = {}) {
           path: `node_modules/${packageName}/package.json`,
           sha256: "3".repeat(64),
           bins:
-            packageName === "@the-open-engine/lattice-cli"
-              ? { lattice: "dist/index.js" }
-              : packageName === "@the-open-engine/opcore"
-                ? { opcore: "dist/index.js" }
+            packageName === "@the-open-engine/opcore"
+              ? { opcore: "dist/index.js", lattice: "dist/lattice/index.js" }
               : packageName === "@the-open-engine/opcore-asp-provider"
                 ? { "opcore-asp-provider": "dist/index.js" }
                 : {}
         }
       })),
     descriptor: {
-      path: "node_modules/@the-open-engine/lattice-cli/dist/descriptors/lattice.managed-tool.json",
-      packageName: "@the-open-engine/lattice-cli",
+      path: "node_modules/@the-open-engine/opcore/dist/descriptors/lattice.managed-tool.json",
+      packageName: "@the-open-engine/opcore",
       checksumSha256: "7".repeat(64),
       descriptor,
       resolvedArtifacts: descriptor.artifacts.map((artifact) => ({ ...artifact, packageFile: true })),

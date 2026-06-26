@@ -137,7 +137,7 @@ describe("conformance fixture metadata", () => {
       const descriptor = fixtureById(id).descriptor;
       assert.equal(descriptor.dataFile, "packages/fixtures/descriptors/lattice.managed-tool.json");
       assert.equal(descriptor.descriptorKind, "aggregate_lattice");
-      assert.equal(descriptor.packageName, "@the-open-engine/lattice-cli");
+      assert.equal(descriptor.packageName, "@the-open-engine/opcore");
       assert.ok(descriptor.entrypoints.length > 0);
       assert.deepEqual(descriptor.commandGroups, [
         "lattice graph",

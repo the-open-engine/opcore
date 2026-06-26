@@ -1,4 +1,4 @@
-import type { EditRefusal } from "@the-open-engine/lattice-contracts";
+import type { EditRefusal } from "@the-open-engine/opcore-contracts";
 
 export type ParsedPatchFileKind = "create" | "delete" | "modify";
 export type ParsedPatchLineKind = "context" | "add" | "delete";

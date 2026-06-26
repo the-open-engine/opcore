@@ -4,8 +4,8 @@ import type {
   ValidationRequest,
   ValidationScope,
   ValidationScopeKind
-} from "@the-open-engine/lattice-contracts";
-import { validateRepoRelativePath, validateValidationRequestPayload } from "@the-open-engine/lattice-contracts";
+} from "@the-open-engine/opcore-contracts";
+import { validateRepoRelativePath, validateValidationRequestPayload } from "@the-open-engine/opcore-contracts";
 
 export type ValidationWorkspaceFileStatus = "added" | "modified" | "deleted" | "renamed" | "unchanged";
 

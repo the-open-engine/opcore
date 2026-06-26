@@ -9,7 +9,7 @@ Source rows: `agent-server-protocol/docs/planning/old-tool-compatibility-matrix.
 
 ## Native Rust Checks
 
-`@the-open-engine/lattice-validation-rust` exports these provider assessment checks:
+`@the-open-engine/opcore-validation-rust` exports these provider assessment checks:
 
 | Check | Native behavior | Retained compatibility |
 |---|---|---|

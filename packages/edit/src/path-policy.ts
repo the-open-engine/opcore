@@ -1,6 +1,6 @@
 import { isAbsolute, relative, resolve } from "node:path";
-import type { EditRefusal, RepoIdentity } from "@the-open-engine/lattice-contracts";
-import { validateRepoIdentity, validateRepoRelativePath } from "@the-open-engine/lattice-contracts";
+import type { EditRefusal, RepoIdentity } from "@the-open-engine/opcore-contracts";
+import { validateRepoIdentity, validateRepoRelativePath } from "@the-open-engine/opcore-contracts";
 import type { EditFileStat, EditWorkspace } from "./workspace.js";
 import { errorCode } from "./workspace.js";
 

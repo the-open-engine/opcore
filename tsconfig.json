@@ -27,9 +27,6 @@
     },
     {
       "path": "packages/fixtures"
-    },
-    {
-      "path": "packages/cli"
     }
   ]
 }

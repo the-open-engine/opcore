@@ -63,7 +63,7 @@ function aspServerManifest(version, indexSha256, providerBinPath) {
     capabilityProfiles: ["core-check-provider", "opcore-core-check"],
     entrypoint: { transport: "stdio", bin: providerBinPath, args: ["--stdio"] },
     artifact: { fingerprint: `sha256:${indexSha256}`, checksums: [{ path: "dist/index.js", sha256: indexSha256 }] },
-    provenance: { publisher: "the-open-engine", source: "https://github.com/the-open-engine/lattice", license: "MIT" },
+    provenance: { publisher: "the-open-engine", source: "https://github.com/the-open-engine/opcore", license: "MIT" },
     accessExpectations: {
       filesystem: { read: ["workspace:snapshot"], write: [] },
       network: { outbound: false, allowlist: [] },

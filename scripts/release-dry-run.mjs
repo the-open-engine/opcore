@@ -14,14 +14,13 @@ import { releasePackageDirForName } from "./release-package-dirs.mjs";
 
 const releaseVersion = "0.1.0-alpha.0";
 const implementationPackages = [
-  "@the-open-engine/lattice-contracts",
+  "@the-open-engine/opcore-contracts",
   "@the-open-engine/opcore",
-  "@the-open-engine/lattice-cli",
-  "@the-open-engine/lattice-graph",
-  "@the-open-engine/lattice-edit",
-  "@the-open-engine/lattice-validation",
-  "@the-open-engine/lattice-validation-rust",
-  "@the-open-engine/lattice-validation-typescript",
+  "@the-open-engine/opcore-graph",
+  "@the-open-engine/opcore-edit",
+  "@the-open-engine/opcore-validation",
+  "@the-open-engine/opcore-validation-rust",
+  "@the-open-engine/opcore-validation-typescript",
   "@the-open-engine/opcore-asp-provider"
 ];
 const publicPackages = [
@@ -36,15 +35,14 @@ if (!graphCoreSupportedTargets.includes(target)) {
 }
 
 const installPackages = [
-  "@the-open-engine/lattice-contracts",
+  "@the-open-engine/opcore-contracts",
   "@the-open-engine/opcore",
-  "@the-open-engine/lattice-cli",
-  "@the-open-engine/lattice-graph",
+  "@the-open-engine/opcore-graph",
   graphCoreNativePackageNames.find((packageName) => packageName.endsWith(target)),
-  "@the-open-engine/lattice-edit",
-  "@the-open-engine/lattice-validation",
-  "@the-open-engine/lattice-validation-rust",
-  "@the-open-engine/lattice-validation-typescript",
+  "@the-open-engine/opcore-edit",
+  "@the-open-engine/opcore-validation",
+  "@the-open-engine/opcore-validation-rust",
+  "@the-open-engine/opcore-validation-typescript",
   "@the-open-engine/opcore-asp-provider"
 ].filter(Boolean);
 

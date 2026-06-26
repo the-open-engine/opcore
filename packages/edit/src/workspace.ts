@@ -11,7 +11,7 @@ import {
 } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { tmpdir } from "node:os";
-import type { RepoRelativeChange } from "@the-open-engine/lattice-contracts";
+import type { RepoRelativeChange } from "@the-open-engine/opcore-contracts";
 
 export interface EditFileStat {
   mode: number;

@@ -1,5 +1,5 @@
 import { dirname } from "node:path";
-import type { EditPlan, EditRefusal, RepoRelativeChange, ValidationRequest } from "@the-open-engine/lattice-contracts";
+import type { EditPlan, EditRefusal, RepoRelativeChange, ValidationRequest } from "@the-open-engine/opcore-contracts";
 import { decodeTextContent } from "./content-policy.js";
 import { calculateEditChecksum } from "./hash.js";
 import {

@@ -1,4 +1,4 @@
-import type { ValidationCheckDefinition } from "@the-open-engine/lattice-validation";
+import type { ValidationCheckDefinition } from "@the-open-engine/opcore-validation";
 import { createCargoCheck, createClippyCheck, createDeadCodeCheck, createRustdocCheck, type RustCommandCheckOptions } from "./cargo-check.js";
 import { createFileLengthCheck, type RustFileLengthThresholds } from "./file-length-check.js";
 import { createFmtCheck } from "./fmt-check.js";

@@ -15,6 +15,9 @@
       "path": "../graph"
     },
     {
+      "path": "../edit"
+    },
+    {
       "path": "../validation"
     },
     {

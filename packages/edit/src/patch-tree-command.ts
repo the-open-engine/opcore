@@ -1,4 +1,4 @@
-import type { EditRefusal, RepoIdentity, RepoRelativeChange } from "@the-open-engine/lattice-contracts";
+import type { EditRefusal, RepoIdentity, RepoRelativeChange } from "@the-open-engine/opcore-contracts";
 import { calculateEditChecksum } from "./hash.js";
 import { decodeTextContent, validateTextContentString } from "./content-policy.js";
 import { isCodexApplyPatch, parseCodexApplyPatch } from "./codex-patch-parser.js";

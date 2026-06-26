@@ -3,7 +3,7 @@ import type {
   ValidationRequest,
   ValidationResult,
   ValidationStatusPayload
-} from "@the-open-engine/lattice-contracts";
+} from "@the-open-engine/opcore-contracts";
 import {
   createCheckCommandAdapter,
   createNodeValidationWorkspace,
@@ -11,9 +11,9 @@ import {
   createValidationStatusPayload,
   type ValidationCommandAdapterOptions,
   type ValidationGraphProviderClient
-} from "@the-open-engine/lattice-validation";
-import { createRustValidationAdapterStatus, createRustValidationChecks } from "@the-open-engine/lattice-validation-rust";
-import { createTypeScriptValidationChecks } from "@the-open-engine/lattice-validation-typescript";
+} from "@the-open-engine/opcore-validation";
+import { createRustValidationAdapterStatus, createRustValidationChecks } from "@the-open-engine/opcore-validation-rust";
+import { createTypeScriptValidationChecks } from "@the-open-engine/opcore-validation-typescript";
 import {
   opcoreGraphDetectChanges,
   opcoreGraphFactQuery,

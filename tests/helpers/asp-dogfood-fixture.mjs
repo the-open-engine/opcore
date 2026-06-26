@@ -72,8 +72,7 @@ function installedPackagesFixture() {
 }
 
 function binsFor(packageName) {
-  if (packageName === "@the-open-engine/lattice-cli") return { lattice: "dist/index.js" };
-  if (packageName === "@the-open-engine/opcore") return { opcore: "dist/index.js" };
+  if (packageName === "@the-open-engine/opcore") return { opcore: "dist/index.js", lattice: "dist/lattice/index.js" };
   if (packageName === "@the-open-engine/opcore-asp-provider") return { "opcore-asp-provider": "dist/index.js" };
   return {};
 }
@@ -122,7 +121,7 @@ function serverManifestFixture() {
     capabilityProfiles: ["core-check-provider", "opcore-core-check"],
     entrypoint: { transport: "stdio", bin: "/tmp/opcore-asp-dogfood/project/node_modules/.bin/opcore-asp-provider", args: ["--stdio"] },
     artifact: { fingerprint: `sha256:${"e".repeat(64)}`, checksums: [{ path: "dist/index.js", sha256: "e".repeat(64) }] },
-    provenance: { publisher: "the-open-engine", source: "https://github.com/the-open-engine/lattice", license: "MIT" },
+    provenance: { publisher: "the-open-engine", source: "https://github.com/the-open-engine/opcore", license: "MIT" },
     accessExpectations: accessExpectationsFixture()
   };
 }

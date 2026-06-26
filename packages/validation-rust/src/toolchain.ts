@@ -1,7 +1,7 @@
 import type {
   ValidationAdapterRuntimeStatus,
   ValidationAdapterToolchainStatus
-} from "@the-open-engine/lattice-contracts";
+} from "@the-open-engine/opcore-contracts";
 import { rustValidationCheckIds } from "./check-ids.js";
 import { validationRustAdapterName } from "./check-constants.js";
 import { runTool } from "./process.js";

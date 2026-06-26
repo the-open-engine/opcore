@@ -1,5 +1,5 @@
-import type { ValidationScopeKind } from "@the-open-engine/lattice-contracts";
-import { validationScopeKinds } from "@the-open-engine/lattice-contracts";
+import type { ValidationScopeKind } from "@the-open-engine/opcore-contracts";
+import { validationScopeKinds } from "@the-open-engine/opcore-contracts";
 
 export const rustCheckOwner = "validation";
 export const rustCheckAdapter = "rust";

@@ -1,4 +1,4 @@
-import type { EditRefusal, RepoIdentity } from "@the-open-engine/lattice-contracts";
+import type { EditRefusal, RepoIdentity } from "@the-open-engine/opcore-contracts";
 import type { ParsedEditCommand } from "./command-parser.js";
 import type { EditPlannerResult } from "./planner.js";
 import { createSymbolEditPlan } from "./symbol-preview.js";

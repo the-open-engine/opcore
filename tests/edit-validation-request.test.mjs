@@ -59,8 +59,8 @@ describe("edit validation request contract boundary", () => {
     const sources = readdirSync(new URL("../packages/edit/src", import.meta.url))
       .filter((entry) => entry.endsWith(".ts"))
       .map((entry) => readFileSync(new URL(`../packages/edit/src/${entry}`, import.meta.url), "utf8"));
-    assert.equal(sources.some((source) => source.includes("@the-open-engine/lattice-validation")), false);
-    assert.equal(sources.some((source) => source.includes("@the-open-engine/lattice-contracts")), true);
+    assert.equal(sources.some((source) => source.includes("@the-open-engine/opcore-validation")), false);
+    assert.equal(sources.some((source) => source.includes("@the-open-engine/opcore-contracts")), true);
   });
 
   it("converts create, replace, delete, and rename changes to validation overlays", () => {

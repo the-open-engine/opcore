@@ -6,7 +6,7 @@ resolver = "2"
 version = "0.1.0-alpha.0"
 edition = "2021"
 license = "MIT"
-repository = "https://github.com/the-open-engine/lattice"
+repository = "https://github.com/the-open-engine/opcore"
 
 [workspace.dependencies]
 serde = { version = "1.0.203", features = ["derive"] }

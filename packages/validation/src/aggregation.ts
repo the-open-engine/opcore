@@ -10,8 +10,8 @@ import type {
   ValidationResultManifest,
   ValidationResultStatus,
   ValidationSkippedCheck
-} from "@the-open-engine/lattice-contracts";
-import { GRAPH_SCHEMA_VERSION, validateValidationResultPayload } from "@the-open-engine/lattice-contracts";
+} from "@the-open-engine/opcore-contracts";
+import { GRAPH_SCHEMA_VERSION, validateValidationResultPayload } from "@the-open-engine/opcore-contracts";
 
 export interface CreateValidationManifestArgs {
   checks: readonly string[];

@@ -1,4 +1,4 @@
-import type { CommandAdapter, CommandRouterResult, ParsedCommandArgv, ValidationStatusPayload } from "@the-open-engine/lattice-contracts";
+import type { CommandAdapter, CommandRouterResult, ParsedCommandArgv, ValidationStatusPayload } from "@the-open-engine/opcore-contracts";
 import {
   commandGroupByName,
   createCommandRouterResult,
@@ -6,8 +6,8 @@ import {
   parseCommandArgv,
   routeCommandAdapter,
   validateCommandRouterManifest
-} from "@the-open-engine/lattice-contracts";
-import { graphCommandAdapter } from "@the-open-engine/lattice-graph";
+} from "@the-open-engine/opcore-contracts";
+import { graphCommandAdapter } from "@the-open-engine/opcore-graph";
 import { editCommandAdapter } from "./edit-composition.js";
 import { inspectCommandAdapter } from "./inspect-adapter.js";
 import { commandRouterManifest } from "./manifest.js";
@@ -191,7 +191,7 @@ function helpMessage(groupName?: string): string {
       "  lattice graph search \"GreetingCard\" --repo . --limit 5",
       "  lattice validate pre-write --request-file ./validation-request.json --timeout-ms 30000 --json",
       "",
-      "Use --json for agent integrations. Docs: https://github.com/the-open-engine/lattice#readme",
+      "Use --json for agent integrations. Docs: https://github.com/the-open-engine/opcore#readme",
       "Groups: graph, inspect, edit, check, validate, status, doctor"
     ].join("\n");
   }

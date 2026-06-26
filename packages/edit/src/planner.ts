@@ -1,4 +1,4 @@
-import type { EditPlan, EditRefusal, RepoIdentity, RepoRelativeChange, ValidationRequest } from "@the-open-engine/lattice-contracts";
+import type { EditPlan, EditRefusal, RepoIdentity, RepoRelativeChange, ValidationRequest } from "@the-open-engine/opcore-contracts";
 import { calculateEditChecksum, calculatePlanHash, createPlanId } from "./hash.js";
 import {
   applyResolvedTextEdits,

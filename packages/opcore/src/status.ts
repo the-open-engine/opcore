@@ -4,8 +4,8 @@ import type {
   OpcoreRepoStatePayload,
   ParsedCommandArgv,
   ValidationAdapterRuntimeStatus
-} from "@the-open-engine/lattice-contracts";
-import { createCommandRouterResult } from "@the-open-engine/lattice-contracts";
+} from "@the-open-engine/opcore-contracts";
+import { createCommandRouterResult } from "@the-open-engine/opcore-contracts";
 import { spawnSync } from "node:child_process";
 import { existsSync, readdirSync, realpathSync, statSync } from "node:fs";
 import { basename, extname, join, resolve, sep } from "node:path";

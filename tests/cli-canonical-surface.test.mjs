@@ -5,13 +5,13 @@ import { cpSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, wri
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { commandRouterManifest, routeCommand } from "../packages/cli/dist/index.js";
+import { commandRouterManifest, routeCommand } from "../packages/opcore/dist/lattice/index.js";
 
 const removedLegacyCommandField = `legacy${"Command"}`;
 
 const repoRoot = fileURLToPath(new URL("..", import.meta.url));
 const sourceFixtureRoot = resolve(repoRoot, "packages/fixtures/source-extraction/wave1");
-const latticeBin = fileURLToPath(new URL("../packages/cli/dist/index.js", import.meta.url));
+const latticeBin = fileURLToPath(new URL("../packages/opcore/dist/lattice/index.js", import.meta.url));
 
 describe("canonical CLI surface", () => {
   it("declares the canonical validate routes", () => {
@@ -170,7 +170,7 @@ describe("canonical CLI surface", () => {
 
   it("routes canonical edit commands and keeps future edit routes typed", async () => {
     assert.equal((await run(["edit", "multi-edit", "--json"], 64)).status, "unsupported");
-    const editRepo = mkdtempSync(join(tmpdir(), "lattice-cli-edit-"));
+    const editRepo = mkdtempSync(join(tmpdir(), "opcore-lattice-bin-edit-"));
     try {
       mkdirSync(join(editRepo, "src"), { recursive: true });
       writeFileSync(join(editRepo, "src/a.ts"), "old\n");
@@ -239,7 +239,7 @@ async function run(args, expectedStatus = 0, bin = "lattice") {
 }
 
 async function withFixtureCopy(runFixture) {
-  const temp = mkdtempSync(join(tmpdir(), "lattice-cli-"));
+  const temp = mkdtempSync(join(tmpdir(), "opcore-lattice-bin-"));
   const fixtureRoot = join(temp, "wave1");
   try {
     cpSync(sourceFixtureRoot, fixtureRoot, { recursive: true, filter: skipGeneratedStore });

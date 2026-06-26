@@ -1,5 +1,5 @@
-import type { CommandRouterResult, OpcoreInitAction, OpcoreInitPlanPayload, ParsedCommandArgv } from "@the-open-engine/lattice-contracts";
-import { createCommandRouterResult } from "@the-open-engine/lattice-contracts";
+import type { CommandRouterResult, OpcoreInitAction, OpcoreInitPlanPayload, ParsedCommandArgv } from "@the-open-engine/opcore-contracts";
+import { createCommandRouterResult } from "@the-open-engine/opcore-contracts";
 import { chmodSync, lstatSync, mkdirSync, readFileSync, realpathSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
 import { createRepoState, resolveRepo } from "./status.js";

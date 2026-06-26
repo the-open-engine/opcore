@@ -7,7 +7,7 @@ import type {
   GraphReviewContextAvailableResult,
   RepoIdentity,
   ValidationRequest
-} from "@the-open-engine/lattice-contracts";
+} from "@the-open-engine/opcore-contracts";
 import type { EditPlannerResult } from "./planner.js";
 import { createEditPlanFromChanges } from "./planner.js";
 import {

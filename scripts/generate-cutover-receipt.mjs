@@ -30,7 +30,7 @@ import {
 } from "./release-package-dirs.mjs";
 
 const repoRoot = fileURLToPath(new URL("..", import.meta.url));
-const descriptorPath = "packages/cli/dist/descriptors/lattice.managed-tool.json";
+const descriptorPath = "packages/opcore/dist/descriptors/lattice.managed-tool.json";
 const graphReleaseReceiptPath = "docs/release/graph-release-receipt.json";
 const releaseReceiptPath = "docs/release/release-receipt.json";
 const preWriteEvidencePath = "docs/integration/pre-write-validation.md";
@@ -464,15 +464,15 @@ function collectInstalledDescriptor(project, tarballs) {
     project,
     "node_modules",
     "@the-open-engine",
-    "lattice-cli",
+    "opcore",
     "dist",
     "descriptors",
     "lattice.managed-tool.json"
   );
   const descriptor = validateManagedToolDescriptor(JSON.parse(readFileSync(descriptorAbsolutePath, "utf8")));
   return {
-    path: "node_modules/@the-open-engine/lattice-cli/dist/descriptors/lattice.managed-tool.json",
-    packageName: "@the-open-engine/lattice-cli",
+    path: "node_modules/@the-open-engine/opcore/dist/descriptors/lattice.managed-tool.json",
+    packageName: "@the-open-engine/opcore",
     checksumSha256: sha256File(descriptorAbsolutePath),
     descriptor,
     resolvedArtifacts: descriptor.artifacts.map((artifact) => {

@@ -1,5 +1,5 @@
-import type { ValidationCheckContext, ValidationFileView } from "@the-open-engine/lattice-validation";
-import { normalizeValidationFileViewPath } from "@the-open-engine/lattice-validation";
+import type { ValidationCheckContext, ValidationFileView } from "@the-open-engine/opcore-validation";
+import { normalizeValidationFileViewPath } from "@the-open-engine/opcore-validation";
 import ts from "typescript";
 
 export const typeScriptSourceExtensions = [".ts", ".tsx", ".js", ".jsx", ".mts", ".cts"] as const;

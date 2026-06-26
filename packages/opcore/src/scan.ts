@@ -4,9 +4,9 @@ import type {
   OpcoreRepoStatePayload,
   ValidationRequest,
   ValidationResult
-} from "@the-open-engine/lattice-contracts";
-import { createCommandRouterResult } from "@the-open-engine/lattice-contracts";
-import { createValidationRunner, type ValidationWorkspace } from "@the-open-engine/lattice-validation";
+} from "@the-open-engine/opcore-contracts";
+import { createCommandRouterResult } from "@the-open-engine/opcore-contracts";
+import { createValidationRunner, type ValidationWorkspace } from "@the-open-engine/opcore-validation";
 import { readdir, readFile } from "node:fs/promises";
 import { join, relative, resolve, sep } from "node:path";
 import { createOpcoreMetricReport, writeOpcoreMetricArtifacts } from "./reporting.js";

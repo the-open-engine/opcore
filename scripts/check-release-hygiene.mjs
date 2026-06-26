@@ -160,16 +160,16 @@ function isAllowlistedOldNameHit(path, line) {
   const trimmed = line.trim();
   const allowlist = [
     {
-      reason: "transitional internal package dependency",
-      matches: () => path === "packages/opcore/package.json" && /"@the-open-engine\/lattice-(contracts|graph|validation|validation-rust|validation-typescript)"/.test(trimmed)
+      reason: "intentionally retained lattice command package metadata",
+      matches: () => path === "packages/opcore/package.json" && /lattice(?:\.managed-tool|")|dist\/lattice/.test(trimmed)
     },
     {
-      reason: "transitional repository URL",
-      matches: () => path === "packages/opcore/package.json" && /github\.com\/the-open-engine\/lattice\.git/.test(trimmed)
+      reason: "intentionally retained lattice bin README reference",
+      matches: () => path === "packages/opcore/README.md" && /`lattice`/.test(trimmed)
     },
     {
-      reason: "transitional internal package import",
-      matches: () => path.startsWith("packages/opcore/src/") && /@the-open-engine\/lattice-(contracts|graph|validation|validation-rust|validation-typescript)/.test(trimmed)
+      reason: "intentionally retained lattice command implementation",
+      matches: () => path.startsWith("packages/opcore/src/lattice/")
     },
     {
       reason: "internal graph provider id",

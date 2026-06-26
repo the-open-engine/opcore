@@ -4,19 +4,19 @@
   "aggregateIdentity": {
     "name": "lattice",
     "releaseLine": "lattice",
-    "packageName": "@the-open-engine/lattice-cli",
+    "packageName": "@the-open-engine/opcore",
     "version": "0.1.0-alpha.0"
   },
   "packageIdentity": {
-    "packageName": "@the-open-engine/lattice-cli",
-    "artifactName": "@the-open-engine/lattice-cli",
+    "packageName": "@the-open-engine/opcore",
+    "artifactName": "@the-open-engine/opcore",
     "version": "0.1.0-alpha.0"
   },
   "entrypoints": [
     {
       "bin": "lattice",
-      "packageName": "@the-open-engine/lattice-cli",
-      "path": "dist/index.js",
+      "packageName": "@the-open-engine/opcore",
+      "path": "dist/lattice/index.js",
       "command": [
         "lattice"
       ]
@@ -41,7 +41,7 @@
         "detect-changes",
         "search"
       ],
-      "packageName": "@the-open-engine/lattice-graph"
+      "packageName": "@the-open-engine/opcore-graph"
     },
     {
       "name": "inspect",
@@ -57,7 +57,7 @@
         "implementations",
         "search"
       ],
-      "packageName": "@the-open-engine/lattice-cli"
+      "packageName": "@the-open-engine/opcore"
     },
     {
       "name": "edit",
@@ -77,7 +77,7 @@
         "move",
         "signature"
       ],
-      "packageName": "@the-open-engine/lattice-edit"
+      "packageName": "@the-open-engine/opcore-edit"
     },
     {
       "name": "check",
@@ -93,7 +93,7 @@
         "all",
         "manifest"
       ],
-      "packageName": "@the-open-engine/lattice-validation"
+      "packageName": "@the-open-engine/opcore-validation"
     },
     {
       "name": "validate",
@@ -107,7 +107,7 @@
         "pre-write",
         "manifest"
       ],
-      "packageName": "@the-open-engine/lattice-validation"
+      "packageName": "@the-open-engine/opcore-validation"
     },
     {
       "name": "status",
@@ -118,7 +118,7 @@
       "commands": [
         "status"
       ],
-      "packageName": "@the-open-engine/lattice-cli"
+      "packageName": "@the-open-engine/opcore"
     },
     {
       "name": "doctor",
@@ -129,7 +129,7 @@
       "commands": [
         "doctor"
       ],
-      "packageName": "@the-open-engine/lattice-cli"
+      "packageName": "@the-open-engine/opcore"
     }
   ],
   "healthProbes": [
@@ -352,21 +352,21 @@
   "artifacts": [
     {
       "id": "cli-entrypoint",
-      "packageName": "@the-open-engine/lattice-cli",
-      "path": "dist/index.js",
+      "packageName": "@the-open-engine/opcore",
+      "path": "dist/lattice/index.js",
       "type": "entrypoint",
       "required": true
     },
     {
       "id": "descriptor",
-      "packageName": "@the-open-engine/lattice-cli",
+      "packageName": "@the-open-engine/opcore",
       "path": "dist/descriptors/lattice.managed-tool.json",
       "type": "descriptor",
       "required": true
     },
     {
       "id": "contracts-schema",
-      "packageName": "@the-open-engine/lattice-contracts",
+      "packageName": "@the-open-engine/opcore-contracts",
       "path": "schemas/lattice-contracts.schema.json",
       "type": "schema",
       "required": true

@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
-import type { HypotheticalOverlay, ValidationRequest } from "@the-open-engine/lattice-contracts";
-import { validateRepoRelativePath, validateValidationRequestPayload } from "@the-open-engine/lattice-contracts";
+import type { HypotheticalOverlay, ValidationRequest } from "@the-open-engine/opcore-contracts";
+import { validateRepoRelativePath, validateValidationRequestPayload } from "@the-open-engine/opcore-contracts";
 import type { ResolvedValidationScope, ValidationWorkspace, ValidationWorkspaceReadFileResult } from "./scope.js";
 
 export type ValidationFileReadState = "before" | "after";

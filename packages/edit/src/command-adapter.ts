@@ -7,11 +7,11 @@ import type {
   EditPlan,
   EditRefusal,
   RepoIdentity
-} from "@the-open-engine/lattice-contracts";
+} from "@the-open-engine/opcore-contracts";
 import {
   createCommandRouterResult,
   validateEditPlanPayload
-} from "@the-open-engine/lattice-contracts";
+} from "@the-open-engine/opcore-contracts";
 import { previewEditPlan, type EditPlanPreviewSuccess } from "./atomic-writer.js";
 import {
   parseEditCommandArgs,

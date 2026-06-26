@@ -45,7 +45,7 @@ describe("cutover release receipt", () => {
       const temp = mkdtempSync(join(tmpdir(), "lattice-cutover-negative-"));
       try {
         const receiptPath = join(temp, "cutover.json");
-        const receipt = JSON.parse(readFileSync(resolve(repoRoot, "docs/release/release-receipt.json"), "utf8"));
+        const descriptor = JSON.parse(readFileSync(resolve(repoRoot, "packages/fixtures/descriptors/lattice.managed-tool.json"), "utf8"));
         const cutover = {
           schemaVersion: 1,
           issue: "#30",
@@ -64,22 +64,24 @@ describe("cutover release receipt", () => {
                 path: `node_modules/${packageName}/package.json`,
                 sha256: "c".repeat(64),
                 bins:
-                  packageName === "@the-open-engine/lattice-cli"
-                    ? { lattice: "dist/index.js" }
-                    : packageName === "@the-open-engine/opcore"
-                      ? { opcore: "dist/index.js" }
+                  packageName === "@the-open-engine/opcore"
+                    ? { opcore: "dist/index.js", lattice: "dist/lattice/index.js" }
                     : packageName === "@the-open-engine/opcore-asp-provider"
                       ? { "opcore-asp-provider": "dist/index.js" }
                       : {}
               }
             })),
           descriptor: {
-            path: "packages/cli/dist/descriptors/lattice.managed-tool.json",
-            packageName: "@the-open-engine/lattice-cli",
+            path: "packages/opcore/dist/descriptors/lattice.managed-tool.json",
+            packageName: "@the-open-engine/opcore",
             checksumSha256: "d".repeat(64),
-            descriptor: receipt.descriptor.descriptor,
-            resolvedArtifacts: receipt.descriptor.resolvedArtifacts,
-            resolvedChecksums: receipt.descriptor.resolvedChecksums
+            descriptor,
+            resolvedArtifacts: descriptor.artifacts.map((artifact) => ({ ...artifact, packageFile: true })),
+            resolvedChecksums: descriptor.checksums.map((checksum) => ({
+              ...checksum,
+              packageFile: true,
+              value: "8".repeat(64)
+            }))
           },
           environmentIsolation: {
             currentToolEnvCleared: true,

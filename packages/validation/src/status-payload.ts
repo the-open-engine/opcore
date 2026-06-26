@@ -3,8 +3,8 @@ import type {
   GraphProviderStatus,
   ValidationAdapterRuntimeStatus,
   ValidationStatusPayload
-} from "@the-open-engine/lattice-contracts";
-import { validateValidationStatusPayload } from "@the-open-engine/lattice-contracts";
+} from "@the-open-engine/opcore-contracts";
+import { validateValidationStatusPayload } from "@the-open-engine/opcore-contracts";
 import { createValidationCheckManifest, type ValidationCheckDefinition } from "./registry.js";
 import { defaultValidationGraphProvider, missingGraphStatus } from "./request.js";
 

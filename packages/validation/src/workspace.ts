@@ -4,7 +4,7 @@ import type {
   ValidationWorkspaceFileSet,
   ValidationWorkspaceReadFileResult
 } from "./scope.js";
-import { validateRepoRelativePath } from "@the-open-engine/lattice-contracts";
+import { validateRepoRelativePath } from "@the-open-engine/opcore-contracts";
 import { spawnSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import { relative, resolve, sep } from "node:path";

@@ -1,47 +1,219 @@
-# Opcore Agent Guidance
+UPDATE THIS FILE when making architectural changes, adding patterns, or changing conventions.
 
-Update this file when changing release architecture, public naming, or repo
-conventions.
+# Opcore
 
-## Non-Negotiables
+Opcore is the code-intelligence and robustness monorepo for graph context, edit planning, pre-write validation, repo robustness scanning/measurement, and the standalone ASP Core check provider for coding agents. Existing old-name package, binary, fixture, descriptor, receipt, and repo-path names are transitional implementation debt until the rename lands; do not introduce new public/product-facing old-name branding. The accepted runtime/CLI boundary is hybrid: Rust graph core with TypeScript contracts, CLI router, edit, validation, validation-typescript, ASP provider facade, npm/Opcore facade, and ACE descriptors. See @docs/architecture/runtime-cli-ard.md and @docs/planning/opcore-alpha-roadmap.md before changing language, package, provider, product, or CLI ownership.
 
-- This repository is private until maintainers explicitly approve publication.
-- Do not publish packages, push public docs, announce release status, or create
-  public-facing claims without explicit approval.
-- The public product name is Opcore. Do not introduce legacy product naming into
-  release-facing files, package metadata, examples, quickstarts, screenshots, or
-  docs in this repository.
-- Keep user-facing setup simple: scan first, then optional setup, then changed
-  file checks and measurable deltas.
-- Opcore must remain independent from downstream harnesses. A harness can be
-  one downstream client of an ASP host, but it must not ship Opcore, provision
-  providers, or own release gates.
-- ASP is the host/protocol/manager layer. Opcore is one provider/product behind
-  that layer, not the protocol, not the host, and not a privileged provider.
+## Key Concepts
 
-## Public UX Rules
+| Concept | Meaning |
+|---------|---------|
+| Graph provider | Owns source extraction, persistent graph facts, freshness metadata, graph query contracts, and FTS search index artifacts. |
+| Edit planner | Owns symbol-aware rename, move, signature, patch, and tree edits; it must validate full edit plans, not isolated files. |
+| Validation engine | Owns mechanical checks, hypothetical validation, check manifests, and failure policy. |
+| Opcore product facade | Thin user-facing robustness loop over graph, validation, edit, and ASP-provider packages: read-only scan/status/check/measure by default, approval-gated init, and no ASP-standard or old-tool replacement claims. |
+| Command adapters | Package-owned graph, edit, check, and validate dispatch surfaces used only by canonical `lattice` routes. |
+| Current-tool wrappers | Local agent tooling that invokes the already-installed ACE-managed tools; these wrappers are not lattice implementation artifacts. |
 
-- The first screen must help a developer run Opcore in under 10 minutes.
-- Always show what was checked and what was skipped before showing findings.
-- Use named signals, counts, and file locations. Do not invent a single opaque
-  quality score.
-- Unsupported stacks are a coverage state, not a failure and not a hidden pass.
-- Source edits are out of scope for the default product loop. Scans and checks
-  must be read-only on source.
-- `opcore init` may write only explicit setup artifacts after approval, and it
-  must be additive, idempotent, and reversible.
+## Where To Look
 
-## Release Readiness
+| Concept | Primary File |
+|---------|--------------|
+| Runtime/CLI ARD | @docs/architecture/runtime-cli-ard.md |
+| Opcore alpha roadmap | @docs/planning/opcore-alpha-roadmap.md |
+| Opcore metrics/report/history | @packages/opcore/src/reporting.ts |
+| Public contracts | @packages/contracts/ |
+| Contract JSON schema | @packages/contracts/schemas/lattice-contracts.schema.json |
+| Command router package | @packages/opcore/src/lattice/ |
+| Graph provider package track | @packages/graph/ |
+| Graph SQLite store | @crates/graph-core/src/store.rs |
+| Edit package track | @packages/edit/ |
+| Validation package track | @packages/validation/ |
+| Validation file view | @packages/validation/src/overlays.ts |
+| Validation graph client | @packages/validation/src/graph-client.ts |
+| Rust validation adapter | @packages/validation-rust/ |
+| TypeScript validation adapter | @packages/validation-typescript/ |
+| Opcore product facade | @packages/opcore/ |
+| Opcore scan report seam | @packages/opcore/src/reporting.ts |
+| ASP Core check provider facade | @packages/asp-provider/ |
+| ASP provider manifest generator | @scripts/write-asp-provider-manifest.mjs |
+| Golden fixtures and reference evidence | @packages/fixtures/ |
+| Graph reference evidence manifest | @packages/fixtures/graph-reference-evidence/manifest.json |
+| Graph release fixture | @packages/fixtures/graph-release/release-readiness-fixture.json |
+| Graph release receipt | @docs/release/graph-release-receipt.json |
+| Graph release payload checksum target | @docs/release/graph-release-receipt.payload.json |
+| Graph release handoff | @docs/release/graph-release-handoff.md |
+| Release receipt | @docs/release/release-receipt.json |
+| Release receipt summary | @docs/release/release-receipt.summary.md |
+| Cutover receipt | @docs/release/cutover-receipt.json |
+| Cutover receipt summary | @docs/release/cutover-receipt.summary.md |
+| ASP dogfood receipt | @docs/release/asp-dogfood-receipt.json |
+| ASP dogfood receipt summary | @docs/release/asp-dogfood-receipt.summary.md |
+| Secret scan allowlist | @docs/release/secret-scan-allowlist.json |
+| Release receipt generator | @scripts/generate-release-receipt.mjs |
+| Cutover receipt generator | @scripts/generate-cutover-receipt.mjs |
+| ASP dogfood receipt generator | @scripts/generate-asp-dogfood-receipt.mjs |
+| Workspace checks | @scripts/check-workspace.mjs |
+| Package dry-run checks | @scripts/check-packages.mjs |
+| Provenance checks | @scripts/check-provenance.mjs |
+| Current ACE tool setup | @scripts/setup-current-tools.sh |
+| Local CI-equivalent gate | @scripts/ci/run-local-ci-equivalent.sh |
+| Zeroshot setup | @.zeroshot/settings.json |
+| GitHub Actions | @.github/workflows/ |
+| Tests | @tests/ |
 
-Before release, verify:
+## Current Tooling
 
-- no release-facing file contains legacy product naming;
-- package metadata points at this repository;
-- public package names are Opcore names;
-- `opcore` scan/check/measure work from installed artifacts, not workspace
-  shortcuts;
-- native packages are available for supported alpha platforms;
-- unsupported platforms and languages degrade honestly;
-- claim scrub rejects public-standard, security/SAST, every-stack,
-  automatic-fix, and replacement-overclaim wording;
-- no public publish step has run.
+- Run `npm run setup:tools` after cloning or entering a fresh worktree. It writes `.ace/runtime/bin/{rox,crg,cix}` wrappers that exec the current external ACE-managed tools from `LATTICE_CURRENT_TOOLS_DIR`, sibling Covibes repos, or `PATH`.
+- The generated `rox` wrapper also prepends the current ACE-managed `rust-code-analysis-cli` native tool when one is discoverable - WHY: all-mode Rust function metrics must match scoped Rust Rox findings.
+- NEVER point `.ace/runtime/bin/{rox,crg,cix}` at `packages/graph`, `packages/edit`, or `packages/validation` before the release/cutover issues say those packages are production-ready - WHY: agents must validate lattice work with the stable current tools, not with the toolchain being rewritten.
+- Source `scripts/dev-env.sh` when interactive shells should prefer the generated wrappers. It fails non-zero and leaves PATH/env untouched when `.ace/runtime/bin/{rox,crg,cix}` is incomplete - WHY: ACE, MCP, Zeroshot, and humans should resolve the same current tool surface.
+- `ace.json` routes the code-review graph MCP through `.ace/runtime/bin/crg serve --repo "$repo_root"`; update `ace.json`, `scripts/setup-current-tools.sh`, and this file together when tool acquisition changes.
+- Use current external `crg` for discovery before broad text scans, current external `cix` for cohesive symbol/edit deltas, and current external `rox` for staged/changed/repo validation. These are dev validation helpers, not lattice release surfaces.
+- `npm run current-tools:validate-changed` runs `scripts/ci/run-rox-clean-changed-gate.mjs`: it stops Rox, clears `.rox-cache` and `.robustness-engine-cache`, runs daemon-free changed-file Rox, and fails non-baseline findings while retaining legacy code-quality findings already present on the base tree.
+- Root `.npmrc` sets `loglevel=silent` - WHY: JSON-emitting npm scripts such as `npm run asp-dogfood:check -- --json` must write parseable JSON to redirected stdout without npm lifecycle preambles.
+- Graph-owned transitional `lattice graph serve --repo <repo>` starts the graph package stdio/MCP bridge over graph-core JSONL; `--repo` defaults to cwd, supports ping/status/query/search/shutdown, injects missing nested query repos, and returns typed startup/frame/provider failures.
+- #126 ships graph-core through optional Opcore native packages `@the-open-engine/opcore-graph-core-darwin-arm64`, `@the-open-engine/opcore-graph-core-darwin-x64`, and `@the-open-engine/opcore-graph-core-linux-x64`; `packages/graph` resolves only matching package metadata and never probes `packages/graph/dist/native`, sibling checkouts, `.ace/runtime`, or PATH.
+- Release dry-run CI runs on PRs and main pushes; native jobs upload tarred native package directories so `lattice-graph-core` execute bits survive artifact transfer; aggregate CI must not install a Rust toolchain, must set `LATTICE_REQUIRE_ALL_NATIVE_PACKAGES=1` after extracting all three native artifacts, and `scripts/release-dry-run.mjs` then validates package-local executable binaries/checksums without rebuilding graph-core - WHY: aggregate proof must consume runnable per-target artifacts produced by native jobs, not a local Linux rebuild or non-executable download.
+- #19 keeps `LATTICE_GRAPH_WATCH_PATHS` as the only watch env default and ignores `CRG_WATCH_PATHS` - WHY: Opcore watch roots must not inherit old-tool scoping accidentally.
+- #19 graph discovery excludes generated/private/dependency roots even without repo ignore files: `.git`, `node_modules`, `.pnpm`, `vendor`, `dist`, `target`, `.ace`, `.lattice`, `.rox-cache`, and `.robustness-engine-cache` - WHY: cache/vendor changes must not create graph facts, freshness changes, or FTS rows.
+- #19 requires graph status to preserve real WAL checkpoint evidence from the latest pipeline summary and release gates to fail missing/fabricated WAL evidence - WHY: freshness and checkpoint pressure must remain host-visible provider facts.
+- #19 treats `lattice graph serve` as the stdio/MCP hot-query replacement, not a Unix socket, with parallel independent serve sessions as the supported concurrency evidence.
+- #19 keeps current external CRG receipts as non-implementation compatibility evidence only - WHY: old CRG remains a guardrail until downstream cutover issues consume the Opcore proof.
+- `opcore-asp-provider --stdio` is the transitional provider binary for the standalone ASP Core check provider; it uses host workspace callbacks and Opcore validation only, never ACE descriptors or current-tool wrappers.
+- #120 ASP dogfood uses `npm run asp-dogfood:check` with a temporary `ASP_HOME`, standalone sibling/private ASP manager bootstrap evidence, installed provider evidence, and retained current-tool guardrail receipts - WHY: dogfood proves advisory/shadow host integration without making Opcore the host, manager, authority, or old-tool replacement.
+- `opcore [--repo <path>] [--json]` is the public read-only first-run scan. It emits `repoState` plus `validationResult`, prints Coverage before Findings, and writes only `.opcore/report.json` and `.opcore/history.jsonl`.
+- `opcore status [--repo <path>] [--json]` is the runtime-owned activation/readiness entrypoint. It emits `repoState` and must stay read-only: no graph build/update/watch, validation checks, package installs, ASP setup, ACE setup, current-tool wrapper execution, or source writes.
+- `opcore check --changed --json` is the agent gate and defaults to `--base HEAD`.
+- #130 Opcore metrics aggregate named, drillable signals from supplied validation and graph evidence, write only `.opcore/report.json` plus append-only `.opcore/history.jsonl`, and expose read-only `opcore measure [--repo <path>] [--json]` deltas through `opcoreMeasure` - WHY: reports must show honest coverage/signals/degradations/history without scores, source edits, setup writes, validation runs, or graph builds.
+- `opcore init [--repo <path>] [--approve] [--json]` is the approval-gated repo/agent setup path. Default init is plan-only; approved init writes additive `.opcore/config`, delimited guidance in existing agent files or a new `AGENTS.md` when none exist, and `.opcore/init-undo.json`. Fail-closed hooks require approved `--fail-closed-hook`.
+- `opcore try [--json]` is the launch demo loop. It creates local TS, Rust, mixed, and unsupported-file sample repos, runs scan/init/check/measure, returns `opcoreTry.published:false`, and must not publish anything or mention old-tool/current-tool names in human output.
+- Launch-facing naming gates must keep README, quickstart, concepts, examples, demo, agent integration, and `packages/opcore` copy branded as Opcore. Any remaining old-name hit in those surfaces must be explicitly allowlisted as internal/transitional implementation naming.
+
+## Architecture Rules
+
+- ALWAYS keep graph, edit, and validation as separate ownership boundaries - WHY: graph facts, code mutation, and policy checks evolve at different correctness boundaries - Consequence: a single mixed engine makes parity and cutover unverifiable.
+- ALWAYS put shared wire/types/contracts in `packages/contracts` before another package consumes them - WHY: package-private shape copying creates incompatible command and API surfaces.
+- ALWAYS update `packages/contracts/schemas/lattice-contracts.schema.json`, contract tests, fixture metadata, package exports, and packlists together when changing shared contracts - WHY: Rust/native graph-core consumers and TypeScript packages must consume the same wire artifacts.
+- ALWAYS dispatch implemented canonical `lattice graph`, `lattice edit`, `lattice check`, and `lattice validate` routes through public package-owned adapters - WHY: package entrypoints must be able to run without importing the aggregate CLI.
+- NEVER import package implementation internals across package tracks - WHY: graph, edit, and validation must be releasable and testable independently - Consequence: router composition hides runtime coupling until package publishing.
+- ALWAYS route symbol edits through graph-backed discovery and whole-plan validation - WHY: declaration-only rewrites leave dangling imports and broken call sites.
+- ALWAYS emit boolean `attributes.exported` on supported TS/JS graph symbol nodes and file-node `attributes.exports[]` for default/re-export/barrel forms - WHY: dead-export metrics must distinguish unsupported export coverage from zero dead exports.
+- ALWAYS make validation checks read file content through `ValidationCheckContext.fileView` - WHY: validation overlays are hypothetical and checks must see the same before/after file state without mutating disk.
+- ALWAYS make validation checks consume GraphProvider facts through `ValidationCheckContext.graph` and injected `ValidationGraphProviderClient` sessions - WHY: validation must depend only on public contracts, not graph package internals, CLI execution, or store layouts.
+- ALWAYS keep `packages/asp-provider` as a provider-process facade over ASP Core check/evaluate only - WHY: ASP hosts own decisions, authority, gate semantics, workspace grants, and apply behavior.
+- ALWAYS keep the Opcore product facade thin over public package adapters - WHY: `opcore` is first-run UX, not a second implementation of graph, validation, edit, ASP host authority, or old-tool behavior.
+- ALWAYS make Opcore scan/status/check/measure read-only with respect to source files and require explicit approval before `opcore init` writes guidance, hooks, or config - WHY: first-run trust depends on showing value before mutating a repo.
+- ALWAYS put coverage honesty before Opcore metrics - WHY: the graph engine is currently TypeScript/JavaScript-only, Rust is validation/toolchain coverage without graph, and unsupported stacks must be counted instead of silently ignored.
+- NEVER ship a blended quality score, security/SAST claim, all-stack claim, AI-authorship claim, automatic-fix claim, ASP-standard claim, or old-tool replacement claim from Opcore alpha - WHY: the alpha must survive skeptical drill-down and current receipts keep `oldToolReplacementClaimed: false`.
+- NEVER add new launch-facing old-name branding - WHY: the public/product name is Opcore. Existing old-name package/bin/repo references are transitional implementation debt to remove or hide before alpha.
+- ALWAYS keep Rust validation in `packages/validation-rust` as provider assessment checks composed by the CLI, not host decisions or old-tool wrappers - WHY: Cargo, rustfmt, clippy, rustdoc, import/dead-code, unused dependency, and function-metric evidence must remain package-owned and overlay-safe.
+- ALWAYS treat Cargo.lock-only changes as retained compatibility unless a later decision expands Rust adapter ownership - WHY: current parity covers `.rs`, `.inc`, and `Cargo.toml`; lockfile-only policy needs an explicit cutover decision before old guardrails move.
+- NEVER add public CLI behavior outside @docs/architecture/runtime-cli-ard.md canonical routing - WHY: early command shapes become accidental API promises.
+- ALWAYS keep `GraphProviderStatus.state` aligned with `failure.category` in TypeScript validators and JSON schema - WHY: consumers branch on both fields for required graph failure policy; contradictory pairs make provider handling ambiguous.
+- ALWAYS reject blank validation check names before normalization deduplicates or trims them - WHY: blank checks can otherwise become an empty no-check validation request and hide caller mistakes.
+- ALWAYS update `rox.json`, CI, and this file in the same change when adding a new implementation language or Rust gate surface - WHY: language support without repo-wide and scoped validation lets agents ship unverified code paths.
+- NEVER add backward-compatibility shims for removed internal paths - WHY: this is a clean release line; migrate the caller or delete the old path.
+- ALWAYS keep generated provider/runtime trees out of Git - WHY: descriptors and scripts are source of truth; generated trees drift by machine.
+- ALWAYS keep old-tool reference evidence under @docs/graph-reference-evidence/ and @packages/fixtures/graph-reference-evidence/ - WHY: reference data may mention old tools only under allowlisted evidence docs/fixtures, never as implementation package naming or source provenance.
+- ALWAYS keep staged graph optional-analysis classifications sourced from `graphReleaseOptionalAnalysisSurfaces` - WHY: #13 coverage, #14 flows, #15 communities, and #16 read-only suggestions are non-release-blocking #17 deferred/staged surfaces and must not drift across contracts, fixtures, receipts, or docs.
+- ALWAYS update `packages/opcore/src/lattice/descriptor.ts`, `scripts/write-cli-descriptor.mjs`, descriptor fixtures, package packlists, and descriptor validation together when changing ACE acquisition metadata - WHY: ACE must consume installed lattice release artifacts, not workspace-local paths.
+- ALWAYS update release receipt contracts, `scripts/generate-release-receipt.mjs`, docs/release receipts, CI, and package/provenance/secret negative tests together when changing release evidence ownership - WHY: #29 is the maintainer release proof gate for the alpha line.
+- ALWAYS update cutover receipt contracts, `scripts/generate-cutover-receipt.mjs`, docs/release cutover receipts, CI, and cutover negative tests together when changing installed-artifact release behavior - WHY: #30 proves canonical lattice artifacts replace current external dev tools without fallback.
+- ALWAYS keep ASP dogfood advisory/shadow and isolated to temp `ASP_HOME`; co-record `current-tools:validate-changed` and `current-tools:validate-rust-graph`, keep `oldToolReplacementClaimed: false`, and represent inspect/edit gaps as degraded or retained blockers - WHY: #120 proves standalone ASP manager integration without authorizing rollout or retiring Rox/CRG/CIX.
+- ALWAYS update `packages/asp-provider/src/manifest.ts`, `scripts/write-asp-provider-manifest.mjs`, package packlists, release receipts, and installed-bin tests together when changing ASP provider install metadata - WHY: the provisional manifest is install metadata only and must not imply trust, authority, or gate permission.
+- ALWAYS treat `darwin-arm64`, `darwin-x64`, and `linux-x64` as the only supported Opcore alpha graph-core native targets until CI aggregate evidence expands the set - WHY: local single-platform builds cannot prove clean public installs for other targets.
+- ALWAYS require the release dry-run aggregate workflow to download all three Opcore native package artifacts before release receipts or cutover receipts claim cross-platform graph-core readiness - WHY: release receipts must record real per-target checksums, not local fallback or fabricated binaries.
+- ALWAYS keep `@the-open-engine/opcore` launch-facing help, README snippets, smoke output, and JSON named Opcore while preserving transitional `lattice status` compatibility - WHY: first-run activation must not leak internal or old-tool names into the public readiness flow.
+- ALWAYS keep Opcore metrics finding-only and evidence-backed, with no opaque score or blended quality number - WHY: `opcore measure` is a trend report over concrete counts, not a scoring system.
+- ALWAYS keep `opcore init` additive, idempotent, approval-gated, and reversible through `.opcore/init-undo.json` where supported - WHY: it is the only alpha command allowed to write repo guidance/hooks/config, and it must never weaken existing lint/test/CI/pre-commit or agent guardrails.
+
+## Language And Runtime
+
+- Node >=22 and TypeScript are the current scaffold baseline.
+- The accepted boundary is hybrid: Rust graph core owns extraction, persistence, watch refresh, and hot graph queries; TypeScript owns contracts, router-core helpers, CLI composition, package command adapters, edit orchestration, validation policy, validation-typescript adapters, npm facade, and ACE descriptors.
+- #21 adds the Cargo workspace, `crates/graph-core`, Rust sidecar protocol, installed native artifacts, checksums, schema-compatible `rox.json` Rust gate metadata, npm Rust gate scripts, workspace Rust/clippy lint policy, `rox.json` code-quality scope for `packages/`, `scripts/`, `tests/`, and `crates/`, repo-wide Rox extension coverage for scoped Rust graph function metrics under `crates/`, scoped `current-tools:validate-rust-graph`, and GitHub Actions Rust setup.
+- #8 adds Wave 1 Rust graph-core source extraction for `.ts`, `.tsx`, `.js`, and `.jsx` through OXC parser crates. #9 adds the SQLite GraphProvider store at `.lattice/graph/graph.db`, freshness metadata, and #19 direct-reader reference evidence. #10 implements `lattice graph build/update/watch/status`, incremental cached FileFacts updates, phase timings, daemon `ping`/`health`, and watch artifacts at `.lattice/graph/daemon/{pid,state.json,daemon.log}`. #11 implements read-only store-backed `impact`, named `query`, `review-context`, and `detect-changes` envelopes. #12 implements Rust graph-core FTS5 search with `nodes_fts`, signature projection, full and incremental index maintenance, typed failures, and canonical `lattice graph search` through the TypeScript graph adapter. Full build/update/status are unscoped unless `--paths` is passed; `LATTICE_GRAPH_WATCH_PATHS` scopes watch only. Pipeline failures return router status `error`/exit 1 without fabricated summaries; status, health, query, and search paths are read-only when the store is missing or stale. Long-tail parser coverage remains follow-up graph work.
+- #127 emits TS/JS export metadata from graph-core: supported symbol declarations carry boolean `attributes.exported` plus `exportKind`/`exportName`, top-level non-function variables use `Variable` nodes, and file nodes record default/re-export/barrel `attributes.exports[]` metadata. SQLite `nodes.is_exported` mirrors only `attributes.exported:true`.
+- #47 adds the graph-owned serve transport: canonical `lattice graph serve` bridges JSONL `lattice.graph.daemon` and MCP-style JSON-RPC stdio frames to graph-core, with typed invalid repo, stale store, schema mismatch, bad frame, and sidecar startup failures.
+- #25 completes validation contracts without runner or CLI behavior: ValidationScope supports files, changed, staged, all, repo, and package; hypothetical overlays are write/delete only, with rename-style edit preflight represented as delete old path plus write new path; graph config distinguishes optional and required provider modes with typed required_missing, stale, schema_mismatch, daemon_unavailable, incompatible_provider, and provider_error failures; @the-open-engine/opcore-validation owns request normalization and result skeleton helpers while depending only on @the-open-engine/opcore-contracts.
+- #55 adds the dependency-injected validation runner, check registry, scope resolver, aggregation helpers, check manifest metadata, run summaries, skipped-check records, and timing metadata; it still must not import graph, edit, CLI, validation-typescript, graph-core/native, or raw SQLite internals.
+- #56 adds the validation file view: `@the-open-engine/opcore-validation` composes normalized `ValidationRequest` overlays, resolved scope files, and injected workspace `readFile` access so `lattice validate` checks can read hypothetical after-state writes/deletes and before-state checksums without mutating the worktree. `checksumBefore` conflicts return refused/conflict before checks run.
+- #26 adds the validation-owned GraphProvider consumer boundary: `ValidationGraphProviderClient`, cached `ValidationGraphQuerySession`, graph requirement preloading, status/query failure mapping, and helper access for metadata, file checksums, IMPORTS_FROM, CALLS, and TESTED_BY facts.
+- #57 adds the TypeScript validation adapter: `@the-open-engine/opcore-validation-typescript` exports package-owned syntax, type, import-graph, dead-code, and relevant-tests check definitions. Syntax/type checks use the validation file view and an overlay-aware compiler host, including tsconfig path aliases for repo files and deterministic node_modules/package declaration resolution for external package imports; graph checks require #26 graph sessions and batched IMPORTS_FROM, CALLS, and TESTED_BY fact requirements.
+- #20 adds the Rust validation adapter: `@the-open-engine/opcore-validation-rust` exports package-owned source hygiene, fmt, cargo-check, clippy, rustdoc, import-graph, dead-code, unused-deps, file-length, and function-metrics checks. #61 makes the five retained Rust rows native when supporting tools are available: rustdoc diagnostics block through `cargo doc`, import-graph reports unresolved modules/use paths/orphans/cycles from fileView, dead-code combines Cargo `dead_code` with orphan-source evidence, unused-deps parses cargo-udeps with workspace/package scoping, and function-metrics parses rust-code-analysis JSON object/array output. Missing `rustdoc`, `cargo-depgraph`, `cargo-udeps`, or `rust-code-analysis-cli` stays degraded or unsupported with `requiredTool` and retained `currentUsage`; no generic retained row remains for available tools. Rust checks materialize temporary workspaces from `ValidationCheckContext.fileView` after-state content for Cargo tools, add no validation daemon or hidden cache, never shell out to Rox, and keep current external Rust guardrails active until #27/#28/#29 accept replacement receipts.
+- #27 adds canonical validation CLI surfaces: `lattice check` implements `files`, `staged`, `changed`, `tree`, `all`, and `manifest`; `tree` reads committed Git tree content from `--tree <ref>` and scopes files from `--changed-from <ref>` without consuming dirty worktree files. `lattice validate` implements `--request-file`, `hypothetical --request-file`, `pre-write --request-file --timeout-ms --json`, and `manifest`; runtime-owned `lattice status --json` and `lattice doctor --json` include typed `validationStatus` payloads with adapter routes, check ids, manifest entries, graph status, and daemon readiness metadata. #58 defines `lattice validate pre-write --request-file <validation-request.json> --timeout-ms 30000 --json` as the hook-safe, fail-closed pre-write contract with typed `PreWriteValidationReceipt` output.
+- #69 removes public runtime lifecycle command groups: top-level start and stop are unsupported unless a later architecture decision adopts them. Runtime readiness remains `lattice status` and `lattice doctor`; graph daemon lifecycle/status remains graph-owned under `lattice graph`.
+- #118 adds `@the-open-engine/opcore-asp-provider` and `opcore-asp-provider --stdio` as an independently launchable ASP Core check provider facade. It handles `initialize`, `initialized`, and `check/evaluate`, maps ASP create/modify/delete/rename changesets into validation overlays through host `workspace/listTree` and `workspace/readBlob` callbacks, runs the same TypeScript and Rust validation checks as Opcore validation composition, reports degraded/unsupported coverage for missing graph/toolchain/provider surfaces, emits provider-owned diagnostics, binds `validAsOf` to baseline/changeset/read blobs, and strips host-owned decision/authority/apply fields. It does not add a `lattice asp` router group and must not use ACE descriptors, `.ace/runtime`, `rox`, `crg`, or `cix` as implementation paths.
+- #128 adds `opcore status` and `opcore status --json` as the read-only repo-aware activation command. It resolves repo/Git state, coverage, graph status/action, validation adapter/check availability, degraded Rust tools, cheap ASP enrollment hints, warnings, blockers, and next actions without running builds, checks, installs, setup, wrappers, or writes. Its JSON payload is `repoState`; `lattice status` keeps the transitional `validationStatus` payload.
+- #129 adds `@the-open-engine/opcore` and the standalone `opcore` bin. Zero-command scan is read-only, uses `repoState` from #128, runs validation without source mutation, prints Coverage before Findings, writes only `.opcore/report.json` and `.opcore/history.jsonl`, and exposes `opcore check --changed|--staged|<files...> --json` with stable agent exit codes.
+- #130 adds `packages/opcore/src/reporting.ts`, `OpcoreMetricReport`, `OpcoreMetricHistoryEntry`, and `OpcoreMeasureDelta`. Reports aggregate TS/JS syntax/type/test/dead-export diagnostics, graph structure/fan-in evidence when supplied, Rust source hygiene/file length/module/toolchain diagnostics, unsupported stack census, and honest degradations for unavailable checks/tools/facts. `writeOpcoreMetricArtifacts` writes only under `.opcore/`; `opcore status` excludes those generated artifacts from coverage; `opcore measure` reads them and returns deltas without validationResult, validationStatus, scans, graph builds, setup, or source writes.
+- #131 adds `packages/opcore/src/init.ts` and the `opcoreInit` router payload. `opcore init` detects existing `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `.github/copilot-instructions.md`, `.codex/AGENTS.md`, and `.opencode/AGENTS.md`, presents a plan before writing, upserts a single `<!-- BEGIN OPCORE INIT -->` block on approval, writes additive `.opcore/config`, records undo metadata, and keeps blocking hooks opt-in. Approved writes refuse symlink targets or symlink ancestors so setup paths cannot redirect into source or unrelated repo files. Undo refuses metadata whose `repoRoot` does not match or whose entries are outside Opcore-owned config/hooks/agent guidance paths. The guidance must tell agents to run `opcore check --changed`, preserve existing guardrails, report unsupported/degraded coverage honestly, and not rely on ACE, Rox, CRG, CIX, or ASP host authority for direct Opcore.
+- #133 adds `packages/opcore/src/try.ts` and the `opcoreTry` router payload. `opcore try` uses generated local sample repos only, keeps output coverage-first with named findings/deltas, includes unsupported-file census evidence, and records clean-room launch proof without public announcement or package publishing.
+- #22 adds the edit-core library foundation: `@the-open-engine/opcore-edit` owns deterministic exact, multi-edit, and literal search-replace planners, edit checksums, plan hashes, validation overlay construction, preview mode, repo path policy, Node workspaces, and all-or-nothing atomic apply/rollback. #59 adds canonical `lattice edit exact`, `multi`, `search-replace`, `check`, and `apply` parsing inside the edit package, typed `editPlan`/`editResult` router payloads, no old `cix` aliases, and search-replace uniqueness unless `replaceAll` is true. #60 adds canonical `lattice edit patch` and `tree`: raw unified diff patch input through `--stdin`/`--request-file` or `{patch}` JSON, tree payloads `{repo?,validation?,fileContains?,files:[{path,content,checksumBefore?}|{path,delete:true,checksumBefore?}]}`, patch/tree-only forbidden target policy for absolute paths, parent traversal, UNC paths, symlink escapes, `.gitignore` targets, generated/private roots, and binary content, plus `editResult.rollback` state for atomic apply failures. #24 routes non-empty `lattice edit` apply/check plans through an injected validation runner before writes, rejects validation bypass plans, preserves full `ValidationResult` envelopes in edit results, and keeps `--dry-run` as a non-validating preview. #23 implements canonical `lattice edit rename`, `move`, and `signature` routes as graph-backed, validation-required edit plans: GraphProvider contract status/query/search evidence is required for targeting/freshness, TypeScript/JavaScript language-service materialization stays edit-owned, and apply/check refuses graph freshness changes before validation or writes.
+- #17 adds the graph release readiness receipt gate: `npm run graph-release:check` proves canonical graph commands, direct SQLite queries, serve transport, package inspection, provenance/license receipts, benchmark metrics, and handoff data for #7/#28/#29.
+- #28 adds the aggregate lattice ACE descriptor contract and artifact: `@the-open-engine/opcore` packages `dist/descriptors/lattice.managed-tool.json`, generated from `packages/opcore/src/lattice/descriptor.ts` after build. Descriptors must list only the canonical `lattice` bin, command groups graph/inspect/edit/check/validate/status/doctor, package-relative artifact/checksum paths, GraphProvider daemon/query/search/native capabilities, edit validation dependency, validation graph optional/required modes, and deferred #13-#16 optional surfaces as metadata. Descriptor validators must reject private runtime roots such as `.ace` on either slash style.
+- #29 adds the repo-wide release receipt gate: `npm run release-receipt:check` proves public package tarballs plus the internal fixtures package, packlists, sha256 checksums, descriptor/provider manifest artifact resolution, canonical lattice command groups, native graph artifact checksum evidence, production and bundled dependency licenses, provenance scans, release hygiene, graph #17 input evidence, and current-tree plus git-history secret scans. `npm run release-receipt:receipt` refreshes `docs/release/release-receipt.json`, `docs/release/release-receipt.summary.md`, license/provenance reports, and artifact attestation docs. Secret allowlist entries live only in `docs/release/secret-scan-allowlist.json` and must include reviewed path or commit scope, reviewer, reason, expiry, and optional fingerprint/kind narrowing; remove real findings instead of allowlisting them.
+- #30 adds the installed-artifact cutover gate: `npm run cutover:check` packs and installs the lattice workspace packages into a clean temp project, clears current-tool env resolution, excludes local wrapper and sibling paths, verifies installed canonical bins (`lattice`, `opcore`, and `opcore-asp-provider`), validates `ReleaseCutoverReceipt`, proves graph/inspect/edit/check/validate/status/doctor/pre-write flows through `lattice`, proves scan/status/check/measure flows through `opcore`, and rejects old-tool/private-path markers or advertised `not_implemented` release commands. Each command receipt id is contract-bound to its expected canonical command/status/exit. Top-level `lattice inspect symbols|definition|references|signature|implementations|search` is read-only CLI behavior; signature and implementations are implemented read-only language-service parity. `lattice graph inspect` is not an advertised release route.
+- #72 adds typed inspect reference results and `lattice inspect references <file> <symbol> --line <n> [--column <n>]` for read-only CIX refs parity over fresh graph facts plus an inspect-owned TypeScript/JavaScript language-service seam. #100 adds shared read-only `InspectSignatureResult` and `InspectImplementationResult` contracts, fixture foundations, target parsing, graph freshness enforcement, and typed `unsupported_route` scaffolds. #101 implements `lattice inspect signature <file> <symbol> --line <n> [--column <n>]` and node-id targeting for read-only CIX `sig` parity over fresh graph facts. #102 implements `lattice inspect implementations <file> <symbol> --line <n> [--column <n>]` and class/type node-id targets for CIX `impls` parity over graph `IMPLEMENTS`/`INHERITS` facts plus TypeScript/TSX language-service materialization.
+- The provenance GitHub workflow must install stable Rust and run `npm run build` before `npm run release-receipt:check` - WHY: release receipts import ignored `dist/` contracts/descriptors and require native graph artifacts from a clean checkout.
+
+## Test Rules
+
+- ALL tests live in @tests/ until a package-specific test harness is explicitly introduced by an issue.
+- Add contract tests before implementation tests for GraphProvider, EditPlan, ValidationRequest, and canonical CLI behavior.
+- Add golden/reference fixtures before replacing current external tool behavior.
+- Keep release hygiene, conformance metadata, and package packlist gates executable when changing package or release surfaces - WHY: maintainer release receipts must fail before public alpha assumptions drift.
+- Add #29 negative fixtures for release evidence regressions: Python code-review-graph provenance, high-confidence secrets, unexpected package files, old public bins, descriptor artifact drift, and missing native checksum evidence.
+- Add #30 negative fixtures for cutover regressions: current-tool descriptor markers, advertised placeholder command receipts, missing cutover command receipts, and old bin fallback in installed projects.
+- Local proof for agent work is `npm run ci:local`; it regenerates current-tool wrappers, runs `npm run ci`, runs repo-wide Rox, then runs the Rust graph function-metrics check. GitHub Actions run Node and Rust gates while current external ACE tools remain local-worktree dependencies.
+
+## Commands
+
+- `npm run setup` - install npm dependencies and generate current-tool wrappers.
+- `npm run setup:tools` - regenerate `.ace/runtime/bin/{rox,crg,cix}` from current external tools.
+- `source scripts/dev-env.sh` - prepend generated current-tool wrappers to an interactive shell.
+- `npm run ci` - portable GitHub/npm gate.
+- `npm run graph:artifact` - build `crates/graph-core` release sidecar for the current supported target and copy it to the matching `packages/opcore-graph-core-<target>/` package with metadata and checksum.
+- `npm run descriptor:artifact` - write the validated aggregate lattice ACE descriptor to `packages/opcore/dist/descriptors/lattice.managed-tool.json`.
+- `npm run asp-provider:manifest` - write `packages/asp-provider/dist/manifests/opcore-asp-provider.provisional.json`.
+- `npm run graph-release:check` - generate and validate the #17 graph release readiness receipt in temp/check mode.
+- `npm run graph-release:receipt` - write `docs/release/graph-release-receipt.json`, `docs/release/graph-release-receipt.payload.json`, and `docs/release/graph-release-handoff.md`.
+- `npm run release-receipt:check` - generate and validate the #29 repo-wide release receipt in check mode.
+- `npm run release-receipt:receipt` - write `docs/release/release-receipt.json`, `docs/release/release-receipt.summary.md`, license/provenance reports, and artifact attestation docs.
+- `npm run cutover:check` - install packed lattice artifacts into a clean temp project and validate the #30 cutover receipt.
+- `npm run cutover:receipt` - write `docs/release/cutover-receipt.json`, `docs/release/cutover-receipt.summary.md`, and cutover artifact attestation.
+- `npm run asp-dogfood:check` - validate #120 standalone ASP manager dogfood in advisory mode with temp `ASP_HOME` and retained old-tool guardrails.
+- `npm run asp-dogfood:receipt` - write `docs/release/asp-dogfood-receipt.json` and `docs/release/asp-dogfood-receipt.summary.md`.
+- `npm run rust:check` - run `cargo fmt --check`, `cargo clippy --all-targets --all-features -- -D warnings`, and `cargo test`.
+- `npm run current-tools:validate-rust-graph` - run current external Rox function metrics against all Rust files under `crates/`.
+- `opcore --repo . --json` - run the read-only first-run scan and write `.opcore/report.json` plus `.opcore/history.jsonl`.
+- `opcore try --json` - run the generated local launch demo loop and return `opcoreTry.published:false`.
+- `opcore status --repo . --json` - inspect first-run repo activation/readiness without building graphs, running checks, setup, wrappers, installs, or writes.
+- `opcore init --repo . --json` - preview additive repo/agent setup without creating `.opcore/`, guidance files, hooks, or config.
+- `opcore init --repo . --approve --json` - apply additive `.opcore/config`, delimited agent guidance, and undo metadata after reviewing the plan.
+- `opcore init --repo . --undo --approve --json` - restore/remove files recorded by the last approved init.
+- `opcore measure --repo . --json` - compare `.opcore/report.json` against `.opcore/history.jsonl` without running checks, graph builds, setup, wrappers, installs, source writes, or writes outside `.opcore`.
+- `opcore check --changed --json` - run the changed-file agent validation gate with default `--base HEAD`.
+- `opcore-asp-provider --stdio` - launch the standalone ASP Core check provider process.
+- `node --test tests/graph-extraction-conformance.test.mjs` - verify Wave 1 source extraction facts against @packages/fixtures/source-extraction/wave1.
+- `node --test tests/graph-store-conformance.test.mjs` - verify SQLite store persistence, freshness metadata, and #19 direct-reader queries.
+- `node --test tests/graph-pipeline-cli.test.mjs` - verify graph build/update/watch/status CLI behavior and daemon lifecycle artifacts.
+- `node --test tests/graph-query-conformance.test.mjs tests/graph-query-cli.test.mjs` - verify store-backed impact, named queries, review context, detect-changes, search, and failure states.
+- `node --test tests/graph-search-conformance.test.mjs` - verify FTS5 schema parity, full/incremental indexing, deterministic ranking, context boosts, and typed search failures.
+- `node --test tests/graph-serve-transport.test.mjs` - verify graph serve JSONL/MCP ping, status, query, search, shutdown, and typed transport failures.
+- `node --test tests/validation-overlays.test.mjs` - verify validation overlays, validation file view reads, checksumBefore conflicts, and runner fileView context.
+- `node --test tests/validation-graph-client.test.mjs` - verify validation GraphProvider client/session caching, helper facts, and provider failure mapping.
+- `node --test tests/validation-typescript.test.mjs` - verify TypeScript adapter exports, overlay-aware syntax/type checks, graph-aware signals, and graph batching.
+- `node --test tests/asp-provider.test.mjs` - verify ASP provider stdio lifecycle, host-backed overlays, diagnostics, coverage, read-set binding, forbidden host-owned fields, and provisional manifest shape.
+- `node --test tests/edit-core.test.mjs` - verify exact, multi-edit, and literal search-replace planner behavior.
+- `node --test tests/edit-atomic-writer.test.mjs` - verify edit preview, path policy, metadata preservation, and atomic rollback.
+- `node --test tests/edit-validation-request.test.mjs` - verify edit-owned validation request and overlay construction.
+- `node --test tests/edit-validation.test.mjs` - verify edit apply/check validation runner integration and fail-closed behavior.
+- `npm run ci:local` or `npm run verify` - local agent gate with setup:tools, `npm run ci`, repo-wide current `rox`, and Rust graph function metrics.
+- `lattice status --json` - inspect the package router health surface after building @packages/opcore/src/lattice.
+- `npm run release:hygiene` - verify public docs, community files, and release command anchors.
+- `npm run conformance:check` - verify concrete synthetic fixture metadata for #3 contracts.
+- `npm run pack:check` - verify package dry-run packlists against @tests/fixtures/package-packlists.json.
+- `npm run current-tools:validate-all` - current external validation repo-wide check.
+- `npm run current-tools:validate-rust-graph` - current external Rust graph function-metrics check.

@@ -5,34 +5,32 @@ import { rootWorkspacePackageDirs } from "./release-package-dirs.mjs";
 const root = JSON.parse(readFileSync("package.json", "utf8"));
 const packlists = JSON.parse(readFileSync("tests/fixtures/package-packlists.json", "utf8"));
 const expectedPackageNames = [
-  "@the-open-engine/lattice-contracts",
+  "@the-open-engine/opcore-contracts",
   "@the-open-engine/opcore",
-  "@the-open-engine/lattice-cli",
-  "@the-open-engine/lattice-graph",
+  "@the-open-engine/opcore-graph",
   "@the-open-engine/opcore-graph-core-darwin-arm64",
   "@the-open-engine/opcore-graph-core-darwin-x64",
   "@the-open-engine/opcore-graph-core-linux-x64",
-  "@the-open-engine/lattice-edit",
-  "@the-open-engine/lattice-validation",
-  "@the-open-engine/lattice-validation-rust",
-  "@the-open-engine/lattice-validation-typescript",
+  "@the-open-engine/opcore-edit",
+  "@the-open-engine/opcore-validation",
+  "@the-open-engine/opcore-validation-rust",
+  "@the-open-engine/opcore-validation-typescript",
   "@the-open-engine/opcore-asp-provider",
-  "@the-open-engine/lattice-fixtures"
+  "@the-open-engine/opcore-fixtures"
 ];
 const packageDirsByName = new Map([
-  ["@the-open-engine/lattice-contracts", "packages/contracts"],
+  ["@the-open-engine/opcore-contracts", "packages/contracts"],
   ["@the-open-engine/opcore", "packages/opcore"],
-  ["@the-open-engine/lattice-cli", "packages/cli"],
-  ["@the-open-engine/lattice-graph", "packages/graph"],
+  ["@the-open-engine/opcore-graph", "packages/graph"],
   ["@the-open-engine/opcore-graph-core-darwin-arm64", "packages/opcore-graph-core-darwin-arm64"],
   ["@the-open-engine/opcore-graph-core-darwin-x64", "packages/opcore-graph-core-darwin-x64"],
   ["@the-open-engine/opcore-graph-core-linux-x64", "packages/opcore-graph-core-linux-x64"],
-  ["@the-open-engine/lattice-edit", "packages/edit"],
-  ["@the-open-engine/lattice-validation", "packages/validation"],
-  ["@the-open-engine/lattice-validation-rust", "packages/validation-rust"],
-  ["@the-open-engine/lattice-validation-typescript", "packages/validation-typescript"],
+  ["@the-open-engine/opcore-edit", "packages/edit"],
+  ["@the-open-engine/opcore-validation", "packages/validation"],
+  ["@the-open-engine/opcore-validation-rust", "packages/validation-rust"],
+  ["@the-open-engine/opcore-validation-typescript", "packages/validation-typescript"],
   ["@the-open-engine/opcore-asp-provider", "packages/asp-provider"],
-  ["@the-open-engine/lattice-fixtures", "packages/fixtures"]
+  ["@the-open-engine/opcore-fixtures", "packages/fixtures"]
 ]);
 const nativePackageNames = new Set([
   "@the-open-engine/opcore-graph-core-darwin-arm64",
@@ -68,8 +66,7 @@ for (const packageName of expectedPackageNames) {
   const parsed = JSON.parse(result.stdout);
   const manifest = JSON.parse(readFileSync(`${packageDir}/package.json`, "utf8"));
   const bin = manifest.bin ?? {};
-  if (packageName === "@the-open-engine/lattice-cli") assertSameSet(Object.keys(bin), ["lattice"], `${packageName} bins`);
-  else if (packageName === "@the-open-engine/opcore") assertSameSet(Object.keys(bin), ["opcore"], `${packageName} bins`);
+  if (packageName === "@the-open-engine/opcore") assertSameSet(Object.keys(bin), ["lattice", "opcore"], `${packageName} bins`);
   else if (packageName === "@the-open-engine/opcore-asp-provider") {
     assertSameSet(Object.keys(bin), ["opcore-asp-provider"], `${packageName} bins`);
   }

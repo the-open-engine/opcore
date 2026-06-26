@@ -1,5 +1,5 @@
-import type { CommandGroupContract, CommandRouterResult, ParsedCommandArgv } from "@the-open-engine/lattice-contracts";
-import { createCommandRouterResult } from "@the-open-engine/lattice-contracts";
+import type { CommandGroupContract, CommandRouterResult, ParsedCommandArgv } from "@the-open-engine/opcore-contracts";
+import { createCommandRouterResult } from "@the-open-engine/opcore-contracts";
 import { checkCommandAdapter } from "./validation-composition.js";
 
 const checkGroup: CommandGroupContract = {

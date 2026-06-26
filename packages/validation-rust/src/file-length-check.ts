@@ -1,4 +1,4 @@
-import type { ValidationCheckDefinition, ValidationCheckResult } from "@the-open-engine/lattice-validation";
+import type { ValidationCheckDefinition, ValidationCheckResult } from "@the-open-engine/opcore-validation";
 import { RUST_FILE_LENGTH_CHECK_ID } from "./check-ids.js";
 import { defaultRustFileLengthThresholds, rustCheckAdapter, rustCheckOwner, supportedRustValidationScopes } from "./check-constants.js";
 import { diagnostic, sortDiagnostics } from "./diagnostics.js";

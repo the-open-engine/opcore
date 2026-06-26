@@ -1,5 +1,5 @@
-import type { ValidationCheckContext, ValidationGraphQueryRequirement } from "@the-open-engine/lattice-validation";
-import type { GraphEdgeKind } from "@the-open-engine/lattice-contracts";
+import type { ValidationCheckContext, ValidationGraphQueryRequirement } from "@the-open-engine/opcore-validation";
+import type { GraphEdgeKind } from "@the-open-engine/opcore-contracts";
 import { materializeTypeScriptSources, toFileNodeId } from "./source-files.js";
 
 export async function importGraphRequirements(

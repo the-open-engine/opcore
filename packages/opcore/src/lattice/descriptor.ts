@@ -10,26 +10,26 @@ import {
   type ManagedToolDescriptorCommandGroupName,
   validateManagedToolDescriptor,
   validationScopeKinds
-} from "@the-open-engine/lattice-contracts";
+} from "@the-open-engine/opcore-contracts";
 import {
   TYPE_SCRIPT_DEAD_CODE_CHECK_ID,
   TYPE_SCRIPT_IMPORT_GRAPH_CHECK_ID,
   TYPE_SCRIPT_RELEVANT_TESTS_CHECK_ID,
   TYPE_SCRIPT_SYNTAX_CHECK_ID,
   TYPE_SCRIPT_TYPES_CHECK_ID
-} from "@the-open-engine/lattice-validation-typescript";
-import { rustValidationCheckIds } from "@the-open-engine/lattice-validation-rust";
+} from "@the-open-engine/opcore-validation-typescript";
+import { rustValidationCheckIds } from "@the-open-engine/opcore-validation-rust";
 
 export const descriptorArtifactPath = "dist/descriptors/lattice.managed-tool.json" as const;
 
 const commandGroupPackageNames: Record<ManagedToolDescriptorCommandGroupName, string> = {
-  graph: "@the-open-engine/lattice-graph",
-  inspect: "@the-open-engine/lattice-cli",
-  edit: "@the-open-engine/lattice-edit",
-  check: "@the-open-engine/lattice-validation",
-  validate: "@the-open-engine/lattice-validation",
-  status: "@the-open-engine/lattice-cli",
-  doctor: "@the-open-engine/lattice-cli"
+  graph: "@the-open-engine/opcore-graph",
+  inspect: "@the-open-engine/opcore",
+  edit: "@the-open-engine/opcore-edit",
+  check: "@the-open-engine/opcore-validation",
+  validate: "@the-open-engine/opcore-validation",
+  status: "@the-open-engine/opcore",
+  doctor: "@the-open-engine/opcore"
 };
 
 export interface LatticeManagedToolDescriptorOptions {
@@ -56,19 +56,19 @@ export function createLatticeManagedToolDescriptor(options: LatticeManagedToolDe
     aggregateIdentity: {
       name: "lattice",
       releaseLine: "lattice",
-      packageName: "@the-open-engine/lattice-cli",
+      packageName: "@the-open-engine/opcore",
       ...(options.version ? { version: options.version } : {})
     },
     packageIdentity: {
-      packageName: "@the-open-engine/lattice-cli",
-      artifactName: "@the-open-engine/lattice-cli",
+      packageName: "@the-open-engine/opcore",
+      artifactName: "@the-open-engine/opcore",
       ...(options.version ? { version: options.version } : {})
     },
     entrypoints: [
       {
         bin: "lattice",
-        packageName: "@the-open-engine/lattice-cli",
-        path: "dist/index.js",
+        packageName: "@the-open-engine/opcore",
+        path: "dist/lattice/index.js",
         command: ["lattice"]
       }
     ],
@@ -146,21 +146,21 @@ export function createLatticeManagedToolDescriptor(options: LatticeManagedToolDe
     artifacts: [
       {
         id: "cli-entrypoint",
-        packageName: "@the-open-engine/lattice-cli",
-        path: "dist/index.js",
+        packageName: "@the-open-engine/opcore",
+        path: "dist/lattice/index.js",
         type: "entrypoint",
         required: true
       },
       {
         id: "descriptor",
-        packageName: "@the-open-engine/lattice-cli",
+        packageName: "@the-open-engine/opcore",
         path: descriptorArtifactPath,
         type: "descriptor",
         required: true
       },
       {
         id: "contracts-schema",
-        packageName: "@the-open-engine/lattice-contracts",
+        packageName: "@the-open-engine/opcore-contracts",
         path: "schemas/lattice-contracts.schema.json",
         type: "schema",
         required: true

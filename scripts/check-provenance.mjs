@@ -5,22 +5,21 @@ import { isAbsolute, normalize } from "node:path";
 const forbiddenFileNames = new Set(["pyproject.toml", "setup.py", "setup.cfg", "Pipfile"]);
 const forbiddenPackageNames = new Set(["code-review-graph", "gungnir"]);
 const forbiddenPublicPackageNames = new Set([
-  "@the-open-engine/lattice-cix",
-  "@the-open-engine/lattice-rox",
-  "@the-open-engine/lattice-rox-typescript"
+  "@the-open-engine/opcore-cix",
+  "@the-open-engine/opcore-rox",
+  "@the-open-engine/opcore-rox-typescript"
 ]);
 const publicPackageNames = new Set([
   "@the-open-engine/opcore",
-  "@the-open-engine/lattice-cli",
-  "@the-open-engine/lattice-contracts",
-  "@the-open-engine/lattice-graph",
+  "@the-open-engine/opcore-contracts",
+  "@the-open-engine/opcore-graph",
   "@the-open-engine/opcore-graph-core-darwin-arm64",
   "@the-open-engine/opcore-graph-core-darwin-x64",
   "@the-open-engine/opcore-graph-core-linux-x64",
-  "@the-open-engine/lattice-edit",
-  "@the-open-engine/lattice-validation",
-  "@the-open-engine/lattice-validation-rust",
-  "@the-open-engine/lattice-validation-typescript",
+  "@the-open-engine/opcore-edit",
+  "@the-open-engine/opcore-validation",
+  "@the-open-engine/opcore-validation-rust",
+  "@the-open-engine/opcore-validation-typescript",
   "@the-open-engine/opcore-asp-provider"
 ]);
 const forbiddenPublicBins = new Set(["crg", "cix", "rox"]);
@@ -150,7 +149,7 @@ function checkGeneratedGraphArtifactMetadata() {
 }
 
 async function checkGeneratedCliDescriptor() {
-  const descriptorPath = "packages/cli/dist/descriptors/lattice.managed-tool.json";
+  const descriptorPath = "packages/opcore/dist/descriptors/lattice.managed-tool.json";
   if (!existsSync(descriptorPath)) return;
   const descriptorText = readFileSync(descriptorPath, "utf8");
   checkDescriptorStrings(descriptorPath, descriptorText);

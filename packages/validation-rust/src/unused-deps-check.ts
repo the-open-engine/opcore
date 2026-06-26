@@ -1,5 +1,5 @@
-import type { ValidationCheckDefinition, ValidationCheckResult } from "@the-open-engine/lattice-validation";
-import type { ValidationDiagnostic } from "@the-open-engine/lattice-contracts";
+import type { ValidationCheckDefinition, ValidationCheckResult } from "@the-open-engine/opcore-validation";
+import type { ValidationDiagnostic } from "@the-open-engine/opcore-contracts";
 import { RUST_UNUSED_DEPS_CHECK_ID } from "./check-ids.js";
 import { rustCheckAdapter, rustCheckOwner, supportedRustValidationScopes } from "./check-constants.js";
 import { loadCargoMetadata, resolveCargoPackageScope, type CargoMetadataPackage } from "./cargo-metadata.js";

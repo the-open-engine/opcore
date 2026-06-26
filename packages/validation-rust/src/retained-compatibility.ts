@@ -1,4 +1,4 @@
-import type { ValidationAdapterDegradedCheckStatus } from "@the-open-engine/lattice-contracts";
+import type { ValidationAdapterDegradedCheckStatus } from "@the-open-engine/opcore-contracts";
 import {
   RUST_DEAD_CODE_CHECK_ID,
   RUST_FUNCTION_METRICS_CHECK_ID,

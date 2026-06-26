@@ -12,7 +12,7 @@ import { runGraphServeCli } from "../packages/graph/dist/index.js";
 
 const repoRoot = fileURLToPath(new URL("..", import.meta.url));
 const sourceFixtureRoot = resolve(repoRoot, "packages/fixtures/source-extraction/wave1");
-const latticeBin = fileURLToPath(new URL("../packages/cli/dist/index.js", import.meta.url));
+const latticeBin = fileURLToPath(new URL("../packages/opcore/dist/lattice/index.js", import.meta.url));
 
 describe("graph serve stdio transport", () => {
   it("answers lattice graph serve JSONL ping/status/query/search/shutdown", async () => {

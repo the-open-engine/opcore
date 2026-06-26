@@ -6,7 +6,7 @@ import { cpSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } fro
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { commandRouterManifest, routeCommand, runCli } from "../packages/cli/dist/index.js";
+import { commandRouterManifest, routeCommand, runCli } from "../packages/opcore/dist/lattice/index.js";
 
 const removedLegacyCommandField = `legacy${"Command"}`;
 const removedLegacyMappingsField = `legacy${"Mappings"}`;

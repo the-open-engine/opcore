@@ -375,6 +375,7 @@ function withRobustnessFixtureCopy(run) {
 }
 
 function createRuntimeIgnoredFiles(fixtureRoot) {
+  writeFileSync(join(fixtureRoot, ".gitignore"), "ignored/drop.ts\n");
   for (const [directory, file] of [
     ["ignored", "drop.ts"],
     ["node_modules/pkg", "index.ts"],

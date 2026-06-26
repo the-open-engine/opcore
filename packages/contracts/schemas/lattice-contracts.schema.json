@@ -3112,7 +3112,7 @@
               "const": "lattice"
             },
             "packageName": {
-              "const": "@the-open-engine/lattice-cli"
+              "const": "@the-open-engine/opcore"
             },
             "version": {
               "type": "string"
@@ -3128,10 +3128,10 @@
           ],
           "properties": {
             "packageName": {
-              "const": "@the-open-engine/lattice-cli"
+              "const": "@the-open-engine/opcore"
             },
             "artifactName": {
-              "const": "@the-open-engine/lattice-cli"
+              "const": "@the-open-engine/opcore"
             },
             "version": {
               "type": "string",
@@ -3157,7 +3157,7 @@
                 "const": "lattice"
               },
               "packageName": {
-                "const": "@the-open-engine/lattice-cli"
+                "const": "@the-open-engine/opcore"
               },
               "path": {
                 "$ref": "#/$defs/ManagedToolPackagePath"
@@ -3987,7 +3987,7 @@
                     "const": "descriptor"
                   },
                   "packageName": {
-                    "const": "@the-open-engine/lattice-cli"
+                    "const": "@the-open-engine/opcore"
                   },
                   "type": {
                     "const": "descriptor"
@@ -7081,7 +7081,7 @@
       ],
       "properties": {
         "packageName": {
-          "const": "@the-open-engine/lattice-graph"
+          "const": "@the-open-engine/opcore-graph"
         },
         "tarballName": {
           "$ref": "#/$defs/SourceFreeString"
@@ -7281,7 +7281,7 @@
                 ],
                 "properties": {
                   "packageName": {
-                    "const": "@the-open-engine/lattice-graph"
+                    "const": "@the-open-engine/opcore-graph"
                   }
                 }
               },
@@ -9881,17 +9881,16 @@
     },
     "ReleaseReceiptPackageName": {
       "enum": [
-        "@the-open-engine/lattice-contracts",
+        "@the-open-engine/opcore-contracts",
         "@the-open-engine/opcore",
-        "@the-open-engine/lattice-cli",
-        "@the-open-engine/lattice-graph",
+        "@the-open-engine/opcore-graph",
         "@the-open-engine/opcore-graph-core-darwin-arm64",
         "@the-open-engine/opcore-graph-core-darwin-x64",
         "@the-open-engine/opcore-graph-core-linux-x64",
-        "@the-open-engine/lattice-edit",
-        "@the-open-engine/lattice-validation",
-        "@the-open-engine/lattice-validation-rust",
-        "@the-open-engine/lattice-validation-typescript",
+        "@the-open-engine/opcore-edit",
+        "@the-open-engine/opcore-validation",
+        "@the-open-engine/opcore-validation-rust",
+        "@the-open-engine/opcore-validation-typescript",
         "@the-open-engine/opcore-asp-provider"
       ]
     },
@@ -10309,24 +10308,7 @@
             "properties": {
               "bins": {
                 "required": [
-                  "opcore"
-                ]
-              }
-            }
-          }
-        },
-        {
-          "if": {
-            "properties": {
-              "packageName": {
-                "const": "@the-open-engine/lattice-cli"
-              }
-            }
-          },
-          "then": {
-            "properties": {
-              "bins": {
-                "required": [
+                  "opcore",
                   "lattice"
                 ]
               }
@@ -10518,7 +10500,7 @@
           "$ref": "#/$defs/RepoRelativePath"
         },
         "packageName": {
-          "const": "@the-open-engine/lattice-cli"
+          "const": "@the-open-engine/opcore"
         },
         "checksumSha256": {
           "$ref": "#/$defs/Sha256"
@@ -10717,7 +10699,7 @@
           "minimum": 0
         },
         "workspacePackageCount": {
-          "const": 12
+          "const": 11
         },
         "unresolvedLicenseCount": {
           "const": 0
@@ -10981,15 +10963,15 @@
         },
         "packageNames": {
           "type": "array",
-          "minItems": 12,
-          "maxItems": 12,
+          "minItems": 11,
+          "maxItems": 11,
           "items": {
             "$ref": "#/$defs/ReleaseReceiptPackageName"
           },
           "allOf": [
             {
               "contains": {
-                "const": "@the-open-engine/lattice-contracts"
+                "const": "@the-open-engine/opcore-contracts"
               },
               "minContains": 1,
               "maxContains": 1
@@ -11003,14 +10985,7 @@
             },
             {
               "contains": {
-                "const": "@the-open-engine/lattice-cli"
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "const": "@the-open-engine/lattice-graph"
+                "const": "@the-open-engine/opcore-graph"
               },
               "minContains": 1,
               "maxContains": 1
@@ -11038,28 +11013,28 @@
             },
             {
               "contains": {
-                "const": "@the-open-engine/lattice-edit"
+                "const": "@the-open-engine/opcore-edit"
               },
               "minContains": 1,
               "maxContains": 1
             },
             {
               "contains": {
-                "const": "@the-open-engine/lattice-validation"
+                "const": "@the-open-engine/opcore-validation"
               },
               "minContains": 1,
               "maxContains": 1
             },
             {
               "contains": {
-                "const": "@the-open-engine/lattice-validation-rust"
+                "const": "@the-open-engine/opcore-validation-rust"
               },
               "minContains": 1,
               "maxContains": 1
             },
             {
               "contains": {
-                "const": "@the-open-engine/lattice-validation-typescript"
+                "const": "@the-open-engine/opcore-validation-typescript"
               },
               "minContains": 1,
               "maxContains": 1
@@ -11134,8 +11109,8 @@
         },
         "packages": {
           "type": "array",
-          "minItems": 12,
-          "maxItems": 12,
+          "minItems": 11,
+          "maxItems": 11,
           "items": {
             "$ref": "#/$defs/ReleaseReceiptPackageEvidence"
           },
@@ -11148,7 +11123,7 @@
                 ],
                 "properties": {
                   "packageName": {
-                    "const": "@the-open-engine/lattice-contracts"
+                    "const": "@the-open-engine/opcore-contracts"
                   }
                 }
               },
@@ -11178,22 +11153,7 @@
                 ],
                 "properties": {
                   "packageName": {
-                    "const": "@the-open-engine/lattice-cli"
-                  }
-                }
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "type": "object",
-                "required": [
-                  "packageName"
-                ],
-                "properties": {
-                  "packageName": {
-                    "const": "@the-open-engine/lattice-graph"
+                    "const": "@the-open-engine/opcore-graph"
                   }
                 }
               },
@@ -11253,7 +11213,7 @@
                 ],
                 "properties": {
                   "packageName": {
-                    "const": "@the-open-engine/lattice-edit"
+                    "const": "@the-open-engine/opcore-edit"
                   }
                 }
               },
@@ -11268,7 +11228,7 @@
                 ],
                 "properties": {
                   "packageName": {
-                    "const": "@the-open-engine/lattice-validation"
+                    "const": "@the-open-engine/opcore-validation"
                   }
                 }
               },
@@ -11283,7 +11243,7 @@
                 ],
                 "properties": {
                   "packageName": {
-                    "const": "@the-open-engine/lattice-validation-rust"
+                    "const": "@the-open-engine/opcore-validation-rust"
                   }
                 }
               },
@@ -11298,7 +11258,7 @@
                 ],
                 "properties": {
                   "packageName": {
-                    "const": "@the-open-engine/lattice-validation-typescript"
+                    "const": "@the-open-engine/opcore-validation-typescript"
                   }
                 }
               },
@@ -11530,7 +11490,7 @@
           "if": {
             "properties": {
               "packageName": {
-                "const": "@the-open-engine/lattice-cli"
+                "const": "@the-open-engine/opcore"
               }
             }
           },
@@ -11540,6 +11500,7 @@
                 "properties": {
                   "bins": {
                     "required": [
+                      "opcore",
                       "lattice"
                     ]
                   }
@@ -11567,7 +11528,7 @@
           "minLength": 1
         },
         "packageName": {
-          "const": "@the-open-engine/lattice-cli"
+          "const": "@the-open-engine/opcore"
         },
         "checksumSha256": {
           "$ref": "#/$defs/Sha256"
@@ -13810,15 +13771,15 @@
         },
         "packageNames": {
           "type": "array",
-          "minItems": 12,
-          "maxItems": 12,
+          "minItems": 11,
+          "maxItems": 11,
           "items": {
             "$ref": "#/$defs/ReleaseReceiptPackageName"
           },
           "allOf": [
             {
               "contains": {
-                "const": "@the-open-engine/lattice-contracts"
+                "const": "@the-open-engine/opcore-contracts"
               },
               "minContains": 1,
               "maxContains": 1
@@ -13832,14 +13793,7 @@
             },
             {
               "contains": {
-                "const": "@the-open-engine/lattice-cli"
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "const": "@the-open-engine/lattice-graph"
+                "const": "@the-open-engine/opcore-graph"
               },
               "minContains": 1,
               "maxContains": 1
@@ -13867,28 +13821,28 @@
             },
             {
               "contains": {
-                "const": "@the-open-engine/lattice-edit"
+                "const": "@the-open-engine/opcore-edit"
               },
               "minContains": 1,
               "maxContains": 1
             },
             {
               "contains": {
-                "const": "@the-open-engine/lattice-validation"
+                "const": "@the-open-engine/opcore-validation"
               },
               "minContains": 1,
               "maxContains": 1
             },
             {
               "contains": {
-                "const": "@the-open-engine/lattice-validation-rust"
+                "const": "@the-open-engine/opcore-validation-rust"
               },
               "minContains": 1,
               "maxContains": 1
             },
             {
               "contains": {
-                "const": "@the-open-engine/lattice-validation-typescript"
+                "const": "@the-open-engine/opcore-validation-typescript"
               },
               "minContains": 1,
               "maxContains": 1
@@ -13904,8 +13858,8 @@
         },
         "installedPackages": {
           "type": "array",
-          "minItems": 10,
-          "maxItems": 10,
+          "minItems": 9,
+          "maxItems": 9,
           "items": {
             "$ref": "#/$defs/ReleaseCutoverInstalledPackageEvidence"
           },
@@ -13918,7 +13872,7 @@
                 ],
                 "properties": {
                   "packageName": {
-                    "const": "@the-open-engine/lattice-contracts"
+                    "const": "@the-open-engine/opcore-contracts"
                   }
                 }
               },
@@ -13948,7 +13902,7 @@
                 ],
                 "properties": {
                   "packageName": {
-                    "const": "@the-open-engine/lattice-cli"
+                    "const": "@the-open-engine/opcore-graph"
                   }
                 }
               },
@@ -13963,7 +13917,7 @@
                 ],
                 "properties": {
                   "packageName": {
-                    "const": "@the-open-engine/lattice-graph"
+                    "const": "@the-open-engine/opcore-edit"
                   }
                 }
               },
@@ -13978,7 +13932,7 @@
                 ],
                 "properties": {
                   "packageName": {
-                    "const": "@the-open-engine/lattice-edit"
+                    "const": "@the-open-engine/opcore-validation"
                   }
                 }
               },
@@ -13993,7 +13947,7 @@
                 ],
                 "properties": {
                   "packageName": {
-                    "const": "@the-open-engine/lattice-validation"
+                    "const": "@the-open-engine/opcore-validation-rust"
                   }
                 }
               },
@@ -14008,22 +13962,7 @@
                 ],
                 "properties": {
                   "packageName": {
-                    "const": "@the-open-engine/lattice-validation-rust"
-                  }
-                }
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "type": "object",
-                "required": [
-                  "packageName"
-                ],
-                "properties": {
-                  "packageName": {
-                    "const": "@the-open-engine/lattice-validation-typescript"
+                    "const": "@the-open-engine/opcore-validation-typescript"
                   }
                 }
               },
@@ -14629,15 +14568,15 @@
         },
         "packageNames": {
           "type": "array",
-          "minItems": 12,
-          "maxItems": 12,
+          "minItems": 11,
+          "maxItems": 11,
           "items": {
             "$ref": "#/$defs/ReleaseReceiptPackageName"
           },
           "allOf": [
             {
               "contains": {
-                "const": "@the-open-engine/lattice-contracts"
+                "const": "@the-open-engine/opcore-contracts"
               },
               "minContains": 1,
               "maxContains": 1
@@ -14651,14 +14590,7 @@
             },
             {
               "contains": {
-                "const": "@the-open-engine/lattice-cli"
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "const": "@the-open-engine/lattice-graph"
+                "const": "@the-open-engine/opcore-graph"
               },
               "minContains": 1,
               "maxContains": 1
@@ -14686,28 +14618,28 @@
             },
             {
               "contains": {
-                "const": "@the-open-engine/lattice-edit"
+                "const": "@the-open-engine/opcore-edit"
               },
               "minContains": 1,
               "maxContains": 1
             },
             {
               "contains": {
-                "const": "@the-open-engine/lattice-validation"
+                "const": "@the-open-engine/opcore-validation"
               },
               "minContains": 1,
               "maxContains": 1
             },
             {
               "contains": {
-                "const": "@the-open-engine/lattice-validation-rust"
+                "const": "@the-open-engine/opcore-validation-rust"
               },
               "minContains": 1,
               "maxContains": 1
             },
             {
               "contains": {
-                "const": "@the-open-engine/lattice-validation-typescript"
+                "const": "@the-open-engine/opcore-validation-typescript"
               },
               "minContains": 1,
               "maxContains": 1
@@ -14723,8 +14655,8 @@
         },
         "installedPackages": {
           "type": "array",
-          "minItems": 10,
-          "maxItems": 10,
+          "minItems": 9,
+          "maxItems": 9,
           "items": {
             "$ref": "#/$defs/ReleaseCutoverInstalledPackageEvidence"
           },
@@ -14737,7 +14669,7 @@
                 ],
                 "properties": {
                   "packageName": {
-                    "const": "@the-open-engine/lattice-contracts"
+                    "const": "@the-open-engine/opcore-contracts"
                   }
                 }
               },
@@ -14767,7 +14699,7 @@
                 ],
                 "properties": {
                   "packageName": {
-                    "const": "@the-open-engine/lattice-cli"
+                    "const": "@the-open-engine/opcore-graph"
                   }
                 }
               },
@@ -14782,7 +14714,7 @@
                 ],
                 "properties": {
                   "packageName": {
-                    "const": "@the-open-engine/lattice-graph"
+                    "const": "@the-open-engine/opcore-edit"
                   }
                 }
               },
@@ -14797,7 +14729,7 @@
                 ],
                 "properties": {
                   "packageName": {
-                    "const": "@the-open-engine/lattice-edit"
+                    "const": "@the-open-engine/opcore-validation"
                   }
                 }
               },
@@ -14812,7 +14744,7 @@
                 ],
                 "properties": {
                   "packageName": {
-                    "const": "@the-open-engine/lattice-validation"
+                    "const": "@the-open-engine/opcore-validation-rust"
                   }
                 }
               },
@@ -14827,22 +14759,7 @@
                 ],
                 "properties": {
                   "packageName": {
-                    "const": "@the-open-engine/lattice-validation-rust"
-                  }
-                }
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "type": "object",
-                "required": [
-                  "packageName"
-                ],
-                "properties": {
-                  "packageName": {
-                    "const": "@the-open-engine/lattice-validation-typescript"
+                    "const": "@the-open-engine/opcore-validation-typescript"
                   }
                 }
               },
