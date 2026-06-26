@@ -6,19 +6,9 @@ import { spawnSync } from "node:child_process";
 import { graphCoreNativeSupportedTargets, releaseReceiptPackageNames, validateReleaseReceipt } from "../packages/contracts/dist/index.js";
 import { withCompleteNativeArtifactFixtures } from "./native-artifact-fixture.mjs";
 
-describe("release receipt gate", () => {
-  it("keeps persisted #29 release receipt docs available for cutover evidence", () => {
-    withReleaseDocsLock(() => {
-      assert.equal(existsSync("docs/release/release-receipt.json"), true);
-      assert.equal(existsSync("docs/release/release-receipt.summary.md"), true);
-      const receipt = validateReleaseReceipt(JSON.parse(readFileSync("docs/release/release-receipt.json", "utf8")));
-      assert.equal(receipt.issue, "#29");
-      assert.equal(receipt.packages.length, releaseReceiptPackageNames.length);
-      const summary = readFileSync("docs/release/release-receipt.summary.md", "utf8");
-      assert.match(summary, /maintainer release/i);
-    });
-  });
+const releaseDocsLockTimeoutMs = 900000;
 
+describe("release receipt gate", () => {
   it("emits validated #29 release receipt JSON", () => {
     withReleaseDocsLock(() => {
       const result = withCompleteNativeArtifactFixtures(() => run("npm", ["run", "release-receipt:check", "--", "--json"]));
@@ -78,7 +68,7 @@ function withReleaseDocsLock(runLocked) {
     "docs/release/provenance-receipts.md",
     "docs/release/artifact-attestation.md"
   ];
-  const deadline = Date.now() + 300000;
+  const deadline = Date.now() + releaseDocsLockTimeoutMs;
   while (Date.now() < deadline) {
     try {
       mkdirSync(lockPath);

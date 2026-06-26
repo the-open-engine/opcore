@@ -16,7 +16,7 @@ declare const process: {
 };
 
 const helpArgs = new Set(["--help", "-h", "help"]);
-const opcoreSkippedPathSegments = new Set([
+export const commonSkippedPathSegments = [
   ".git",
   "node_modules",
   ".pnpm",
@@ -28,7 +28,10 @@ const opcoreSkippedPathSegments = new Set([
   ".lattice",
   ".opcore",
   ".rox-cache",
-  ".robustness-engine-cache",
+  ".robustness-engine-cache"
+] as const;
+const skippedPathSegments = new Set<string>([
+  ...commonSkippedPathSegments,
   ".venv",
   "venv",
   "env",
@@ -41,7 +44,7 @@ const opcoreSkippedPathSegments = new Set([
   ".ruff_cache",
   "site-packages"
 ]);
-const opcoreSkippedPathSegmentSuffixes = [".egg-info", ".dist-info"];
+const skippedPathSegmentSuffixes = [".egg-info", ".dist-info"];
 
 type SourcePolicyState = "supported" | "extraction_pending" | "retained" | "unsupported";
 
@@ -336,7 +339,7 @@ function readRepoCensus(resolution: RepoResolution): FileCensus {
     const files = filesResult.stdout
       .split(/\r?\n/)
       .map((line) => line.trim())
-      .filter((line) => line.length > 0 && !hasOpcoreSkippedPathSegment(line))
+      .filter((line) => line.length > 0 && !hasSkippedSegment(line))
       .filter((file) => fileExistsForCensus(resolution.root, file, traversalFailures));
     return { files, git: status, traversalFailures: uniqueTraversalFailures(traversalFailures) };
   }
@@ -401,10 +404,10 @@ function readFilesRecursive(root: string): { files: string[]; traversalFailures:
       continue;
     }
     for (const entry of entries) {
-      if (isOpcoreSkippedPathSegment(entry.name)) continue;
+      if (isSkippedPathSegment(entry.name)) continue;
       const absolute = join(current, entry.name);
       const relative = absolute.slice(root.length + 1).split(sep).join("/");
-      if (hasOpcoreSkippedPathSegment(relative)) continue;
+      if (hasSkippedSegment(relative)) continue;
       if (entry.isDirectory()) {
         stack.push(absolute);
       } else if (entry.isFile()) {
@@ -679,12 +682,12 @@ function gitFailureMessage(result: { status: number | null; stdout: string; stde
   return detail.length > 0 ? detail : `exit ${result.status ?? "unknown"}`;
 }
 
-export function hasOpcoreSkippedPathSegment(path: string): boolean {
-  return path.split(/[\\/]+/).some((segment) => isOpcoreSkippedPathSegment(segment));
+function hasSkippedSegment(path: string): boolean {
+  return path.split(/[\\/]+/).some((segment) => isSkippedPathSegment(segment));
 }
 
-export function isOpcoreSkippedPathSegment(segment: string): boolean {
-  return opcoreSkippedPathSegments.has(segment) || opcoreSkippedPathSegmentSuffixes.some((suffix) => segment.endsWith(suffix));
+function isSkippedPathSegment(segment: string): boolean {
+  return skippedPathSegments.has(segment) || skippedPathSegmentSuffixes.some((suffix) => segment.endsWith(suffix));
 }
 
 function fileKind(file: string): string {

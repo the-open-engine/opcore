@@ -28,51 +28,6 @@ pub struct FileFacts {
     pub heritage: Vec<HeritageFact>,
 }
 
-struct FileFactsParts {
-    path: String,
-    file_node: GraphFactNode,
-    nodes: BTreeMap<String, GraphFactNode>,
-    edges: BTreeMap<String, GraphFactEdge>,
-    declarations: BTreeMap<String, String>,
-    export_aliases: BTreeMap<String, String>,
-    re_exports: Vec<ReExportFact>,
-    imports: Vec<ImportFact>,
-    references: Vec<ReferenceFact>,
-    heritage: Vec<HeritageFact>,
-}
-
-fn finish_file_facts(parts: FileFactsParts) -> FileFacts {
-    FileFacts {
-        path: parts.path,
-        file_node: parts.file_node,
-        nodes: parts.nodes,
-        edges: parts.edges,
-        declarations: parts.declarations,
-        export_aliases: parts.export_aliases,
-        re_exports: parts.re_exports,
-        imports: parts.imports,
-        references: parts.references,
-        heritage: parts.heritage,
-    }
-}
-
-fn set_file_exports_attribute(node: &mut GraphFactNode, file_exports: &[Value]) {
-    graph_attributes_object(node)
-        .insert("exports".to_string(), Value::Array(file_exports.to_vec()));
-}
-
-fn graph_attributes_object(node: &mut GraphFactNode) -> &mut serde_json::Map<String, Value> {
-    let attributes = node
-        .attributes
-        .get_or_insert_with(|| Value::Object(serde_json::Map::new()));
-    loop {
-        if let Value::Object(object) = attributes {
-            return object;
-        }
-        *attributes = Value::Object(serde_json::Map::new());
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ImportFact {
     pub specifier: String,

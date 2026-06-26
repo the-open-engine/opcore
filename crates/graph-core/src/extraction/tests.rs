@@ -1173,14 +1173,15 @@ fn repo_with_tsconfig() -> Result<TempDir, std::io::Error> {
 }
 
 fn write_python_graph_fixture(repo: &TempDir) -> TestResult {
-    for (path, contents) in PYTHON_GRAPH_FIXTURE_FILES {
-        write(repo, path, contents)?;
-    }
+    write_python_package_files(repo)?;
+    write_python_model_files(repo)?;
+    write_python_stub_and_tests(repo)?;
     Ok(())
 }
 
-const PYTHON_GRAPH_FIXTURE_FILES: &[(&str, &str)] = &[
-    (
+fn write_python_package_files(repo: &TempDir) -> TestResult {
+    write(
+        repo,
         "src/pkg/__init__.py",
         r#"
 from .models import PublicModel
@@ -1188,22 +1189,29 @@ from .models import PublicModel
 PACKAGE_VALUE = PublicModel()
 __all__ = ["PublicModel", "PACKAGE_VALUE"]
 "#,
-    ),
-    (
+    )?;
+    write(
+        repo,
         "src/pkg/base.py",
         r#"
 class BaseModel:
     pass
 "#,
-    ),
-    (
+    )?;
+    write(
+        repo,
         "src/pkg/helpers.py",
         r#"
 def build_name():
     return "public"
-"#,
-    ),
-    (
+	"#,
+    )?;
+    Ok(())
+}
+
+fn write_python_model_files(repo: &TempDir) -> TestResult {
+    write(
+        repo,
         "src/pkg/models.py",
         r#"
 from .base import BaseModel
@@ -1226,10 +1234,15 @@ def make_model():
 
 def _hidden():
     return PublicModel()
-"#,
-    ),
-    ("src/pkg/stubs.pyi", "def stubbed() -> str: ...\n"),
-    (
+	"#,
+    )?;
+    Ok(())
+}
+
+fn write_python_stub_and_tests(repo: &TempDir) -> TestResult {
+    write(repo, "src/pkg/stubs.pyi", "def stubbed() -> str: ...\n")?;
+    write(
+        repo,
         "src/pkg/uses_stub.py",
         r#"
 from .stubs import stubbed
@@ -1237,8 +1250,9 @@ from .stubs import stubbed
 def call_stub():
     return stubbed()
 "#,
-    ),
-    (
+    )?;
+    write(
+        repo,
         "tests/test_models.py",
         r#"
 from src.pkg import PACKAGE_VALUE
@@ -1253,8 +1267,9 @@ class TestPublicModel:
     def test_render(self):
         return PublicModel().render()
 "#,
-    ),
-];
+    )?;
+    Ok(())
+}
 
 fn write(repo: &TempDir, path: &str, contents: &str) -> Result<(), std::io::Error> {
     let path = repo.path().join(path);

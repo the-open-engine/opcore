@@ -11,15 +11,10 @@ import { createValidationRunner, type ValidationWorkspace } from "@the-open-engi
 import { readdir, readFile } from "node:fs/promises";
 import { join, relative, resolve, sep } from "node:path";
 import { createOpcoreMetricReport, writeOpcoreMetricArtifacts } from "./reporting.js";
-import {
-  createRepoState,
-  hasOpcoreSkippedPathSegment,
-  isOpcoreSkippedPathSegment,
-  parseOpcoreRepoArgs,
-  type RepoResolution,
-  resolveRepo
-} from "./status.js";
+import { commonSkippedPathSegments, createRepoState, parseOpcoreRepoArgs, type RepoResolution, resolveRepo } from "./status.js";
 import { createOpcoreValidationGraphProviderClient, defaultValidationChecks } from "./validation-composition.js";
+
+const skippedPathSegments = new Set<string>(commonSkippedPathSegments);
 
 export interface OpcoreScanAnalysis {
   repoState: OpcoreRepoStatePayload;
@@ -135,10 +130,10 @@ async function listRepoFiles(root: string): Promise<string[]> {
     if (!current) continue;
     const entries = await readdir(current, { withFileTypes: true });
     for (const entry of entries) {
-      if (isOpcoreSkippedPathSegment(entry.name)) continue;
+      if (skippedPathSegments.has(entry.name)) continue;
       const absolute = join(current, entry.name);
       const path = relative(root, absolute).split(sep).join("/");
-      if (hasOpcoreSkippedPathSegment(path)) continue;
+      if (hasSkippedSegment(path)) continue;
       if (entry.isDirectory()) stack.push(absolute);
       else if (entry.isFile()) files.push(path);
     }
@@ -183,6 +178,10 @@ function resolveRepoPath(root: string, path: string): string {
     throw new Error(`Repo-relative path escapes repository: ${path}`);
   }
   return absolute;
+}
+
+function hasSkippedSegment(path: string): boolean {
+  return path.split(/[\\/]+/).some((segment) => skippedPathSegments.has(segment));
 }
 
 function isMissingFileError(error: unknown): boolean {

@@ -43,7 +43,6 @@ import {
   requiredGraphEdgeKinds,
   requiredGraphNodeKinds,
   routeCommandAdapter,
-  writeCommandRouterResult,
   validationCheckRunStatuses,
   validationFailureCategories,
   validationResultStatuses,
@@ -1984,60 +1983,6 @@ describe("lattice shared contracts", () => {
         }),
       /canonicalCommand must start/
     );
-  });
-
-  it("writes routed command results through shared stdout/stderr policy", () => {
-    const writeResult = (routed) => {
-      let stdout = "";
-      let stderr = "";
-      const exitCode = writeCommandRouterResult(routed, {
-        stdout: (text) => {
-          stdout += text;
-        },
-        stderr: (text) => {
-          stderr += text;
-        }
-      });
-      return { exitCode, stdout, stderr };
-    };
-    const ok = writeResult(
-      createCommandRouterResult({
-        bin: "lattice",
-        argv: ["graph", "status"],
-        canonicalCommand: ["lattice", "graph", "status"],
-        owner: "graph",
-        status: "ok",
-        json: false,
-        message: "graph ok"
-      })
-    );
-    assert.deepEqual(ok, { exitCode: 0, stdout: "graph ok\n", stderr: "" });
-    const unsupported = writeResult(
-      createCommandRouterResult({
-        bin: "lattice",
-        argv: ["graph", "unknown"],
-        canonicalCommand: ["lattice", "graph", "unknown"],
-        owner: "graph",
-        status: "unsupported",
-        json: false,
-        message: "unsupported graph route"
-      })
-    );
-    assert.deepEqual(unsupported, { exitCode: 64, stdout: "", stderr: "unsupported graph route\n" });
-    const json = writeResult(
-      createCommandRouterResult({
-        bin: "lattice",
-        argv: ["graph", "status", "--json"],
-        canonicalCommand: ["lattice", "graph", "status"],
-        owner: "graph",
-        status: "ok",
-        json: true,
-        message: "graph ok"
-      })
-    );
-    assert.equal(json.exitCode, 0);
-    assert.equal(json.stderr, "");
-    assert.deepEqual(JSON.parse(json.stdout).canonicalCommand, ["lattice", "graph", "status"]);
   });
 
   it("accepts graph reference evidence manifests and rejects invalid coverage", () => {

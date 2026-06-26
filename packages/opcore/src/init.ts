@@ -12,7 +12,18 @@ import type {
   ValidationResult
 } from "@the-open-engine/opcore-contracts";
 import { createCommandRouterResult } from "@the-open-engine/opcore-contracts";
-import { chmodSync, lstatSync, mkdirSync, readFileSync, realpathSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
+import {
+  appendFileSync,
+  chmodSync,
+  lstatSync,
+  mkdirSync,
+  readFileSync,
+  realpathSync,
+  readdirSync,
+  rmSync,
+  statSync,
+  writeFileSync
+} from "node:fs";
 import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
 import { createOpcoreScanAnalysis } from "./scan.js";
 import { resolveRepo } from "./status.js";
@@ -36,7 +47,9 @@ const endMarker = "<!-- END OPCORE INIT -->";
 const configPath = ".opcore/config";
 const undoPath = ".opcore/init-undo.json";
 const hookPath = ".opcore/hooks/pre-commit-opcore-check.sh";
-const allowedUndoPaths = new Set<string>([configPath, undoPath, hookPath, ...AGENT_FILE_CANDIDATES]);
+const gitignorePath = ".gitignore";
+const opcoreIgnoreLine = ".opcore/";
+const allowedUndoPaths = new Set<string>([configPath, undoPath, hookPath, gitignorePath, ...AGENT_FILE_CANDIDATES]);
 const rustActiveValidationKinds = new Set([".rs", ".inc", "Cargo.toml"]);
 
 interface ParsedInitArgs {
@@ -73,10 +86,19 @@ interface PlannedInit {
   writes: readonly PlannedWrite[];
 }
 
-interface PlannedWrite {
+type PlannedWrite = PlannedFileWrite | PlannedManagedLineAppend;
+
+interface PlannedFileWrite {
+  kind: "write";
   path: string;
   content: string;
   executable?: boolean;
+}
+
+interface PlannedManagedLineAppend {
+  kind: "append_managed_line";
+  path: string;
+  line: string;
 }
 
 interface UndoMetadata {
@@ -86,10 +108,21 @@ interface UndoMetadata {
   entries: readonly UndoEntry[];
 }
 
-interface UndoEntry {
+type UndoEntry = FileUndoEntry | ManagedLineUndoEntry;
+
+interface FileUndoEntry {
+  kind?: "restore_file";
   path: string;
   existed: boolean;
   content?: string;
+}
+
+interface ManagedLineUndoEntry {
+  kind: "append_managed_line";
+  path: string;
+  existed: boolean;
+  line: string;
+  appended?: string;
 }
 
 export async function routeOpcoreInit(
@@ -455,27 +488,39 @@ function planInit(
   options: ParsedInitArgs,
   context: InitContext
 ): PlannedInit {
-  void git;
   const agentFiles = detectAgentFiles(repoRoot);
   const config = createConfig(repoRoot, options.failClosedHook, context.scan, context.settings);
   const writes: PlannedWrite[] = [
     {
+      kind: "write",
       path: configPath,
       content: `${JSON.stringify(config, null, 2)}\n`
     },
     ...agentFiles.map((path) => ({
+      kind: "write" as const,
       path,
       content: upsertOpcoreBlock(readOptionalRepoFile(repoRoot, path))
     }))
   ];
+  if (git) {
+    const gitignore = readOptionalRepoFile(repoRoot, gitignorePath);
+    if (!gitignoreIgnoresOpcore(gitignore ?? "")) {
+      writes.push({
+        kind: "append_managed_line",
+        path: gitignorePath,
+        line: opcoreIgnoreLine
+      });
+    }
+  }
   if (options.failClosedHook) {
     writes.push({
+      kind: "write",
       path: hookPath,
       content: failClosedHookContent(),
       executable: true
     });
   }
-  const actions = createInitActions(agentFiles, options.failClosedHook);
+  const actions = createInitActions(agentFiles, options.failClosedHook, writes.some((write) => write.path === gitignorePath));
   return {
     writes,
     payload: {
@@ -492,7 +537,7 @@ function planInit(
       },
       agentFiles,
       actions,
-      warnings: initWarnings(context.scan),
+      warnings: initWarnings(context.scan, git),
       nextActions: options.dryRun
         ? ["Run opcore init --approve to apply this plan."]
         : ["Review this plan, then run opcore init --approve to write repo setup."],
@@ -533,9 +578,13 @@ function planUndo(repoRoot: string, requestedPath: string, options: ParsedInitAr
       .map((entry) => entry.path)
       .filter((path) => AGENT_FILE_CANDIDATES.includes(path as (typeof AGENT_FILE_CANDIDATES)[number])),
     actions: metadata.entries.map((entry) => ({
-      kind: entry.existed ? "restore" : "remove",
+      kind: entry.kind === "append_managed_line" ? "remove" : entry.existed ? "restore" : "remove",
       path: entry.path,
-      summary: entry.existed ? `Restore ${entry.path} from Opcore init backup.` : `Remove ${entry.path} created by Opcore init.`,
+      summary: entry.kind === "append_managed_line"
+        ? `Remove managed ${entry.line} gitignore entry from ${entry.path}.`
+        : entry.existed
+          ? `Restore ${entry.path} from Opcore init backup.`
+          : `Remove ${entry.path} created by Opcore init.`,
       requiresApproval: !entry.path.startsWith(".opcore/"),
       outsideOpcore: !entry.path.startsWith(".opcore/")
     })),
@@ -572,10 +621,15 @@ function applyInit(repoRoot: string, writes: readonly PlannedWrite[]): void {
     schemaVersion: 1,
     kind: "opcore_init_undo",
     repoRoot,
-    entries: touchedPaths.map((path) => previousMetadata?.entries.find((entry) => entry.path === path) ?? priorEntry(repoRoot, path))
+    entries: touchedPaths.map((path) => {
+      const previousEntry = previousMetadata?.entries.find((entry) => entry.path === path);
+      if (previousEntry) return previousEntry;
+      return priorEntry(repoRoot, path, writes.find((write) => write.path === path));
+    })
   };
   for (const write of writes) writeRepoFile(repoRoot, write);
   writeRepoFile(repoRoot, {
+    kind: "write",
     path: undoPath,
     content: `${JSON.stringify(metadata, null, 2)}\n`
   });
@@ -592,7 +646,7 @@ function applyUndo(repoRoot: string, payload: OpcoreInitPlanPayload): void {
   void payload;
 }
 
-function createInitActions(agentFiles: readonly string[], failClosedHook: boolean): OpcoreInitAction[] {
+function createInitActions(agentFiles: readonly string[], failClosedHook: boolean, gitignoreWritePlanned: boolean): OpcoreInitAction[] {
   const actions: OpcoreInitAction[] = [
     {
       kind: "write",
@@ -609,6 +663,15 @@ function createInitActions(agentFiles: readonly string[], failClosedHook: boolea
       outsideOpcore: true
     }))
   ];
+  if (gitignoreWritePlanned) {
+    actions.push({
+      kind: "write",
+      path: gitignorePath,
+      summary: "Append managed .opcore/ gitignore entry.",
+      requiresApproval: true,
+      outsideOpcore: true
+    });
+  }
   if (failClosedHook) {
     actions.push({
       kind: "create_hook",
@@ -665,14 +728,16 @@ function createConfig(
   const existingHooks = isPlainObject(existing.hooks) ? existing.hooks : {};
   const existingGuidance = isPlainObject(existing.guidance) ? existing.guidance : {};
   const existingOnboarding = isPlainObject(existing.onboarding) ? existing.onboarding : {};
+  const onboardingScan = isPlainObject(existingOnboarding.scan) ? existingOnboarding.scan : scan;
+  const onboardingLanguages = Array.isArray(existingOnboarding.languages) ? existingOnboarding.languages : settings.languages;
   return {
     ...existing,
     schemaVersion: 1,
     kind: "opcore_init_config",
     onboarding: {
       ...existingOnboarding,
-      scan,
-      languages: settings.languages,
+      scan: onboardingScan,
+      languages: onboardingLanguages,
       timingPayload: true
     },
     guidance: {
@@ -689,13 +754,16 @@ function createConfig(
   };
 }
 
-function initWarnings(scan: OpcoreInitScanSummary): string[] {
+function initWarnings(scan: OpcoreInitScanSummary, git: boolean): string[] {
   const warnings: string[] = [];
   if (scan.unsupportedStacks.length > 0) {
     warnings.push(`Unsupported stacks: ${scan.unsupportedStacks.map((stack) => `${stack.language} (${stack.count})`).join(", ")}`);
   }
   if (scan.degradedRustTools.length > 0) {
     warnings.push(`Degraded Rust tools: ${scan.degradedRustTools.map((tool) => tool.tool).join(", ")}`);
+  }
+  if (!git) {
+    warnings.push("No Git repository detected; .opcore/ ignore entry not written.");
   }
   warnings.push("Do not weaken existing lint, test, CI, pre-commit, or agent guardrails.");
   warnings.push("Fail-closed hooks are opt-in and are not created unless --fail-closed-hook is approved.");
@@ -711,9 +779,20 @@ function failClosedHookContent(): string {
   ].join("\n");
 }
 
-function priorEntry(repoRoot: string, path: string): UndoEntry {
-  if (!repoPathExists(repoRoot, path)) return { path, existed: false };
+function priorEntry(repoRoot: string, path: string, write: PlannedWrite | undefined): UndoEntry {
+  if (write?.kind === "append_managed_line") {
+    const existing = readOptionalRepoFile(repoRoot, path);
+    return {
+      kind: "append_managed_line",
+      path,
+      existed: existing !== undefined,
+      line: write.line,
+      appended: appendManagedGitignoreLine(existing)
+    };
+  }
+  if (!repoPathExists(repoRoot, path)) return { kind: "restore_file", path, existed: false };
   return {
+    kind: "restore_file",
     path,
     existed: true,
     content: readFileSync(assertExistingRepoPath(repoRoot, path, "Existing Opcore init target", "file"), "utf8")
@@ -723,6 +802,11 @@ function priorEntry(repoRoot: string, path: string): UndoEntry {
 function writeRepoFile(repoRoot: string, write: PlannedWrite): void {
   const absolute = assertRepoMutationPath(repoRoot, write.path, "Opcore init write target");
   mkdirSync(dirname(absolute), { recursive: true });
+  if (write.kind === "append_managed_line") {
+    const existing = readOptionalRepoFile(repoRoot, write.path);
+    appendFileSync(absolute, appendManagedGitignoreLine(existing));
+    return;
+  }
   writeFileSync(absolute, write.content, "utf8");
   if (write.executable) {
     assertRepoMutationPath(repoRoot, write.path, "Opcore init chmod target");
@@ -732,6 +816,17 @@ function writeRepoFile(repoRoot: string, write: PlannedWrite): void {
 
 function restoreUndoEntry(repoRoot: string, entry: UndoEntry): void {
   const absolute = assertRepoMutationPath(repoRoot, entry.path, "Opcore init undo target");
+  if (entry.kind === "append_managed_line") {
+    if (!repoPathExists(repoRoot, entry.path)) return;
+    const removal = removeManagedGitignoreLine(readFileSync(absolute, "utf8"), entry);
+    if (!removal.removed) return;
+    if (!entry.existed && removal.content.length === 0) {
+      rmSync(absolute, { force: true });
+      return;
+    }
+    writeFileSync(absolute, removal.content, "utf8");
+    return;
+  }
   if (!entry.existed) {
     rmSync(absolute, { force: true });
     return;
@@ -765,6 +860,38 @@ function readUndoMetadata(repoRoot: string): UndoMetadata {
       throw new Error(`.opcore/init-undo.json contains duplicate path: ${entry.path}`);
     }
     seenPaths.add(entry.path);
+    const kind = typeof entry.kind === "string" ? entry.kind : "restore_file";
+    if (kind === "append_managed_line") {
+      if (entry.path !== gitignorePath) {
+        throw new Error(`.opcore/init-undo.json append-managed-line entry targets unsupported path: ${entry.path}`);
+      }
+      if (typeof entry.line !== "string" || entry.line !== opcoreIgnoreLine) {
+        throw new Error(`.opcore/init-undo.json append-managed-line entry for ${entry.path} has invalid line`);
+      }
+      if (
+        "appended" in entry &&
+        entry.appended !== undefined &&
+        entry.appended !== `${opcoreIgnoreLine}\n` &&
+        entry.appended !== `\n${opcoreIgnoreLine}\n`
+      ) {
+        throw new Error(`.opcore/init-undo.json append-managed-line entry for ${entry.path} has invalid appended text`);
+      }
+      resolveRepoPath(repoRoot, entry.path);
+      entries.push({
+        kind: "append_managed_line",
+        path: entry.path,
+        existed: entry.existed,
+        line: entry.line,
+        ...(typeof entry.appended === "string" ? { appended: entry.appended } : {})
+      });
+      continue;
+    }
+    if (entry.path === gitignorePath) {
+      throw new Error(".opcore/init-undo.json .gitignore entry must use managed-line undo metadata");
+    }
+    if (kind !== "restore_file") {
+      throw new Error(`.opcore/init-undo.json contains unsupported entry kind: ${kind}`);
+    }
     if (entry.existed && typeof entry.content !== "string") {
       throw new Error(`.opcore/init-undo.json restore entry for ${entry.path} is missing string content`);
     }
@@ -773,6 +900,7 @@ function readUndoMetadata(repoRoot: string): UndoMetadata {
     }
     resolveRepoPath(repoRoot, entry.path);
     entries.push({
+      kind: "restore_file",
       path: entry.path,
       existed: entry.existed,
       ...(typeof entry.content === "string" ? { content: entry.content } : {})
@@ -802,6 +930,51 @@ function readJsonObject(repoRoot: string, path: string): Record<string, unknown>
 function readOptionalRepoFile(repoRoot: string, path: string): string | undefined {
   if (!repoPathExists(repoRoot, path)) return undefined;
   return readFileSync(assertExistingRepoPath(repoRoot, path, "Existing repo file", "file"), "utf8");
+}
+
+function gitignoreIgnoresOpcore(content: string): boolean {
+  let ignored = false;
+  for (const rawLine of content.split(/\r\n|\n|\r/u)) {
+    const line = rawLine.trim();
+    if (line.length === 0 || line.startsWith("#")) continue;
+    const negated = line.startsWith("!");
+    const pattern = negated ? line.slice(1).trim() : line;
+    if (isOpcoreGitignorePattern(pattern)) {
+      ignored = !negated;
+    }
+  }
+  return ignored;
+}
+
+function isOpcoreGitignorePattern(pattern: string): boolean {
+  return pattern === ".opcore" ||
+    pattern === ".opcore/" ||
+    pattern === "/.opcore" ||
+    pattern === "/.opcore/" ||
+    pattern === ".opcore/**" ||
+    pattern === "/.opcore/**";
+}
+
+function appendManagedGitignoreLine(existing: string | undefined): string {
+  if (existing === undefined || existing.length === 0) return `${opcoreIgnoreLine}\n`;
+  return `${existing.endsWith("\n") || existing.endsWith("\r") ? "" : "\n"}${opcoreIgnoreLine}\n`;
+}
+
+function removeManagedGitignoreLine(current: string, entry: ManagedLineUndoEntry): { content: string; removed: boolean } {
+  if (entry.appended !== undefined && current.endsWith(entry.appended)) {
+    return { content: current.slice(0, -entry.appended.length), removed: true };
+  }
+  const chunks = current.match(/[^\r\n]*(?:\r\n|\n|\r|$)/gu) ?? [];
+  const meaningfulChunks = chunks.filter((chunk) => chunk.length > 0);
+  for (let index = 0; index < meaningfulChunks.length; index += 1) {
+    const chunk = meaningfulChunks[index];
+    const chunkLine = chunk.replace(/(?:\r\n|\n|\r)$/u, "");
+    if (chunkLine === entry.line) {
+      meaningfulChunks.splice(index, 1);
+      return { content: meaningfulChunks.join(""), removed: true };
+    }
+  }
+  return { content: current, removed: false };
 }
 
 function resolveRepoPath(repoRoot: string, path: string): string {

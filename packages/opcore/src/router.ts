@@ -1,10 +1,5 @@
-import type { CommandRouterResult, CommandRouterWriter, ParsedCommandArgv } from "@the-open-engine/opcore-contracts";
-import {
-  createCommandRouterResult,
-  normalizeCommandBin,
-  parseCommandArgv,
-  writeCommandRouterResult
-} from "@the-open-engine/opcore-contracts";
+import type { CommandRouterResult, ParsedCommandArgv } from "@the-open-engine/opcore-contracts";
+import { createCommandRouterResult, normalizeCommandBin, parseCommandArgv } from "@the-open-engine/opcore-contracts";
 import { routeOpcoreCheck } from "./check.js";
 import {
   createOpcoreMeasureDelta,
@@ -30,11 +25,13 @@ declare const process: {
   };
 };
 
+type Writer = (text: string) => void;
+
 export interface RunOpcoreCliOptions {
   argv: readonly string[];
   bin?: string;
-  stdout?: CommandRouterWriter;
-  stderr?: CommandRouterWriter;
+  stdout?: Writer;
+  stderr?: Writer;
   stdinIsTTY?: boolean;
   stdoutIsTTY?: boolean;
   readLine?: (prompt: string) => Promise<string>;
@@ -64,12 +61,17 @@ export async function routeOpcoreCommand(
 }
 
 export async function runOpcoreCli(options: RunOpcoreCliOptions): Promise<number> {
+  const stdout = options.stdout ?? ((text: string) => process.stdout.write(text));
+  const stderr = options.stderr ?? ((text: string) => process.stderr.write(text));
   const routed = await routeOpcoreCommand(options.argv, options.bin ?? "opcore", {
     stdinIsTTY: options.stdinIsTTY ?? process.stdin.isTTY === true,
     stdoutIsTTY: options.stdoutIsTTY ?? process.stdout.isTTY === true,
     readLine: options.readLine ?? createReadLine()
   });
-  return writeCommandRouterResult(routed, { stdout: options.stdout, stderr: options.stderr });
+  const output = routed.json ? JSON.stringify(routed) : routed.message;
+  const write = routed.json || routed.status === "ok" ? stdout : stderr;
+  write(`${output}\n`);
+  return routed.exitCode;
 }
 
 async function routeOpcoreParsed(

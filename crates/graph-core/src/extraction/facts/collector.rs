@@ -1,7 +1,6 @@
 use super::{
-    file_id, finish_file_facts, graph_attributes_object, insert_edge, set_file_exports_attribute,
-    EdgeDraft, FileFacts, FileFactsParts, HeritageFact, ImportBinding, ImportFact, ReExportFact,
-    ReferenceFact,
+    file_id, insert_edge, EdgeDraft, FileFacts, HeritageFact, ImportBinding, ImportFact,
+    ReExportFact, ReferenceFact,
 };
 use crate::protocol::{GraphFactEdge, GraphFactNode};
 use oxc_ast::ast::{
@@ -95,9 +94,13 @@ impl FileFactCollector {
     fn finish(mut self) -> FileFacts {
         self.reconcile_file_exports();
         if !self.file_exports.is_empty() {
-            set_file_exports_attribute(&mut self.file_node, &self.file_exports);
+            set_attribute(
+                &mut self.file_node,
+                "exports",
+                Value::Array(self.file_exports.clone()),
+            );
         }
-        finish_file_facts(FileFactsParts {
+        FileFacts {
             path: self.path,
             file_node: self.file_node,
             nodes: self.nodes,
@@ -108,7 +111,7 @@ impl FileFactCollector {
             imports: self.imports,
             references: self.references,
             heritage: self.heritage,
-        })
+        }
     }
 
     fn reconcile_file_exports(&mut self) {
@@ -700,14 +703,14 @@ fn default_export_local(expression: &Expression<'_>) -> Option<String> {
 }
 
 fn ensure_export_attribute(node: &mut GraphFactNode) {
-    let attributes = graph_attributes_object(node);
+    let attributes = attributes_object(node);
     attributes
         .entry("exported".to_string())
         .or_insert_with(|| Value::Bool(false));
 }
 
 fn apply_export_attributes(node: &mut GraphFactNode, export: &ExportContext, local_name: &str) {
-    let attributes = graph_attributes_object(node);
+    let attributes = attributes_object(node);
     attributes.insert("exported".to_string(), Value::Bool(true));
     attributes.insert(
         "exportKind".to_string(),
@@ -721,4 +724,20 @@ fn apply_export_attributes(node: &mut GraphFactNode, export: &ExportContext, loc
 
 fn registers_default_export_alias(export: &ExportContext, local_name: &str) -> bool {
     export.export_kind == "default" || export.export_name_for(local_name) == "default"
+}
+
+fn set_attribute(node: &mut GraphFactNode, key: &str, value: Value) {
+    attributes_object(node).insert(key.to_string(), value);
+}
+
+fn attributes_object(node: &mut GraphFactNode) -> &mut serde_json::Map<String, Value> {
+    let attributes = node
+        .attributes
+        .get_or_insert_with(|| Value::Object(serde_json::Map::new()));
+    loop {
+        if let Value::Object(object) = attributes {
+            return object;
+        }
+        *attributes = Value::Object(serde_json::Map::new());
+    }
 }

@@ -1,9 +1,8 @@
 use super::diagnostics::{error, warning};
-use super::normalize_relative_path;
 use super::tsconfig::ImportResolution;
 use crate::protocol::GraphExtractionDiagnosticCategory;
 use std::collections::BTreeSet;
-use std::path::{Path, PathBuf};
+use std::path::{Component, Path, PathBuf};
 
 pub fn resolve_import(
     specifier: &str,
@@ -94,7 +93,7 @@ fn resolve_path_candidate(
     candidate: PathBuf,
     known_files: &BTreeSet<String>,
 ) -> Result<Option<String>, ()> {
-    let normalized = normalize_relative_path(&candidate)?;
+    let normalized = normalize_relative(&candidate)?;
     Ok(resolve_module_suffix(&normalized, known_files))
 }
 
@@ -185,6 +184,26 @@ fn unresolved_import(specifier: &str, from_path: &str) -> ImportResolution {
             Some("python".to_string()),
         )],
     }
+}
+
+fn normalize_relative(path: &Path) -> Result<String, ()> {
+    let mut parts = Vec::new();
+    for component in path.components() {
+        match component {
+            Component::CurDir => {}
+            Component::Normal(part) => parts.push(part.to_string_lossy().to_string()),
+            Component::ParentDir => {
+                if parts.pop().is_none() {
+                    return Err(());
+                }
+            }
+            Component::RootDir | Component::Prefix(_) => return Err(()),
+        }
+    }
+    if parts.is_empty() {
+        return Err(());
+    }
+    Ok(parts.join("/"))
 }
 
 fn is_python_source_path(path: &str) -> bool {

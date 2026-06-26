@@ -1,6 +1,6 @@
 use super::{
-    file_id, finish_file_facts, insert_edge, set_file_exports_attribute, EdgeDraft, FileFacts,
-    FileFactsParts, HeritageFact, ImportBinding, ImportFact, ReExportFact, ReferenceFact,
+    file_id, insert_edge, EdgeDraft, FileFacts, HeritageFact, ImportBinding, ImportFact,
+    ReExportFact, ReferenceFact,
 };
 use crate::protocol::{GraphFactEdge, GraphFactNode};
 use serde_json::{json, Value};
@@ -106,9 +106,13 @@ impl<'a> PythonFileFactCollector<'a> {
             }
         }
         if self.explicit_exports.is_some() || !self.file_exports.is_empty() {
-            set_file_exports_attribute(&mut self.file_node, &self.file_exports);
+            set_attribute(
+                &mut self.file_node,
+                "exports",
+                Value::Array(self.file_exports.clone()),
+            );
         }
-        finish_file_facts(FileFactsParts {
+        FileFacts {
             path: self.path,
             file_node: self.file_node,
             nodes: self.nodes,
@@ -119,7 +123,7 @@ impl<'a> PythonFileFactCollector<'a> {
             imports: self.imports,
             references: self.references,
             heritage: self.heritage,
-        })
+        }
     }
 
     fn visit_module(&mut self, node: Node<'_>) {
@@ -689,4 +693,20 @@ fn module_name_for_path(path: &str) -> String {
         return "__init__".to_string();
     }
     parts.join(".")
+}
+
+fn set_attribute(node: &mut GraphFactNode, key: &str, value: Value) {
+    attributes_object(node).insert(key.to_string(), value);
+}
+
+fn attributes_object(node: &mut GraphFactNode) -> &mut serde_json::Map<String, Value> {
+    let attributes = node
+        .attributes
+        .get_or_insert_with(|| Value::Object(serde_json::Map::new()));
+    loop {
+        if let Value::Object(object) = attributes {
+            return object;
+        }
+        *attributes = Value::Object(serde_json::Map::new());
+    }
 }

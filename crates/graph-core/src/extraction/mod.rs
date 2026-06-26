@@ -15,7 +15,7 @@ use crate::protocol::{
 use crate::{GRAPH_PROVIDER_NAME, GRAPH_SCHEMA_VERSION};
 use diagnostics::has_error;
 use serde::{Deserialize, Serialize};
-use std::path::{Component, Path, PathBuf};
+use std::path::PathBuf;
 
 pub use diagnostics::{error, info, warning};
 pub use discovery::{
@@ -27,26 +27,6 @@ pub use language::SourceLanguage;
 pub const DEFAULT_MAX_FILES: usize = 4_000;
 pub const DEFAULT_MAX_DEPTH: usize = 64;
 pub const EXTRACTION_GENERATED_AT: &str = "2026-06-04T00:00:00.000Z";
-
-fn normalize_relative_path(path: &Path) -> Result<String, ()> {
-    let mut parts = Vec::new();
-    for component in path.components() {
-        match component {
-            Component::CurDir => {}
-            Component::Normal(part) => parts.push(part.to_string_lossy().to_string()),
-            Component::ParentDir => {
-                if parts.pop().is_none() {
-                    return Err(());
-                }
-            }
-            Component::RootDir | Component::Prefix(_) => return Err(()),
-        }
-    }
-    if parts.is_empty() {
-        return Err(());
-    }
-    Ok(parts.join("/"))
-}
 
 #[derive(Debug, Clone)]
 pub struct ExtractionOptions {

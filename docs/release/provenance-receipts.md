@@ -3,7 +3,7 @@
 Maintainer provenance evidence for the Lattice alpha release gate.
 
 - Current-tree files scanned: 394
-- Git-history commits scanned: 53
+- Git-history commits scanned: 58
 - Python code-review-graph source findings: 0
 - Python package metadata findings: 0
 - Copied git-history marker findings: 0
