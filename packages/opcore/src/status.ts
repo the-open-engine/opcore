@@ -28,29 +28,80 @@ const skippedPathSegments = new Set([
   ".lattice",
   ".opcore",
   ".rox-cache",
-  ".robustness-engine-cache"
+  ".robustness-engine-cache",
+  ".venv",
+  "venv",
+  "env",
+  "__pycache__",
+  ".eggs",
+  "build",
+  ".tox",
+  ".mypy_cache",
+  ".pytest_cache",
+  ".ruff_cache",
+  "site-packages"
 ]);
-const graphExtensions = new Set([".ts", ".tsx", ".js", ".jsx"]);
-const validationExtensions = new Set([".ts", ".tsx", ".js", ".jsx", ".mts", ".cts", ".rs", ".inc"]);
-const validationBasenames = new Set(["Cargo.toml"]);
-const retainedBasenames = new Set(["Cargo.lock"]);
-const unsupportedStacks = new Map([
-  [".py", "Python"],
-  [".go", "Go"],
-  [".java", "Java"],
-  [".rb", "Ruby"],
-  [".php", "PHP"],
-  [".cs", "C#"],
-  [".c", "C"],
-  [".cc", "C++"],
-  [".cpp", "C++"],
-  [".h", "C/C++ Header"],
-  [".hpp", "C++ Header"],
-  [".swift", "Swift"],
-  [".kt", "Kotlin"],
-  [".kts", "Kotlin"],
-  [".scala", "Scala"],
-  [".lua", "Lua"]
+const skippedPathSegmentSuffixes = [".egg-info", ".dist-info"];
+
+type SourcePolicyState = "supported" | "extraction_pending" | "retained" | "unsupported";
+
+interface SourcePolicy {
+  language: string;
+  graphSupported: boolean;
+  validationSupported: boolean;
+  retained: boolean;
+  state: SourcePolicyState;
+}
+
+function supportedPolicy(language: string, graphSupported: boolean, validationSupported: boolean): SourcePolicy {
+  return { language, graphSupported, validationSupported, retained: false, state: "supported" };
+}
+
+function retainedPolicy(language: string): SourcePolicy {
+  return { language, graphSupported: false, validationSupported: false, retained: true, state: "retained" };
+}
+
+function extractionPendingPolicy(language: string): SourcePolicy {
+  return { language, graphSupported: false, validationSupported: false, retained: false, state: "extraction_pending" };
+}
+
+function unsupportedPolicy(language: string): SourcePolicy {
+  return { language, graphSupported: false, validationSupported: false, retained: false, state: "unsupported" };
+}
+
+// Keep this status policy in lockstep with crates/graph-core/src/extraction/language.rs.
+const sourcePolicies = new Map<string, SourcePolicy>([
+  [".ts", supportedPolicy("TypeScript", true, true)],
+  [".tsx", supportedPolicy("TypeScript", true, true)],
+  [".js", supportedPolicy("JavaScript", true, true)],
+  [".jsx", supportedPolicy("JavaScript", true, true)],
+  [".mts", supportedPolicy("TypeScript", false, true)],
+  [".cts", supportedPolicy("TypeScript", false, true)],
+  [".rs", supportedPolicy("Rust", false, true)],
+  [".inc", supportedPolicy("Rust", false, true)],
+  ["Cargo.toml", supportedPolicy("Rust", false, true)],
+  ["Cargo.lock", retainedPolicy("Rust")],
+  [".py", extractionPendingPolicy("Python")],
+  [".pyi", extractionPendingPolicy("Python")],
+  [".mjs", unsupportedPolicy("JavaScript")],
+  [".cjs", unsupportedPolicy("JavaScript")],
+  [".vue", unsupportedPolicy("Vue")],
+  [".svelte", unsupportedPolicy("Svelte")],
+  [".go", unsupportedPolicy("Go")],
+  [".java", unsupportedPolicy("Java")],
+  [".rb", unsupportedPolicy("Ruby")],
+  [".php", unsupportedPolicy("PHP")],
+  [".swift", unsupportedPolicy("Swift")],
+  [".kt", unsupportedPolicy("Kotlin")],
+  [".kts", unsupportedPolicy("Kotlin")],
+  [".scala", unsupportedPolicy("Scala")],
+  [".lua", unsupportedPolicy("Lua")],
+  [".cs", unsupportedPolicy("C#")],
+  [".c", unsupportedPolicy("C")],
+  [".cc", unsupportedPolicy("C++")],
+  [".cpp", unsupportedPolicy("C++")],
+  [".h", unsupportedPolicy("C/C++ Header")],
+  [".hpp", unsupportedPolicy("C++ Header")]
 ]);
 
 export interface RepoResolution {
@@ -350,7 +401,7 @@ function readFilesRecursive(root: string): { files: string[]; traversalFailures:
       continue;
     }
     for (const entry of entries) {
-      if (skippedPathSegments.has(entry.name)) continue;
+      if (isSkippedPathSegment(entry.name)) continue;
       const absolute = join(current, entry.name);
       const relative = absolute.slice(root.length + 1).split(sep).join("/");
       if (hasSkippedSegment(relative)) continue;
@@ -375,10 +426,11 @@ function computeCoverage(files: readonly string[]): OpcoreRepoStatePayload["cove
 
   for (const file of files) {
     const kind = fileKind(file);
-    const language = languageForFile(file);
-    const graphSupported = graphExtensions.has(kind);
-    const validationSupported = validationExtensions.has(kind) || validationBasenames.has(basename(file));
-    const retained = retainedBasenames.has(basename(file));
+    const policy = sourcePolicyForFile(file);
+    const language = policy?.language;
+    const graphSupported = policy?.graphSupported ?? false;
+    const validationSupported = policy?.validationSupported ?? false;
+    const retained = policy?.retained ?? false;
 
     if (graphSupported) {
       graphSupportedFiles += 1;
@@ -389,8 +441,8 @@ function computeCoverage(files: readonly string[]): OpcoreRepoStatePayload["cove
       increment(validationCounts, kind);
     }
     if (retained) retainedFiles += 1;
-    if (unsupportedStacks.has(kind)) {
-      const current = unsupportedCounts.get(kind) ?? { language: unsupportedStacks.get(kind) ?? kind, count: 0, examples: [] };
+    if (policy && !graphSupported && !validationSupported && !retained) {
+      const current = unsupportedCounts.get(kind) ?? { language: policy.language, count: 0, examples: [] };
       current.count += 1;
       if (current.examples.length < 3) current.examples.push(file);
       unsupportedCounts.set(kind, current);
@@ -628,7 +680,11 @@ function gitFailureMessage(result: { status: number | null; stdout: string; stde
 }
 
 function hasSkippedSegment(path: string): boolean {
-  return path.split(/[\\/]+/).some((segment) => skippedPathSegments.has(segment));
+  return path.split(/[\\/]+/).some((segment) => isSkippedPathSegment(segment));
+}
+
+function isSkippedPathSegment(segment: string): boolean {
+  return skippedPathSegments.has(segment) || skippedPathSegmentSuffixes.some((suffix) => segment.endsWith(suffix));
 }
 
 function fileKind(file: string): string {
@@ -637,12 +693,8 @@ function fileKind(file: string): string {
   return extname(name);
 }
 
-function languageForFile(file: string): string | undefined {
-  const kind = fileKind(file);
-  if ([".ts", ".tsx", ".mts", ".cts"].includes(kind)) return "TypeScript";
-  if ([".js", ".jsx"].includes(kind)) return "JavaScript";
-  if ([".rs", ".inc", "Cargo.toml", "Cargo.lock"].includes(kind)) return "Rust";
-  return unsupportedStacks.get(kind);
+function sourcePolicyForFile(file: string): SourcePolicy | undefined {
+  return sourcePolicies.get(fileKind(file));
 }
 
 function increment(map: Map<string, number>, key: string): void {

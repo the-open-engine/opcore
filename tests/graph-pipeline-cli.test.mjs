@@ -1,3 +1,4 @@
+import { DatabaseSync } from "node:sqlite";
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
@@ -226,6 +227,7 @@ describe("graph pipeline CLI", () => {
     try {
       for (const [directory, file] of [
         ["src", "app.ts"],
+        ["src", "tool.py"],
         ["node_modules/pkg", "index.ts"],
         [".ace/runtime", "generated.ts"],
         [".lattice/graph", "generated.ts"],
@@ -234,7 +236,20 @@ describe("graph pipeline CLI", () => {
         [".pnpm/pkg", "index.ts"],
         ["vendor/pkg", "generated.ts"],
         ["dist", "generated.ts"],
-        ["target", "generated.ts"]
+        ["target", "generated.ts"],
+        [".venv/lib/python3.12/site-packages/pkg", "ignored.py"],
+        ["venv/lib/python3.12/site-packages/pkg", "ignored.py"],
+        ["env/lib/python3.12/site-packages/pkg", "ignored.py"],
+        ["src/__pycache__", "ignored.py"],
+        [".eggs/pkg", "ignored.py"],
+        ["build/lib", "ignored.py"],
+        [".tox/py", "ignored.py"],
+        [".mypy_cache", "ignored.py"],
+        [".pytest_cache", "ignored.py"],
+        [".ruff_cache", "ignored.py"],
+        ["pkg.egg-info", "ignored.py"],
+        ["pkg.dist-info", "ignored.py"],
+        ["lib/site-packages/pkg", "ignored.py"]
       ]) {
         mkdirSync(join(temp, directory), { recursive: true });
         writeFileSync(join(temp, directory, file), "export const value = true;\n");
@@ -242,8 +257,11 @@ describe("graph pipeline CLI", () => {
 
       const build = run(latticeBin, ["graph", "build", "--repo", temp, "--json"]);
       assert.equal(build.providerStatus.state, "available");
-      assert.equal(build.graphPipeline.summary.discoveredFiles, 1);
-      assert.deepEqual(build.graphPipeline.summary.changedFiles, ["src/app.ts"]);
+      assert.equal(build.graphPipeline.summary.discoveredFiles, 2);
+      assert.equal(build.graphPipeline.summary.parsedFiles, 1);
+      assert.deepEqual(build.graphPipeline.summary.changedFiles, ["src/app.ts", "src/tool.py"]);
+      using db = new DatabaseSync(join(temp, ".lattice/graph/graph.db"));
+      assert.equal(db.prepare("select count(*) as count from nodes where path = ?").get("src/tool.py").count, 0);
     } finally {
       rmSync(temp, { recursive: true, force: true });
     }

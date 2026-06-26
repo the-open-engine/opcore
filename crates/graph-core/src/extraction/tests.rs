@@ -1,4 +1,4 @@
-use super::{extract_sources, ExtractionOptions};
+use super::{discover_sources_for_options, extract_sources, ExtractionOptions};
 use crate::protocol::{
     GraphExtractionDiagnosticCategory as Category, GraphExtractionDiagnosticSeverity as Severity,
     GraphFactNode,
@@ -726,6 +726,96 @@ fn unsupported_and_missing_tsconfig_are_typed_warnings() -> TestResult {
         .iter()
         .any(|diagnostic| diagnostic.severity == Severity::Error));
     assert!(!result.nodes.is_empty());
+    Ok(())
+}
+
+#[test]
+fn python_sources_are_discovered_without_extraction_facts() -> TestResult {
+    let repo = repo_with_tsconfig()?;
+    write(&repo, "src/app.ts", "export const app = true;\n")?;
+    write(&repo, "src/tool.py", "def run():\n    return True\n")?;
+    write(&repo, "src/typings.pyi", "def run() -> bool: ...\n")?;
+
+    let discovery = discover_sources_for_options(&ExtractionOptions::new(repo.path()));
+    let sources = discovery
+        .sources
+        .iter()
+        .map(|source| (source.relative_path.as_str(), source.language.as_str()))
+        .collect::<Vec<_>>();
+    assert_eq!(
+        sources,
+        vec![
+            ("src/app.ts", "typescript"),
+            ("src/tool.py", "python"),
+            ("src/typings.pyi", "python")
+        ]
+    );
+    assert!(!discovery
+        .diagnostics
+        .iter()
+        .any(|diagnostic| diagnostic.category == Category::UnsupportedLanguage));
+
+    let result = extract_sources(ExtractionOptions::new(repo.path()));
+    assert!(!result
+        .diagnostics
+        .iter()
+        .any(|diagnostic| diagnostic.severity == Severity::Error));
+    assert_eq!(
+        sorted(
+            result
+                .file_hashes
+                .iter()
+                .map(|hash| format!("{}:{}", hash.relative_path, hash.language))
+                .collect()
+        ),
+        vec![
+            "src/app.ts:typescript".to_string(),
+            "src/tool.py:python".to_string(),
+            "src/typings.pyi:python".to_string()
+        ]
+    );
+    assert_missing_node(&result.nodes, "file:src/tool.py")?;
+    assert_missing_node(&result.nodes, "file:src/typings.pyi")?;
+    Ok(())
+}
+
+#[test]
+fn python_generated_private_and_dependency_paths_are_ignored() -> TestResult {
+    let repo = repo_with_tsconfig()?;
+    write(&repo, "src/app.ts", "export const app = true;\n")?;
+    write(&repo, "src/tool.py", "def run():\n    return True\n")?;
+    for path in [
+        ".venv/lib/python3.12/site-packages/pkg/ignored.py",
+        "venv/lib/python3.12/site-packages/pkg/ignored.py",
+        "env/lib/python3.12/site-packages/pkg/ignored.py",
+        "src/__pycache__/ignored.py",
+        ".eggs/pkg/ignored.py",
+        "build/lib/ignored.py",
+        ".tox/py/ignored.py",
+        ".mypy_cache/ignored.py",
+        ".pytest_cache/ignored.py",
+        ".ruff_cache/ignored.py",
+        "pkg.egg-info/ignored.py",
+        "pkg.dist-info/ignored.py",
+        "lib/site-packages/pkg/ignored.py",
+    ] {
+        write(&repo, path, "def ignored():\n    return True\n")?;
+    }
+
+    let discovery = discover_sources_for_options(&ExtractionOptions::new(repo.path()));
+    let source_paths = sorted(
+        discovery
+            .sources
+            .iter()
+            .map(|source| source.relative_path.clone())
+            .collect(),
+    );
+
+    assert_eq!(source_paths, vec!["src/app.ts", "src/tool.py"]);
+    assert!(!discovery
+        .diagnostics
+        .iter()
+        .any(|diagnostic| diagnostic.category == Category::UnsupportedLanguage));
     Ok(())
 }
 
