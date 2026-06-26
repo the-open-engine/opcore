@@ -12,7 +12,7 @@ Graph input evidence: docs/release/graph-release-receipt.json
 
 | Platform | Binary | Binary SHA-256 | Checksum File |
 |----------|--------|----------------|---------------|
-| darwin-arm64 | lattice-graph-core | 34bcd16b63011b1e360cf86457945d33749c18d71025f53c9937431c374691b4 | lattice-graph-core.sha256 |
+| darwin-arm64 | lattice-graph-core | 9b67974520bc715cdebf440d03ed1ef04df36528023210f608d6fca102a696b2 | lattice-graph-core.sha256 |
 | darwin-x64 | lattice-graph-core | 6652d43eec8f39e7c1b930b92e032eb268d1e4263454a89614e0d8299fc3b4e7 | lattice-graph-core.sha256 |
 | linux-x64 | lattice-graph-core | 4654c6ba6383886e759fe3c805ec8c0df3b31d2e1db9d5c18626de6b2cfe758a | lattice-graph-core.sha256 |
 
@@ -21,5 +21,5 @@ No package publishing happens in this gate.
 ## Cutover Gate
 
 Issue #30 receipt: docs/release/cutover-receipt.json
-Cutover receipt SHA-256: 401ff1436f07b0c7f3782901fd64823fe8e995de7bdeffff4dc5a8fc4f910cb9
+Cutover receipt SHA-256: bb6e2a900bc20bad591b5f82208193f45694329d47d0dc83fb5610eee059c9b1
 Installed command receipts: 28

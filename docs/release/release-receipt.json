@@ -2,21 +2,20 @@
   "schemaVersion": 1,
   "issue": "#29",
   "origin": "covibes-authored-release-proof",
-  "generatedAt": "2026-06-26T10:44:16.233Z",
-  "commitSha": "f51e3ae668444c39c703db95a40b6b20de9a1c89",
+  "generatedAt": "2026-06-26T22:07:47.514Z",
+  "commitSha": "54a8c987f70543000258a802d363a4f78942d0c6",
   "privateRepo": true,
   "packageNames": [
-    "@the-open-engine/lattice-contracts",
+    "@the-open-engine/opcore-contracts",
     "@the-open-engine/opcore",
-    "@the-open-engine/lattice-cli",
-    "@the-open-engine/lattice-graph",
+    "@the-open-engine/opcore-graph",
     "@the-open-engine/opcore-graph-core-darwin-arm64",
     "@the-open-engine/opcore-graph-core-darwin-x64",
     "@the-open-engine/opcore-graph-core-linux-x64",
-    "@the-open-engine/lattice-edit",
-    "@the-open-engine/lattice-validation",
-    "@the-open-engine/lattice-validation-rust",
-    "@the-open-engine/lattice-validation-typescript",
+    "@the-open-engine/opcore-edit",
+    "@the-open-engine/opcore-validation",
+    "@the-open-engine/opcore-validation-rust",
+    "@the-open-engine/opcore-validation-typescript",
     "@the-open-engine/opcore-asp-provider"
   ],
   "commandGroups": [
@@ -30,11 +29,11 @@
   ],
   "packages": [
     {
-      "packageName": "@the-open-engine/lattice-contracts",
+      "packageName": "@the-open-engine/opcore-contracts",
       "packageRoot": "packages/contracts",
       "version": "0.1.0-alpha.0",
       "manifest": {
-        "name": "@the-open-engine/lattice-contracts",
+        "name": "@the-open-engine/opcore-contracts",
         "version": "0.1.0-alpha.0",
         "license": "MIT",
         "main": "dist/index.js",
@@ -49,11 +48,11 @@
         "bundledDependencies": []
       },
       "tarball": {
-        "filename": "the-open-engine-lattice-contracts-0.1.0-alpha.0.tgz",
-        "path": ".lattice/release/packages/the-open-engine-lattice-contracts-0.1.0-alpha.0.tgz",
-        "sha256": "6801e8dda1ed82724bfa95d70ab7b7c4af4f87016a7471eb4cdfb425dda382b5",
-        "integrity": "sha512-StFb2r2iX3ArQJkETEd657o4AAK6nwXcVvWZPgbiC+KoDXM/RJA8x35goNKxtUJnUQ+Skhn6ZPMEJ3oi0c/eVw==",
-        "shasum": "596051f69bf37b1cf717c774678cfa764c209c3a"
+        "filename": "the-open-engine-opcore-contracts-0.1.0-alpha.0.tgz",
+        "path": ".lattice/release/packages/the-open-engine-opcore-contracts-0.1.0-alpha.0.tgz",
+        "sha256": "3da144f40ae83ba1f0d965e2c86b4079de4745af40bf63ea3d7cde66dd3512f2",
+        "integrity": "sha512-yZyufxd60sSMPZZwmMl+hTquOMgv1hZ5mYAYyED1TeuFwxYkwvwf6J4fRgyf4Su0JYbCQwk0dyoaDXAeLThoBQ==",
+        "shasum": "66eecf53c64a3c386a1778c931c16f18556fa98f"
       },
       "files": [
         "README.md",
@@ -77,7 +76,7 @@
       "descriptorReferences": [
         {
           "id": "contracts-schema",
-          "packageName": "@the-open-engine/lattice-contracts",
+          "packageName": "@the-open-engine/opcore-contracts",
           "path": "schemas/lattice-contracts.schema.json",
           "type": "schema",
           "required": true
@@ -100,29 +99,33 @@
           "README.md"
         ],
         "bins": {
-          "opcore": "dist/index.js"
+          "opcore": "dist/index.js",
+          "lattice": "dist/lattice/index.js"
         },
         "dependencies": {
-          "@the-open-engine/lattice-contracts": "0.1.0-alpha.0",
-          "@the-open-engine/lattice-graph": "0.1.0-alpha.0",
-          "@the-open-engine/lattice-validation": "0.1.0-alpha.0",
-          "@the-open-engine/lattice-validation-rust": "0.1.0-alpha.0",
-          "@the-open-engine/lattice-validation-typescript": "0.1.0-alpha.0"
+          "@the-open-engine/opcore-edit": "0.1.0-alpha.0",
+          "@the-open-engine/opcore-contracts": "0.1.0-alpha.0",
+          "@the-open-engine/opcore-graph": "0.1.0-alpha.0",
+          "@the-open-engine/opcore-validation": "0.1.0-alpha.0",
+          "@the-open-engine/opcore-validation-rust": "0.1.0-alpha.0",
+          "@the-open-engine/opcore-validation-typescript": "0.1.0-alpha.0",
+          "ts-morph": "^28.0.0"
         },
         "bundledDependencies": []
       },
       "tarball": {
         "filename": "the-open-engine-opcore-0.1.0-alpha.0.tgz",
         "path": ".lattice/release/packages/the-open-engine-opcore-0.1.0-alpha.0.tgz",
-        "sha256": "8d2858dad630606d3bd6984d9a13a547a04a2f469750172e031bb63577ac3e32",
-        "integrity": "sha512-sF2nitsk8ZOQOzpwPh/ptyy+HOvxWwc08j1nRf5HrpMeQgQF9alp3WnzU8pxEKm5TMFUAg7ripSTPPUmg4iPxw==",
-        "shasum": "172556d8d773fc2cb1e163affa566e25c71c4005"
+        "sha256": "22405894781335943ad8678d97dc4922cd8f2ec38a28bf1b852201a79e2ec91d",
+        "integrity": "sha512-0GOwUclOGdvtLnRPwnhJ/CdRGOVXf8WYVfGk1ViR80dn63+qOk+cXDl+YeRAo7PmPdJWZc25bX0FWMAGqCV45A==",
+        "shasum": "7c4f20f3e80aa60f4687df455c27148b40c5132d"
       },
       "files": [
         "README.md",
         "dist/check.d.ts",
         "dist/check.d.ts.map",
         "dist/check.js",
+        "dist/descriptors/lattice.managed-tool.json",
         "dist/graph-provider-client.d.ts",
         "dist/graph-provider-client.d.ts.map",
         "dist/graph-provider-client.js",
@@ -132,6 +135,33 @@
         "dist/init.d.ts",
         "dist/init.d.ts.map",
         "dist/init.js",
+        "dist/lattice/descriptor.d.ts",
+        "dist/lattice/descriptor.d.ts.map",
+        "dist/lattice/descriptor.js",
+        "dist/lattice/edit-composition.d.ts",
+        "dist/lattice/edit-composition.d.ts.map",
+        "dist/lattice/edit-composition.js",
+        "dist/lattice/graph-provider-client.d.ts",
+        "dist/lattice/graph-provider-client.d.ts.map",
+        "dist/lattice/graph-provider-client.js",
+        "dist/lattice/index.d.ts",
+        "dist/lattice/index.d.ts.map",
+        "dist/lattice/index.js",
+        "dist/lattice/inspect-adapter.d.ts",
+        "dist/lattice/inspect-adapter.d.ts.map",
+        "dist/lattice/inspect-adapter.js",
+        "dist/lattice/inspect-language-service.d.ts",
+        "dist/lattice/inspect-language-service.d.ts.map",
+        "dist/lattice/inspect-language-service.js",
+        "dist/lattice/manifest.d.ts",
+        "dist/lattice/manifest.d.ts.map",
+        "dist/lattice/manifest.js",
+        "dist/lattice/router.d.ts",
+        "dist/lattice/router.d.ts.map",
+        "dist/lattice/router.js",
+        "dist/lattice/validation-composition.d.ts",
+        "dist/lattice/validation-composition.d.ts.map",
+        "dist/lattice/validation-composition.js",
         "dist/reporting.d.ts",
         "dist/reporting.d.ts.map",
         "dist/reporting.js",
@@ -152,12 +182,13 @@
         "dist/validation-composition.js",
         "package.json"
       ],
-      "fileCount": 32,
+      "fileCount": 60,
       "expectedFiles": [
         "README.md",
         "dist/check.d.ts",
         "dist/check.d.ts.map",
         "dist/check.js",
+        "dist/descriptors/lattice.managed-tool.json",
         "dist/graph-provider-client.d.ts",
         "dist/graph-provider-client.d.ts.map",
         "dist/graph-provider-client.js",
@@ -167,6 +198,33 @@
         "dist/init.d.ts",
         "dist/init.d.ts.map",
         "dist/init.js",
+        "dist/lattice/descriptor.d.ts",
+        "dist/lattice/descriptor.d.ts.map",
+        "dist/lattice/descriptor.js",
+        "dist/lattice/edit-composition.d.ts",
+        "dist/lattice/edit-composition.d.ts.map",
+        "dist/lattice/edit-composition.js",
+        "dist/lattice/graph-provider-client.d.ts",
+        "dist/lattice/graph-provider-client.d.ts.map",
+        "dist/lattice/graph-provider-client.js",
+        "dist/lattice/index.d.ts",
+        "dist/lattice/index.d.ts.map",
+        "dist/lattice/index.js",
+        "dist/lattice/inspect-adapter.d.ts",
+        "dist/lattice/inspect-adapter.d.ts.map",
+        "dist/lattice/inspect-adapter.js",
+        "dist/lattice/inspect-language-service.d.ts",
+        "dist/lattice/inspect-language-service.d.ts.map",
+        "dist/lattice/inspect-language-service.js",
+        "dist/lattice/manifest.d.ts",
+        "dist/lattice/manifest.d.ts.map",
+        "dist/lattice/manifest.js",
+        "dist/lattice/router.d.ts",
+        "dist/lattice/router.d.ts.map",
+        "dist/lattice/router.js",
+        "dist/lattice/validation-composition.d.ts",
+        "dist/lattice/validation-composition.d.ts.map",
+        "dist/lattice/validation-composition.js",
         "dist/reporting.d.ts",
         "dist/reporting.d.ts.map",
         "dist/reporting.js",
@@ -187,128 +245,22 @@
         "dist/validation-composition.js",
         "package.json"
       ],
-      "expectedFileCount": 32,
+      "expectedFileCount": 60,
       "bins": {
-        "opcore": "dist/index.js"
-      },
-      "descriptorReferences": [],
-      "nativeArtifacts": []
-    },
-    {
-      "packageName": "@the-open-engine/lattice-cli",
-      "packageRoot": "packages/cli",
-      "version": "0.1.0-alpha.0",
-      "manifest": {
-        "name": "@the-open-engine/lattice-cli",
-        "version": "0.1.0-alpha.0",
-        "license": "MIT",
-        "main": "dist/index.js",
-        "types": "dist/index.d.ts",
-        "files": [
-          "dist",
-          "README.md"
-        ],
-        "bins": {
-          "lattice": "dist/index.js"
-        },
-        "dependencies": {
-          "@the-open-engine/lattice-edit": "0.1.0-alpha.0",
-          "@the-open-engine/lattice-contracts": "0.1.0-alpha.0",
-          "@the-open-engine/lattice-graph": "0.1.0-alpha.0",
-          "@the-open-engine/lattice-validation": "0.1.0-alpha.0",
-          "@the-open-engine/lattice-validation-rust": "0.1.0-alpha.0",
-          "@the-open-engine/lattice-validation-typescript": "0.1.0-alpha.0",
-          "ts-morph": "^28.0.0"
-        },
-        "bundledDependencies": []
-      },
-      "tarball": {
-        "filename": "the-open-engine-lattice-cli-0.1.0-alpha.0.tgz",
-        "path": ".lattice/release/packages/the-open-engine-lattice-cli-0.1.0-alpha.0.tgz",
-        "sha256": "b05924813e985235f383c994ceeb4633d0fb1058f7030e1a5492a7a003710998",
-        "integrity": "sha512-FB9Dfr9bxFBUOK2xq8WC1SoZmoTkbbqEkWwdjNgWjTKReWbtzRqN5KnsRXyKx9OwSvIEX6c45EUg7CGU9a46Pg==",
-        "shasum": "301915341b07d6f10e60638fa008f48a4baaa964"
-      },
-      "files": [
-        "README.md",
-        "dist/descriptor.d.ts",
-        "dist/descriptor.d.ts.map",
-        "dist/descriptor.js",
-        "dist/descriptors/lattice.managed-tool.json",
-        "dist/edit-composition.d.ts",
-        "dist/edit-composition.d.ts.map",
-        "dist/edit-composition.js",
-        "dist/graph-provider-client.d.ts",
-        "dist/graph-provider-client.d.ts.map",
-        "dist/graph-provider-client.js",
-        "dist/index.d.ts",
-        "dist/index.d.ts.map",
-        "dist/index.js",
-        "dist/inspect-adapter.d.ts",
-        "dist/inspect-adapter.d.ts.map",
-        "dist/inspect-adapter.js",
-        "dist/inspect-language-service.d.ts",
-        "dist/inspect-language-service.d.ts.map",
-        "dist/inspect-language-service.js",
-        "dist/manifest.d.ts",
-        "dist/manifest.d.ts.map",
-        "dist/manifest.js",
-        "dist/router.d.ts",
-        "dist/router.d.ts.map",
-        "dist/router.js",
-        "dist/validation-composition.d.ts",
-        "dist/validation-composition.d.ts.map",
-        "dist/validation-composition.js",
-        "package.json"
-      ],
-      "fileCount": 30,
-      "expectedFiles": [
-        "README.md",
-        "dist/descriptor.d.ts",
-        "dist/descriptor.d.ts.map",
-        "dist/descriptor.js",
-        "dist/descriptors/lattice.managed-tool.json",
-        "dist/edit-composition.d.ts",
-        "dist/edit-composition.d.ts.map",
-        "dist/edit-composition.js",
-        "dist/graph-provider-client.d.ts",
-        "dist/graph-provider-client.d.ts.map",
-        "dist/graph-provider-client.js",
-        "dist/index.d.ts",
-        "dist/index.d.ts.map",
-        "dist/index.js",
-        "dist/inspect-adapter.d.ts",
-        "dist/inspect-adapter.d.ts.map",
-        "dist/inspect-adapter.js",
-        "dist/inspect-language-service.d.ts",
-        "dist/inspect-language-service.d.ts.map",
-        "dist/inspect-language-service.js",
-        "dist/manifest.d.ts",
-        "dist/manifest.d.ts.map",
-        "dist/manifest.js",
-        "dist/router.d.ts",
-        "dist/router.d.ts.map",
-        "dist/router.js",
-        "dist/validation-composition.d.ts",
-        "dist/validation-composition.d.ts.map",
-        "dist/validation-composition.js",
-        "package.json"
-      ],
-      "expectedFileCount": 30,
-      "bins": {
-        "lattice": "dist/index.js"
+        "opcore": "dist/index.js",
+        "lattice": "dist/lattice/index.js"
       },
       "descriptorReferences": [
         {
           "id": "cli-entrypoint",
-          "packageName": "@the-open-engine/lattice-cli",
-          "path": "dist/index.js",
+          "packageName": "@the-open-engine/opcore",
+          "path": "dist/lattice/index.js",
           "type": "entrypoint",
           "required": true
         },
         {
           "id": "descriptor",
-          "packageName": "@the-open-engine/lattice-cli",
+          "packageName": "@the-open-engine/opcore",
           "path": "dist/descriptors/lattice.managed-tool.json",
           "type": "descriptor",
           "required": true
@@ -317,11 +269,11 @@
       "nativeArtifacts": []
     },
     {
-      "packageName": "@the-open-engine/lattice-graph",
+      "packageName": "@the-open-engine/opcore-graph",
       "packageRoot": "packages/graph",
       "version": "0.1.0-alpha.0",
       "manifest": {
-        "name": "@the-open-engine/lattice-graph",
+        "name": "@the-open-engine/opcore-graph",
         "version": "0.1.0-alpha.0",
         "license": "MIT",
         "main": "dist/index.js",
@@ -332,7 +284,7 @@
         ],
         "bins": {},
         "dependencies": {
-          "@the-open-engine/lattice-contracts": "0.1.0-alpha.0"
+          "@the-open-engine/opcore-contracts": "0.1.0-alpha.0"
         },
         "optionalDependencies": {
           "@the-open-engine/opcore-graph-core-darwin-arm64": "0.1.0-alpha.0",
@@ -342,11 +294,11 @@
         "bundledDependencies": []
       },
       "tarball": {
-        "filename": "the-open-engine-lattice-graph-0.1.0-alpha.0.tgz",
-        "path": ".lattice/release/packages/the-open-engine-lattice-graph-0.1.0-alpha.0.tgz",
-        "sha256": "b3c0d26e66d9ff66d62890c77411c540d98892cefa320291f783d106517de7d6",
-        "integrity": "sha512-nvZrFOOVfJMaZPoo96iYzX+rwphq6ljiuvvPXtFoO0Kn2PcNfYs3mr9AdLX9ntlGqKtUmTnYN3uXgYWo0YGnig==",
-        "shasum": "a603ab73d5d731f81de3b9e5f7ace42417517fb7"
+        "filename": "the-open-engine-opcore-graph-0.1.0-alpha.0.tgz",
+        "path": ".lattice/release/packages/the-open-engine-opcore-graph-0.1.0-alpha.0.tgz",
+        "sha256": "99b3543204a1919e261820d4e70522643e96e690d5caf7586ef1e0ac95c7e1d7",
+        "integrity": "sha512-AAOh62CB97sZi2TZchRFzhpMR4LaWbA/eSpX3H7jk7UeWeccrSc8GD57CajGqPV0zk7hVPqq3LwrLwQ8TQfl+g==",
+        "shasum": "8cb1eab17fc0f814ddc0b822486f69809c67829b"
       },
       "files": [
         "README.md",
@@ -419,9 +371,9 @@
       "tarball": {
         "filename": "the-open-engine-opcore-graph-core-darwin-arm64-0.1.0-alpha.0.tgz",
         "path": ".lattice/release/packages/the-open-engine-opcore-graph-core-darwin-arm64-0.1.0-alpha.0.tgz",
-        "sha256": "ac6c9c61a0bcd799973d871a39d7d694a45875aefda34dfb83754df0dd4795ad",
-        "integrity": "sha512-fPlXmAkc+6TfjVz4EclFCREommnoh6aB9mjFzk+w5nyD0693DZEw+10Mc1B5kS9namHukXj13TAIoshCb3ddJA==",
-        "shasum": "23e534e904f240404ee60c52cf461806418fe43b"
+        "sha256": "7e8ed3bca37fd01c5479a2ffb3b17f82dd88abc2e2ed53143146fdd353d2aa06",
+        "integrity": "sha512-FDCXVFcmDB05TykPGCo0ZQNVzfDxiiS/NINXGkZbjVmUw56VaAwqtMbjALsCnUrxjdRVhyyrh6p7FfeFi5Gcdg==",
+        "shasum": "b8a7e73bccfc7e98688b4a63286577deb24aee2e"
       },
       "files": [
         "README.md",
@@ -474,15 +426,15 @@
             "targetPlatform": "darwin-arm64",
             "binaryPath": "lattice-graph-core",
             "checksumPath": "lattice-graph-core.sha256",
-            "checksumSha256": "34bcd16b63011b1e360cf86457945d33749c18d71025f53c9937431c374691b4",
+            "checksumSha256": "9b67974520bc715cdebf440d03ed1ef04df36528023210f608d6fca102a696b2",
             "buildProfile": "release"
           },
           "binaryPath": "lattice-graph-core",
           "checksumPath": "lattice-graph-core.sha256",
           "metadataPath": "metadata.json",
-          "binarySha256": "34bcd16b63011b1e360cf86457945d33749c18d71025f53c9937431c374691b4",
-          "checksumFileSha256": "985d073e1fc1de37585f179298a80cbc7bca739dba028283ceb211a26a4e626c",
-          "metadataSha256": "7962a876e5279b62a161346ff19620a1775e5b6c0374c71f48f531b7fdcb2073",
+          "binarySha256": "9b67974520bc715cdebf440d03ed1ef04df36528023210f608d6fca102a696b2",
+          "checksumFileSha256": "f2f433f555c48f8179f0c5760302d790027f96fe7216913419121573931c34bd",
+          "metadataSha256": "14e0250917a190f34fdfc7bd55c47321a8af96ed3c0563e17c4d062bbd705c12",
           "descriptorArtifactId": "graph-core-binary-darwin-arm64",
           "descriptorChecksumId": "graph-core-binary-sha256-darwin-arm64"
         }
@@ -515,9 +467,9 @@
       "tarball": {
         "filename": "the-open-engine-opcore-graph-core-darwin-x64-0.1.0-alpha.0.tgz",
         "path": ".lattice/release/packages/the-open-engine-opcore-graph-core-darwin-x64-0.1.0-alpha.0.tgz",
-        "sha256": "f589d3df77bbbdeb24f29d4b7c3dcc36d79397441be9e1b2bcc8c59110d637e3",
-        "integrity": "sha512-0wXosy8wU7GpBuI+Jzr4m65EXnsANhdyQmW44jm6SKdr5FHtdLxqpZGCr/OL5IktwFUWK5OhR7UGjX3gVixOCg==",
-        "shasum": "dd26d9ab64da550e8c2800ab7c232dc7ae6af551"
+        "sha256": "368d60f892c079481dff9af24ef8ed3280a2ee3774ce3b464a245d99ef2c0e38",
+        "integrity": "sha512-NdtMzUyMVNr/XPB5mRGDXhA+1wzscqvMOP7foQ81yQZFK1D2tQhAINZDGYXvASwPb2R/3XOTL/iF+RtpsVLJKw==",
+        "shasum": "712e71c092f667afc3913263566d3246c78eb054"
       },
       "files": [
         "README.md",
@@ -611,9 +563,9 @@
       "tarball": {
         "filename": "the-open-engine-opcore-graph-core-linux-x64-0.1.0-alpha.0.tgz",
         "path": ".lattice/release/packages/the-open-engine-opcore-graph-core-linux-x64-0.1.0-alpha.0.tgz",
-        "sha256": "02fb3bc51d95c5f3f6c7940c9695c7061f113542542a454db783cad2b8b72e41",
-        "integrity": "sha512-VIOI9SkcbEqxM9/YgTJIerVPhfAV3aNUGNhHxtlsL+LxTso6qzwXYdsg0Nq7NDm3CqgNKp0Ezy4hbLCIl1gFDw==",
-        "shasum": "82a208620b2b9169757b83b73da08352f621a54d"
+        "sha256": "0257eec51dc2b82bba564f1aa528aeb09a890ed38c272639ddb7fe19225e4d48",
+        "integrity": "sha512-sdk4AIKbDREelV0oBfZ4DpRUM7gPbI+nx7ILbRInDwYQFRBq4E0Kx9ZLPSkR9xU3K000enXx/JFzXX3FH3D0BQ==",
+        "shasum": "b25e04abac17e58e18eb03d35e3c10cb0a4ad05e"
       },
       "files": [
         "README.md",
@@ -681,11 +633,11 @@
       ]
     },
     {
-      "packageName": "@the-open-engine/lattice-edit",
+      "packageName": "@the-open-engine/opcore-edit",
       "packageRoot": "packages/edit",
       "version": "0.1.0-alpha.0",
       "manifest": {
-        "name": "@the-open-engine/lattice-edit",
+        "name": "@the-open-engine/opcore-edit",
         "version": "0.1.0-alpha.0",
         "license": "MIT",
         "main": "dist/index.js",
@@ -696,17 +648,17 @@
         ],
         "bins": {},
         "dependencies": {
-          "@the-open-engine/lattice-contracts": "0.1.0-alpha.0",
+          "@the-open-engine/opcore-contracts": "0.1.0-alpha.0",
           "ts-morph": "^28.0.0"
         },
         "bundledDependencies": []
       },
       "tarball": {
-        "filename": "the-open-engine-lattice-edit-0.1.0-alpha.0.tgz",
-        "path": ".lattice/release/packages/the-open-engine-lattice-edit-0.1.0-alpha.0.tgz",
-        "sha256": "43048ec715740e326b9fb58e5bbc57eca75aa0d32ce1a49b08d1a5ea603e0104",
-        "integrity": "sha512-GzWoPLzGueTrLOLgZYe+PfS6DeYJT0Ob3lNxZbg4znIjPes8J3NTol5oa+NM5KbU6NMLV0jWABqAJRyClrgg0A==",
-        "shasum": "4e230041f87cf0dfb6842fe6734ffe2d4cda9663"
+        "filename": "the-open-engine-opcore-edit-0.1.0-alpha.0.tgz",
+        "path": ".lattice/release/packages/the-open-engine-opcore-edit-0.1.0-alpha.0.tgz",
+        "sha256": "644a11cd599d33fedc3ba880b782d3256b2b7a9580c9863e34f50b7a0a98bfa8",
+        "integrity": "sha512-4lvXfV7xZpMyrEBO+AP66nHmSsE2/KY1eH8hdJznZnxhFrj1uqn5VGtxOlp7dACXTsvPokD4DYiMU8Ptby/mZQ==",
+        "shasum": "8cb383281136f6e0dafeb162e59cdff01dac220f"
       },
       "files": [
         "README.md",
@@ -861,11 +813,11 @@
       "nativeArtifacts": []
     },
     {
-      "packageName": "@the-open-engine/lattice-validation",
+      "packageName": "@the-open-engine/opcore-validation",
       "packageRoot": "packages/validation",
       "version": "0.1.0-alpha.0",
       "manifest": {
-        "name": "@the-open-engine/lattice-validation",
+        "name": "@the-open-engine/opcore-validation",
         "version": "0.1.0-alpha.0",
         "license": "MIT",
         "main": "dist/index.js",
@@ -876,16 +828,16 @@
         ],
         "bins": {},
         "dependencies": {
-          "@the-open-engine/lattice-contracts": "0.1.0-alpha.0"
+          "@the-open-engine/opcore-contracts": "0.1.0-alpha.0"
         },
         "bundledDependencies": []
       },
       "tarball": {
-        "filename": "the-open-engine-lattice-validation-0.1.0-alpha.0.tgz",
-        "path": ".lattice/release/packages/the-open-engine-lattice-validation-0.1.0-alpha.0.tgz",
-        "sha256": "1c79b723abd731e75981c0f0811eb4904e521254cd4b945da5bc49f33ec975ad",
-        "integrity": "sha512-499+limc7R49oTo7++hFtpQCsxPnUt1Cp497qnAXB1jd7QkJfUxKyh3M8lP+LUSnbL9vgNJWRYsxPYgbOUVx8w==",
-        "shasum": "684c5cf5169af3c73f40ee5278c4d3db20f1c792"
+        "filename": "the-open-engine-opcore-validation-0.1.0-alpha.0.tgz",
+        "path": ".lattice/release/packages/the-open-engine-opcore-validation-0.1.0-alpha.0.tgz",
+        "sha256": "196a250ddb3fee9d1083f56b3f3a8a1e0319db52ee5a65a4730629e7a66d8549",
+        "integrity": "sha512-RuYjYaVXg3jalcco0Sc/KxWKIsxpw4fa0rnTdbtoMA0bJ4niZ4A/VV2dWXc/7NH2KKWX3LBtGl1ctYSBcKsHaQ==",
+        "shasum": "c5eede9ae0659ca2845db146a590a5cc3b597e43"
       },
       "files": [
         "README.md",
@@ -974,11 +926,11 @@
       "nativeArtifacts": []
     },
     {
-      "packageName": "@the-open-engine/lattice-validation-rust",
+      "packageName": "@the-open-engine/opcore-validation-rust",
       "packageRoot": "packages/validation-rust",
       "version": "0.1.0-alpha.0",
       "manifest": {
-        "name": "@the-open-engine/lattice-validation-rust",
+        "name": "@the-open-engine/opcore-validation-rust",
         "version": "0.1.0-alpha.0",
         "license": "MIT",
         "main": "dist/index.js",
@@ -989,17 +941,17 @@
         ],
         "bins": {},
         "dependencies": {
-          "@the-open-engine/lattice-contracts": "0.1.0-alpha.0",
-          "@the-open-engine/lattice-validation": "0.1.0-alpha.0"
+          "@the-open-engine/opcore-contracts": "0.1.0-alpha.0",
+          "@the-open-engine/opcore-validation": "0.1.0-alpha.0"
         },
         "bundledDependencies": []
       },
       "tarball": {
-        "filename": "the-open-engine-lattice-validation-rust-0.1.0-alpha.0.tgz",
-        "path": ".lattice/release/packages/the-open-engine-lattice-validation-rust-0.1.0-alpha.0.tgz",
-        "sha256": "be71165c1846d1f9d35eb1b3557b7a16386ced45d47ac8a82341dac0ed599d14",
-        "integrity": "sha512-za5D9Jyo56iJWY6SiIs/845S4wygxgzATIxi/YON3J4yuwvzpnaK5haWD+fWiHMM5vhvIYWRJCBL6u5tPYVylQ==",
-        "shasum": "46d37154b88be6cc49c8c490587a2b6253703f81"
+        "filename": "the-open-engine-opcore-validation-rust-0.1.0-alpha.0.tgz",
+        "path": ".lattice/release/packages/the-open-engine-opcore-validation-rust-0.1.0-alpha.0.tgz",
+        "sha256": "62fbf3bd851a41cafff48c209f2da006215f2e8ad3218d66483e0ec1090d419b",
+        "integrity": "sha512-Q2GDltXWNdWZ560fOSR+K7HkqB7Zko9M2nMIiriLXP/i0clPP3YYbQ6QqDqLo8Tsa7M32PgUxiNUp3KyqQ0L7A==",
+        "shasum": "067451cbc0cfe96f264cf8a5749b8d63ee59ceaf"
       },
       "files": [
         "README.md",
@@ -1118,11 +1070,11 @@
       "nativeArtifacts": []
     },
     {
-      "packageName": "@the-open-engine/lattice-validation-typescript",
+      "packageName": "@the-open-engine/opcore-validation-typescript",
       "packageRoot": "packages/validation-typescript",
       "version": "0.1.0-alpha.0",
       "manifest": {
-        "name": "@the-open-engine/lattice-validation-typescript",
+        "name": "@the-open-engine/opcore-validation-typescript",
         "version": "0.1.0-alpha.0",
         "license": "MIT",
         "main": "dist/index.js",
@@ -1133,18 +1085,18 @@
         ],
         "bins": {},
         "dependencies": {
-          "@the-open-engine/lattice-contracts": "0.1.0-alpha.0",
-          "@the-open-engine/lattice-validation": "0.1.0-alpha.0",
+          "@the-open-engine/opcore-contracts": "0.1.0-alpha.0",
+          "@the-open-engine/opcore-validation": "0.1.0-alpha.0",
           "typescript": "^5.9.3"
         },
         "bundledDependencies": []
       },
       "tarball": {
-        "filename": "the-open-engine-lattice-validation-typescript-0.1.0-alpha.0.tgz",
-        "path": ".lattice/release/packages/the-open-engine-lattice-validation-typescript-0.1.0-alpha.0.tgz",
-        "sha256": "f56d255773f271c7574aab364e6de6e5f305c6a27c285945eca01e9b2e14d2d7",
-        "integrity": "sha512-6Hk/ih6PZjreU4TWSW1krX9i22y975jy2g2Lj8/DMtp1S9Ojob8HeBeVNe5gII1WIxo3lqUuJxqqa0i0VM7OpQ==",
-        "shasum": "ffbaae8daa785858cdda80310995836f60db2e71"
+        "filename": "the-open-engine-opcore-validation-typescript-0.1.0-alpha.0.tgz",
+        "path": ".lattice/release/packages/the-open-engine-opcore-validation-typescript-0.1.0-alpha.0.tgz",
+        "sha256": "67fc29226b6509fd28290f6c86c75fdf6ba229c1599121baa3b5a01cb664a1af",
+        "integrity": "sha512-2eAGFx8qovgeYw4fuG+bbifv8Fh7MnEzWLGfqmnVgiTq2kLvI3J3ag4xu80Ml4i3vkmbEjqsMfqUE7PfQC2qhA==",
+        "shasum": "c2d2fd0c6c56151dddfe161bb3e336fac31cf564"
       },
       "files": [
         "README.md",
@@ -1256,20 +1208,20 @@
           "opcore-asp-provider": "dist/index.js"
         },
         "dependencies": {
-          "@the-open-engine/lattice-contracts": "0.1.0-alpha.0",
-          "@the-open-engine/lattice-graph": "0.1.0-alpha.0",
-          "@the-open-engine/lattice-validation": "0.1.0-alpha.0",
-          "@the-open-engine/lattice-validation-rust": "0.1.0-alpha.0",
-          "@the-open-engine/lattice-validation-typescript": "0.1.0-alpha.0"
+          "@the-open-engine/opcore-contracts": "0.1.0-alpha.0",
+          "@the-open-engine/opcore-graph": "0.1.0-alpha.0",
+          "@the-open-engine/opcore-validation": "0.1.0-alpha.0",
+          "@the-open-engine/opcore-validation-rust": "0.1.0-alpha.0",
+          "@the-open-engine/opcore-validation-typescript": "0.1.0-alpha.0"
         },
         "bundledDependencies": []
       },
       "tarball": {
         "filename": "the-open-engine-opcore-asp-provider-0.1.0-alpha.0.tgz",
         "path": ".lattice/release/packages/the-open-engine-opcore-asp-provider-0.1.0-alpha.0.tgz",
-        "sha256": "9367e33f76b7970fc40b9c1159e147467172e85fe10f2fd9575f9a3ee806d624",
-        "integrity": "sha512-Aa4PE70XHwFruy7bxRFZLGeFkMlGo+obrNBFqZdqaB7Ipk1CsEPhGpY/Xnty0neKEW8wWSxT3+BiTy1Sb0uacA==",
-        "shasum": "ea0f3322570ec51222eba469fafba5c87585f8db"
+        "sha256": "fab42dc3212f902a635e730760f82a9c604469eb980776bcc49cb8f5efa4849c",
+        "integrity": "sha512-KqA5LY52wbkOQTyfkocyf5a6uu7y3Y6Vlj1rqvYAYMjlpkwDz/98KnXoINbtQUqfCSnuON2yEAatjjmmDbuq8w==",
+        "shasum": "285ca9fafdc66b75cb799414f7e6d614a2c6fcc3"
       },
       "files": [
         "README.md",
@@ -1285,6 +1237,7 @@
         "dist/manifest.d.ts",
         "dist/manifest.d.ts.map",
         "dist/manifest.js",
+        "dist/manifests/asp-server.json",
         "dist/manifests/opcore-asp-provider.provisional.json",
         "dist/mapping.d.ts",
         "dist/mapping.d.ts.map",
@@ -1300,7 +1253,7 @@
         "dist/workspace.js",
         "package.json"
       ],
-      "fileCount": 27,
+      "fileCount": 28,
       "expectedFiles": [
         "README.md",
         "dist/digests.d.ts",
@@ -1315,6 +1268,7 @@
         "dist/manifest.d.ts",
         "dist/manifest.d.ts.map",
         "dist/manifest.js",
+        "dist/manifests/asp-server.json",
         "dist/manifests/opcore-asp-provider.provisional.json",
         "dist/mapping.d.ts",
         "dist/mapping.d.ts.map",
@@ -1330,7 +1284,7 @@
         "dist/workspace.js",
         "package.json"
       ],
-      "expectedFileCount": 27,
+      "expectedFileCount": 28,
       "bins": {
         "opcore-asp-provider": "dist/index.js"
       },
@@ -1339,28 +1293,28 @@
     }
   ],
   "descriptor": {
-    "path": "packages/cli/dist/descriptors/lattice.managed-tool.json",
-    "packageName": "@the-open-engine/lattice-cli",
-    "checksumSha256": "013196fc075e784d3be4c0e7d5d9a1535b65a68a3d1ad7b97b0933fd1db43720",
+    "path": "packages/opcore/dist/descriptors/lattice.managed-tool.json",
+    "packageName": "@the-open-engine/opcore",
+    "checksumSha256": "274f1e3cd81c7c8d6445610158f2ceda142f67727c0f5b4b8130371c481d0fc7",
     "descriptor": {
       "schemaVersion": 1,
       "descriptorKind": "aggregate_lattice",
       "aggregateIdentity": {
         "name": "lattice",
         "releaseLine": "lattice",
-        "packageName": "@the-open-engine/lattice-cli",
+        "packageName": "@the-open-engine/opcore",
         "version": "0.1.0-alpha.0"
       },
       "packageIdentity": {
-        "packageName": "@the-open-engine/lattice-cli",
-        "artifactName": "@the-open-engine/lattice-cli",
+        "packageName": "@the-open-engine/opcore",
+        "artifactName": "@the-open-engine/opcore",
         "version": "0.1.0-alpha.0"
       },
       "entrypoints": [
         {
           "bin": "lattice",
-          "packageName": "@the-open-engine/lattice-cli",
-          "path": "dist/index.js",
+          "packageName": "@the-open-engine/opcore",
+          "path": "dist/lattice/index.js",
           "command": [
             "lattice"
           ]
@@ -1385,7 +1339,7 @@
             "detect-changes",
             "search"
           ],
-          "packageName": "@the-open-engine/lattice-graph"
+          "packageName": "@the-open-engine/opcore-graph"
         },
         {
           "name": "inspect",
@@ -1401,7 +1355,7 @@
             "implementations",
             "search"
           ],
-          "packageName": "@the-open-engine/lattice-cli"
+          "packageName": "@the-open-engine/opcore"
         },
         {
           "name": "edit",
@@ -1421,7 +1375,7 @@
             "move",
             "signature"
           ],
-          "packageName": "@the-open-engine/lattice-edit"
+          "packageName": "@the-open-engine/opcore-edit"
         },
         {
           "name": "check",
@@ -1437,7 +1391,7 @@
             "all",
             "manifest"
           ],
-          "packageName": "@the-open-engine/lattice-validation"
+          "packageName": "@the-open-engine/opcore-validation"
         },
         {
           "name": "validate",
@@ -1451,7 +1405,7 @@
             "pre-write",
             "manifest"
           ],
-          "packageName": "@the-open-engine/lattice-validation"
+          "packageName": "@the-open-engine/opcore-validation"
         },
         {
           "name": "status",
@@ -1462,7 +1416,7 @@
           "commands": [
             "status"
           ],
-          "packageName": "@the-open-engine/lattice-cli"
+          "packageName": "@the-open-engine/opcore"
         },
         {
           "name": "doctor",
@@ -1473,7 +1427,7 @@
           "commands": [
             "doctor"
           ],
-          "packageName": "@the-open-engine/lattice-cli"
+          "packageName": "@the-open-engine/opcore"
         }
       ],
       "healthProbes": [
@@ -1696,21 +1650,21 @@
       "artifacts": [
         {
           "id": "cli-entrypoint",
-          "packageName": "@the-open-engine/lattice-cli",
-          "path": "dist/index.js",
+          "packageName": "@the-open-engine/opcore",
+          "path": "dist/lattice/index.js",
           "type": "entrypoint",
           "required": true
         },
         {
           "id": "descriptor",
-          "packageName": "@the-open-engine/lattice-cli",
+          "packageName": "@the-open-engine/opcore",
           "path": "dist/descriptors/lattice.managed-tool.json",
           "type": "descriptor",
           "required": true
         },
         {
           "id": "contracts-schema",
-          "packageName": "@the-open-engine/lattice-contracts",
+          "packageName": "@the-open-engine/opcore-contracts",
           "path": "schemas/lattice-contracts.schema.json",
           "type": "schema",
           "required": true
@@ -1862,7 +1816,7 @@
           "lattice",
           "graph"
         ],
-        "packageName": "@the-open-engine/lattice-graph"
+        "packageName": "@the-open-engine/opcore-graph"
       },
       {
         "name": "inspect",
@@ -1870,7 +1824,7 @@
           "lattice",
           "inspect"
         ],
-        "packageName": "@the-open-engine/lattice-cli"
+        "packageName": "@the-open-engine/opcore"
       },
       {
         "name": "edit",
@@ -1878,7 +1832,7 @@
           "lattice",
           "edit"
         ],
-        "packageName": "@the-open-engine/lattice-edit"
+        "packageName": "@the-open-engine/opcore-edit"
       },
       {
         "name": "check",
@@ -1886,7 +1840,7 @@
           "lattice",
           "check"
         ],
-        "packageName": "@the-open-engine/lattice-validation"
+        "packageName": "@the-open-engine/opcore-validation"
       },
       {
         "name": "validate",
@@ -1894,7 +1848,7 @@
           "lattice",
           "validate"
         ],
-        "packageName": "@the-open-engine/lattice-validation"
+        "packageName": "@the-open-engine/opcore-validation"
       },
       {
         "name": "status",
@@ -1902,7 +1856,7 @@
           "lattice",
           "status"
         ],
-        "packageName": "@the-open-engine/lattice-cli"
+        "packageName": "@the-open-engine/opcore"
       },
       {
         "name": "doctor",
@@ -1910,21 +1864,21 @@
           "lattice",
           "doctor"
         ],
-        "packageName": "@the-open-engine/lattice-cli"
+        "packageName": "@the-open-engine/opcore"
       }
     ],
     "resolvedArtifacts": [
       {
         "id": "cli-entrypoint",
-        "packageName": "@the-open-engine/lattice-cli",
-        "path": "dist/index.js",
+        "packageName": "@the-open-engine/opcore",
+        "path": "dist/lattice/index.js",
         "type": "entrypoint",
         "required": true,
         "packageFile": true
       },
       {
         "id": "descriptor",
-        "packageName": "@the-open-engine/lattice-cli",
+        "packageName": "@the-open-engine/opcore",
         "path": "dist/descriptors/lattice.managed-tool.json",
         "type": "descriptor",
         "required": true,
@@ -1932,7 +1886,7 @@
       },
       {
         "id": "contracts-schema",
-        "packageName": "@the-open-engine/lattice-contracts",
+        "packageName": "@the-open-engine/opcore-contracts",
         "path": "schemas/lattice-contracts.schema.json",
         "type": "schema",
         "required": true,
@@ -2023,7 +1977,7 @@
         "artifactRef": "graph-core-binary-darwin-arm64",
         "required": true,
         "packageFile": true,
-        "value": "34bcd16b63011b1e360cf86457945d33749c18d71025f53c9937431c374691b4"
+        "value": "9b67974520bc715cdebf440d03ed1ef04df36528023210f608d6fca102a696b2"
       },
       {
         "id": "graph-core-binary-sha256-darwin-x64",
@@ -2057,15 +2011,15 @@
         "targetPlatform": "darwin-arm64",
         "binaryPath": "lattice-graph-core",
         "checksumPath": "lattice-graph-core.sha256",
-        "checksumSha256": "34bcd16b63011b1e360cf86457945d33749c18d71025f53c9937431c374691b4",
+        "checksumSha256": "9b67974520bc715cdebf440d03ed1ef04df36528023210f608d6fca102a696b2",
         "buildProfile": "release"
       },
       "binaryPath": "lattice-graph-core",
       "checksumPath": "lattice-graph-core.sha256",
       "metadataPath": "metadata.json",
-      "binarySha256": "34bcd16b63011b1e360cf86457945d33749c18d71025f53c9937431c374691b4",
-      "checksumFileSha256": "985d073e1fc1de37585f179298a80cbc7bca739dba028283ceb211a26a4e626c",
-      "metadataSha256": "7962a876e5279b62a161346ff19620a1775e5b6c0374c71f48f531b7fdcb2073",
+      "binarySha256": "9b67974520bc715cdebf440d03ed1ef04df36528023210f608d6fca102a696b2",
+      "checksumFileSha256": "f2f433f555c48f8179f0c5760302d790027f96fe7216913419121573931c34bd",
+      "metadataSha256": "14e0250917a190f34fdfc7bd55c47321a8af96ed3c0563e17c4d062bbd705c12",
       "descriptorArtifactId": "graph-core-binary-darwin-arm64",
       "descriptorChecksumId": "graph-core-binary-sha256-darwin-arm64"
     },
@@ -2114,10 +2068,10 @@
   ],
   "license": {
     "reportPath": "docs/release/license-report.md",
-    "reportSha256": "1d3f69b3e24fe8f231b86070b6f0d69a6896a4431d0c23c8ee6dce0d9b58799b",
+    "reportSha256": "3515d1c895d2486baad3d81dcb0808ccbe236c25b7a5ef45061ded725048f607",
     "productionDependencyCount": 11,
     "bundledDependencyCount": 0,
-    "workspacePackageCount": 12,
+    "workspacePackageCount": 11,
     "unresolvedLicenseCount": 0,
     "packages": [
       {
@@ -2201,17 +2155,17 @@
   },
   "provenance": {
     "reportPath": "docs/release/provenance-receipts.md",
-    "reportSha256": "8195ffea373f98c4bc6d12d6397a2cbc9693b19cec003c4609f3d4a9d652834a",
-    "scannedFileCount": 379,
-    "historyCommitCount": 137,
+    "reportSha256": "a8cc6b379371ebdd8ddf70dd2acf09a4f3bc228fa839a85566c96f58d3cc90cb",
+    "scannedFileCount": 394,
+    "historyCommitCount": 58,
     "findingCount": 0,
     "findings": []
   },
   "secretHistory": {
     "allowlistPath": "docs/release/secret-scan-allowlist.json",
     "allowlistSha256": "7060c267c912e3156b87c646e3bc970eac1ac8bdd964cf0a794b83e6f1250614",
-    "currentTreeScannedFileCount": 378,
-    "gitHistoryScannedCommitCount": 137,
+    "currentTreeScannedFileCount": 393,
+    "gitHistoryScannedCommitCount": 58,
     "findingCount": 0,
     "findings": []
   },
@@ -2238,7 +2192,7 @@
       "status": "passed",
       "exitCode": 0,
       "path": "docs/release/license-report.md",
-      "checksumSha256": "1d3f69b3e24fe8f231b86070b6f0d69a6896a4431d0c23c8ee6dce0d9b58799b",
+      "checksumSha256": "3515d1c895d2486baad3d81dcb0808ccbe236c25b7a5ef45061ded725048f607",
       "summary": "11 production dependencies, 0 unresolved"
     },
     {
@@ -2251,8 +2205,8 @@
       "status": "passed",
       "exitCode": 0,
       "path": "docs/release/provenance-receipts.md",
-      "checksumSha256": "8195ffea373f98c4bc6d12d6397a2cbc9693b19cec003c4609f3d4a9d652834a",
-      "summary": "379 files, 137 commits scanned"
+      "checksumSha256": "a8cc6b379371ebdd8ddf70dd2acf09a4f3bc228fa839a85566c96f58d3cc90cb",
+      "summary": "394 files, 58 commits scanned"
     },
     {
       "id": "release-hygiene",
@@ -2263,7 +2217,7 @@
       "status": "passed",
       "exitCode": 0,
       "path": "docs/release/artifact-attestation.md",
-      "checksumSha256": "1eacf13c0ffc89796ffd042ad94928c784e0513a06fd51b04ecea27db08b524a",
+      "checksumSha256": "707a105e98849b3cf7d14d91840328b037eebdf2088ff68332bdb6b629cea754",
       "summary": "release hygiene check passed"
     },
     {
@@ -2276,7 +2230,7 @@
       "status": "passed",
       "exitCode": 0,
       "path": "docs/release/graph-release-receipt.json",
-      "checksumSha256": "3eb840352a74cee3ee9a44cb26b58dd05dacc016662bfa0973d20de5b280a183",
+      "checksumSha256": "81ab958309c81ca98a855c392bb571f529ab64b0c02c37013d34d00b15a06c8d",
       "summary": "graph release receipt #17 validated as input evidence"
     },
     {
@@ -2290,12 +2244,12 @@
       "exitCode": 0,
       "path": "docs/release/secret-scan-allowlist.json",
       "checksumSha256": "7060c267c912e3156b87c646e3bc970eac1ac8bdd964cf0a794b83e6f1250614",
-      "summary": "378 files, 137 commits scanned"
+      "summary": "393 files, 58 commits scanned"
     }
   ],
   "graphReleaseReceipt": {
     "path": "docs/release/graph-release-receipt.json",
     "issue": "#17",
-    "checksumSha256": "3eb840352a74cee3ee9a44cb26b58dd05dacc016662bfa0973d20de5b280a183"
+    "checksumSha256": "81ab958309c81ca98a855c392bb571f529ab64b0c02c37013d34d00b15a06c8d"
   }
 }
