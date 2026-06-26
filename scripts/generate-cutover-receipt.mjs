@@ -562,6 +562,9 @@ function assertCommandPayload(id, parsed) {
   if (id === "inspect-signature" && (!Array.isArray(parsed.inspectResult?.signatures) || parsed.inspectResult.signatures.length === 0)) {
     throw new Error("inspect-signature must return read-only signature entries");
   }
+  if (id === "inspect-references" && (!Array.isArray(parsed.inspectResult?.references) || parsed.inspectResult.references.length === 0)) {
+    throw new Error("inspect-references must return read-only reference entries");
+  }
   if (id === "inspect-implementations" && parsed.inspectResult?.implementations?.length < 1) {
     throw new Error("inspect-implementations must return implementation evidence");
   }

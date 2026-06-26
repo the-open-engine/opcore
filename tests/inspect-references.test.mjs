@@ -67,10 +67,11 @@ it("rejects line-disambiguated targets that are not backed by graph facts", asyn
 it("preserves node-id references with graphQuery and typed inspectResult", async () => {
   await withFixtureCopy(async (fixtureRoot) => {
     await buildGraph(fixtureRoot);
+    const nodeId = "function:src/components/GreetingCard.tsx#GreetingCard";
     const result = await routeCommand([
       "inspect",
       "references",
-      "function:src/components/GreetingCard.tsx#GreetingCard",
+      nodeId,
       "--repo",
       fixtureRoot,
       "--limit",
@@ -80,9 +81,11 @@ it("preserves node-id references with graphQuery and typed inspectResult", async
     assert.equal(result.owner, "inspect");
     assert.equal(result.status, "ok");
     assert.equal(result.providerStatus.state, "available");
-    assert.equal(result.graphQuery.queryKind, "callers_of");
+    assert.equal(result.graphQuery.nodes.some((node) => node.id === nodeId), true);
     assert.equal(result.inspectResult.status, "ok");
-    assert.equal(result.inspectResult.target.nodeId, "function:src/components/GreetingCard.tsx#GreetingCard");
+    assert.equal(result.inspectResult.references.length > 0, true);
+    for (const reference of result.inspectResult.references) assert.deepEqual(reference.evidence.graphNodeIds, [nodeId]);
+    assert.equal(result.inspectResult.target.nodeId, nodeId);
     assert.equal(Object.hasOwn(result, "alias"), false);
     assert.equal(Object.hasOwn(result, removedLegacyCommandField), false);
   });
