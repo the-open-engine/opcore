@@ -1,0 +1,9 @@
+node_modules/
+dist/
+target/
+.opcore/
+.asp/
+coverage/
+*.tgz
+*.log
+.DS_Store
