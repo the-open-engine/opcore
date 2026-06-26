@@ -142,6 +142,8 @@ const runtimeArdPath = "docs/architecture/runtime-cli-ard.md";
 if (!existsSync(runtimeArdPath)) fail(`Missing runtime CLI ARD: ${runtimeArdPath}`);
 const runtimeArd = readFileSync(runtimeArdPath, "utf8");
 const readme = readFileSync("README.md", "utf8");
+const quickstart = readFileSync("docs/quickstart.md", "utf8");
+const opcorePackageReadme = readFileSync("packages/opcore/README.md", "utf8");
 for (const [name, content] of [
   ["AGENTS.md", agents],
   ["CLAUDE.md", claude],
@@ -160,6 +162,27 @@ for (const token of [
   "opcore measure --repo ."
 ]) {
   requireIncludes("README.md", readme, token);
+}
+for (const [name, content] of [
+  ["README.md", readme],
+  ["docs/quickstart.md", quickstart],
+  ["packages/opcore/README.md", opcorePackageReadme]
+]) {
+  for (const token of [
+    "npx @the-open-engine/opcore@0.1.0-alpha.0 init",
+    "npm install -g @the-open-engine/opcore@0.1.0-alpha.0",
+    "npm prefix -g",
+    "$(npm prefix -g)/bin",
+    "darwin-arm64",
+    "darwin-x64",
+    "linux-x64",
+    "Unsupported platforms return typed degraded status",
+    "Windows is out of scope for `0.1.0-alpha.0`",
+    "freshly `git init` repo with no commits",
+    "opcore check --changed --json"
+  ]) {
+    requireIncludes(name, content, token);
+  }
 }
 for (const token of [
   "Decision: hybrid",
