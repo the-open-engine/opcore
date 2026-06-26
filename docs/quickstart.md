@@ -59,7 +59,7 @@ opcore init
 opcore init --approve
 ```
 
-`opcore init` previews a plan before writing. Approved init may add `.opcore/config`, delimited agent guidance, mirrors for existing agent files, undo metadata, and optional hooks only when explicitly requested.
+`opcore init` runs the read-only scan first, prints coverage before findings, shows the additive setup plan, and prompts on a TTY. `opcore init --json` previews without writing. Approved init may add `.opcore/config`, delimited agent guidance, mirrors for existing agent files, undo metadata, and optional hooks only when explicitly requested. JSON output includes scan, language settings, interaction, and timing fields.
 
 ## Coverage Honesty
 

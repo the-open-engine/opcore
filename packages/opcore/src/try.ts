@@ -154,9 +154,10 @@ async function runScenario(sampleRoot: string, seed: TryScenarioSeed): Promise<T
   seed.write(repoRoot);
 
   const scan = await routeOpcoreScan(["try", "--repo", repoRoot, "--json"], ["--repo", repoRoot], true);
-  const init = routeOpcoreInit(
+  const init = await routeOpcoreInit(
     ["try", "init", "--repo", repoRoot, "--approve", "--json"],
-    parseCommandArgv(["init", "--repo", repoRoot, "--approve", "--json"])
+    parseCommandArgv(["init", "--repo", repoRoot, "--approve", "--json"]),
+    { stdinIsTTY: false, stdoutIsTTY: false }
   );
   const check = await routeOpcoreCheck(
     ["try", ...checkArgs, "--repo", repoRoot],

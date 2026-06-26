@@ -48,8 +48,9 @@ Opcore alpha must provide value quickly and honestly:
 - Time to first useful output should be under 10 minutes.
 - Scan/check/measure/status are read-only with respect to source files.
 - Scan may write `.opcore/report.json` and `.opcore/history.jsonl`.
-- Init may write `.opcore/config`, AGENTS.md guidance, mirrors, undo metadata, and optional hooks only after a visible approval step.
+- Init runs a read-only scan first, shows coverage before findings, then may write `.opcore/config`, AGENTS.md guidance, mirrors, undo metadata, and optional hooks only after explicit approval.
 - Reports must state coverage before findings: deep TypeScript/JavaScript graph support, Rust validation/toolchain support, and unsupported-language counts.
+- Init JSON includes scan, per-language onboarding settings, interaction state, and timing fields for time-to-first-output checks.
 - Metrics are named, drillable counts and deltas, not a blended quality score.
 - Current Rox/CRG/CIX guardrails remain retained until explicit replacement evidence says otherwise.
 
@@ -80,6 +81,8 @@ Do not call the alpha ready until current evidence proves:
 - `opcore --repo . --json` writes only `.opcore/report.json` and `.opcore/history.jsonl`.
 - `opcore status --repo . --json` does not build graphs, run checks, run setup, install packages, use ACE/current-tool wrappers, or write files.
 - `opcore init --repo . --json` previews setup without writing.
+- TTY `opcore init --repo .` prompts after the scan and setup plan; declining writes nothing.
+- `opcore init --repo . --approve --json` applies additive setup without prompting and still avoids scan report/history writes.
 - `opcore check --changed --json` has stable agent exit codes.
 - Public docs and package output contain no ASP-standard, old-tool replacement, security/SAST, all-stack, AI-authorship, automatic-fix, or blended-score overclaims.
 

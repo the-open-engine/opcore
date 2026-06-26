@@ -52,6 +52,14 @@ describe("installed package bins", () => {
       const opcoreScan = assertSmoke(project, ["--json"], 0, "opcore");
       assert.deepEqual(opcoreScan.canonicalCommand, ["opcore", "scan"]);
       assert.equal(Object.hasOwn(opcoreScan, "validationResult"), true);
+      const opcoreInit = assertSmoke(project, ["init", "--json"], 0, "opcore");
+      assert.deepEqual(opcoreInit.canonicalCommand, ["opcore", "init"]);
+      assert.equal(opcoreInit.opcoreInit.mode, "plan");
+      assert.equal(Object.hasOwn(opcoreInit.opcoreInit, "scan"), true);
+      assert.equal(Array.isArray(opcoreInit.opcoreInit.settings.languages), true);
+      assert.equal(opcoreInit.opcoreInit.timings.scanMs >= 0, true);
+      assert.equal(existsSync(join(project, ".opcore", "config")), false);
+      assert.equal(existsSync(join(project, "AGENTS.md")), false);
       const opcoreMeasure = assertSmoke(project, ["measure", "--json"], 0, "opcore");
       assert.deepEqual(opcoreMeasure.canonicalCommand, ["opcore", "measure"]);
       assert.equal(opcoreMeasure.opcoreMeasure.kind, "opcore_measure_delta");

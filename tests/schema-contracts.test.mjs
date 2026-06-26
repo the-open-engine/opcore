@@ -1281,6 +1281,40 @@ describe("lattice JSON schema wire constraints", () => {
       false
     );
     assert.equal(
+      isValidDefinition("OpcoreInitPlanPayload", {
+        ...validOpcoreInitPlan(),
+        timings: undefined
+      }),
+      false
+    );
+    assert.equal(
+      isValidDefinition("OpcoreInitPlanPayload", {
+        ...validOpcoreInitPlan(),
+        settings: undefined
+      }),
+      false
+    );
+    assert.equal(
+      isValidDefinition("OpcoreInitPlanPayload", {
+        ...validOpcoreInitPlan(),
+        interaction: {
+          ...validOpcoreInitPlan().interaction,
+          promptState: "maybe"
+        }
+      }),
+      false
+    );
+    assert.equal(
+      isValidDefinition("OpcoreInitPlanPayload", {
+        ...validOpcoreInitPlan(),
+        scan: {
+          ...validOpcoreInitPlan().scan,
+          diagnosticCount: -1
+        }
+      }),
+      false
+    );
+    assert.equal(
       isValidDefinition("CommandRouterResult", {
         ...validRouterResult(),
         owner: "validation",
@@ -2317,6 +2351,55 @@ function validOpcoreInitPlan(overrides = {}) {
     warnings: ["Unsupported stacks must be treated honestly."],
     nextActions: ["Run opcore init --approve to apply this plan."],
     undoAvailable: false,
+    scan: {
+      totalFiles: 2,
+      graphSupportedFiles: 1,
+      validationSupportedFiles: 1,
+      validationRetainedFiles: 0,
+      unsupportedFiles: 1,
+      languages: validOpcoreRepoState().coverage.languages,
+      unsupportedStacks: validOpcoreRepoState().coverage.unsupported.stacks,
+      degradedRustTools: [],
+      diagnosticCount: 0,
+      validationStatus: "passed",
+      failedChecks: [],
+      graphState: "available",
+      activationLevel: "degraded"
+    },
+    settings: {
+      languages: [
+        {
+          language: "TypeScript",
+          files: 1,
+          state: "supported",
+          graph: "supported",
+          validation: "supported",
+          checks: ["typescript.syntax", "typescript.types"],
+          notes: []
+        },
+        {
+          language: "Python",
+          files: 1,
+          state: "unsupported",
+          graph: "unsupported",
+          validation: "unsupported",
+          checks: [],
+          notes: ["Unsupported stack counted without fabricated checks."]
+        }
+      ]
+    },
+    interaction: {
+      tty: false,
+      promptState: "not_requested"
+    },
+    timings: {
+      scanMs: 2,
+      planMs: 1,
+      promptMs: 0,
+      applyMs: 0,
+      totalMs: 3,
+      firstOutputMs: 2
+    },
     ...overrides
   };
 }
