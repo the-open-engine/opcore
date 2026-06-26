@@ -7,5 +7,16 @@
     "setup": [
       "npm run setup"
     ]
+  },
+  "ship": {
+    "commandProofs": [
+      {
+        "id": "opcore-ci",
+        "profile": "ci-equivalent",
+        "scope": "repo",
+        "description": "Opcore local CI-equivalent gate",
+        "command": "bash ./scripts/ci/run-local-ci-equivalent.sh"
+      }
+    ]
   }
 }
