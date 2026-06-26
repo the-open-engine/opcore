@@ -418,13 +418,26 @@
       "nodeKinds": [
         "File",
         "Function",
-        "Test"
+        "Test",
+        "Module",
+        "Struct",
+        "Enum",
+        "Trait",
+        "Impl",
+        "Method",
+        "TypeAlias",
+        "Const",
+        "Static",
+        "Macro"
       ],
       "edgeKinds": [
         "CALLS",
         "CONTAINS",
         "IMPORTS_FROM",
-        "TESTED_BY"
+        "TESTED_BY",
+        "IMPLEMENTS",
+        "DEPENDS_ON",
+        "INHERITS"
       ],
       "directReaderQueries": [
         "status-counts",

@@ -40,6 +40,8 @@ use write::{
     write_snapshot_rows, PreviousSearchFacts, SnapshotIndexes, SnapshotInsertContext,
 };
 
+// v1 columns already persist Rust facts: language/kind/signature/qualified_name,
+// parent_name/params/return_type/modifiers/is_test/is_exported, plus nodes_fts.
 const STORE_SCHEMA_VERSION: u32 = 1;
 const COMPAT_SCHEMA_VERSION: &str = "6";
 pub const WAL_AUTOCHECKPOINT_PAGES: u32 = 1_000;

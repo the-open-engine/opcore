@@ -118,6 +118,20 @@ fn status_response_round_trips_with_handshake() -> TestResult {
         "/status/handshake/artifactName",
         json!("lattice-graph-core"),
     );
+    let node_kinds = value
+        .pointer("/status/handshake/nodeKinds")
+        .and_then(|value| value.as_array())
+        .ok_or_else(|| std::io::Error::other("missing handshake nodeKinds"))?;
+    for kind in ["Module", "Struct", "Trait", "Method"] {
+        assert!(node_kinds.iter().any(|value| value == kind), "{kind}");
+    }
+    let edge_kinds = value
+        .pointer("/status/handshake/edgeKinds")
+        .and_then(|value| value.as_array())
+        .ok_or_else(|| std::io::Error::other("missing handshake edgeKinds"))?;
+    for kind in ["IMPLEMENTS", "DEPENDS_ON", "INHERITS"] {
+        assert!(edge_kinds.iter().any(|value| value == kind), "{kind}");
+    }
     let decoded: GraphDaemonResponse = serde_json::from_value(value)?;
     assert_eq!(decoded, response);
     Ok(())

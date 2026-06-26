@@ -109,7 +109,17 @@ describe("lattice shared contracts", () => {
       "Function",
       "Variable",
       "Type",
-      "Test"
+      "Test",
+      "Module",
+      "Struct",
+      "Enum",
+      "Trait",
+      "Impl",
+      "Method",
+      "TypeAlias",
+      "Const",
+      "Static",
+      "Macro"
     ]);
     assert.deepEqual(requiredGraphEdgeKinds, [
       "CONTAINS",
@@ -121,6 +131,10 @@ describe("lattice shared contracts", () => {
       "IMPLEMENTS",
       "DEPENDS_ON"
     ]);
+    assert.deepEqual(
+      requiredGraphEdgeKinds.filter((kind) => ["CONTAINS", "IMPORTS_FROM", "CALLS", "IMPLEMENTS", "DEPENDS_ON", "INHERITS"].includes(kind)),
+      ["CONTAINS", "IMPORTS_FROM", "CALLS", "INHERITS", "IMPLEMENTS", "DEPENDS_ON"]
+    );
     assert.deepEqual(graphExtractionDiagnosticCategories, [
       "missing_tsconfig",
       "malformed_tsconfig",
@@ -2821,7 +2835,29 @@ function validHandshake() {
     artifactVersion: "0.1.0-alpha.0",
     targetPlatform: "test",
     supportedOperations: ["build", "update", "watch", "status", "query", "ping", "health", "shutdown"],
-    nodeKinds: ["repo", "package", "file", "symbol", "test", "File", "Class", "Function", "Type", "Test", "Variable"],
+    nodeKinds: [
+      "repo",
+      "package",
+      "file",
+      "symbol",
+      "test",
+      "File",
+      "Class",
+      "Function",
+      "Type",
+      "Test",
+      "Variable",
+      "Module",
+      "Struct",
+      "Enum",
+      "Trait",
+      "Impl",
+      "Method",
+      "TypeAlias",
+      "Const",
+      "Static",
+      "Macro"
+    ],
     edgeKinds: [
       "CONTAINS",
       "DECLARES",
@@ -3413,8 +3449,8 @@ function validGraphReferenceEvidenceManifest() {
         tables: ["metadata", "nodes", "edges"],
         indexes: ["idx_nodes_file"],
         metadataKeys: ["schema_version"],
-        nodeKinds: ["File"],
-        edgeKinds: ["CALLS"],
+        nodeKinds: ["File", "Function", "Test", "Module", "Struct", "Enum", "Trait", "Impl", "Method", "TypeAlias", "Const", "Static", "Macro"],
+        edgeKinds: ["CALLS", "CONTAINS", "IMPORTS_FROM", "TESTED_BY", "IMPLEMENTS", "DEPENDS_ON", "INHERITS"],
         directReaderQueries: ["status-counts"],
         fixtures: ["sqlite-fixtures"]
       }

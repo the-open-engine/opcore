@@ -4,6 +4,6 @@
   "targetPlatform": "darwin-arm64",
   "binaryPath": "lattice-graph-core",
   "checksumPath": "lattice-graph-core.sha256",
-  "checksumSha256": "34bcd16b63011b1e360cf86457945d33749c18d71025f53c9937431c374691b4",
+  "checksumSha256": "f0e05abdace44a9181785b77f02e2e22a614597a9e38ff32b5aa8a5abdcade7c",
   "buildProfile": "release"
 }

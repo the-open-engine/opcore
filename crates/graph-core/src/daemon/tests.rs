@@ -80,8 +80,27 @@ fn status_handshake_reports_capabilities() -> TestResult {
         &value,
         "/status/handshake/nodeKinds",
         json!([
-            "repo", "package", "file", "symbol", "test", "File", "Class", "Function", "Variable",
-            "Type", "Test"
+            "repo",
+            "package",
+            "file",
+            "symbol",
+            "test",
+            "File",
+            "Class",
+            "Function",
+            "Variable",
+            "Type",
+            "Test",
+            "Module",
+            "Struct",
+            "Enum",
+            "Trait",
+            "Impl",
+            "Method",
+            "TypeAlias",
+            "Const",
+            "Static",
+            "Macro"
         ]),
     );
     assert_json_eq(

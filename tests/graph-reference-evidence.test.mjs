@@ -33,8 +33,22 @@ describe("graph reference evidence fixtures", () => {
   });
 
   it("keeps SQLite and daemon evidence concrete", () => {
-    assert.deepEqual(sqliteFixtures.nodeKinds, ["File", "Function", "Test"]);
-    assert.deepEqual(sqliteFixtures.edgeKinds, ["CALLS", "CONTAINS", "IMPORTS_FROM", "TESTED_BY"]);
+    assert.deepEqual(sqliteFixtures.nodeKinds, [
+      "File",
+      "Function",
+      "Test",
+      "Module",
+      "Struct",
+      "Enum",
+      "Trait",
+      "Impl",
+      "Method",
+      "TypeAlias",
+      "Const",
+      "Static",
+      "Macro"
+    ]);
+    assert.deepEqual(sqliteFixtures.edgeKinds, ["CALLS", "CONTAINS", "IMPORTS_FROM", "TESTED_BY", "IMPLEMENTS", "DEPENDS_ON", "INHERITS"]);
     assert.deepEqual(sqliteFixtures.tables.map((entry) => entry.name), ["metadata", "nodes", "edges", "nodes_fts"]);
     assert.deepEqual(
       sqliteFixtures.indexes,

@@ -26,7 +26,17 @@ export const requiredGraphNodeKinds = [
   "Function",
   "Variable",
   "Type",
-  "Test"
+  "Test",
+  "Module",
+  "Struct",
+  "Enum",
+  "Trait",
+  "Impl",
+  "Method",
+  "TypeAlias",
+  "Const",
+  "Static",
+  "Macro"
 ] as const;
 export type GraphNodeKind = (typeof requiredGraphNodeKinds)[number] | (string & {});
 
