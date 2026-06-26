@@ -82,4 +82,8 @@ test("claim scrub covers every public package README", () => {
     [...covered].some((path) => path.startsWith("packages/opcore/src/") && path.endsWith(".ts")),
     "claim scrub must cover packages/opcore/src/**/*.ts"
   );
+  assert.ok(
+    covered.has("packages/asp-provider/dist/manifests/asp-server.json"),
+    "claim scrub must cover the canonical ASP server manifest"
+  );
 });

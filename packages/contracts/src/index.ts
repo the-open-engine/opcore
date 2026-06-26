@@ -2590,11 +2590,17 @@ export interface ReleaseCutoverInstalledManifestEvidence {
   bins: Readonly<Record<string, string>>;
 }
 
+export interface ReleaseCutoverInstalledFileEvidence {
+  path: string;
+  sha256: string;
+}
+
 export interface ReleaseCutoverInstalledPackageEvidence {
   packageName: ReleaseReceiptPackageName;
   version: string;
   tarball: ReleaseCutoverTarballEvidence;
   installedManifest: ReleaseCutoverInstalledManifestEvidence;
+  installedFiles: readonly ReleaseCutoverInstalledFileEvidence[];
 }
 
 export interface ReleaseCutoverDescriptorEvidence {
@@ -6806,6 +6812,38 @@ function validateReleaseCutoverInstalledPackages(packages: readonly ReleaseCutov
     }
     validateSha256(entry.installedManifest.sha256, "Release cutover installed manifest sha256");
     validateReleaseReceiptBins(entry.installedManifest.bins, entry.packageName);
+    validateReleaseCutoverInstalledFiles(entry);
+  }
+}
+
+function validateReleaseCutoverInstalledFiles(entry: ReleaseCutoverInstalledPackageEvidence): void {
+  validateNonEmptyArray(entry.installedFiles, "Release cutover installed files");
+  const prefix = `node_modules/${entry.packageName}/`;
+  const paths = [];
+  for (const file of entry.installedFiles) {
+    if (!file || typeof file !== "object") throw new Error("Release cutover installed file evidence entry is required");
+    validateNonEmptyString(file.path, "Release cutover installed file path");
+    if (!file.path.startsWith(prefix)) {
+      throw new Error(`Release cutover installed file path must be inside ${prefix}`);
+    }
+    validateSha256(file.sha256, "Release cutover installed file sha256");
+    paths.push(file.path);
+  }
+  if (new Set(paths).size !== paths.length) {
+    throw new Error("Release cutover installed file paths must be unique");
+  }
+  if (!paths.includes(entry.installedManifest.path)) {
+    throw new Error("Release cutover installed files must include package.json");
+  }
+  const binPaths = Object.values(entry.installedManifest.bins).map((path) => `${prefix}${path}`);
+  for (const binPath of binPaths) {
+    if (!paths.includes(binPath)) throw new Error(`Release cutover installed files must include bin target ${binPath}`);
+  }
+  if (
+    entry.packageName === "@the-open-engine/opcore-asp-provider" &&
+    !paths.includes("node_modules/@the-open-engine/opcore-asp-provider/dist/manifests/asp-server.json")
+  ) {
+    throw new Error("Release cutover ASP provider installed files must include canonical asp-server.json");
   }
 }
 

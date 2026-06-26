@@ -118,6 +118,9 @@ function checkLaunchClaims() {
 }
 
 function launchFacingFiles() {
+  const generatedManifests = [
+    "packages/asp-provider/dist/manifests/asp-server.json"
+  ].filter((path) => existsSync(path));
   return [
     "README.md",
     "docs/quickstart.md",
@@ -127,6 +130,7 @@ function launchFacingFiles() {
     "docs/demo.md",
     "packages/opcore/README.md",
     "packages/opcore/package.json",
+    ...generatedManifests,
     ...walkFiles("packages/opcore/src").filter((path) => path.endsWith(".ts"))
   ];
 }

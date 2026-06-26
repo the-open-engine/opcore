@@ -2126,6 +2126,22 @@ describe("lattice JSON schema wire constraints", () => {
     assert.equal(
       isValidDefinition("ReleaseCutoverReceipt", {
         ...receipt,
+        installedPackages: receipt.installedPackages.map((entry) =>
+          entry.packageName === "@the-open-engine/opcore-asp-provider"
+            ? {
+                ...entry,
+                installedFiles: entry.installedFiles.filter(
+                  (file) => file.path !== "node_modules/@the-open-engine/opcore-asp-provider/dist/manifests/asp-server.json"
+                )
+              }
+            : entry
+        )
+      }),
+      false
+    );
+    assert.equal(
+      isValidDefinition("ReleaseCutoverReceipt", {
+        ...receipt,
         environmentIsolation: { ...receipt.environmentIsolation, latticeBinOnly: false }
       }),
       false
@@ -3500,6 +3516,9 @@ function validReleaseReceipt() {
         "package.json",
         "README.md",
         ...(nativeTarget ? [] : ["dist/index.js"]),
+        ...(packageName === "@the-open-engine/opcore-asp-provider"
+          ? ["dist/manifests/asp-server.json", "dist/manifests/opcore-asp-provider.provisional.json"]
+          : []),
         ...descriptor.artifacts.filter((artifact) => artifact.packageName === packageName).map((artifact) => artifact.path)
       ])
     ];
@@ -3662,7 +3681,11 @@ function validReleaseCutoverReceipt() {
       path: `node_modules/${entry.packageName}/package.json`,
       sha256: "6".repeat(64),
       bins: entry.bins
-    }
+    },
+    installedFiles: entry.files.map((path) => ({
+      path: `node_modules/${entry.packageName}/${path}`,
+      sha256: "9".repeat(64)
+    }))
   }));
   const commandReceipts = [
     ["opcore-scan", ["opcore", "scan"], "runtime"],

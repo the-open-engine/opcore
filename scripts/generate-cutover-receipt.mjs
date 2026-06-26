@@ -6,6 +6,7 @@ import {
   existsSync,
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
   rmSync,
   statSync,
@@ -437,7 +438,8 @@ function inspectInstalledBins(project) {
 
 function collectInstalledPackages(project, tarballs) {
   return releaseReceiptPackageNames.flatMap((packageName) => {
-    const manifestPath = join(project, "node_modules", ...packageName.split("/"), "package.json");
+    const packageRoot = join(project, "node_modules", ...packageName.split("/"));
+    const manifestPath = join(packageRoot, "package.json");
     if (!existsSync(manifestPath)) return [];
     const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
     const tarball = tarballs.find((entry) => entry.packageName === packageName);
@@ -453,9 +455,30 @@ function collectInstalledPackages(project, tarballs) {
         path: `node_modules/${packageName}/package.json`,
         sha256: sha256File(manifestPath),
         bins: manifest.bin ?? {}
-      }
+      },
+      installedFiles: collectInstalledFiles(packageRoot, packageName)
     }];
   });
+}
+
+function collectInstalledFiles(packageRoot, packageName) {
+  const files = [];
+  const visit = (directory) => {
+    for (const entry of readdirSync(directory, { withFileTypes: true })) {
+      const absolutePath = join(directory, entry.name);
+      if (entry.isDirectory()) {
+        visit(absolutePath);
+      } else if (entry.isFile()) {
+        const packagePath = relative(packageRoot, absolutePath).split("\\").join("/");
+        files.push({
+          path: `node_modules/${packageName}/${packagePath}`,
+          sha256: sha256File(absolutePath)
+        });
+      }
+    }
+  };
+  visit(packageRoot);
+  return files.sort((left, right) => left.path.localeCompare(right.path));
 }
 
 function collectInstalledDescriptor(project, tarballs) {
@@ -639,9 +662,16 @@ function collectStringValues(value) {
 function collectInputEvidence() {
   return [
     { issue: "#17", path: graphReleaseReceiptPath, checksumSha256: sha256File(join(repoRoot, graphReleaseReceiptPath)) },
-    { issue: "#29", path: releaseReceiptPath, checksumSha256: sha256File(join(repoRoot, releaseReceiptPath)) },
+    { issue: "#29", path: releaseReceiptPath, checksumSha256: releaseReceiptChecksum() },
     { issue: "#58", path: preWriteEvidencePath, checksumSha256: sha256File(join(repoRoot, preWriteEvidencePath)) }
   ];
+}
+
+function releaseReceiptChecksum() {
+  const releaseReceiptAbsolutePath = join(repoRoot, releaseReceiptPath);
+  if (existsSync(releaseReceiptAbsolutePath)) return sha256File(releaseReceiptAbsolutePath);
+  const generatedReceipt = runJson(process.execPath, ["scripts/generate-release-receipt.mjs", "--json"]);
+  return sha256(`${JSON.stringify(generatedReceipt, null, 2)}\n`);
 }
 
 function writeCutoverDocs(receipt) {
@@ -728,6 +758,10 @@ function run(command, args, options = {}) {
     );
   }
   return result;
+}
+
+function runJson(command, args, options = {}) {
+  return JSON.parse(run(command, args, options).stdout);
 }
 
 function valueAfter(flag) {

@@ -379,6 +379,7 @@
       "dist/validation-composition.d.ts.map",
       "dist/workspace.d.ts",
       "dist/workspace.d.ts.map",
+      "dist/manifests/asp-server.json",
       "dist/manifests/opcore-asp-provider.provisional.json"
     ]
   },

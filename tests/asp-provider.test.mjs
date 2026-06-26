@@ -129,10 +129,65 @@ describe("Opcore ASP provider", () => {
     assert.doesNotMatch(JSON.stringify(manifest), /\.ace\/runtime|\b(?:rox|crg|cix)\b|LATTICE_CURRENT_TOOLS_DIR/i);
   });
 
+  it("ships a canonical ASP server manifest with read-only access expectations", () => {
+    const manifestPath = join(repoRoot, "packages/asp-provider/dist/manifests/asp-server.json");
+    assert.equal(existsSync(manifestPath), true, "run npm run build before asp-provider tests");
+    const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+    const indexSha256 = sha256File(join(repoRoot, "packages/asp-provider/dist/index.js"));
+
+    assertKeys(manifest, [
+      "$schema",
+      "accessExpectations",
+      "artifact",
+      "capabilities",
+      "entrypoint",
+      "manifestVersion",
+      "protocolVersions",
+      "provenance",
+      "server"
+    ]);
+    assertKeys(manifest.server, ["id", "name", "version"]);
+    assertKeys(manifest.entrypoint, ["args", "bin", "transport"]);
+    assertKeys(manifest.artifact, ["checksums", "fingerprint"]);
+    assertKeys(manifest.artifact.checksums[0], ["path", "sha256"]);
+    assertKeys(manifest.provenance, ["license", "publisher", "source"]);
+    assertKeys(manifest.accessExpectations, ["dataClasses", "environment", "filesystem", "network", "secrets"]);
+    assertKeys(manifest.accessExpectations.filesystem, ["read", "write"]);
+    assertKeys(manifest.accessExpectations.network, ["allowlist", "outbound"]);
+    assertKeys(manifest.accessExpectations.secrets, ["names"]);
+    assertKeys(manifest.accessExpectations.environment, ["inherit", "variables"]);
+
+    assert.equal(manifest.$schema, "https://covibes.dev/asp/schemas/server-manifest.schema.json");
+    assert.equal(manifest.manifestVersion, "asp-server/0.1");
+    assert.deepEqual(manifest.server, { id: "opcore", name: "Opcore", version: "0.1.0-alpha.0" });
+    assert.deepEqual(manifest.protocolVersions, ["asp/0.1"]);
+    assert.deepEqual(manifest.capabilities, ["check"]);
+    assert.deepEqual(manifest.entrypoint, { transport: "stdio", bin: "opcore-asp-provider", args: ["--stdio"] });
+    assert.equal(manifest.artifact.fingerprint, `sha256:${indexSha256}`);
+    assert.deepEqual(manifest.artifact.checksums, [{ path: "dist/index.js", sha256: indexSha256 }]);
+    assert.match(manifest.artifact.checksums[0].sha256, /^[a-f0-9]{64}$/);
+    assert.deepEqual(manifest.provenance, {
+      publisher: "The Open Engine",
+      source: "https://github.com/the-open-engine/opcore",
+      license: "MIT"
+    });
+    assert.deepEqual(manifest.accessExpectations, {
+      filesystem: { read: ["**/*"], write: [] },
+      network: { outbound: false, allowlist: [] },
+      secrets: { names: [] },
+      environment: { inherit: false, variables: [] },
+      dataClasses: ["source-code"]
+    });
+    assertNoForbiddenKeys(manifest);
+    assert.doesNotMatch(JSON.stringify(manifest.provenance), /\b(?:trust|authority|gate|apply|decision|verdict|assurance)\b/i);
+    assert.doesNotMatch(JSON.stringify(manifest), /\.ace\/runtime|\b(?:rox|crg|cix)\b|LATTICE_CURRENT_TOOLS_DIR/i);
+  });
+
   it("removes stale legacy generated manifests before packaging", () => {
     const manifestDir = join(repoRoot, "packages/asp-provider/dist/manifests");
     const legacyManifestPath = join(manifestDir, ["lattice", "asp", "provider.provisional.json"].join("-"));
-    const manifestPath = join(manifestDir, "opcore-asp-provider.provisional.json");
+    const provisionalManifestPath = join(manifestDir, "opcore-asp-provider.provisional.json");
+    const canonicalManifestPath = join(manifestDir, "asp-server.json");
     writeFileSync(legacyManifestPath, "{}\n");
 
     const result = spawnSync(process.execPath, ["scripts/write-asp-provider-manifest.mjs"], {
@@ -142,7 +197,8 @@ describe("Opcore ASP provider", () => {
 
     assert.equal(result.status, 0, result.stderr);
     assert.equal(existsSync(legacyManifestPath), false);
-    assert.equal(existsSync(manifestPath), true);
+    assert.equal(existsSync(provisionalManifestPath), true);
+    assert.equal(existsSync(canonicalManifestPath), true);
   });
 });
 
@@ -374,6 +430,14 @@ function blobIdFor(content) {
 
 function digestJson(value) {
   return `sha256:${createHash("sha256").update(canonicalJson(value)).digest("hex")}`;
+}
+
+function sha256File(path) {
+  return createHash("sha256").update(readFileSync(path)).digest("hex");
+}
+
+function assertKeys(value, expected) {
+  assert.deepEqual(Object.keys(value).sort(), expected.sort());
 }
 
 function canonicalJson(value) {

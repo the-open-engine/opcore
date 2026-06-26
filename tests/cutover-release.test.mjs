@@ -69,7 +69,8 @@ describe("cutover release receipt", () => {
                     : packageName === "@the-open-engine/opcore-asp-provider"
                       ? { "opcore-asp-provider": "dist/index.js" }
                       : {}
-              }
+              },
+              installedFiles: installedFilesFor(packageName)
             })),
           descriptor: {
             path: "packages/opcore/dist/descriptors/lattice.managed-tool.json",
@@ -123,6 +124,15 @@ describe("cutover release receipt", () => {
     });
   });
 });
+
+function installedFilesFor(packageName) {
+  const paths = [
+    "package.json",
+    ...(packageName === "@the-open-engine/opcore" ? ["dist/index.js", "dist/lattice/index.js"] : []),
+    ...(packageName === "@the-open-engine/opcore-asp-provider" ? ["dist/index.js", "dist/manifests/asp-server.json"] : [])
+  ];
+  return paths.map((path) => ({ path: `node_modules/${packageName}/${path}`, sha256: "4".repeat(64) }));
+}
 
 function withReleaseDocsLock(runLocked) {
   const lockPath = resolve(repoRoot, "docs/release/.receipt-test.lock");
