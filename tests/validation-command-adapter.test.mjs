@@ -392,6 +392,74 @@ describe("validation command adapters", () => {
     }
   });
 
+  it("discovers tracked and untracked files from unborn HEAD changed scope", () => {
+    const temp = mkdtempSync(join(tmpdir(), "lattice-validation-unborn-head-"));
+    try {
+      mkdirSync(join(temp, "src"));
+      git(temp, ["init", "-q"]);
+      git(temp, ["symbolic-ref", "HEAD", "refs/heads/main"]);
+      writeFileSync(join(temp, "src/tracked.ts"), "export const tracked = 1;\n");
+      writeFileSync(join(temp, "src/untracked.ts"), "export const untracked = 1;\n");
+      trackGitFile(temp, "src/tracked.ts");
+
+      const result = createNodeValidationWorkspace({ repoRoot: temp }).listChangedFiles("HEAD");
+      const byPath = new Map(result.files.map((file) => [typeof file === "string" ? file : file.path, file]));
+
+      assert.equal(Boolean(result.unavailable), false);
+      assert.equal(byPath.get("src/tracked.ts").status, "added");
+      assert.equal(byPath.get("src/untracked.ts").status, "added");
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("discovers untracked-only files from unborn HEAD changed scope", () => {
+    const temp = mkdtempSync(join(tmpdir(), "lattice-validation-unborn-untracked-"));
+    try {
+      mkdirSync(join(temp, "src"));
+      git(temp, ["init", "-q"]);
+      git(temp, ["symbolic-ref", "HEAD", "refs/heads/main"]);
+      writeFileSync(join(temp, "src/untracked.ts"), "export const untracked = 1;\n");
+
+      const result = createNodeValidationWorkspace({ repoRoot: temp }).listChangedFiles("HEAD");
+      const byPath = new Map(result.files.map((file) => [typeof file === "string" ? file : file.path, file]));
+
+      assert.equal(Boolean(result.unavailable), false);
+      assert.equal(byPath.get("src/untracked.ts").status, "added");
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("returns typed unavailable changed scope outside Git repositories", () => {
+    const temp = mkdtempSync(join(tmpdir(), "lattice-validation-non-git-"));
+    try {
+      const result = createNodeValidationWorkspace({ repoRoot: temp }).listChangedFiles("HEAD");
+
+      assert.equal(result.unavailable, true);
+      assert.equal(result.message, "Changed validation scope requires a Git repository");
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("returns typed unavailable changed scope for unresolved explicit base refs", () => {
+    const temp = mkdtempSync(join(tmpdir(), "lattice-validation-bad-base-"));
+    try {
+      mkdirSync(join(temp, "src"));
+      writeFileSync(join(temp, "src/index.ts"), "export const value = 1;\n");
+      initializeGitSnapshot(temp, ["src/index.ts"]);
+
+      const result = createNodeValidationWorkspace({ repoRoot: temp }).listChangedFiles("definitely-missing");
+
+      assert.equal(result.unavailable, true);
+      assert.equal(result.message, "Changed validation base ref is unavailable");
+      assert.equal(result.cause, "Cannot resolve --base definitely-missing to a commit");
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
   it("runs tree scope against committed tree content without reading dirty worktree files", async () => {
     const temp = mkdtempSync(join(tmpdir(), "lattice-validation-tree-"));
     try {
@@ -601,8 +669,7 @@ function initializeGitSnapshot(repoRoot, files) {
   git(repoRoot, ["init", "-q"]);
   git(repoRoot, ["symbolic-ref", "HEAD", "refs/heads/main"]);
   for (const file of files) {
-    const object = git(repoRoot, ["hash-object", "-w", file]).stdout.trim();
-    git(repoRoot, ["update-index", "--add", "--cacheinfo", "100644", object, file]);
+    trackGitFile(repoRoot, file);
   }
   const tree = git(repoRoot, ["write-tree"]).stdout.trim();
   const commit = git(repoRoot, ["commit-tree", tree, "-m", "initial"], {
@@ -618,8 +685,7 @@ function initializeGitSnapshot(repoRoot, files) {
 }
 
 function commitWorktreeFile(repoRoot, file, message) {
-  const object = git(repoRoot, ["hash-object", "-w", file]).stdout.trim();
-  git(repoRoot, ["update-index", "--add", "--cacheinfo", "100644", object, file]);
+  trackGitFile(repoRoot, file);
   const tree = git(repoRoot, ["write-tree"]).stdout.trim();
   const commit = git(repoRoot, ["commit-tree", tree, "-p", "HEAD", "-m", message], {
     GIT_AUTHOR_NAME: "Lattice",
@@ -631,6 +697,11 @@ function commitWorktreeFile(repoRoot, file, message) {
   }).stdout.trim();
   git(repoRoot, ["update-ref", "refs/heads/main", commit]);
   return commit;
+}
+
+function trackGitFile(repoRoot, file) {
+  const object = git(repoRoot, ["hash-object", "-w", file]).stdout.trim();
+  git(repoRoot, ["update-index", "--add", "--cacheinfo", "100644", object, file]);
 }
 
 function stageRenameForDiff(repoRoot, fromPath, toPath) {

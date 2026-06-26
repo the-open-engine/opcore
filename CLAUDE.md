@@ -21,42 +21,42 @@ Opcore is the code-intelligence and robustness monorepo for graph context, edit 
 |---------|--------------|
 | Runtime/CLI ARD | @docs/architecture/runtime-cli-ard.md |
 | Opcore alpha roadmap | @docs/planning/opcore-alpha-roadmap.md |
-| Opcore metrics/report/history | @packages/opcore/src/reporting.ts |
+| Opcore metrics/report/history | `packages/opcore/src/reporting.ts` |
 | Public contracts | @packages/contracts/ |
-| Contract JSON schema | @packages/contracts/schemas/lattice-contracts.schema.json |
+| Contract JSON schema | `packages/contracts/schemas/lattice-contracts.schema.json` |
 | Command router package | @packages/opcore/src/lattice/ |
 | Graph provider package track | @packages/graph/ |
-| Graph SQLite store | @crates/graph-core/src/store.rs |
+| Graph SQLite store | `crates/graph-core/src/store.rs` |
 | Edit package track | @packages/edit/ |
 | Validation package track | @packages/validation/ |
-| Validation file view | @packages/validation/src/overlays.ts |
-| Validation graph client | @packages/validation/src/graph-client.ts |
+| Validation file view | `packages/validation/src/overlays.ts` |
+| Validation graph client | `packages/validation/src/graph-client.ts` |
 | Rust validation adapter | @packages/validation-rust/ |
 | TypeScript validation adapter | @packages/validation-typescript/ |
 | Opcore product facade | @packages/opcore/ |
-| Opcore scan report seam | @packages/opcore/src/reporting.ts |
+| Opcore scan report seam | `packages/opcore/src/reporting.ts` |
 | ASP Core check provider facade | @packages/asp-provider/ |
-| ASP provider manifest generator | @scripts/write-asp-provider-manifest.mjs |
+| ASP provider manifest generator | `scripts/write-asp-provider-manifest.mjs` |
 | Golden fixtures and reference evidence | @packages/fixtures/ |
-| Graph reference evidence manifest | @packages/fixtures/graph-reference-evidence/manifest.json |
-| Graph release fixture | @packages/fixtures/graph-release/release-readiness-fixture.json |
-| Graph release receipt | @docs/release/graph-release-receipt.json |
-| Graph release payload checksum target | @docs/release/graph-release-receipt.payload.json |
+| Graph reference evidence manifest | `packages/fixtures/graph-reference-evidence/manifest.json` |
+| Graph release fixture | `packages/fixtures/graph-release/release-readiness-fixture.json` |
+| Graph release receipt | `docs/release/graph-release-receipt.json` |
+| Graph release payload checksum target | `docs/release/graph-release-receipt.payload.json` |
 | Graph release handoff | @docs/release/graph-release-handoff.md |
-| Release receipt | @docs/release/release-receipt.json |
+| Release receipt | `docs/release/release-receipt.json` |
 | Release receipt summary | @docs/release/release-receipt.summary.md |
-| Cutover receipt | @docs/release/cutover-receipt.json |
+| Cutover receipt | `docs/release/cutover-receipt.json` |
 | Cutover receipt summary | @docs/release/cutover-receipt.summary.md |
-| ASP dogfood receipt | @docs/release/asp-dogfood-receipt.json |
+| ASP dogfood receipt | `docs/release/asp-dogfood-receipt.json` |
 | ASP dogfood receipt summary | @docs/release/asp-dogfood-receipt.summary.md |
 | Secret scan allowlist | @docs/release/secret-scan-allowlist.json |
-| Release receipt generator | @scripts/generate-release-receipt.mjs |
-| Cutover receipt generator | @scripts/generate-cutover-receipt.mjs |
-| ASP dogfood receipt generator | @scripts/generate-asp-dogfood-receipt.mjs |
-| Workspace checks | @scripts/check-workspace.mjs |
-| Package dry-run checks | @scripts/check-packages.mjs |
-| Provenance checks | @scripts/check-provenance.mjs |
-| Current ACE tool setup | @scripts/setup-current-tools.sh |
+| Release receipt generator | `scripts/generate-release-receipt.mjs` |
+| Cutover receipt generator | `scripts/generate-cutover-receipt.mjs` |
+| ASP dogfood receipt generator | `scripts/generate-asp-dogfood-receipt.mjs` |
+| Workspace checks | `scripts/check-workspace.mjs` |
+| Package dry-run checks | `scripts/check-packages.mjs` |
+| Provenance checks | `scripts/check-provenance.mjs` |
+| Current ACE tool setup | `scripts/setup-current-tools.sh` |
 | Local CI-equivalent gate | @scripts/ci/run-local-ci-equivalent.sh |
 | Zeroshot setup | @.zeroshot/settings.json |
 | GitHub Actions | @.github/workflows/ |
@@ -77,6 +77,9 @@ Opcore is the code-intelligence and robustness monorepo for graph context, edit 
 - Release dry-run CI runs on PRs and main pushes; native jobs upload tarred native package directories so `lattice-graph-core` execute bits survive artifact transfer; aggregate CI must not install a Rust toolchain, must set `LATTICE_REQUIRE_ALL_NATIVE_PACKAGES=1` after extracting all three native artifacts, and `scripts/release-dry-run.mjs` then validates package-local executable binaries/checksums without rebuilding graph-core - WHY: aggregate proof must consume runnable per-target artifacts produced by native jobs, not a local Linux rebuild or non-executable download.
 - #19 keeps `LATTICE_GRAPH_WATCH_PATHS` as the only watch env default and ignores `CRG_WATCH_PATHS` - WHY: Opcore watch roots must not inherit old-tool scoping accidentally.
 - #19 graph discovery excludes generated/private/dependency roots even without repo ignore files: `.git`, `node_modules`, `.pnpm`, `vendor`, `dist`, `target`, `.ace`, `.lattice`, `.rox-cache`, and `.robustness-engine-cache` - WHY: cache/vendor changes must not create graph facts, freshness changes, or FTS rows.
+- #16 Python `.py` and `.pyi` files are discovered as extraction-pending source inputs in graph-core and Opcore status, but they do not produce graph facts or validation-supported counts until #17/#19 land - WHY: Python coverage must be honest before parser/validation support exists.
+- #16 source-extension policy is reconciled across graph-core and Opcore status: graph-extractable `.ts/.tsx/.js/.jsx`; validation-supported `.ts/.tsx/.js/.jsx/.mts/.cts/.rs/.inc` plus `Cargo.toml`; retained `Cargo.lock`; Python extraction-pending `.py/.pyi`; known unsupported `.mjs/.cjs/.vue/.svelte/.go/.java/.rb/.php/.swift/.kt/.kts/.scala/.lua/.cs/.c/.cc/.cpp/.h/.hpp`.
+- #16 Python generated/private/dependency roots are excluded from discovery and status census: `.venv`, `venv`, `env`, `__pycache__`, `.eggs`, `build`, `.tox`, `.mypy_cache`, `.pytest_cache`, `.ruff_cache`, `site-packages`, `*.egg-info`, and `*.dist-info` - WHY: dependency/cache artifacts must not create graph freshness or coverage evidence.
 - #19 requires graph status to preserve real WAL checkpoint evidence from the latest pipeline summary and release gates to fail missing/fabricated WAL evidence - WHY: freshness and checkpoint pressure must remain host-visible provider facts.
 - #19 treats `lattice graph serve` as the stdio/MCP hot-query replacement, not a Unix socket, with parallel independent serve sessions as the supported concurrency evidence.
 - #19 keeps current external CRG receipts as non-implementation compatibility evidence only - WHY: old CRG remains a guardrail until downstream cutover issues consume the Opcore proof.

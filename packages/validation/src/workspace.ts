@@ -9,6 +9,8 @@ import { spawnSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import { relative, resolve, sep } from "node:path";
 
+const EMPTY_TREE_SHA = "4b825dc642cb6eb9a060e54bf8d69288fbee4904";
+
 export interface CreateNodeValidationWorkspaceOptions {
   repoRoot: string;
 }
@@ -63,7 +65,9 @@ function readStagedFile(repoRoot: string, path: string): ValidationWorkspaceRead
 }
 
 function listChangedFiles(repoRoot: string, baseRef: string): ValidationWorkspaceFileSet {
-  const diff = listDiffFiles(repoRoot, ["diff", "--name-status", "-z", "--find-renames", baseRef, "--"]);
+  const base = resolveChangedBase(repoRoot, baseRef);
+  if (!base.ok) return unavailable(base);
+  const diff = listDiffFiles(repoRoot, ["diff", "--name-status", "-z", "--find-renames", base.diffBase, "--"]);
   if (diff.unavailable) return diff;
   const untracked = git(repoRoot, ["ls-files", "--others", "--exclude-standard", "-z"]);
   if (!untracked.ok) return unavailable(untracked);
@@ -151,6 +155,33 @@ function resolveTreeish(repoRoot: string, ref: string): { ok: true; treeSha: str
     };
   }
   return { ok: true, treeSha: result.stdout.trim() };
+}
+
+function resolveChangedBase(
+  repoRoot: string,
+  baseRef: string
+): { ok: true; diffBase: string } | { ok: false; message: string; cause: string } {
+  const insideWorkTree = git(repoRoot, ["rev-parse", "--is-inside-work-tree"]);
+  if (!insideWorkTree.ok || insideWorkTree.stdout.trim() !== "true") {
+    return {
+      ok: false,
+      message: "Changed validation scope requires a Git repository",
+      cause: insideWorkTree.ok ? "git rev-parse --is-inside-work-tree returned false" : insideWorkTree.cause
+    };
+  }
+
+  const commit = git(repoRoot, ["rev-parse", "--verify", "--quiet", "--end-of-options", `${baseRef}^{commit}`]);
+  if (commit.ok && commit.stdout.trim().length > 0) return { ok: true, diffBase: baseRef };
+
+  const isDefaultHead = baseRef === "HEAD" || baseRef === "@";
+  const head = git(repoRoot, ["rev-parse", "--verify", "--quiet", "HEAD"]);
+  if (isDefaultHead && !head.ok) return { ok: true, diffBase: EMPTY_TREE_SHA };
+
+  return {
+    ok: false,
+    message: "Changed validation base ref is unavailable",
+    cause: `Cannot resolve --base ${baseRef} to a commit`
+  };
 }
 
 function resolveRepoPath(repoRoot: string, path: string): string {

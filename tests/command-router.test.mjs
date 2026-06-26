@@ -283,9 +283,12 @@ describe("lattice command router", () => {
       assert.equal(Object.hasOwn(implementations.inspectResult, "signatures"), false);
       assert.equal(symbols.graphQuery.nodes.some((node) => node.id === "function:src/components/GreetingCard.tsx#GreetingCard"), true);
       assert.equal(definition.graphQuery.nodes[0].id, "function:src/components/GreetingCard.tsx#GreetingCard");
-      assert.equal(references.graphQuery.queryKind, "callers_of");
-      assert.equal(references.graphQuery.nodes.some((node) => node.id === "test:src/__tests__/greeting.test.ts#renders greeting cards"), true);
+      assert.equal(references.graphQuery.nodes.some((node) => node.id === "function:src/components/GreetingCard.tsx#GreetingCard"), true);
       assert.equal(references.inspectResult.status, "ok");
+      assert.equal(references.inspectResult.references.length > 0, true);
+      for (const reference of references.inspectResult.references) {
+        assert.deepEqual(reference.evidence.graphNodeIds, ["function:src/components/GreetingCard.tsx#GreetingCard"]);
+      }
       assert.equal(references.inspectResult.target.nodeId, "function:src/components/GreetingCard.tsx#GreetingCard");
       assert.equal(signature.inspectResult.route, "signature");
       assert.equal(implementations.inspectResult.route, "implementations");

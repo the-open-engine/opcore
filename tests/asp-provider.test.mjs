@@ -146,6 +146,68 @@ describe("Opcore ASP provider", () => {
   });
 });
 
+// #15/#45: claim-scrub gate over the provider README, package.json, and manifest source.
+// Reads source files only, so it runs in `npm test` without a prior build. It locks the
+// "providers assess, hosts decide" semantics and forbids overclaim phrases that would never
+// legitimately appear on the provider surface (host authority, ASP-standard, old-tool
+// replacement, security/SAST, all-stack, AI-authorship, automatic-fix, blended score).
+describe("Opcore ASP provider claim scrub", () => {
+  const readmePath = join(repoRoot, "packages/asp-provider/README.md");
+  const packageJsonPath = join(repoRoot, "packages/asp-provider/package.json");
+  const manifestSourcePath = join(repoRoot, "packages/asp-provider/src/manifest.ts");
+
+  // package.json description/keywords are pure marketing metadata with no disclaimer prose,
+  // so a bare forbidden-token scan there is meaningful (unlike the README, which legitimately
+  // names these concepts in order to disclaim them).
+  const forbiddenMetadataTokens = [
+    /\bstandard\b/i,
+    /\bauthority\b/i,
+    /\breplaces?\b/i,
+    /\bsecurity\b/i,
+    /\bSAST\b/i,
+    /\bgate\b/i,
+    /\ball[- ]stack\b/i,
+    /\bblended\b/i,
+    /\bAI authorship\b/i
+  ];
+
+  it("keeps the providers-assess / hosts-decide semantics in the README", () => {
+    const readme = readFileSync(readmePath, "utf8");
+    assert.match(readme, /providers assess/i, "README must state that providers assess");
+    assert.match(readme, /hosts decide/i, "README must state that hosts decide");
+    assert.match(readme, /never (?:makes a policy decision|holds authority)/i, "README must disclaim host authority");
+    assert.match(readme, /no ASP router|there is no ASP router/i, "README must disclaim an ASP router command");
+    assert.match(readme, /\bwrite\b[^.\n]*\bfalse\b/i, "README must state write is false");
+    assert.match(readme, /\bnetwork\b[^.\n]*\bfalse\b/i, "README must state network is false");
+    assert.match(readme, /degraded|unsupported/i, "README must describe degraded/unsupported coverage honesty");
+    assert.match(readme, /does \*\*not\*\* use ACE|not use ACE as a carrier/i, "README must disclaim ACE as carrier/provisioner");
+  });
+
+  it("rejects forbidden marketing tokens in package.json metadata", () => {
+    const manifest = JSON.parse(readFileSync(packageJsonPath, "utf8"));
+    const marketing = [manifest.description ?? "", ...(manifest.keywords ?? [])].join(" ");
+    for (const pattern of forbiddenMetadataTokens) {
+      assert.doesNotMatch(marketing, pattern, `Forbidden provider marketing token ${pattern} in package.json`);
+    }
+  });
+
+  it("forbids ASP router command examples in the README", () => {
+    const readme = readFileSync(readmePath, "utf8");
+    for (const block of readme.match(/```[\s\S]*?```/g) ?? []) {
+      assert.doesNotMatch(block, /\b(?:opcore|lattice)\s+asp\b/i, "README code blocks must not show an ASP router command");
+    }
+  });
+
+  it("keeps no-authority manifest flags in the manifest source", () => {
+    const source = readFileSync(manifestSourcePath, "utf8");
+    assert.match(source, /noAuthority:\s*true/);
+    assert.match(source, /noTrust:\s*true/);
+    assert.match(source, /noGateGrant:\s*true/);
+    assert.match(source, /write:\s*false/);
+    assert.match(source, /network:\s*false/);
+  });
+});
+
 function spawnProvider(host) {
   const child = spawn(process.execPath, [providerBin, "--stdio"], {
     cwd: repoRoot,
