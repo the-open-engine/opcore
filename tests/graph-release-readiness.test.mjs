@@ -17,6 +17,8 @@ import {
 import { withCompleteNativeArtifactFixtures } from "./native-artifact-fixture.mjs";
 
 const repoRoot = fileURLToPath(new URL("..", import.meta.url));
+const receiptGatesRunSeparately = process.env.OPCORE_CI_RECEIPT_GATES_RUN_SEPARATELY === "1";
+const separateReceiptGateSkip = receiptGatesRunSeparately ? "covered by root CI receipt gate" : false;
 const serveTransportIds = [
   "serve-jsonl-ping",
   "serve-jsonl-status",
@@ -53,7 +55,7 @@ describe("graph release readiness receipt", () => {
     assert.equal(receipt.packageInspection.forbiddenMarkersAbsent, true);
   });
 
-  it("generates a passing #17 receipt gate", () => {
+  it("generates a passing #17 receipt gate", { skip: separateReceiptGateSkip }, () => {
     const result = withCompleteNativeArtifactFixtures(() => {
       return spawnSync("npm", ["run", "--silent", "graph-release:check", "--", "--json"], {
         cwd: repoRoot,
@@ -101,7 +103,7 @@ describe("graph release readiness receipt", () => {
     assert.match(source, /walCheckpoint/);
   });
 
-  it("fails instead of fabricating WAL benchmark evidence", () => {
+  it("fails instead of fabricating WAL benchmark evidence", { skip: separateReceiptGateSkip }, () => {
     const result = spawnSync("npm", ["run", "--silent", "graph-release:check", "--", "--json"], {
       cwd: repoRoot,
       encoding: "utf8",

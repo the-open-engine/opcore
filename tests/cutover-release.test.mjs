@@ -10,11 +10,18 @@ import { withCompleteNativeArtifactFixtures } from "./native-artifact-fixture.mj
 
 const repoRoot = fileURLToPath(new URL("..", import.meta.url));
 const releaseDocsLockTimeoutMs = 900000;
+const receiptGatesRunSeparately = process.env.OPCORE_CI_RECEIPT_GATES_RUN_SEPARATELY === "1";
+const separateReceiptGateSkip = receiptGatesRunSeparately ? "covered by root CI receipt gate" : false;
 
 describe("cutover release receipt", () => {
-  it("proves installed lattice artifacts without current-tool fallback", { timeout: 180000 }, () => {
+  it("proves installed lattice artifacts without current-tool fallback", { timeout: 180000, skip: separateReceiptGateSkip }, () => {
     withReleaseDocsLock(() => {
-      const result = withCompleteNativeArtifactFixtures(() => run(["scripts/generate-cutover-receipt.mjs", "--json"]));
+      run(["scripts/generate-release-receipt.mjs", "--inspect-packages-only", "--json"]);
+      const result = withCompleteNativeArtifactFixtures(() =>
+        run(["scripts/generate-cutover-receipt.mjs", "--json"], {
+          env: { ...process.env, OPCORE_CUTOVER_REUSE_RELEASE_PACKAGES: "1" }
+        })
+      );
       const receipt = validateReleaseCutoverReceipt(JSON.parse(result.stdout));
       assert.equal(receipt.issue, "#30");
       assert.deepEqual(receipt.packageNames, releaseReceiptPackageNames);
@@ -189,6 +196,7 @@ function run(args, options = {}) {
   const result = spawnSync(process.execPath, args, {
     cwd: repoRoot,
     encoding: "utf8",
+    env: options.env,
     stdio: ["ignore", "pipe", "pipe"]
   });
   const expectFailure = options.expectFailure ?? false;

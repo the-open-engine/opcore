@@ -38,6 +38,7 @@ const preWriteEvidencePath = "docs/integration/pre-write-validation.md";
 const cutoverReceiptPath = "docs/release/cutover-receipt.json";
 const cutoverSummaryPath = "docs/release/cutover-receipt.summary.md";
 const artifactAttestationPath = "docs/release/artifact-attestation.md";
+const releasePackDestination = ".lattice/release/packages";
 const fixtureRoot = "packages/fixtures/source-extraction/wave1";
 const currentToolEnvVars = [
   "LATTICE_CURRENT_TOOLS_DIR",
@@ -50,6 +51,7 @@ const currentToolEnvVars = [
 const args = process.argv.slice(2);
 const writeDocs = args.includes("--write");
 const jsonOutput = args.includes("--json") || !writeDocs;
+const reuseReleasePackages = process.env.OPCORE_CUTOVER_REUSE_RELEASE_PACKAGES === "1";
 
 try {
   const validateReceiptFile = valueAfter("--validate-receipt-file");
@@ -82,7 +84,9 @@ function generateReceipt() {
   try {
     const packDir = join(tempRoot, "packages");
     mkdirSync(packDir, { recursive: true });
-    const tarballs = releaseReceiptPackageNames.map((packageName) => packWorkspace(packageName, packDir));
+    const tarballs = reuseReleasePackages
+      ? releaseReceiptPackageNames.map(readReleasePackageTarball)
+      : releaseReceiptPackageNames.map((packageName) => packWorkspace(packageName, packDir));
     const tarballsByPackage = new Map(tarballs.map((entry) => [entry.packageName, entry]));
     const project = join(tempRoot, "project");
     mkdirSync(project);
@@ -395,6 +399,27 @@ function packWorkspace(packageName, destination) {
     path,
     sha256: sha256File(path)
   };
+}
+
+function readReleasePackageTarball(packageName) {
+  const packageDir = join(repoRoot, releasePackageDirForName(packageName));
+  const manifest = readJson(join(packageDir, "package.json"));
+  const filename = releasePackageTarballFilename(packageName, manifest.version);
+  const path = join(repoRoot, releasePackDestination, filename);
+  if (!existsSync(path)) {
+    throw new Error(`Missing reusable release package tarball: ${releasePackDestination}/${filename}`);
+  }
+  return {
+    packageName,
+    packageDir,
+    filename,
+    path,
+    sha256: sha256File(path)
+  };
+}
+
+function releasePackageTarballFilename(packageName, version) {
+  return `${packageName.replace(/^@/, "").replace(/\//g, "-")}-${version}.tgz`;
 }
 
 function releaseRuntimeInstallPackageNames() {
