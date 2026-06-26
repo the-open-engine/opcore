@@ -10,7 +10,7 @@ import {
   throwRpc,
   unsupportedVersionError
 } from "./json-rpc.js";
-export { createOpcoreAspProviderManifest } from "./manifest.js";
+export { createOpcoreAspProviderManifest, createOpcoreAspServerManifest } from "./manifest.js";
 export { evaluateChangeset, initializeResult } from "./mapping.js";
 export { JsonRpcPeer } from "./json-rpc.js";
 

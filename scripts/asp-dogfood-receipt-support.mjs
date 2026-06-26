@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { dirname, join, relative, resolve } from "node:path";
 import { aspDogfoodForbiddenProviderMarkers, releaseReceiptPackageNames } from "../packages/contracts/dist/index.js";
 import {
   currentGraphCoreNativeTarget,
@@ -184,16 +184,17 @@ function commandFailure(command, cwd, result) {
 
 export function collectInstalledPackages(project, tarballs) {
   return releaseReceiptPackageNames.flatMap((packageName) => {
-    const manifestPath = join(project, "node_modules", ...packageName.split("/"), "package.json");
+    const packageRoot = join(project, "node_modules", ...packageName.split("/"));
+    const manifestPath = join(packageRoot, "package.json");
     if (!existsSync(manifestPath)) return [];
     const manifest = readJson(manifestPath);
     const tarball = tarballs.find((entry) => entry.packageName === packageName);
     if (!tarball) throw new Error(`Missing tarball evidence for ${packageName}`);
-    return [installedPackageEvidence(packageName, manifest, manifestPath, tarball)];
+    return [installedPackageEvidence(packageName, manifest, manifestPath, tarball, packageRoot)];
   });
 }
 
-function installedPackageEvidence(packageName, manifest, manifestPath, tarball) {
+function installedPackageEvidence(packageName, manifest, manifestPath, tarball, packageRoot) {
   return {
     packageName,
     version: manifest.version,
@@ -202,8 +203,29 @@ function installedPackageEvidence(packageName, manifest, manifestPath, tarball) 
       path: `node_modules/${packageName}/package.json`,
       sha256: sha256File(manifestPath),
       bins: manifest.bin ?? {}
+    },
+    installedFiles: collectInstalledFiles(packageRoot, packageName)
+  };
+}
+
+function collectInstalledFiles(packageRoot, packageName) {
+  const files = [];
+  const visit = (directory) => {
+    for (const entry of readdirSync(directory, { withFileTypes: true })) {
+      const absolutePath = join(directory, entry.name);
+      if (entry.isDirectory()) {
+        visit(absolutePath);
+      } else if (entry.isFile()) {
+        const packagePath = relative(packageRoot, absolutePath).split("\\").join("/");
+        files.push({
+          path: `node_modules/${packageName}/${packagePath}`,
+          sha256: sha256File(absolutePath)
+        });
+      }
     }
   };
+  visit(packageRoot);
+  return files.sort((left, right) => left.path.localeCompare(right.path));
 }
 
 export function collectParityBlockers(repoRoot) {

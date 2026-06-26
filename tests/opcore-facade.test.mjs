@@ -7,6 +7,7 @@ import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   createOpcoreMetricReport,
+  runOpcoreCli,
   writeOpcoreMetricArtifacts
 } from "../packages/opcore/dist/index.js";
 
@@ -186,8 +187,14 @@ describe("opcore public facade", () => {
       assert.equal(result.status, "ok");
       assert.equal(result.opcoreInit.mode, "plan");
       assert.equal(result.opcoreInit.approved, false);
+      assert.equal(result.opcoreInit.scan.totalFiles, 0);
+      assert.equal(Array.isArray(result.opcoreInit.settings.languages), true);
+      assert.equal(result.opcoreInit.interaction.promptState, "not_requested");
+      assert.equal(result.opcoreInit.timings.scanMs >= 0, true);
       assert.equal(result.opcoreInit.actions.some((action) => action.path === ".opcore/config"), true);
-      assert.match(result.message, /^opcore init plan/);
+      assert.match(result.message, /^Coverage:/);
+      assert.equal(result.message.indexOf("Coverage:") < result.message.indexOf("Findings:"), true);
+      assert.equal(result.message.indexOf("Findings:") < result.message.indexOf("Setup:"), true);
       assert.equal(existsSync(join(temp, ".opcore")), false);
       assert.equal(existsSync(join(temp, "AGENTS.md")), false);
     } finally {
@@ -203,14 +210,20 @@ describe("opcore public facade", () => {
       assert.equal(result.opcoreInit.mode, "apply");
       assert.equal(result.opcoreInit.approved, true);
       assert.equal(result.opcoreInit.undoAvailable, true);
+      assert.equal(result.opcoreInit.interaction.promptState, "not_requested");
+      assert.equal(result.opcoreInit.timings.applyMs >= 0, true);
       assert.equal(result.opcoreInit.nextActions.some((action) => action.includes("--undo --approve")), true);
       assert.equal(result.opcoreInit.nextActions.some((action) => action.includes("opcore init --approve")), false);
       assert.equal(existsSync(join(temp, ".opcore", "config")), true);
       assert.equal(existsSync(join(temp, ".opcore", "init-undo.json")), true);
+      assert.equal(existsSync(join(temp, ".opcore", "report.json")), false);
+      assert.equal(existsSync(join(temp, ".opcore", "history.jsonl")), false);
       assert.equal(existsSync(join(temp, ".opcore", "hooks", "pre-commit-opcore-check.sh")), false);
       const config = JSON.parse(readFileSync(join(temp, ".opcore", "config"), "utf8"));
       assert.equal(config.schemaVersion, 1);
       assert.equal(config.guidance.checkCommand, "opcore check --changed");
+      assert.deepEqual(config.onboarding.languages, result.opcoreInit.settings.languages);
+      assert.equal(config.onboarding.scan.totalFiles, result.opcoreInit.scan.totalFiles);
       const agents = readFileSync(join(temp, "AGENTS.md"), "utf8");
       assert.equal(markerCount(agents), 1);
       assert.match(agents, /opcore check --changed/);
@@ -219,6 +232,140 @@ describe("opcore public facade", () => {
       assert.match(agents, /Do not rely on ACE, Rox, CRG, CIX, or ASP host authority/i);
     } finally {
       rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("keeps non-TTY no-flag init plan-only with coverage before findings and setup", () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-init-nontty-"));
+    try {
+      const result = runOpcore(["init", "--repo", temp], temp, 0);
+
+      assert.equal(result.stderr, "");
+      assert.equal(firstNonEmptyLine(result.stdout), "Coverage:");
+      assert.equal(result.stdout.indexOf("Coverage:") < result.stdout.indexOf("Findings:"), true);
+      assert.equal(result.stdout.indexOf("Findings:") < result.stdout.indexOf("Setup:"), true);
+      assert.match(result.stdout, /Approval: required/);
+      assert.equal(existsSync(join(temp, ".opcore")), false);
+      assert.equal(existsSync(join(temp, "AGENTS.md")), false);
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("declines TTY init without writing files", async () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-init-tty-decline-"));
+    try {
+      const result = await runOpcoreCliInProcess(["init", "--repo", temp], temp, { answer: "n" });
+
+      assert.equal(result.exitCode, 0);
+      assert.equal(result.stderr, "");
+      assert.equal(result.stdout.indexOf("Coverage:") < result.stdout.indexOf("Findings:"), true);
+      assert.equal(result.stdout.indexOf("Findings:") < result.stdout.indexOf("Setup:"), true);
+      assert.match(result.stdout, /Apply setup\? \[y\/N\]/);
+      assert.match(result.stdout, /declined/i);
+      assert.equal(existsSync(join(temp, ".opcore")), false);
+      assert.equal(existsSync(join(temp, "AGENTS.md")), false);
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("applies TTY init only after explicit yes", async () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-init-tty-yes-"));
+    try {
+      const result = await runOpcoreCliInProcess(["init", "--repo", temp], temp, { answer: "yes" });
+
+      assert.equal(result.exitCode, 0);
+      assert.equal(result.stderr, "");
+      assert.match(result.stdout, /Apply setup\? \[y\/N\]/);
+      assert.match(result.stdout, /applied/i);
+      assert.equal(existsSync(join(temp, ".opcore", "config")), true);
+      assert.equal(existsSync(join(temp, ".opcore", "init-undo.json")), true);
+      assert.equal(existsSync(join(temp, ".opcore", "report.json")), false);
+      assert.equal(existsSync(join(temp, ".opcore", "history.jsonl")), false);
+      assert.equal(markerCount(readFileSync(join(temp, "AGENTS.md"), "utf8")), 1);
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("reports deterministic init scan settings across supported and unsupported stacks", () => {
+    const cases = [
+      {
+        name: "typescript",
+        files: [["src/index.ts", "export const value: number = 1;\n"]],
+        expect: { totalFiles: 1, languages: ["TypeScript"], unsupportedFiles: 0 }
+      },
+      {
+        name: "rust",
+        files: [
+          ["Cargo.toml", "[package]\nname = \"opcore_fixture\"\nversion = \"0.1.0\"\nedition = \"2021\"\n"],
+          ["src/lib.rs", "pub fn value() -> i32 { 1 }\n"]
+        ],
+        expect: { totalFiles: 2, languages: ["Rust"], unsupportedFiles: 0 }
+      },
+      {
+        name: "mixed",
+        files: [
+          ["src/index.ts", "export const value = 1;\n"],
+          ["Cargo.toml", "[package]\nname = \"opcore_fixture\"\nversion = \"0.1.0\"\nedition = \"2021\"\n"],
+          ["src/lib.rs", "pub fn value() -> i32 { 1 }\n"]
+        ],
+        expect: { totalFiles: 3, languages: ["Rust", "TypeScript"], unsupportedFiles: 0 }
+      },
+      {
+        name: "mixed-cargo-lock-only",
+        files: [
+          ["src/index.ts", "export const value = 1;\n"],
+          ["Cargo.lock", "# lockfile\n"]
+        ],
+        expect: { totalFiles: 2, languages: ["Rust", "TypeScript"], unsupportedFiles: 0 }
+      },
+      {
+        name: "python",
+        files: [["scripts/app.py", "print('unsupported')\n"]],
+        expect: { totalFiles: 1, languages: ["Python"], unsupportedFiles: 0 }
+      },
+      {
+        name: "fresh-git",
+        files: [["src/index.ts", "export const value = 1;\n"]],
+        gitInit: true,
+        expect: { totalFiles: 1, languages: ["TypeScript"], unsupportedFiles: 0 }
+      }
+    ];
+
+    for (const fixture of cases) {
+      const temp = mkdtempSync(join(tmpdir(), `opcore-init-${fixture.name}-`));
+      try {
+        if (fixture.gitInit) run("git", ["init"], temp, 0);
+        for (const [path, content] of fixture.files) writeFixtureFile(temp, path, content);
+
+        const result = parseJson(runOpcore(["init", "--repo", temp, "--json"], temp, 0).stdout);
+        const languages = result.opcoreInit.settings.languages.map((entry) => entry.language).sort();
+
+        assert.equal(result.opcoreInit.scan.totalFiles, fixture.expect.totalFiles, fixture.name);
+        assert.deepEqual(languages, fixture.expect.languages, fixture.name);
+        assert.equal(result.opcoreInit.scan.unsupportedFiles, fixture.expect.unsupportedFiles, fixture.name);
+        assert.equal(result.opcoreInit.scan.diagnosticCount >= 0, true, fixture.name);
+        assert.equal(existsSync(join(temp, ".opcore")), false, fixture.name);
+        if (fixture.name === "python") {
+          assert.equal(result.opcoreInit.scan.graphSupportedFiles, 1);
+          assert.equal(result.opcoreInit.scan.validationSupportedFiles, 0);
+          assert.deepEqual(result.opcoreInit.scan.unsupportedStacks, []);
+          assert.equal(result.opcoreInit.settings.languages[0].state, "unsupported");
+          assert.equal(result.opcoreInit.settings.languages[0].graph, "supported");
+          assert.equal(result.opcoreInit.settings.languages[0].validation, "unsupported");
+          assert.equal(result.opcoreInit.scan.diagnosticCount, 0);
+        }
+        if (fixture.name === "mixed-cargo-lock-only") {
+          const rust = result.opcoreInit.settings.languages.find((entry) => entry.language === "Rust");
+          assert.equal(rust.state, "retained");
+          assert.equal(rust.validation, "retained");
+          assert.deepEqual(rust.checks, []);
+        }
+      } finally {
+        rmSync(temp, { recursive: true, force: true });
+      }
     }
   });
 
@@ -605,6 +752,34 @@ function runOpcore(args, cwd, expectedStatus) {
   return run(process.execPath, [opcoreBin, ...args], cwd, expectedStatus);
 }
 
+async function runOpcoreCliInProcess(args, cwd, options) {
+  const previousCwd = process.cwd();
+  let stdout = "";
+  let stderr = "";
+  process.chdir(cwd);
+  try {
+    const exitCode = await runOpcoreCli({
+      argv: args,
+      bin: "opcore",
+      stdout: (text) => {
+        stdout += text;
+      },
+      stderr: (text) => {
+        stderr += text;
+      },
+      stdinIsTTY: true,
+      stdoutIsTTY: true,
+      readLine: async (prompt) => {
+        stdout += prompt;
+        return options.answer;
+      }
+    });
+    return { exitCode, stdout, stderr };
+  } finally {
+    process.chdir(previousCwd);
+  }
+}
+
 function run(command, args, cwd, expectedStatus, env = process.env) {
   const result = spawnSync(command, args, {
     cwd,
@@ -620,6 +795,12 @@ function run(command, args, cwd, expectedStatus, env = process.env) {
     `stderr:\n${result.stderr}`
   ].join("\n"));
   return result;
+}
+
+function writeFixtureFile(root, path, content) {
+  const absolute = join(root, path);
+  mkdirSync(dirname(absolute), { recursive: true });
+  writeFileSync(absolute, content);
 }
 
 function parseJson(stdout) {

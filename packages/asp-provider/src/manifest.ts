@@ -9,6 +9,55 @@ import {
 } from "./protocol.js";
 import { defaultAspProviderValidationCheckIds } from "./validation-composition.js";
 
+export type OpcoreAspServerManifest = {
+  $schema: "https://covibes.dev/asp/schemas/server-manifest.schema.json";
+  manifestVersion: "asp-server/0.1";
+  server: {
+    id: typeof OPCORE_PROVIDER_ID;
+    name: "Opcore";
+    version: typeof OPCORE_PROVIDER_VERSION;
+  };
+  protocolVersions: readonly [typeof ASP_PROTOCOL_VERSION];
+  capabilities: readonly ["check"];
+  entrypoint: {
+    transport: "stdio";
+    bin: "opcore-asp-provider";
+    args: readonly ["--stdio"];
+  };
+  artifact: {
+    fingerprint: string;
+    checksums: readonly [
+      {
+        path: "dist/index.js";
+        sha256: string;
+      }
+    ];
+  };
+  provenance: {
+    publisher: "The Open Engine";
+    source: "https://github.com/the-open-engine/opcore";
+    license: "MIT";
+  };
+  accessExpectations: {
+    filesystem: {
+      read: readonly ["**/*"];
+      write: readonly [];
+    };
+    network: {
+      outbound: false;
+      allowlist: readonly [];
+    };
+    secrets: {
+      names: readonly [];
+    };
+    environment: {
+      inherit: false;
+      variables: readonly [];
+    };
+    dataClasses: readonly ["source-code"];
+  };
+};
+
 export type OpcoreAspProviderManifest = {
   schemaVersion: 1;
   kind: "opcore-asp-provider-provisional-manifest";
@@ -42,8 +91,7 @@ export type OpcoreAspProviderManifest = {
 };
 
 export function createOpcoreAspProviderManifest(options: { packageRoot?: string; indexSha256?: string } = {}): OpcoreAspProviderManifest {
-  const packageRoot = options.packageRoot ?? process.cwd();
-  const indexSha256 = options.indexSha256 ?? sha256File(join(packageRoot, "dist/index.js"));
+  const indexSha256 = resolveIndexSha256(options);
   return {
     schemaVersion: 1,
     kind: "opcore-asp-provider-provisional-manifest",
@@ -75,6 +123,63 @@ export function createOpcoreAspProviderManifest(options: { packageRoot?: string;
     noGateGrant: true,
     note: "Install metadata only. This manifest does not grant authority, trust, policy gate permission, or host apply permission."
   };
+}
+
+export function createOpcoreAspServerManifest(options: { packageRoot?: string; indexSha256?: string } = {}): OpcoreAspServerManifest {
+  const indexSha256 = resolveIndexSha256(options);
+  return {
+    $schema: "https://covibes.dev/asp/schemas/server-manifest.schema.json",
+    manifestVersion: "asp-server/0.1",
+    server: {
+      id: OPCORE_PROVIDER_ID,
+      name: "Opcore",
+      version: OPCORE_PROVIDER_VERSION
+    },
+    protocolVersions: [ASP_PROTOCOL_VERSION],
+    capabilities: ["check"],
+    entrypoint: {
+      transport: "stdio",
+      bin: "opcore-asp-provider",
+      args: ["--stdio"]
+    },
+    artifact: {
+      fingerprint: `sha256:${indexSha256}`,
+      checksums: [
+        {
+          path: "dist/index.js",
+          sha256: indexSha256
+        }
+      ]
+    },
+    provenance: {
+      publisher: "The Open Engine",
+      source: "https://github.com/the-open-engine/opcore",
+      license: "MIT"
+    },
+    accessExpectations: {
+      filesystem: {
+        read: ["**/*"],
+        write: []
+      },
+      network: {
+        outbound: false,
+        allowlist: []
+      },
+      secrets: {
+        names: []
+      },
+      environment: {
+        inherit: false,
+        variables: []
+      },
+      dataClasses: ["source-code"]
+    }
+  };
+}
+
+function resolveIndexSha256(options: { packageRoot?: string; indexSha256?: string }): string {
+  const packageRoot = options.packageRoot ?? process.cwd();
+  return options.indexSha256 ?? sha256File(join(packageRoot, "dist/index.js"));
 }
 
 function sha256File(path: string): string {

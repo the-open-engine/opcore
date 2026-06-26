@@ -983,6 +983,45 @@ def run():
 }
 
 #[test]
+fn python_package_from_import_submodule_calls_resolve_to_submodule_member() -> TestResult {
+    let repo = repo_with_tsconfig()?;
+    write(&repo, "pkg/__init__.py", "")?;
+    write(
+        &repo,
+        "pkg/mod.py",
+        r#"
+def f():
+    return True
+"#,
+    )?;
+    write(
+        &repo,
+        "app.py",
+        r#"
+from pkg import mod
+
+def g():
+    return mod.f()
+"#,
+    )?;
+
+    let result = extract_sources(ExtractionOptions::new(repo.path()));
+    let triples = edge_triples(&result.edges);
+
+    assert!(triples.contains(&vec![
+        "IMPORTS_FROM".to_string(),
+        "file:app.py".to_string(),
+        "file:pkg/mod.py".to_string()
+    ]));
+    assert!(triples.contains(&vec![
+        "CALLS".to_string(),
+        "function:app.py#g".to_string(),
+        "function:pkg/mod.py#f".to_string()
+    ]));
+    Ok(())
+}
+
+#[test]
 fn python_parse_errors_are_typed_warnings_and_non_fatal() -> TestResult {
     let repo = repo_with_tsconfig()?;
     write(&repo, "src/broken.py", "def broken(:\n    return True\n")?;

@@ -1,6 +1,7 @@
 import type {
   CommandRouterResult,
   GraphProviderMode,
+  OpcoreMetricReport,
   OpcoreRepoStatePayload,
   ValidationRequest,
   ValidationResult
@@ -10,7 +11,7 @@ import { createValidationRunner, type ValidationWorkspace } from "@the-open-engi
 import { readdir, readFile } from "node:fs/promises";
 import { join, relative, resolve, sep } from "node:path";
 import { createOpcoreMetricReport, writeOpcoreMetricArtifacts } from "./reporting.js";
-import { createRepoState, parseOpcoreRepoArgs, resolveRepo } from "./status.js";
+import { createRepoState, parseOpcoreRepoArgs, type RepoResolution, resolveRepo } from "./status.js";
 import { createOpcoreValidationGraphProviderClient, defaultValidationChecks } from "./validation-composition.js";
 
 const skippedPathSegments = new Set([
@@ -27,6 +28,13 @@ const skippedPathSegments = new Set([
   ".rox-cache",
   ".robustness-engine-cache"
 ]);
+
+export interface OpcoreScanAnalysis {
+  repoState: OpcoreRepoStatePayload;
+  validationResult: ValidationResult;
+  metricReport: OpcoreMetricReport;
+  message: string;
+}
 
 export async function routeOpcoreScan(argv: readonly string[], args: readonly string[], json: boolean): Promise<CommandRouterResult> {
   const parsed = parseOpcoreRepoArgs(args, "opcore scan");
@@ -53,7 +61,23 @@ export async function routeOpcoreScan(argv: readonly string[], args: readonly st
       message: resolution.message
     });
   }
-  const repoState = createRepoState(resolution.resolution);
+  const analysis = await createOpcoreScanAnalysis(resolution.resolution);
+  writeOpcoreMetricArtifacts(analysis.repoState.repo.root, analysis.metricReport);
+  return createCommandRouterResult({
+    bin: "opcore",
+    argv,
+    canonicalCommand: ["opcore", "scan"],
+    owner: "runtime",
+    status: "ok",
+    json,
+    message: analysis.message,
+    repoState: analysis.repoState,
+    validationResult: analysis.validationResult
+  });
+}
+
+export async function createOpcoreScanAnalysis(resolution: RepoResolution): Promise<OpcoreScanAnalysis> {
+  const repoState = createRepoState(resolution);
   const graphMode: GraphProviderMode = repoState.graph.state === "available" ? "required" : "optional";
   const validationRequest: ValidationRequest = {
     repo: {
@@ -77,18 +101,12 @@ export async function routeOpcoreScan(argv: readonly string[], args: readonly st
     repoState,
     validationResult
   });
-  writeOpcoreMetricArtifacts(repoState.repo.root, metricReport);
-  return createCommandRouterResult({
-    bin: "opcore",
-    argv,
-    canonicalCommand: ["opcore", "scan"],
-    owner: "runtime",
-    status: "ok",
-    json,
+  return {
     message: formatScanMessage(repoState, validationResult),
     repoState,
-    validationResult
-  });
+    validationResult,
+    metricReport
+  };
 }
 
 function createReadOnlyWorkspace(repoRoot: string): ValidationWorkspace {
@@ -143,15 +161,26 @@ function formatScanMessage(repoState: OpcoreRepoStatePayload, validationResult: 
   const languages = repoState.coverage.languages.length === 0
     ? "none"
     : repoState.coverage.languages.map((entry) => `${entry.language} ${entry.files}`).join(", ");
+  const degradedRustTools = repoState.validation.degradedToolchains.length === 0
+    ? "none"
+    : repoState.validation.degradedToolchains.map((tool) => `${tool.adapter}:${tool.tool}`).join(", ");
   const failedChecks = validationResult.manifest?.runs
     ?.filter((run) => run.status !== "passed")
     .map((run) => run.checkId) ?? [];
   return [
-    `Coverage: files=${repoState.coverage.totalFiles} graph=${repoState.coverage.graph.supportedFiles} validation=${repoState.coverage.validation.supportedFiles} unsupported=${unsupported}`,
-    `Languages: ${languages}`,
-    `Readiness: ${repoState.activation.level}; ${repoState.activation.summary}`,
-    `Findings: diagnostics=${validationResult.diagnostics.length} status=${validationResult.status}`,
-    `Checks: failed=${failedChecks.length === 0 ? "none" : failedChecks.join(", ")}`
+    "Coverage:",
+    `  files=${repoState.coverage.totalFiles}`,
+    `  graph-supported-ts-js=${repoState.coverage.graph.supportedFiles}`,
+    `  validation-supported=${repoState.coverage.validation.supportedFiles}`,
+    `  validation-retained=${repoState.coverage.validation.retainedFiles}`,
+    `  unsupported=${unsupported}`,
+    `  languages=${languages}`,
+    `  degraded-rust-tools=${degradedRustTools}`,
+    "Findings:",
+    `  diagnostics=${validationResult.diagnostics.length}`,
+    `  validation=${validationResult.status}`,
+    `  failed-checks=${failedChecks.length === 0 ? "none" : failedChecks.join(", ")}`,
+    `  activation=${repoState.activation.level}; ${repoState.activation.summary}`
   ].join("\n");
 }
 

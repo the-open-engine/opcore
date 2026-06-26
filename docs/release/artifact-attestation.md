@@ -21,5 +21,5 @@ No package publishing happens in this gate.
 ## Cutover Gate
 
 Issue #30 receipt: docs/release/cutover-receipt.json
-Cutover receipt SHA-256: 175a1d5434029a1381b9ba45f01bdcbeeaaa11a14f68e194123208b527111c6d
+Cutover receipt SHA-256: 401ff1436f07b0c7f3782901fd64823fe8e995de7bdeffff4dc5a8fc4f910cb9
 Installed command receipts: 28

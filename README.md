@@ -15,6 +15,7 @@ check before edits land.
 npm install -g @the-open-engine/opcore@0.1.0-alpha.0
 opcore --repo .
 opcore try
+opcore init --repo .
 opcore init --repo . --approve
 opcore check --changed --json
 opcore measure --repo .
@@ -23,6 +24,12 @@ opcore measure --repo .
 The first command should work in an existing project without setup. It should
 detect what Opcore can analyze, say what it cannot analyze, write only local
 Opcore report/history artifacts, and never edit source files.
+
+`opcore init` is scan-first and ask-before-write on a TTY: it prints coverage
+before findings, shows the additive setup plan, then writes only after an
+explicit yes. `opcore init --json` previews without writing; `opcore init
+--approve --json` applies additive setup without prompting and returns scan,
+language settings, interaction, and timing fields.
 
 Alpha package artifacts target darwin-arm64 and linux-x64.
 

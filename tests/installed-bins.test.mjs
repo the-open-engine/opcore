@@ -52,6 +52,14 @@ describe("installed package bins", () => {
       const opcoreScan = assertSmoke(project, ["--json"], 0, "opcore");
       assert.deepEqual(opcoreScan.canonicalCommand, ["opcore", "scan"]);
       assert.equal(Object.hasOwn(opcoreScan, "validationResult"), true);
+      const opcoreInit = assertSmoke(project, ["init", "--json"], 0, "opcore");
+      assert.deepEqual(opcoreInit.canonicalCommand, ["opcore", "init"]);
+      assert.equal(opcoreInit.opcoreInit.mode, "plan");
+      assert.equal(Object.hasOwn(opcoreInit.opcoreInit, "scan"), true);
+      assert.equal(Array.isArray(opcoreInit.opcoreInit.settings.languages), true);
+      assert.equal(opcoreInit.opcoreInit.timings.scanMs >= 0, true);
+      assert.equal(existsSync(join(project, ".opcore", "config")), false);
+      assert.equal(existsSync(join(project, "AGENTS.md")), false);
       const opcoreMeasure = assertSmoke(project, ["measure", "--json"], 0, "opcore");
       assert.deepEqual(opcoreMeasure.canonicalCommand, ["opcore", "measure"]);
       assert.equal(opcoreMeasure.opcoreMeasure.kind, "opcore_measure_delta");
@@ -130,8 +138,21 @@ describe("installed package bins", () => {
         } else if (packageName === "@the-open-engine/opcore-asp-provider") {
           assert.deepEqual(manifest.bin, { "opcore-asp-provider": "dist/index.js" });
           assert.equal(
+            manifest.exports["./manifests/asp-server.json"],
+            "./dist/manifests/asp-server.json"
+          );
+          assert.equal(
             manifest.exports["./manifests/opcore-asp-provider.provisional.json"],
             "./dist/manifests/opcore-asp-provider.provisional.json"
+          );
+          const canonicalManifestPath = join(
+            project,
+            "node_modules",
+            "@the-open-engine",
+            "opcore-asp-provider",
+            "dist",
+            "manifests",
+            "asp-server.json"
           );
           assert.equal(
             existsSync(
@@ -147,6 +168,20 @@ describe("installed package bins", () => {
             ),
             true
           );
+          assert.equal(existsSync(canonicalManifestPath), true, canonicalManifestPath);
+          const canonicalManifest = JSON.parse(readFileSync(canonicalManifestPath, "utf8"));
+          const installedIndexPath = join(
+            project,
+            "node_modules",
+            "@the-open-engine",
+            "opcore-asp-provider",
+            "dist",
+            "index.js"
+          );
+          const installedIndexSha256 = createHash("sha256").update(readFileSync(installedIndexPath)).digest("hex");
+          assert.deepEqual(canonicalManifest.entrypoint, { transport: "stdio", bin: "opcore-asp-provider", args: ["--stdio"] });
+          assert.equal(canonicalManifest.artifact.fingerprint, `sha256:${installedIndexSha256}`);
+          assert.deepEqual(canonicalManifest.artifact.checksums, [{ path: "dist/index.js", sha256: installedIndexSha256 }]);
         } else assert.equal(Object.hasOwn(manifest, "bin"), false, packageName);
         assert.doesNotMatch(JSON.stringify(manifest), /file:\.\.\/|\.\.\/(contracts|cli|graph|edit|validation|fixtures)/);
       }

@@ -278,8 +278,8 @@ const graphMetadata = {
     ageMs: 0,
     stale: false
   },
-  nodeKinds: ["repo", "file"],
-  edgeKinds: ["CONTAINS"]
+  nodeKinds: ["File", "Module", "Struct", "Function", "Test"],
+  edgeKinds: ["CONTAINS", "IMPORTS_FROM", "CALLS", "IMPLEMENTS", "DEPENDS_ON", "INHERITS"]
 };
 
 describe("lattice JSON schema wire constraints", () => {
@@ -736,6 +736,25 @@ describe("lattice JSON schema wire constraints", () => {
         metadata: graphMetadata,
         nodes: [],
         edges: []
+      }),
+      true
+    );
+  });
+
+  it("accepts Rust graph fact kinds while keeping graph kind strings open", () => {
+    assert.equal(isValidDefinition("GraphFactNode", { id: "struct:src/lib.rs#Widget", kind: "Struct", path: "src/lib.rs", name: "Widget" }), true);
+    assert.equal(isValidDefinition("GraphFactEdge", { kind: "IMPLEMENTS", from: "impl:src/lib.rs#Widget.Display", to: "trait:src/lib.rs#Display" }), true);
+    assert.equal(isValidDefinition("GraphFactNode", { id: "custom:src/lib.rs#Thing", kind: "CustomRustKind" }), true);
+    assert.equal(isValidDefinition("GraphFactEdge", { kind: "CUSTOM_RUST_EDGE", from: "a", to: "b" }), true);
+    assert.equal(isValidDefinition("GraphSnapshotMetadata", graphMetadata), true);
+    assert.equal(
+      isValidDefinition("GraphFactQueryRequest", {
+        ...validGraphFactQueryRequest(),
+        selector: {
+          kind: "nodes",
+          nodeKinds: ["Module", "Struct", "CustomRustKind"],
+          edgeKinds: ["IMPLEMENTS", "CUSTOM_RUST_EDGE"]
+        }
       }),
       true
     );
@@ -1277,6 +1296,40 @@ describe("lattice JSON schema wire constraints", () => {
       isValidDefinition("OpcoreInitPlanPayload", {
         ...validOpcoreInitPlan(),
         actions: [{ ...validOpcoreInitPlan().actions[0], path: "../AGENTS.md" }]
+      }),
+      false
+    );
+    assert.equal(
+      isValidDefinition("OpcoreInitPlanPayload", {
+        ...validOpcoreInitPlan(),
+        timings: undefined
+      }),
+      false
+    );
+    assert.equal(
+      isValidDefinition("OpcoreInitPlanPayload", {
+        ...validOpcoreInitPlan(),
+        settings: undefined
+      }),
+      false
+    );
+    assert.equal(
+      isValidDefinition("OpcoreInitPlanPayload", {
+        ...validOpcoreInitPlan(),
+        interaction: {
+          ...validOpcoreInitPlan().interaction,
+          promptState: "maybe"
+        }
+      }),
+      false
+    );
+    assert.equal(
+      isValidDefinition("OpcoreInitPlanPayload", {
+        ...validOpcoreInitPlan(),
+        scan: {
+          ...validOpcoreInitPlan().scan,
+          diagnosticCount: -1
+        }
       }),
       false
     );
@@ -2073,6 +2126,22 @@ describe("lattice JSON schema wire constraints", () => {
     assert.equal(
       isValidDefinition("ReleaseCutoverReceipt", {
         ...receipt,
+        installedPackages: receipt.installedPackages.map((entry) =>
+          entry.packageName === "@the-open-engine/opcore-asp-provider"
+            ? {
+                ...entry,
+                installedFiles: entry.installedFiles.filter(
+                  (file) => file.path !== "node_modules/@the-open-engine/opcore-asp-provider/dist/manifests/asp-server.json"
+                )
+              }
+            : entry
+        )
+      }),
+      false
+    );
+    assert.equal(
+      isValidDefinition("ReleaseCutoverReceipt", {
+        ...receipt,
         environmentIsolation: { ...receipt.environmentIsolation, latticeBinOnly: false }
       }),
       false
@@ -2317,6 +2386,55 @@ function validOpcoreInitPlan(overrides = {}) {
     warnings: ["Unsupported stacks must be treated honestly."],
     nextActions: ["Run opcore init --approve to apply this plan."],
     undoAvailable: false,
+    scan: {
+      totalFiles: 2,
+      graphSupportedFiles: 1,
+      validationSupportedFiles: 1,
+      validationRetainedFiles: 0,
+      unsupportedFiles: 1,
+      languages: validOpcoreRepoState().coverage.languages,
+      unsupportedStacks: validOpcoreRepoState().coverage.unsupported.stacks,
+      degradedRustTools: [],
+      diagnosticCount: 0,
+      validationStatus: "passed",
+      failedChecks: [],
+      graphState: "available",
+      activationLevel: "degraded"
+    },
+    settings: {
+      languages: [
+        {
+          language: "TypeScript",
+          files: 1,
+          state: "supported",
+          graph: "supported",
+          validation: "supported",
+          checks: ["typescript.syntax", "typescript.types"],
+          notes: []
+        },
+        {
+          language: "Python",
+          files: 1,
+          state: "unsupported",
+          graph: "unsupported",
+          validation: "unsupported",
+          checks: [],
+          notes: ["Unsupported stack counted without fabricated checks."]
+        }
+      ]
+    },
+    interaction: {
+      tty: false,
+      promptState: "not_requested"
+    },
+    timings: {
+      scanMs: 2,
+      planMs: 1,
+      promptMs: 0,
+      applyMs: 0,
+      totalMs: 3,
+      firstOutputMs: 2
+    },
     ...overrides
   };
 }
@@ -2677,7 +2795,29 @@ function validHandshake() {
     artifactVersion: "0.1.0-alpha.0",
     targetPlatform: "test",
     supportedOperations: ["build", "update", "watch", "status", "query", "ping", "health", "shutdown"],
-    nodeKinds: ["repo", "package", "file", "symbol", "test", "File", "Module", "Class", "Function", "Type", "Test", "Variable"],
+    nodeKinds: [
+      "repo",
+      "package",
+      "file",
+      "symbol",
+      "test",
+      "File",
+      "Module",
+      "Class",
+      "Function",
+      "Variable",
+      "Type",
+      "Test",
+      "Struct",
+      "Enum",
+      "Trait",
+      "Impl",
+      "Method",
+      "TypeAlias",
+      "Const",
+      "Static",
+      "Macro"
+    ],
     edgeKinds: [
       "CONTAINS",
       "DECLARES",
@@ -3027,8 +3167,8 @@ function validGraphReferenceEvidenceManifest() {
         tables: ["metadata", "nodes", "edges"],
         indexes: ["idx_nodes_file"],
         metadataKeys: ["schema_version"],
-        nodeKinds: ["File"],
-        edgeKinds: ["CALLS"],
+        nodeKinds: ["File", "Function", "Test", "Module", "Struct", "Enum", "Trait", "Impl", "Method", "TypeAlias", "Const", "Static", "Macro"],
+        edgeKinds: ["CALLS", "CONTAINS", "IMPORTS_FROM", "TESTED_BY", "IMPLEMENTS", "DEPENDS_ON", "INHERITS"],
         directReaderQueries: ["status-counts"],
         fixtures: ["sqlite-fixtures"]
       }
@@ -3376,6 +3516,9 @@ function validReleaseReceipt() {
         "package.json",
         "README.md",
         ...(nativeTarget ? [] : ["dist/index.js"]),
+        ...(packageName === "@the-open-engine/opcore-asp-provider"
+          ? ["dist/manifests/asp-server.json", "dist/manifests/opcore-asp-provider.provisional.json"]
+          : []),
         ...descriptor.artifacts.filter((artifact) => artifact.packageName === packageName).map((artifact) => artifact.path)
       ])
     ];
@@ -3538,7 +3681,11 @@ function validReleaseCutoverReceipt() {
       path: `node_modules/${entry.packageName}/package.json`,
       sha256: "6".repeat(64),
       bins: entry.bins
-    }
+    },
+    installedFiles: entry.files.map((path) => ({
+      path: `node_modules/${entry.packageName}/${path}`,
+      sha256: "9".repeat(64)
+    }))
   }));
   const commandReceipts = [
     ["opcore-scan", ["opcore", "scan"], "runtime"],

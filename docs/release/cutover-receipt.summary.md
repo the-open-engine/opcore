@@ -3,9 +3,9 @@
 Maintainer cutover gate proves installed Lattice artifacts handle canonical release commands without dev-tool fallback.
 
 Machine receipt: docs/release/cutover-receipt.json
-Machine receipt SHA-256: 175a1d5434029a1381b9ba45f01bdcbeeaaa11a14f68e194123208b527111c6d
+Machine receipt SHA-256: 401ff1436f07b0c7f3782901fd64823fe8e995de7bdeffff4dc5a8fc4f910cb9
 
-Installed packages: 10
+Installed packages: 9
 Command receipts: 28
 Forbidden marker findings: 0
 Input evidence: #17, #29, #58

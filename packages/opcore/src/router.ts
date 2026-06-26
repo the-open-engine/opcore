@@ -7,13 +7,17 @@ import {
   readOpcoreMetricHistory,
   readOpcoreMetricReport
 } from "./reporting.js";
-import { routeOpcoreInit } from "./init.js";
+import { routeOpcoreInit, type OpcoreInitRuntime } from "./init.js";
 import { routeOpcoreScan } from "./scan.js";
 import { parseOpcoreRepoArgs, resolveRepo, routeOpcoreStatus } from "./status.js";
 import { routeOpcoreTry } from "./try.js";
 
 declare const process: {
+  stdin: {
+    isTTY?: boolean;
+  };
   stdout: {
+    isTTY?: boolean;
     write(text: string): void;
   };
   stderr: {
@@ -28,11 +32,18 @@ export interface RunOpcoreCliOptions {
   bin?: string;
   stdout?: Writer;
   stderr?: Writer;
+  stdinIsTTY?: boolean;
+  stdoutIsTTY?: boolean;
+  readLine?: (prompt: string) => Promise<string>;
 }
 
 const helpArgs = new Set(["--help", "-h", "help"]);
 
-export async function routeOpcoreCommand(argv: readonly string[], bin = "opcore"): Promise<CommandRouterResult> {
+export async function routeOpcoreCommand(
+  argv: readonly string[],
+  bin = "opcore",
+  runtime: OpcoreInitRuntime = {}
+): Promise<CommandRouterResult> {
   const parsed = parseCommandArgv(argv);
   const normalizedBin = normalizeCommandBin(bin);
   if (normalizedBin !== "opcore") {
@@ -46,13 +57,17 @@ export async function routeOpcoreCommand(argv: readonly string[], bin = "opcore"
       message: `Unsupported command entrypoint: ${normalizedBin}`
     });
   }
-  return routeOpcoreParsed(argv, parsed);
+  return routeOpcoreParsed(argv, parsed, runtime);
 }
 
 export async function runOpcoreCli(options: RunOpcoreCliOptions): Promise<number> {
   const stdout = options.stdout ?? ((text: string) => process.stdout.write(text));
   const stderr = options.stderr ?? ((text: string) => process.stderr.write(text));
-  const routed = await routeOpcoreCommand(options.argv, options.bin ?? "opcore");
+  const routed = await routeOpcoreCommand(options.argv, options.bin ?? "opcore", {
+    stdinIsTTY: options.stdinIsTTY ?? process.stdin.isTTY === true,
+    stdoutIsTTY: options.stdoutIsTTY ?? process.stdout.isTTY === true,
+    readLine: options.readLine ?? createReadLine()
+  });
   if (routed.json) {
     stdout(`${JSON.stringify(routed)}\n`);
   } else if (routed.status === "ok") {
@@ -63,14 +78,18 @@ export async function runOpcoreCli(options: RunOpcoreCliOptions): Promise<number
   return routed.exitCode;
 }
 
-async function routeOpcoreParsed(argv: readonly string[], parsed: ParsedCommandArgv): Promise<CommandRouterResult> {
+async function routeOpcoreParsed(
+  argv: readonly string[],
+  parsed: ParsedCommandArgv,
+  runtime: OpcoreInitRuntime
+): Promise<CommandRouterResult> {
   const [head, ...rest] = parsed.args;
   if (head === undefined) return routeOpcoreScan(argv, rest, parsed.json);
   if (helpArgs.has(head)) return routeHelp(argv, parsed.json);
   if (head.startsWith("--")) return routeOpcoreScan(argv, parsed.args, parsed.json);
   if (head === "status") return routeOpcoreStatus(argv, parsed);
   if (head === "check") return routeOpcoreCheck(argv, parsed);
-  if (head === "init") return routeOpcoreInit(argv, parsed);
+  if (head === "init") return routeOpcoreInit(argv, parsed, runtime);
   if (head === "measure") return routeMeasure(argv, parsed);
   if (head === "try") return routeOpcoreTry(argv, parsed);
   return createCommandRouterResult({
@@ -82,6 +101,20 @@ async function routeOpcoreParsed(argv: readonly string[], parsed: ParsedCommandA
     json: parsed.json,
     message: `Unsupported opcore command: ${head}`
   });
+}
+
+function createReadLine(): (prompt: string) => Promise<string> {
+  return async (prompt: string) => {
+    const readline = await import("node:readline/promises");
+    const input = process.stdin;
+    const output = process.stdout;
+    const rl = readline.createInterface({ input, output });
+    try {
+      return await rl.question(prompt);
+    } finally {
+      rl.close();
+    }
+  };
 }
 
 function routeMeasure(argv: readonly string[], parsed: ParsedCommandArgv): CommandRouterResult {

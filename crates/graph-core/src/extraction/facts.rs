@@ -177,6 +177,24 @@ impl ImportResolutionContext<'_> {
         self.diagnostics.extend(resolution.diagnostics);
         resolution.resolved_path
     }
+
+    fn resolve_python_imported_submodule(
+        &self,
+        specifier: &str,
+        imported: &str,
+        path: &str,
+    ) -> Option<String> {
+        let submodule_specifier = python_submodule_specifier(specifier, imported)?;
+        python_imports::resolve_import(&submodule_specifier, path, self.known_files).resolved_path
+    }
+}
+
+fn python_submodule_specifier(specifier: &str, imported: &str) -> Option<String> {
+    if specifier.is_empty() || imported.is_empty() || imported == "*" {
+        return None;
+    }
+    let separator = if specifier.ends_with('.') { "" } else { "." };
+    Some(format!("{specifier}{separator}{imported}"))
 }
 
 struct FactFinalizer {
@@ -216,6 +234,11 @@ impl FactFinalizer {
     fn resolve_imports(&mut self, file_facts: &[FileFacts], imports: &mut ImportResolutionContext) {
         for facts in file_facts {
             for import in &facts.imports {
+                if is_python_source_path(&facts.path)
+                    && self.register_python_import(facts, import, imports)
+                {
+                    continue;
+                }
                 if let Some(target_path) = imports.resolve(&import.specifier, &facts.path) {
                     self.register_import(facts, import, target_path);
                 }
@@ -224,22 +247,80 @@ impl FactFinalizer {
     }
 
     fn register_import(&mut self, facts: &FileFacts, import: &ImportFact, target_path: String) {
-        let from = file_id(&facts.path);
-        let to = file_id(&target_path);
+        self.register_import_edge(&facts.path, &target_path);
+        for binding in &import.bindings {
+            self.register_import_binding(
+                &facts.path,
+                binding,
+                target_path.clone(),
+                binding.imported.clone(),
+            );
+        }
+    }
+
+    fn register_python_import(
+        &mut self,
+        facts: &FileFacts,
+        import: &ImportFact,
+        imports: &mut ImportResolutionContext,
+    ) -> bool {
+        let mut fallback_bindings = Vec::new();
+        let mut handled_submodule = false;
+        for binding in &import.bindings {
+            if let Some(target_path) = imports.resolve_python_imported_submodule(
+                &import.specifier,
+                &binding.imported,
+                &facts.path,
+            ) {
+                self.register_import_binding(&facts.path, binding, target_path, "*".to_string());
+                handled_submodule = true;
+            } else {
+                fallback_bindings.push(binding);
+            }
+        }
+        if !handled_submodule {
+            return false;
+        }
+        if !fallback_bindings.is_empty() {
+            if let Some(target_path) = imports.resolve(&import.specifier, &facts.path) {
+                for binding in fallback_bindings {
+                    self.register_import_binding(
+                        &facts.path,
+                        binding,
+                        target_path.clone(),
+                        binding.imported.clone(),
+                    );
+                }
+            }
+        }
+        true
+    }
+
+    fn register_import_binding(
+        &mut self,
+        facts_path: &str,
+        binding: &ImportBinding,
+        target_path: String,
+        imported: String,
+    ) {
+        self.register_import_edge(facts_path, &target_path);
+        self.imports_by_file
+            .entry(facts_path.to_string())
+            .or_default()
+            .insert(
+                binding.local.clone(),
+                ImportTarget {
+                    path: target_path,
+                    imported,
+                },
+            );
+    }
+
+    fn register_import_edge(&mut self, facts_path: &str, target_path: &str) {
+        let from = file_id(facts_path);
+        let to = file_id(target_path);
         insert_edge(&mut self.edges, EdgeDraft::new("IMPORTS_FROM", &from, &to));
         insert_edge(&mut self.edges, EdgeDraft::new("DEPENDS_ON", &from, &to));
-        for binding in &import.bindings {
-            self.imports_by_file
-                .entry(facts.path.clone())
-                .or_default()
-                .insert(
-                    binding.local.clone(),
-                    ImportTarget {
-                        path: target_path.clone(),
-                        imported: binding.imported.clone(),
-                    },
-                );
-        }
     }
 
     fn resolve_re_exports(&mut self, file_facts: &[FileFacts]) {
