@@ -1082,12 +1082,16 @@ const rustCheckIds = [
   it("combines cargo dead_code diagnostics with native orphan-source dead-code evidence", async () => {
     const temp = mkdtempSync(join(tmpdir(), "lattice-validation-rust-dead-code-"));
     try {
+      const logPath = join(temp, "cargo.log");
       const { env } = writeFakeRustToolchain(join(temp, "bin"), {
         cargo: {
+          logPath,
+          logEnvKeys: ["RUSTFLAGS"],
           checkStdout: `${JSON.stringify(cargoMessage("warning", "function `unused_private` is never used", "dead_code"))}\n`,
           checkStatus: 101
         }
       });
+      env.RUSTFLAGS = "explicit-flag";
       const result = await runner({
         files: rustCrate({
           "crates/app/src/lib.rs": "pub fn answer() -> i32 { 42 }\n",
@@ -1106,7 +1110,57 @@ const rustCheckIds = [
 
       assert.equal(result.status, "policy_failure", JSON.stringify(result, null, 2));
       assert.deepEqual(result.diagnostics.map((diagnostic) => diagnostic.code), ["dead_code", "RUST_DEAD_ORPHAN_SOURCE"]);
+      const cargoCheckLog = readFileSync(logPath, "utf8")
+        .split(/\r?\n/)
+        .find((line) => line.startsWith("check --message-format=json"));
+      assert.equal(
+        cargoCheckLog,
+        "check --message-format=json --all-targets --all-features\tRUSTFLAGS=explicit-flag -Ddead_code"
+      );
     } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("runs rust.dead-code with process env PATH and appends RUSTFLAGS when no env option is supplied", async () => {
+    const temp = mkdtempSync(join(tmpdir(), "lattice-validation-rust-dead-code-env-"));
+    const originalPath = process.env.PATH;
+    const originalRustflags = process.env.RUSTFLAGS;
+    try {
+      const logPath = join(temp, "cargo.log");
+      const { bin } = writeFakeRustToolchain(join(temp, "bin"), {
+        cargo: {
+          logPath,
+          logEnvKeys: ["PATH", "RUSTFLAGS"]
+        }
+      });
+      process.env.PATH = bin;
+      process.env.RUSTFLAGS = "process-flag";
+      const files = rustCrate();
+      const content = new Map(Object.entries(files));
+      const result = await createValidationRunner({
+        workspace: {
+          readFile: (path) => (content.has(path) ? { status: "found", content: content.get(path) } : { status: "missing" }),
+          listChangedFiles: () => ({ files: [...content.keys()] }),
+          listStagedFiles: () => ({ files: [...content.keys()] }),
+          listRepoFiles: () => ({ files: [...content.keys()] }),
+          listTreeFiles: () => ({ files: [...content.keys()] }),
+          listPackageFiles: (_name, root) => ({ files: [...content.keys()].filter((path) => path.startsWith(`${root}/`)) })
+        },
+        checks: createRustValidationChecks()
+      }).runValidation(request({ checks: [RUST_DEAD_CODE_CHECK_ID] }));
+
+      assert.equal(result.status, "passed", JSON.stringify(result, null, 2));
+      const cargoCheckLog = readFileSync(logPath, "utf8")
+        .split(/\r?\n/)
+        .find((line) => line.startsWith("check --message-format=json"));
+      assert.equal(
+        cargoCheckLog,
+        `check --message-format=json --all-targets --all-features\tPATH=${bin}\tRUSTFLAGS=process-flag -Ddead_code`
+      );
+    } finally {
+      restoreProcessEnv("PATH", originalPath);
+      restoreProcessEnv("RUSTFLAGS", originalRustflags);
       rmSync(temp, { recursive: true, force: true });
     }
   });
@@ -1309,4 +1363,12 @@ function cargoMessage(level, message, code) {
       spans: [{ file_name: "crates/app/src/lib.rs", is_primary: true }]
     }
   };
+}
+
+function restoreProcessEnv(key, value) {
+  if (value === undefined) {
+    delete process.env[key];
+    return;
+  }
+  process.env[key] = value;
 }

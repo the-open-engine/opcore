@@ -7,7 +7,7 @@ import {
   createRustValidationChecks
 } from "../../packages/validation-rust/dist/index.js";
 
-export function runner({ files, env = process.env, packageFiles, timeoutMs } = {}) {
+export function runner({ files, env, packageFiles, timeoutMs } = {}) {
   const content = new Map(Object.entries(files ?? rustCrate()));
   return createValidationRunner({
     workspace: {
@@ -104,10 +104,11 @@ export function fakeCargoScript({
   udepsStatus = 0,
   udepsVersionStatus = 0,
   metadata = defaultCargoMetadata(),
-  logPath
+  logPath,
+  logEnvKeys = []
 } = {}) {
   const metadataJson = typeof metadata === "string" ? metadata : JSON.stringify(metadata);
-  const logLine = logPath === undefined ? "" : `printf '%s\\n' "$*" >> '${shellEscapeSingleQuoted(logPath)}'`;
+  const logLine = cargoInvocationLogLine(logPath, logEnvKeys);
   return [
     "#!/bin/sh",
     logLine,
@@ -217,6 +218,17 @@ function gitEnv() {
 
 function shellEscapeSingleQuoted(value) {
   return String(value).replaceAll("'", "'\\''");
+}
+
+function cargoInvocationLogLine(logPath, logEnvKeys) {
+  if (logPath === undefined) return "";
+  const escapedLogPath = shellEscapeSingleQuoted(logPath);
+  if (logEnvKeys.length === 0) return `printf '%s\\n' "$*" >> '${escapedLogPath}'`;
+  const envWrites = logEnvKeys.map((key) => {
+    if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(key)) throw new Error(`Invalid env key for fake cargo log: ${key}`);
+    return `printf '\\t%s=%s' '${shellEscapeSingleQuoted(key)}' "$${key}" >> '${escapedLogPath}'`;
+  });
+  return [`printf '%s' "$*" >> '${escapedLogPath}'`, ...envWrites, `printf '\\n' >> '${escapedLogPath}'`].join("\n");
 }
 
 function writeExecutable(path, content) {

@@ -211,11 +211,12 @@ async function runDeadCodeCheck(context: ValidationCheckContext, options: RustCo
     if (!metadata.ok) return metadataFailureResult(metadata);
     const packageScope = resolveCargoPackageScope(metadata.metadata, context.scope);
     if (!packageScope.ok) return metadataFailureResult(packageScope);
+    const baseEnv = options.env ?? process.env;
     const deadCodeOptions = {
       ...options,
       env: {
-        ...options.env,
-        RUSTFLAGS: [options.env?.RUSTFLAGS, "-Ddead_code"].filter(Boolean).join(" ")
+        ...baseEnv,
+        RUSTFLAGS: [baseEnv.RUSTFLAGS, "-Ddead_code"].filter(Boolean).join(" ")
       }
     };
     const commandArgs = scopedCargoArgs(["check", "--message-format=json", "--all-targets", "--all-features"], packageScope.member);
