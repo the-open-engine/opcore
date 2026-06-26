@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -11,6 +11,23 @@ import { withCompleteNativeArtifactFixtures } from "./native-artifact-fixture.mj
 const repoRoot = fileURLToPath(new URL("..", import.meta.url));
 
 describe("cutover release receipt", () => {
+  it("does not synthesize #29 release receipt input evidence", () => {
+    const source = readFileSync(resolve(repoRoot, "scripts/generate-cutover-receipt.mjs"), "utf8");
+    assert.doesNotMatch(source, /scripts\/generate-release-receipt\.mjs/);
+    assert.doesNotMatch(source, /\breleaseReceiptChecksum\b/);
+  });
+
+  it("fails closed when #29 release receipt input evidence is missing", () => {
+    withReleaseDocsLock(() => {
+      withFileSnapshots(["docs/release/release-receipt.json", "docs/release/release-receipt.summary.md"], () => {
+        rmSync(resolve(repoRoot, "docs/release/release-receipt.json"), { force: true });
+        rmSync(resolve(repoRoot, "docs/release/release-receipt.summary.md"), { force: true });
+        const result = run(["scripts/generate-cutover-receipt.mjs", "--json"], { expectFailure: true });
+        assert.match(`${result.stderr}\n${result.stdout}`, /Missing #29 input evidence: docs\/release\/release-receipt\.json/);
+      });
+    });
+  });
+
   it("proves installed lattice artifacts without current-tool fallback", { timeout: 180000 }, () => {
     withReleaseDocsLock(() => {
       const result = withCompleteNativeArtifactFixtures(() => run(["scripts/generate-cutover-receipt.mjs", "--json"]));
@@ -151,6 +168,25 @@ function withReleaseDocsLock(runLocked) {
     }
   }
   throw new Error(`timed out waiting for ${lockPath}`);
+}
+
+function withFileSnapshots(paths, runWithSnapshots) {
+  const snapshots = paths.map((path) => {
+    const absolutePath = resolve(repoRoot, path);
+    return {
+      absolutePath,
+      exists: existsSync(absolutePath),
+      content: existsSync(absolutePath) ? readFileSync(absolutePath, "utf8") : undefined
+    };
+  });
+  try {
+    return runWithSnapshots();
+  } finally {
+    for (const snapshot of snapshots) {
+      if (snapshot.exists) writeFileSync(snapshot.absolutePath, snapshot.content);
+      else rmSync(snapshot.absolutePath, { force: true });
+    }
+  }
 }
 
 function sleep(ms) {

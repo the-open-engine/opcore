@@ -16,7 +16,7 @@ declare const process: {
 };
 
 const helpArgs = new Set(["--help", "-h", "help"]);
-const skippedPathSegments = new Set([
+const opcoreSkippedPathSegments = new Set([
   ".git",
   "node_modules",
   ".pnpm",
@@ -41,7 +41,7 @@ const skippedPathSegments = new Set([
   ".ruff_cache",
   "site-packages"
 ]);
-const skippedPathSegmentSuffixes = [".egg-info", ".dist-info"];
+const opcoreSkippedPathSegmentSuffixes = [".egg-info", ".dist-info"];
 
 type SourcePolicyState = "supported" | "extraction_pending" | "retained" | "unsupported";
 
@@ -336,7 +336,7 @@ function readRepoCensus(resolution: RepoResolution): FileCensus {
     const files = filesResult.stdout
       .split(/\r?\n/)
       .map((line) => line.trim())
-      .filter((line) => line.length > 0 && !hasSkippedSegment(line))
+      .filter((line) => line.length > 0 && !hasOpcoreSkippedPathSegment(line))
       .filter((file) => fileExistsForCensus(resolution.root, file, traversalFailures));
     return { files, git: status, traversalFailures: uniqueTraversalFailures(traversalFailures) };
   }
@@ -401,10 +401,10 @@ function readFilesRecursive(root: string): { files: string[]; traversalFailures:
       continue;
     }
     for (const entry of entries) {
-      if (isSkippedPathSegment(entry.name)) continue;
+      if (isOpcoreSkippedPathSegment(entry.name)) continue;
       const absolute = join(current, entry.name);
       const relative = absolute.slice(root.length + 1).split(sep).join("/");
-      if (hasSkippedSegment(relative)) continue;
+      if (hasOpcoreSkippedPathSegment(relative)) continue;
       if (entry.isDirectory()) {
         stack.push(absolute);
       } else if (entry.isFile()) {
@@ -679,12 +679,12 @@ function gitFailureMessage(result: { status: number | null; stdout: string; stde
   return detail.length > 0 ? detail : `exit ${result.status ?? "unknown"}`;
 }
 
-function hasSkippedSegment(path: string): boolean {
-  return path.split(/[\\/]+/).some((segment) => isSkippedPathSegment(segment));
+export function hasOpcoreSkippedPathSegment(path: string): boolean {
+  return path.split(/[\\/]+/).some((segment) => isOpcoreSkippedPathSegment(segment));
 }
 
-function isSkippedPathSegment(segment: string): boolean {
-  return skippedPathSegments.has(segment) || skippedPathSegmentSuffixes.some((suffix) => segment.endsWith(suffix));
+export function isOpcoreSkippedPathSegment(segment: string): boolean {
+  return opcoreSkippedPathSegments.has(segment) || opcoreSkippedPathSegmentSuffixes.some((suffix) => segment.endsWith(suffix));
 }
 
 function fileKind(file: string): string {

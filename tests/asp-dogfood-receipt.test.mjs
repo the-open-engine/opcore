@@ -6,6 +6,7 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { validateAspDogfoodReceipt } from "../packages/contracts/dist/index.js";
+import { aspEnv } from "../scripts/asp-dogfood-receipt-support.mjs";
 import { invalidAspDogfoodCases, validAspDogfoodReceipt } from "./helpers/asp-dogfood-fixture.mjs";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -40,5 +41,10 @@ describe("ASP dogfood receipt", () => {
     const ciVerify = receipt.hostEvaluation.ciVerify;
     receipt.hostEvaluation.ciVerify = { ...ciVerify, status: "failed", exitCode: 1, assertion: "asp ci verify failed evidence recorded" };
     assert.equal(validateAspDogfoodReceipt(receipt).issue, "#120");
+  });
+
+  it("sets a deterministic host timeout for installed provider dogfood checks", () => {
+    const env = aspEnv("/tmp/opcore-asp-dogfood/project", "/tmp/opcore-asp-dogfood/asp-home");
+    assert.equal(env.ASP_CORE_HOST_TIMEOUT_MS, "30000");
   });
 });

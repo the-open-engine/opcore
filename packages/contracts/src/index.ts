@@ -2951,13 +2951,20 @@ export async function routeCommandAdapter(options: RouteCommandAdapterOptions): 
 }
 
 export async function runCommandAdapterCli(options: RunCommandAdapterCliOptions): Promise<number> {
-  const stdout = options.stdout ?? ((text: string) => process.stdout.write(text));
-  const stderr = options.stderr ?? ((text: string) => process.stderr.write(text));
   const argv = options.argv ?? process.argv.slice(2);
   const routed = await routeCommandAdapter({
     ...options,
     argv
   });
+  return writeCommandRouterResult(routed, { stdout: options.stdout, stderr: options.stderr });
+}
+
+export function writeCommandRouterResult(
+  routed: CommandRouterResult,
+  writers: { stdout?: CommandRouterWriter; stderr?: CommandRouterWriter } = {}
+): number {
+  const stdout = writers.stdout ?? ((text: string) => process.stdout.write(text));
+  const stderr = writers.stderr ?? ((text: string) => process.stderr.write(text));
   if (routed.json) {
     stdout(`${JSON.stringify(routed)}\n`);
   } else if (routed.status === "ok") {

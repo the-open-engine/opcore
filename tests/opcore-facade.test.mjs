@@ -115,6 +115,26 @@ describe("opcore public facade", () => {
     }
   });
 
+  it("keeps scan validation workspace aligned with status skipped paths", () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-scan-skip-policy-"));
+    try {
+      mkdirSync(join(temp, "src"), { recursive: true });
+      writeFileSync(join(temp, "src", "index.ts"), "export const value = 1;\n");
+      for (const ignoredDirectory of [".venv/pkg", "pkg.egg-info"]) {
+        mkdirSync(join(temp, ignoredDirectory), { recursive: true });
+        writeFileSync(join(temp, ignoredDirectory, "broken.ts"), "export const = ;\n");
+      }
+
+      const result = parseJson(runOpcore(["--json"], temp, 0).stdout);
+
+      assert.equal(result.repoState.coverage.totalFiles, 1);
+      assert.equal(result.validationResult.status, "passed");
+      assert.equal(result.validationResult.diagnostics.length, 0);
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
   it("runs check --changed with default HEAD base and stable agent exit codes", () => {
     withFixtureCopy((fixtureRoot) => {
       initGitFixture(fixtureRoot);

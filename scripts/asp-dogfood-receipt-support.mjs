@@ -77,6 +77,7 @@ function aspServerManifest(version, indexSha256, providerBinPath) {
 export function aspEnv(project, aspHome) {
   const env = sanitizedEnv();
   env.ASP_HOME = aspHome;
+  env.ASP_CORE_HOST_TIMEOUT_MS = "30000";
   env.PATH = [join(project, "node_modules", ".bin"), env.PATH].join(":");
   if (env.PATH.includes(".ace/runtime")) throw new Error("ASP dogfood PATH still includes .ace/runtime");
   return env;

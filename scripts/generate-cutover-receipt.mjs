@@ -78,6 +78,7 @@ try {
 }
 
 function generateReceipt() {
+  const inputEvidence = collectInputEvidence();
   const tempRoot = mkdtempSync(join(tmpdir(), "lattice-cutover-"));
   try {
     const packDir = join(tempRoot, "packages");
@@ -319,7 +320,7 @@ function generateReceipt() {
         findingCount: 0,
         markersBlocked: ["private-runtime", "current-tool-env", "private-home", "old-tool-bins"]
       },
-      inputEvidence: collectInputEvidence()
+      inputEvidence
     };
     assertSameSet(receipt.commandReceipts.map((entry) => entry.id), releaseCutoverRequiredCommandIds, "cutover command receipts");
     assertNoForbiddenMarkers(receiptScanTextsWithoutReceipt(project, descriptor, commandTexts, tarballs));
@@ -661,17 +662,18 @@ function collectStringValues(value) {
 
 function collectInputEvidence() {
   return [
-    { issue: "#17", path: graphReleaseReceiptPath, checksumSha256: sha256File(join(repoRoot, graphReleaseReceiptPath)) },
-    { issue: "#29", path: releaseReceiptPath, checksumSha256: releaseReceiptChecksum() },
-    { issue: "#58", path: preWriteEvidencePath, checksumSha256: sha256File(join(repoRoot, preWriteEvidencePath)) }
+    { issue: "#17", path: graphReleaseReceiptPath, checksumSha256: requiredEvidenceChecksum("#17", graphReleaseReceiptPath) },
+    { issue: "#29", path: releaseReceiptPath, checksumSha256: requiredEvidenceChecksum("#29", releaseReceiptPath) },
+    { issue: "#58", path: preWriteEvidencePath, checksumSha256: requiredEvidenceChecksum("#58", preWriteEvidencePath) }
   ];
 }
 
-function releaseReceiptChecksum() {
-  const releaseReceiptAbsolutePath = join(repoRoot, releaseReceiptPath);
-  if (existsSync(releaseReceiptAbsolutePath)) return sha256File(releaseReceiptAbsolutePath);
-  const generatedReceipt = runJson(process.execPath, ["scripts/generate-release-receipt.mjs", "--json"]);
-  return sha256(`${JSON.stringify(generatedReceipt, null, 2)}\n`);
+function requiredEvidenceChecksum(issue, path) {
+  const absolutePath = join(repoRoot, path);
+  if (!existsSync(absolutePath)) {
+    throw new Error(`Missing ${issue} input evidence: ${path}. Regenerate the required release receipt before cutover receipt generation.`);
+  }
+  return sha256File(absolutePath);
 }
 
 function writeCutoverDocs(receipt) {
