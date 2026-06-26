@@ -1,8 +1,9 @@
 use super::diagnostics::{error, warning};
+use super::normalize_relative_path;
 use crate::protocol::{GraphExtractionDiagnostic, GraphExtractionDiagnosticCategory};
 use serde_json::{Map, Value};
 use std::collections::BTreeSet;
-use std::path::{Component, Path, PathBuf};
+use std::path::{Path, PathBuf};
 
 #[derive(Debug, Clone)]
 pub struct TsConfig {
@@ -324,7 +325,7 @@ fn resolve_candidate(
     specifier: &str,
     from_path: &str,
 ) -> ImportResolution {
-    let normalized = match normalize_relative(&candidate) {
+    let normalized = match normalize_relative_path(&candidate) {
         Ok(path) => path,
         Err(()) => {
             return ImportResolution {
@@ -365,24 +366,4 @@ fn resolution_candidates(path: &str) -> Vec<String> {
         }
     }
     candidates
-}
-
-fn normalize_relative(path: &Path) -> Result<String, ()> {
-    let mut parts = Vec::new();
-    for component in path.components() {
-        match component {
-            Component::CurDir => {}
-            Component::Normal(part) => parts.push(part.to_string_lossy().to_string()),
-            Component::ParentDir => {
-                if parts.pop().is_none() {
-                    return Err(());
-                }
-            }
-            Component::RootDir | Component::Prefix(_) => return Err(()),
-        }
-    }
-    if parts.is_empty() {
-        return Err(());
-    }
-    Ok(parts.join("/"))
 }

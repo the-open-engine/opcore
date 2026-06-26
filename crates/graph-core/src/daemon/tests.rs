@@ -81,7 +81,7 @@ fn status_handshake_reports_capabilities() -> TestResult {
         .and_then(Value::as_array)
         .ok_or_else(|| std::io::Error::other("missing handshake nodeKinds"))?;
     for kind in [
-        "repo", "File", "Function", "Module", "Struct", "Trait", "Method",
+        "repo", "File", "Module", "Class", "Function", "Variable", "Struct", "Trait", "Method",
     ] {
         assert!(node_kinds.iter().any(|value| value == kind), "{kind}");
     }

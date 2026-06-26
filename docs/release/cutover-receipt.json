@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "issue": "#30",
   "origin": "covibes-authored-cutover-proof",
-  "generatedAt": "2026-06-26T19:18:15.954Z",
-  "commitSha": "771db13a1627928c72ece0920166c454637ae730",
+  "generatedAt": "2026-06-26T21:33:53.176Z",
+  "commitSha": "18e64177949ba5f7c16cc7b7c2c44a10cbc17867",
   "privateRepo": true,
   "packageNames": [
     "@the-open-engine/opcore-contracts",
@@ -24,7 +24,7 @@
       "version": "0.1.0-alpha.0",
       "tarball": {
         "filename": "the-open-engine-opcore-contracts-0.1.0-alpha.0.tgz",
-        "sha256": "66430e8e97551c4f545cec390f8c6e7f71f5b2943cf28494bd74ed2921d85c65"
+        "sha256": "16b4587170166d0f8b02d5d84df87ee0274bd28ffba985cd5616d64c92169795"
       },
       "installedManifest": {
         "path": "node_modules/@the-open-engine/opcore-contracts/package.json",
@@ -34,15 +34,15 @@
       "installedFiles": [
         {
           "path": "node_modules/@the-open-engine/opcore-contracts/dist/index.d.ts",
-          "sha256": "24352436ca0be070f6c40df0c622e28ee13072a39e2829f71f8add835ff3d997"
+          "sha256": "7a5e59a80ae8a2e284d018d3d1f5d27a3bff46d5a66def39bf03823776b87f44"
         },
         {
           "path": "node_modules/@the-open-engine/opcore-contracts/dist/index.d.ts.map",
-          "sha256": "6e4f80063814fadc62b75433e113e0bfb5e73990423420e530826dc4c66c4e9c"
+          "sha256": "29443adafddd4c48c4bf43216ab84a519a2885d0e3b286996075094caab02b19"
         },
         {
           "path": "node_modules/@the-open-engine/opcore-contracts/dist/index.js",
-          "sha256": "cb943778e93aaca1dc8712228215ba55ee88dc9172f48af508e08b632ec00421"
+          "sha256": "648aef2de22c36d15bb8c95068eb0bb8fa501d42c2db47d1c2db11d9b415bd42"
         },
         {
           "path": "node_modules/@the-open-engine/opcore-contracts/package.json",
@@ -50,11 +50,11 @@
         },
         {
           "path": "node_modules/@the-open-engine/opcore-contracts/README.md",
-          "sha256": "34c64fe2dc3c56429c84f36a0cda79c0f84ebac4bd6aeb4e439509fd895f84e4"
+          "sha256": "e2bd6ac310e1bb47f2557522444df4797653c42e363cf261727ecd89b336ce28"
         },
         {
           "path": "node_modules/@the-open-engine/opcore-contracts/schemas/lattice-contracts.schema.json",
-          "sha256": "3ea335d665bb89985cb4bc5021f66327150ca79b7057342fe30fb0f5819ab128"
+          "sha256": "171f5b11c9c0f6412a1e819c653d20b11303c591183fcbe48ad1393ac9f3566e"
         }
       ]
     },
@@ -63,7 +63,7 @@
       "version": "0.1.0-alpha.0",
       "tarball": {
         "filename": "the-open-engine-opcore-0.1.0-alpha.0.tgz",
-        "sha256": "79c33645c731bb80f2144de1bce854860e753e6456e06a9354924b2f28763a3b"
+        "sha256": "ffdbe17068ba144c525721eca0548ca366d6fadbe625b8ae44843f770e758fb4"
       },
       "installedManifest": {
         "path": "node_modules/@the-open-engine/opcore/package.json",
@@ -248,15 +248,15 @@
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/router.d.ts",
-          "sha256": "186553b7e809a4e9597dccf786bf65497be7195407d6594fcf0c535e389be04a"
+          "sha256": "0a0bdecb5f69d9ae1434173328d1cbad191f9a98d862470be258777a240a6e69"
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/router.d.ts.map",
-          "sha256": "970fd2395c63a231a7ac94ef870156e6e8c97d18009da919a78e445c97c7bd8d"
+          "sha256": "da9f078c9a4455c5bd0807a25b2b2db8be1b13b5da47ae51919cbb7f3a480007"
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/router.js",
-          "sha256": "b7f1a59dda74772516be3dbb29e5c7cf009dc28e7b58758e955d3e5c3b4241e3"
+          "sha256": "c029b5f3e0ad314f96a09dac268ba0bd379c104ae15f6e6337eea24d4ce63ec0"
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/scan.d.ts",
@@ -264,23 +264,23 @@
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/scan.d.ts.map",
-          "sha256": "6a97d2cbf53efb6f6f1bda3bd2238370436aad8a5e9af633f9fbf14bfc90b7ad"
+          "sha256": "737df02eceb2277827e2be1dd35ee2f5edc1d081afa544a0b2d4e09de7e0588c"
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/scan.js",
-          "sha256": "3840805d60e2f32a5cf77c5d272b08a6d272412bab472bbd2508c729689f8809"
+          "sha256": "aa161a430e9082eddf6634fcac99b2c18c5734069de2842904e464e86e4b011f"
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/status.d.ts",
-          "sha256": "2842511e0e73365d56f10d5a9fe2e78e257989b700b333b86d0a6a0d77cd6e76"
+          "sha256": "caf5d8a645e0aaf44be9a388de1ce2764b9c1f685e3ce86c2098139c666a7ec0"
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/status.d.ts.map",
-          "sha256": "63ba03090c4c3f66edf4810a8c0bd6182060a6d2c4e37a48aef8ea5cde5257a3"
+          "sha256": "0a0807d4708068b9bdac8211ad5299ee74737c95efea9ab2b2dc689c10394390"
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/status.js",
-          "sha256": "c75f083d8fc59514db9c03c702d823d07bc96edd3286ceb890a02ac4453628de"
+          "sha256": "284bb0a4dd40ece61c6c708a842ca8995b18e49cd7ffdc11c884f61937a1b90b"
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/try.d.ts",
@@ -292,7 +292,7 @@
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/try.js",
-          "sha256": "31b48e6747e54ad232ce0cece4ab0cb00e58ef76853895dfe602299645f06367"
+          "sha256": "ffebfb98c00ffde54308f10a836bfd65058425e825b2c25de4e33705b998a1aa"
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/validation-composition.d.ts",
@@ -404,7 +404,7 @@
       "version": "0.1.0-alpha.0",
       "tarball": {
         "filename": "the-open-engine-opcore-graph-core-darwin-arm64-0.1.0-alpha.0.tgz",
-        "sha256": "37571b5b5af13f4103c3056f9c4846d4cf47bad31abfb937912d7ee900985151"
+        "sha256": "e761ea2dbca97db906d93b0cfe4b85c4aa721681f82f6f0d3642c423e3ea6a90"
       },
       "installedManifest": {
         "path": "node_modules/@the-open-engine/opcore-graph-core-darwin-arm64/package.json",
@@ -414,15 +414,15 @@
       "installedFiles": [
         {
           "path": "node_modules/@the-open-engine/opcore-graph-core-darwin-arm64/lattice-graph-core",
-          "sha256": "c4a086c73df1555cbc5536b46d55bd5fc266bad107c971c207bdf27931b864d6"
+          "sha256": "d96817de80dc52e8825be402f7bc1ada4b6676e8b5e95e8f1819c3921c27a2d3"
         },
         {
           "path": "node_modules/@the-open-engine/opcore-graph-core-darwin-arm64/lattice-graph-core.sha256",
-          "sha256": "764c3612c482ff5677d425d866eb3605d8450280d4d88a9f77ee174316968d9e"
+          "sha256": "171424cae88e2271eae05620fd06a0cb63914670e3ad365bb9f11f4bc7c08ddc"
         },
         {
           "path": "node_modules/@the-open-engine/opcore-graph-core-darwin-arm64/metadata.json",
-          "sha256": "9479a27cc430022b9ae01cf564c8d9ff19aa29e92d1db2e2e659624ae320cce4"
+          "sha256": "906b55056989c7172139666942a4ebf5536da4b47a4a1513318994c2a907ad1d"
         },
         {
           "path": "node_modules/@the-open-engine/opcore-graph-core-darwin-arm64/package.json",
@@ -905,7 +905,7 @@
       "version": "0.1.0-alpha.0",
       "tarball": {
         "filename": "the-open-engine-opcore-validation-rust-0.1.0-alpha.0.tgz",
-        "sha256": "d24a401104a220ab3951f6395edd4bd809a77a13661830be58391315dba77c40"
+        "sha256": "62fbf3bd851a41cafff48c209f2da006215f2e8ad3218d66483e0ec1090d419b"
       },
       "installedManifest": {
         "path": "node_modules/@the-open-engine/opcore-validation-rust/package.json",
@@ -923,7 +923,7 @@
         },
         {
           "path": "node_modules/@the-open-engine/opcore-validation-rust/dist/cargo-check.js",
-          "sha256": "302c7958679108b4bc34ef71ca1765bce71c862a3a634b0a0a2ba50f9aa088f6"
+          "sha256": "186038e0cd6f3d7235740499dbac6d13384877417554b3de0810fd09dad59049"
         },
         {
           "path": "node_modules/@the-open-engine/opcore-validation-rust/dist/cargo-metadata.d.ts",
@@ -2063,7 +2063,7 @@
         "artifactRef": "graph-core-binary-darwin-arm64",
         "required": true,
         "packageFile": true,
-        "value": "c4a086c73df1555cbc5536b46d55bd5fc266bad107c971c207bdf27931b864d6"
+        "value": "d96817de80dc52e8825be402f7bc1ada4b6676e8b5e95e8f1819c3921c27a2d3"
       },
       {
         "id": "graph-core-binary-sha256-darwin-x64",
@@ -2115,7 +2115,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/opcore",
-      "stdoutSha256": "bcbd430f4acff286c6b649b44c0d825e65aa3484d22d72583b74a563dfdfa4c4",
+      "stdoutSha256": "c6a96768caeae90047739a9d5b476a686f36ebe47d22d524b4ab06e3c3da328e",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "opcore scan wrote read-only report artifacts"
     },
@@ -2133,7 +2133,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/opcore",
-      "stdoutSha256": "54c07530093ec96ed93d1fbbb731e32ed25feee6617039bbc44ede5bb5a6ec7e",
+      "stdoutSha256": "8a70002b156525bd2a54e1cc77cf31ab2dfdd39383f79e99fc5ac1d156707298",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "opcore status returned repoState"
     },
@@ -2161,7 +2161,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/opcore",
-      "stdoutSha256": "20770b2b3eacf87a9e1733e33495b7cb8f3bf0c559c023190604a4ea60ebf1de",
+      "stdoutSha256": "0a3bb72f558f0e7ad158fec05a346db1c1437ed96cccde6f1bca682d8df386d9",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "opcore check changed defaulted base to HEAD"
     },
@@ -2179,7 +2179,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/opcore",
-      "stdoutSha256": "911f4071decec01008a0aab1044cbc2fedae03bc812abc36031b12263a09561e",
+      "stdoutSha256": "04743cfca377d89478f8fcf7e2b50ba8c9d0ce65638a68daa1fdd3623f7a7161",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "opcore measure returned read-only report deltas"
     },
@@ -2197,7 +2197,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/opcore",
-      "stdoutSha256": "c128a9f67d113985cbcab421623c93d488e4c3722b76ab6c19ab3380bb13bd52",
+      "stdoutSha256": "03a7a4a7b8425576c86399474c923fff2e9be938cf1267980cc6d16ca5081cab",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "opcore try generated local sample repos without publishing"
     },
@@ -2215,7 +2215,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "017685bf21f9284350cf8703761aa22ebfabf2a97804bfc00b127401f5cd3faa",
+      "stdoutSha256": "8050d5ffe05eb2023463a61efdd9c133039e7114fafc5d5126a52f56a88e7a70",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "runtime status reports validation readiness"
     },
@@ -2233,7 +2233,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "5bf6ea169d49e5e9e0fa5815355f4e394f479746f4a2ef23a1576ddf2baad28b",
+      "stdoutSha256": "723da7e2638286b6167928a959daf603de46be6525a62a8410944505fef56c49",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "runtime doctor reports validation readiness"
     },
@@ -2253,7 +2253,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "d5206de989741d6c9725905244615181194085d4706ac112e36bf664af172a55",
+      "stdoutSha256": "012a9dfd95a153b0176a67fd31663b8c4e71f6d102937b54393b37114e16d00e",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "graph build completed with native artifact"
     },
@@ -2273,7 +2273,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "14eeb8687b9a89c880722696ae7d9b75ca37a5ec0441094f9ffacb1312083929",
+      "stdoutSha256": "752cca06ed5d7aeb2b93c0456c54b921ab19757f9ae169dd33cd3c9c1cc9fddd",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "graph status available after build"
     },
@@ -2293,7 +2293,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "824b5894e6e73095da450d3bc15a0e467d08c7a3289af8fb3b672fdea008643f",
+      "stdoutSha256": "c3b041c823ea7c40219f9ccf06e67f76d9e87230d2aa028285aa2e7b02b4a163",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "graph query returned facts"
     },
@@ -2317,7 +2317,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "88638d4d4be40a6584a64411e31c244f76a7f56a4929dbcc1749141984381e37",
+      "stdoutSha256": "14152d33977bb0f8827068330f4b5d6b13c598b9510a931decebebe5bb4c4124",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "graph impact returned file impact"
     },
@@ -2341,7 +2341,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "4c7599af67880d4567080f31ac3fce3fd2e9f002deec5f1e0924d3e2988f2a25",
+      "stdoutSha256": "f51ab9c11b398596c3cf378a511968b55e0add67dcf211cc3b638db7aa6bbd10",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "graph review-context returned related facts"
     },
@@ -2365,7 +2365,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "2bc6a3cc3a4065b2b1b50175c3a9c798292891e09f6587f0c34e543e2318ec0c",
+      "stdoutSha256": "39a35342de19ad7098b2307b98ee08a7a287297cbf25966be2b06e2ce4f9189e",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "graph detect-changes returned typed change data"
     },
@@ -2391,7 +2391,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "fbf0b5479307f8d9934c4f7afba7ea08be5ae14806c3b4f154d428bc3f7eb58b",
+      "stdoutSha256": "6f7ddf709c546f26a9e1198142e6a30a3952e196b3252675f11242ab77265645",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "graph search returned ranked results"
     },
@@ -2411,7 +2411,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "53041ac8fa580c2458940f6f23607a72a7511b715209af4c86097667f77a6755",
+      "stdoutSha256": "d2f8fe655cf3cd745624abd658f44c3cebab632f0bcceebea0a814e068e6f8c2",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "graph serve status route is ready"
     },
@@ -2437,7 +2437,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "a53ec99bc943ade0473501355cbec1ed28225f0d4f6b05e43dcf851e3cfc3e65",
+      "stdoutSha256": "df3e6891e6641ce7f1b1b9384c08737b14b4c6dc3ed91265d5867388bf74f659",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "inspect symbols returned graph symbols"
     },
@@ -2459,7 +2459,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "30b9d752becd5700befc68a9cdd633f11d2fdd47f7fad17eeada24e6ef27b3f4",
+      "stdoutSha256": "02bfc4f0f781235e8a6a7c2205139142f60d778a50e58270043581cbfe02f714",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "inspect definition returned a symbol"
     },
@@ -2485,7 +2485,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "7931f437d1e0ea40c4b22c179d879cbee7e55c5f5173a112eea97fd00ac43f90",
+      "stdoutSha256": "29258a4baffb8270fc37d1ddf99646e93f4e4e6ed44c876fb354f9fde1ab8c0f",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "inspect references returned callers"
     },
@@ -2507,7 +2507,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "7ad28859d2aa030371bef8de2637f77fc00217182ddd203c7c4bf93fbc84a21e",
+      "stdoutSha256": "a26c0e34874c6e26cce8995fbabf4d9c3794dde6ef139b4da76ef32d6d78fd21",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "inspect signature returned read-only language-service signatures"
     },
@@ -2529,7 +2529,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "6017ebe59648a9957ed64c26fbf669fe203eab0e36722811414ff8da901f474a",
+      "stdoutSha256": "a34adae3bcf4fc1f8860004981049c40de6b1da6cefca8cea0871a4458152fe4",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "inspect implementations returned implementation evidence"
     },
@@ -2555,7 +2555,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "72a797a649ec62e024a971f3592444d786c0adea0c234e907ce22ae7bb9685ac",
+      "stdoutSha256": "b7e57eed281960076bd947a979276b6ff33ae7c576244238409a2ea3921293b6",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "inspect search returned graph search results"
     },
@@ -2587,7 +2587,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "0865e5318a82f50a5a17101ae7cc99d2019d8051cbfd9689613b17d7be75c3f9",
+      "stdoutSha256": "b8cf2d2f8cd4af5e5136c4d51efd350dcf80405c0a66a883dc7005e937a12f48",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "safe edit preview produced a plan without writing"
     },
@@ -2621,7 +2621,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "4ae65cb08c0ca65fb12928a1a9e843d76a9e002aa39f8efd9e895658fed5f3b8",
+      "stdoutSha256": "ec8b8b29b7ae107a42596d91cbdcc88ecbbe8ff509b706669c89b2d4d38891d7",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "safe edit apply wrote after validation"
     },
@@ -2655,7 +2655,7 @@
       "status": "error",
       "exitCode": 1,
       "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "7be6ccca3d88715ac260a7bbb6d7e68140a8143611f3d4753903813647cf4cee",
+      "stdoutSha256": "8cfc43090b3176fea129e3d2f5d38a4253988de6db9a08b3929c6c1a7db49e15",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "validation-refused edit left file unchanged"
     },
@@ -2681,7 +2681,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "ba087260df08d6dfebbdf68a97b2d2f1d92f41750377c1c870da25509e098552",
+      "stdoutSha256": "0fe0a3bdb7d44c006c8fd8678c2baa62a0dce8c262a3da7190248a3b4df87214",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "check files passed syntax and type checks"
     },
@@ -2692,20 +2692,20 @@
         "validate",
         "request",
         "--request-file",
-        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/lattice-cutover-ybZ1SN/project/validate-request.json"
+        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/lattice-cutover-W6KNqM/project/validate-request.json"
       ],
       "canonicalCommand": [
         "lattice",
         "validate",
         "request",
         "--request-file",
-        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/lattice-cutover-ybZ1SN/project/validate-request.json"
+        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/lattice-cutover-W6KNqM/project/validate-request.json"
       ],
       "owner": "validation",
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "e1a1cd1bedcf3c150d5c96eeb11ef021e34eacd64e3d287ca99901e8a5a54715",
+      "stdoutSha256": "042d33ccf42669c175ddcf8872ae7334395bb2f76f4857b0c4433278c5b29a57",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "validate request passed"
     },
@@ -2716,7 +2716,7 @@
         "validate",
         "pre-write",
         "--request-file",
-        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/lattice-cutover-ybZ1SN/project/pre-write-pass.json",
+        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/lattice-cutover-W6KNqM/project/pre-write-pass.json",
         "--timeout-ms",
         "30000"
       ],
@@ -2725,7 +2725,7 @@
         "validate",
         "pre-write",
         "--request-file",
-        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/lattice-cutover-ybZ1SN/project/pre-write-pass.json",
+        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/lattice-cutover-W6KNqM/project/pre-write-pass.json",
         "--timeout-ms",
         "30000"
       ],
@@ -2733,7 +2733,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "45e68c230cd1ccfee15b6f7dd0c1d5e7fba7c62b58d6aced06597faa0d12193f",
+      "stdoutSha256": "63676a93753b2a88ba561b736e53654354b2268be82cb583673e914adb69d806",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "pre-write pass receipt was ok"
     },
@@ -2744,7 +2744,7 @@
         "validate",
         "pre-write",
         "--request-file",
-        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/lattice-cutover-ybZ1SN/project/pre-write-fail.json",
+        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/lattice-cutover-W6KNqM/project/pre-write-fail.json",
         "--timeout-ms",
         "30000"
       ],
@@ -2753,7 +2753,7 @@
         "validate",
         "pre-write",
         "--request-file",
-        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/lattice-cutover-ybZ1SN/project/pre-write-fail.json",
+        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/lattice-cutover-W6KNqM/project/pre-write-fail.json",
         "--timeout-ms",
         "30000"
       ],
@@ -2761,7 +2761,7 @@
       "status": "error",
       "exitCode": 1,
       "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "1863c38414735e5009d954a15d3c763c1a5bf544118942af780b4a443d7ce6d6",
+      "stdoutSha256": "560cd9e0027ca739ede6a8064a4d023fb44cb47dc067daeb803a75f69fcf662a",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "pre-write failure receipt failed closed"
     }
@@ -2775,7 +2775,7 @@
         "files",
         "src/index.ts",
         "--repo",
-        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/lattice-cutover-ybZ1SN/missing-graph",
+        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/lattice-cutover-W6KNqM/missing-graph",
         "--graph-mode",
         "required",
         "--checks",
@@ -2793,7 +2793,7 @@
         "validate",
         "request",
         "--request-file",
-        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/lattice-cutover-ybZ1SN/missing-graph/required-graph.json",
+        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/lattice-cutover-W6KNqM/missing-graph/required-graph.json",
         "--json"
       ],
       "status": "passed",
@@ -2820,7 +2820,7 @@
     {
       "issue": "#29",
       "path": "docs/release/release-receipt.json",
-      "checksumSha256": "fd974af03edc4257ff63bb2279b5d97b542d0b0f9df5d7a04d5505198f0d9e80"
+      "checksumSha256": "160862774a1b6ece788b3163504721356cc417e049f2d524ed385f6e512f385d"
     },
     {
       "issue": "#58",

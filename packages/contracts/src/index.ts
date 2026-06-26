@@ -22,12 +22,12 @@ export const requiredGraphNodeKinds = [
   "symbol",
   "test",
   "File",
+  "Module",
   "Class",
   "Function",
   "Variable",
   "Type",
   "Test",
-  "Module",
   "Struct",
   "Enum",
   "Trait",
@@ -93,6 +93,7 @@ export const graphExtractionDiagnosticCategories = [
   "unsupported_language",
   "parse_error",
   "missing_parser",
+  "unresolved_import",
   "max_files_exceeded",
   "max_depth_exceeded",
   "path_traversal",
@@ -169,6 +170,10 @@ export type ValidationSkippedCheckReason = (typeof validationSkippedCheckReasons
 
 export const validationCheckIdPattern = "^[a-z][a-z0-9]*(?:[._:-][a-z0-9]+)*$" as const;
 const validationCheckIdRegex = new RegExp(validationCheckIdPattern);
+const latencyStableIdRegex = /^[a-z][a-z0-9_-]*$/;
+const latencyTelemetryCommandTokenRegex = /^(?=.*[A-Za-z0-9])[-@A-Za-z0-9._,:=]+$/;
+const latencyTelemetrySourceFileExtensionRegex =
+  /\.(?:[cm]?[tj]sx?|mjs|cjs|jsonl?|rs|pyi?|mdx?|toml|lock|ya?ml|txt|inc|css|s[ac]ss|html?|vue|svelte|go|java|rb|php|swift|kts?|scala|lua|cs|c|cc|cpp|h|hpp)(?:$|[,=:])/i;
 
 export type JsonPrimitive = string | number | boolean | null;
 export type JsonValue = JsonPrimitive | JsonValue[] | { [key: string]: JsonValue };
@@ -1274,6 +1279,25 @@ export type CommandOwner = (typeof commandOwners)[number];
 export const commandRouteStatuses = ["ok", "error", "not_implemented", "unsupported"] as const;
 export type CommandRouteStatus = (typeof commandRouteStatuses)[number];
 
+export const commandTimingProcessStates = ["cold", "warm"] as const;
+export type CommandTimingProcessState = (typeof commandTimingProcessStates)[number];
+
+export const commandTimingDegradationReasons = ["no_source", "no_paths"] as const;
+export type CommandTimingDegradationReason = (typeof commandTimingDegradationReasons)[number];
+
+export const latencyBudgetResultStatuses = ["pass", "over"] as const;
+export type LatencyBudgetResultStatus = (typeof latencyBudgetResultStatuses)[number];
+
+export const commandLatencyTelemetryBins = ["lattice", "opcore", "opcore-asp-provider"] as const;
+export type CommandLatencyTelemetryBin = (typeof commandLatencyTelemetryBins)[number];
+
+export const commandLatencyTelemetryArtifactPolicy = {
+  path: ".opcore/telemetry.jsonl",
+  maxRecords: 500,
+  maxBytes: 1024 * 1024,
+  rotation: "ring_buffer"
+} as const;
+
 export const graphReferenceEvidenceClassifications = ["required", "supporting", "optional", "deferred"] as const;
 export type GraphReferenceEvidenceClassification = (typeof graphReferenceEvidenceClassifications)[number];
 
@@ -2007,6 +2031,77 @@ export interface OpcoreTryPayload {
   commands: readonly OpcoreTryCommandSummary[];
 }
 
+export type CommandTimingPhase = Pick<GraphPipelinePhaseTiming, "phase" | "durationMs" | "fileCount">;
+
+export interface CommandTiming {
+  durationMs: number;
+  phases: readonly CommandTimingPhase[];
+  processState: CommandTimingProcessState;
+  degradations?: readonly CommandTimingDegradationReason[];
+}
+
+export interface RepoShapeFingerprint {
+  totalFiles: number;
+  languages: readonly {
+    language: string;
+    files: number;
+  }[];
+  graph: {
+    supportedFiles: number;
+    unsupportedFiles: number;
+  };
+  git: {
+    available: boolean;
+    clean?: boolean;
+  };
+}
+
+export interface CommandLatencyRecord {
+  schemaVersion: 1;
+  recordedAt: string;
+  bin: string;
+  canonicalCommand: readonly string[];
+  owner: CommandOwner;
+  status: CommandRouteStatus;
+  exitCode: number;
+  repo: RepoShapeFingerprint;
+  timing: CommandTiming;
+  opcoreVersion: string;
+}
+
+export interface LatencyPhaseBudget {
+  phase: string;
+  budgetMs: number;
+}
+
+export interface LatencyBudget {
+  schemaVersion: 1;
+  canonicalCommand: readonly string[];
+  scope: string;
+  repoShapeBucket: string;
+  budgetMs: number;
+  phaseBudgets?: readonly LatencyPhaseBudget[];
+}
+
+export interface LatencyBudgetResult {
+  schemaVersion: 1;
+  status: LatencyBudgetResultStatus;
+  budget: LatencyBudget;
+  observed: {
+    canonicalCommand: readonly string[];
+    phase: string;
+    durationMs: number;
+  };
+  evidence: {
+    canonicalCommand: readonly string[];
+    phase: string;
+    repoShapeBucket: string;
+    observedMs: number;
+    budgetMs: number;
+    overByMs: number;
+  };
+}
+
 export interface CommandRouterResult {
   schemaVersion: 1;
   bin: string;
@@ -2035,6 +2130,7 @@ export interface CommandRouterResult {
   opcoreInit?: OpcoreInitPlanPayload;
   opcoreMeasure?: OpcoreMeasureDelta;
   opcoreTry?: OpcoreTryPayload;
+  timing?: CommandTiming;
 }
 
 export interface ParsedCommandArgv {
@@ -2068,6 +2164,7 @@ export interface CommandRouterResultInput {
   opcoreInit?: OpcoreInitPlanPayload;
   opcoreMeasure?: OpcoreMeasureDelta;
   opcoreTry?: OpcoreTryPayload;
+  timing?: CommandTiming;
 }
 
 export interface CommandAdapterRequest {
@@ -2693,6 +2790,14 @@ export interface AspDogfoodAspHomeEvidence {
   aceRuntimeBinExcluded: true;
 }
 
+export interface AspDogfoodHostFixtureEvidence {
+  repo: string;
+  temp: true;
+  sourceRepoMutated: false;
+  baselineCommitted: true;
+  changedPaths: readonly string[];
+}
+
 export interface AspDogfoodCommandRunReceipt {
   id: string;
   command: readonly string[];
@@ -2805,6 +2910,7 @@ export interface AspDogfoodReceipt {
   installedPackages: readonly ReleaseCutoverInstalledPackageEvidence[];
   manager: AspDogfoodManagerEvidence;
   aspHome: AspDogfoodAspHomeEvidence;
+  hostFixture: AspDogfoodHostFixtureEvidence;
   provider: AspDogfoodProviderEvidence;
   managerState: AspDogfoodManagerStateEvidence;
   repoEnrollment: AspDogfoodRepoEnrollmentEvidence;
@@ -2878,7 +2984,8 @@ export function createCommandRouterResult(input: CommandRouterResultInput): Comm
     repoState: input.repoState,
     opcoreInit: input.opcoreInit,
     opcoreMeasure: input.opcoreMeasure,
-    opcoreTry: input.opcoreTry
+    opcoreTry: input.opcoreTry,
+    timing: input.timing
   }) as CommandRouterResult);
 }
 
@@ -2965,13 +3072,9 @@ export function writeCommandRouterResult(
 ): number {
   const stdout = writers.stdout ?? ((text: string) => process.stdout.write(text));
   const stderr = writers.stderr ?? ((text: string) => process.stderr.write(text));
-  if (routed.json) {
-    stdout(`${JSON.stringify(routed)}\n`);
-  } else if (routed.status === "ok") {
-    stdout(`${routed.message}\n`);
-  } else {
-    stderr(`${routed.message}\n`);
-  }
+  const text = routed.json ? JSON.stringify(routed) : routed.message;
+  const write = routed.json || routed.status === "ok" ? stdout : stderr;
+  write(`${text}\n`);
   return routed.exitCode;
 }
 
@@ -3490,6 +3593,7 @@ export function validateCommandRouterResult(result: CommandRouterResult): Comman
   if (result.opcoreInit !== undefined) validateOpcoreInitPlanPayload(result.opcoreInit);
   if (result.opcoreMeasure !== undefined) validateOpcoreMeasureDelta(result.opcoreMeasure);
   if (result.opcoreTry !== undefined) validateOpcoreTryPayload(result.opcoreTry);
+  if (result.timing !== undefined) validateCommandTiming(result.timing);
   if (result.repoState !== undefined && result.owner !== "runtime") {
     throw new Error("Opcore repoState payload requires runtime owner");
   }
@@ -3784,6 +3888,172 @@ function validateOpcoreInitTiming(timing: OpcoreInitTiming): OpcoreInitTiming {
   validateNonNegativeNumber(timing.totalMs, "Opcore init timing totalMs");
   validateNonNegativeNumber(timing.firstOutputMs, "Opcore init timing firstOutputMs");
   return timing;
+}
+
+export function validateCommandTiming(timing: CommandTiming): CommandTiming {
+  assertNoOpaqueScoreFields(timing, "Command timing");
+  assertNoTelemetrySourceFields(timing, "Command timing");
+  if (!timing || typeof timing !== "object") {
+    throw new Error("Command timing is required");
+  }
+  validateNonNegativeNumber(timing.durationMs, "Command timing durationMs");
+  if (!Array.isArray(timing.phases)) {
+    throw new Error("Command timing phases must be an array");
+  }
+  for (const phase of timing.phases) validateCommandTimingPhase(phase);
+  if (!includesString(commandTimingProcessStates, timing.processState)) {
+    throw new Error(`Unknown command timing processState: ${String(timing.processState)}`);
+  }
+  if (timing.degradations !== undefined) {
+    validateStringArray(timing.degradations, "Command timing degradations", { allowEmpty: true });
+    for (const degradation of timing.degradations) {
+      if (!includesString(commandTimingDegradationReasons, degradation)) {
+        throw new Error(`Unknown command timing degradation: ${String(degradation)}`);
+      }
+    }
+  }
+  return timing;
+}
+
+export function validateRepoShapeFingerprint(fingerprint: RepoShapeFingerprint): RepoShapeFingerprint {
+  assertNoOpaqueScoreFields(fingerprint, "Repo shape fingerprint");
+  assertNoTelemetrySourceFields(fingerprint, "Repo shape fingerprint");
+  if (!fingerprint || typeof fingerprint !== "object") {
+    throw new Error("Repo shape fingerprint is required");
+  }
+  validateNonNegativeInteger(fingerprint.totalFiles, "Repo shape fingerprint totalFiles");
+  if (!Array.isArray(fingerprint.languages)) {
+    throw new Error("Repo shape fingerprint languages must be an array");
+  }
+  for (const language of fingerprint.languages) {
+    validateNonEmptyString(language.language, "Repo shape fingerprint language");
+    validateNonNegativeInteger(language.files, "Repo shape fingerprint language files");
+  }
+  if (!fingerprint.graph || typeof fingerprint.graph !== "object") {
+    throw new Error("Repo shape fingerprint graph is required");
+  }
+  validateNonNegativeInteger(fingerprint.graph.supportedFiles, "Repo shape fingerprint graph supportedFiles");
+  validateNonNegativeInteger(fingerprint.graph.unsupportedFiles, "Repo shape fingerprint graph unsupportedFiles");
+  if (!fingerprint.git || typeof fingerprint.git !== "object") {
+    throw new Error("Repo shape fingerprint git is required");
+  }
+  if (typeof fingerprint.git.available !== "boolean") {
+    throw new Error("Repo shape fingerprint git available must be boolean");
+  }
+  if (fingerprint.git.clean !== undefined && typeof fingerprint.git.clean !== "boolean") {
+    throw new Error("Repo shape fingerprint git clean must be boolean");
+  }
+  return fingerprint;
+}
+
+export function validateCommandLatencyRecord(record: CommandLatencyRecord): CommandLatencyRecord {
+  assertNoOpaqueScoreFields(record, "Command latency record");
+  assertNoTelemetrySourceFields(record, "Command latency record");
+  if (!record || typeof record !== "object") {
+    throw new Error("Command latency record is required");
+  }
+  if (record.schemaVersion !== 1) {
+    throw new Error("Command latency record schemaVersion must be 1");
+  }
+  validateNonEmptyString(record.recordedAt, "Command latency record recordedAt");
+  validateLatencyTelemetryCommandBin(record.bin, "Command latency record bin");
+  validateLatencyCanonicalCommand(record.canonicalCommand, "Command latency record canonicalCommand");
+  validateCommandOwner(record.owner);
+  const status = validateCommandRouteStatus(record.status);
+  validateExitCodeForStatus(record.exitCode, status);
+  validateRepoShapeFingerprint(record.repo);
+  validateCommandTiming(record.timing);
+  validateNonEmptyString(record.opcoreVersion, "Command latency record opcoreVersion");
+  return record;
+}
+
+export function validateLatencyBudget(budget: LatencyBudget): LatencyBudget {
+  assertNoOpaqueScoreFields(budget, "Latency budget");
+  assertNoTelemetrySourceFields(budget, "Latency budget");
+  if (!budget || typeof budget !== "object") {
+    throw new Error("Latency budget is required");
+  }
+  if (budget.schemaVersion !== 1) {
+    throw new Error("Latency budget schemaVersion must be 1");
+  }
+  validateLatencyCanonicalCommand(budget.canonicalCommand, "Latency budget canonicalCommand");
+  validateLatencyStableId(budget.scope, "Latency budget scope");
+  validateLatencyStableId(budget.repoShapeBucket, "Latency budget repoShapeBucket");
+  validateNonNegativeNumber(budget.budgetMs, "Latency budget budgetMs");
+  if (budget.phaseBudgets !== undefined) {
+    if (!Array.isArray(budget.phaseBudgets)) {
+      throw new Error("Latency budget phaseBudgets must be an array");
+    }
+    const phases = new Set<string>();
+    for (const phaseBudget of budget.phaseBudgets) {
+      const validatedPhaseBudget = validateLatencyPhaseBudget(phaseBudget);
+      if (phases.has(validatedPhaseBudget.phase)) {
+        throw new Error("Latency budget phaseBudgets must not include duplicate phases");
+      }
+      phases.add(validatedPhaseBudget.phase);
+    }
+  }
+  return budget;
+}
+
+export function validateLatencyBudgetResult(result: LatencyBudgetResult): LatencyBudgetResult {
+  assertNoOpaqueScoreFields(result, "Latency budget result");
+  assertNoTelemetrySourceFields(result, "Latency budget result");
+  if (!result || typeof result !== "object") {
+    throw new Error("Latency budget result is required");
+  }
+  if (result.schemaVersion !== 1) {
+    throw new Error("Latency budget result schemaVersion must be 1");
+  }
+  if (!includesString(latencyBudgetResultStatuses, result.status)) {
+    throw new Error(`Unknown latency budget result status: ${String(result.status)}`);
+  }
+  const budget = validateLatencyBudget(result.budget);
+  if (!result.observed || typeof result.observed !== "object") {
+    throw new Error("Latency budget result observed is required");
+  }
+  validateLatencyCanonicalCommand(result.observed.canonicalCommand, "Latency budget result observed canonicalCommand");
+  validateLatencyStableId(result.observed.phase, "Latency budget result observed phase");
+  validateNonNegativeNumber(result.observed.durationMs, "Latency budget result observed durationMs");
+  if (!result.evidence || typeof result.evidence !== "object") {
+    throw new Error("Latency budget result evidence is required");
+  }
+  validateLatencyCanonicalCommand(result.evidence.canonicalCommand, "Latency budget result evidence canonicalCommand");
+  validateLatencyStableId(result.evidence.phase, "Latency budget result evidence phase");
+  validateLatencyStableId(result.evidence.repoShapeBucket, "Latency budget result evidence repoShapeBucket");
+  validateNonNegativeNumber(result.evidence.observedMs, "Latency budget result evidence observedMs");
+  validateNonNegativeNumber(result.evidence.budgetMs, "Latency budget result evidence budgetMs");
+  validateNonNegativeNumber(result.evidence.overByMs, "Latency budget result evidence overByMs");
+  if (!sameStringArray(result.observed.canonicalCommand, result.evidence.canonicalCommand)) {
+    throw new Error("Latency budget result observed and evidence commands must match");
+  }
+  if (!sameStringArray(budget.canonicalCommand, result.evidence.canonicalCommand)) {
+    throw new Error("Latency budget result evidence command must match budget command");
+  }
+  if (result.observed.phase !== result.evidence.phase) {
+    throw new Error("Latency budget result observed and evidence phases must match");
+  }
+  if (budget.repoShapeBucket !== result.evidence.repoShapeBucket) {
+    throw new Error("Latency budget result evidence bucket must match budget bucket");
+  }
+  if (result.observed.durationMs !== result.evidence.observedMs) {
+    throw new Error("Latency budget result observed duration must match evidence observedMs");
+  }
+  const appliedBudgetMs = resolveLatencyAppliedBudgetMs(budget, result.evidence.phase);
+  if (result.evidence.budgetMs !== appliedBudgetMs) {
+    throw new Error("Latency budget result evidence budgetMs must match the applied budget");
+  }
+  const computedOverByMs = Math.max(0, result.evidence.observedMs - appliedBudgetMs);
+  if (result.evidence.overByMs !== computedOverByMs) {
+    throw new Error("Latency budget result overByMs must equal observedMs over budgetMs");
+  }
+  if (result.status === "pass" && result.evidence.overByMs !== 0) {
+    throw new Error("Latency budget pass result must not exceed budget");
+  }
+  if (result.status === "over" && result.evidence.overByMs <= 0) {
+    throw new Error("Latency budget over result must exceed budget");
+  }
+  return result;
 }
 
 function validateOpcoreInitAction(action: OpcoreInitAction): OpcoreInitAction {
@@ -4152,6 +4422,111 @@ function assertNoOpaqueScoreFields(value: unknown, label: string): void {
   }
 }
 
+function assertNoTelemetrySourceFields(value: unknown, label: string): void {
+  const blockedKeys = new Set([
+    "root",
+    "requestedPath",
+    "path",
+    "paths",
+    "examples",
+    "content",
+    "contents",
+    "source",
+    "secret",
+    "secrets",
+    "token",
+    "tokens",
+    "apiKey",
+    "password"
+  ]);
+  visitTelemetryValue(value);
+
+  function visitTelemetryValue(entry: unknown): void {
+    if (!entry || typeof entry !== "object") return;
+    if (Array.isArray(entry)) {
+      for (const item of entry) visitTelemetryValue(item);
+      return;
+    }
+    for (const [key, child] of Object.entries(entry)) {
+      if (blockedKeys.has(key)) {
+        throw new Error(`${label} must remain source-safe and must not include ${key}`);
+      }
+      visitTelemetryValue(child);
+    }
+  }
+}
+
+function validateCommandTimingPhase(phase: CommandTimingPhase): CommandTimingPhase {
+  if (!phase || typeof phase !== "object") {
+    throw new Error("Command timing phase is required");
+  }
+  validateLatencyStableId(phase.phase, "Command timing phase");
+  validateNonNegativeNumber(phase.durationMs, "Command timing phase durationMs");
+  if (phase.fileCount !== undefined) validateNonNegativeInteger(phase.fileCount, "Command timing phase fileCount");
+  return phase;
+}
+
+function validateLatencyPhaseBudget(phaseBudget: LatencyPhaseBudget): LatencyPhaseBudget {
+  if (!phaseBudget || typeof phaseBudget !== "object") {
+    throw new Error("Latency phase budget is required");
+  }
+  validateLatencyStableId(phaseBudget.phase, "Latency phase budget phase");
+  validateNonNegativeNumber(phaseBudget.budgetMs, "Latency phase budget budgetMs");
+  return phaseBudget;
+}
+
+function resolveLatencyAppliedBudgetMs(budget: LatencyBudget, phase: string): number {
+  if (phase === "total") return budget.budgetMs;
+  const phaseBudget = budget.phaseBudgets?.find((entry) => entry.phase === phase);
+  if (!phaseBudget) {
+    throw new Error("Latency budget result phase must match total or a configured phase budget");
+  }
+  return phaseBudget.budgetMs;
+}
+
+function validateLatencyStableId(value: unknown, label: string): string {
+  const stableId = validateNonEmptyString(value, label);
+  if (!latencyStableIdRegex.test(stableId)) {
+    throw new Error(`${label} must be a stable latency id`);
+  }
+  return stableId;
+}
+
+function validateLatencyTelemetryCommandBin(value: unknown, label: string): CommandLatencyTelemetryBin {
+  const bin = validateNonEmptyString(value, label);
+  if (!includesString(commandLatencyTelemetryBins, bin)) {
+    throw new Error(`${label} must be a source-safe command bin`);
+  }
+  return bin;
+}
+
+function validateLatencyCanonicalCommand(command: readonly string[], label: string): readonly string[] {
+  const parts = validateStringArray(command, label, { allowEmpty: false });
+  for (const [index, part] of parts.entries()) {
+    validateLatencyCanonicalCommandToken(part, `${label} entry ${index}`);
+  }
+  return parts;
+}
+
+function validateLatencyCanonicalCommandToken(value: string, label: string): string {
+  if (!latencyTelemetryCommandTokenRegex.test(value)) {
+    throw new Error(`${label} must be a source-safe canonicalCommand token`);
+  }
+  if (
+    value.includes("/") ||
+    value.includes("\\") ||
+    value === "." ||
+    value === ".." ||
+    value.startsWith("~") ||
+    /^[A-Za-z]:/.test(value) ||
+    /^file:/i.test(value) ||
+    latencyTelemetrySourceFileExtensionRegex.test(value)
+  ) {
+    throw new Error(`${label} must be a source-safe canonicalCommand token`);
+  }
+  return value;
+}
+
 function validateOpcoreCoverageCounts(
   section:
     | OpcoreRepoStatePayload["coverage"]["graph"]
@@ -4320,6 +4695,7 @@ export function validateAspDogfoodReceipt(receipt: AspDogfoodReceipt): AspDogfoo
   validateReleaseCutoverInstalledPackages(receipt.installedPackages);
   validateAspDogfoodManager(receipt.manager);
   validateAspDogfoodAspHome(receipt.aspHome);
+  validateAspDogfoodHostFixture(receipt.hostFixture);
   validateAspDogfoodProvider(receipt.provider);
   validateAspDogfoodManagerState(receipt.managerState);
   validateAspDogfoodRepoEnrollment(receipt.repoEnrollment);
@@ -7062,6 +7438,16 @@ function validateAspDogfoodAspHome(aspHome: AspDogfoodAspHomeEvidence): void {
   if (aspHome.sharedStateMutated !== false) throw new Error("ASP dogfood shared ASP state must not be mutated");
   if (aspHome.pathSanitized !== true) throw new Error("ASP dogfood PATH must be sanitized for manager execution");
   if (aspHome.aceRuntimeBinExcluded !== true) throw new Error("ASP dogfood manager PATH must exclude .ace/runtime");
+}
+
+function validateAspDogfoodHostFixture(fixture: AspDogfoodHostFixtureEvidence): void {
+  if (!fixture || typeof fixture !== "object") throw new Error("ASP dogfood host fixture evidence is required");
+  validateNonEmptyString(fixture.repo, "ASP dogfood host fixture repo");
+  if (fixture.temp !== true) throw new Error("ASP dogfood host fixture repo must be temporary");
+  if (fixture.sourceRepoMutated !== false) throw new Error("ASP dogfood host fixture must not mutate the source repo");
+  if (fixture.baselineCommitted !== true) throw new Error("ASP dogfood host fixture must commit a baseline");
+  validateStringArray(fixture.changedPaths, "ASP dogfood host fixture changedPaths", { allowEmpty: false });
+  for (const path of fixture.changedPaths) validateRepoRelativePath(path);
 }
 
 function validateAspDogfoodProvider(provider: AspDogfoodProviderEvidence): void {

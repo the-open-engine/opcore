@@ -3,9 +3,12 @@
 Issue #120 receipt for advisory standalone ASP manager dogfood.
 
 Machine receipt: docs/release/asp-dogfood-receipt.json
-Machine receipt SHA-256: 9695e46044a028de11491e1f5a6fab60919c06bea56877c6a23d0b6b4beea12d
+Machine receipt SHA-256: 8d4c682f759f5bf0946dc6a3cc8446090df8c36b5284711a5e8f26112e586110
 Bootstrap source: local-sibling
 Repo enrollment mode: advisory
+Host fixture repo: temporary
+Host fixture changed paths: src/dogfood.ts
+Source repo mutated: false
 Provider command: opcore-asp-provider --stdio
 Host assurance: gated
 Transaction guarantee: none

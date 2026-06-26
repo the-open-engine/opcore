@@ -24,7 +24,11 @@ impl SourceLanguage {
     pub fn is_graph_extractable(self) -> bool {
         matches!(
             self,
-            Self::TypeScript | Self::TypeScriptJsx | Self::JavaScript | Self::JavaScriptJsx
+            Self::TypeScript
+                | Self::TypeScriptJsx
+                | Self::JavaScript
+                | Self::JavaScriptJsx
+                | Self::Python
         )
     }
 

@@ -3,6 +3,7 @@ mod discovery;
 mod facts;
 mod language;
 mod parser;
+mod python_imports;
 mod tsconfig;
 
 #[cfg(test)]
@@ -14,7 +15,7 @@ use crate::protocol::{
 use crate::{GRAPH_PROVIDER_NAME, GRAPH_SCHEMA_VERSION};
 use diagnostics::has_error;
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
+use std::path::{Component, Path, PathBuf};
 
 pub use diagnostics::{error, info, warning};
 pub use discovery::{
@@ -26,6 +27,26 @@ pub use language::SourceLanguage;
 pub const DEFAULT_MAX_FILES: usize = 4_000;
 pub const DEFAULT_MAX_DEPTH: usize = 64;
 pub const EXTRACTION_GENERATED_AT: &str = "2026-06-04T00:00:00.000Z";
+
+fn normalize_relative_path(path: &Path) -> Result<String, ()> {
+    let mut parts = Vec::new();
+    for component in path.components() {
+        match component {
+            Component::CurDir => {}
+            Component::Normal(part) => parts.push(part.to_string_lossy().to_string()),
+            Component::ParentDir => {
+                if parts.pop().is_none() {
+                    return Err(());
+                }
+            }
+            Component::RootDir | Component::Prefix(_) => return Err(()),
+        }
+    }
+    if parts.is_empty() {
+        return Err(());
+    }
+    Ok(parts.join("/"))
+}
 
 #[derive(Debug, Clone)]
 pub struct ExtractionOptions {
@@ -182,10 +203,17 @@ fn parse_file_fact(
         input.force_missing_parser,
     );
     diagnostics.extend(parsed.diagnostics);
-    if let Some(program) = parsed.program {
-        facts::extract_file_facts(input.source, input.file_node, &program)
-    } else {
-        facts::file_facts_without_ast(input.source, input.file_node)
+    match parsed.program {
+        Some(parser::ParsedProgram::Oxc(program)) => {
+            facts::extract_oxc_file_facts(input.source, input.file_node, &program)
+        }
+        Some(parser::ParsedProgram::Python(tree)) => facts::extract_python_file_facts(
+            input.source,
+            input.file_node,
+            input.source_text,
+            &tree,
+        ),
+        None => facts::file_facts_without_ast(input.source, input.file_node),
     }
 }
 
@@ -271,5 +299,5 @@ pub fn boundary_name() -> &'static str {
 }
 
 pub fn behavior_status() -> &'static str {
-    "wave1: staged TypeScript/JavaScript source extraction"
+    "wave1: staged TypeScript/JavaScript/Python source extraction"
 }

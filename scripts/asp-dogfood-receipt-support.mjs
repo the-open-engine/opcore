@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { aspDogfoodForbiddenProviderMarkers, releaseReceiptPackageNames } from "../packages/contracts/dist/index.js";
 import {
@@ -81,6 +81,34 @@ export function aspEnv(project, aspHome) {
   env.PATH = [join(project, "node_modules", ".bin"), env.PATH].join(":");
   if (env.PATH.includes(".ace/runtime")) throw new Error("ASP dogfood PATH still includes .ace/runtime");
   return env;
+}
+
+export function createAspHostFixtureRepo(tempRoot) {
+  const repoPath = join(tempRoot, "asp-host-fixture");
+  mkdirSync(join(repoPath, "src"), { recursive: true });
+  const repo = realpathSync(repoPath);
+  writeFileSync(join(repo, "tsconfig.json"), `${JSON.stringify({ compilerOptions: { strict: true }, include: ["src/**/*.ts"] }, null, 2)}\n`);
+  writeFileSync(join(repo, "src", "dogfood.ts"), "export const dogfoodValue: number = 1;\n");
+  runRequired("git", ["init", "--quiet"], { cwd: repo });
+  runRequired("git", ["update-index", "--add", "tsconfig.json", "src/dogfood.ts"], { cwd: repo });
+  const tree = runRequired("git", ["write-tree"], { cwd: repo }).stdout.trim();
+  const gitEnv = {
+    ...process.env,
+    GIT_AUTHOR_NAME: "Opcore ASP Dogfood",
+    GIT_AUTHOR_EMAIL: "opcore@example.invalid",
+    GIT_COMMITTER_NAME: "Opcore ASP Dogfood",
+    GIT_COMMITTER_EMAIL: "opcore@example.invalid"
+  };
+  const commit = runRequired("git", ["commit-tree", tree, "-m", "asp dogfood fixture baseline"], { cwd: repo, env: gitEnv }).stdout.trim();
+  runRequired("git", ["branch", "-f", "main", commit], { cwd: repo });
+  runRequired("git", ["checkout", "--quiet", "main"], { cwd: repo });
+  writeFileSync(join(repo, "src", "dogfood.ts"), "export const dogfoodValue: number = 2;\n");
+  const changedPaths = runRequired("git", ["diff", "--name-only", "HEAD", "--"], { cwd: repo }).stdout
+    .trim()
+    .split(/\r?\n/)
+    .filter(Boolean);
+  if (changedPaths.length === 0) throw new Error("ASP dogfood fixture must include at least one changed path");
+  return { repo, temp: true, sourceRepoMutated: false, baselineCommitted: true, changedPaths };
 }
 
 export function runAspCommand({ repoRoot, asp, id, canonicalArgs, env }) {
@@ -286,6 +314,9 @@ Machine receipt: ${receiptPath}
 Machine receipt SHA-256: ${receiptSha256}
 Bootstrap source: ${receipt.manager.bootstrapSource}
 Repo enrollment mode: ${receipt.repoEnrollment.mode}
+Host fixture repo: ${receipt.hostFixture.temp ? "temporary" : "non-temporary"}
+Host fixture changed paths: ${receipt.hostFixture.changedPaths.join(", ")}
+Source repo mutated: ${receipt.hostFixture.sourceRepoMutated}
 Provider command: ${receipt.provider.command.join(" ")}
 Host assurance: ${receipt.hostEvaluation.check.assurance.mode}
 Transaction guarantee: ${receipt.hostEvaluation.check.assurance.transactionGuarantee}

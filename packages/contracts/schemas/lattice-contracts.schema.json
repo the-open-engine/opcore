@@ -241,6 +241,7 @@
             "unsupported_language",
             "parse_error",
             "missing_parser",
+            "unresolved_import",
             "max_files_exceeded",
             "max_depth_exceeded",
             "path_traversal",
@@ -766,12 +767,12 @@
         "symbol",
         "test",
         "File",
+        "Module",
         "Class",
         "Function",
         "Variable",
         "Type",
         "Test",
-        "Module",
         "Struct",
         "Enum",
         "Trait",
@@ -6499,6 +6500,432 @@
         }
       ]
     },
+    "LatencyStableId": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z][a-z0-9_-]*$"
+    },
+    "LatencyTelemetryCommandBin": {
+      "enum": [
+        "lattice",
+        "opcore",
+        "opcore-asp-provider"
+      ]
+    },
+    "LatencyCanonicalCommandToken": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?=.*[A-Za-z0-9])[-@A-Za-z0-9._,:=]+$",
+      "not": {
+        "anyOf": [
+          {
+            "pattern": "[/\\\\]"
+          },
+          {
+            "pattern": "^(?:\\.|\\.\\.)$"
+          },
+          {
+            "pattern": "^(?:~|[A-Za-z]:|file:)"
+          },
+          {
+            "pattern": "\\.(?:[cCmM]?[tTjJ][sS][xX]?|[mM][jJ][sS]|[cC][jJ][sS]|[jJ][sS][oO][nN][lL]?|[rR][sS]|[pP][yY][iI]?|[mM][dD][xX]?|[tT][oO][mM][lL]|[lL][oO][cC][kK]|[yY][aA]?[mM][lL]|[tT][xX][tT]|[iI][nN][cC]|[cC][sS][sS]|[sS][aAcC][sS][sS]|[hH][tT][mM][lL]?|[vV][uU][eE]|[sS][vV][eE][lL][tT][eE]|[gG][oO]|[jJ][aA][vV][aA]|[rR][bB]|[pP][hH][pP]|[sS][wW][iI][fF][tT]|[kK][tT][sS]?|[sS][cC][aA][lL][aA]|[lL][uU][aA]|[cC][sS]|[cC]|[cC][cC]|[cC][pP][pP]|[hH]|[hH][pP][pP])(?:$|[,=:])"
+          }
+        ]
+      }
+    },
+    "LatencyCanonicalCommand": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/LatencyCanonicalCommandToken"
+      }
+    },
+    "CommandTimingProcessState": {
+      "enum": [
+        "cold",
+        "warm"
+      ]
+    },
+    "CommandTimingDegradationReason": {
+      "enum": [
+        "no_source",
+        "no_paths"
+      ]
+    },
+    "LatencyBudgetResultStatus": {
+      "enum": [
+        "pass",
+        "over"
+      ]
+    },
+    "LatencyTelemetryArtifactPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "maxRecords",
+        "maxBytes",
+        "rotation"
+      ],
+      "properties": {
+        "path": {
+          "const": ".opcore/telemetry.jsonl"
+        },
+        "maxRecords": {
+          "const": 500
+        },
+        "maxBytes": {
+          "const": 1048576
+        },
+        "rotation": {
+          "const": "ring_buffer"
+        }
+      }
+    },
+    "CommandTimingPhase": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "phase",
+        "durationMs"
+      ],
+      "properties": {
+        "phase": {
+          "$ref": "#/$defs/LatencyStableId"
+        },
+        "durationMs": {
+          "type": "number",
+          "minimum": 0
+        },
+        "fileCount": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "CommandTiming": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "durationMs",
+        "phases",
+        "processState"
+      ],
+      "properties": {
+        "durationMs": {
+          "type": "number",
+          "minimum": 0
+        },
+        "phases": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CommandTimingPhase"
+          }
+        },
+        "processState": {
+          "$ref": "#/$defs/CommandTimingProcessState"
+        },
+        "degradations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CommandTimingDegradationReason"
+          }
+        }
+      }
+    },
+    "RepoShapeFingerprint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "totalFiles",
+        "languages",
+        "graph",
+        "git"
+      ],
+      "properties": {
+        "totalFiles": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "languages": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "language",
+              "files"
+            ],
+            "properties": {
+              "language": {
+                "type": "string",
+                "minLength": 1
+              },
+              "files": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        },
+        "graph": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "supportedFiles",
+            "unsupportedFiles"
+          ],
+          "properties": {
+            "supportedFiles": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "unsupportedFiles": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "git": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "available"
+          ],
+          "properties": {
+            "available": {
+              "type": "boolean"
+            },
+            "clean": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    },
+    "CommandLatencyRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "recordedAt",
+        "bin",
+        "canonicalCommand",
+        "owner",
+        "status",
+        "exitCode",
+        "repo",
+        "timing",
+        "opcoreVersion"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "recordedAt": {
+          "type": "string",
+          "minLength": 1
+        },
+        "bin": {
+          "$ref": "#/$defs/LatencyTelemetryCommandBin"
+        },
+        "canonicalCommand": {
+          "$ref": "#/$defs/LatencyCanonicalCommand"
+        },
+        "owner": {
+          "$ref": "#/$defs/CommandOwner"
+        },
+        "status": {
+          "$ref": "#/$defs/CommandRouteStatus"
+        },
+        "exitCode": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "repo": {
+          "$ref": "#/$defs/RepoShapeFingerprint"
+        },
+        "timing": {
+          "$ref": "#/$defs/CommandTiming"
+        },
+        "opcoreVersion": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "status": {
+              "const": "ok"
+            },
+            "exitCode": {
+              "const": 0
+            }
+          }
+        },
+        {
+          "properties": {
+            "status": {
+              "const": "error"
+            },
+            "exitCode": {
+              "const": 1
+            }
+          }
+        },
+        {
+          "properties": {
+            "status": {
+              "const": "not_implemented"
+            },
+            "exitCode": {
+              "const": 2
+            }
+          }
+        },
+        {
+          "properties": {
+            "status": {
+              "const": "unsupported"
+            },
+            "exitCode": {
+              "const": 64
+            }
+          }
+        }
+      ]
+    },
+    "LatencyPhaseBudget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "phase",
+        "budgetMs"
+      ],
+      "properties": {
+        "phase": {
+          "$ref": "#/$defs/LatencyStableId"
+        },
+        "budgetMs": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "LatencyBudget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "canonicalCommand",
+        "scope",
+        "repoShapeBucket",
+        "budgetMs"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "canonicalCommand": {
+          "$ref": "#/$defs/LatencyCanonicalCommand"
+        },
+        "scope": {
+          "$ref": "#/$defs/LatencyStableId"
+        },
+        "repoShapeBucket": {
+          "$ref": "#/$defs/LatencyStableId"
+        },
+        "budgetMs": {
+          "type": "number",
+          "minimum": 0
+        },
+        "phaseBudgets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/LatencyPhaseBudget"
+          }
+        }
+      }
+    },
+    "LatencyBudgetResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "status",
+        "budget",
+        "observed",
+        "evidence"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "status": {
+          "$ref": "#/$defs/LatencyBudgetResultStatus"
+        },
+        "budget": {
+          "$ref": "#/$defs/LatencyBudget"
+        },
+        "observed": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "canonicalCommand",
+            "phase",
+            "durationMs"
+          ],
+          "properties": {
+            "canonicalCommand": {
+              "$ref": "#/$defs/LatencyCanonicalCommand"
+            },
+            "phase": {
+              "$ref": "#/$defs/LatencyStableId"
+            },
+            "durationMs": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        },
+        "evidence": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "canonicalCommand",
+            "phase",
+            "repoShapeBucket",
+            "observedMs",
+            "budgetMs",
+            "overByMs"
+          ],
+          "properties": {
+            "canonicalCommand": {
+              "$ref": "#/$defs/LatencyCanonicalCommand"
+            },
+            "phase": {
+              "$ref": "#/$defs/LatencyStableId"
+            },
+            "repoShapeBucket": {
+              "$ref": "#/$defs/LatencyStableId"
+            },
+            "observedMs": {
+              "type": "number",
+              "minimum": 0
+            },
+            "budgetMs": {
+              "type": "number",
+              "minimum": 0
+            },
+            "overByMs": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        }
+      }
+    },
     "CommandRouterResult": {
       "type": "object",
       "additionalProperties": false,
@@ -6612,6 +7039,9 @@
         },
         "opcoreTry": {
           "$ref": "#/$defs/OpcoreTryPayload"
+        },
+        "timing": {
+          "$ref": "#/$defs/CommandTiming"
         }
       },
       "allOf": [
@@ -14160,6 +14590,7 @@
         "installedPackages",
         "manager",
         "aspHome",
+        "hostFixture",
         "provider",
         "managerState",
         "repoEnrollment",
@@ -14495,6 +14926,53 @@
             },
             "aceRuntimeBinExcluded": {
               "const": true
+            }
+          }
+        },
+        "hostFixture": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "repo",
+            "temp",
+            "sourceRepoMutated",
+            "baselineCommitted",
+            "changedPaths"
+          ],
+          "properties": {
+            "repo": {
+              "type": "string",
+              "minLength": 1
+            },
+            "temp": {
+              "const": true
+            },
+            "sourceRepoMutated": {
+              "const": false
+            },
+            "baselineCommitted": {
+              "const": true
+            },
+            "changedPaths": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "not": {
+                  "anyOf": [
+                    {
+                      "pattern": "^[\\\\/]"
+                    },
+                    {
+                      "pattern": "^[A-Za-z]:[\\\\/]"
+                    },
+                    {
+                      "pattern": "(^|/)\\.\\.(/|$)"
+                    }
+                  ]
+                }
+              }
             }
           }
         },

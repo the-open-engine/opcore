@@ -3,6 +3,9 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
   GRAPH_SCHEMA_VERSION,
+  commandLatencyTelemetryArtifactPolicy,
+  commandTimingDegradationReasons,
+  commandTimingProcessStates,
   commandExitCodeForStatus,
   commandExitSemantics,
   commandGroupByName,
@@ -22,6 +25,7 @@ import {
   graphReleaseDirectSqliteQueryIds,
   graphReleaseHandoffIssues,
   graphReleaseOptionalAnalysisSurfaces,
+  latencyBudgetResultStatuses,
   releaseReceiptCommandGroups,
   releaseReceiptPackageNames,
   releaseReceiptReportIds,
@@ -45,7 +49,9 @@ import {
   validationResultStatuses,
   validationSkippedCheckReasons,
   validateCommandAdapterRequest,
+  validateCommandLatencyRecord,
   validateProviderStatus,
+  validateCommandTiming,
   validateCommandRouterManifest,
   validateCommandRouterResult,
   validateGraphDaemonRequest,
@@ -68,11 +74,14 @@ import {
   validateGraphReferenceEvidenceManifest,
   validateInspectRouteResult,
   validateManagedToolDescriptor,
+  validateLatencyBudget,
+  validateLatencyBudgetResult,
   validateOpcoreInitPlanPayload,
   validateOpcoreMeasureDelta,
   validateOpcoreMetricHistoryEntry,
   validateOpcoreMetricReport,
   validateOpcoreTryPayload,
+  validateRepoShapeFingerprint,
   validateEditCommandResult,
   validateEditPlanPayload,
   validateRepoIdentity,
@@ -106,12 +115,12 @@ describe("lattice shared contracts", () => {
       "symbol",
       "test",
       "File",
+      "Module",
       "Class",
       "Function",
       "Variable",
       "Type",
       "Test",
-      "Module",
       "Struct",
       "Enum",
       "Trait",
@@ -142,6 +151,7 @@ describe("lattice shared contracts", () => {
       "unsupported_language",
       "parse_error",
       "missing_parser",
+      "unresolved_import",
       "max_files_exceeded",
       "max_depth_exceeded",
       "path_traversal",
@@ -1347,6 +1357,163 @@ describe("lattice shared contracts", () => {
     );
   });
 
+  it("validates latency telemetry contracts and router timing", () => {
+    assert.deepEqual(commandTimingProcessStates, ["cold", "warm"]);
+    assert.deepEqual(commandTimingDegradationReasons, ["no_source", "no_paths"]);
+    assert.deepEqual(latencyBudgetResultStatuses, ["pass", "over"]);
+    assert.deepEqual(commandLatencyTelemetryArtifactPolicy, {
+      path: ".opcore/telemetry.jsonl",
+      maxRecords: 500,
+      maxBytes: 1048576,
+      rotation: "ring_buffer"
+    });
+
+    const timing = validateCommandTiming(validCommandTiming());
+    assert.equal(timing.processState, "warm");
+    assert.equal(validateRepoShapeFingerprint(validRepoShapeFingerprint()).graph.unsupportedFiles, 1);
+    assert.equal(validateCommandLatencyRecord(validCommandLatencyRecord()).repo.totalFiles, 3);
+    assert.equal(validateLatencyBudget(validLatencyBudget()).phaseBudgets[0].phase, "validation");
+    assert.equal(validateLatencyBudgetResult(validLatencyBudgetResult()).status, "pass");
+    assert.equal(validateLatencyBudgetResult(validLatencyBudgetResult({ status: "over" })).evidence.overByMs, 25);
+    assert.equal(
+      createCommandRouterResult({
+        bin: "opcore",
+        argv: ["check", "changed", "--json"],
+        canonicalCommand: ["opcore", "check", "changed"],
+        owner: "validation",
+        status: "ok",
+        json: true,
+        message: "check complete",
+        timing
+      }).timing.durationMs,
+      42
+    );
+
+    assert.throws(
+      () =>
+        validateCommandLatencyRecord({
+          ...validCommandLatencyRecord(),
+          repo: { ...validRepoShapeFingerprint(), path: "src/index.ts" }
+        }),
+      /source-safe/
+    );
+    assert.throws(
+      () =>
+        validateCommandLatencyRecord({
+          ...validCommandLatencyRecord(),
+          bin: "/tmp/project/node_modules/.bin/opcore"
+        }),
+      /source-safe command bin/
+    );
+    assert.throws(
+      () =>
+        validateCommandLatencyRecord({
+          ...validCommandLatencyRecord(),
+          canonicalCommand: ["opcore", "check", "files", "src/secret.ts"]
+        }),
+      /source-safe canonicalCommand/
+    );
+    assert.throws(
+      () =>
+        validateLatencyBudget({
+          ...validLatencyBudget(),
+          canonicalCommand: ["opcore", "check", "files", "src/secret.ts"]
+        }),
+      /source-safe canonicalCommand/
+    );
+    assert.throws(
+      () =>
+        validateLatencyBudget({
+          ...validLatencyBudget(),
+          canonicalCommand: ["opcore", "check", "files", "secret.ts"]
+        }),
+      /source-safe canonicalCommand/
+    );
+    assert.throws(
+      () =>
+        validateLatencyBudgetResult({
+          ...validLatencyBudgetResult(),
+          observed: {
+            ...validLatencyBudgetResult().observed,
+            canonicalCommand: ["opcore", "check", "files", "src/secret.ts"]
+          }
+        }),
+      /source-safe canonicalCommand/
+    );
+    assert.throws(
+      () =>
+        validateCommandLatencyRecord({
+          ...validCommandLatencyRecord(),
+          timing: { ...validCommandTiming(), phases: [{ ...validCommandTiming().phases[0], content: "source" }] }
+        }),
+      /source-safe/
+    );
+    assert.throws(
+      () => validateCommandTiming({ ...validCommandTiming(), score: 99 }),
+      /opaque score/
+    );
+    assert.throws(
+      () => validateRepoShapeFingerprint({ ...validRepoShapeFingerprint(), score: 99 }),
+      /opaque score/
+    );
+    assert.throws(
+      () => validateCommandLatencyRecord({ ...validCommandLatencyRecord(), score: 99 }),
+      /opaque score/
+    );
+    assert.throws(
+      () => validateLatencyBudget({ ...validLatencyBudget(), score: 99 }),
+      /opaque score/
+    );
+    assert.throws(
+      () =>
+        validateLatencyBudgetResult({
+          ...validLatencyBudgetResult(),
+          evidence: {
+            ...validLatencyBudgetResult().evidence,
+            observedMs: 1000,
+            budgetMs: 1000,
+            overByMs: 0
+          },
+          observed: {
+            ...validLatencyBudgetResult().observed,
+            durationMs: 1000
+          }
+        }),
+      /applied budget/
+    );
+    assert.throws(
+      () =>
+        validateLatencyBudgetResult({
+          ...validLatencyBudgetResult(),
+          observed: {
+            ...validLatencyBudgetResult().observed,
+            phase: "validation",
+            durationMs: 76
+          },
+          evidence: {
+            ...validLatencyBudgetResult().evidence,
+            phase: "validation",
+            observedMs: 76,
+            budgetMs: 100,
+            overByMs: 0
+          }
+        }),
+      /applied budget/
+    );
+    assert.throws(
+      () => validateCommandLatencyRecord({ ...validCommandLatencyRecord(), exitCode: 1 }),
+      /ok status/
+    );
+    assert.throws(
+      () =>
+        validateCommandTiming({
+          ...validCommandTiming(),
+          phases: [{ ...validCommandTiming().phases[0], phase: "graph.build" }]
+        }),
+      /stable latency id/
+    );
+  });
+
   it("validates Opcore init plans and router payloads", () => {
     const plan = validateOpcoreInitPlanPayload(validOpcoreInitPlan());
     assert.equal(plan.actions[0].path, ".opcore/config");
@@ -2249,6 +2416,8 @@ describe("lattice shared contracts", () => {
     assert.equal(validateAspDogfoodReceipt(receipt).issue, "#120");
     assert.equal(receipt.bootstrapSource, "local-sibling");
     assert.deepEqual(receipt.provider.command, ["opcore-asp-provider", "--stdio"]);
+    assert.equal(receipt.hostFixture.sourceRepoMutated, false);
+    assert.deepEqual(receipt.hostFixture.changedPaths, ["src/dogfood.ts"]);
     assert.deepEqual(receipt.currentToolGuardrails.map((entry) => entry.id), aspDogfoodGuardrailIds);
     assert.throws(
       () =>
@@ -2294,6 +2463,22 @@ describe("lattice shared contracts", () => {
           }
         }),
       /authorityEvidence/
+    );
+    assert.throws(
+      () =>
+        validateAspDogfoodReceipt({
+          ...receipt,
+          hostFixture: { ...receipt.hostFixture, changedPaths: [] }
+        }),
+      /changedPaths/
+    );
+    assert.throws(
+      () =>
+        validateAspDogfoodReceipt({
+          ...receipt,
+          hostFixture: { ...receipt.hostFixture, sourceRepoMutated: true }
+        }),
+      /source repo/
     );
     assert.throws(
       () =>
@@ -2518,6 +2703,104 @@ function validOpcoreRepoState() {
     warnings: ["Unsupported stacks: Python"],
     blockers: [],
     nextActions: ["lattice check changed --repo /repo --json"]
+  };
+}
+
+function validCommandTiming(overrides = {}) {
+  return {
+    durationMs: 42,
+    phases: [
+      {
+        phase: "validation",
+        durationMs: 35,
+        fileCount: 2
+      }
+    ],
+    processState: "warm",
+    degradations: ["no_paths"],
+    ...overrides
+  };
+}
+
+function validRepoShapeFingerprint(overrides = {}) {
+  return {
+    totalFiles: 3,
+    languages: [
+      {
+        language: "TypeScript",
+        files: 2
+      },
+      {
+        language: "Python",
+        files: 1
+      }
+    ],
+    graph: {
+      supportedFiles: 2,
+      unsupportedFiles: 1
+    },
+    git: {
+      available: true,
+      clean: false
+    },
+    ...overrides
+  };
+}
+
+function validCommandLatencyRecord(overrides = {}) {
+  return {
+    schemaVersion: 1,
+    recordedAt: "2026-06-26T17:00:00.000Z",
+    bin: "opcore",
+    canonicalCommand: ["opcore", "check", "changed"],
+    owner: "validation",
+    status: "ok",
+    exitCode: 0,
+    repo: validRepoShapeFingerprint(),
+    timing: validCommandTiming(),
+    opcoreVersion: "0.1.0-alpha.0",
+    ...overrides
+  };
+}
+
+function validLatencyBudget(overrides = {}) {
+  return {
+    schemaVersion: 1,
+    canonicalCommand: ["opcore", "check", "changed"],
+    scope: "changed",
+    repoShapeBucket: "small_ts",
+    budgetMs: 100,
+    phaseBudgets: [
+      {
+        phase: "validation",
+        budgetMs: 75
+      }
+    ],
+    ...overrides
+  };
+}
+
+function validLatencyBudgetResult(overrides = {}) {
+  const status = overrides.status ?? "pass";
+  const observedMs = status === "over" ? 125 : 42;
+  return {
+    schemaVersion: 1,
+    status,
+    budget: validLatencyBudget(),
+    observed: {
+      canonicalCommand: ["opcore", "check", "changed"],
+      phase: "total",
+      durationMs: observedMs
+    },
+    evidence: {
+      canonicalCommand: ["opcore", "check", "changed"],
+      phase: "total",
+      repoShapeBucket: "small_ts",
+      observedMs,
+      budgetMs: 100,
+      overByMs: Math.max(0, observedMs - 100)
+    },
+    ...overrides
   };
 }
 
@@ -3004,12 +3287,12 @@ function validHandshake() {
       "symbol",
       "test",
       "File",
+      "Module",
       "Class",
       "Function",
+      "Variable",
       "Type",
       "Test",
-      "Variable",
-      "Module",
       "Struct",
       "Enum",
       "Trait",
@@ -4261,6 +4544,7 @@ function validReleaseCutoverReceipt() {
 function validAspDogfoodReceipt() {
   const cutover = validReleaseCutoverReceipt();
   const aspRepo = covibesPath("agent-server-protocol");
+  const hostFixtureRepo = "/tmp/opcore-asp-dogfood/asp-host-fixture";
   const command = (id, commandParts, output = {}) => ({
     id,
     command: commandParts,
@@ -4335,6 +4619,13 @@ function validAspDogfoodReceipt() {
       pathSanitized: true,
       aceRuntimeBinExcluded: true
     },
+    hostFixture: {
+      repo: hostFixtureRepo,
+      temp: true,
+      sourceRepoMutated: false,
+      baselineCommitted: true,
+      changedPaths: ["src/dogfood.ts"]
+    },
     provider: {
       providerId: "opcore",
       packageName: "@the-open-engine/opcore-asp-provider",
@@ -4355,20 +4646,20 @@ function validAspDogfoodReceipt() {
       serverStatus: command("asp-server-status", ["asp", "server", "status", "opcore", "--json"], { server: { id: "opcore" } })
     },
     repoEnrollment: {
-      repo: "/repo/lattice",
+      repo: hostFixtureRepo,
       mode: "advisory",
-      repoAdd: command("asp-repo-add", ["asp", "repo", "add", "/repo/lattice", "--json"]),
-      repoEnable: command("asp-repo-enable", ["asp", "repo", "enable", "opcore", "--repo", "/repo/lattice", "--mode", "advisory", "--json"]),
-      repoStatus: command("asp-repo-status", ["asp", "repo", "status", "/repo/lattice", "--json"])
+      repoAdd: command("asp-repo-add", ["asp", "repo", "add", hostFixtureRepo, "--json"]),
+      repoEnable: command("asp-repo-enable", ["asp", "repo", "enable", "opcore", "--repo", hostFixtureRepo, "--mode", "advisory", "--json"]),
+      repoStatus: command("asp-repo-status", ["asp", "repo", "status", hostFixtureRepo, "--json"])
     },
     hostEvaluation: {
       check: {
-        ...command("asp-check-changed", ["asp", "check", "--repo", "/repo/lattice", "--changed", "--call-site", "interactive", "--json"]),
+        ...command("asp-check-changed", ["asp", "check", "--repo", hostFixtureRepo, "--changed", "--call-site", "interactive", "--json"]),
         hostDecision,
         receipt: hostDecision.receipt,
         assurance: { mode: "gated", transactionGuarantee: "none" }
       },
-      ciVerify: command("asp-ci-verify", ["asp", "ci", "verify", "--repo", "/repo/lattice", "--changed-from", "HEAD", "--json"])
+      ciVerify: command("asp-ci-verify", ["asp", "ci", "verify", "--repo", hostFixtureRepo, "--changed-from", "main", "--json"])
     },
     providerProbe: {
       ...command("provider-probe", ["opcore-asp-provider", "--stdio"]),
