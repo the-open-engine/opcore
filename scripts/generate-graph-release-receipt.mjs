@@ -30,7 +30,7 @@ import {
 } from "../packages/contracts/dist/index.js";
 
 const repoRoot = fileURLToPath(new URL("..", import.meta.url));
-const latticeBin = join(repoRoot, "packages/cli/dist/index.js");
+const latticeBin = join(repoRoot, "packages/opcore/dist/lattice/index.js");
 const sourceFixtureRoot = join(repoRoot, "packages/fixtures/source-extraction/wave1");
 const baselineReceipt = "packages/fixtures/graph-reference-evidence/baseline-receipts.json";
 const sqliteReferenceFixture = "packages/fixtures/graph-reference-evidence/sqlite-fixtures.json";
@@ -482,12 +482,12 @@ function serveSearchEnvelope(repo) {
 }
 
 function inspectGraphPackage() {
-  const result = spawnSync("npm", ["pack", "--dry-run", "--json", "--workspace", "@the-open-engine/lattice-graph"], {
+  const result = spawnSync("npm", ["pack", "--dry-run", "--json", "--workspace", "@the-open-engine/opcore-graph"], {
     cwd: repoRoot,
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"]
   });
-  if (result.status !== 0) failCommand("npm", ["pack", "--dry-run", "--json", "--workspace", "@the-open-engine/lattice-graph"], result);
+  if (result.status !== 0) failCommand("npm", ["pack", "--dry-run", "--json", "--workspace", "@the-open-engine/opcore-graph"], result);
   const parsed = JSON.parse(result.stdout);
   const files = parsed[0]?.files?.map((entry) => entry.path).sort() ?? [];
   const pathFindings = scanGraphPackagePaths(files);
@@ -499,7 +499,7 @@ function inspectGraphPackage() {
     throw new Error(`Graph package file content contains forbidden marker:\n${contentFindings.join("\n")}`);
   }
   return {
-    packageName: "@the-open-engine/lattice-graph",
+    packageName: "@the-open-engine/opcore-graph",
     tarballName: parsed[0]?.filename ?? "covibes-lattice-graph-0.1.0-alpha.0.tgz",
     fileCount: files.length,
     files,

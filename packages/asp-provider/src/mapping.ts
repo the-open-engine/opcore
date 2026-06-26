@@ -4,8 +4,8 @@ import type {
   ValidationDiagnostic,
   ValidationRequest,
   ValidationResult
-} from "@the-open-engine/lattice-contracts";
-import { validateRepoRelativePath } from "@the-open-engine/lattice-contracts";
+} from "@the-open-engine/opcore-contracts";
+import { validateRepoRelativePath } from "@the-open-engine/opcore-contracts";
 import type { JsonRpcPeer } from "./json-rpc.js";
 import { changesetDigest as computeChangesetDigest, diagnosticFingerprint, digestJson } from "./digests.js";
 import type {

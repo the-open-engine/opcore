@@ -1,5 +1,5 @@
 {
-  "name": "@the-open-engine/lattice-validation",
+  "name": "@the-open-engine/opcore-validation",
   "version": "0.1.0-alpha.0",
   "description": "Validation runner, scopes, overlays, and pre-write checks for coding agents.",
   "type": "module",
@@ -28,14 +28,14 @@
     "access": "public"
   },
   "dependencies": {
-    "@the-open-engine/lattice-contracts": "0.1.0-alpha.0"
+    "@the-open-engine/opcore-contracts": "0.1.0-alpha.0"
   },
   "engines": {
     "node": ">=22"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/the-open-engine/lattice.git",
+    "url": "git+https://github.com/the-open-engine/opcore.git",
     "directory": "packages/validation"
   },
   "scripts": {

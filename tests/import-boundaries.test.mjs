@@ -5,22 +5,22 @@ import { join } from "node:path";
 
 const importPattern = /\bimport(?:\s+type)?(?:[\s\S]*?\sfrom\s*)?["']([^"']+)["']/g;
 const implementationPackages = new Set([
-  "@the-open-engine/lattice-graph",
-  "@the-open-engine/lattice-edit",
-  "@the-open-engine/lattice-validation",
-  "@the-open-engine/lattice-validation-rust",
-  "@the-open-engine/lattice-validation-typescript"
+  "@the-open-engine/opcore-graph",
+  "@the-open-engine/opcore-edit",
+  "@the-open-engine/opcore-validation",
+  "@the-open-engine/opcore-validation-rust",
+  "@the-open-engine/opcore-validation-typescript"
 ]);
 const packageNamesByDir = new Map([
-  ["contracts", "@the-open-engine/lattice-contracts"],
-  ["cli", "@the-open-engine/lattice-cli"],
-  ["graph", "@the-open-engine/lattice-graph"],
-  ["edit", "@the-open-engine/lattice-edit"],
-  ["validation", "@the-open-engine/lattice-validation"],
-  ["validation-rust", "@the-open-engine/lattice-validation-rust"],
-  ["validation-typescript", "@the-open-engine/lattice-validation-typescript"],
+  ["contracts", "@the-open-engine/opcore-contracts"],
+  ["opcore", "@the-open-engine/opcore"],
+  ["graph", "@the-open-engine/opcore-graph"],
+  ["edit", "@the-open-engine/opcore-edit"],
+  ["validation", "@the-open-engine/opcore-validation"],
+  ["validation-rust", "@the-open-engine/opcore-validation-rust"],
+  ["validation-typescript", "@the-open-engine/opcore-validation-typescript"],
   ["asp-provider", "@the-open-engine/opcore-asp-provider"],
-  ["fixtures", "@the-open-engine/lattice-fixtures"]
+  ["fixtures", "@the-open-engine/opcore-fixtures"]
 ]);
 const packageDirsByName = new Map([...packageNamesByDir].map(([dir, name]) => [name, dir]));
 
@@ -28,7 +28,7 @@ describe("package import boundaries", () => {
   it("keeps contracts independent of lattice packages", () => {
     for (const file of sourceFiles("packages/contracts/src")) {
       for (const source of imports(file)) {
-        assert.equal(source.startsWith("@the-open-engine/lattice-"), false, `${file} imports ${source}`);
+        assert.equal(source.startsWith("@the-open-engine/opcore-"), false, `${file} imports ${source}`);
       }
     }
   });
@@ -50,15 +50,15 @@ describe("package import boundaries", () => {
           continue;
         }
         if (source.startsWith("node:")) continue;
-        if (packageDir === "cli") {
+        if (packageDir === "opcore") {
           assert.equal(
             [
-              "@the-open-engine/lattice-contracts",
-              "@the-open-engine/lattice-graph",
-              "@the-open-engine/lattice-edit",
-              "@the-open-engine/lattice-validation",
-              "@the-open-engine/lattice-validation-rust",
-              "@the-open-engine/lattice-validation-typescript",
+              "@the-open-engine/opcore-contracts",
+              "@the-open-engine/opcore-graph",
+              "@the-open-engine/opcore-edit",
+              "@the-open-engine/opcore-validation",
+              "@the-open-engine/opcore-validation-rust",
+              "@the-open-engine/opcore-validation-typescript",
               "ts-morph"
             ].includes(source),
             true,
@@ -68,32 +68,32 @@ describe("package import boundaries", () => {
         if (packageDir === "asp-provider") {
           assert.equal(
             [
-              "@the-open-engine/lattice-contracts",
-              "@the-open-engine/lattice-graph",
-              "@the-open-engine/lattice-validation",
-              "@the-open-engine/lattice-validation-rust",
-              "@the-open-engine/lattice-validation-typescript"
+              "@the-open-engine/opcore-contracts",
+              "@the-open-engine/opcore-graph",
+              "@the-open-engine/opcore-validation",
+              "@the-open-engine/opcore-validation-rust",
+              "@the-open-engine/opcore-validation-typescript"
             ].includes(source),
             true,
             `${file} imports ${source}`
           );
         }
         if (["graph", "validation"].includes(packageDir)) {
-          assert.equal(source, "@the-open-engine/lattice-contracts", `${file} imports ${source}`);
+          assert.equal(source, "@the-open-engine/opcore-contracts", `${file} imports ${source}`);
         }
         if (packageDir === "edit") {
-          assert.equal(["@the-open-engine/lattice-contracts", "ts-morph"].includes(source), true, `${file} imports ${source}`);
+          assert.equal(["@the-open-engine/opcore-contracts", "ts-morph"].includes(source), true, `${file} imports ${source}`);
         }
         if (packageDir === "validation-typescript") {
           assert.equal(
-            ["@the-open-engine/lattice-contracts", "@the-open-engine/lattice-validation", "typescript"].includes(source),
+            ["@the-open-engine/opcore-contracts", "@the-open-engine/opcore-validation", "typescript"].includes(source),
             true,
             `${file} imports ${source}`
           );
         }
         if (packageDir === "validation-rust") {
           assert.equal(
-            ["@the-open-engine/lattice-contracts", "@the-open-engine/lattice-validation"].includes(source),
+            ["@the-open-engine/opcore-contracts", "@the-open-engine/opcore-validation"].includes(source),
             true,
             `${file} imports ${source}`
           );
@@ -105,7 +105,7 @@ describe("package import boundaries", () => {
   it("keeps adapter packages free of aggregate CLI dependencies", () => {
     for (const packageDir of ["graph", "edit", "validation", "validation-rust", "asp-provider"]) {
       const manifest = JSON.parse(readFileSync(`packages/${packageDir}/package.json`, "utf8"));
-      assert.equal(manifest.dependencies?.["@the-open-engine/lattice-cli"], undefined, packageDir);
+      assert.equal(manifest.dependencies?.["@the-open-engine/opcore"], undefined, packageDir);
       const tsconfig = JSON.parse(readFileSync(`packages/${packageDir}/tsconfig.json`, "utf8"));
       assert.equal(
         (tsconfig.references ?? []).some((reference) => reference.path === "../cli"),

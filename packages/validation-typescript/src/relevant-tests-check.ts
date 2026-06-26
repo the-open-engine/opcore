@@ -1,5 +1,5 @@
-import type { GraphFactEdge, ValidationDiagnostic } from "@the-open-engine/lattice-contracts";
-import type { ValidationCheckDefinition } from "@the-open-engine/lattice-validation";
+import type { GraphFactEdge, ValidationDiagnostic } from "@the-open-engine/opcore-contracts";
+import type { ValidationCheckDefinition } from "@the-open-engine/opcore-validation";
 import { TYPE_SCRIPT_RELEVANT_TESTS_CHECK_ID } from "./check-ids.js";
 import { typeScriptCheckAdapter, typeScriptCheckOwner, supportedTypeScriptValidationScopes } from "./check-constants.js";
 import { relevantTestsGraphRequirements } from "./graph-requirements.js";

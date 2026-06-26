@@ -1,7 +1,7 @@
 {
-  "name": "@the-open-engine/lattice-validation-typescript",
+  "name": "@the-open-engine/opcore-validation-typescript",
   "version": "0.1.0-alpha.0",
-  "description": "TypeScript syntax, type, and graph-aware validation checks for Lattice.",
+  "description": "TypeScript syntax, type, and graph-aware validation checks for Opcore.",
   "type": "module",
   "license": "MIT",
   "main": "dist/index.js",
@@ -28,8 +28,8 @@
     "access": "public"
   },
   "dependencies": {
-    "@the-open-engine/lattice-contracts": "0.1.0-alpha.0",
-    "@the-open-engine/lattice-validation": "0.1.0-alpha.0",
+    "@the-open-engine/opcore-contracts": "0.1.0-alpha.0",
+    "@the-open-engine/opcore-validation": "0.1.0-alpha.0",
     "typescript": "^5.9.3"
   },
   "engines": {
@@ -37,7 +37,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/the-open-engine/lattice.git",
+    "url": "git+https://github.com/the-open-engine/opcore.git",
     "directory": "packages/validation-typescript"
   },
   "scripts": {

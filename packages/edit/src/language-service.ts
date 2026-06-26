@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, realpathSync, readdirSync, statSync } from "node:fs";
 import { dirname, extname, isAbsolute, join, relative, resolve } from "node:path";
-import type { EditRefusal, RepoRelativeChange } from "@the-open-engine/lattice-contracts";
+import type { EditRefusal, RepoRelativeChange } from "@the-open-engine/opcore-contracts";
 import { decodeTextContent } from "./content-policy.js";
 import { Node, Project, SyntaxKind, type SourceFile, type Symbol as MorphSymbol } from "ts-morph";
 import { calculateEditChecksum } from "./hash.js";

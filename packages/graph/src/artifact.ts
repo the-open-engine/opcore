@@ -2,8 +2,8 @@ import type {
   GraphProviderArtifactMetadata,
   GraphProviderErrorFailureCategory,
   GraphProviderStatus
-} from "@the-open-engine/lattice-contracts";
-import { validateGraphProviderArtifactMetadata } from "@the-open-engine/lattice-contracts";
+} from "@the-open-engine/opcore-contracts";
+import { validateGraphProviderArtifactMetadata } from "@the-open-engine/opcore-contracts";
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { createRequire } from "node:module";

@@ -1,7 +1,9 @@
 # Opcore
 
-Status: private pre-release staging repo. Do not publish packages, docs, or
+Status: maintainer-controlled alpha staging. Do not publish packages, docs, or
 announcements from this repository until maintainers explicitly approve it.
+
+Local code scans, honest coverage, setup guidance, and changed-file validation for coding agents.
 
 Opcore is a robustness engine for coding agents. It gives a repository a
 read-only health scan, then gives any agent that can run a command a stable
@@ -10,15 +12,19 @@ check before edits land.
 ## Target First Run
 
 ```bash
-npx @the-open-engine/opcore
-opcore init
+npm install -g @the-open-engine/opcore@0.1.0-alpha.0
+opcore --repo .
+opcore try
+opcore init --repo . --approve
 opcore check --changed --json
-opcore measure
+opcore measure --repo .
 ```
 
 The first command should work in an existing project without setup. It should
 detect what Opcore can analyze, say what it cannot analyze, write only local
 Opcore report/history artifacts, and never edit source files.
+
+Alpha package artifacts target darwin-arm64 and linux-x64.
 
 ## Product Rules
 
@@ -37,6 +43,10 @@ Opcore report/history artifacts, and never edit source files.
 Opcore is an independently installed ASP provider and product surface. ASP is
 the host/protocol/manager surface that can enroll many providers. Opcore should
 work without being provisioned by a downstream agent harness.
+
+The current architecture is hybrid: Rust graph core plus TypeScript contracts,
+router adapters, validation, edit planning, and the Opcore facade. See
+@docs/architecture/runtime-cli-ard.md.
 
 Normal users should not need to learn the ASP model before seeing value from
 Opcore.

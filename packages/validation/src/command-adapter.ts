@@ -6,12 +6,12 @@ import type {
   ValidationFailure,
   ValidationRequest,
   ValidationResult
-} from "@the-open-engine/lattice-contracts";
+} from "@the-open-engine/opcore-contracts";
 import {
   createCommandRouterResult,
   validatePreWriteValidationReceipt,
   validateValidationRequestPayload
-} from "@the-open-engine/lattice-contracts";
+} from "@the-open-engine/opcore-contracts";
 import { aggregateValidationResults } from "./aggregation.js";
 import {
   DEFAULT_PRE_WRITE_TIMEOUT_MS,

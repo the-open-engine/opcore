@@ -1,4 +1,4 @@
-import type { EditRefusal } from "@the-open-engine/lattice-contracts";
+import type { EditRefusal } from "@the-open-engine/opcore-contracts";
 import type { ParsedPatchLine } from "./patch-parser.js";
 
 export type ParsedCodexPatchSectionKind = "add" | "delete" | "update";

@@ -1,4 +1,4 @@
-import { createEditCommandAdapter, type EditGraphProviderClient } from "@the-open-engine/lattice-edit";
+import { createEditCommandAdapter, type EditGraphProviderClient } from "@the-open-engine/opcore-edit";
 import {
   cliGraphDetectChanges,
   cliGraphFactQuery,

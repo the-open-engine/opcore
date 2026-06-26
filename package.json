@@ -1,5 +1,5 @@
 {
-  "name": "lattice",
+  "name": "opcore",
   "version": "0.1.0-alpha.0",
   "private": true,
   "description": "Local code intelligence, safe edits, and pre-write validation for coding agents.",
@@ -7,7 +7,6 @@
   "workspaces": [
     "packages/contracts",
     "packages/opcore",
-    "packages/cli",
     "packages/graph",
     "packages/edit",
     "packages/validation",
@@ -55,7 +54,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/the-open-engine/lattice.git"
+    "url": "git+https://github.com/the-open-engine/opcore.git"
   },
   "engines": {
     "node": ">=22"

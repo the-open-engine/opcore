@@ -1,4 +1,4 @@
-import type { EditRefusal } from "@the-open-engine/lattice-contracts";
+import type { EditRefusal } from "@the-open-engine/opcore-contracts";
 import { calculateEditChecksum } from "./hash.js";
 
 export type TextLineEnding = "lf" | "crlf" | "mixed" | "none";

@@ -1,5 +1,5 @@
-import type { ValidationWorkspace, ValidationWorkspaceFileSet, ValidationWorkspaceReadFileResult } from "@the-open-engine/lattice-validation";
-import { calculateValidationFileChecksum } from "@the-open-engine/lattice-validation";
+import type { ValidationWorkspace, ValidationWorkspaceFileSet, ValidationWorkspaceReadFileResult } from "@the-open-engine/opcore-validation";
+import { calculateValidationFileChecksum } from "@the-open-engine/opcore-validation";
 import type { JsonRpcPeer } from "./json-rpc.js";
 import type { Baseline, ChangeSet, EncodedBlob, InitializedParams, InitializeParams, InlineBlob, JsonObject } from "./protocol.js";
 

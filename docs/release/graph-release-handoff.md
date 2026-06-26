@@ -3,13 +3,13 @@
 Issue #17 graph-release gate receipt for #7, #28, and #29.
 
 Full receipt: docs/release/graph-release-receipt.json
-Full receipt SHA-256: 3eb840352a74cee3ee9a44cb26b58dd05dacc016662bfa0973d20de5b280a183
+Full receipt SHA-256: 81ab958309c81ca98a855c392bb571f529ab64b0c02c37013d34d00b15a06c8d
 
 | Issue | Checksummed Receipt Path | SHA-256 |
 |-------|--------------------------|---------|
-| #7 | docs/release/graph-release-receipt.payload.json | 181f5da12a93053b41d1421f4d82874022e09667fd040e8bdb18c5e4d720ed73 |
-| #28 | docs/release/graph-release-receipt.payload.json | 181f5da12a93053b41d1421f4d82874022e09667fd040e8bdb18c5e4d720ed73 |
-| #29 | docs/release/graph-release-receipt.payload.json | 181f5da12a93053b41d1421f4d82874022e09667fd040e8bdb18c5e4d720ed73 |
+| #7 | docs/release/graph-release-receipt.payload.json | 5982e7cf18728410c48a708adec1fe94166594e054f484098eb37ed008a09c00 |
+| #28 | docs/release/graph-release-receipt.payload.json | 5982e7cf18728410c48a708adec1fe94166594e054f484098eb37ed008a09c00 |
+| #29 | docs/release/graph-release-receipt.payload.json | 5982e7cf18728410c48a708adec1fe94166594e054f484098eb37ed008a09c00 |
 
 ## Parent #4 Graph Scope
 

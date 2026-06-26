@@ -6,11 +6,11 @@
   "commitSha": "5579ff16c18b047f601471b3f0d26777149321d9",
   "graphPackageVersions": [
     {
-      "packageName": "@the-open-engine/lattice-graph",
+      "packageName": "@the-open-engine/opcore-graph",
       "version": "0.1.0-alpha.0"
     },
     {
-      "packageName": "@the-open-engine/lattice-contracts",
+      "packageName": "@the-open-engine/opcore-contracts",
       "version": "0.1.0-alpha.0"
     },
     {
@@ -338,8 +338,8 @@
     }
   ],
   "packageInspection": {
-    "packageName": "@the-open-engine/lattice-graph",
-    "tarballName": "covibes-lattice-graph-0.1.0-alpha.0.tgz",
+    "packageName": "@the-open-engine/opcore-graph",
+    "tarballName": "the-open-engine-opcore-graph-0.1.0-alpha.0.tgz",
     "fileCount": 17,
     "files": [
       "package.json",

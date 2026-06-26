@@ -5,8 +5,8 @@ import type {
   GraphProviderStatus,
   ValidationRequest,
   ValidationScopeKind
-} from "@the-open-engine/lattice-contracts";
-import { validationCheckIdPattern, validationScopeKinds } from "@the-open-engine/lattice-contracts";
+} from "@the-open-engine/opcore-contracts";
+import { validationCheckIdPattern, validationScopeKinds } from "@the-open-engine/opcore-contracts";
 import type { ValidationGraphQueryRequirement, ValidationGraphQuerySession } from "./graph-client.js";
 import type { ValidationFileView } from "./overlays.js";
 import type { ResolvedValidationScope } from "./scope.js";

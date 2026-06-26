@@ -476,7 +476,7 @@ describe("lattice JSON schema wire constraints", () => {
       { kind: "staged" },
       { kind: "all" },
       { kind: "repo" },
-      { kind: "package", packageName: "@the-open-engine/lattice-contracts", packageRoot: "packages/contracts" }
+      { kind: "package", packageName: "@the-open-engine/opcore-contracts", packageRoot: "packages/contracts" }
     ]) {
       assert.equal(isValidDefinition("ValidationRequest", validationRequestWith({ scope })), true);
     }
@@ -485,12 +485,12 @@ describe("lattice JSON schema wire constraints", () => {
     assert.equal(
       isValidDefinition(
         "ValidationRequest",
-        validationRequestWith({ scope: { kind: "package", packageName: "@the-open-engine/lattice", packageRoot: "../packages" } })
+        validationRequestWith({ scope: { kind: "package", packageName: "@the-open-engine/opcore", packageRoot: "../packages" } })
       ),
       false
     );
     assert.equal(
-      isValidDefinition("ValidationRequest", validationRequestWith({ scope: { kind: "package", packageName: "@the-open-engine/lattice" } })),
+      isValidDefinition("ValidationRequest", validationRequestWith({ scope: { kind: "package", packageName: "@the-open-engine/opcore" } })),
       false
     );
   });
@@ -1754,7 +1754,7 @@ describe("lattice JSON schema wire constraints", () => {
         ...receipt,
         graphPackageVersions: [
           {
-            packageName: "@the-open-engine/lattice-contracts",
+            packageName: "@the-open-engine/opcore-contracts",
             version: "0.1.0-alpha.0"
           }
         ]
@@ -1937,7 +1937,7 @@ describe("lattice JSON schema wire constraints", () => {
     assert.equal(
       isValidDefinition("ReleaseReceipt", {
         ...receipt,
-        packages: receipt.packages.filter((entry) => entry.packageName !== "@the-open-engine/lattice-edit")
+        packages: receipt.packages.filter((entry) => entry.packageName !== "@the-open-engine/opcore-edit")
       }),
       false
     );
@@ -1952,7 +1952,7 @@ describe("lattice JSON schema wire constraints", () => {
       isValidDefinition("ReleaseReceipt", {
         ...receipt,
         packages: receipt.packages.map((entry) =>
-          entry.packageName === "@the-open-engine/lattice-cli"
+          entry.packageName === "@the-open-engine/opcore"
             ? { ...entry, bins: { ...entry.bins, rox: "dist/index.js" } }
             : entry
         )
@@ -2002,8 +2002,8 @@ describe("lattice JSON schema wire constraints", () => {
       isValidDefinition("ReleaseCutoverReceipt", {
         ...receipt,
         packageNames: [
-          "@the-open-engine/lattice-contracts",
-          "@the-open-engine/lattice-contracts",
+          "@the-open-engine/opcore-contracts",
+          "@the-open-engine/opcore-contracts",
           ...receipt.packageNames.slice(2)
         ]
       }),
@@ -2063,7 +2063,7 @@ describe("lattice JSON schema wire constraints", () => {
       isValidDefinition("ReleaseCutoverReceipt", {
         ...receipt,
         installedPackages: receipt.installedPackages.map((entry) =>
-          entry.packageName === "@the-open-engine/lattice-cli"
+          entry.packageName === "@the-open-engine/opcore"
             ? { ...entry, installedManifest: { ...entry.installedManifest, bins: { lattice: "dist/index.js", crg: "dist/index.js" } } }
             : entry
         )
@@ -2180,7 +2180,7 @@ describe("lattice JSON schema wire constraints", () => {
 function validRouterManifest() {
   return {
     schemaVersion: 1,
-    packageName: "@the-open-engine/lattice-cli",
+    packageName: "@the-open-engine/opcore",
     bins: ["lattice"],
     exitSemantics: {
       ok: 0,
@@ -2468,18 +2468,18 @@ function validManagedToolDescriptor(overrides = {}) {
     aggregateIdentity: {
       name: "lattice",
       releaseLine: "lattice",
-      packageName: "@the-open-engine/lattice-cli"
+      packageName: "@the-open-engine/opcore"
     },
     packageIdentity: {
-      packageName: "@the-open-engine/lattice-cli",
-      artifactName: "@the-open-engine/lattice-cli",
+      packageName: "@the-open-engine/opcore",
+      artifactName: "@the-open-engine/opcore",
       version: "0.1.0-alpha.0"
     },
     entrypoints: [
       {
         bin: "lattice",
-        packageName: "@the-open-engine/lattice-cli",
-        path: "dist/index.js",
+        packageName: "@the-open-engine/opcore",
+        path: "dist/lattice/index.js",
         command: ["lattice"]
       }
     ],
@@ -2497,12 +2497,12 @@ function validManagedToolDescriptor(overrides = {}) {
       commands,
       packageName:
         name === "graph"
-          ? "@the-open-engine/lattice-graph"
+          ? "@the-open-engine/opcore-graph"
           : name === "edit"
-            ? "@the-open-engine/lattice-edit"
+            ? "@the-open-engine/opcore-edit"
             : name === "check" || name === "validate"
-              ? "@the-open-engine/lattice-validation"
-              : "@the-open-engine/lattice-cli"
+              ? "@the-open-engine/opcore-validation"
+              : "@the-open-engine/opcore"
     })),
     healthProbes: [
       {
@@ -2559,21 +2559,21 @@ function validManagedToolDescriptor(overrides = {}) {
     artifacts: [
       {
         id: "cli-entrypoint",
-        packageName: "@the-open-engine/lattice-cli",
-        path: "dist/index.js",
+        packageName: "@the-open-engine/opcore",
+        path: "dist/lattice/index.js",
         type: "entrypoint",
         required: true
       },
       {
         id: "descriptor",
-        packageName: "@the-open-engine/lattice-cli",
+        packageName: "@the-open-engine/opcore",
         path: "dist/descriptors/lattice.managed-tool.json",
         type: "descriptor",
         required: true
       },
       {
         id: "contracts-schema",
-        packageName: "@the-open-engine/lattice-contracts",
+        packageName: "@the-open-engine/opcore-contracts",
         path: "schemas/lattice-contracts.schema.json",
         type: "schema",
         required: true
@@ -3097,7 +3097,7 @@ function validGraphReferenceEvidenceManifest() {
       containsPackageMetadata: false,
       containsGitHistory: false,
       referenceReceiptsAreImplementationInput: false,
-      implementationPackageNames: ["@the-open-engine/lattice-graph"],
+      implementationPackageNames: ["@the-open-engine/opcore-graph"],
       allowedMentionPaths: ["docs/graph-reference-evidence/", "packages/fixtures/graph-reference-evidence/"]
     }
   };
@@ -3134,7 +3134,7 @@ function validGraphReleaseReceipt() {
     commitSha: "a".repeat(40),
     graphPackageVersions: [
       {
-        packageName: "@the-open-engine/lattice-graph",
+        packageName: "@the-open-engine/opcore-graph",
         version: "0.1.0-alpha.0"
       },
       ...graphCoreNativeSupportedTargets.map((target) => ({
@@ -3217,7 +3217,7 @@ function validGraphReleaseReceipt() {
       comparison: "recorded"
     })),
     packageInspection: {
-      packageName: "@the-open-engine/lattice-graph",
+      packageName: "@the-open-engine/opcore-graph",
       tarballName: "covibes-lattice-graph-0.1.0-alpha.0.tgz",
       fileCount: 1,
       files: ["dist/index.js"],
@@ -3317,37 +3317,35 @@ function validGraphReleaseReceipt() {
 
 function validReleaseReceipt() {
   const packageNames = [
-    "@the-open-engine/lattice-contracts",
+    "@the-open-engine/opcore-contracts",
     "@the-open-engine/opcore",
-    "@the-open-engine/lattice-cli",
-    "@the-open-engine/lattice-graph",
+    "@the-open-engine/opcore-graph",
     ...graphCoreNativePackageNames,
-    "@the-open-engine/lattice-edit",
-    "@the-open-engine/lattice-validation",
-    "@the-open-engine/lattice-validation-rust",
-    "@the-open-engine/lattice-validation-typescript",
+    "@the-open-engine/opcore-edit",
+    "@the-open-engine/opcore-validation",
+    "@the-open-engine/opcore-validation-rust",
+    "@the-open-engine/opcore-validation-typescript",
     "@the-open-engine/opcore-asp-provider"
   ];
   const commandGroups = ["graph", "inspect", "edit", "check", "validate", "status", "doctor"];
   const reportIds = ["package-inspection", "license", "provenance", "release-hygiene", "graph-release", "secret-history"];
   const descriptor = validManagedToolDescriptor();
   const packageRoots = new Map([
-    ["@the-open-engine/lattice-contracts", "packages/contracts"],
+    ["@the-open-engine/opcore-contracts", "packages/contracts"],
     ["@the-open-engine/opcore", "packages/opcore"],
-    ["@the-open-engine/lattice-cli", "packages/cli"],
-    ["@the-open-engine/lattice-graph", "packages/graph"],
+    ["@the-open-engine/opcore-graph", "packages/graph"],
     ...graphCoreNativeSupportedTargets.map((target) => [
       graphCoreNativePackageNameForTarget(target),
       `packages/${graphCoreNativePackageNameForTarget(target).replace("@the-open-engine/", "")}`
     ]),
-    ["@the-open-engine/lattice-edit", "packages/edit"],
-    ["@the-open-engine/lattice-validation", "packages/validation"],
-    ["@the-open-engine/lattice-validation-rust", "packages/validation-rust"],
-    ["@the-open-engine/lattice-validation-typescript", "packages/validation-typescript"],
+    ["@the-open-engine/opcore-edit", "packages/edit"],
+    ["@the-open-engine/opcore-validation", "packages/validation"],
+    ["@the-open-engine/opcore-validation-rust", "packages/validation-rust"],
+    ["@the-open-engine/opcore-validation-typescript", "packages/validation-typescript"],
     ["@the-open-engine/opcore-asp-provider", "packages/asp-provider"]
   ]);
   const packages = packageNames.map((packageName) => {
-    const isCli = packageName === "@the-open-engine/lattice-cli";
+    const isOpcore = packageName === "@the-open-engine/opcore";
     const nativeTarget = graphCoreNativeSupportedTargets.find((target) => graphCoreNativePackageNameForTarget(target) === packageName);
     const nativeDescriptor = nativeTarget
       ? descriptor.capabilities.graph.nativeArtifacts.find((artifact) => artifact.targetPlatform === nativeTarget)
@@ -3381,12 +3379,10 @@ function validReleaseReceipt() {
         ...descriptor.artifacts.filter((artifact) => artifact.packageName === packageName).map((artifact) => artifact.path)
       ])
     ];
-    const bins = isCli
-      ? { lattice: "dist/index.js" }
-      : packageName === "@the-open-engine/opcore"
-        ? { opcore: "dist/index.js" }
-        : packageName === "@the-open-engine/opcore-asp-provider"
-          ? { "opcore-asp-provider": "dist/index.js" }
+    const bins = isOpcore
+      ? { opcore: "dist/index.js", lattice: "dist/lattice/index.js" }
+      : packageName === "@the-open-engine/opcore-asp-provider"
+        ? { "opcore-asp-provider": "dist/index.js" }
           : {};
     return {
       packageName,
@@ -3445,8 +3441,8 @@ function validReleaseReceipt() {
     commandGroups,
     packages,
     descriptor: {
-      path: "packages/cli/dist/descriptors/lattice.managed-tool.json",
-      packageName: "@the-open-engine/lattice-cli",
+      path: "packages/opcore/dist/descriptors/lattice.managed-tool.json",
+      packageName: "@the-open-engine/opcore",
       checksumSha256: "b".repeat(64),
       descriptor,
       commandGroups: descriptor.commandGroups.map((group) => ({
@@ -3743,7 +3739,7 @@ function validAspDogfoodReceipt() {
     capabilityProfiles: ["core-check-provider", "opcore-core-check"],
     entrypoint: { transport: "stdio", bin: "/tmp/opcore-asp-dogfood/project/node_modules/.bin/opcore-asp-provider", args: ["--stdio"] },
     artifact: { fingerprint: `sha256:${"e".repeat(64)}`, checksums: [{ path: "dist/index.js", sha256: "e".repeat(64) }] },
-    provenance: { publisher: "the-open-engine", source: "https://github.com/the-open-engine/lattice", license: "MIT" },
+    provenance: { publisher: "the-open-engine", source: "https://github.com/the-open-engine/opcore", license: "MIT" },
     accessExpectations: {
       filesystem: { read: ["workspace:snapshot"], write: [] },
       network: { outbound: false, allowlist: [] },

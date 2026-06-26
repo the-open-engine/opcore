@@ -1,4 +1,4 @@
-import type { ValidationCheckContext } from "@the-open-engine/lattice-validation";
+import type { ValidationCheckContext } from "@the-open-engine/opcore-validation";
 import { cpSync, existsSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { mkdir, unlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";

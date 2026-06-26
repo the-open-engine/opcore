@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 
 const repoRoot = fileURLToPath(new URL("..", import.meta.url));
-const latticeBin = join(repoRoot, "packages/cli/dist/index.js");
+const latticeBin = join(repoRoot, "packages/opcore/dist/lattice/index.js");
 const sourceFixtureRoot = resolve(repoRoot, "packages/fixtures/source-extraction/wave1");
 
 describe("graph query CLI routes", () => {

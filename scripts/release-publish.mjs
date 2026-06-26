@@ -7,14 +7,13 @@ const releaseVersion = valueAfter("--version") ?? "0.1.0-alpha.0";
 const tag = valueAfter("--tag") ?? "alpha";
 const dryRun = process.argv.includes("--dry-run") || process.env.LATTICE_PUBLISH_DRY_RUN === "1";
 const implementationPackages = [
-  "@the-open-engine/lattice-contracts",
+  "@the-open-engine/opcore-contracts",
   "@the-open-engine/opcore",
-  "@the-open-engine/lattice-cli",
-  "@the-open-engine/lattice-graph",
-  "@the-open-engine/lattice-edit",
-  "@the-open-engine/lattice-validation",
-  "@the-open-engine/lattice-validation-rust",
-  "@the-open-engine/lattice-validation-typescript",
+  "@the-open-engine/opcore-graph",
+  "@the-open-engine/opcore-edit",
+  "@the-open-engine/opcore-validation",
+  "@the-open-engine/opcore-validation-rust",
+  "@the-open-engine/opcore-validation-typescript",
   "@the-open-engine/opcore-asp-provider"
 ];
 const publicPackages = [...graphCoreNativePackageNames, ...implementationPackages];
@@ -40,7 +39,7 @@ for (const packageName of publicPackages) {
   run("npm", ["publish", "--access", "public", "--tag", tag], { cwd: releasePackageDirForName(packageName) });
 }
 
-process.stdout.write(`published Lattice ${releaseVersion} with npm tag ${tag}\n`);
+process.stdout.write(`published Opcore ${releaseVersion} with npm tag ${tag}\n`);
 
 function valueAfter(flag) {
   const index = process.argv.indexOf(flag);

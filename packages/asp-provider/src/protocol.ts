@@ -1,4 +1,4 @@
-import type { ValidationScopeKind } from "@the-open-engine/lattice-contracts";
+import type { ValidationScopeKind } from "@the-open-engine/opcore-contracts";
 
 export type JsonPrimitive = string | number | boolean | null;
 export type JsonValue = JsonPrimitive | JsonValue[] | { [key: string]: JsonValue };

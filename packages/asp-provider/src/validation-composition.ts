@@ -18,17 +18,17 @@ import type {
   RepoIdentity,
   ValidationRequest,
   ValidationResult
-} from "@the-open-engine/lattice-contracts";
-import { GRAPH_SCHEMA_VERSION, validateProviderStatus } from "@the-open-engine/lattice-contracts";
+} from "@the-open-engine/opcore-contracts";
+import { GRAPH_SCHEMA_VERSION, validateProviderStatus } from "@the-open-engine/opcore-contracts";
 import {
   createValidationCheckManifest,
   createValidationRunner,
   type ValidationCheckDefinition,
   type ValidationGraphProviderClient,
   type ValidationWorkspace
-} from "@the-open-engine/lattice-validation";
-import { createRustValidationChecks } from "@the-open-engine/lattice-validation-rust";
-import { createTypeScriptValidationChecks } from "@the-open-engine/lattice-validation-typescript";
+} from "@the-open-engine/opcore-validation";
+import { createRustValidationChecks } from "@the-open-engine/opcore-validation-rust";
+import { createTypeScriptValidationChecks } from "@the-open-engine/opcore-validation-typescript";
 import {
   graphProviderDetectChanges,
   graphProviderImpact,
@@ -36,7 +36,7 @@ import {
   graphProviderQuery,
   graphProviderReviewContext,
   graphProviderStatus
-} from "@the-open-engine/lattice-graph";
+} from "@the-open-engine/opcore-graph";
 
 export const defaultAspProviderValidationChecks = [
   ...createTypeScriptValidationChecks(),

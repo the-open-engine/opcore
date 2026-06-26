@@ -1,4 +1,4 @@
-import type { ValidationCheckDefinition } from "@the-open-engine/lattice-validation";
+import type { ValidationCheckDefinition } from "@the-open-engine/opcore-validation";
 import { createDeadCodeCheck } from "./dead-code-check.js";
 import { createImportGraphCheck } from "./import-graph-check.js";
 import { createRelevantTestsCheck } from "./relevant-tests-check.js";

@@ -1,4 +1,4 @@
-import type { ValidationCheckContext } from "@the-open-engine/lattice-validation";
+import type { ValidationCheckContext } from "@the-open-engine/opcore-validation";
 import ts from "typescript";
 import { resolveTypeScriptCompilerOptions } from "./compiler-options.js";
 import { materializeTypeScriptSources, type TypeScriptMaterializedSourceSet } from "./source-files.js";

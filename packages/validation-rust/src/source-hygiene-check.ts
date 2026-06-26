@@ -1,4 +1,4 @@
-import type { ValidationCheckDefinition } from "@the-open-engine/lattice-validation";
+import type { ValidationCheckDefinition } from "@the-open-engine/opcore-validation";
 import { RUST_SOURCE_HYGIENE_CHECK_ID } from "./check-ids.js";
 import { ownedClippyLints, rustCheckAdapter, rustCheckOwner, supportedRustValidationScopes } from "./check-constants.js";
 import { diagnostic, sortDiagnostics } from "./diagnostics.js";

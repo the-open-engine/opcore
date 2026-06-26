@@ -1,0 +1,11 @@
+{
+  "github": {
+    "prBase": "main"
+  },
+  "worktree": {
+    "baseRef": "origin/main",
+    "setup": [
+      "npm run setup"
+    ]
+  }
+}

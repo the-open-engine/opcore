@@ -1,8 +1,8 @@
 {
-  "name": "@the-open-engine/lattice-fixtures",
+  "name": "@the-open-engine/opcore-fixtures",
   "version": "0.1.0-alpha.0",
   "private": true,
-  "description": "Internal fixtures and conformance inputs for Lattice tests and examples.",
+  "description": "Internal fixtures and conformance inputs for Opcore tests and examples.",
   "type": "module",
   "license": "MIT",
   "main": "dist/index.js",
@@ -65,7 +65,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/the-open-engine/lattice.git",
+    "url": "git+https://github.com/the-open-engine/opcore.git",
     "directory": "packages/fixtures"
   }
 }

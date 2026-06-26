@@ -16,15 +16,14 @@ const currentTarget = `${process.platform}-${process.arch}`;
 const currentNativePackage = graphCoreNativePackageNamesByTarget[currentTarget];
 
 const packageNames = [
-  "@the-open-engine/lattice-contracts",
+  "@the-open-engine/opcore-contracts",
   "@the-open-engine/opcore",
-  "@the-open-engine/lattice-cli",
-  "@the-open-engine/lattice-graph",
+  "@the-open-engine/opcore-graph",
   currentNativePackage,
-  "@the-open-engine/lattice-edit",
-  "@the-open-engine/lattice-validation",
-  "@the-open-engine/lattice-validation-rust",
-  "@the-open-engine/lattice-validation-typescript",
+  "@the-open-engine/opcore-edit",
+  "@the-open-engine/opcore-validation",
+  "@the-open-engine/opcore-validation-rust",
+  "@the-open-engine/opcore-validation-typescript",
   "@the-open-engine/opcore-asp-provider"
 ].filter(Boolean);
 
@@ -122,14 +121,12 @@ describe("installed package bins", () => {
       for (const packageName of packageNames) {
         const manifestPath = join(project, "node_modules", ...packageName.split("/"), "package.json");
         const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
-        if (packageName === "@the-open-engine/lattice-cli") {
-          assert.deepEqual(manifest.bin, { lattice: "dist/index.js" });
+        if (packageName === "@the-open-engine/opcore") {
+          assert.deepEqual(manifest.bin, { opcore: "dist/index.js", lattice: "dist/lattice/index.js" });
           assert.equal(
             manifest.exports["./descriptors/lattice.managed-tool.json"],
             "./dist/descriptors/lattice.managed-tool.json"
           );
-        } else if (packageName === "@the-open-engine/opcore") {
-          assert.deepEqual(manifest.bin, { opcore: "dist/index.js" });
         } else if (packageName === "@the-open-engine/opcore-asp-provider") {
           assert.deepEqual(manifest.bin, { "opcore-asp-provider": "dist/index.js" });
           assert.equal(
@@ -158,15 +155,16 @@ describe("installed package bins", () => {
     }
   });
 
-  it("installs packed Opcore alone with only the opcore bin", { timeout: 120000 }, () => {
+  it("installs packed Opcore alone with the opcore and lattice bins", { timeout: 120000 }, () => {
     const temp = mkdtempSync(join(tmpdir(), "opcore-installed-bin-"));
     try {
       const tarballs = [
-        "@the-open-engine/lattice-contracts",
-        "@the-open-engine/lattice-graph",
-        "@the-open-engine/lattice-validation",
-        "@the-open-engine/lattice-validation-rust",
-        "@the-open-engine/lattice-validation-typescript",
+        "@the-open-engine/opcore-contracts",
+        "@the-open-engine/opcore-graph",
+        "@the-open-engine/opcore-edit",
+        "@the-open-engine/opcore-validation",
+        "@the-open-engine/opcore-validation-rust",
+        "@the-open-engine/opcore-validation-typescript",
         "@the-open-engine/opcore"
       ].map((packageName) => packWorkspace(packageName, temp));
       const project = join(temp, "project");
@@ -175,7 +173,8 @@ describe("installed package bins", () => {
       run("npm", ["install", "--ignore-scripts", "--no-audit", "--no-fund", ...tarballs], { cwd: project });
 
       assert.equal(existsSync(binPath(project, "opcore")), true);
-      for (const forbiddenBin of ["lattice", "crg", "cix", "rox"]) {
+      assert.equal(existsSync(binPath(project, "lattice")), true);
+      for (const forbiddenBin of ["crg", "cix", "rox"]) {
         assert.equal(existsSync(binPath(project, forbiddenBin)), false, forbiddenBin);
       }
       const status = assertSmoke(project, ["status", "--json"], 0, "opcore");
@@ -235,7 +234,7 @@ function assertManagedDescriptor(project) {
     project,
     "node_modules",
     "@the-open-engine",
-    "lattice-cli",
+    "opcore",
     "dist",
     "descriptors",
     "lattice.managed-tool.json"

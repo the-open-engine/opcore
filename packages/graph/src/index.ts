@@ -17,8 +17,8 @@ import type {
   GraphDetectChangesResult,
   GraphReviewContextResult,
   GraphSearchResult
-} from "@the-open-engine/lattice-contracts";
-import { createCommandRouterResult, graphNamedQueryKinds } from "@the-open-engine/lattice-contracts";
+} from "@the-open-engine/opcore-contracts";
+import { createCommandRouterResult, graphNamedQueryKinds } from "@the-open-engine/opcore-contracts";
 import { providerFailureStatus } from "./artifact.js";
 import { graphServeRouterResult, isServeTransportArgv, runGraphServeCli } from "./serve.js";
 import { invokeGraphCoreSidecar } from "./sidecar.js";

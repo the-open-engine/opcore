@@ -6,8 +6,8 @@ import type {
   GraphWatchLifecycle,
   GraphProviderFailureStatus,
   GraphProviderStatus
-} from "@the-open-engine/lattice-contracts";
-import { validateGraphDaemonResponse, validateGraphWatchLifecycle } from "@the-open-engine/lattice-contracts";
+} from "@the-open-engine/opcore-contracts";
+import { validateGraphDaemonResponse, validateGraphWatchLifecycle } from "@the-open-engine/opcore-contracts";
 import { spawn, spawnSync, type SpawnSyncReturns } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";

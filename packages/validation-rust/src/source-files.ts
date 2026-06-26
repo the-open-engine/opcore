@@ -1,5 +1,5 @@
-import type { ValidationCheckContext, ValidationCheckResult } from "@the-open-engine/lattice-validation";
-import { normalizeValidationFileViewPath } from "@the-open-engine/lattice-validation";
+import type { ValidationCheckContext, ValidationCheckResult } from "@the-open-engine/opcore-validation";
+import { normalizeValidationFileViewPath } from "@the-open-engine/opcore-validation";
 
 export interface RustMaterializedSourceFile {
   path: string;

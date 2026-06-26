@@ -1,4 +1,4 @@
-import type { EditRefusal } from "@the-open-engine/lattice-contracts";
+import type { EditRefusal } from "@the-open-engine/opcore-contracts";
 import { normalizeEditRepoRelativePath } from "./path-policy.js";
 
 export const implementedEditCommands = ["exact", "multi", "search-replace", "check", "apply", "patch", "tree", "rename", "move", "signature"] as const;

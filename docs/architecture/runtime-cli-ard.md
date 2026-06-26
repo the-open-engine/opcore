@@ -110,7 +110,7 @@ Before replacing current external tool behavior, add golden/reference fixtures a
 
 ## Rust Validation Adapter
 
-#20 adds `@the-open-engine/lattice-validation-rust` as a validation adapter package composed by the CLI beside TypeScript checks. Stable check ids are `rust.source-hygiene`, `rust.fmt`, `rust.cargo-check`, `rust.clippy`, `rust.rustdoc`, `rust.import-graph`, `rust.dead-code`, `rust.unused-deps`, and `rust.function-metrics`. These are provider assessment checks; ASP hosts decide allow, deny, or degraded coverage later.
+#20 adds `@the-open-engine/opcore-validation-rust` as a validation adapter package composed by the CLI beside TypeScript checks. Stable check ids are `rust.source-hygiene`, `rust.fmt`, `rust.cargo-check`, `rust.clippy`, `rust.rustdoc`, `rust.import-graph`, `rust.dead-code`, `rust.unused-deps`, and `rust.function-metrics`. These are provider assessment checks; ASP hosts decide allow, deny, or degraded coverage later.
 
 Rust checks read candidate files through `ValidationCheckContext.fileView`. Checks that need Cargo or native tools materialize a temporary workspace from after-state content, apply write/delete overlays there, and clean up without mutating the real worktree. `.rs`, `.inc`, and `Cargo.toml` are adapter-owned inputs. Cargo.lock-only changes remain retained compatibility until a later decision expands Rust adapter ownership.
 

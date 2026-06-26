@@ -1,4 +1,4 @@
-import type { ValidationCheckContext } from "@the-open-engine/lattice-validation";
+import type { ValidationCheckContext } from "@the-open-engine/opcore-validation";
 import ts from "typescript";
 import { readOptionalRepoFile } from "./source-files.js";
 

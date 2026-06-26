@@ -199,7 +199,7 @@ describe("validation-typescript adapter", () => {
         },
         scope: {
           kind: "package",
-          packageName: "@the-open-engine/lattice-validation-typescript",
+          packageName: "@the-open-engine/opcore-validation-typescript",
           packageRoot: "packages/validation-typescript"
         },
         checks: [TYPE_SCRIPT_TYPES_CHECK_ID]
@@ -523,7 +523,7 @@ describe("validation-typescript adapter", () => {
         "import type { Payload, Shape } from './types';\nfunction describe(shape: Shape, payload: Payload) { return `${payload.id}:${shape.width}`; }\nvoid describe;\n"
       );
 
-      const graphBuild = spawnSync(process.execPath, ["packages/cli/dist/index.js", "graph", "build", "--repo", repo, "--json"], {
+      const graphBuild = spawnSync(process.execPath, ["packages/opcore/dist/lattice/index.js", "graph", "build", "--repo", repo, "--json"], {
         cwd: process.cwd(),
         encoding: "utf8"
       });
@@ -532,7 +532,7 @@ describe("validation-typescript adapter", () => {
       const check = spawnSync(
         process.execPath,
         [
-          "packages/cli/dist/index.js",
+          "packages/opcore/dist/lattice/index.js",
           "check",
           "files",
           "src/types.ts",
@@ -587,7 +587,7 @@ describe("validation-typescript adapter", () => {
       );
       writeFileSync(join(repo, "src/index.ts"), "export { missing as renamed };\nfunction internal(){return 1;}\n");
 
-      const graphBuild = spawnSync(process.execPath, ["packages/cli/dist/index.js", "graph", "build", "--repo", repo, "--json"], {
+      const graphBuild = spawnSync(process.execPath, ["packages/opcore/dist/lattice/index.js", "graph", "build", "--repo", repo, "--json"], {
         cwd: process.cwd(),
         encoding: "utf8"
       });
@@ -595,7 +595,7 @@ describe("validation-typescript adapter", () => {
 
       const nodeQuery = spawnSync(
         process.execPath,
-        ["packages/cli/dist/index.js", "graph", "query", "--repo", repo, "--kind", "nodes", "--json"],
+        ["packages/opcore/dist/lattice/index.js", "graph", "query", "--repo", repo, "--kind", "nodes", "--json"],
         {
           cwd: process.cwd(),
           encoding: "utf8"
@@ -617,7 +617,7 @@ describe("validation-typescript adapter", () => {
       const check = spawnSync(
         process.execPath,
         [
-          "packages/cli/dist/index.js",
+          "packages/opcore/dist/lattice/index.js",
           "check",
           "files",
           "src/index.ts",
@@ -668,7 +668,7 @@ describe("validation-typescript adapter", () => {
         "export { laterNested as exportedLaterNested };\nfunction container(){ function laterNested(){ return 1; } return laterNested(); }\n"
       );
 
-      const graphBuild = spawnSync(process.execPath, ["packages/cli/dist/index.js", "graph", "build", "--repo", repo, "--json"], {
+      const graphBuild = spawnSync(process.execPath, ["packages/opcore/dist/lattice/index.js", "graph", "build", "--repo", repo, "--json"], {
         cwd: process.cwd(),
         encoding: "utf8"
       });
@@ -676,7 +676,7 @@ describe("validation-typescript adapter", () => {
 
       const nodeQuery = spawnSync(
         process.execPath,
-        ["packages/cli/dist/index.js", "graph", "query", "--repo", repo, "--kind", "nodes", "--json"],
+        ["packages/opcore/dist/lattice/index.js", "graph", "query", "--repo", repo, "--kind", "nodes", "--json"],
         {
           cwd: process.cwd(),
           encoding: "utf8"
@@ -700,7 +700,7 @@ describe("validation-typescript adapter", () => {
       const check = spawnSync(
         process.execPath,
         [
-          "packages/cli/dist/index.js",
+          "packages/opcore/dist/lattice/index.js",
           "check",
           "files",
           "src/index.ts",
@@ -752,7 +752,7 @@ describe("validation-typescript adapter", () => {
         "import usedDefault from './dep';\nfunction run() { return usedDefault(); }\nrun();\n"
       );
 
-      const graphBuild = spawnSync(process.execPath, ["packages/cli/dist/index.js", "graph", "build", "--repo", repo, "--json"], {
+      const graphBuild = spawnSync(process.execPath, ["packages/opcore/dist/lattice/index.js", "graph", "build", "--repo", repo, "--json"], {
         cwd: process.cwd(),
         encoding: "utf8"
       });
@@ -760,7 +760,7 @@ describe("validation-typescript adapter", () => {
 
       const edgeQuery = spawnSync(
         process.execPath,
-        ["packages/cli/dist/index.js", "graph", "query", "--repo", repo, "--kind", "edges", "--json"],
+        ["packages/opcore/dist/lattice/index.js", "graph", "query", "--repo", repo, "--kind", "edges", "--json"],
         {
           cwd: process.cwd(),
           encoding: "utf8"
@@ -781,7 +781,7 @@ describe("validation-typescript adapter", () => {
       const check = spawnSync(
         process.execPath,
         [
-          "packages/cli/dist/index.js",
+          "packages/opcore/dist/lattice/index.js",
           "check",
           "files",
           "src/dep.ts",
@@ -836,7 +836,7 @@ describe("validation-typescript adapter", () => {
         "import { publicName } from './dep';\nfunction run() { return publicName(); }\nrun();\n"
       );
 
-      const graphBuild = spawnSync(process.execPath, ["packages/cli/dist/index.js", "graph", "build", "--repo", repo, "--json"], {
+      const graphBuild = spawnSync(process.execPath, ["packages/opcore/dist/lattice/index.js", "graph", "build", "--repo", repo, "--json"], {
         cwd: process.cwd(),
         encoding: "utf8"
       });
@@ -844,7 +844,7 @@ describe("validation-typescript adapter", () => {
 
       const edgeQuery = spawnSync(
         process.execPath,
-        ["packages/cli/dist/index.js", "graph", "query", "--repo", repo, "--kind", "edges", "--json"],
+        ["packages/opcore/dist/lattice/index.js", "graph", "query", "--repo", repo, "--kind", "edges", "--json"],
         {
           cwd: process.cwd(),
           encoding: "utf8"
@@ -865,7 +865,7 @@ describe("validation-typescript adapter", () => {
       const check = spawnSync(
         process.execPath,
         [
-          "packages/cli/dist/index.js",
+          "packages/opcore/dist/lattice/index.js",
           "check",
           "files",
           "src/dep.ts",
@@ -921,7 +921,7 @@ describe("validation-typescript adapter", () => {
         "import { addFromBarrel } from './barrel';\nfunction run() { return addFromBarrel(); }\nrun();\n"
       );
 
-      const graphBuild = spawnSync(process.execPath, ["packages/cli/dist/index.js", "graph", "build", "--repo", repo, "--json"], {
+      const graphBuild = spawnSync(process.execPath, ["packages/opcore/dist/lattice/index.js", "graph", "build", "--repo", repo, "--json"], {
         cwd: process.cwd(),
         encoding: "utf8"
       });
@@ -929,7 +929,7 @@ describe("validation-typescript adapter", () => {
 
       const edgeQuery = spawnSync(
         process.execPath,
-        ["packages/cli/dist/index.js", "graph", "query", "--repo", repo, "--kind", "edges", "--json"],
+        ["packages/opcore/dist/lattice/index.js", "graph", "query", "--repo", repo, "--kind", "edges", "--json"],
         {
           cwd: process.cwd(),
           encoding: "utf8"
@@ -947,7 +947,7 @@ describe("validation-typescript adapter", () => {
 
       const nodeQuery = spawnSync(
         process.execPath,
-        ["packages/cli/dist/index.js", "graph", "query", "--repo", repo, "--kind", "nodes", "--json"],
+        ["packages/opcore/dist/lattice/index.js", "graph", "query", "--repo", repo, "--kind", "nodes", "--json"],
         {
           cwd: process.cwd(),
           encoding: "utf8"
@@ -969,7 +969,7 @@ describe("validation-typescript adapter", () => {
       const check = spawnSync(
         process.execPath,
         [
-          "packages/cli/dist/index.js",
+          "packages/opcore/dist/lattice/index.js",
           "check",
           "files",
           "src/source.ts",
@@ -1142,7 +1142,7 @@ function repoWorkspace() {
       files: listRepoFiles(`${packageRoot}/src`).filter((path) => path.endsWith(".ts"))
     }),
     resolvePackageRoot: (packageName) =>
-      packageName === "@the-open-engine/lattice-validation-typescript" ? "packages/validation-typescript" : undefined
+      packageName === "@the-open-engine/opcore-validation-typescript" ? "packages/validation-typescript" : undefined
   };
 }
 

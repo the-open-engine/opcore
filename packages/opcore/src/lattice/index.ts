@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { commandRouterManifest } from "./manifest.js";
 import { runCli } from "./router.js";
-import { isServeTransportArgv, runGraphServeCli } from "@the-open-engine/lattice-graph";
+import { isServeTransportArgv, runGraphServeCli } from "@the-open-engine/opcore-graph";
 
 declare const process: {
   argv: string[];

@@ -3,11 +3,11 @@ import type {
   ValidationFailureCategory,
   ValidationRequest,
   ValidationResult
-} from "@the-open-engine/lattice-contracts";
+} from "@the-open-engine/opcore-contracts";
 import {
   validateValidationRequestPayload,
   validateValidationResultPayload
-} from "@the-open-engine/lattice-contracts";
+} from "@the-open-engine/opcore-contracts";
 
 export interface EditValidationRunner {
   runValidation(request: ValidationRequest): Promise<ValidationResult>;

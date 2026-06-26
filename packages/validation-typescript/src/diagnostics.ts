@@ -1,4 +1,4 @@
-import type { ValidationDiagnostic, ValidationDiagnosticCategory } from "@the-open-engine/lattice-contracts";
+import type { ValidationDiagnostic, ValidationDiagnosticCategory } from "@the-open-engine/opcore-contracts";
 import ts from "typescript";
 import { toRepoRelativeCompilerPath } from "./compiler-host.js";
 

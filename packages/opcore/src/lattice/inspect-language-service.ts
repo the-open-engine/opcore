@@ -14,7 +14,7 @@ import type {
   InspectSignatureTypeParameter,
   InspectSymbolSummary,
   InspectSymbolTarget
-} from "@the-open-engine/lattice-contracts";
+} from "@the-open-engine/opcore-contracts";
 import { Node, Project, SyntaxKind, type ParameterDeclaration, type SourceFile, type Symbol as MorphSymbol, type TypeParameterDeclaration } from "ts-morph";
 
 export interface InspectReferenceRequest {

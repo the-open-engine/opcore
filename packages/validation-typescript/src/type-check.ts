@@ -1,4 +1,4 @@
-import type { ValidationCheckDefinition } from "@the-open-engine/lattice-validation";
+import type { ValidationCheckDefinition } from "@the-open-engine/opcore-validation";
 import { TYPE_SCRIPT_TYPES_CHECK_ID } from "./check-ids.js";
 import { typeScriptCheckAdapter, typeScriptCheckOwner, supportedTypeScriptValidationScopes } from "./check-constants.js";
 import { createOverlayAwareTypeScriptProgram, repoSourceFiles } from "./compiler-host.js";

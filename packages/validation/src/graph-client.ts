@@ -24,7 +24,7 @@ import type {
   JsonValue,
   RepoIdentity,
   ValidationRequest
-} from "@the-open-engine/lattice-contracts";
+} from "@the-open-engine/opcore-contracts";
 import {
   GRAPH_SCHEMA_VERSION,
   validateGraphDetectChangesRequest,
@@ -39,7 +39,7 @@ import {
   validateGraphReviewContextResult,
   validateProviderStatus,
   validateRepoRelativePath
-} from "@the-open-engine/lattice-contracts";
+} from "@the-open-engine/opcore-contracts";
 import { defaultValidationGraphProvider, missingGraphStatus } from "./request.js";
 
 type MaybePromise<T> = T | Promise<T>;

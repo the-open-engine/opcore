@@ -32,18 +32,18 @@
     "opcore-asp-provider": "dist/index.js"
   },
   "dependencies": {
-    "@the-open-engine/lattice-contracts": "0.1.0-alpha.0",
-    "@the-open-engine/lattice-graph": "0.1.0-alpha.0",
-    "@the-open-engine/lattice-validation": "0.1.0-alpha.0",
-    "@the-open-engine/lattice-validation-rust": "0.1.0-alpha.0",
-    "@the-open-engine/lattice-validation-typescript": "0.1.0-alpha.0"
+    "@the-open-engine/opcore-contracts": "0.1.0-alpha.0",
+    "@the-open-engine/opcore-graph": "0.1.0-alpha.0",
+    "@the-open-engine/opcore-validation": "0.1.0-alpha.0",
+    "@the-open-engine/opcore-validation-rust": "0.1.0-alpha.0",
+    "@the-open-engine/opcore-validation-typescript": "0.1.0-alpha.0"
   },
   "engines": {
     "node": ">=22"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/the-open-engine/lattice.git",
+    "url": "git+https://github.com/the-open-engine/opcore.git",
     "directory": "packages/asp-provider"
   },
   "scripts": {

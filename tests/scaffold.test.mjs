@@ -10,7 +10,6 @@ describe("lattice scaffold", () => {
     assert.deepEqual(root.workspaces, [
       "packages/contracts",
       "packages/opcore",
-      "packages/cli",
       "packages/graph",
       "packages/edit",
       "packages/validation",
@@ -28,14 +27,14 @@ describe("lattice scaffold", () => {
     );
 
     assert.deepEqual(packages, [
-      "@the-open-engine/lattice-contracts",
+      "@the-open-engine/opcore-contracts",
       "@the-open-engine/opcore",
-      "@the-open-engine/lattice-graph",
-      "@the-open-engine/lattice-edit",
-      "@the-open-engine/lattice-validation",
-      "@the-open-engine/lattice-validation-rust",
-      "@the-open-engine/lattice-validation-typescript",
-      "@the-open-engine/lattice-fixtures"
+      "@the-open-engine/opcore-graph",
+      "@the-open-engine/opcore-edit",
+      "@the-open-engine/opcore-validation",
+      "@the-open-engine/opcore-validation-rust",
+      "@the-open-engine/opcore-validation-typescript",
+      "@the-open-engine/opcore-fixtures"
     ]);
   });
 

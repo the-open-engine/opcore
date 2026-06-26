@@ -7,8 +7,8 @@ import type {
   OpcoreTryScenario,
   OpcoreTrySignalSummary,
   ParsedCommandArgv
-} from "@the-open-engine/lattice-contracts";
-import { createCommandRouterResult, parseCommandArgv } from "@the-open-engine/lattice-contracts";
+} from "@the-open-engine/opcore-contracts";
+import { createCommandRouterResult, parseCommandArgv } from "@the-open-engine/opcore-contracts";
 import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";

@@ -13,13 +13,13 @@ import type {
   InspectRouteResult,
   InspectSymbolTarget,
   RepoIdentity
-} from "@the-open-engine/lattice-contracts";
-import { createCommandRouterResult } from "@the-open-engine/lattice-contracts";
+} from "@the-open-engine/opcore-contracts";
+import { createCommandRouterResult } from "@the-open-engine/opcore-contracts";
 import {
   graphProviderNamedQuery,
   graphProviderQuery,
   graphProviderSearch
-} from "@the-open-engine/lattice-graph";
+} from "@the-open-engine/opcore-graph";
 import {
   isSupportedInspectImplementationSourcePath,
   isSupportedInspectSourcePath,

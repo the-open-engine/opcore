@@ -1,7 +1,7 @@
 {
-  "name": "@the-open-engine/lattice-contracts",
+  "name": "@the-open-engine/opcore-contracts",
   "version": "0.1.0-alpha.0",
-  "description": "Public contracts and JSON schema for Lattice graph, edit, validation, and CLI routes.",
+  "description": "Public contracts and JSON schema for Opcore graph, edit, validation, and CLI routes.",
   "type": "module",
   "license": "MIT",
   "main": "dist/index.js",
@@ -37,7 +37,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/the-open-engine/lattice.git",
+    "url": "git+https://github.com/the-open-engine/opcore.git",
     "directory": "packages/contracts"
   }
 }

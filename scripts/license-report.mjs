@@ -71,7 +71,7 @@ for (const entry of thirdParty) {
 const lines = [
   "# License Report",
   "",
-  "Maintainer license evidence for the Lattice alpha release gate.",
+  "Maintainer license evidence for the Opcore alpha release gate.",
   "",
   `Root package: ${root.name}@${root.version}`,
   `Lockfile version: ${lock.lockfileVersion}`,

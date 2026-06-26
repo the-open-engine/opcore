@@ -1,4 +1,4 @@
-import type { ValidationCheckDefinition } from "@the-open-engine/lattice-validation";
+import type { ValidationCheckDefinition } from "@the-open-engine/opcore-validation";
 import { RUST_FMT_CHECK_ID } from "./check-ids.js";
 import { rustCheckAdapter, rustCheckOwner, supportedRustValidationScopes } from "./check-constants.js";
 import { commandInfrastructureFailure, commandUnavailableFailure, singleStderrPolicyFailure } from "./diagnostics.js";

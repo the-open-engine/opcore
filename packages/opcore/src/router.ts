@@ -1,5 +1,5 @@
-import type { CommandRouterResult, ParsedCommandArgv } from "@the-open-engine/lattice-contracts";
-import { createCommandRouterResult, normalizeCommandBin, parseCommandArgv } from "@the-open-engine/lattice-contracts";
+import type { CommandRouterResult, ParsedCommandArgv } from "@the-open-engine/opcore-contracts";
+import { createCommandRouterResult, normalizeCommandBin, parseCommandArgv } from "@the-open-engine/opcore-contracts";
 import { routeOpcoreCheck } from "./check.js";
 import {
   createOpcoreMeasureDelta,

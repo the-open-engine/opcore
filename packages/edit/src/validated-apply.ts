@@ -3,7 +3,7 @@ import type {
   EditPlan,
   EditRefusal,
   ValidationResult
-} from "@the-open-engine/lattice-contracts";
+} from "@the-open-engine/opcore-contracts";
 import {
   applyEditPlan,
   previewEditPlan,

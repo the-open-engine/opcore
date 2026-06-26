@@ -14,8 +14,8 @@ import type {
   GraphSearchRequest,
   GraphSearchResult,
   RepoIdentity
-} from "@the-open-engine/lattice-contracts";
-import { GRAPH_SCHEMA_VERSION, validateProviderStatus } from "@the-open-engine/lattice-contracts";
+} from "@the-open-engine/opcore-contracts";
+import { GRAPH_SCHEMA_VERSION, validateProviderStatus } from "@the-open-engine/opcore-contracts";
 import { stableStringify } from "./hash.js";
 
 type MaybePromise<T> = T | Promise<T>;

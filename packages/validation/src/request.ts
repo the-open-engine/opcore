@@ -5,8 +5,8 @@ import type {
   RepoIdentity,
   ValidationRequest,
   ValidationScope
-} from "@the-open-engine/lattice-contracts";
-import { validateValidationRequestPayload } from "@the-open-engine/lattice-contracts";
+} from "@the-open-engine/opcore-contracts";
+import { validateValidationRequestPayload } from "@the-open-engine/opcore-contracts";
 
 export const defaultValidationGraphProvider = "lattice-graph" as const;
 

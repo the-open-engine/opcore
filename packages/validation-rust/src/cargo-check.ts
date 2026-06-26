@@ -1,5 +1,5 @@
-import type { ValidationCheckDefinition, ValidationCheckResult, ValidationCheckContext } from "@the-open-engine/lattice-validation";
-import type { ValidationDiagnostic, ValidationDiagnosticCategory } from "@the-open-engine/lattice-contracts";
+import type { ValidationCheckDefinition, ValidationCheckResult, ValidationCheckContext } from "@the-open-engine/opcore-validation";
+import type { ValidationDiagnostic, ValidationDiagnosticCategory } from "@the-open-engine/opcore-contracts";
 import { RUST_CARGO_CHECK_ID, RUST_CLIPPY_CHECK_ID, RUST_DEAD_CODE_CHECK_ID, RUST_RUSTDOC_CHECK_ID } from "./check-ids.js";
 import { ownedClippyLints, rustCheckAdapter, rustCheckOwner, supportedRustValidationScopes } from "./check-constants.js";
 import type { CargoMetadataPackage } from "./cargo-metadata.js";

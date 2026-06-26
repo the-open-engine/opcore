@@ -1,4 +1,4 @@
-import type { EditRefusal, RepoIdentity } from "@the-open-engine/lattice-contracts";
+import type { EditRefusal, RepoIdentity } from "@the-open-engine/opcore-contracts";
 import { normalizeEditRepoRelativePath } from "./path-policy.js";
 
 export interface SymbolEditTarget {

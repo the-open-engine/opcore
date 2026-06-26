@@ -37,7 +37,7 @@
         },
         "scope": {
           "kind": "package",
-          "packageName": "@the-open-engine/lattice-validation",
+          "packageName": "@the-open-engine/opcore-validation",
           "packageRoot": "packages/validation"
         },
         "graph": {

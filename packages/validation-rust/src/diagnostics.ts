@@ -2,8 +2,8 @@ import type {
   ValidationCheckRunStatus,
   ValidationDiagnostic,
   ValidationDiagnosticCategory
-} from "@the-open-engine/lattice-contracts";
-import type { ValidationCheckResult } from "@the-open-engine/lattice-validation";
+} from "@the-open-engine/opcore-contracts";
+import type { ValidationCheckResult } from "@the-open-engine/opcore-validation";
 import { isAbsolute, relative } from "node:path";
 import type { RustValidationProcessResult } from "./process.js";
 import { parseJsonLines } from "./process.js";

@@ -8,8 +8,8 @@ import type {
   ValidationResult,
   ValidationResultStatus,
   ValidationSkippedCheck
-} from "@the-open-engine/lattice-contracts";
-import { GRAPH_SCHEMA_VERSION, validateValidationResultPayload } from "@the-open-engine/lattice-contracts";
+} from "@the-open-engine/opcore-contracts";
+import { GRAPH_SCHEMA_VERSION, validateValidationResultPayload } from "@the-open-engine/opcore-contracts";
 import { createCheckCommandAdapter, createValidateCommandAdapter } from "./command-adapter.js";
 
 export interface CreateValidationResultSkeletonArgs {

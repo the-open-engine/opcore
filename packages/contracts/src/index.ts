@@ -1127,13 +1127,13 @@ export const managedToolDescriptorCommandGroups = ["graph", "inspect", "edit", "
 export type ManagedToolDescriptorCommandGroupName = (typeof managedToolDescriptorCommandGroups)[number];
 
 const managedToolDescriptorCommandGroupPackageNames: Record<ManagedToolDescriptorCommandGroupName, string> = {
-  graph: "@the-open-engine/lattice-graph",
-  inspect: "@the-open-engine/lattice-cli",
-  edit: "@the-open-engine/lattice-edit",
-  check: "@the-open-engine/lattice-validation",
-  validate: "@the-open-engine/lattice-validation",
-  status: "@the-open-engine/lattice-cli",
-  doctor: "@the-open-engine/lattice-cli"
+  graph: "@the-open-engine/opcore-graph",
+  inspect: "@the-open-engine/opcore",
+  edit: "@the-open-engine/opcore-edit",
+  check: "@the-open-engine/opcore-validation",
+  validate: "@the-open-engine/opcore-validation",
+  status: "@the-open-engine/opcore",
+  doctor: "@the-open-engine/opcore"
 };
 
 export const managedToolDescriptorArtifactTypes = [
@@ -1153,12 +1153,12 @@ export interface ManagedToolDescriptor {
   aggregateIdentity: {
     name: "lattice";
     releaseLine: "lattice";
-    packageName: "@the-open-engine/lattice-cli";
+    packageName: "@the-open-engine/opcore";
     version?: string;
   };
   packageIdentity: {
-    packageName: "@the-open-engine/lattice-cli";
-    artifactName: "@the-open-engine/lattice-cli";
+    packageName: "@the-open-engine/opcore";
+    artifactName: "@the-open-engine/opcore";
     version?: string;
   };
   entrypoints: readonly ManagedToolDescriptorEntrypoint[];
@@ -1173,7 +1173,7 @@ export interface ManagedToolDescriptor {
 
 export interface ManagedToolDescriptorEntrypoint {
   bin: "lattice";
-  packageName: "@the-open-engine/lattice-cli";
+  packageName: "@the-open-engine/opcore";
   path: string;
   command: readonly string[];
 }
@@ -1372,17 +1372,16 @@ export function graphCoreNativePackageNameForTarget(target: GraphCoreNativeSuppo
 }
 
 export const releaseReceiptPackageNames = [
-  "@the-open-engine/lattice-contracts",
+  "@the-open-engine/opcore-contracts",
   "@the-open-engine/opcore",
-  "@the-open-engine/lattice-cli",
-  "@the-open-engine/lattice-graph",
+  "@the-open-engine/opcore-graph",
   "@the-open-engine/opcore-graph-core-darwin-arm64",
   "@the-open-engine/opcore-graph-core-darwin-x64",
   "@the-open-engine/opcore-graph-core-linux-x64",
-  "@the-open-engine/lattice-edit",
-  "@the-open-engine/lattice-validation",
-  "@the-open-engine/lattice-validation-rust",
-  "@the-open-engine/lattice-validation-typescript",
+  "@the-open-engine/opcore-edit",
+  "@the-open-engine/opcore-validation",
+  "@the-open-engine/opcore-validation-rust",
+  "@the-open-engine/opcore-validation-typescript",
   "@the-open-engine/opcore-asp-provider"
 ] as const;
 export type ReleaseReceiptPackageName = (typeof releaseReceiptPackageNames)[number];
@@ -1675,7 +1674,7 @@ export interface CommandGroupContract {
 
 export interface CommandRouterManifest {
   schemaVersion: 1;
-  packageName: "@the-open-engine/lattice-cli" | (string & {});
+  packageName: "@the-open-engine/opcore" | (string & {});
   bins: readonly string[];
   exitSemantics: CommandExitSemantics;
   ownershipBoundaries: readonly {
@@ -2040,7 +2039,7 @@ export const commandExitSemantics: CommandExitSemantics = {
 
 export const commandRouterManifest: CommandRouterManifest = {
   schemaVersion: 1,
-  packageName: "@the-open-engine/lattice-cli",
+  packageName: "@the-open-engine/opcore",
   bins: ["lattice"],
   exitSemantics: commandExitSemantics,
   ownershipBoundaries: [
@@ -2252,7 +2251,7 @@ export interface GraphReleaseBenchmarkReceipt {
 }
 
 export interface GraphReleasePackageInspection {
-  packageName: "@the-open-engine/lattice-graph";
+  packageName: "@the-open-engine/opcore-graph";
   tarballName: string;
   fileCount: number;
   files: readonly string[];
@@ -2411,7 +2410,7 @@ export interface ReleaseReceiptResolvedChecksumEvidence {
 
 export interface ReleaseReceiptDescriptorEvidence {
   path: string;
-  packageName: "@the-open-engine/lattice-cli";
+  packageName: "@the-open-engine/opcore";
   checksumSha256: string;
   descriptor: ManagedToolDescriptor;
   commandGroups: readonly ReleaseReceiptDescriptorCommandGroupEvidence[];
@@ -2528,7 +2527,7 @@ export interface ReleaseCutoverInstalledPackageEvidence {
 
 export interface ReleaseCutoverDescriptorEvidence {
   path: string;
-  packageName: "@the-open-engine/lattice-cli";
+  packageName: "@the-open-engine/opcore";
   checksumSha256: string;
   descriptor: ManagedToolDescriptor;
   resolvedArtifacts: readonly ReleaseReceiptResolvedArtifactEvidence[];
@@ -2978,8 +2977,8 @@ function validateManagedToolIdentity(descriptor: ManagedToolDescriptor): void {
   if (!aggregate || typeof aggregate !== "object") throw new Error("Managed tool descriptor aggregateIdentity is required");
   if (aggregate.name !== "lattice") throw new Error("Managed tool descriptor aggregateIdentity.name must be lattice");
   if (aggregate.releaseLine !== "lattice") throw new Error("Managed tool descriptor aggregateIdentity.releaseLine must be lattice");
-  if (aggregate.packageName !== "@the-open-engine/lattice-cli") {
-    throw new Error("Managed tool descriptor aggregateIdentity.packageName must be @the-open-engine/lattice-cli");
+  if (aggregate.packageName !== "@the-open-engine/opcore") {
+    throw new Error("Managed tool descriptor aggregateIdentity.packageName must be @the-open-engine/opcore");
   }
   if (aggregate.version !== undefined) validateNonEmptyString(aggregate.version, "Managed tool descriptor aggregateIdentity.version");
 
@@ -2987,11 +2986,11 @@ function validateManagedToolIdentity(descriptor: ManagedToolDescriptor): void {
   if (!packageIdentity || typeof packageIdentity !== "object") {
     throw new Error("Managed tool descriptor packageIdentity is required");
   }
-  if (packageIdentity.packageName !== "@the-open-engine/lattice-cli") {
-    throw new Error("Managed tool descriptor packageIdentity.packageName must be @the-open-engine/lattice-cli");
+  if (packageIdentity.packageName !== "@the-open-engine/opcore") {
+    throw new Error("Managed tool descriptor packageIdentity.packageName must be @the-open-engine/opcore");
   }
-  if (packageIdentity.artifactName !== "@the-open-engine/lattice-cli") {
-    throw new Error("Managed tool descriptor packageIdentity.artifactName must be @the-open-engine/lattice-cli");
+  if (packageIdentity.artifactName !== "@the-open-engine/opcore") {
+    throw new Error("Managed tool descriptor packageIdentity.artifactName must be @the-open-engine/opcore");
   }
   if (packageIdentity.version !== undefined) validateNonEmptyString(packageIdentity.version, "Managed tool descriptor packageIdentity.version");
 }
@@ -3011,11 +3010,13 @@ function validateManagedToolEntrypoints(entrypoints: readonly ManagedToolDescrip
   for (const entrypoint of entrypoints) {
     if (!entrypoint || typeof entrypoint !== "object") throw new Error("Managed tool descriptor entrypoint is required");
     if (entrypoint.bin !== "lattice") throw new Error("Managed tool descriptor must not reference old public aliases");
-    if (entrypoint.packageName !== "@the-open-engine/lattice-cli") {
-      throw new Error("Managed tool descriptor entrypoint packageName must be @the-open-engine/lattice-cli");
+    if (entrypoint.packageName !== "@the-open-engine/opcore") {
+      throw new Error("Managed tool descriptor entrypoint packageName must be @the-open-engine/opcore");
     }
     validateManagedToolPackagePath(entrypoint.path, "Managed tool descriptor entrypoint path");
-    if (entrypoint.path !== "dist/index.js") throw new Error("Managed tool descriptor entrypoint path must be dist/index.js");
+    if (entrypoint.path !== "dist/lattice/index.js") {
+      throw new Error("Managed tool descriptor entrypoint path must be dist/lattice/index.js");
+    }
     validateExactStringSequence(entrypoint.command, ["lattice"], "Managed tool descriptor entrypoint command");
   }
 }
@@ -3210,7 +3211,7 @@ function validateManagedToolArtifacts(artifacts: readonly ManagedToolDescriptorA
     !artifacts.some(
       (artifact) =>
         artifact.id === "descriptor" &&
-        artifact.packageName === "@the-open-engine/lattice-cli" &&
+        artifact.packageName === "@the-open-engine/opcore" &&
         artifact.path === "dist/descriptors/lattice.managed-tool.json" &&
         artifact.type === "descriptor" &&
         artifact.required
@@ -5953,8 +5954,8 @@ function validateGraphReleasePackageVersions(versions: readonly GraphReleasePack
     validateNonEmptyString(version.packageName, "Graph release package version packageName");
     validateNonEmptyString(version.version, "Graph release package version version");
   }
-  if (!versions.some((version) => version.packageName === "@the-open-engine/lattice-graph")) {
-    throw new Error("Graph release package versions must include @the-open-engine/lattice-graph");
+  if (!versions.some((version) => version.packageName === "@the-open-engine/opcore-graph")) {
+    throw new Error("Graph release package versions must include @the-open-engine/opcore-graph");
   }
 }
 
@@ -6063,8 +6064,8 @@ function validateGraphReleaseBenchmarks(benchmarks: readonly GraphReleaseBenchma
 
 function validateGraphReleasePackageInspection(inspection: GraphReleasePackageInspection): void {
   if (!inspection || typeof inspection !== "object") throw new Error("Graph release packageInspection is required");
-  if (inspection.packageName !== "@the-open-engine/lattice-graph") {
-    throw new Error("Graph release packageInspection packageName must be @the-open-engine/lattice-graph");
+  if (inspection.packageName !== "@the-open-engine/opcore-graph") {
+    throw new Error("Graph release packageInspection packageName must be @the-open-engine/opcore-graph");
   }
   validateNonEmptyString(inspection.tarballName, "Graph release packageInspection tarballName");
   if (typeof inspection.fileCount !== "number" || inspection.fileCount <= 0) {
@@ -6344,8 +6345,8 @@ function validateReleaseReceiptDescriptor(
 ): void {
   if (!descriptorEvidence || typeof descriptorEvidence !== "object") throw new Error("Release receipt descriptor evidence is required");
   validateRepoRelativePath(descriptorEvidence.path);
-  if (descriptorEvidence.packageName !== "@the-open-engine/lattice-cli") {
-    throw new Error("Release receipt descriptor packageName must be @the-open-engine/lattice-cli");
+  if (descriptorEvidence.packageName !== "@the-open-engine/opcore") {
+    throw new Error("Release receipt descriptor packageName must be @the-open-engine/opcore");
   }
   validateSha256(descriptorEvidence.checksumSha256, "Release receipt descriptor checksumSha256");
   const descriptor = validateManagedToolDescriptor(descriptorEvidence.descriptor);
@@ -6585,10 +6586,8 @@ function validateReleaseReceiptBins(bins: Readonly<Record<string, string>>, pack
     if (["crg", "cix", "rox"].includes(bin)) throw new Error(`Release receipt package exposes old public bin ${bin}`);
     validateRepoRelativePath(bins[bin]);
   }
-  if (packageName === "@the-open-engine/lattice-cli") {
-    validateExactStringSet(binNames, ["lattice"], "Release receipt CLI package bins");
-  } else if (packageName === "@the-open-engine/opcore") {
-    validateExactStringSet(binNames, ["opcore"], "Release receipt Opcore package bins");
+  if (packageName === "@the-open-engine/opcore") {
+    validateExactStringSet(binNames, ["lattice", "opcore"], "Release receipt Opcore package bins");
   } else if (packageName === "@the-open-engine/opcore-asp-provider") {
     validateExactStringSet(binNames, ["opcore-asp-provider"], "Release receipt ASP provider package bins");
   } else if (binNames.length > 0) {
@@ -6637,8 +6636,8 @@ function validateReleaseCutoverInstalledPackageSet(packageNames: readonly string
 function validateReleaseCutoverDescriptor(descriptorEvidence: ReleaseCutoverDescriptorEvidence): void {
   if (!descriptorEvidence || typeof descriptorEvidence !== "object") throw new Error("Release cutover descriptor evidence is required");
   validateNonEmptyString(descriptorEvidence.path, "Release cutover descriptor path");
-  if (descriptorEvidence.packageName !== "@the-open-engine/lattice-cli") {
-    throw new Error("Release cutover descriptor packageName must be @the-open-engine/lattice-cli");
+  if (descriptorEvidence.packageName !== "@the-open-engine/opcore") {
+    throw new Error("Release cutover descriptor packageName must be @the-open-engine/opcore");
   }
   validateSha256(descriptorEvidence.checksumSha256, "Release cutover descriptor checksumSha256");
   const descriptor = validateManagedToolDescriptor(descriptorEvidence.descriptor);

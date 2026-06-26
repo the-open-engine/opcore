@@ -9,7 +9,7 @@ import type {
   ValidationResult,
   ValidationScopeKind,
   ValidationSkippedCheck
-} from "@the-open-engine/lattice-contracts";
+} from "@the-open-engine/opcore-contracts";
 import { aggregateValidationResults, type AggregateValidationResultsArgs } from "./aggregation.js";
 import {
   createValidationGraphQuerySession,

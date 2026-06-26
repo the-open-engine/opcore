@@ -16,8 +16,8 @@ import type {
   GraphReviewContextRequest,
   GraphReviewContextResult,
   RepoIdentity
-} from "@the-open-engine/lattice-contracts";
-import { GRAPH_SCHEMA_VERSION, validateProviderStatus } from "@the-open-engine/lattice-contracts";
+} from "@the-open-engine/opcore-contracts";
+import { GRAPH_SCHEMA_VERSION, validateProviderStatus } from "@the-open-engine/opcore-contracts";
 import {
   graphProviderDetectChanges,
   graphProviderImpact,
@@ -25,7 +25,7 @@ import {
   graphProviderQuery,
   graphProviderReviewContext,
   graphProviderStatus
-} from "@the-open-engine/lattice-graph";
+} from "@the-open-engine/opcore-graph";
 
 const graphProviderName = "lattice-graph";
 

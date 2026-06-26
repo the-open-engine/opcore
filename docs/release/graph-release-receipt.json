@@ -2,15 +2,15 @@
   "schemaVersion": 1,
   "issue": "#17",
   "origin": "covibes-authored-synthetic",
-  "generatedAt": "2026-06-25T21:53:39.531Z",
-  "commitSha": "45559d2daa467125adfbf367976ede9177ded808",
+  "generatedAt": "2026-06-26T13:06:28.586Z",
+  "commitSha": "96d82089c56863467dcb9bc560588d5ccd62d076",
   "graphPackageVersions": [
     {
-      "packageName": "@the-open-engine/lattice-graph",
+      "packageName": "@the-open-engine/opcore-graph",
       "version": "0.1.0-alpha.0"
     },
     {
-      "packageName": "@the-open-engine/lattice-contracts",
+      "packageName": "@the-open-engine/opcore-contracts",
       "version": "0.1.0-alpha.0"
     },
     {
@@ -59,7 +59,7 @@
       "status": "passed",
       "exitCode": 0,
       "fixture": "packages/fixtures/source-extraction/wave1",
-      "durationMs": 458
+      "durationMs": 1080
     },
     {
       "id": "lattice-graph-update",
@@ -76,7 +76,7 @@
       "status": "passed",
       "exitCode": 0,
       "fixture": "packages/fixtures/source-extraction/wave1",
-      "durationMs": 286
+      "durationMs": 664
     },
     {
       "id": "lattice-graph-watch",
@@ -93,7 +93,7 @@
       "status": "passed",
       "exitCode": 0,
       "fixture": "packages/fixtures/source-extraction/wave1",
-      "durationMs": 309
+      "durationMs": 609
     },
     {
       "id": "lattice-graph-status",
@@ -110,7 +110,7 @@
       "status": "passed",
       "exitCode": 0,
       "fixture": "packages/fixtures/source-extraction/wave1",
-      "durationMs": 274
+      "durationMs": 619
     },
     {
       "id": "lattice-graph-query",
@@ -127,7 +127,7 @@
       "status": "passed",
       "exitCode": 0,
       "fixture": "packages/fixtures/source-extraction/wave1",
-      "durationMs": 284
+      "durationMs": 603
     },
     {
       "id": "lattice-graph-impact",
@@ -144,7 +144,7 @@
       "status": "passed",
       "exitCode": 0,
       "fixture": "packages/fixtures/source-extraction/wave1",
-      "durationMs": 481
+      "durationMs": 617
     },
     {
       "id": "lattice-graph-search",
@@ -161,7 +161,7 @@
       "status": "passed",
       "exitCode": 0,
       "fixture": "packages/fixtures/source-extraction/wave1",
-      "durationMs": 448
+      "durationMs": 644
     },
     {
       "id": "lattice-graph-serve",
@@ -178,7 +178,7 @@
       "status": "passed",
       "exitCode": 0,
       "fixture": "packages/fixtures/source-extraction/wave1",
-      "durationMs": 448
+      "durationMs": 555
     }
   ],
   "directSqliteQueries": [
@@ -258,7 +258,7 @@
   "benchmarks": [
     {
       "metric": "install_setup_ms",
-      "value": 2,
+      "value": 8,
       "unit": "ms",
       "baselineIssue": "#19",
       "baselineReceipt": "packages/fixtures/graph-reference-evidence/baseline-receipts.json",
@@ -266,7 +266,7 @@
     },
     {
       "metric": "cold_build_ms",
-      "value": 458,
+      "value": 1080,
       "unit": "ms",
       "baselineIssue": "#19",
       "baselineReceipt": "packages/fixtures/graph-reference-evidence/baseline-receipts.json",
@@ -274,7 +274,7 @@
     },
     {
       "metric": "incremental_update_ms",
-      "value": 286,
+      "value": 664,
       "unit": "ms",
       "baselineIssue": "#19",
       "baselineReceipt": "packages/fixtures/graph-reference-evidence/baseline-receipts.json",
@@ -282,7 +282,7 @@
     },
     {
       "metric": "impact_cold_ms",
-      "value": 481,
+      "value": 617,
       "unit": "ms",
       "baselineIssue": "#19",
       "baselineReceipt": "packages/fixtures/graph-reference-evidence/baseline-receipts.json",
@@ -290,7 +290,7 @@
     },
     {
       "metric": "impact_hot_ms",
-      "value": 495,
+      "value": 610,
       "unit": "ms",
       "baselineIssue": "#19",
       "baselineReceipt": "packages/fixtures/graph-reference-evidence/baseline-receipts.json",
@@ -298,7 +298,7 @@
     },
     {
       "metric": "search_ms",
-      "value": 448,
+      "value": 644,
       "unit": "ms",
       "baselineIssue": "#19",
       "baselineReceipt": "packages/fixtures/graph-reference-evidence/baseline-receipts.json",
@@ -306,7 +306,7 @@
     },
     {
       "metric": "daemon_startup_ms",
-      "value": 438,
+      "value": 534,
       "unit": "ms",
       "baselineIssue": "#19",
       "baselineReceipt": "packages/fixtures/graph-reference-evidence/baseline-receipts.json",
@@ -314,7 +314,7 @@
     },
     {
       "metric": "daemon_query_ms",
-      "value": 438,
+      "value": 534,
       "unit": "ms",
       "baselineIssue": "#19",
       "baselineReceipt": "packages/fixtures/graph-reference-evidence/baseline-receipts.json",
@@ -338,8 +338,8 @@
     }
   ],
   "packageInspection": {
-    "packageName": "@the-open-engine/lattice-graph",
-    "tarballName": "the-open-engine-lattice-graph-0.1.0-alpha.0.tgz",
+    "packageName": "@the-open-engine/opcore-graph",
+    "tarballName": "the-open-engine-opcore-graph-0.1.0-alpha.0.tgz",
     "fileCount": 17,
     "files": [
       "README.md",
@@ -544,19 +544,19 @@
     {
       "issue": "#7",
       "receiptPath": "docs/release/graph-release-receipt.payload.json",
-      "checksumSha256": "181f5da12a93053b41d1421f4d82874022e09667fd040e8bdb18c5e4d720ed73",
+      "checksumSha256": "5982e7cf18728410c48a708adec1fe94166594e054f484098eb37ed008a09c00",
       "rollbackNote": "Keep ACE wrappers on current external tools if receipt regresses."
     },
     {
       "issue": "#28",
       "receiptPath": "docs/release/graph-release-receipt.payload.json",
-      "checksumSha256": "181f5da12a93053b41d1421f4d82874022e09667fd040e8bdb18c5e4d720ed73",
+      "checksumSha256": "5982e7cf18728410c48a708adec1fe94166594e054f484098eb37ed008a09c00",
       "rollbackNote": "Keep ACE wrappers on current external tools if receipt regresses."
     },
     {
       "issue": "#29",
       "receiptPath": "docs/release/graph-release-receipt.payload.json",
-      "checksumSha256": "181f5da12a93053b41d1421f4d82874022e09667fd040e8bdb18c5e4d720ed73",
+      "checksumSha256": "5982e7cf18728410c48a708adec1fe94166594e054f484098eb37ed008a09c00",
       "rollbackNote": "Keep ACE wrappers on current external tools if receipt regresses."
     }
   ]

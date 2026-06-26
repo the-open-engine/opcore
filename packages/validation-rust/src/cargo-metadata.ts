@@ -1,4 +1,4 @@
-import type { ValidationDiagnostic } from "@the-open-engine/lattice-contracts";
+import type { ValidationDiagnostic } from "@the-open-engine/opcore-contracts";
 import { existsSync, realpathSync } from "node:fs";
 import { join, relative } from "node:path";
 import { parseJsonObject, runTool } from "./process.js";
