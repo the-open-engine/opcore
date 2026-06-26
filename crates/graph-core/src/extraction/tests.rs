@@ -1236,6 +1236,11 @@ def call_stub():
     return stubbed()
 "#,
     )?;
+    write_python_test_fixture(repo)?;
+    Ok(())
+}
+
+fn write_python_test_fixture(repo: &TempDir) -> TestResult {
     write(
         repo,
         "tests/test_models.py",

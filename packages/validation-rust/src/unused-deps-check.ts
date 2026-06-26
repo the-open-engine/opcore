@@ -80,7 +80,7 @@ function cargoUdepsToolchainFailure(result: ReturnType<typeof runTool>): Validat
   return {
     status: "unsupported_request",
     diagnostics: [],
-    failureMessage: output.trim() || "cargo-udeps requires a nightly Rust toolchain"
+    failureMessage: "cargo-udeps requires a nightly Rust toolchain; rust.unused-deps needs a nightly compiler."
   };
 }
 

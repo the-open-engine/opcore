@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { realpathSync } from "node:fs";
 import { commandRouterManifest } from "./manifest.js";
 import { runCli } from "./router.js";
 import { isServeTransportArgv, runGraphServeCli } from "@the-open-engine/opcore-graph";
@@ -32,12 +33,28 @@ async function runLatticeDirectCli(): Promise<void> {
 function isDirectExecution(): boolean {
   const entrypoint = process.argv[1];
   if (typeof entrypoint !== "string") return false;
-  const normalized = entrypoint.replaceAll("\\", "/");
-  return import.meta.url === `file://${entrypoint}` || normalized.endsWith("/.bin/lattice");
+  const normalized = normalizePath(entrypoint);
+  return normalized.endsWith("/.bin/lattice") || normalizePath(safeRealpath(entrypoint)) === currentModulePath();
 }
 
 function directBin(): "lattice" {
   return "lattice";
+}
+
+function safeRealpath(path: string): string {
+  try {
+    return realpathSync(path);
+  } catch {
+    return path;
+  }
+}
+
+function currentModulePath(): string {
+  return normalizePath(decodeURIComponent(new URL(import.meta.url).pathname));
+}
+
+function normalizePath(path: string): string {
+  return path.replaceAll("\\", "/");
 }
 
 void commandRouterManifest;

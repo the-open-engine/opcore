@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { realpathSync } from "node:fs";
 import { runOpcoreCli } from "./router.js";
 
 declare const process: {
@@ -31,6 +32,22 @@ if (isDirectExecution()) {
 function isDirectExecution(): boolean {
   const entrypoint = process.argv[1];
   if (typeof entrypoint !== "string") return false;
-  const normalized = entrypoint.replaceAll("\\", "/");
-  return import.meta.url === `file://${entrypoint}` || normalized.endsWith("/.bin/opcore");
+  const normalized = normalizePath(entrypoint);
+  return normalized.endsWith("/.bin/opcore") || normalizePath(safeRealpath(entrypoint)) === currentModulePath();
+}
+
+function safeRealpath(path: string): string {
+  try {
+    return realpathSync(path);
+  } catch {
+    return path;
+  }
+}
+
+function currentModulePath(): string {
+  return normalizePath(decodeURIComponent(new URL(import.meta.url).pathname));
+}
+
+function normalizePath(path: string): string {
+  return path.replaceAll("\\", "/");
 }
