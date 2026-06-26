@@ -16,12 +16,12 @@ and honest coverage; the ASP host owns the allow/deny/transaction outcome.
 - It **is** an ASP Core `check` capability provider over Opcore validation.
 - It **is** read-only with respect to the host workspace and the network.
 - It is **not** an ASP host, manager, catalog, or authority.
-- It is **not** a `lattice asp` or `opcore asp` CLI route — there is no ASP router
+- It is **not** exposed through aggregate CLI ASP subcommands; there is no ASP router
   command. The provider is launched as its own process.
 - It does **not** use ACE as a carrier or provisioner, does **not** read or write
   `.ace/runtime`, and does **not** execute `rox`, `crg`, or `cix`.
-- It makes no ASP-standard, old-tool-replacement, security/SAST, all-stack,
-  AI-authorship, automatic-fix, or blended-quality-score claim.
+- It makes no ASP-standard, old-tool-replacement, security-scanner, all-stack,
+  AI-authorship, automatic-fix, or opaque score-style claim.
 
 ## Install
 
@@ -109,9 +109,10 @@ what state the assessment was computed against.
 `manifests/opcore-asp-provider.provisional.json` is **install metadata only**. It
 records the provider id, package, bin (`opcore-asp-provider --stdio`), capability
 family, check ids, read-only permissions, and a `dist/index.js` checksum. It carries
-`noAuthority`, `noTrust`, and `noGateGrant` and grants no trust, authority, or gate
-permission. Whether the canonical packaged ASP server manifest is owned here or
-converted by the ASP manager is tracked in the Opcore release-readiness coordination.
+`noAuthority`, `noTrust`, and `noGateGrant`; host policy owns trust and gating
+decisions for any consuming workflow. Whether the canonical packaged ASP server
+manifest is owned here or converted by the ASP manager is tracked in the Opcore
+release-readiness coordination.
 
 ## License
 
