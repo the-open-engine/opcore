@@ -1173,6 +1173,13 @@ fn repo_with_tsconfig() -> Result<TempDir, std::io::Error> {
 }
 
 fn write_python_graph_fixture(repo: &TempDir) -> TestResult {
+    write_python_package_files(repo)?;
+    write_python_model_files(repo)?;
+    write_python_stub_and_tests(repo)?;
+    Ok(())
+}
+
+fn write_python_package_files(repo: &TempDir) -> TestResult {
     write(
         repo,
         "src/pkg/__init__.py",
@@ -1197,8 +1204,12 @@ class BaseModel:
         r#"
 def build_name():
     return "public"
-"#,
+	"#,
     )?;
+    Ok(())
+}
+
+fn write_python_model_files(repo: &TempDir) -> TestResult {
     write(
         repo,
         "src/pkg/models.py",
@@ -1223,8 +1234,12 @@ def make_model():
 
 def _hidden():
     return PublicModel()
-"#,
+	"#,
     )?;
+    Ok(())
+}
+
+fn write_python_stub_and_tests(repo: &TempDir) -> TestResult {
     write(repo, "src/pkg/stubs.pyi", "def stubbed() -> str: ...\n")?;
     write(
         repo,
