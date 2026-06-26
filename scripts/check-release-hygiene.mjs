@@ -1,4 +1,6 @@
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { relative } from "node:path";
+import { launchClaimScrubFiles, scrubLaunchClaims } from "./lib/launch-claim-scrub.mjs";
 
 const publicDocs = [
   "README.md",
@@ -104,21 +106,10 @@ function checkLaunchNaming() {
 }
 
 function checkLaunchClaims() {
-  const forbiddenClaims = [
-    { label: "public ASP standard claim", pattern: /\bASP\b.{0,80}\b(public standard|standard now|standardized)\b/i },
-    { label: "old-tool replacement claim", pattern: /\breplaces?\s+(Rox|CRG|CIX)\b|\b(Rox|CRG|CIX)\b.{0,80}\breplaces?\b/i },
-    { label: "universal stack claim", pattern: /\b(every|all)\s+(stack|language|platform)\b|\buniversal\s+(stack|language|platform)\s+coverage\b/i },
-    { label: "universal agent claim", pattern: /\b(every|all)\s+agents?\b|\bworks with every agent\b/i },
-    { label: "AI authorship claim", pattern: /\bAI authorship\b|\bauthorship detection\b|\bdetects? AI\b/i },
-    { label: "scanner claim", pattern: /\bSAST\b|\bsecurity scanner\b/i },
-    { label: "automatic fix claim", pattern: /\bautomatic fixes\b|\bautomatically fixes\b|\bauto-?fix(?:es)?\b/i },
-    { label: "unsupported coverage claim", pattern: /\bunsupported (platforms?|languages?|stacks?)\b.{0,80}\b(covered|supported|analyzed)\b/i }
-  ];
   const findings = [];
-  for (const path of launchFacingFiles()) {
-    const content = readFileSync(path, "utf8");
-    for (const claim of forbiddenClaims) {
-      if (claim.pattern.test(content)) findings.push(`${path}: ${claim.label}`);
+  for (const path of launchClaimScrubFiles(process.cwd())) {
+    for (const label of scrubLaunchClaims(readFileSync(path, "utf8"))) {
+      findings.push(`${relative(process.cwd(), path)}: ${label}`);
     }
   }
   if (findings.length > 0) {
