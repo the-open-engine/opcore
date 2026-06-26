@@ -6,7 +6,6 @@ import type {
   CommandRouteStatus,
   GraphFactQuerySelector,
   GraphFactQueryResult,
-  GraphNamedQueryResult,
   GraphProviderStatus,
   InspectFailureCategory,
   InspectRouteFailure,
@@ -16,7 +15,6 @@ import type {
 } from "@the-open-engine/opcore-contracts";
 import { createCommandRouterResult } from "@the-open-engine/opcore-contracts";
 import {
-  graphProviderNamedQuery,
   graphProviderQuery,
   graphProviderSearch
 } from "@the-open-engine/opcore-graph";
@@ -111,10 +109,10 @@ function inspectSignatureResult(request: CommandAdapterRequest, options: Inspect
 function inspectNodeReferencesResult(request: CommandAdapterRequest, options: InspectOptions, target: InspectSymbolTarget): CommandRouterResult {
   const nodeId = target.nodeId;
   if (!nodeId) return inspectFailureResult(request, "references", "malformed_target", "lattice inspect references node target requires nodeId");
-  const graphQuery = graphProviderNamedQuery(options.repo, {
-    queryKind: "callers_of",
-    target: nodeId,
-    limit: options.limit
+  const graphQuery = graphProviderQuery(options.repo, {
+    kind: "symbols",
+    ids: [nodeId],
+    limit: options.limit ?? 1
   });
   if (graphQuery.status.state !== "available") {
     return inspectFailureResult(
@@ -127,6 +125,34 @@ function inspectNodeReferencesResult(request: CommandAdapterRequest, options: In
       graphQuery
     );
   }
+  if (!("nodes" in graphQuery) || graphQuery.nodes.length === 0) {
+    return inspectFailureResult(request, "references", "target_not_found", `Inspect references node target not found: ${nodeId}`, graphQuery.status, target, graphQuery);
+  }
+  const candidate = graphQuery.nodes[0];
+  const parsed = graphNodeTarget(candidate.id, candidate.path, candidate.name);
+  if (!parsed) {
+    return inspectFailureResult(request, "references", "target_not_found", `Inspect references node target is not a supported class/function/type node: ${nodeId}`, graphQuery.status, target, graphQuery);
+  }
+  if (!isSupportedInspectSourcePath(parsed.path)) {
+    return inspectFailureResult(request, "references", "unsupported_language", `Unsupported inspect references target language: ${parsed.path}`, graphQuery.status, target, graphQuery);
+  }
+  const resolution = resolveInspectReferences(options.repoRoot, {
+    path: parsed.path,
+    symbolName: parsed.symbolName,
+    line: options.line,
+    column: options.column,
+    limit: options.limit,
+    graphTargetOnly: true,
+    graphNodeIds: [candidate.id],
+    graphCandidates: [candidate],
+    graphKind: candidate.kind,
+    graphSymbolName: candidate.name ?? parsed.symbolName
+  });
+  if (!resolution.ok) {
+    return inspectFailureResult(request, "references", resolution.category, resolution.message, graphQuery.status, resolution.target ?? target, graphQuery, {
+      candidates: resolution.candidates
+    });
+  }
   return createCommandRouterResult({
     bin: request.bin,
     argv: request.argv,
@@ -134,15 +160,15 @@ function inspectNodeReferencesResult(request: CommandAdapterRequest, options: In
     owner: "inspect",
     status: "ok",
     json: request.json,
-    message: "lattice inspect references: graph provider returned read-only results.",
+    message: "lattice inspect references: language service returned read-only references.",
     providerStatus: graphQuery.status,
     graphQuery,
     inspectResult: {
       route: "references",
       status: "ok",
-      target,
+      target: resolution.target,
       providerStatus: graphQuery.status,
-      references: []
+      references: resolution.references
     }
   });
 }
@@ -447,7 +473,7 @@ function inspectFailureResult(
   message: string,
   providerStatus?: GraphProviderStatus,
   target?: InspectSymbolTarget,
-  graphQuery?: GraphFactQueryResult | GraphNamedQueryResult,
+  graphQuery?: GraphFactQueryResult,
   options: { candidates?: readonly InspectSymbolTarget[] } = {}
 ): CommandRouterResult {
   const failure: InspectRouteFailure = {
