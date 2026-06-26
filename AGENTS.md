@@ -21,42 +21,42 @@ Opcore is the code-intelligence and robustness monorepo for graph context, edit 
 |---------|--------------|
 | Runtime/CLI ARD | @docs/architecture/runtime-cli-ard.md |
 | Opcore alpha roadmap | @docs/planning/opcore-alpha-roadmap.md |
-| Opcore metrics/report/history | @packages/opcore/src/reporting.ts |
+| Opcore metrics/report/history | `packages/opcore/src/reporting.ts` |
 | Public contracts | @packages/contracts/ |
-| Contract JSON schema | @packages/contracts/schemas/lattice-contracts.schema.json |
+| Contract JSON schema | `packages/contracts/schemas/lattice-contracts.schema.json` |
 | Command router package | @packages/opcore/src/lattice/ |
 | Graph provider package track | @packages/graph/ |
-| Graph SQLite store | @crates/graph-core/src/store.rs |
+| Graph SQLite store | `crates/graph-core/src/store.rs` |
 | Edit package track | @packages/edit/ |
 | Validation package track | @packages/validation/ |
-| Validation file view | @packages/validation/src/overlays.ts |
-| Validation graph client | @packages/validation/src/graph-client.ts |
+| Validation file view | `packages/validation/src/overlays.ts` |
+| Validation graph client | `packages/validation/src/graph-client.ts` |
 | Rust validation adapter | @packages/validation-rust/ |
 | TypeScript validation adapter | @packages/validation-typescript/ |
 | Opcore product facade | @packages/opcore/ |
-| Opcore scan report seam | @packages/opcore/src/reporting.ts |
+| Opcore scan report seam | `packages/opcore/src/reporting.ts` |
 | ASP Core check provider facade | @packages/asp-provider/ |
-| ASP provider manifest generator | @scripts/write-asp-provider-manifest.mjs |
+| ASP provider manifest generator | `scripts/write-asp-provider-manifest.mjs` |
 | Golden fixtures and reference evidence | @packages/fixtures/ |
-| Graph reference evidence manifest | @packages/fixtures/graph-reference-evidence/manifest.json |
-| Graph release fixture | @packages/fixtures/graph-release/release-readiness-fixture.json |
-| Graph release receipt | @docs/release/graph-release-receipt.json |
-| Graph release payload checksum target | @docs/release/graph-release-receipt.payload.json |
+| Graph reference evidence manifest | `packages/fixtures/graph-reference-evidence/manifest.json` |
+| Graph release fixture | `packages/fixtures/graph-release/release-readiness-fixture.json` |
+| Graph release receipt | `docs/release/graph-release-receipt.json` |
+| Graph release payload checksum target | `docs/release/graph-release-receipt.payload.json` |
 | Graph release handoff | @docs/release/graph-release-handoff.md |
-| Release receipt | @docs/release/release-receipt.json |
+| Release receipt | `docs/release/release-receipt.json` |
 | Release receipt summary | @docs/release/release-receipt.summary.md |
-| Cutover receipt | @docs/release/cutover-receipt.json |
+| Cutover receipt | `docs/release/cutover-receipt.json` |
 | Cutover receipt summary | @docs/release/cutover-receipt.summary.md |
-| ASP dogfood receipt | @docs/release/asp-dogfood-receipt.json |
+| ASP dogfood receipt | `docs/release/asp-dogfood-receipt.json` |
 | ASP dogfood receipt summary | @docs/release/asp-dogfood-receipt.summary.md |
 | Secret scan allowlist | @docs/release/secret-scan-allowlist.json |
-| Release receipt generator | @scripts/generate-release-receipt.mjs |
-| Cutover receipt generator | @scripts/generate-cutover-receipt.mjs |
-| ASP dogfood receipt generator | @scripts/generate-asp-dogfood-receipt.mjs |
-| Workspace checks | @scripts/check-workspace.mjs |
-| Package dry-run checks | @scripts/check-packages.mjs |
-| Provenance checks | @scripts/check-provenance.mjs |
-| Current ACE tool setup | @scripts/setup-current-tools.sh |
+| Release receipt generator | `scripts/generate-release-receipt.mjs` |
+| Cutover receipt generator | `scripts/generate-cutover-receipt.mjs` |
+| ASP dogfood receipt generator | `scripts/generate-asp-dogfood-receipt.mjs` |
+| Workspace checks | `scripts/check-workspace.mjs` |
+| Package dry-run checks | `scripts/check-packages.mjs` |
+| Provenance checks | `scripts/check-provenance.mjs` |
+| Current ACE tool setup | `scripts/setup-current-tools.sh` |
 | Local CI-equivalent gate | @scripts/ci/run-local-ci-equivalent.sh |
 | Zeroshot setup | @.zeroshot/settings.json |
 | GitHub Actions | @.github/workflows/ |
