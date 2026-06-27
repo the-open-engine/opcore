@@ -48,6 +48,7 @@ const endMarker = "<!-- END OPCORE INIT -->";
 const configPath = ".opcore/config";
 const undoPath = ".opcore/init-undo.json";
 const hookPath = ".opcore/hooks/pre-commit-opcore-check.sh";
+const failClosedHookActivationCommand = "cp .opcore/hooks/pre-commit-opcore-check.sh .git/hooks/pre-commit";
 const gitignorePath = ".gitignore";
 const opcoreIgnoreLine = ".opcore/";
 const allowedUndoPaths = new Set<string>([configPath, undoPath, hookPath, gitignorePath, ...AGENT_FILE_CANDIDATES]);
@@ -689,10 +690,8 @@ function planInit(
       },
       agentFiles,
       actions,
-      warnings: initWarnings(context.scan, git),
-      nextActions: options.dryRun
-        ? ["Run opcore init --approve to apply this plan."]
-        : ["Review this plan, then run opcore init --approve to write repo setup."],
+      warnings: initWarnings(context.scan, git, options.failClosedHook),
+      nextActions: initNextActions(options),
       undoAvailable: repoPathExists(repoRoot, undoPath),
       scan: context.scan,
       settings: context.settings,
@@ -707,9 +706,27 @@ function appliedInitPayload(payload: OpcoreInitPlanPayload, repoRoot: string): O
     ...payload,
     mode: "apply",
     approved: true,
-    nextActions: ["Run opcore init --undo --approve to restore or remove recorded setup files."],
+    nextActions: appliedInitNextActions(payload),
     undoAvailable: repoPathExists(repoRoot, undoPath)
   };
+}
+
+function initNextActions(options: ParsedInitArgs): string[] {
+  const actions = options.dryRun
+    ? ["Run opcore init --approve to apply this plan."]
+    : ["Review this plan, then run opcore init --approve to write repo setup."];
+  if (options.failClosedHook) actions.push(failClosedHookManualInstallAction());
+  return actions;
+}
+
+function appliedInitNextActions(payload: OpcoreInitPlanPayload): string[] {
+  const actions = ["Run opcore init --undo --approve to restore or remove recorded setup files."];
+  if (payload.options.failClosedHook) actions.push(failClosedHookManualInstallAction());
+  return actions;
+}
+
+function failClosedHookManualInstallAction(): string {
+  return `Manual install required before the fail-closed hook is active: ${failClosedHookActivationCommand}`;
 }
 
 function planUndo(repoRoot: string, requestedPath: string, options: ParsedInitArgs, context: InitContext): OpcoreInitPlanPayload {
@@ -828,7 +845,7 @@ function createInitActions(agentFiles: readonly string[], failClosedHook: boolea
     actions.push({
       kind: "create_hook",
       path: hookPath,
-      summary: "Create opt-in fail-closed pre-commit hook script.",
+      summary: `Manual install required: create fail-closed pre-commit hook script; activate with \`${failClosedHookActivationCommand}\`.`,
       requiresApproval: false,
       outsideOpcore: false
     });
@@ -907,7 +924,7 @@ function createConfig(
   };
 }
 
-function initWarnings(scan: OpcoreInitScanSummary, git: boolean): string[] {
+function initWarnings(scan: OpcoreInitScanSummary, git: boolean, failClosedHook: boolean): string[] {
   const warnings: string[] = [];
   if (scan.unsupportedStacks.length > 0) {
     warnings.push(`Unsupported stacks: ${scan.unsupportedStacks.map((stack) => `${stack.language} (${stack.count})`).join(", ")}`);
@@ -919,13 +936,20 @@ function initWarnings(scan: OpcoreInitScanSummary, git: boolean): string[] {
     warnings.push("No Git repository detected; .opcore/ ignore entry not written.");
   }
   warnings.push("Do not weaken existing lint, test, CI, pre-commit, or agent guardrails.");
-  warnings.push("Fail-closed hooks are opt-in and are not created unless --fail-closed-hook is approved.");
+  warnings.push(
+    failClosedHook
+      ? `Fail-closed hook script is opt-in. Manual install required: ${failClosedHookActivationCommand}`
+      : "Fail-closed hooks are opt-in and are not created unless --fail-closed-hook is approved."
+  );
   return warnings;
 }
 
 function failClosedHookContent(): string {
   return [
     "#!/usr/bin/env sh",
+    "# Manual install required.",
+    "# This script is not active until installed.",
+    `# Activation command: ${failClosedHookActivationCommand}`,
     "set -eu",
     "opcore check --changed",
     ""
@@ -1234,7 +1258,7 @@ function removeEmptyOpcoreHookDir(repoRoot: string): void {
   if (!lstatIfExists(hooksDir)) return;
   assertExistingRepoPath(repoRoot, ".opcore/hooks", "Opcore hooks directory", "directory");
   if (readdirSync(hooksDir).length === 0) {
-    rmSync(hooksDir, { recursive: false, force: true });
+    rmSync(hooksDir, { recursive: true, force: true });
   }
 }
 

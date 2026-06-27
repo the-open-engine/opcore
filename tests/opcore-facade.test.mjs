@@ -622,7 +622,11 @@ describe("opcore public facade", () => {
 
   it("writes fail-closed hook only when explicitly requested and approved", () => {
     const temp = mkdtempSync(join(tmpdir(), "opcore-init-hook-"));
+    const humanTemp = mkdtempSync(join(tmpdir(), "opcore-init-hook-human-"));
+    const activationCommand = "cp .opcore/hooks/pre-commit-opcore-check.sh .git/hooks/pre-commit";
     try {
+      initGitFixture(temp);
+      initGitFixture(humanTemp);
       runOpcore(["init", "--repo", temp, "--approve", "--json"], temp, 0);
       assert.equal(existsSync(join(temp, ".opcore", "hooks", "pre-commit-opcore-check.sh")), false);
 
@@ -630,10 +634,27 @@ describe("opcore public facade", () => {
         runOpcore(["init", "--repo", temp, "--approve", "--fail-closed-hook", "--json"], temp, 0).stdout
       );
       const hook = readFileSync(join(temp, ".opcore", "hooks", "pre-commit-opcore-check.sh"), "utf8");
+      const coreHooksPath = run("git", ["config", "--get", "core.hooksPath"], temp, 1);
       assert.equal(result.opcoreInit.options.failClosedHook, true);
+      assert.equal(result.opcoreInit.actions.some((action) => action.summary.includes("Manual install required")), true);
+      assert.equal(result.opcoreInit.actions.some((action) => action.summary.includes(activationCommand)), true);
+      assert.equal(result.opcoreInit.nextActions.some((action) => action.includes("Manual install required")), true);
+      assert.equal(result.opcoreInit.nextActions.some((action) => action.includes(activationCommand)), true);
+      assert.match(hook, /^#!\/usr\/bin\/env sh\n# Manual install required\./);
+      assert.match(hook, /# This script is not active until installed\./);
+      assert.match(hook, new RegExp(`# Activation command: ${escapeRegExp(activationCommand)}`));
       assert.match(hook, /opcore check --changed/);
+      assert.equal(existsSync(join(temp, ".git", "hooks", "pre-commit")), false);
+      assert.equal(coreHooksPath.stdout, "");
+
+      const human = runOpcore(["init", "--repo", humanTemp, "--fail-closed-hook"], humanTemp, 0);
+      assert.match(human.stdout, /Manual install required/);
+      assert.match(human.stdout, new RegExp(escapeRegExp(activationCommand)));
+      runOpcore(["init", "--repo", temp, "--undo", "--approve", "--json"], temp, 0);
+      assert.equal(existsSync(join(temp, ".opcore", "hooks")), false);
     } finally {
       rmSync(temp, { recursive: true, force: true });
+      rmSync(humanTemp, { recursive: true, force: true });
     }
   });
 
