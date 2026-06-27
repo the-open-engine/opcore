@@ -327,7 +327,9 @@ function repoState(overrides = {}) {
           generatedAt: "2026-06-25T00:00:00.000Z",
           ageMs: 0,
           stale: false
-        }
+        },
+        nodes_by_kind: {},
+        edges_by_kind: {}
       }
     },
     validation: {

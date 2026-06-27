@@ -1,5 +1,6 @@
 use super::*;
 use crate::protocol::{GraphFactQueryKind, GraphFreshness, GraphProviderMode, RepoIdentity};
+use serde_json::json;
 use std::collections::BTreeSet;
 
 #[test]
@@ -27,6 +28,85 @@ fn impact_traverses_reverse_file_dependencies_and_tests() {
         .tests
         .contains(&"src/__tests__/greeting.test.ts".to_string()));
     assert!(!output.traversal.truncated);
+}
+
+#[test]
+fn python_file_queries_traverse_nested_symbols_and_is_test_functions() {
+    let snapshot = python_test_snapshot();
+    let tests = named_query(
+        &snapshot,
+        &GraphNamedQueryRequest {
+            request_id: None,
+            repo: repo(),
+            schema_version: 1,
+            mode: GraphProviderMode::Required,
+            query_kind: GraphNamedQueryKind::TestsFor,
+            target: "src/pkg/models.py".to_string(),
+            max_depth: Some(1),
+            limit: Some(100),
+        },
+    );
+    assert!(tests
+        .nodes
+        .iter()
+        .any(|node| node.path.as_deref() == Some("tests/test_models.py")));
+
+    let summary = named_query(
+        &snapshot,
+        &GraphNamedQueryRequest {
+            request_id: None,
+            repo: repo(),
+            schema_version: 1,
+            mode: GraphProviderMode::Required,
+            query_kind: GraphNamedQueryKind::FileSummary,
+            target: "src/pkg/models.py".to_string(),
+            max_depth: None,
+            limit: Some(100),
+        },
+    );
+    assert!(summary
+        .edges
+        .iter()
+        .any(|edge| edge.kind == "CONTAINS" && edge.to == "class:src/pkg/models.py#PublicModel"));
+
+    let impact = impact(
+        &snapshot,
+        &GraphImpactRequest {
+            request_id: None,
+            repo: repo(),
+            schema_version: 1,
+            mode: GraphProviderMode::Required,
+            files: vec!["src/pkg/models.py".to_string()],
+            base_ref: None,
+            max_depth: Some(3),
+            limit: Some(100),
+        },
+    );
+    assert!(impact.tests.contains(&"tests/test_models.py".to_string()));
+    assert!(impact
+        .impacted_symbols
+        .contains(&"class:src/pkg/models.py#PublicModel".to_string()));
+    assert!(!impact
+        .impacted_symbols
+        .contains(&"function:tests/test_models.py#test_make_model".to_string()));
+
+    let review = review_context(
+        &snapshot,
+        &[hash("src/pkg/models.py", "aaa")],
+        &[hash("src/pkg/models.py", "bbb")],
+        &GraphReviewContextRequest {
+            request_id: None,
+            repo: repo(),
+            schema_version: 1,
+            mode: GraphProviderMode::Required,
+            files: vec!["src/pkg/models.py".to_string()],
+            base_ref: None,
+            max_depth: Some(3),
+            limit: Some(100),
+        },
+    );
+    assert_eq!(review.changed_files, vec!["src/pkg/models.py"]);
+    assert!(review.tests.contains(&"tests/test_models.py".to_string()));
 }
 
 #[test]
@@ -418,6 +498,124 @@ fn cycle_snapshot() -> StoreQueryOutput {
     }
 }
 
+fn python_test_snapshot() -> StoreQueryOutput {
+    StoreQueryOutput {
+        metadata: python_test_metadata(),
+        nodes: python_test_nodes(),
+        edges: python_test_edges(),
+        diagnostics: Vec::new(),
+    }
+}
+
+fn python_test_metadata() -> GraphSnapshotMetadata {
+    GraphSnapshotMetadata {
+        schema_version: 1,
+        provider: "lattice-graph".to_string(),
+        repo: repo(),
+        generated_at: "2026-06-04T00:00:00.000Z".to_string(),
+        freshness: GraphFreshness {
+            generated_at: "2026-06-04T00:00:00.000Z".to_string(),
+            age_ms: 0,
+            max_age_ms: None,
+            stale: false,
+            reason: None,
+        },
+        node_kinds: vec![
+            "File".to_string(),
+            "Module".to_string(),
+            "Class".to_string(),
+            "Function".to_string(),
+        ],
+        edge_kinds: vec![
+            "CONTAINS".to_string(),
+            "IMPORTS_FROM".to_string(),
+            "TESTED_BY".to_string(),
+        ],
+    }
+}
+
+fn python_test_nodes() -> Vec<GraphFactNode> {
+    vec![
+        node("file:src/pkg/models.py", "File", Some("src/pkg/models.py")),
+        node(
+            "module:src/pkg/models.py#src.pkg.models",
+            "Module",
+            Some("src/pkg/models.py"),
+        ),
+        node(
+            "class:src/pkg/models.py#PublicModel",
+            "Class",
+            Some("src/pkg/models.py"),
+        ),
+        node(
+            "function:src/pkg/models.py#make_model",
+            "Function",
+            Some("src/pkg/models.py"),
+        ),
+        node(
+            "file:tests/test_models.py",
+            "File",
+            Some("tests/test_models.py"),
+        ),
+        node(
+            "module:tests/test_models.py#tests.test_models",
+            "Module",
+            Some("tests/test_models.py"),
+        ),
+        node_with_attributes(
+            "function:tests/test_models.py#test_make_model",
+            "Function",
+            Some("tests/test_models.py"),
+            json!({"isTest": true}),
+        ),
+    ]
+}
+
+fn python_test_edges() -> Vec<GraphFactEdge> {
+    vec![
+        edge(
+            "CONTAINS",
+            "file:src/pkg/models.py",
+            "module:src/pkg/models.py#src.pkg.models",
+        ),
+        edge(
+            "CONTAINS",
+            "module:src/pkg/models.py#src.pkg.models",
+            "class:src/pkg/models.py#PublicModel",
+        ),
+        edge(
+            "CONTAINS",
+            "module:src/pkg/models.py#src.pkg.models",
+            "function:src/pkg/models.py#make_model",
+        ),
+        edge(
+            "CONTAINS",
+            "file:tests/test_models.py",
+            "module:tests/test_models.py#tests.test_models",
+        ),
+        edge(
+            "CONTAINS",
+            "module:tests/test_models.py#tests.test_models",
+            "function:tests/test_models.py#test_make_model",
+        ),
+        edge(
+            "IMPORTS_FROM",
+            "file:tests/test_models.py",
+            "file:src/pkg/models.py",
+        ),
+        edge(
+            "TESTED_BY",
+            "class:src/pkg/models.py#PublicModel",
+            "function:tests/test_models.py#test_make_model",
+        ),
+        edge(
+            "TESTED_BY",
+            "function:src/pkg/models.py#make_model",
+            "function:tests/test_models.py#test_make_model",
+        ),
+    ]
+}
+
 fn repo() -> RepoIdentity {
     RepoIdentity {
         repo_id: Some("fixture".to_string()),
@@ -434,6 +632,18 @@ fn node(id: &str, kind: &str, path: Option<&str>) -> GraphFactNode {
         path: path.map(str::to_string),
         name: None,
         attributes: None,
+    }
+}
+
+fn node_with_attributes(
+    id: &str,
+    kind: &str,
+    path: Option<&str>,
+    attributes: serde_json::Value,
+) -> GraphFactNode {
+    GraphFactNode {
+        attributes: Some(attributes),
+        ..node(id, kind, path)
     }
 }
 

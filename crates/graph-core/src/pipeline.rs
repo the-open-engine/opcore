@@ -474,6 +474,8 @@ fn attach_store_message(
             repo,
             freshness,
             db_path,
+            nodes_by_kind: None,
+            edges_by_kind: None,
             message: Some(format!(
                 "GraphProvider {operation} completed at {generated_at}"
             )),

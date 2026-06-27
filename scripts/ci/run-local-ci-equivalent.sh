@@ -4,9 +4,41 @@ set -euo pipefail
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "${repo_root}"
 
+generated_artifact_backup=""
+
 run_step() {
   printf '\n==> %s\n' "$*"
   "$@"
+}
+
+snapshot_generated_artifacts() {
+  generated_artifact_backup="$(mktemp -d "${TMPDIR:-/tmp}/opcore-generated-artifacts.XXXXXX")"
+  while IFS= read -r path; do
+    [ -n "${path}" ] || continue
+    mkdir -p "${generated_artifact_backup}/$(dirname "${path}")"
+    cp -p "${path}" "${generated_artifact_backup}/${path}"
+  done < <(
+    git ls-files \
+      'packages/opcore-graph-core-*/lattice-graph-core' \
+      'packages/opcore-graph-core-*/lattice-graph-core.sha256' \
+      'packages/opcore-graph-core-*/metadata.json'
+  )
+}
+
+restore_generated_artifacts() {
+  [ -n "${generated_artifact_backup}" ] || return 0
+  [ -d "${generated_artifact_backup}" ] || return 0
+  while IFS= read -r path; do
+    [ -n "${path}" ] || continue
+    cp -p "${generated_artifact_backup}/${path}" "${path}"
+  done < <(
+    git ls-files \
+      'packages/opcore-graph-core-*/lattice-graph-core' \
+      'packages/opcore-graph-core-*/lattice-graph-core.sha256' \
+      'packages/opcore-graph-core-*/metadata.json'
+  )
+  rm -rf "${generated_artifact_backup}"
+  generated_artifact_backup=""
 }
 
 collect_changed_files() {
@@ -58,7 +90,7 @@ run_docs_or_agent_gate() {
 }
 
 changed_file_list="$(mktemp "${TMPDIR:-/tmp}/opcore-local-ci-changed.XXXXXX")"
-trap 'rm -f "${changed_file_list}"' EXIT
+trap 'restore_generated_artifacts; rm -f "${changed_file_list}"' EXIT
 collect_changed_files > "${changed_file_list}"
 
 if docs_or_agent_only_changes "${changed_file_list}"; then
@@ -67,6 +99,8 @@ if docs_or_agent_only_changes "${changed_file_list}"; then
 fi
 
 run_step npm run setup:tools
+snapshot_generated_artifacts
 run_step npm run ci
+restore_generated_artifacts
 run_step npm run current-tools:validate-all
 run_step npm run current-tools:validate-rust-graph
