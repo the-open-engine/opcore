@@ -12,19 +12,7 @@
       "path": "../contracts"
     },
     {
-      "path": "../graph"
-    },
-    {
       "path": "../validation"
-    },
-    {
-      "path": "../validation-python"
-    },
-    {
-      "path": "../validation-rust"
-    },
-    {
-      "path": "../validation-typescript"
     }
   ]
 }

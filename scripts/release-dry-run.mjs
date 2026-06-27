@@ -19,6 +19,7 @@ const implementationPackages = [
   "@the-open-engine/opcore-graph",
   "@the-open-engine/opcore-edit",
   "@the-open-engine/opcore-validation",
+  "@the-open-engine/opcore-validation-python",
   "@the-open-engine/opcore-validation-rust",
   "@the-open-engine/opcore-validation-typescript",
   "@the-open-engine/opcore-asp-provider"
@@ -41,6 +42,7 @@ const installPackages = [
   graphCoreNativePackageNames.find((packageName) => packageName.endsWith(target)),
   "@the-open-engine/opcore-edit",
   "@the-open-engine/opcore-validation",
+  "@the-open-engine/opcore-validation-python",
   "@the-open-engine/opcore-validation-rust",
   "@the-open-engine/opcore-validation-typescript",
   "@the-open-engine/opcore-asp-provider"

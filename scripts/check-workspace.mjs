@@ -9,6 +9,7 @@ const packageTracks = [
   { dir: "graph", name: "@the-open-engine/opcore-graph" },
   { dir: "edit", name: "@the-open-engine/opcore-edit" },
   { dir: "validation", name: "@the-open-engine/opcore-validation" },
+  { dir: "validation-python", name: "@the-open-engine/opcore-validation-python" },
   { dir: "validation-rust", name: "@the-open-engine/opcore-validation-rust" },
   { dir: "validation-typescript", name: "@the-open-engine/opcore-validation-typescript" },
   { dir: "asp-provider", name: "@the-open-engine/opcore-asp-provider", bin: "opcore-asp-provider" },

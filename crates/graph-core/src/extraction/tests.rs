@@ -1,4 +1,7 @@
-use super::{discover_sources_for_options, extract_sources, ExtractionOptions};
+use super::{
+    discover_sources_for_options, extract_sources, DiscoveryResult, ExtractionOptions,
+    ExtractionResult,
+};
 use crate::protocol::{
     GraphExtractionDiagnosticCategory as Category, GraphExtractionDiagnosticSeverity as Severity,
     GraphFactNode,
@@ -735,6 +738,16 @@ fn rust_sources_are_discovered_and_extracted() -> TestResult {
     write_rust_graph_fixture(&repo)?;
 
     let discovery = discover_sources_for_options(&ExtractionOptions::new(repo.path()));
+    let result = extract_sources(ExtractionOptions::new(repo.path()));
+
+    assert_rust_discovery_sources(&discovery);
+    assert_rust_extraction_nodes(&result);
+    assert_rust_extraction_edges(&result);
+    assert_rust_extraction_attributes(&result)?;
+    Ok(())
+}
+
+fn assert_rust_discovery_sources(discovery: &DiscoveryResult) {
     let sources = discovery
         .sources
         .iter()
@@ -752,11 +765,9 @@ fn rust_sources_are_discovered_and_extracted() -> TestResult {
         .diagnostics
         .iter()
         .any(|diagnostic| diagnostic.category == Category::UnsupportedLanguage));
+}
 
-    let result = extract_sources(ExtractionOptions::new(repo.path()));
-    let node_ids = sorted(result.nodes.iter().map(|node| node.id.clone()).collect());
-    let triples = edge_triples(&result.edges);
-
+fn assert_rust_extraction_nodes(result: &ExtractionResult) {
     assert!(
         !result
             .diagnostics
@@ -765,6 +776,7 @@ fn rust_sources_are_discovered_and_extracted() -> TestResult {
         "{:?}",
         result.diagnostics
     );
+    let node_ids = sorted(result.nodes.iter().map(|node| node.id.clone()).collect());
     for id in [
         "file:src/lib.rs",
         "module:src/lib.rs#crate",
@@ -785,50 +797,16 @@ fn rust_sources_are_discovered_and_extracted() -> TestResult {
     ] {
         assert!(node_ids.contains(&id.to_string()), "{id}");
     }
-    for triple in [
-        vec![
-            "CONTAINS".to_string(),
-            "file:src/user.rs".to_string(),
-            "module:src/user.rs#user".to_string(),
-        ],
-        vec![
-            "CONTAINS".to_string(),
-            "module:src/user.rs#user".to_string(),
-            "function:src/user.rs#user::run".to_string(),
-        ],
-        vec![
-            "CONTAINS".to_string(),
-            "module:src/user.rs#user.tests".to_string(),
-            "test:src/user.rs#user.tests::test_run".to_string(),
-        ],
-        vec![
-            "IMPORTS_FROM".to_string(),
-            "file:src/user.rs".to_string(),
-            "file:src/helpers.rs".to_string(),
-        ],
-        vec![
-            "CALLS".to_string(),
-            "function:src/user.rs#user::run".to_string(),
-            "function:src/helpers.rs#helpers::assist".to_string(),
-        ],
-        vec![
-            "CALLS".to_string(),
-            "test:src/user.rs#user.tests::test_run".to_string(),
-            "function:src/user.rs#user::run".to_string(),
-        ],
-        vec![
-            "TESTED_BY".to_string(),
-            "function:src/user.rs#user::run".to_string(),
-            "test:src/user.rs#user.tests::test_run".to_string(),
-        ],
-        vec![
-            "IMPLEMENTS".to_string(),
-            "impl:src/lib.rs#impl Service for Widget".to_string(),
-            "trait:src/lib.rs#Service".to_string(),
-        ],
-    ] {
+}
+
+fn assert_rust_extraction_edges(result: &ExtractionResult) {
+    let triples = edge_triples(&result.edges);
+    for triple in rust_expected_edge_triples() {
         assert!(triples.contains(&triple), "{triple:?}");
     }
+}
+
+fn assert_rust_extraction_attributes(result: &ExtractionResult) -> TestResult {
     assert_eq!(
         required_attributes(&result.nodes, "struct:src/lib.rs#Widget")?
             .get("exported")
@@ -841,30 +819,70 @@ fn rust_sources_are_discovered_and_extracted() -> TestResult {
             .and_then(Value::as_str),
         Some("rust")
     );
-    assert_eq!(
-        required_attributes(&result.nodes, "function:src/user.rs#user::run")?
-            .get("qualifiedName")
-            .and_then(Value::as_str),
-        Some("user::run")
-    );
-    assert!(
-        required_attributes(&result.nodes, "function:src/user.rs#user::run")?
-            .get("signature")
-            .and_then(Value::as_str)
-            .is_some_and(|signature| signature.starts_with("pub fn run"))
-    );
-    assert!(
-        required_attributes(&result.nodes, "function:src/user.rs#user::run")?
-            .get("lineStart")
-            .and_then(Value::as_u64)
-            .is_some()
-    );
+    assert_rust_run_attributes(result)?;
     assert!(result.metadata.node_kinds.contains(&"Struct".to_string()));
     assert!(result
         .metadata
         .edge_kinds
         .contains(&"IMPLEMENTS".to_string()));
     Ok(())
+}
+
+fn assert_rust_run_attributes(result: &ExtractionResult) -> TestResult {
+    let attributes = required_attributes(&result.nodes, "function:src/user.rs#user::run")?;
+    assert_eq!(
+        attributes.get("qualifiedName").and_then(Value::as_str),
+        Some("user::run")
+    );
+    assert!(attributes
+        .get("signature")
+        .and_then(Value::as_str)
+        .is_some_and(|signature| signature.starts_with("pub fn run")));
+    assert!(attributes
+        .get("lineStart")
+        .and_then(Value::as_u64)
+        .is_some());
+    Ok(())
+}
+
+fn rust_expected_edge_triples() -> Vec<Vec<String>> {
+    [
+        ("CONTAINS", "file:src/user.rs", "module:src/user.rs#user"),
+        (
+            "CONTAINS",
+            "module:src/user.rs#user",
+            "function:src/user.rs#user::run",
+        ),
+        (
+            "CONTAINS",
+            "module:src/user.rs#user.tests",
+            "test:src/user.rs#user.tests::test_run",
+        ),
+        ("IMPORTS_FROM", "file:src/user.rs", "file:src/helpers.rs"),
+        (
+            "CALLS",
+            "function:src/user.rs#user::run",
+            "function:src/helpers.rs#helpers::assist",
+        ),
+        (
+            "CALLS",
+            "test:src/user.rs#user.tests::test_run",
+            "function:src/user.rs#user::run",
+        ),
+        (
+            "TESTED_BY",
+            "function:src/user.rs#user::run",
+            "test:src/user.rs#user.tests::test_run",
+        ),
+        (
+            "IMPLEMENTS",
+            "impl:src/lib.rs#impl Service for Widget",
+            "trait:src/lib.rs#Service",
+        ),
+    ]
+    .into_iter()
+    .map(|(kind, from, to)| vec![kind.to_string(), from.to_string(), to.to_string()])
+    .collect()
 }
 
 #[test]

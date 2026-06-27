@@ -25,7 +25,13 @@ const allCheckIds = [
   "rust.dead-code",
   "rust.unused-deps",
   "rust.file-length",
-  "rust.function-metrics"
+  "rust.function-metrics",
+  "python.syntax",
+  "python.source-hygiene",
+  "python.types",
+  "python.import-graph",
+  "python.dead-code",
+  "python.relevant-tests"
 ];
 
 describe("Opcore ASP provider", () => {

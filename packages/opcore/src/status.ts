@@ -84,8 +84,8 @@ const sourcePolicies = new Map<string, SourcePolicy>([
   [".inc", supportedPolicy("Rust", false, true)],
   ["Cargo.toml", supportedPolicy("Rust", false, true)],
   ["Cargo.lock", retainedPolicy("Rust")],
-  [".py", supportedPolicy("Python", true, false)],
-  [".pyi", supportedPolicy("Python", true, false)],
+  [".py", supportedPolicy("Python", true, true)],
+  [".pyi", supportedPolicy("Python", true, true)],
   [".mjs", unsupportedPolicy("JavaScript")],
   [".cjs", unsupportedPolicy("JavaScript")],
   [".vue", unsupportedPolicy("Vue")],
@@ -537,7 +537,7 @@ function statusWarnings(options: {
     );
   }
   if (options.validation.degradedToolchains.length > 0) {
-    warnings.push(`Degraded Rust tools: ${options.validation.degradedToolchains.map((tool) => tool.tool).join(", ")}`);
+    warnings.push(`Degraded validation tools: ${options.validation.degradedToolchains.map((tool) => tool.tool).join(", ")}`);
   }
   if (options.graphStatus.state === "skipped" || options.graphStatus.state === "stale" || options.graphStatus.state === "schema_mismatch") {
     warnings.push(`Graph is ${options.graphStatus.state}; graph-backed scan/check work needs ${graphAction(options.graphStatus)}`);
@@ -600,7 +600,7 @@ export function formatOpcoreStatus(repoState: OpcoreRepoStatePayload): string {
   const adapters = repoState.validation.adapters.length === 0
     ? "none"
     : repoState.validation.adapters.map((adapter) => `${adapter.adapter}:${adapter.status}`).join(", ");
-  const rustTools = repoState.validation.degradedToolchains.length === 0
+  const degradedTools = repoState.validation.degradedToolchains.length === 0
     ? "none"
     : repoState.validation.degradedToolchains.map((tool) => tool.tool).join(", ");
   const git = repoState.repo.git.available
@@ -611,7 +611,7 @@ export function formatOpcoreStatus(repoState: OpcoreRepoStatePayload): string {
     `Repo: ${repoState.repo.root} (${git})`,
     `Coverage: files=${repoState.coverage.totalFiles} graph=${repoState.coverage.graph.supportedFiles} validation=${repoState.coverage.validation.supportedFiles} retained=${repoState.coverage.validation.retainedFiles} unsupported=${unsupported}`,
     `Graph: ${repoState.graph.state}; ${repoState.graph.action}`,
-    `Validation: checks=${repoState.validation.checkCount} adapters=${adapters} degradedRustTools=${rustTools}`,
+    `Validation: checks=${repoState.validation.checkCount} adapters=${adapters} degradedTools=${degradedTools}`,
     `ASP: ${repoState.activation.asp.state}${repoState.activation.asp.paths.length > 0 ? ` (${repoState.activation.asp.paths.join(", ")})` : ""}`,
     `Activation: ${repoState.activation.level}; ${repoState.activation.summary}`,
     "Next:",

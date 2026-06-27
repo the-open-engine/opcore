@@ -519,11 +519,11 @@ function addValidationDegradations(
 
   for (const tool of repoState.validation.degradedToolchains) {
     degradations.push({
-      id: `rust.tool.${safeId(tool.tool)}.unavailable`,
-      title: `Rust tool unavailable: ${tool.tool}`,
+      id: `${safeId(tool.adapter)}.tool.${safeId(tool.tool)}.unavailable`,
+      title: `Validation tool unavailable: ${tool.adapter}:${tool.tool}`,
       source: "opcore_status",
       severity: "warning",
-      message: tool.failureMessage ?? `${tool.tool} is unavailable; related Rust metrics are degraded.`,
+      message: tool.failureMessage ?? `${tool.tool} is unavailable; related validation metrics are degraded.`,
       requiredTool: tool.tool
     });
   }

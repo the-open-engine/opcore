@@ -218,4 +218,3 @@ Opcore is the code-intelligence and robustness monorepo for graph context, edit 
 - `npm run conformance:check` - verify concrete synthetic fixture metadata for #3 contracts.
 - `npm run pack:check` - verify package dry-run packlists against @tests/fixtures/package-packlists.json.
 - `npm run current-tools:validate-all` - current external validation repo-wide check.
-- `npm run current-tools:validate-rust-graph` - current external Rust graph function-metrics check.

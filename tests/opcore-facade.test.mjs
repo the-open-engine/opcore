@@ -69,7 +69,7 @@ describe("opcore public facade", () => {
     });
   });
 
-  it("reports Python sources as graph-supported without validation support", () => {
+  it("reports Python sources as graph-supported with validation support", () => {
     const temp = mkdtempSync(join(tmpdir(), "opcore-python-status-"));
     try {
       for (const [directory, file] of [
@@ -98,10 +98,10 @@ describe("opcore public facade", () => {
 
       assert.equal(coverage.totalFiles, 2);
       assert.deepEqual(coverage.languages, [
-        { language: "Python", files: 2, graphSupported: true, validationSupported: false }
+        { language: "Python", files: 2, graphSupported: true, validationSupported: true }
       ]);
       assert.equal(coverage.graph.supportedFiles, 2);
-      assert.equal(coverage.validation.supportedFiles, 0);
+      assert.equal(coverage.validation.supportedFiles, 2);
       assert.equal(coverage.unsupported.totalFiles, 0);
       assert.deepEqual(
         coverage.unsupported.stacks.map((stack) => ({
@@ -150,7 +150,7 @@ describe("opcore public facade", () => {
 
       const human = runOpcore(["status", "--repo", temp], temp, 0);
       assert.match(human.stdout, /Coverage: files=2 graph=1 validation=2 retained=0 unsupported=none/);
-      assert.match(human.stdout, /Validation: checks=\d+ adapters=.*degradedRustTools=/);
+      assert.match(human.stdout, /Validation: checks=\d+ adapters=.*degradedTools=/);
       assert.deepEqual(collectRepoPaths(temp), before);
     } finally {
       rmSync(temp, { recursive: true, force: true });
@@ -436,12 +436,12 @@ describe("opcore public facade", () => {
         assert.equal(existsSync(join(temp, ".opcore")), false, fixture.name);
         if (fixture.name === "python") {
           assert.equal(result.opcoreInit.scan.graphSupportedFiles, 1);
-          assert.equal(result.opcoreInit.scan.validationSupportedFiles, 0);
+          assert.equal(result.opcoreInit.scan.validationSupportedFiles, 1);
           assert.deepEqual(result.opcoreInit.scan.unsupportedStacks, []);
-          assert.equal(result.opcoreInit.settings.languages[0].state, "unsupported");
+          assert.equal(result.opcoreInit.settings.languages[0].state, "degraded");
           assert.equal(result.opcoreInit.settings.languages[0].graph, "supported");
-          assert.equal(result.opcoreInit.settings.languages[0].validation, "unsupported");
-          assert.equal(result.opcoreInit.scan.diagnosticCount, 0);
+          assert.equal(result.opcoreInit.settings.languages[0].validation, "degraded");
+          assert.equal(result.opcoreInit.scan.diagnosticCount, 1);
         }
         if (fixture.name === "mixed-cargo-lock-only") {
           const rust = result.opcoreInit.settings.languages.find((entry) => entry.language === "Rust");
