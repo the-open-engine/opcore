@@ -193,6 +193,9 @@ fn parse_file_fact(
             input.source_text,
             &tree,
         ),
+        Some(parser::ParsedProgram::Rust(syntax)) => {
+            facts::extract_rust_file_facts(input.source, input.file_node, &syntax)
+        }
         None => facts::file_facts_without_ast(input.source, input.file_node),
     }
 }
@@ -279,5 +282,5 @@ pub fn boundary_name() -> &'static str {
 }
 
 pub fn behavior_status() -> &'static str {
-    "wave1: staged TypeScript/JavaScript/Python source extraction"
+    "wave1: staged TypeScript/JavaScript/Python/Rust source extraction"
 }

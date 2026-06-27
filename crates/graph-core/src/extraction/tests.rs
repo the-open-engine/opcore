@@ -703,7 +703,7 @@ fn path_traversal_errors_are_typed_and_block_empty_success() -> TestResult {
 fn unsupported_and_missing_tsconfig_are_typed_warnings() -> TestResult {
     let repo = temp_repo()?;
     write(&repo, "src/a.ts", "export function a() { return 1; }")?;
-    write(&repo, "src/tool.rs", "fn main() {}")?;
+    write(&repo, "src/view.vue", "<script>export default {}</script>")?;
 
     let result = extract_sources(ExtractionOptions::new(repo.path()));
 
@@ -726,6 +726,229 @@ fn unsupported_and_missing_tsconfig_are_typed_warnings() -> TestResult {
         .iter()
         .any(|diagnostic| diagnostic.severity == Severity::Error));
     assert!(!result.nodes.is_empty());
+    Ok(())
+}
+
+#[test]
+fn rust_sources_are_discovered_and_extracted() -> TestResult {
+    let repo = repo_with_tsconfig()?;
+    write_rust_graph_fixture(&repo)?;
+
+    let discovery = discover_sources_for_options(&ExtractionOptions::new(repo.path()));
+    let sources = discovery
+        .sources
+        .iter()
+        .map(|source| (source.relative_path.as_str(), source.language.as_str()))
+        .collect::<Vec<_>>();
+    assert_eq!(
+        sources,
+        vec![
+            ("src/helpers.rs", "rust"),
+            ("src/lib.rs", "rust"),
+            ("src/user.rs", "rust")
+        ]
+    );
+    assert!(!discovery
+        .diagnostics
+        .iter()
+        .any(|diagnostic| diagnostic.category == Category::UnsupportedLanguage));
+
+    let result = extract_sources(ExtractionOptions::new(repo.path()));
+    let node_ids = sorted(result.nodes.iter().map(|node| node.id.clone()).collect());
+    let triples = edge_triples(&result.edges);
+
+    assert!(
+        !result
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.severity == Severity::Error),
+        "{:?}",
+        result.diagnostics
+    );
+    for id in [
+        "file:src/lib.rs",
+        "module:src/lib.rs#crate",
+        "module:src/user.rs#user",
+        "module:src/user.rs#user.tests",
+        "struct:src/lib.rs#Widget",
+        "enum:src/lib.rs#Mode",
+        "trait:src/lib.rs#Service",
+        "impl:src/lib.rs#impl Service for Widget",
+        "method:src/lib.rs#Widget::handle",
+        "type:src/lib.rs#Alias",
+        "const:src/lib.rs#LIMIT",
+        "static:src/lib.rs#NAME",
+        "macro:src/lib.rs#trace",
+        "function:src/helpers.rs#helpers::assist",
+        "function:src/user.rs#user::run",
+        "test:src/user.rs#user.tests::test_run",
+    ] {
+        assert!(node_ids.contains(&id.to_string()), "{id}");
+    }
+    for triple in [
+        vec![
+            "CONTAINS".to_string(),
+            "file:src/user.rs".to_string(),
+            "module:src/user.rs#user".to_string(),
+        ],
+        vec![
+            "CONTAINS".to_string(),
+            "module:src/user.rs#user".to_string(),
+            "function:src/user.rs#user::run".to_string(),
+        ],
+        vec![
+            "CONTAINS".to_string(),
+            "module:src/user.rs#user.tests".to_string(),
+            "test:src/user.rs#user.tests::test_run".to_string(),
+        ],
+        vec![
+            "IMPORTS_FROM".to_string(),
+            "file:src/user.rs".to_string(),
+            "file:src/helpers.rs".to_string(),
+        ],
+        vec![
+            "CALLS".to_string(),
+            "function:src/user.rs#user::run".to_string(),
+            "function:src/helpers.rs#helpers::assist".to_string(),
+        ],
+        vec![
+            "CALLS".to_string(),
+            "test:src/user.rs#user.tests::test_run".to_string(),
+            "function:src/user.rs#user::run".to_string(),
+        ],
+        vec![
+            "TESTED_BY".to_string(),
+            "function:src/user.rs#user::run".to_string(),
+            "test:src/user.rs#user.tests::test_run".to_string(),
+        ],
+        vec![
+            "IMPLEMENTS".to_string(),
+            "impl:src/lib.rs#impl Service for Widget".to_string(),
+            "trait:src/lib.rs#Service".to_string(),
+        ],
+    ] {
+        assert!(triples.contains(&triple), "{triple:?}");
+    }
+    assert_eq!(
+        required_attributes(&result.nodes, "struct:src/lib.rs#Widget")?
+            .get("exported")
+            .and_then(Value::as_bool),
+        Some(true)
+    );
+    assert_eq!(
+        required_attributes(&result.nodes, "struct:src/lib.rs#Widget")?
+            .get("language")
+            .and_then(Value::as_str),
+        Some("rust")
+    );
+    assert_eq!(
+        required_attributes(&result.nodes, "function:src/user.rs#user::run")?
+            .get("qualifiedName")
+            .and_then(Value::as_str),
+        Some("user::run")
+    );
+    assert!(
+        required_attributes(&result.nodes, "function:src/user.rs#user::run")?
+            .get("signature")
+            .and_then(Value::as_str)
+            .is_some_and(|signature| signature.starts_with("pub fn run"))
+    );
+    assert!(
+        required_attributes(&result.nodes, "function:src/user.rs#user::run")?
+            .get("lineStart")
+            .and_then(Value::as_u64)
+            .is_some()
+    );
+    assert!(result.metadata.node_kinds.contains(&"Struct".to_string()));
+    assert!(result
+        .metadata
+        .edge_kinds
+        .contains(&"IMPLEMENTS".to_string()));
+    Ok(())
+}
+
+#[test]
+fn rust_crate_use_prefers_module_file_over_lib_declaration_stub() -> TestResult {
+    let repo = repo_with_tsconfig()?;
+    write(&repo, "src/lib.rs", "pub mod helpers;\nmod user;\n")?;
+    write(&repo, "src/helpers.rs", "pub fn assist() -> usize { 1 }\n")?;
+    write(
+        &repo,
+        "src/user.rs",
+        "use crate::helpers;\npub fn run() { helpers::assist(); }\n",
+    )?;
+
+    let result = extract_sources(ExtractionOptions::new(repo.path()));
+    let triples = edge_triples(&result.edges);
+
+    assert!(triples.contains(&vec![
+        "IMPORTS_FROM".to_string(),
+        "file:src/user.rs".to_string(),
+        "file:src/helpers.rs".to_string()
+    ]));
+    assert!(!triples.contains(&vec![
+        "IMPORTS_FROM".to_string(),
+        "file:src/user.rs".to_string(),
+        "file:src/lib.rs".to_string()
+    ]));
+    Ok(())
+}
+
+#[test]
+fn rust_crate_use_resolves_within_nearest_workspace_crate() -> TestResult {
+    let repo = repo_with_tsconfig()?;
+    write(
+        &repo,
+        "crates/app/src/lib.rs",
+        "pub mod helpers;\nmod user;\n",
+    )?;
+    write(
+        &repo,
+        "crates/app/src/helpers.rs",
+        "pub fn assist() -> usize { 1 }\n",
+    )?;
+    write(
+        &repo,
+        "crates/app/src/user.rs",
+        "use crate::helpers;\npub fn run() { helpers::assist(); }\n",
+    )?;
+    write(
+        &repo,
+        "crates/other/src/lib.rs",
+        "pub mod helpers;\npub fn unrelated() {}\n",
+    )?;
+    write(
+        &repo,
+        "crates/other/src/helpers.rs",
+        "pub fn assist() -> usize { 2 }\n",
+    )?;
+
+    let result = extract_sources(ExtractionOptions::new(repo.path()));
+    let triples = edge_triples(&result.edges);
+
+    assert!(triples.contains(&vec![
+        "IMPORTS_FROM".to_string(),
+        "file:crates/app/src/user.rs".to_string(),
+        "file:crates/app/src/helpers.rs".to_string()
+    ]));
+    assert!(!triples.contains(&vec![
+        "IMPORTS_FROM".to_string(),
+        "file:crates/app/src/user.rs".to_string(),
+        "file:crates/other/src/helpers.rs".to_string()
+    ]));
+    Ok(())
+}
+
+#[test]
+fn rust_parse_errors_are_typed_and_block_empty_success() -> TestResult {
+    let repo = repo_with_tsconfig()?;
+    write(&repo, "src/broken.rs", "pub fn broken(")?;
+
+    let result = extract_sources(ExtractionOptions::new(repo.path()));
+
+    assert_error_category(result.clone(), Category::ParseError);
+    assert!(result.nodes.is_empty(), "{:?}", result.nodes);
+    assert!(result.edges.is_empty(), "{:?}", result.edges);
     Ok(())
 }
 
@@ -1176,6 +1399,67 @@ fn write_python_graph_fixture(repo: &TempDir) -> TestResult {
     write_python_package_files(repo)?;
     write_python_model_files(repo)?;
     write_python_stub_and_tests(repo)?;
+    Ok(())
+}
+
+fn write_rust_graph_fixture(repo: &TempDir) -> TestResult {
+    write(
+        repo,
+        "src/lib.rs",
+        r#"
+pub mod helpers;
+mod user;
+
+pub trait Service {
+    fn handle(&self);
+}
+
+pub struct Widget;
+
+pub enum Mode {
+    Fast,
+}
+
+impl Service for Widget {
+    fn handle(&self) {
+        helpers::assist();
+    }
+}
+
+pub type Alias = Widget;
+pub const LIMIT: usize = 1;
+pub static NAME: &str = "widget";
+
+macro_rules! trace {
+    () => {};
+}
+"#,
+    )?;
+    write(repo, "src/helpers.rs", "pub fn assist() -> usize { 1 }\n")?;
+    write(
+        repo,
+        "src/user.rs",
+        r#"
+use crate::helpers;
+use crate::{Service, Widget};
+
+pub fn run() {
+    helpers::assist();
+    let widget = Widget;
+    widget.handle();
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_run() {
+        run();
+    }
+}
+"#,
+    )?;
     Ok(())
 }
 
