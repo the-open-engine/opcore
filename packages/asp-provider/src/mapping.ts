@@ -1,11 +1,13 @@
 import type {
+  CommandTiming,
+  CommandTimingPhase,
   GraphProviderMode,
   HypotheticalOverlay,
   ValidationDiagnostic,
   ValidationRequest,
   ValidationResult
 } from "@the-open-engine/opcore-contracts";
-import { validateRepoRelativePath } from "@the-open-engine/opcore-contracts";
+import { validateCommandTiming, validateRepoRelativePath } from "@the-open-engine/opcore-contracts";
 import type { JsonRpcPeer } from "./json-rpc.js";
 import { changesetDigest as computeChangesetDigest, diagnosticFingerprint, digestJson } from "./digests.js";
 import type {
@@ -37,6 +39,7 @@ import {
 const providerSource = OPCORE_PROVIDER_ID;
 const capabilityVersion = "check/0.1";
 const supportedComparison = "all";
+let firstAssessmentTiming = true;
 
 export function initializeResult(params: InitializeParams): JsonObject {
   if (params.protocolVersion !== ASP_PROTOCOL_VERSION) {
@@ -79,44 +82,50 @@ export async function evaluateChangeset(
   initialized: InitializedParams,
   rawParams: unknown
 ): Promise<Assessment> {
-  const started = Date.now();
+  const timing = createAssessmentTiming();
   const params = normalizeEvaluateParams(rawParams);
   const digest = params.changesetDigest ?? computeChangesetDigest(params.changeset);
   const selectedIds = normalizeRequestedChecks(params.checks);
   const selectedChecks = selectedValidationChecks(selectedIds);
   const changedPaths = changedScopePaths(params.changeset.changes);
-  const workspace = createAspHostValidationWorkspace(peer, initialize, initialized, params.changeset);
+  const workspace = timing.timeSync("host_workspace_binding", () =>
+    createAspHostValidationWorkspace(peer, initialize, initialized, params.changeset)
+  );
   let validationResult: ValidationResult;
   let request: ValidationRequest;
   const mappingDegradations = comparisonDegradations(params.comparison ?? "introduced");
 
   try {
-    const overlays = await overlaysForChanges(params.changeset.changes, workspace);
-    const graphMode = graphModeFor(params.callSite, selectedChecks);
-    request = {
-      requestId: digest,
-      repo: {
-        repoRoot: initialize.workspace?.root ?? process.cwd()
-      },
-      scope: {
-        kind: "files",
-        files: changedPaths
-      },
-      graph: {
-        mode: graphMode,
-        provider: "lattice-graph"
-      },
-      checks: selectedIds,
-      overlays
-    };
-    validationResult = await createAspProviderValidationRunner(workspace.workspace).runValidation(request);
+    request = await timing.timeAsync("changeset_overlay_mapping", async () => {
+      const overlays = await overlaysForChanges(params.changeset.changes, workspace);
+      const graphMode = graphModeFor(params.callSite, selectedChecks);
+      return {
+        requestId: digest,
+        repo: {
+          repoRoot: initialize.workspace?.root ?? process.cwd()
+        },
+        scope: {
+          kind: "files",
+          files: changedPaths
+        },
+        graph: {
+          mode: graphMode,
+          provider: "lattice-graph"
+        },
+        checks: selectedIds,
+        overlays
+      };
+    });
+    validationResult = await timing.timeAsync("validation", () =>
+      createAspProviderValidationRunner(workspace.workspace).runValidation(request)
+    );
   } catch (error) {
     const validationFailure = errorAssessment({
       baseline: params.changeset.baseline,
       changesetDigest: digest,
       changedPaths,
       selectedIds,
-      started,
+      timing: timing.finish(),
       readBlobIds: workspace.readBlobIds(),
       degradation: {
         source: providerSource,
@@ -137,7 +146,7 @@ export async function evaluateChangeset(
     requestedComparison: params.comparison ?? "introduced",
     mappingDegradations,
     readBlobIds: workspace.readBlobIds(),
-    started
+    timing: timing.finish(validationResult)
   });
   return stripForbiddenKeys(assessment) as Assessment;
 }
@@ -262,7 +271,7 @@ function assessmentFromValidationResult(args: {
   requestedComparison: string;
   mappingDegradations: readonly ProviderCoverageDegradation[];
   readBlobIds: readonly string[];
-  started: number;
+  timing: CommandTiming;
 }): Assessment {
   const resultDegradations = validationCoverageDegradations(args.validationResult);
   const degraded = uniqueDegradations([...args.mappingDegradations, ...resultDegradations.degraded]);
@@ -288,7 +297,7 @@ function assessmentFromValidationResult(args: {
       blobs: [...args.readBlobIds].sort()
     },
     provider: providerMetadata(),
-    timing: timing(args.started),
+    timing: args.timing,
     cache: {
       status: "disabled"
     }
@@ -300,7 +309,7 @@ function errorAssessment(args: {
   changesetDigest: string;
   changedPaths: readonly string[];
   selectedIds: readonly string[];
-  started: number;
+  timing: CommandTiming;
   readBlobIds: readonly string[];
   degradation: ProviderCoverageDegradation;
 }): Assessment {
@@ -331,7 +340,7 @@ function errorAssessment(args: {
       blobs: [...args.readBlobIds].sort()
     },
     provider: providerMetadata(),
-    timing: timing(args.started),
+    timing: args.timing,
     cache: {
       status: "disabled"
     }
@@ -502,17 +511,91 @@ function providerMetadata(): Assessment["provider"] {
   };
 }
 
-function timing(started: number): JsonObject {
-  const ended = Date.now();
+function diagnosticSource(_checkId: string): string {
+  return OPCORE_PROVIDER_ID;
+}
+
+type AssessmentTimingRecorder = {
+  timeSync<T>(phase: string, action: () => T): T;
+  timeAsync<T>(phase: string, action: () => Promise<T>): Promise<T>;
+  finish(validationResult?: ValidationResult): CommandTiming;
+};
+
+function createAssessmentTiming(): AssessmentTimingRecorder {
+  const startedAt = Date.now();
+  const processState = nextAssessmentProcessState();
+  const phases: CommandTimingPhase[] = [];
   return {
-    startedAt: new Date(started).toISOString(),
-    endedAt: new Date(ended).toISOString(),
-    elapsedMs: Math.max(0, ended - started)
+    timeSync<T>(phase: string, action: () => T): T {
+      const phaseStartedAt = Date.now();
+      try {
+        return action();
+      } finally {
+        phases.push({
+          phase,
+          durationMs: elapsedMs(phaseStartedAt)
+        });
+      }
+    },
+    async timeAsync<T>(phase: string, action: () => Promise<T>): Promise<T> {
+      const phaseStartedAt = Date.now();
+      try {
+        return await action();
+      } finally {
+        phases.push({
+          phase,
+          durationMs: elapsedMs(phaseStartedAt)
+        });
+      }
+    },
+    finish(validationResult) {
+      const durationMs = elapsedMs(startedAt);
+      return validateCommandTiming({
+        durationMs,
+        phases: [
+          ...phases,
+          ...validationCheckPhases(validationResult)
+        ],
+        processState
+      });
+    }
   };
 }
 
-function diagnosticSource(_checkId: string): string {
-  return OPCORE_PROVIDER_ID;
+function nextAssessmentProcessState(): CommandTiming["processState"] {
+  if (firstAssessmentTiming) {
+    firstAssessmentTiming = false;
+    return "cold";
+  }
+  return "warm";
+}
+
+function validationCheckPhases(result: ValidationResult | undefined): CommandTimingPhase[] {
+  return (result?.manifest?.runs ?? [])
+    .filter((run) => isNonNegativeFiniteNumber(run.durationMs))
+    .map((run) => ({
+      phase: `validation_${normalizePhaseId(run.checkId, "check")}`,
+      durationMs: run.durationMs as number
+    }));
+}
+
+function elapsedMs(startedAt: number): number {
+  return Math.max(0, Date.now() - startedAt);
+}
+
+function isNonNegativeFiniteNumber(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0;
+}
+
+function normalizePhaseId(value: string, fallback: string): string {
+  const normalized = value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]+/g, "_")
+    .replace(/_+/g, "_")
+    .replace(/^[^a-z]+/, "")
+    .replace(/[_-]+$/g, "");
+  return /^[a-z][a-z0-9_-]*$/.test(normalized) ? normalized : fallback;
 }
 
 function uniqueDegradations(entries: readonly ProviderCoverageDegradation[]): ProviderCoverageDegradation[] {
