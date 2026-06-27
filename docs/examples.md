@@ -28,15 +28,17 @@ Expected shape:
 
 ```text
 Coverage:
-  scenarios=4 files=... validation=... unsupported=...
+  scenarios=5 files=13 validation=9 unsupported=1
 Findings:
-  coverage.unsupported_stacks: count=...
-  rust.source_hygiene: count=...
-  typescript.type_errors: count=...
+  coverage.unsupported_stacks: count=1 delta=0
+  python.source_hygiene: count=1 delta=0
+  python.syntax_errors: count=1 delta=0
+  rust.source_hygiene: count=8 delta=0
+  typescript.type_errors: count=2 delta=0
 Loop:
   opcore --repo <sample>
   opcore init --repo <sample> --approve
-  opcore check --changed --checks typescript.syntax,typescript.types,rust.source-hygiene,rust.file-length --json
+  opcore check --changed --checks typescript.syntax,typescript.types,rust.source-hygiene,rust.file-length,python.syntax,python.source-hygiene --json
   opcore measure --repo <sample>
 Sandbox:
   <local temp directory>
@@ -84,6 +86,14 @@ opcore check --changed --json
 
 The command defaults to `--base HEAD`; pass `--base origin/main` when the workflow needs a different comparison point.
 
+For Python-only validation in the same scan, check, measure loop:
+
+```bash
+opcore check --changed --checks python.syntax,python.source-hygiene --json
+```
+
+`python.types` is optional-tool evidence; missing mypy or pyright is reported as degraded instead of inventing a finding.
+
 ## Read Deltas
 
 ```bash
@@ -97,4 +107,6 @@ Coverage:
   files=... graph=... validation=... unsupported=...
 Signals:
   typescript.type_errors: 2 baseline=-1 previous=+0
+  python-measure-delta: python.dead-code previous=-1 baseline=+0
+  python.types: degraded requiredTool=mypy|pyright
 ```

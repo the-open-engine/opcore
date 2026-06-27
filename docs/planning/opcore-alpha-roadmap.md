@@ -52,7 +52,7 @@ Opcore alpha must provide value quickly and honestly:
   `.opcore/history.jsonl`;
   bounded `.opcore/telemetry.jsonl` capped at 500 records or 1 MiB.
 - Init runs a read-only scan first, shows coverage before findings, then may write `.opcore/config`, AGENTS.md guidance, mirrors, undo metadata, and optional hooks only after explicit approval.
-- Reports must state coverage before findings: deep TypeScript/JavaScript graph support, Rust validation/toolchain support, and unsupported-language counts.
+- Reports must state coverage before findings: deep TypeScript/JavaScript graph support, Rust validation/toolchain support, experimental Python validation (degraded-honest), and unsupported-language counts.
 - Init JSON includes scan, per-language onboarding settings, interaction state, and timing fields for time-to-first-output checks.
 - Metrics are named, drillable counts and deltas, not a blended quality score.
 - Current Rox/CRG/CIX guardrails remain retained until explicit replacement evidence says otherwise.
@@ -68,9 +68,10 @@ Ship only signals the engine can defend:
 - Rust oversized files.
 - Rust module cycles, orphans, and unresolved module evidence.
 - Rust cargo, fmt, clippy, rustdoc, and optional-tool evidence when available, with honest degraded status when tools are missing.
+- Python `.py`/`.pyi` graph-backed structure, untested modules, dead exports, syntax, source-hygiene, import graph, relevant-test signals, and optional `python.types` via mypy or pyright with degraded status when tools are missing.
 - Unsupported language census with no fake findings.
 
-Do not ship headline claims for generic complexity, TS complexity, Python/Go/Java analysis, security, cross-repo percentiles, automatic fixes, or old-tool replacement.
+Do not ship headline claims for generic complexity, TS complexity, Python code analysis, Go/Java analysis, security, cross-repo percentiles, automatic fixes, or old-tool replacement.
 
 ## Release Gate
 
@@ -97,7 +98,7 @@ Do not call the alpha ready until current evidence proves:
 Use:
 
 - "Opcore is the robustness loop for agent-era repos."
-- "Deep for TypeScript/JavaScript and useful for Rust in alpha; unsupported stacks are counted and reported honestly."
+- "Deep for TypeScript/JavaScript, useful for Rust, and experimental Python validation (degraded-honest) in alpha; unsupported stacks are counted and reported honestly."
 - "ASP is an optional private host/provider seam until the protocol has independent interoperability evidence."
 
 Avoid:
@@ -106,6 +107,7 @@ Avoid:
 - "Opcore proves the standard."
 - "Opcore replaces Rox/CRG/CIX."
 - "Works with every stack."
+- "Python code analysis" as a headline.
 - "Detects AI authorship."
 - "Security scanner" or "SAST."
 - "Automatically fixes your repo."
