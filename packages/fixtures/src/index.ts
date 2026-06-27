@@ -14,6 +14,7 @@ export const fixtureIds = [
   "graph-core-artifact-handshake-v1",
   "source-extraction-wave1-v1",
   "source-extraction-python-v1",
+  "validation-python-v1",
   "command-adapter-v1",
   "graph-pipeline-v1",
   "graph-query-v1",
@@ -45,7 +46,7 @@ export interface SyntheticFixtureMetadata {
     | "fixtures";
   origin: typeof fixtureOrigin;
   containsSourceCode: boolean;
-  issue: "#3" | "#8" | "#10" | "#11" | "#12" | "#17" | "#19" | "#20" | "#21" | "#25" | "#28" | "#37" | "#47" | "#100";
+  issue: "#3" | "#8" | "#10" | "#11" | "#12" | "#17" | "#19" | "#20" | "#21" | "#22" | "#25" | "#28" | "#37" | "#47" | "#100";
   schemaVersion: 1;
   dataFile?: string;
   status:
@@ -65,6 +66,7 @@ export interface SyntheticFixtureMetadata {
     | "graph_search"
     | "graph_serve_transport"
     | "inspect_symbol_parity"
+    | "validation_python"
     | "validation_contract"
     | "graph_core_artifact_handshake"
     | "source_extraction_wave1"
@@ -210,6 +212,12 @@ export interface SyntheticFixtureMetadata {
     graphFailureStates: readonly string[];
     providerFailureCategories: readonly string[];
     dataFile: string;
+  };
+  validationPython?: {
+    fixtureRoot: string;
+    scenarios: readonly ("clean" | "failing" | "degraded-tools")[];
+    checks: readonly string[];
+    degradedTools: readonly string[];
   };
   graphRelease?: {
     receipt: string;
@@ -548,7 +556,7 @@ export const conformanceFixtureMetadata = [
   {
     origin: fixtureOrigin,
     containsSourceCode: true,
-    issue: "#17",
+    issue: "#22",
     schemaVersion: 1,
     id: "source-extraction-python-v1",
     packageTrack: "fixtures",
@@ -560,7 +568,29 @@ export const conformanceFixtureMetadata = [
       languages: ["py", "pyi"],
       nodeKinds: ["File", "Module", "Class", "Function", "Variable"],
       edgeKinds: ["CONTAINS", "IMPORTS_FROM", "DEPENDS_ON", "CALLS", "TESTED_BY", "INHERITS"],
-      diagnostics: ["unresolved_import"]
+      diagnostics: ["parse_error", "unresolved_import"]
+    }
+  },
+  {
+    origin: fixtureOrigin,
+    containsSourceCode: true,
+    issue: "#22",
+    schemaVersion: 1,
+    id: "validation-python-v1",
+    packageTrack: "validation-python",
+    status: "validation_python",
+    validationPython: {
+      fixtureRoot: "packages/fixtures/validation-python",
+      scenarios: ["clean", "failing", "degraded-tools"],
+      checks: [
+        "python.syntax",
+        "python.source-hygiene",
+        "python.types",
+        "python.import-graph",
+        "python.dead-code",
+        "python.relevant-tests"
+      ],
+      degradedTools: ["mypy", "pyright", "ruff", "pytest"]
     }
   },
   {

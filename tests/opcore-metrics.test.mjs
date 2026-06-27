@@ -37,10 +37,19 @@ describe("Opcore metrics", () => {
     assert.equal(signals.get("rust.oversized_files").count, 1);
     assert.equal(signals.get("rust.module_resolution").count, 1);
     assert.equal(signals.get("rust.toolchain_drift").count, 1);
+    assert.equal(signals.get("python.syntax_errors").count, 1);
+    assert.equal(signals.get("python.type_errors").count, 1);
+    assert.equal(signals.get("python.untested_modules").count, 1);
+    assert.equal(signals.get("python.dead_exports").evidence[0].path, "pkg/api.py");
+    assert.equal(signals.get("python.source_hygiene").count, 1);
+    assert.equal(signals.get("python.import_graph").count, 1);
     assert.equal(signals.get("coverage.unsupported_stacks").count, 2);
     assert.equal(report.signals.every((signal) => signal.count > 0 && signal.evidence.every((entry) => entry.path)), true);
     assert.equal(report.degradations.some((entry) => entry.id === "typescript.dead_exports.unavailable"), true);
+    assert.equal(report.degradations.some((entry) => entry.id === "python.dead_exports.unavailable"), true);
+    assert.equal(report.degradations.some((entry) => entry.id === "python.types.unavailable"), true);
     assert.equal(report.degradations.some((entry) => entry.id === "rust.tool.cargo.unavailable"), true);
+    assert.equal(report.degradations.some((entry) => entry.id === "python.tool.mypy.unavailable" && entry.requiredTool === "mypy"), true);
     assert.equal(JSON.stringify(report).includes("blendedScore"), false);
     assert.equal(Object.hasOwn(report, "score"), false);
   });
@@ -402,6 +411,48 @@ function validationResult() {
         path: "crates/app/src/lib.rs",
         code: "RUST_FMT_DRIFT",
         message: "Rust formatting drift."
+      },
+      { category: "syntax", severity: "error", path: "pkg/bad.py", code: "PY_SYNTAX_MISSING_COLON", message: "Missing colon." },
+      { category: "types", severity: "error", path: "pkg/typed.py", code: "PY_TYPE_MISMATCH", message: "Type mismatch." },
+      {
+        category: "test",
+        severity: "info",
+        path: "pkg/untested.py",
+        code: "PY_RELEVANT_TESTS_ABSENT",
+        message: "No TESTED_BY graph evidence found."
+      },
+      {
+        category: "graph",
+        severity: "warning",
+        path: "pkg/api.py",
+        code: "PY_DEAD_CODE_UNUSED_EXPORT",
+        message: "Exported Python symbol has no incoming CALLS graph evidence."
+      },
+      {
+        category: "graph",
+        severity: "info",
+        code: "PY_DEAD_CODE_UNSUPPORTED",
+        message: "Graph facts do not include Python export metadata required for dead-code validation."
+      },
+      {
+        category: "policy",
+        severity: "error",
+        path: "pkg/hygiene.py",
+        code: "PY_SOURCE_TYPE_IGNORE",
+        message: "Python type-ignore suppressions are not allowed."
+      },
+      {
+        category: "graph",
+        severity: "warning",
+        path: "pkg/importer.py",
+        code: "PY_IMPORT_GRAPH_MISSING_EDGE",
+        message: "Missing IMPORTS_FROM graph edge."
+      },
+      {
+        category: "types",
+        severity: "info",
+        code: "PYTHON_TYPES_UNSUPPORTED",
+        message: "Python type validation requires mypy or pyright; neither tool is available."
       }
     ],
     manifest: {
@@ -414,7 +465,13 @@ function validationResult() {
         "rust.source-hygiene",
         "rust.file-length",
         "rust.import-graph",
-        "rust.fmt"
+        "rust.fmt",
+        "python.syntax",
+        "python.source-hygiene",
+        "python.types",
+        "python.import-graph",
+        "python.dead-code",
+        "python.relevant-tests"
       ],
       generatedAt: "2026-06-25T00:00:00.000Z"
     }
@@ -423,7 +480,8 @@ function validationResult() {
 
 function repoState(overrides = {}) {
   const degradedToolchains = overrides.degradedToolchains ?? [
-    { adapter: "rust", tool: "cargo", failureMessage: "cargo unavailable" }
+    { adapter: "rust", tool: "cargo", failureMessage: "cargo unavailable" },
+    { adapter: "python", tool: "mypy", failureMessage: "mypy unavailable" }
   ];
   return {
     schemaVersion: 1,

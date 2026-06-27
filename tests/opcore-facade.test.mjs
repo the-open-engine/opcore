@@ -95,8 +95,12 @@ describe("opcore public facade", () => {
         writeFileSync(join(temp, directory, file), "def value():\n    return True\n");
       }
 
-      const result = parseJson(runOpcore(["status", "--repo", temp, "--json"], temp, 0).stdout);
+      const result = parseJson(runOpcore(["status", "--repo", temp, "--json"], temp, 0, { ...process.env, PATH: "" }).stdout);
       const coverage = result.repoState.coverage;
+      const degradedPythonTools = result.repoState.validation.degradedToolchains
+        .filter((tool) => tool.adapter === "python")
+        .map((tool) => tool.tool)
+        .sort();
 
       assert.equal(coverage.totalFiles, 2);
       assert.deepEqual(coverage.languages, [
@@ -113,6 +117,7 @@ describe("opcore public facade", () => {
         })),
         []
       );
+      assert.deepEqual(degradedPythonTools, ["mypy", "pyright", "pytest", "ruff"]);
     } finally {
       rmSync(temp, { recursive: true, force: true });
     }
@@ -457,8 +462,14 @@ describe("opcore public facade", () => {
       },
       {
         name: "python",
-        files: [["scripts/app.py", "print('unsupported')\n"]],
-        expect: { totalFiles: 1, languages: ["Python"], unsupportedFiles: 0 }
+        files: [
+          ["scripts/app.py", "print('supported but type tooling may be degraded')\n"],
+          ["pyproject.toml", "[project]\nname = \"opcore-python-fixture\"\n"],
+          ["requirements.txt", "pytest\nruff\n"],
+          ["uv.lock", "# lock\n"],
+          [".venv/pyvenv.cfg", "home = /tmp/python\n"]
+        ],
+        expect: { totalFiles: 4, languages: ["Python"], unsupportedFiles: 0 }
       },
       {
         name: "fresh-git",
@@ -490,6 +501,19 @@ describe("opcore public facade", () => {
           assert.equal(result.opcoreInit.settings.languages[0].graph, "supported");
           assert.equal(result.opcoreInit.settings.languages[0].validation, "degraded");
           assert.equal(result.opcoreInit.scan.diagnosticCount, 1);
+          assert.match(result.opcoreInit.settings.languages[0].notes.join(" "), /pyproject\.toml/);
+          assert.match(result.opcoreInit.settings.languages[0].notes.join(" "), /requirements\.txt/);
+          assert.match(result.opcoreInit.settings.languages[0].notes.join(" "), /uv\.lock/);
+          assert.match(result.opcoreInit.settings.languages[0].notes.join(" "), /\.venv/);
+          assert.deepEqual(
+            result.opcoreInit.settings.python.dependencyManagers.map((entry) => [entry.kind, entry.path]),
+            [
+              ["pyproject", "pyproject.toml"],
+              ["requirements", "requirements.txt"],
+              ["uv", "uv.lock"]
+            ]
+          );
+          assert.deepEqual(result.opcoreInit.settings.python.virtualEnvironments, [{ kind: "venv", path: ".venv" }]);
         }
         if (fixture.name === "mixed-cargo-lock-only") {
           const rust = result.opcoreInit.settings.languages.find((entry) => entry.language === "Rust");
@@ -932,11 +956,13 @@ describe("opcore public facade", () => {
       assert.equal(jsonResult.opcoreTry.published, false);
       assert.deepEqual(
         jsonResult.opcoreTry.scenarios.map((scenario) => scenario.id).sort(),
-        ["mixed-repo", "rust-crate", "typescript-app", "unsupported-files"]
+        ["mixed-repo", "python-package", "rust-crate", "typescript-app", "unsupported-files"]
       );
       const signalIds = new Set(jsonResult.opcoreTry.scenarios.flatMap((scenario) => scenario.signals.map((signal) => signal.id)));
       assert.equal(signalIds.has("typescript.type_errors"), true);
       assert.equal(signalIds.has("rust.source_hygiene"), true);
+      assert.equal(signalIds.has("python.syntax_errors"), true);
+      assert.equal(signalIds.has("python.source_hygiene"), true);
       assert.equal(signalIds.has("coverage.unsupported_stacks"), true);
       assert.equal(jsonResult.opcoreTry.commands.some((command) => command.canonicalCommand.join(" ") === "opcore measure"), true);
 
@@ -993,8 +1019,8 @@ function initGitFixture(repo) {
   run("git", ["checkout", "-q", "main"], repo, 0);
 }
 
-function runOpcore(args, cwd, expectedStatus) {
-  return run(process.execPath, [opcoreBin, ...args], cwd, expectedStatus);
+function runOpcore(args, cwd, expectedStatus, env = process.env) {
+  return run(process.execPath, [opcoreBin, ...args], cwd, expectedStatus, env);
 }
 
 async function runOpcoreCliInProcess(args, cwd, options) {

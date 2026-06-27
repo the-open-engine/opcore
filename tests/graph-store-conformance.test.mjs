@@ -122,16 +122,16 @@ describe("GraphProvider SQLite store conformance", () => {
       assert.equal(status.dbPath, refresh.dbPath);
       assert.deepEqual(status.nodes_by_kind, {
         Class: 3,
-        File: 7,
-        Function: 9,
-        Module: 7,
+        File: 9,
+        Function: 12,
+        Module: 9,
         Variable: 2
       });
       assert.deepEqual(status.edges_by_kind, {
-        CALLS: 9,
-        CONTAINS: 21,
-        DEPENDS_ON: 6,
-        IMPORTS_FROM: 6,
+        CALLS: 11,
+        CONTAINS: 26,
+        DEPENDS_ON: 7,
+        IMPORTS_FROM: 7,
         INHERITS: 1,
         TESTED_BY: 3
       });
@@ -153,26 +153,26 @@ describe("GraphProvider SQLite store conformance", () => {
           plainRows(db.prepare("select kind, count(*) as count from nodes group by kind order by kind").all()),
           [
             { kind: "Class", count: 3 },
-            { kind: "File", count: 7 },
-            { kind: "Function", count: 9 },
-            { kind: "Module", count: 7 },
+            { kind: "File", count: 9 },
+            { kind: "Function", count: 12 },
+            { kind: "Module", count: 9 },
             { kind: "Variable", count: 2 }
           ]
         );
         assert.deepEqual(
           plainRows(db.prepare("select kind, count(*) as count from edges group by kind order by kind").all()),
           [
-            { kind: "CALLS", count: 9 },
-            { kind: "CONTAINS", count: 21 },
-            { kind: "DEPENDS_ON", count: 6 },
-            { kind: "IMPORTS_FROM", count: 6 },
+            { kind: "CALLS", count: 11 },
+            { kind: "CONTAINS", count: 26 },
+            { kind: "DEPENDS_ON", count: 7 },
+            { kind: "IMPORTS_FROM", count: 7 },
             { kind: "INHERITS", count: 1 },
             { kind: "TESTED_BY", count: 3 }
           ]
         );
         assert.deepEqual(
           plainRows(db.prepare("select language, count(*) as count from file_hashes group by language").all()),
-          [{ language: "python", count: 7 }]
+          [{ language: "python", count: 9 }]
         );
         assert.deepEqual(
           Object.fromEntries(

@@ -21,12 +21,17 @@
     "class:src/pkg/models.py#PublicModel",
     "class:tests/test_models.py#TestPublicModel",
     "file:src/pkg/__init__.py",
+    "file:src/pkg/async_tools.py",
     "file:src/pkg/base.py",
+    "file:src/pkg/broken.py",
     "file:src/pkg/helpers.py",
     "file:src/pkg/models.py",
     "file:src/pkg/stubs.pyi",
     "file:src/pkg/uses_stub.py",
     "file:tests/test_models.py",
+    "function:src/pkg/async_tools.py#load_name",
+    "function:src/pkg/async_tools.py#load_name.inner",
+    "function:src/pkg/async_tools.py#trace",
     "function:src/pkg/helpers.py#build_name",
     "function:src/pkg/models.py#PublicModel.from_value",
     "function:src/pkg/models.py#PublicModel.render",
@@ -37,7 +42,9 @@
     "function:tests/test_models.py#TestPublicModel.test_render",
     "function:tests/test_models.py#test_make_model",
     "module:src/pkg/__init__.py#src.pkg",
+    "module:src/pkg/async_tools.py#src.pkg.async_tools",
     "module:src/pkg/base.py#src.pkg.base",
+    "module:src/pkg/broken.py#src.pkg.broken",
     "module:src/pkg/helpers.py#src.pkg.helpers",
     "module:src/pkg/models.py#src.pkg.models",
     "module:src/pkg/stubs.pyi#src.pkg.stubs",
@@ -47,6 +54,16 @@
     "variable:src/pkg/models.py#_private"
   ],
   "edgeTriples": [
+    [
+      "CALLS",
+      "function:src/pkg/async_tools.py#load_name.inner",
+      "function:src/pkg/helpers.py#build_name"
+    ],
+    [
+      "CALLS",
+      "function:src/pkg/async_tools.py#load_name",
+      "function:src/pkg/async_tools.py#load_name.inner"
+    ],
     [
       "CALLS",
       "function:src/pkg/models.py#_hidden",
@@ -114,8 +131,18 @@
     ],
     [
       "CONTAINS",
+      "file:src/pkg/async_tools.py",
+      "module:src/pkg/async_tools.py#src.pkg.async_tools"
+    ],
+    [
+      "CONTAINS",
       "file:src/pkg/base.py",
       "module:src/pkg/base.py#src.pkg.base"
+    ],
+    [
+      "CONTAINS",
+      "file:src/pkg/broken.py",
+      "module:src/pkg/broken.py#src.pkg.broken"
     ],
     [
       "CONTAINS",
@@ -144,8 +171,23 @@
     ],
     [
       "CONTAINS",
+      "function:src/pkg/async_tools.py#load_name",
+      "function:src/pkg/async_tools.py#load_name.inner"
+    ],
+    [
+      "CONTAINS",
       "module:src/pkg/__init__.py#src.pkg",
       "variable:src/pkg/__init__.py#PACKAGE_VALUE"
+    ],
+    [
+      "CONTAINS",
+      "module:src/pkg/async_tools.py#src.pkg.async_tools",
+      "function:src/pkg/async_tools.py#load_name"
+    ],
+    [
+      "CONTAINS",
+      "module:src/pkg/async_tools.py#src.pkg.async_tools",
+      "function:src/pkg/async_tools.py#trace"
     ],
     [
       "CONTAINS",
@@ -204,6 +246,11 @@
     ],
     [
       "DEPENDS_ON",
+      "file:src/pkg/async_tools.py",
+      "file:src/pkg/helpers.py"
+    ],
+    [
+      "DEPENDS_ON",
       "file:src/pkg/models.py",
       "file:src/pkg/base.py"
     ],
@@ -231,6 +278,11 @@
       "IMPORTS_FROM",
       "file:src/pkg/__init__.py",
       "file:src/pkg/models.py"
+    ],
+    [
+      "IMPORTS_FROM",
+      "file:src/pkg/async_tools.py",
+      "file:src/pkg/helpers.py"
     ],
     [
       "IMPORTS_FROM",
@@ -302,6 +354,33 @@
       "exportPolicy": "underscore_convention",
       "exported": true,
       "isTest": true
+    },
+    "function:src/pkg/async_tools.py#load_name": {
+      "async": true,
+      "decorators": [
+        "trace"
+      ],
+      "exportKind": "named",
+      "exportName": "load_name",
+      "exportPolicy": "underscore_convention",
+      "exported": true,
+      "isTest": false
+    },
+    "function:src/pkg/async_tools.py#load_name.inner": {
+      "async": false,
+      "decorators": [],
+      "exportPolicy": "not_module_level",
+      "exported": false,
+      "isTest": false
+    },
+    "function:src/pkg/async_tools.py#trace": {
+      "async": false,
+      "decorators": [],
+      "exportKind": "named",
+      "exportName": "trace",
+      "exportPolicy": "underscore_convention",
+      "exported": true,
+      "isTest": false
     },
     "function:src/pkg/helpers.py#build_name": {
       "async": false,
@@ -381,8 +460,14 @@
     "module:src/pkg/__init__.py#src.pkg": {
       "dottedName": "src.pkg"
     },
+    "module:src/pkg/async_tools.py#src.pkg.async_tools": {
+      "dottedName": "src.pkg.async_tools"
+    },
     "module:src/pkg/base.py#src.pkg.base": {
       "dottedName": "src.pkg.base"
+    },
+    "module:src/pkg/broken.py#src.pkg.broken": {
+      "dottedName": "src.pkg.broken"
     },
     "module:src/pkg/helpers.py#src.pkg.helpers": {
       "dottedName": "src.pkg.helpers"
@@ -427,6 +512,24 @@
         "policy": "__all__",
         "source": null,
         "supportedSymbol": false
+      }
+    ],
+    "file:src/pkg/async_tools.py": [
+      {
+        "exported": "trace",
+        "kind": "named",
+        "local": "trace",
+        "policy": "underscore_convention",
+        "source": null,
+        "supportedSymbol": true
+      },
+      {
+        "exported": "load_name",
+        "kind": "named",
+        "local": "load_name",
+        "policy": "underscore_convention",
+        "source": null,
+        "supportedSymbol": true
       }
     ],
     "file:src/pkg/base.py": [
@@ -507,6 +610,13 @@
     ]
   },
   "diagnostics": [
+    {
+      "category": "parse_error",
+      "severity": "warning",
+      "message": "Python parser recovered from syntax errors; graph facts may be partial",
+      "path": "src/pkg/broken.py",
+      "language": "python"
+    },
     {
       "category": "unresolved_import",
       "severity": "warning",

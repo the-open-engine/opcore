@@ -636,7 +636,11 @@ function assertCommandPayload(id, parsed) {
       throw new Error("opcore-try must return a local unpublished try payload only");
     }
     const scenarioIds = parsed.opcoreTry.scenarios.map((scenario) => scenario.id).sort();
-    assertSameSet(scenarioIds, ["mixed-repo", "rust-crate", "typescript-app", "unsupported-files"], "opcore try scenario ids");
+    assertSameSet(
+      scenarioIds,
+      ["mixed-repo", "python-package", "rust-crate", "typescript-app", "unsupported-files"],
+      "opcore try scenario ids"
+    );
     const signalText = JSON.stringify(parsed.opcoreTry.scenarios.flatMap((scenario) => scenario.signals.map((signal) => signal.id)));
     for (const required of ["typescript.type_errors", "rust.source_hygiene", "coverage.unsupported_stacks"]) {
       if (!signalText.includes(required)) throw new Error(`opcore-try missing signal ${required}`);

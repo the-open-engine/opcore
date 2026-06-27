@@ -32,7 +32,12 @@ export function createPythonValidationAdapterStatus(
 export function probePythonToolchain(
   options: PythonValidationToolchainOptions = {}
 ): readonly ValidationAdapterToolchainStatus[] {
-  return [probeTool("mypy", "mypy", ["--version"], options.env), probeTool("pyright", "pyright", ["--version"], options.env)];
+  return [
+    probeTool("mypy", "mypy", ["--version"], options.env),
+    probeTool("pyright", "pyright", ["--version"], options.env),
+    probeTool("ruff", "ruff", ["--version"], options.env),
+    probeTool("pytest", "pytest", ["--version"], options.env)
+  ];
 }
 
 export function pythonAvailable(options: PythonValidationToolchainOptions = {}): boolean {

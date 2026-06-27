@@ -3,6 +3,7 @@ import type {
   OpcoreInitAction,
   OpcoreInitInteraction,
   OpcoreInitLanguageSetting,
+  OpcoreInitPythonEnvironment,
   OpcoreInitPlanPayload,
   OpcoreInitScanSummary,
   OpcoreInitSettings,
@@ -26,7 +27,7 @@ import {
 } from "node:fs";
 import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
 import { createOpcoreScanAnalysis } from "./scan.js";
-import { resolveRepo } from "./status.js";
+import { commonSkippedPathSegments, resolveRepo } from "./status.js";
 
 declare const process: {
   cwd(): string;
@@ -51,6 +52,19 @@ const gitignorePath = ".gitignore";
 const opcoreIgnoreLine = ".opcore/";
 const allowedUndoPaths = new Set<string>([configPath, undoPath, hookPath, gitignorePath, ...AGENT_FILE_CANDIDATES]);
 const rustActiveValidationKinds = new Set([".rs", ".inc", "Cargo.toml"]);
+const pythonProjectFileNames = new Set(["pyproject.toml", "Pipfile", "poetry.lock", "uv.lock"]);
+const pythonVirtualEnvDirs = new Set([".venv", "venv", "env"]);
+const pythonDiscoverySkipDirs = new Set([
+  ...commonSkippedPathSegments,
+  "__pycache__",
+  ".eggs",
+  "build",
+  ".tox",
+  ".mypy_cache",
+  ".pytest_cache",
+  ".ruff_cache",
+  "site-packages"
+]);
 
 interface ParsedInitArgs {
   repo: string;
@@ -157,7 +171,7 @@ export async function routeOpcoreInit(
     timing.scanMs = elapsedMs(scanStartedAt);
     const context: InitContext = {
       scan: createInitScanSummary(analysis.repoState, analysis.validationResult),
-      settings: createInitSettings(analysis.repoState),
+      settings: createInitSettings(analysis.repoState, resolution.resolution.root),
       interaction: {
         tty: isInteractiveRuntime(runtime),
         promptState: "not_requested"
@@ -304,13 +318,14 @@ function createInitScanSummary(repoState: OpcoreRepoStatePayload, validationResu
   };
 }
 
-function createInitSettings(repoState: OpcoreRepoStatePayload): OpcoreInitSettings {
+function createInitSettings(repoState: OpcoreRepoStatePayload, repoRoot: string): OpcoreInitSettings {
   const unsupportedLanguages = new Set(repoState.coverage.unsupported.stacks.map((stack) => stack.language));
   const degradedRustTools = repoState.validation.degradedToolchains.filter((tool) => tool.adapter === "rust").map((tool) => tool.tool);
   const degradedPythonTools = repoState.validation.degradedToolchains.filter((tool) => tool.adapter === "python").map((tool) => tool.tool);
   const rustHasActiveValidationInput = repoState.coverage.validation.extensions.some((entry) =>
     rustActiveValidationKinds.has(entry.extension)
   );
+  const pythonProject = detectPythonProjectSignals(repoRoot);
   return {
     languages: repoState.coverage.languages.map((language): OpcoreInitLanguageSetting => {
       const rustRetainedOnly =
@@ -346,10 +361,12 @@ function createInitSettings(repoState: OpcoreRepoStatePayload): OpcoreInitSettin
         notes: notesForLanguage(
           language.language,
           validation,
-          language.language === "Python" ? degradedPythonTools : degradedRustTools
+          language.language === "Python" ? degradedPythonTools : degradedRustTools,
+          language.language === "Python" ? pythonProject : undefined
         )
       };
-    })
+    }),
+    ...(hasPythonEnvironmentSignals(pythonProject) ? { python: pythonProject } : {})
   };
 }
 
@@ -394,12 +411,131 @@ function checksForLanguage(language: string, validation: OpcoreInitLanguageSetti
 function notesForLanguage(
   language: string,
   validation: OpcoreInitLanguageSetting["validation"],
-  degradedTools: readonly string[]
+  degradedTools: readonly string[],
+  pythonProject?: OpcoreInitPythonEnvironment
 ): string[] {
   if (validation === "unsupported") return ["Unsupported stack counted without fabricated checks."];
   if (validation === "retained") return ["Retained for compatibility; no active checks configured."];
-  if (validation === "degraded") return [`${language} validation tools degraded: ${degradedTools.join(", ")}.`];
-  return [];
+  const notes: string[] = [];
+  if (validation === "degraded") notes.push(`${language} validation tools degraded: ${degradedTools.join(", ")}.`);
+  if (language === "Python" && pythonProject !== undefined) {
+    notes.push(...pythonProject.notes);
+  }
+  return notes;
+}
+
+function detectPythonProjectSignals(repoRoot: string): OpcoreInitPythonEnvironment {
+  const files: string[] = [];
+  const virtualEnvironmentPaths: string[] = [];
+  const stack = [""];
+  while (stack.length > 0) {
+    const relativeDir = stack.pop();
+    if (relativeDir === undefined) continue;
+    let entries: ReturnType<typeof readdirSync>;
+    try {
+      entries = readdirSync(relativeDir.length > 0 ? resolveRepoPath(repoRoot, relativeDir) : repoRoot, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+    for (const entry of entries) {
+      const relativePath = relativeDir.length > 0 ? `${relativeDir}/${entry.name}` : entry.name;
+      const entryStat = lstatIfExists(resolveRepoPath(repoRoot, relativePath));
+      if (!entryStat || entryStat.isSymbolicLink()) continue;
+      if (entry.isDirectory()) {
+        if (pythonVirtualEnvDirs.has(entry.name)) {
+          virtualEnvironmentPaths.push(relativePath);
+          continue;
+        }
+        if (pythonDiscoverySkipDirs.has(entry.name) || entry.name.endsWith(".egg-info") || entry.name.endsWith(".dist-info")) {
+          continue;
+        }
+        stack.push(relativePath);
+        continue;
+      }
+      if (entry.isFile() && isPythonProjectFile(entry.name)) files.push(relativePath);
+    }
+  }
+  const uniqueFiles = uniqueStrings(files).sort();
+  const dependencyManagers = pythonDependencyManagers(uniqueFiles);
+  const virtualEnvironments = uniqueStrings(virtualEnvironmentPaths)
+    .sort()
+    .map((path) => ({ kind: "venv" as const, path }));
+  return {
+    dependencyManagers,
+    virtualEnvironments,
+    notes: pythonEnvironmentNotes(uniqueFiles, dependencyManagers, virtualEnvironments)
+  };
+}
+
+function isPythonProjectFile(name: string): boolean {
+  return pythonProjectFileNames.has(name) || /^requirements.*\.txt$/u.test(name);
+}
+
+function pythonDependencyManagers(files: readonly string[]): OpcoreInitPythonEnvironment["dependencyManagers"] {
+  const managers: OpcoreInitPythonEnvironment["dependencyManagers"][number][] = [];
+  const seen = new Set<string>();
+  for (const file of files) {
+    const name = file.split("/").at(-1) ?? file;
+    const kind = pythonDependencyManagerKind(name);
+    if (kind === undefined) continue;
+    const key = `${kind}\0${file}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    managers.push({ kind, path: file });
+  }
+  return managers.sort((left, right) => left.path.localeCompare(right.path) || left.kind.localeCompare(right.kind));
+}
+
+function pythonDependencyManagerKind(
+  name: string
+): OpcoreInitPythonEnvironment["dependencyManagers"][number]["kind"] | undefined {
+  if (name === "pyproject.toml") return "pyproject";
+  if (/^requirements.*\.txt$/u.test(name)) return "requirements";
+  if (name === "Pipfile") return "pipfile";
+  if (name === "poetry.lock") return "poetry";
+  if (name === "uv.lock") return "uv";
+  return undefined;
+}
+
+function pythonEnvironmentNotes(
+  files: readonly string[],
+  dependencyManagers: OpcoreInitPythonEnvironment["dependencyManagers"],
+  virtualEnvironments: OpcoreInitPythonEnvironment["virtualEnvironments"]
+): string[] {
+  const notes: string[] = [];
+  if (files.length > 0) {
+    notes.push(`Detected Python project files: ${formatExamples(files)}.`);
+  }
+  if (dependencyManagers.length > 0) {
+    notes.push(`Detected Python dependency managers: ${formatManagerKinds(dependencyManagers)}.`);
+  }
+  if (virtualEnvironments.length > 0) {
+    notes.push(`Detected Python virtualenv directories: ${formatExamples(virtualEnvironments.map((entry) => entry.path))}.`);
+  }
+  if (files.length > 0 || dependencyManagers.length > 0 || virtualEnvironments.length > 0) {
+    notes.push("Python graph and validation coverage is reported with missing tools as degraded coverage.");
+  }
+  return notes;
+}
+
+function formatManagerKinds(dependencyManagers: OpcoreInitPythonEnvironment["dependencyManagers"]): string {
+  const labels = new Map<OpcoreInitPythonEnvironment["dependencyManagers"][number]["kind"], string>([
+    ["pyproject", "pyproject"],
+    ["requirements", "pip requirements"],
+    ["pipfile", "Pipenv"],
+    ["poetry", "Poetry"],
+    ["uv", "uv"]
+  ]);
+  return [...new Set(dependencyManagers.map((entry) => labels.get(entry.kind) ?? entry.kind))].sort().join(", ");
+}
+
+function hasPythonEnvironmentSignals(environment: OpcoreInitPythonEnvironment): boolean {
+  return environment.dependencyManagers.length > 0 || environment.virtualEnvironments.length > 0 || environment.notes.length > 0;
+}
+
+function formatExamples(values: readonly string[]): string {
+  const visible = values.slice(0, 5).join(", ");
+  return values.length > 5 ? `${visible}, +${values.length - 5} more` : visible;
 }
 
 function withContext(payload: OpcoreInitPlanPayload, context: InitContext, timing: TimingState): OpcoreInitPlanPayload {
@@ -729,6 +865,7 @@ function guidanceBlock(): string {
     "- Run `opcore check --changed` before finalizing edits.",
     "- Preserve existing repo lint/test/CI/pre-commit guardrails.",
     "- Treat unsupported stacks and degraded tools honestly.",
+    "- For Python repos, treat missing mypy/pyright/ruff/pytest as degraded coverage, not a pass.",
     "- Do not rely on ACE, Rox, CRG, CIX, or ASP host authority for direct Opcore.",
     endMarker
   ].join("\n");
@@ -1126,15 +1263,23 @@ function formatInitPlan(payload: OpcoreInitPlanPayload, applied: boolean): strin
   const degradedValidationTools = payload.scan.degradedRustTools.length === 0
     ? "none"
     : payload.scan.degradedRustTools.map((tool) => `${tool.adapter}:${tool.tool}`).join(", ");
+  const pythonDependencyManagers = payload.settings.python?.dependencyManagers.length
+    ? payload.settings.python.dependencyManagers.map((manager) => `${manager.kind}:${manager.path}`).join(", ")
+    : "none";
+  const pythonVirtualEnvironments = payload.settings.python?.virtualEnvironments.length
+    ? payload.settings.python.virtualEnvironments.map((environment) => environment.path).join(", ")
+    : "none";
   return [
     "Coverage:",
     `  files=${payload.scan.totalFiles}`,
-    `  graph-supported-ts-js=${payload.scan.graphSupportedFiles}`,
+    `  graph-supported=${payload.scan.graphSupportedFiles}`,
     `  validation-supported=${payload.scan.validationSupportedFiles}`,
     `  validation-retained=${payload.scan.validationRetainedFiles}`,
     `  unsupported=${unsupported}`,
     `  languages=${languages}`,
     `  degraded-validation-tools=${degradedValidationTools}`,
+    `  python-dependency-managers=${pythonDependencyManagers}`,
+    `  python-virtualenvs=${pythonVirtualEnvironments}`,
     "Findings:",
     `  diagnostics=${payload.scan.diagnosticCount}`,
     `  validation=${payload.scan.validationStatus}`,

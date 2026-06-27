@@ -70,6 +70,12 @@ const rustImportGraphCheckId = "rust.import-graph";
 const rustDeadCodeCheckId = "rust.dead-code";
 const rustGraphSignalsCheckId = "rust.graph-signals";
 const rustFileLengthCheckId = "rust.file-length";
+const pythonSyntaxCheckId = "python.syntax";
+const pythonSourceHygieneCheckId = "python.source-hygiene";
+const pythonTypesCheckId = "python.types";
+const pythonImportGraphCheckId = "python.import-graph";
+const pythonDeadCodeCheckId = "python.dead-code";
+const pythonRelevantTestsCheckId = "python.relevant-tests";
 
 const graphStructureThresholds = {
   maxContainedSymbolsPerFile: 50,
@@ -203,6 +209,54 @@ export function createOpcoreMetricReport(input: CreateOpcoreMetricReportInput): 
     severity: "error",
     checkId: rustCargoCheckId,
     diagnostics: diagnostics.filter((diagnostic) => isRustToolchainDiagnostic(diagnostic) && hasPath(diagnostic))
+  });
+  addDiagnosticSignal(signals, {
+    id: "python.syntax_errors",
+    title: "Python syntax errors",
+    category: "python",
+    severity: "error",
+    checkId: pythonSyntaxCheckId,
+    diagnostics: diagnostics.filter((diagnostic) => diagnostic.category === "syntax" && isPythonPath(diagnostic.path))
+  });
+  addDiagnosticSignal(signals, {
+    id: "python.type_errors",
+    title: "Python type findings",
+    category: "python",
+    severity: "error",
+    checkId: pythonTypesCheckId,
+    diagnostics: diagnostics.filter((diagnostic) => isPythonTypeSignalDiagnostic(diagnostic))
+  });
+  addDiagnosticSignal(signals, {
+    id: "python.untested_modules",
+    title: "Python modules without TESTED_BY graph evidence",
+    category: "python",
+    severity: "warning",
+    checkId: pythonRelevantTestsCheckId,
+    diagnostics: diagnostics.filter((diagnostic) => diagnostic.code === "PY_RELEVANT_TESTS_ABSENT" && hasPath(diagnostic))
+  });
+  addDiagnosticSignal(signals, {
+    id: "python.dead_exports",
+    title: "Python exported symbols without incoming CALLS evidence",
+    category: "python",
+    severity: "warning",
+    checkId: pythonDeadCodeCheckId,
+    diagnostics: diagnostics.filter((diagnostic) => diagnostic.code === "PY_DEAD_CODE_UNUSED_EXPORT" && hasPath(diagnostic))
+  });
+  addDiagnosticSignal(signals, {
+    id: "python.source_hygiene",
+    title: "Python source hygiene suppressions",
+    category: "python",
+    severity: "error",
+    checkId: pythonSourceHygieneCheckId,
+    diagnostics: diagnostics.filter((diagnostic) => diagnostic.code?.startsWith("PY_SOURCE_") === true && hasPath(diagnostic))
+  });
+  addDiagnosticSignal(signals, {
+    id: "python.import_graph",
+    title: "Python import graph gaps",
+    category: "python",
+    severity: "warning",
+    checkId: pythonImportGraphCheckId,
+    diagnostics: diagnostics.filter((diagnostic) => diagnostic.code === "PY_IMPORT_GRAPH_MISSING_EDGE" && hasPath(diagnostic))
   });
 
   addUnsupportedLanguageSignal(signals, input.repoState);
@@ -699,66 +753,59 @@ function addGraphStructureSignals(
       title: "Graph structure metrics unavailable",
       source: "graph_facts",
       severity: "warning",
-      message: "Graph facts were not supplied; graph-backed structure metrics were not computed."
+      message: "Graph facts were not supplied; graph-backed language structure metrics were not computed."
     });
     return;
   }
 
   const edges = graphFacts.edges ?? [];
   const nodesById = new Map((graphFacts.nodes ?? []).map((node) => [node.id, node]));
-  const containedByFile = new Map<string, number>();
-  const importersByTarget = new Map<string, Set<string>>();
+  const tsJsContainedByFile = new Map<string, number>();
+  const tsJsImportersByTarget = new Map<string, Set<string>>();
+  const pythonContainedByFile = new Map<string, number>();
+  const pythonImportersByTarget = new Map<string, Set<string>>();
   for (const edge of edges) {
     if (edge.kind === "CONTAINS") {
       const path = endpointPath(edge.from, nodesById);
-      if (path !== undefined && isTsJsPath(path)) increment(containedByFile, path);
+      if (path !== undefined && isTsJsPath(path)) increment(tsJsContainedByFile, path);
+      if (path !== undefined && isPythonPath(path)) increment(pythonContainedByFile, path);
     }
     if (edge.kind === "IMPORTS_FROM") {
       const target = endpointPath(edge.to, nodesById);
       const source = endpointPath(edge.from, nodesById) ?? edge.from;
       if (target !== undefined && isTsJsPath(target)) {
-        const importers = importersByTarget.get(target) ?? new Set<string>();
+        const importers = tsJsImportersByTarget.get(target) ?? new Set<string>();
         importers.add(source);
-        importersByTarget.set(target, importers);
+        tsJsImportersByTarget.set(target, importers);
+      }
+      if (target !== undefined && isPythonPath(target)) {
+        const importers = pythonImportersByTarget.get(target) ?? new Set<string>();
+        importers.add(source);
+        pythonImportersByTarget.set(target, importers);
       }
     }
   }
 
-  const godFileEvidence = [...containedByFile.entries()]
-    .filter(([, count]) => count > graphStructureThresholds.maxContainedSymbolsPerFile)
-    .map(([path, count]): OpcoreMetricEvidence => ({
-      source: "graph_fact",
-      path,
-      message: `${count} CONTAINS graph facts exceed ${graphStructureThresholds.maxContainedSymbolsPerFile}.`
-    }));
-  if (godFileEvidence.length > 0) {
-    signals.push({
-      id: "typescript.structure.god_files",
-      title: "TS/JS high-structure files",
-      category: "graph",
-      severity: "warning",
-      count: godFileEvidence.length,
-      evidence: godFileEvidence
-    });
-  }
-
-  const fanInEvidence = [...importersByTarget.entries()]
-    .filter(([, importers]) => importers.size > graphStructureThresholds.maxImportFanIn)
-    .map(([path, importers]): OpcoreMetricEvidence => ({
-      source: "graph_fact",
-      path,
-      message: `${importers.size} IMPORTS_FROM graph sources exceed ${graphStructureThresholds.maxImportFanIn}.`
-    }));
-  if (fanInEvidence.length > 0) {
-    signals.push({
-      id: "typescript.structure.high_fan_in",
-      title: "TS/JS high fan-in files",
-      category: "graph",
-      severity: "warning",
-      count: fanInEvidence.length,
-      evidence: fanInEvidence
-    });
-  }
+  addStructureSignal(signals, {
+    id: "typescript.structure.god_files",
+    title: "TS/JS high-structure files",
+    containedByFile: tsJsContainedByFile
+  });
+  addFanInSignal(signals, {
+    id: "typescript.structure.high_fan_in",
+    title: "TS/JS high fan-in files",
+    importersByTarget: tsJsImportersByTarget
+  });
+  addStructureSignal(signals, {
+    id: "python.structure.high_symbol_files",
+    title: "Python high-structure files",
+    containedByFile: pythonContainedByFile
+  });
+  addFanInSignal(signals, {
+    id: "python.structure.high_fan_in",
+    title: "Python high fan-in files",
+    importersByTarget: pythonImportersByTarget
+  });
 
   if ((graphFacts.metadata !== undefined && !graphFacts.metadata.edgeKinds.includes("IMPORTS_FROM")) || edges.length === 0) {
     degradations.push({
@@ -871,6 +918,58 @@ function addRustGraphFactSignals(
   }
 }
 
+function addStructureSignal(
+  signals: OpcoreMetricSignal[],
+  args: {
+    id: string;
+    title: string;
+    containedByFile: ReadonlyMap<string, number>;
+  }
+): void {
+  const evidence = [...args.containedByFile.entries()]
+    .filter(([, count]) => count > graphStructureThresholds.maxContainedSymbolsPerFile)
+    .map(([path, count]): OpcoreMetricEvidence => ({
+      source: "graph_fact",
+      path,
+      message: `${count} CONTAINS graph facts exceed ${graphStructureThresholds.maxContainedSymbolsPerFile}.`
+    }));
+  if (evidence.length === 0) return;
+  signals.push({
+    id: args.id,
+    title: args.title,
+    category: "graph",
+    severity: "warning",
+    count: evidence.length,
+    evidence
+  });
+}
+
+function addFanInSignal(
+  signals: OpcoreMetricSignal[],
+  args: {
+    id: string;
+    title: string;
+    importersByTarget: ReadonlyMap<string, ReadonlySet<string>>;
+  }
+): void {
+  const evidence = [...args.importersByTarget.entries()]
+    .filter(([, importers]) => importers.size > graphStructureThresholds.maxImportFanIn)
+    .map(([path, importers]): OpcoreMetricEvidence => ({
+      source: "graph_fact",
+      path,
+      message: `${importers.size} IMPORTS_FROM graph sources exceed ${graphStructureThresholds.maxImportFanIn}.`
+    }));
+  if (evidence.length === 0) return;
+  signals.push({
+    id: args.id,
+    title: args.title,
+    category: "graph",
+    severity: "warning",
+    count: evidence.length,
+    evidence
+  });
+}
+
 function addValidationDegradations(
   degradations: OpcoreMetricDegradation[],
   repoState: OpcoreRepoStatePayload,
@@ -895,6 +994,29 @@ function addValidationDegradations(
         severity: "warning",
         message: diagnostic.message,
         checkId: rustGraphSignalsCheckId
+      });
+    }
+    if (diagnostic.code === "PY_DEAD_CODE_UNSUPPORTED") {
+      degradations.push({
+        id: "python.dead_exports.unavailable",
+        title: "Python dead-export metric unavailable",
+        source: "validation_diagnostic",
+        severity: "warning",
+        message: diagnostic.message,
+        checkId: pythonDeadCodeCheckId
+      });
+    }
+    if (diagnostic.code === "PYTHON_TYPES_UNSUPPORTED" || diagnostic.code === "PYTHON_TYPES_DEFERRED") {
+      degradations.push({
+        id: diagnostic.code === "PYTHON_TYPES_UNSUPPORTED" ? "python.types.unavailable" : "python.types.deferred",
+        title: diagnostic.code === "PYTHON_TYPES_UNSUPPORTED"
+          ? "Python type metric unavailable"
+          : "Python type metric deferred",
+        source: "validation_diagnostic",
+        severity: "warning",
+        message: diagnostic.message,
+        checkId: pythonTypesCheckId,
+        requiredTool: "mypy or pyright"
       });
     }
   }
@@ -939,6 +1061,16 @@ function addValidationDegradations(
       severity: "warning",
       message: "Validation manifest did not include rust.dead-code; Rust dead-code findings are unavailable.",
       checkId: rustDeadCodeCheckId
+    });
+  }
+  if (repoHasPythonGraphSupport(repoState) && !checks.has(pythonDeadCodeCheckId)) {
+    degradations.push({
+      id: "python.dead_exports.not_run",
+      title: "Python dead-export metric not run",
+      source: "validation_manifest",
+      severity: "warning",
+      message: "Validation manifest did not include python.dead-code; Python dead-export findings are unavailable.",
+      checkId: pythonDeadCodeCheckId
     });
   }
 
@@ -1009,13 +1141,21 @@ function isRustToolchainDiagnostic(diagnostic: ValidationDiagnostic): boolean {
   return false;
 }
 
+function isPythonTypeSignalDiagnostic(diagnostic: ValidationDiagnostic): boolean {
+  if (diagnostic.category !== "types" || !isPythonPath(diagnostic.path)) return false;
+  return diagnostic.code !== "PYTHON_TYPES_UNSUPPORTED" && diagnostic.code !== "PYTHON_TYPES_DEFERRED";
+}
+
 function graphBackedCheckId(checkId: string): boolean {
   return checkId === tsRelevantTestsCheckId ||
     checkId === tsDeadCodeCheckId ||
     checkId === "typescript.import-graph" ||
     checkId === rustImportGraphCheckId ||
     checkId === rustDeadCodeCheckId ||
-    checkId === rustGraphSignalsCheckId;
+    checkId === rustGraphSignalsCheckId ||
+    checkId === pythonImportGraphCheckId ||
+    checkId === pythonDeadCodeCheckId ||
+    checkId === pythonRelevantTestsCheckId;
 }
 
 function previousHistoryEntry(
@@ -1126,6 +1266,14 @@ function repoHasRustValidationSupport(repoState: OpcoreRepoStatePayload): boolea
   ) || repoState.coverage.validation.extensions.some((entry) => entry.extension === ".rs" && entry.count > 0);
 }
 
+function repoHasPythonGraphSupport(repoState: OpcoreRepoStatePayload): boolean {
+  return repoState.coverage.languages.some(
+    (language) => language.language.toLowerCase() === "python" && language.graphSupported && language.files > 0
+  ) || repoState.coverage.graph.extensions.some(
+    (entry) => (entry.extension === ".py" || entry.extension === ".pyi") && entry.count > 0
+  );
+}
+
 function graphSupportsEdgeKind(graphFacts: OpcoreMetricGraphFacts, kind: GraphFactEdge["kind"]): boolean {
   if (graphFacts.metadata !== undefined) return graphFacts.metadata.edgeKinds.includes(kind);
   return (graphFacts.edges ?? []).some((edge) => edge.kind === kind);
@@ -1205,6 +1353,10 @@ function isTsJsPath(path: string | undefined): boolean {
 
 function isRustSourcePath(path: string | undefined): boolean {
   return path !== undefined && /\.(?:rs|inc)$/.test(path);
+}
+
+function isPythonPath(path: string | undefined): boolean {
+  return path !== undefined && /\.pyi?$/.test(path);
 }
 
 function increment(map: Map<string, number>, key: string): void {

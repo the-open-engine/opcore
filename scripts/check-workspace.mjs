@@ -354,6 +354,7 @@ function validatePackageManifest(packagePath, manifest, track) {
         "graph-query",
         "graph-pipeline",
         "validation-contract",
+        "validation-python",
         "graph-reference-evidence",
         "inspect-symbol-parity",
         "source-extraction",

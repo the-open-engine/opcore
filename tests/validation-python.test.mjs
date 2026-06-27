@@ -1,5 +1,8 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { readdirSync, readFileSync } from "node:fs";
+import { dirname, join, relative } from "node:path";
+import { fileURLToPath } from "node:url";
 import { createValidationCheckRegistry, createValidationRunner } from "../packages/validation/dist/index.js";
 import {
   PYTHON_DEAD_CODE_CHECK_ID,
@@ -12,6 +15,9 @@ import {
   createPythonValidationChecks,
   validationPythonAdapterName
 } from "../packages/validation-python/dist/index.js";
+
+const repoRoot = dirname(fileURLToPath(import.meta.url));
+const validationFixtureRoot = join(repoRoot, "../packages/fixtures/validation-python");
 
 describe("validation-python adapter", () => {
   it("exports stable Python check ids and definitions", () => {
@@ -219,6 +225,71 @@ describe("validation-python adapter", () => {
     assert.equal(result.status, "passed");
     assert.deepEqual(result.diagnostics.map((diagnostic) => diagnostic.code), ["PY_RELEVANT_TESTS_FOUND"]);
   });
+
+  it("passes clean Python validation fixture checks", async () => {
+    const result = await runner({
+      files: fixtureFiles("clean"),
+      graphProviderClient: graphClient({
+        factQuery: (query) =>
+          availableFactResult(
+            query,
+            [],
+            query.selector.kind === "edges" && query.selector.edgeKinds?.includes("IMPORTS_FROM")
+              ? [
+                  {
+                    kind: "IMPORTS_FROM",
+                    from: "file:pkg/app.py",
+                    to: "file:pkg/dep.py"
+                  }
+                ]
+              : []
+          )
+      })
+    }).runValidation(
+      request({
+        checks: [PYTHON_SYNTAX_CHECK_ID, PYTHON_SOURCE_HYGIENE_CHECK_ID, PYTHON_IMPORT_GRAPH_CHECK_ID],
+        scope: { kind: "files", files: ["pkg/app.py", "pkg/dep.py"] }
+      })
+    );
+
+    assert.equal(result.status, "passed");
+    assert.deepEqual(result.diagnostics, []);
+  });
+
+  it("reports syntax, hygiene, and import graph diagnostics from failing Python validation fixture", async () => {
+    const result = await runner({
+      files: fixtureFiles("failing"),
+      graphProviderClient: graphClient({
+        factQuery: (query) => availableFactResult(query, [], [])
+      })
+    }).runValidation(
+      request({
+        checks: [PYTHON_SYNTAX_CHECK_ID, PYTHON_SOURCE_HYGIENE_CHECK_ID, PYTHON_IMPORT_GRAPH_CHECK_ID],
+        scope: { kind: "files", files: ["pkg/app.py", "pkg/dep.py"] }
+      })
+    );
+
+    assert.equal(result.status, "policy_failure");
+    assert.deepEqual(
+      result.diagnostics.map((diagnostic) => diagnostic.code).sort(),
+      ["PY_IMPORT_GRAPH_MISSING_EDGE", "PY_SOURCE_TYPE_IGNORE", "PY_SYNTAX_MISSING_COLON"]
+    );
+  });
+
+  it("reports degraded Python type tooling from degraded-tools validation fixture", async () => {
+    const result = await runner({
+      files: fixtureFiles("degraded-tools"),
+      checks: createPythonValidationChecks({ env: { PATH: "" } })
+    }).runValidation(
+      request({
+        checks: [PYTHON_TYPES_CHECK_ID],
+        scope: { kind: "files", files: ["pkg/app.py"] }
+      })
+    );
+
+    assert.equal(result.status, "unsupported_request");
+    assert.deepEqual(result.diagnostics.map((diagnostic) => diagnostic.code), ["PYTHON_TYPES_UNSUPPORTED"]);
+  });
 });
 
 function runner(options = {}) {
@@ -260,6 +331,25 @@ function workspace(options = {}) {
       files: [...files.keys()].filter((path) => path.startsWith(`${packageRoot}/`))
     })
   };
+}
+
+function fixtureFiles(name) {
+  const root = join(validationFixtureRoot, name);
+  const entries = {};
+  for (const path of walkFiles(root)) {
+    entries[relative(root, path).replaceAll("\\", "/")] = readFileSync(path, "utf8");
+  }
+  return entries;
+}
+
+function walkFiles(root) {
+  const paths = [];
+  for (const entry of readdirSync(root, { withFileTypes: true })) {
+    const path = join(root, entry.name);
+    if (entry.isDirectory()) paths.push(...walkFiles(path));
+    else if (entry.isFile()) paths.push(path);
+  }
+  return paths.sort();
 }
 
 function graphClient(overrides = {}) {

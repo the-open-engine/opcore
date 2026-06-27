@@ -58,6 +58,22 @@ const scenarioSeeds: readonly TryScenarioSeed[] = [
     }
   },
   {
+    id: "python-package",
+    title: "Python package with syntax and source hygiene findings",
+    write(repoRoot) {
+      mkdirSync(join(repoRoot, "pkg"), { recursive: true });
+      writeFileSync(join(repoRoot, "pyproject.toml"), "[project]\nname = \"opcore-try-python\"\n");
+      writeFileSync(
+        join(repoRoot, "pkg/app.py"),
+        [
+          "def broken()",
+          "    return 1  # type: ignore",
+          ""
+        ].join("\n")
+      );
+    }
+  },
+  {
     id: "mixed-repo",
     title: "Mixed TS/Rust repo with both supported stacks",
     write(repoRoot) {
@@ -84,7 +100,7 @@ const checkArgs = [
   "check",
   "--changed",
   "--checks",
-  "typescript.syntax,typescript.types,rust.source-hygiene,rust.file-length",
+  "typescript.syntax,typescript.types,rust.source-hygiene,rust.file-length,python.syntax,python.source-hygiene",
   "--json"
 ] as const;
 
@@ -287,7 +303,7 @@ function formatTryHuman(payload: OpcoreTryPayload): string {
     "Loop:",
     "  opcore --repo <sample>",
     "  opcore init --repo <sample> --approve",
-    "  opcore check --changed --checks typescript.syntax,typescript.types,rust.source-hygiene,rust.file-length --json",
+    "  opcore check --changed --checks typescript.syntax,typescript.types,rust.source-hygiene,rust.file-length,python.syntax,python.source-hygiene --json",
     "  opcore measure --repo <sample>",
     "Sandbox:",
     `  ${payload.sampleRoot}`,
