@@ -3,6 +3,7 @@ import type {
   GraphFactNode,
   GraphSnapshotMetadata,
   JsonValue,
+  CommandLatencyRecord,
   OpcoreMeasureComparison,
   OpcoreMeasureDelta,
   OpcoreMeasureSignalCount,
@@ -17,11 +18,13 @@ import type {
   ValidationSkippedCheck
 } from "@the-open-engine/opcore-contracts";
 import {
+  commandLatencyTelemetryArtifactPolicy,
+  validateCommandLatencyRecord,
   validateOpcoreMeasureDelta,
   validateOpcoreMetricHistoryEntry,
   validateOpcoreMetricReport
 } from "@the-open-engine/opcore-contracts";
-import { appendFileSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 export interface OpcoreMetricGraphFacts {
@@ -41,6 +44,13 @@ export interface WriteOpcoreMetricArtifactsResult {
   reportPath: string;
   historyPath: string;
   historyEntry: OpcoreMetricHistoryEntry;
+}
+
+export interface WriteCommandLatencyTelemetryResult {
+  telemetryPath: string;
+  record: CommandLatencyRecord;
+  retainedRecords: number;
+  bytes: number;
 }
 
 const tsSyntaxCheckId = "typescript.syntax";
@@ -183,6 +193,83 @@ export function writeOpcoreMetricArtifacts(repoRoot: string, report: OpcoreMetri
   appendFileSync(historyPath, `${JSON.stringify(historyEntry)}\n`);
 
   return { reportPath, historyPath, historyEntry };
+}
+
+export function writeCommandLatencyTelemetry(
+  repoRoot: string,
+  record: CommandLatencyRecord
+): WriteCommandLatencyTelemetryResult {
+  const validatedRecord = validateCommandLatencyRecord(record);
+  const opcoreDir = join(repoRoot, ".opcore");
+  const telemetryPath = join(repoRoot, commandLatencyTelemetryArtifactPolicy.path);
+  mkdirSync(opcoreDir, { recursive: true });
+  const existingRecords = readCommandLatencyTelemetryRecords(telemetryPath);
+  const records = boundCommandLatencyTelemetryRecords([...existingRecords, validatedRecord]);
+  const text = recordsToJsonl(records);
+  const tempTelemetryPath = join(opcoreDir, `.telemetry.jsonl.${Date.now()}.${Math.random().toString(16).slice(2)}.tmp`);
+  writeFileSync(tempTelemetryPath, text, "utf8");
+  renameSync(tempTelemetryPath, telemetryPath);
+  return {
+    telemetryPath,
+    record: validatedRecord,
+    retainedRecords: records.length,
+    bytes: utf8ByteLength(text)
+  };
+}
+
+function readCommandLatencyTelemetryRecords(telemetryPath: string): CommandLatencyRecord[] {
+  if (!existsSync(telemetryPath)) return [];
+  return readFileSync(telemetryPath, "utf8")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0)
+    .map((line, index) => {
+      try {
+        return validateCommandLatencyRecord(JSON.parse(line) as CommandLatencyRecord);
+      } catch (error) {
+        throw new Error(`Invalid Opcore telemetry entry at line ${index + 1}: ${errorMessage(error)}`);
+      }
+    });
+}
+
+function boundCommandLatencyTelemetryRecords(records: readonly CommandLatencyRecord[]): CommandLatencyRecord[] {
+  const bounded = records.slice(-commandLatencyTelemetryArtifactPolicy.maxRecords);
+  while (bounded.length > 0 && utf8ByteLength(recordsToJsonl(bounded)) > commandLatencyTelemetryArtifactPolicy.maxBytes) {
+    if (bounded.length === 1) {
+      throw new Error(
+        `Opcore telemetry record exceeds ${commandLatencyTelemetryArtifactPolicy.maxBytes} byte artifact cap`
+      );
+    }
+    bounded.shift();
+  }
+  return bounded;
+}
+
+function recordsToJsonl(records: readonly CommandLatencyRecord[]): string {
+  return records.length === 0
+    ? ""
+    : `${records.map((entry) => JSON.stringify(entry)).join("\n")}\n`;
+}
+
+function utf8ByteLength(text: string): number {
+  let bytes = 0;
+  for (let index = 0; index < text.length; index += 1) {
+    const code = text.charCodeAt(index);
+    if (code <= 0x7f) bytes += 1;
+    else if (code <= 0x7ff) bytes += 2;
+    else if (code >= 0xd800 && code <= 0xdbff && index + 1 < text.length) {
+      const next = text.charCodeAt(index + 1);
+      if (next >= 0xdc00 && next <= 0xdfff) {
+        bytes += 4;
+        index += 1;
+      } else {
+        bytes += 3;
+      }
+    } else {
+      bytes += 3;
+    }
+  }
+  return bytes;
 }
 
 export function readOpcoreMetricHistory(repoRoot: string): readonly OpcoreMetricHistoryEntry[] {

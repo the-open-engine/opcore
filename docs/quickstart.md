@@ -76,7 +76,7 @@ opcore init --approve
 opcore init --repo . --approve
 ```
 
-`opcore init` runs the read-only scan first, prints coverage before findings, shows the additive setup plan, and prompts on a TTY. `opcore init --json` previews without writing. Approved init may add `.opcore/config`, delimited agent guidance, mirrors for existing agent files, undo metadata, a managed `.opcore/` `.gitignore` line in Git repos, and optional hooks only when explicitly requested. Non-Git repos skip `.gitignore`; undo removes only the managed line. JSON output includes scan, language settings, interaction, and timing fields.
+`opcore init` runs the read-only scan first, prints coverage before findings, shows the additive setup plan, and prompts on a TTY. `opcore init --json` previews without writing. Approved init may add `.opcore/config`, delimited agent guidance, mirrors for existing agent files, undo metadata, a managed `.opcore/` `.gitignore` line in Git repos, and optional hooks only when explicitly requested. Non-Git repos skip `.gitignore`; undo removes only the managed line. The `.opcore/` ignore covers `.opcore/telemetry.jsonl`. JSON output includes scan, language settings, interaction, and timing fields.
 
 ## Coverage Honesty
 

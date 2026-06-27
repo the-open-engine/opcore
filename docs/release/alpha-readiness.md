@@ -7,8 +7,10 @@ public announcement and does not authorize publishing.
 
 - `opcore` installs and runs from this repo's packaged artifacts.
 - `opcore try` works without touching the user's repository.
-- `opcore --repo .` runs a read-only scan and writes only
-  `.opcore/report.json` plus `.opcore/history.jsonl`.
+- `opcore --repo .` runs a source-read-only scan and emits the scan artifact
+  allowlist: `.opcore/report.json`;
+  `.opcore/history.jsonl`;
+  bounded `.opcore/telemetry.jsonl` capped at 500 records or 1 MiB.
 - `opcore status --repo . --json` is read-only and does not build graphs, run
   checks, install packages, call wrappers, or write files.
 - `opcore check --changed --json` has stable agent exit codes.

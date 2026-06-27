@@ -1,13 +1,19 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
+  commandLatencyTelemetryArtifactPolicy,
+  validateCommandLatencyRecord
+} from "../packages/contracts/dist/index.js";
+import {
+  createCommandLatencyRecord,
   createOpcoreMeasureDelta,
   createOpcoreMetricReport,
   formatOpcoreMeasureHuman,
   readOpcoreMetricHistory,
+  writeCommandLatencyTelemetry,
   writeOpcoreMetricArtifacts
 } from "../packages/opcore/dist/index.js";
 
@@ -119,6 +125,44 @@ describe("Opcore metrics", () => {
     } finally {
       rmSync(temp, { recursive: true, force: true });
     }
+  });
+
+  it("writes bounded command latency telemetry records", () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-telemetry-"));
+    try {
+      for (let index = 0; index < 505; index += 1) {
+        writeCommandLatencyTelemetry(temp, latencyRecord(index));
+      }
+
+      const telemetryPath = join(temp, commandLatencyTelemetryArtifactPolicy.path);
+      const lines = readFileSync(telemetryPath, "utf8").trim().split(/\r?\n/);
+
+      assert.equal(lines.length, commandLatencyTelemetryArtifactPolicy.maxRecords);
+      assert.equal(statSync(telemetryPath).size <= commandLatencyTelemetryArtifactPolicy.maxBytes, true);
+      assert.deepEqual(
+        lines.map((line) => validateCommandLatencyRecord(JSON.parse(line)).recordedAt).slice(0, 2),
+        ["2026-06-25T00:00:05.000Z", "2026-06-25T00:00:06.000Z"]
+      );
+      assert.equal(validateCommandLatencyRecord(JSON.parse(lines.at(-1))).recordedAt, "2026-06-25T00:08:24.000Z");
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("refuses command latency telemetry without router timing", () => {
+    assert.throws(
+      () => createCommandLatencyRecord({
+        bin: "opcore",
+        argv: ["--json"],
+        canonicalCommand: ["opcore", "scan"],
+        owner: "runtime",
+        status: "ok",
+        exitCode: 0,
+        json: true,
+        repoState: repoState()
+      }, repoState()),
+      /requires measured command timing/
+    );
   });
 
   it("computes concrete baseline and previous deltas and formats human sections in order", () => {
@@ -386,4 +430,40 @@ function historyEntry(recordedAt, report) {
     recordedAt,
     report
   };
+}
+
+function latencyRecord(index) {
+  return validateCommandLatencyRecord({
+    schemaVersion: 1,
+    recordedAt: `2026-06-25T00:${String(Math.floor(index / 60)).padStart(2, "0")}:${String(index % 60).padStart(2, "0")}.000Z`,
+    bin: "opcore",
+    canonicalCommand: ["opcore", "scan"],
+    owner: "runtime",
+    status: "ok",
+    exitCode: 0,
+    repo: {
+      totalFiles: 8,
+      languages: [
+        { language: "TypeScript", files: 4 },
+        { language: "Rust", files: 2 },
+        { language: "Python", files: 2 }
+      ],
+      graph: {
+        supportedFiles: 4,
+        unsupportedFiles: 4
+      },
+      git: {
+        available: false
+      }
+    },
+    timing: {
+      durationMs: index,
+      phases: [
+        { phase: "validation", durationMs: index },
+        { phase: "validation_typescript_syntax", durationMs: 1 }
+      ],
+      processState: index === 0 ? "cold" : "warm"
+    },
+    opcoreVersion: "0.1.0-alpha.0"
+  });
 }

@@ -27,7 +27,8 @@ describe("opcore public facade", () => {
       assert.doesNotMatch(human.stdout, /\blattice\b|\bcrg\b|\bcix\b|\brox\b|ASP setup|ACE setup|sibling checkout/i);
       assert.equal(existsSync(join(fixtureRoot, ".opcore", "report.json")), true);
       assert.equal(existsSync(join(fixtureRoot, ".opcore", "history.jsonl")), true);
-      assert.deepEqual(readdirSync(join(fixtureRoot, ".opcore")).sort(), ["history.jsonl", "report.json"]);
+      assert.equal(existsSync(join(fixtureRoot, ".opcore", "telemetry.jsonl")), true);
+      assert.deepEqual(readdirSync(join(fixtureRoot, ".opcore")).sort(), ["history.jsonl", "report.json", "telemetry.jsonl"]);
       assert.equal(existsSync(join(fixtureRoot, ".lattice")), false);
       assert.equal(existsSync(join(fixtureRoot, ".ace")), false);
       assert.equal(existsSync(join(fixtureRoot, ".asp")), false);
@@ -50,11 +51,13 @@ describe("opcore public facade", () => {
       assert.equal(Array.isArray(report.signals), true);
       assert.equal(Array.isArray(report.degradations), true);
       assert.equal(readFileSync(join(fixtureRoot, ".opcore", "history.jsonl"), "utf8").trim().split(/\r?\n/).length >= 2, true);
+      assert.equal(readFileSync(join(fixtureRoot, ".opcore", "telemetry.jsonl"), "utf8").trim().split(/\r?\n/).length >= 2, true);
     });
   });
 
-  it("returns repoState-only status JSON", () => {
+  it("returns repoState-only status JSON without writes", () => {
     withFixtureCopy((fixtureRoot) => {
+      const before = collectRepoPaths(fixtureRoot);
       const result = parseJson(runOpcore(["status", "--repo", fixtureRoot, "--json"], fixtureRoot, 0).stdout);
 
       assert.deepEqual(result.canonicalCommand, ["opcore", "status"]);
@@ -62,6 +65,7 @@ describe("opcore public facade", () => {
       assert.equal(Object.hasOwn(result, "repoState"), true);
       assert.equal(Object.hasOwn(result, "validationResult"), false);
       assert.equal(Object.hasOwn(result, "validationStatus"), false);
+      assert.deepEqual(collectRepoPaths(fixtureRoot), before);
     });
   });
 
@@ -155,6 +159,8 @@ describe("opcore public facade", () => {
       writeOpcoreMetricArtifacts(temp, metricReport(temp, "2026-06-25T00:00:00.000Z", 1));
       const historyBefore = readFileSync(join(temp, ".opcore/history.jsonl"), "utf8");
       const reportBefore = readFileSync(join(temp, ".opcore/report.json"), "utf8");
+      const pathsBefore = collectRepoPaths(temp);
+      assert.equal(existsSync(join(temp, ".opcore/telemetry.jsonl")), false);
 
       const measure = parseJson(runOpcore(["measure", "--repo", temp, "--json"], temp, 0).stdout);
 
@@ -167,6 +173,8 @@ describe("opcore public facade", () => {
       assert.equal(Object.hasOwn(measure, "repoState"), false);
       assert.equal(readFileSync(join(temp, ".opcore/history.jsonl"), "utf8"), historyBefore);
       assert.equal(readFileSync(join(temp, ".opcore/report.json"), "utf8"), reportBefore);
+      assert.equal(existsSync(join(temp, ".opcore/telemetry.jsonl")), false);
+      assert.deepEqual(collectRepoPaths(temp), pathsBefore);
 
       const human = runOpcore(["measure", "--repo", temp], temp, 0);
       assert.equal(human.message, undefined);
@@ -219,8 +227,10 @@ describe("opcore public facade", () => {
       assert.equal(existsSync(join(temp, ".opcore", "init-undo.json")), true);
       assert.equal(existsSync(join(temp, ".opcore", "report.json")), false);
       assert.equal(existsSync(join(temp, ".opcore", "history.jsonl")), false);
+      assert.equal(existsSync(join(temp, ".opcore", "telemetry.jsonl")), false);
       assert.equal(existsSync(join(temp, ".opcore", "hooks", "pre-commit-opcore-check.sh")), false);
       assert.equal(opcoreIgnoreLineCount(readFileSync(join(temp, ".gitignore"), "utf8")), 1);
+      assertGitIgnored(temp, ".opcore/telemetry.jsonl");
       const config = JSON.parse(readFileSync(join(temp, ".opcore", "config"), "utf8"));
       assert.equal(config.schemaVersion, 1);
       assert.equal(config.guidance.checkCommand, "opcore check --changed");
@@ -239,6 +249,34 @@ describe("opcore public facade", () => {
       );
     } finally {
       rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("adds managed .opcore gitignore coverage for approved Git init and undo restores it", () => {
+    const withoutExisting = mkdtempSync(join(tmpdir(), "opcore-init-gitignore-new-"));
+    const withExisting = mkdtempSync(join(tmpdir(), "opcore-init-gitignore-existing-"));
+    try {
+      initGitFixture(withoutExisting);
+      runOpcore(["init", "--repo", withoutExisting, "--approve", "--json"], withoutExisting, 0);
+      runOpcore(["init", "--repo", withoutExisting, "--approve", "--json"], withoutExisting, 0);
+      const freshGitignore = readFileSync(join(withoutExisting, ".gitignore"), "utf8");
+      assert.equal(opcoreIgnoreLineCount(freshGitignore), 1);
+      assertGitIgnored(withoutExisting, ".opcore/telemetry.jsonl");
+      runOpcore(["init", "--repo", withoutExisting, "--undo", "--approve", "--json"], withoutExisting, 0);
+      assert.equal(existsSync(join(withoutExisting, ".gitignore")), false);
+
+      initGitFixture(withExisting);
+      writeFileSync(join(withExisting, ".gitignore"), "node_modules\n");
+      runOpcore(["init", "--repo", withExisting, "--approve", "--json"], withExisting, 0);
+      const existingGitignore = readFileSync(join(withExisting, ".gitignore"), "utf8");
+      assert.equal(opcoreIgnoreLineCount(existingGitignore), 1);
+      assertGitIgnored(withExisting, ".opcore/telemetry.jsonl");
+      assert.match(existingGitignore, /^node_modules$/m);
+      runOpcore(["init", "--repo", withExisting, "--undo", "--approve", "--json"], withExisting, 0);
+      assert.equal(readFileSync(join(withExisting, ".gitignore"), "utf8"), "node_modules\n");
+    } finally {
+      rmSync(withoutExisting, { recursive: true, force: true });
+      rmSync(withExisting, { recursive: true, force: true });
     }
   });
 
@@ -954,6 +992,10 @@ function endMarkerCount(text) {
 
 function opcoreIgnoreLineCount(text) {
   return text.split(/\r?\n/).filter((line) => line === ".opcore/").length;
+}
+
+function assertGitIgnored(repo, path) {
+  run("git", ["check-ignore", path], repo, 0);
 }
 
 function metricReport(repoRoot, generatedAt, typeErrorCount) {
