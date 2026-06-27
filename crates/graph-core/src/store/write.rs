@@ -327,7 +327,7 @@ fn node_insert_row(
         qualified_name: node.id.clone(),
         file_path: node_file_path(context, path.as_deref(), file_hash),
         language: file_hash.map(|hash| hash.language.clone()),
-        is_test: if node.kind == "Test" { 1 } else { 0 },
+        is_test: if is_test_node(node) { 1 } else { 0 },
         is_exported: if node
             .attributes
             .as_ref()
@@ -345,6 +345,16 @@ fn node_insert_row(
         attributes_json: optional_json(&node.attributes)?,
         canonical_json: serde_json::to_string(node)?,
     })
+}
+
+fn is_test_node(node: &GraphFactNode) -> bool {
+    node.kind == "Test"
+        || node
+            .attributes
+            .as_ref()
+            .and_then(|attributes| attributes.get("isTest"))
+            .and_then(serde_json::Value::as_bool)
+            .unwrap_or(false)
 }
 
 fn node_file_path(

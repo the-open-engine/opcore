@@ -1182,7 +1182,9 @@ function availableStatus(mode = "optional", repo = { repoId: "lattice" }) {
     provider: "lattice-graph",
     schemaVersion: 1,
     repo,
-    freshness: freshness()
+    freshness: freshness(),
+    nodes_by_kind: {},
+    edges_by_kind: {}
   };
 }
 

@@ -7,16 +7,24 @@ import { isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   graphProviderBuild,
+  graphProviderDetectChanges,
+  graphProviderImpact,
+  graphProviderNamedQuery,
   graphProviderQuery,
+  graphProviderReviewContext,
+  graphProviderSearch,
   graphProviderStatus,
   graphProviderUpdate,
-  graphProviderWatch
+  graphProviderWatch,
+  invokeGraphCoreSidecar
 } from "../packages/graph/dist/index.js";
 
 const repoRoot = fileURLToPath(new URL("..", import.meta.url));
 const sourceFixtureRoot = resolve(repoRoot, "packages/fixtures/source-extraction/wave1");
+const pythonFixtureRoot = resolve(repoRoot, "packages/fixtures/source-extraction/python");
 const robustnessFixtureRoot = resolve(repoRoot, "packages/fixtures/graph-robustness/watch-roots");
 const expected = JSON.parse(readFileSync(resolve(sourceFixtureRoot, "wave1.expected.json"), "utf8"));
+const pythonExpected = JSON.parse(readFileSync(resolve(pythonFixtureRoot, "python.expected.json"), "utf8"));
 
 describe("GraphProvider SQLite store conformance", () => {
   it("refreshes Wave 1 facts into SQLite and serves #19 direct-reader queries", () => {
@@ -93,6 +101,237 @@ describe("GraphProvider SQLite store conformance", () => {
             { key: "schema_version", value: "6" }
           ]
         );
+      } finally {
+        db.close();
+      }
+    });
+  });
+
+  it("persists Python facts into SQLite and serves store-backed query/search", () => {
+    withPythonFixtureCopy((fixtureRoot) => {
+      const canonicalFixtureRoot = realpathSync(fixtureRoot);
+      const refresh = graphProviderBuild({ repoRoot: fixtureRoot }).status;
+      assert.equal(refresh.state, "available");
+      assert.ok(refresh.dbPath);
+      assert.equal(refresh.dbPath, join(canonicalFixtureRoot, ".lattice/graph/graph.db"));
+      assert.ok(existsSync(refresh.dbPath));
+
+      const status = graphProviderStatus({ repoRoot: fixtureRoot });
+      assert.equal(status.state, "available");
+      assert.equal(status.dbPath, refresh.dbPath);
+      assert.deepEqual(status.nodes_by_kind, {
+        Class: 3,
+        File: 7,
+        Function: 9,
+        Module: 7,
+        Variable: 2
+      });
+      assert.deepEqual(status.edges_by_kind, {
+        CALLS: 9,
+        CONTAINS: 21,
+        DEPENDS_ON: 6,
+        IMPORTS_FROM: 6,
+        INHERITS: 1,
+        TESTED_BY: 3
+      });
+      const rawStatus = rawGraphStatus(fixtureRoot);
+      assert.equal(rawStatus.state, "available");
+      assert.deepEqual(rawStatus.nodes_by_kind, status.nodes_by_kind);
+      assert.deepEqual(rawStatus.edges_by_kind, status.edges_by_kind);
+
+      const result = graphProviderQuery({ repoRoot: fixtureRoot });
+      assert.equal(result.status.state, "available");
+      assert.equal(result.status.dbPath, refresh.dbPath);
+      assert.deepEqual(result.nodes.map((node) => node.id).sort(), pythonExpected.nodeIds);
+      assert.deepEqual(edgeTriples(result.edges), pythonExpected.edgeTriples.sort(compareTuple));
+
+      const db = new DatabaseSync(refresh.dbPath, { readOnly: true });
+      try {
+        assert.equal(db.prepare("pragma user_version").get().user_version, 1);
+        assert.deepEqual(
+          plainRows(db.prepare("select kind, count(*) as count from nodes group by kind order by kind").all()),
+          [
+            { kind: "Class", count: 3 },
+            { kind: "File", count: 7 },
+            { kind: "Function", count: 9 },
+            { kind: "Module", count: 7 },
+            { kind: "Variable", count: 2 }
+          ]
+        );
+        assert.deepEqual(
+          plainRows(db.prepare("select kind, count(*) as count from edges group by kind order by kind").all()),
+          [
+            { kind: "CALLS", count: 9 },
+            { kind: "CONTAINS", count: 21 },
+            { kind: "DEPENDS_ON", count: 6 },
+            { kind: "IMPORTS_FROM", count: 6 },
+            { kind: "INHERITS", count: 1 },
+            { kind: "TESTED_BY", count: 3 }
+          ]
+        );
+        assert.deepEqual(
+          plainRows(db.prepare("select language, count(*) as count from file_hashes group by language").all()),
+          [{ language: "python", count: 7 }]
+        );
+        assert.deepEqual(
+          Object.fromEntries(
+            db
+              .prepare(
+                "select name, is_exported from nodes where name in ('PublicModel', 'make_model', 'build_name', '_hidden') order by name"
+              )
+              .all()
+              .map((row) => [row.name, row.is_exported])
+          ),
+          { PublicModel: 1, _hidden: 0, build_name: 1, make_model: 1 }
+        );
+        assert.equal(
+          db.prepare("select is_test from nodes where id = ?").get("function:tests/test_models.py#test_make_model").is_test,
+          1
+        );
+        for (const nodeId of [
+          "class:src/pkg/models.py#PublicModel",
+          "function:src/pkg/helpers.py#build_name",
+          "function:src/pkg/stubs.pyi#stubbed"
+        ]) {
+          assert.equal(db.prepare("select count(*) as count from nodes_fts where node_id = ?").get(nodeId).count, 1, nodeId);
+        }
+        assert.ok(db.prepare("select count(*) as count from nodes_fts where path = ?").get("src/pkg/stubs.pyi").count > 0);
+      } finally {
+        db.close();
+      }
+
+      const symbols = graphProviderQuery(
+        { repoRoot: fixtureRoot },
+        { kind: "symbols", text: "PublicModel", limit: 100 }
+      );
+      assert.equal(symbols.status.state, "available");
+      assert.ok(symbols.nodes.map((node) => node.id).includes("class:src/pkg/models.py#PublicModel"));
+
+      const imports = graphProviderQuery(
+        { repoRoot: fixtureRoot },
+        { kind: "edges", edgeKinds: ["IMPORTS_FROM"], ids: ["file:tests/test_models.py"], limit: 100 }
+      );
+      assert.equal(imports.status.state, "available");
+      assert.deepEqual(
+        imports.edges.map((edge) => edge.to).sort(),
+        ["file:src/pkg/__init__.py", "file:src/pkg/models.py"]
+      );
+
+      const testedBy = graphProviderQuery(
+        { repoRoot: fixtureRoot },
+        { kind: "neighbors", edgeKinds: ["TESTED_BY"], ids: ["class:src/pkg/models.py#PublicModel"], limit: 100 }
+      );
+      assert.equal(testedBy.status.state, "available");
+      assert.ok(paths(testedBy.nodes).includes("tests/test_models.py"));
+
+      const search = graphProviderSearch({ repoRoot: fixtureRoot }, { query: "PublicModel", limit: 5 });
+      assert.equal(search.status.state, "available");
+      assert.equal(search.results[0].rank, 1);
+      assert.equal(search.results[0].nodeId, "class:src/pkg/models.py#PublicModel");
+
+      const importers = graphProviderNamedQuery(
+        { repoRoot: fixtureRoot },
+        { queryKind: "importers_of", target: "src/pkg/models.py", maxDepth: 2, limit: 100 }
+      );
+      assert.equal(importers.status.state, "available");
+      assert.deepEqual(paths(importers.nodes), ["src/pkg/__init__.py", "src/pkg/models.py", "tests/test_models.py"]);
+
+      const tests = graphProviderNamedQuery(
+        { repoRoot: fixtureRoot },
+        { queryKind: "tests_for", target: "src/pkg/models.py", maxDepth: 1, limit: 100 }
+      );
+      assert.equal(tests.status.state, "available");
+      assert.ok(paths(tests.nodes).includes("tests/test_models.py"));
+      const rawTests = rawNamedQuery(fixtureRoot, {
+        queryKind: "tests_for",
+        target: "src/pkg/models.py",
+        maxDepth: 1,
+        limit: 100
+      });
+      assert.equal(rawTests.status.state, "available");
+      assert.deepEqual(paths(rawTests.nodes), paths(tests.nodes));
+
+      const children = graphProviderNamedQuery(
+        { repoRoot: fixtureRoot },
+        { queryKind: "children_of", target: "src/pkg/models.py", maxDepth: 2, limit: 100 }
+      );
+      assert.equal(children.status.state, "available");
+      assert.ok(children.nodes.map((node) => node.id).includes("class:src/pkg/models.py#PublicModel"));
+      assert.ok(children.nodes.map((node) => node.id).includes("function:src/pkg/models.py#make_model"));
+
+      const summary = graphProviderNamedQuery(
+        { repoRoot: fixtureRoot },
+        { queryKind: "file_summary", target: "src/pkg/models.py", limit: 100 }
+      );
+      assert.equal(summary.status.state, "available");
+      assert.ok(summary.edges.some((edge) => edge.kind === "CONTAINS" && edge.to === "class:src/pkg/models.py#PublicModel"));
+      const rawSummary = rawNamedQuery(fixtureRoot, { queryKind: "file_summary", target: "src/pkg/models.py", limit: 100 });
+      assert.equal(rawSummary.status.state, "available");
+      assert.ok(rawSummary.edges.some((edge) => edge.kind === "CONTAINS" && edge.to === "class:src/pkg/models.py#PublicModel"));
+
+      const impact = graphProviderImpact({ repoRoot: fixtureRoot }, { files: ["src/pkg/models.py"], maxDepth: 3, limit: 100 });
+      assert.equal(impact.status.state, "available");
+      assert.deepEqual(impact.changedFiles, ["src/pkg/models.py"]);
+      assert.ok(impact.impactedFiles.includes("tests/test_models.py"));
+      assert.ok(impact.tests.includes("tests/test_models.py"));
+      const rawImpact = rawGraphImpact(fixtureRoot, { files: ["src/pkg/models.py"], maxDepth: 3, limit: 100 });
+      assert.equal(rawImpact.status.state, "available");
+      assert.ok(rawImpact.impactedFiles.includes("tests/test_models.py"));
+      assert.ok(rawImpact.tests.includes("tests/test_models.py"));
+
+      const changes = graphProviderDetectChanges({ repoRoot: fixtureRoot }, { files: ["src/pkg/models.py"] });
+      assert.equal(changes.status.state, "available");
+      assert.deepEqual(changes.changedFiles, ["src/pkg/models.py"]);
+
+      const review = graphProviderReviewContext({ repoRoot: fixtureRoot }, { files: ["src/pkg/models.py"], maxDepth: 3 });
+      assert.equal(review.status.state, "available");
+      assert.deepEqual(review.changedFiles, ["src/pkg/models.py"]);
+      assert.ok(review.impactedFiles.includes("tests/test_models.py"));
+      assert.ok(review.tests.includes("tests/test_models.py"));
+      const rawReview = rawGraphReviewContext(fixtureRoot, { files: ["src/pkg/models.py"], maxDepth: 3 });
+      assert.equal(rawReview.status.state, "available");
+      assert.ok(rawReview.impactedFiles.includes("tests/test_models.py"));
+      assert.ok(rawReview.tests.includes("tests/test_models.py"));
+    });
+  });
+
+  it("updates Python changed and deleted files incrementally", () => {
+    withPythonFixtureCopy((fixtureRoot) => {
+      const build = graphProviderBuild({ repoRoot: fixtureRoot });
+      assert.equal(build.status.state, "available");
+
+      writeFileSync(
+        join(fixtureRoot, "src/pkg/helpers.py"),
+        `${readFileSync(join(fixtureRoot, "src/pkg/helpers.py"), "utf8")}\n\ndef helper_added():\n    return build_name()\n`
+      );
+      unlinkSync(join(fixtureRoot, "src/pkg/stubs.pyi"));
+
+      const stale = graphProviderStatus({ repoRoot: fixtureRoot });
+      assert.equal(stale.state, "stale");
+      assert.match(stale.freshness.reason, /hash changed|removed/);
+
+      const update = graphProviderUpdate({ repoRoot: fixtureRoot }, "HEAD");
+      assert.equal(update.status.state, "available");
+      assert.deepEqual(update.summary.changedFiles, ["src/pkg/helpers.py"]);
+      assert.deepEqual(update.summary.deletedFiles, ["src/pkg/stubs.pyi"]);
+      assert.equal(update.summary.fullRebuildRequired, false);
+      assert.equal(update.summary.parsedFiles, 1);
+
+      assertStoreMissingPath(update.status.dbPath, "src/pkg/stubs.pyi");
+      const db = new DatabaseSync(update.status.dbPath, { readOnly: true });
+      try {
+        assert.equal(
+          db.prepare("select count(*) as count from nodes_fts where node_id = ?").get("function:src/pkg/helpers.py#helper_added")
+            .count,
+          1
+        );
+        const cached = JSON.parse(db.prepare("select value from lattice_store where key = 'file_facts_json'").get().value);
+        assert.equal(cached.some((facts) => facts.path === "src/pkg/stubs.pyi"), false);
+        const metadata = JSON.parse(db.prepare("select value from lattice_store where key = 'search_index_last_update_json'").get().value);
+        assert.equal(metadata.strategy, "incremental");
+        assert.deepEqual(metadata.changedFiles, ["src/pkg/helpers.py"]);
+        assert.deepEqual(metadata.deletedFiles, ["src/pkg/stubs.pyi"]);
+        assert.ok(metadata.reindexedNodeIds.includes("function:src/pkg/helpers.py#helper_added"));
       } finally {
         db.close();
       }
@@ -363,6 +602,17 @@ function withFixtureCopy(run) {
   }
 }
 
+function withPythonFixtureCopy(run) {
+  const temp = mkdtempSync(join(tmpdir(), "lattice-store-python-"));
+  const fixtureRoot = join(temp, "python");
+  try {
+    cpSync(pythonFixtureRoot, fixtureRoot, { recursive: true, filter: skipGeneratedStore });
+    run(fixtureRoot, temp);
+  } finally {
+    rmSync(temp, { recursive: true, force: true });
+  }
+}
+
 function withRobustnessFixtureCopy(run) {
   const temp = mkdtempSync(join(tmpdir(), "lattice-store-robustness-"));
   const fixtureRoot = join(temp, "watch-roots");
@@ -399,6 +649,70 @@ function skipGeneratedStore(source) {
 
 function edgeTriples(edges) {
   return edges.map((edge) => [edge.kind, edge.from, edge.to]).sort(compareTuple);
+}
+
+function paths(nodes) {
+  return [...new Set(nodes.map((node) => node.path).filter(Boolean))].sort();
+}
+
+function rawGraphStatus(repoRoot) {
+  return invokeGraphCoreSidecar(baseRawGraphRequest(repoRoot, "raw-status", "status")).status;
+}
+
+function rawNamedQuery(repoRoot, options) {
+  return invokeGraphCoreSidecar({
+    ...baseRawGraphRequest(repoRoot, "raw-named-query", "query"),
+    namedQuery: {
+      requestId: "raw-named-query",
+      repo: { repoRoot },
+      schemaVersion: 1,
+      mode: "required",
+      queryKind: options.queryKind,
+      target: options.target,
+      maxDepth: options.maxDepth,
+      limit: options.limit
+    }
+  }).namedQuery;
+}
+
+function rawGraphImpact(repoRoot, options) {
+  return invokeGraphCoreSidecar({
+    ...baseRawGraphRequest(repoRoot, "raw-impact", "query"),
+    impact: {
+      requestId: "raw-impact",
+      repo: { repoRoot },
+      schemaVersion: 1,
+      mode: "required",
+      files: options.files,
+      maxDepth: options.maxDepth,
+      limit: options.limit
+    }
+  }).impact;
+}
+
+function rawGraphReviewContext(repoRoot, options) {
+  return invokeGraphCoreSidecar({
+    ...baseRawGraphRequest(repoRoot, "raw-review-context", "query"),
+    reviewContext: {
+      requestId: "raw-review-context",
+      repo: { repoRoot },
+      schemaVersion: 1,
+      mode: "required",
+      files: options.files,
+      maxDepth: options.maxDepth,
+      limit: options.limit
+    }
+  }).reviewContext;
+}
+
+function baseRawGraphRequest(repoRoot, requestId, operation) {
+  return {
+    protocol: "lattice.graph.daemon",
+    requestId,
+    schemaVersion: 1,
+    operation,
+    repo: { repoRoot }
+  };
 }
 
 function compareTuple(left, right) {

@@ -126,7 +126,7 @@ impl SelectionAccumulator {
                 index
                     .nodes_by_id
                     .get(*id)
-                    .is_some_and(|node| node.kind != "File" && node.kind != "Test")
+                    .is_some_and(|node| node.kind != "File" && !is_test_node(node))
             })
             .cloned()
             .collect()
@@ -196,14 +196,9 @@ impl GraphIndex {
         }
         let mut ids = vec![id.clone()];
         if id.starts_with("file:") {
-            let mut child_ids = self
-                .edges_from(&id, &["CONTAINS"])
-                .map(|edge| edge.to.clone())
-                .collect::<Vec<_>>();
-            child_ids.sort();
-            for child_id in child_ids {
-                if !ids.contains(&child_id) {
-                    ids.push(child_id);
+            for descendant_id in self.contained_descendant_ids(&id) {
+                if !ids.contains(&descendant_id) {
+                    ids.push(descendant_id);
                 }
             }
         }
@@ -276,7 +271,8 @@ impl GraphIndex {
             .cloned()
             .collect::<Vec<_>>();
         for id in selected_start_ids {
-            for edge in self.edges_from(&id, &["CONTAINS", "IMPORTS_FROM", "DEPENDS_ON"]) {
+            selection.add_contained_descendants(self, &id);
+            for edge in self.edges_from(&id, &["IMPORTS_FROM", "DEPENDS_ON"]) {
                 if selection.add_node(self, &edge.to) {
                     selection.add_edge_if_selected(edge);
                 }
@@ -288,6 +284,23 @@ impl GraphIndex {
             }
         }
         selection.into_selection(self, 1)
+    }
+
+    pub(super) fn contained_descendant_ids(&self, root_id: &str) -> Vec<String> {
+        let mut descendants = BTreeSet::new();
+        let mut visited = BTreeSet::new();
+        let mut queue = VecDeque::from([root_id.to_string()]);
+        while let Some(current) = queue.pop_front() {
+            if !visited.insert(current.clone()) {
+                continue;
+            }
+            for edge in self.edges_from(&current, &["CONTAINS"]) {
+                if descendants.insert(edge.to.clone()) {
+                    queue.push_back(edge.to.clone());
+                }
+            }
+        }
+        descendants.into_iter().collect()
     }
 
     pub(super) fn nodes_for_ids(&self, ids: &BTreeSet<String>) -> Vec<GraphFactNode> {
@@ -345,6 +358,19 @@ impl GraphIndex {
     }
 }
 
+impl SelectionAccumulator {
+    pub(super) fn add_contained_descendants(&mut self, index: &GraphIndex, root_id: &str) {
+        for descendant_id in index.contained_descendant_ids(root_id) {
+            self.add_node(index, &descendant_id);
+        }
+        for edge in &index.edges {
+            if edge.kind == "CONTAINS" {
+                self.add_edge_if_selected(edge);
+            }
+        }
+    }
+}
+
 fn traversal_queue(
     start_ids: &[String],
     selection: &SelectionAccumulator,
@@ -362,4 +388,14 @@ fn next_traversal_node(edge: &GraphFactEdge, direction: Direction) -> String {
         Direction::Incoming => edge.from.clone(),
         Direction::Outgoing => edge.to.clone(),
     }
+}
+
+pub(super) fn is_test_node(node: &GraphFactNode) -> bool {
+    node.kind == "Test"
+        || node
+            .attributes
+            .as_ref()
+            .and_then(|attributes| attributes.get("isTest"))
+            .and_then(serde_json::Value::as_bool)
+            .unwrap_or(false)
 }

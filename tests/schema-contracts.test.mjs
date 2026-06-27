@@ -247,6 +247,8 @@ const availableStatus = {
     ageMs: 0,
     stale: false
   },
+  nodes_by_kind: {},
+  edges_by_kind: {},
   handshake: validHandshake()
 };
 
