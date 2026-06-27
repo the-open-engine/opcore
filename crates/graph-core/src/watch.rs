@@ -149,6 +149,14 @@ fn watch_response_from_pipeline(
         Some("graph watch daemon available".to_string()),
     )?;
     session.log("available")?;
+    let (nodes_by_kind, edges_by_kind) = match &pipeline.status {
+        GraphProviderStatus::Available {
+            nodes_by_kind,
+            edges_by_kind,
+            ..
+        } => (Some(nodes_by_kind.clone()), Some(edges_by_kind.clone())),
+        _ => (None, None),
+    };
     pipeline.lifecycle = Some(lifecycle.clone());
     pipeline.status = available_status_with_wal_checkpoint(AvailableStatusInput {
         repo: session.repo.clone(),
@@ -156,8 +164,8 @@ fn watch_response_from_pipeline(
         db_path: Some(display_path(
             &repo_root.join(".lattice").join("graph").join("graph.db"),
         )),
-        nodes_by_kind: None,
-        edges_by_kind: None,
+        nodes_by_kind,
+        edges_by_kind,
         message: Some("graph watch daemon available".to_string()),
         wal_checkpoint: pipeline.summary.wal_checkpoint.clone(),
     });
