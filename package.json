@@ -35,6 +35,7 @@
     "cutover:check": "node scripts/generate-cutover-receipt.mjs",
     "cutover:receipt": "node scripts/generate-cutover-receipt.mjs --write",
     "license:report": "node scripts/license-report.mjs",
+    "latency:check": "node scripts/check-latency-budgets.mjs --records tests/fixtures/latency/telemetry-pass.jsonl",
     "lint": "node scripts/check-workspace.mjs",
     "pack:check": "node scripts/check-packages.mjs",
     "provenance:check": "node scripts/check-provenance.mjs",

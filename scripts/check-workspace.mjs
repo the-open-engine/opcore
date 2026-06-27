@@ -75,6 +75,7 @@ for (const scriptName of [
   "cutover:check",
   "cutover:receipt",
   "license:report",
+  "latency:check",
   "provenance:check",
   "graph:artifact",
   "asp-provider:manifest",
@@ -113,6 +114,7 @@ for (const duplicateCiToken of ["conformance:check", "pack:check", "release:hygi
   }
 }
 requireIncludes("package.json scripts.test", root.scripts.test, "tests/*.test.mjs");
+requireIncludes("package.json scripts.latency:check", root.scripts["latency:check"], "scripts/check-latency-budgets.mjs");
 requireIncludes(
   "package.json scripts.test:ci",
   root.scripts["test:ci"],
