@@ -6,7 +6,7 @@ Opcore starts by counting the repository. TypeScript, JavaScript, Rust sources, 
 
 ## Findings
 
-Findings are named signals such as `typescript.type_errors`, `rust.source_hygiene`, and `coverage.unsupported_stacks`. Counts come from validation diagnostics, graph evidence when available, and repository census data. Opcore does not blend them into an opaque score.
+Findings are named signals such as `typescript.type_errors`, `rust.source_hygiene`, and `coverage.unsupported_stacks`. Counts come from validation diagnostics, graph evidence when available, and repository census data. Opcore does not blend them into a single rating.
 
 ## Artifacts
 
@@ -19,15 +19,19 @@ Allowed scan artifacts:
 ```
 
 Telemetry is bounded command latency evidence capped at 500 records or 1 MiB.
-`opcore measure` reads the report and history artifacts and reports
-baseline/previous deltas. It does not run checks, build graph data, install
-packages, or edit source.
+Scan/status/check/measure are read-only for source files. `opcore measure`
+reads the report and history artifacts and reports baseline/previous deltas. It
+does not run checks, build graph data, install packages, or edit source.
 
 ## Init
 
-`opcore init` is approval-gated. Without `--approve`, it returns a plan. With `--approve`, it writes additive `.opcore/config`, updates one delimited guidance block in existing agent files or creates `AGENTS.md`, appends one managed `.opcore/` line to `.gitignore` only in Git repos that do not already ignore it, and records `.opcore/init-undo.json`.
+`opcore init` is approval-gated. Without `--approve`, it returns a plan. With
+`--approve`, it writes only additive `.opcore/config`, one delimited guidance
+block in an existing agent file or new `AGENTS.md`, a managed `.opcore/` line in
+`.gitignore` for Git repos, and `.opcore/init-undo.json`.
 
-Fail-closed hooks are created only with `--fail-closed-hook`. Undo removes only the managed `.gitignore` line and deletes an init-created `.gitignore` only when it becomes empty.
+Undo with `opcore init --undo`; it removes only recorded setup artifacts where
+supported.
 
 ## Private Provider Mode
 

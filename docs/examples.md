@@ -1,5 +1,23 @@
 # Examples
 
+## First Run
+
+```bash
+npx @the-open-engine/opcore@0.1.0-alpha.0 init
+```
+
+Expected shape:
+
+```text
+Coverage:
+  files=... validation=... unsupported=...
+Findings:
+  <named finding>: count=... locations=...
+Setup:
+  approval=pending
+  writes=.opcore/config, agent guidance block, .gitignore line, .opcore/init-undo.json
+```
+
 ## Try The Loop
 
 ```bash
@@ -54,6 +72,9 @@ opcore init --repo . --approve --json
 ```
 
 The first command returns a plan. The approved command writes additive setup and undo metadata.
+Approved setup writes only `.opcore/config`, one delimited guidance block in an
+existing agent file or new `AGENTS.md`, a managed `.opcore/` line in
+`.gitignore` for Git repos, and `.opcore/init-undo.json`.
 
 ## Gate Changed Files
 
