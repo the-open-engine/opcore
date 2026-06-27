@@ -2,7 +2,7 @@
 
 Deterministic local changed-file validation gate for coding agents.
 
-Opcore gives coding agents and maintainers a read-only-first repo check loop: scan the current repo, report coverage honestly, run changed-file validation, and track concrete local metric deltas. It is built for local feedback before review, not for remote publishing or opaque scoring.
+Opcore gives coding agents and maintainers a read-only-first repo check loop: scan the current repo, report coverage honestly, run changed-file validation, and track concrete local metric deltas. It is built for local feedback before review, not for remote publishing or opaque ratings.
 
 ## First Run
 
@@ -10,7 +10,9 @@ Opcore gives coding agents and maintainers a read-only-first repo check loop: sc
 npx @the-open-engine/opcore@0.1.0-alpha.0 init
 ```
 
-The one-command path starts the interactive onboarding wizard without a prior install. It runs a read-only scan first, prints Coverage before Findings, shows the additive setup plan, and asks before writing guidance, config, hooks, or ignore entries.
+The one-command path starts the interactive onboarding wizard without a prior install. It runs a read-only scan first, prints Coverage before Findings, reports concrete counts and locations, shows the additive setup plan, and asks before writing anything.
+
+Scan/status/check/measure are read-only for source files. The scan loop writes only `.opcore/report.json`, `.opcore/history.jsonl`, and bounded `.opcore/telemetry.jsonl`. Approved init writes only additive `.opcore/config`, one delimited guidance block in an existing agent file or new `AGENTS.md`, a managed `.opcore/` line in `.gitignore` for Git repos, and `.opcore/init-undo.json`. Undo recorded setup with `opcore init --undo`.
 
 ## Changed-File Agent Gate
 
@@ -28,7 +30,7 @@ The command validates changed source files with stable JSON and agent-friendly e
 
 - TypeScript and JavaScript: deep graph-backed and validation signals for syntax, types, imports, relevant tests, dead exports, and graph structure when facts are available.
 - Rust: validation and toolchain signals only unless a later accepted issue expands graph extraction or product coverage.
-- Other languages: counted and reported as unsupported; Opcore does not invent findings or scores for files it cannot assess.
+- Other languages: counted and reported as unsupported; Opcore does not invent findings or ratings for files it cannot assess.
 
 Metric output is named evidence and deltas, not a blended quality number.
 
@@ -47,11 +49,11 @@ opcore measure --repo .
 opcore try
 ```
 
-- `opcore` scans read-only, prints Coverage before Findings, and writes only `.opcore/report.json` plus `.opcore/history.jsonl`.
+- `opcore` scans read-only, prints Coverage before Findings, and writes only `.opcore/report.json`, `.opcore/history.jsonl`, and bounded `.opcore/telemetry.jsonl`.
 - `opcore status` reports activation readiness without running scans, installs, setup, checks, wrappers, or writes.
 - `opcore init` is scan-first and ask-before-write on a TTY; JSON preview runs stay plan-only unless approved.
 - `opcore check --changed --json` and `opcore check --staged --json` are agent gates for source changes.
-- `opcore measure` reads existing metric artifacts and reports named deltas, not a score.
+- `opcore measure` reads existing metric artifacts and reports named deltas, not a blended rating.
 - `opcore try` creates local sample repos and runs the demo loop without publishing anything.
 
 ## Repeat Use

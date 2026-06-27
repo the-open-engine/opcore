@@ -10,45 +10,37 @@ agents. It starts with read-only repository scans, reports honest coverage
 before findings, and gives command-running agents a JSON gate for edits before
 they land.
 
-## Install and first run
+## First Run
 
-Start with the npx-first onboarding command from an existing repository:
+Run the onboarding wizard from an existing repository:
 
 ```bash
 npx @the-open-engine/opcore@0.1.0-alpha.0 init
 ```
 
-The first-run path scans before setup, prints Coverage before Findings, shows
-what Opcore can and cannot inspect, then asks for explicit approval before
-writing guidance, config, hooks, or ignore entries.
+`opcore init` detects supported stacks, runs a read-only first scan, prints
+Coverage before Findings, reports concrete counts and locations, proposes repo
+setup, and asks before writing anything.
+
+Scan/status/check/measure are read-only for source files. The scan loop writes
+only `.opcore/report.json`, `.opcore/history.jsonl`, and bounded
+`.opcore/telemetry.jsonl`. Approved init writes only additive `.opcore/config`,
+one delimited guidance block in an existing agent file or new `AGENTS.md`, a
+managed `.opcore/` `.gitignore` line for Git repos, and
+`.opcore/init-undo.json`. Undo recorded setup with `opcore init --undo`.
+
+Agents and hooks should use the JSON contract `opcore check --changed --json`;
+humans do not need to learn that gate before onboarding.
 
 Install globally for repeat use:
 
 ```bash
-npx @the-open-engine/opcore@0.1.0-alpha.0 init
+npm install -g @the-open-engine/opcore@0.1.0-alpha.0
+opcore init
 ```
-
-The one-command onboarding path starts the interactive wizard in an existing
-project. It runs a read-only scan first, prints Coverage before Findings, says
-what Opcore can and cannot analyze, shows the additive setup plan, and asks for
-explicit approval before writing guidance, config, hooks, or ignore entries.
 
 Run bare `opcore` after install for the read-only scan loop. A scoped scan is
 available as `opcore --repo .`.
-
-## Repeat Use
-
-Install globally when you expect to run Opcore repeatedly:
-
-```bash
-npm install -g @the-open-engine/opcore@0.1.0-alpha.0
-opcore
-opcore --repo .
-opcore init --repo . --approve
-opcore check --changed --json
-opcore measure --repo .
-opcore try
-```
 
 `opcore init` is scan-first and ask-before-write on a TTY: it prints coverage
 before findings, shows the additive setup plan, then writes only after an
@@ -81,13 +73,13 @@ write should be blocked unless the caller has a typed recovery path.
 
 - Start with the useful loop: scan, init, check, measure.
 - Show coverage before findings.
-- Prefer concrete counts and file locations over scores.
+- Prefer concrete counts and file locations over a single rating.
 - Be honest about unsupported languages, missing tools, and degraded checks.
 - Keep ASP concepts behind the normal product path unless a user is installing
   providers or integrating a host.
 - Do not claim broad stack coverage, vulnerability auditing, autonomous repairs,
-  public standard status, or replacement of existing guardrails until evidence
-  proves it.
+  protocol status, or retirement of existing guardrails until evidence proves
+  it.
 
 Use `opcore check --staged --json` when the gate should inspect only staged
 content.
@@ -110,7 +102,7 @@ rating.
 | `opcore` | Read-only scan of the current repository. |
 | `opcore --repo .` | Read-only scan of an explicit repository path. |
 | `opcore status --json` | Read-only readiness and coverage status for tools. |
-| `opcore init --repo . --approve` | Scan-first, approval-gated setup that writes only additive guidance/config when approved. |
+| `opcore init --repo . --approve` | Scan-first setup that writes only the approved init artifacts. |
 | `opcore check --changed --json` | Changed-file JSON gate for agents. |
 | `opcore check --staged --json` | Staged-file JSON gate for pre-commit flows. |
 | `opcore measure --repo .` | Read stored scan history and report concrete deltas. |
@@ -120,10 +112,12 @@ rating.
 
 Opcore is a local CLI facade over scan, init, check, and measure flows. The
 accepted runtime model is hybrid: Rust graph core plus TypeScript contracts and
-CLI adapters. The scan path is read-only with respect to source files and writes
-only `.opcore/report.json`, `.opcore/history.jsonl`, and bounded
-`.opcore/telemetry.jsonl`. Init is additive,
-approval-gated, and reversible through recorded undo metadata where supported.
+CLI adapters. Scan/status/check/measure are read-only for source files. The scan
+loop writes only `.opcore/report.json`, `.opcore/history.jsonl`, and bounded
+`.opcore/telemetry.jsonl`. Approved init writes only additive `.opcore/config`,
+one delimited guidance block in an existing agent file or new `AGENTS.md`, a
+managed `.opcore/` `.gitignore` line for Git repos, and
+`.opcore/init-undo.json`.
 
 For the model behind coverage, findings, and degraded checks, see
 [Concepts: coverage and findings](docs/concepts.md). For the package and CLI

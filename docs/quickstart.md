@@ -7,8 +7,10 @@ npx @the-open-engine/opcore@0.1.0-alpha.0 init
 What this shows:
 
 - `npx @the-open-engine/opcore@0.1.0-alpha.0 init` starts the interactive onboarding wizard without a prior install.
-- The wizard runs a read-only scan first, prints Coverage before Findings, and asks before writing.
-- Approved init writes only additive `.opcore/config`, delimited agent guidance, undo metadata, a managed `.opcore/` `.gitignore` line in Git repos, and opt-in hooks when requested.
+- The wizard runs a read-only scan first, prints Coverage before Findings, reports concrete counts and locations, and asks before writing.
+- Scan/status/check/measure are read-only for source files.
+- Approved init writes only additive `.opcore/config`, one delimited guidance block in an existing agent file or new `AGENTS.md`, a managed `.opcore/` line in `.gitignore` for Git repos, and `.opcore/init-undo.json`.
+- Undo recorded setup with `opcore init --undo`.
 
 Alpha support is `darwin-arm64`, `darwin-x64`, and `linux-x64` with Node >=22. Unsupported platforms return typed degraded status instead of crashing. Windows is out of scope for `0.1.0-alpha.0`. Unsupported-language files are counted in coverage; day-one checks skip them.
 
@@ -31,7 +33,10 @@ export PATH="$(npm prefix -g)/bin:$PATH"
 
 Restart the shell or add that export to the shell startup file used by the environment.
 
-## First Scan
+## After Setup Reference
+
+Scan reads the repo and writes only `.opcore/report.json`,
+`.opcore/history.jsonl`, and bounded `.opcore/telemetry.jsonl`.
 
 Run this inside the repository you want to inspect:
 
@@ -48,7 +53,7 @@ opcore --json
 opcore status --json
 ```
 
-## Check Changes
+Check changed files from agents or hooks:
 
 ```bash
 opcore check --changed --json
@@ -59,7 +64,7 @@ Agents should treat any non-zero exit as a blocked write unless their workflow h
 
 `opcore check --changed --json` works in a freshly `git init` repo with no commits; it treats the empty baseline as the comparison base.
 
-## Measure Progress
+Measure progress from stored artifacts:
 
 ```bash
 opcore measure
@@ -68,7 +73,7 @@ opcore measure --repo .
 
 `opcore measure` compares the latest scan with the baseline or previous scan and reports concrete deltas such as type errors, untested surface, dead exports, suppression abuse, oversized files, and unsupported-language coverage.
 
-## Set Up Agent Guidance
+Approve setup non-interactively only when the plan is acceptable:
 
 ```bash
 opcore init
@@ -76,11 +81,11 @@ opcore init --approve
 opcore init --repo . --approve
 ```
 
-`opcore init` runs the read-only scan first, prints coverage before findings, shows the additive setup plan, and prompts on a TTY. `opcore init --json` previews without writing. Approved init may add `.opcore/config`, delimited agent guidance, mirrors for existing agent files, undo metadata, a managed `.opcore/` `.gitignore` line in Git repos, and optional hooks only when explicitly requested. Non-Git repos skip `.gitignore`; undo removes only the managed line. The `.opcore/` ignore covers `.opcore/telemetry.jsonl`. JSON output includes scan, language settings, interaction, and timing fields.
+`opcore init` runs the read-only scan first, prints coverage before findings, shows the additive setup plan, and prompts on a TTY. `opcore init --json` previews without writing. Approved init writes only the approved setup artifacts listed above. Non-Git repos skip `.gitignore`; undo removes only the managed line. The `.opcore/` ignore covers `.opcore/telemetry.jsonl`. JSON output includes scan, language settings, interaction, and timing fields.
 
 ## Coverage Honesty
 
-Opcore alpha is deep for TypeScript/JavaScript graph-backed signals and useful for Rust validation signals. Other languages are counted and reported as unsupported in v0; they do not get fake findings or fake scores.
+Opcore alpha is deep for TypeScript/JavaScript graph-backed signals and useful for Rust validation signals. Other languages are counted and reported as unsupported in v0; they do not get fake findings or fake ratings.
 
 ## Demo Loop
 
