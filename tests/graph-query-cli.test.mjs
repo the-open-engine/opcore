@@ -57,6 +57,43 @@ describe("graph query CLI routes", () => {
       assert.equal(search.graphSearch.results[0].path, "src/components/GreetingCard.tsx");
     });
   });
+
+  it("routes Rust query, impact, review-context, detect-changes, and search through canonical lattice commands", () => {
+    withBuiltRustFixture((fixtureRoot) => {
+      const query = run(latticeBin, [
+        "graph",
+        "query",
+        "callers_of",
+        "function:src/helpers.rs#helpers::assist",
+        "--repo",
+        fixtureRoot,
+        "--json"
+      ]);
+      assert.equal(query.status, "ok");
+      assert.ok(query.graphQuery.nodes.some((node) => node.id === "function:src/consumer.rs#consumer::run"));
+
+      const impact = run(latticeBin, ["graph", "impact", "--repo", fixtureRoot, "--files", "src/helpers.rs", "--max-depth", "3", "--json"]);
+      assert.equal(impact.status, "ok");
+      assert.deepEqual(impact.graphImpact.changedFiles, ["src/helpers.rs"]);
+      assert.ok(impact.graphImpact.impactedFiles.includes("src/consumer.rs"));
+      assert.ok(impact.graphImpact.tests.includes("src/consumer.rs"));
+
+      const review = run(latticeBin, ["graph", "review-context", "--repo", fixtureRoot, "--files", "src/helpers.rs", "--json"]);
+      assert.equal(review.status, "ok");
+      assert.ok(review.graphReviewContext.impactedFiles.includes("src/consumer.rs"));
+      assert.ok(review.graphReviewContext.tests.includes("src/consumer.rs"));
+
+      const changes = run(latticeBin, ["graph", "detect-changes", "--repo", fixtureRoot, "--files", "src/helpers.rs", "--json"]);
+      assert.equal(changes.status, "ok");
+      assert.deepEqual(changes.graphChanges.changedFiles, ["src/helpers.rs"]);
+      assert.deepEqual(changes.graphChanges.deletedFiles, []);
+
+      const search = run(latticeBin, ["graph", "search", "pub struct Widget", "--repo", fixtureRoot, "--limit", "5", "--json"]);
+      assert.equal(search.status, "ok");
+      assert.equal(search.graphSearch.results[0].nodeId, "struct:src/lib.rs#Widget");
+      assert.match(search.graphSearch.results[0].signature, /\bpub struct Widget\b/);
+    });
+  });
 });
 
 describe("graph query CLI freshness failures", () => {
@@ -193,6 +230,66 @@ function withBuiltFixture(runFixture) {
   } finally {
     rmSync(temp, { recursive: true, force: true });
   }
+}
+
+function withBuiltRustFixture(runFixture) {
+  const temp = mkdtempSync(join(tmpdir(), "lattice-query-cli-rust-"));
+  try {
+    writeRustFixture(temp);
+    run(latticeBin, ["graph", "build", "--repo", temp, "--json"]);
+    runFixture(temp);
+  } finally {
+    rmSync(temp, { recursive: true, force: true });
+  }
+}
+
+function writeRustFixture(root) {
+  mkdirSync(join(root, "src"), { recursive: true });
+  writeFileSync(
+    join(root, "src/lib.rs"),
+    [
+      "pub mod helpers;",
+      "pub mod consumer;",
+      "",
+      "pub trait Service {",
+      "    fn handle(&self) -> String;",
+      "}",
+      "",
+      "pub struct Widget;",
+      "",
+      "impl Widget {",
+      "    pub fn new() -> Self {",
+      "        Widget",
+      "    }",
+      "}",
+      ""
+    ].join("\n")
+  );
+  writeFileSync(join(root, "src/helpers.rs"), "pub fn assist() -> String { \"ok\".to_string() }\n");
+  writeFileSync(
+    join(root, "src/consumer.rs"),
+    [
+      "use crate::helpers;",
+      "use crate::{Service, Widget};",
+      "",
+      "pub fn run() -> String {",
+      "    let widget = Widget::new();",
+      "    helpers::assist();",
+      "    widget.handle()",
+      "}",
+      "",
+      "#[cfg(test)]",
+      "mod tests {",
+      "    use super::*;",
+      "",
+      "    #[test]",
+      "    fn test_run() {",
+      "        assert_eq!(run(), \"ok\");",
+      "    }",
+      "}",
+      ""
+    ].join("\n")
+  );
 }
 
 function run(script, args, expectedStatus = 0) {

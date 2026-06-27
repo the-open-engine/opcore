@@ -1,6 +1,6 @@
 import { it } from "node:test";
 import assert from "node:assert/strict";
-import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -88,6 +88,61 @@ it("preserves node-id references with graphQuery and typed inspectResult", async
     assert.equal(result.inspectResult.target.nodeId, nodeId);
     assert.equal(Object.hasOwn(result, "alias"), false);
     assert.equal(Object.hasOwn(result, removedLegacyCommandField), false);
+  });
+});
+
+it("returns Rust graph-backed references and degrades unsupported Rust signature materialization", async () => {
+  await withRustInspectFixture(async (fixtureRoot) => {
+    await buildGraph(fixtureRoot);
+
+    const references = await routeCommand([
+      "inspect",
+      "references",
+      "function:src/helpers.rs#helpers::assist",
+      "--repo",
+      fixtureRoot,
+      "--json"
+    ], "lattice");
+    assert.equal(references.owner, "inspect");
+    assert.equal(references.status, "ok");
+    assert.equal(references.providerStatus.state, "available");
+    assert.equal(references.inspectResult.status, "ok");
+    assert.equal(references.inspectResult.target.nodeId, "function:src/helpers.rs#helpers::assist");
+    assert.equal(references.inspectResult.references.some((reference) => reference.evidence.resolver === "graph"), true);
+    assert.equal(
+      references.inspectResult.references.some((reference) =>
+        reference.evidence.graphNodeIds.includes("function:src/consumer.rs#consumer::run")
+      ),
+      true
+    );
+
+    const signature = await routeCommand([
+      "inspect",
+      "signature",
+      "struct:src/lib.rs#Widget",
+      "--repo",
+      fixtureRoot,
+      "--json"
+    ], "lattice");
+    assert.equal(signature.owner, "inspect");
+    assert.equal(signature.status, "unsupported");
+    assert.equal(signature.inspectResult.status, "degraded");
+    assert.equal(signature.inspectResult.failure.category, "unsupported_route");
+    assert.equal(Object.hasOwn(signature.inspectResult, "signatures"), false);
+
+    const implementations = await routeCommand([
+      "inspect",
+      "implementations",
+      "trait:src/lib.rs#Service",
+      "--repo",
+      fixtureRoot,
+      "--json"
+    ], "lattice");
+    assert.equal(implementations.owner, "inspect");
+    assert.equal(implementations.status, "unsupported");
+    assert.equal(implementations.inspectResult.status, "degraded");
+    assert.equal(implementations.inspectResult.failure.category, "unsupported_route");
+    assert.equal(Object.hasOwn(implementations.inspectResult, "implementations"), false);
   });
 });
 
@@ -199,6 +254,65 @@ async function withFixtureCopy(runFixture) {
   } finally {
     rmSync(temp, { recursive: true, force: true });
   }
+}
+
+async function withRustInspectFixture(runFixture) {
+  const temp = mkdtempSync(join(tmpdir(), "lattice-inspect-rust-"));
+  try {
+    writeRustFixture(temp);
+    await runFixture(temp);
+  } finally {
+    rmSync(temp, { recursive: true, force: true });
+  }
+}
+
+function writeRustFixture(root) {
+  mkdirSync(join(root, "src"), { recursive: true });
+  writeFileSync(
+    join(root, "src/lib.rs"),
+    [
+      "pub mod helpers;",
+      "pub mod consumer;",
+      "",
+      "pub trait Service {",
+      "    fn handle(&self) -> String;",
+      "}",
+      "",
+      "pub struct Widget;",
+      "",
+      "impl Widget {",
+      "    pub fn new() -> Self {",
+      "        Widget",
+      "    }",
+      "}",
+      ""
+    ].join("\n")
+  );
+  writeFileSync(join(root, "src/helpers.rs"), "pub fn assist() -> String { \"ok\".to_string() }\n");
+  writeFileSync(
+    join(root, "src/consumer.rs"),
+    [
+      "use crate::helpers;",
+      "use crate::{Service, Widget};",
+      "",
+      "pub fn run() -> String {",
+      "    let widget = Widget::new();",
+      "    helpers::assist();",
+      "    widget.handle()",
+      "}",
+      "",
+      "#[cfg(test)]",
+      "mod tests {",
+      "    use super::*;",
+      "",
+      "    #[test]",
+      "    fn test_run() {",
+      "        assert_eq!(run(), \"ok\");",
+      "    }",
+      "}",
+      ""
+    ].join("\n")
+  );
 }
 
 function skipGeneratedStore(source) {
