@@ -1,9 +1,11 @@
 #!/usr/bin/env node
+import { realpathSync } from "node:fs";
 import { runOpcoreCli } from "./router.js";
 
 declare const process: {
   argv: string[];
   exitCode?: number;
+  platform: string;
 };
 
 export { routeOpcoreCommand, runOpcoreCli } from "./router.js";
@@ -38,6 +40,20 @@ if (isDirectExecution()) {
 function isDirectExecution(): boolean {
   const entrypoint = process.argv[1];
   if (typeof entrypoint !== "string") return false;
-  const normalized = entrypoint.replaceAll("\\", "/");
-  return import.meta.url === `file://${entrypoint}` || normalized.endsWith("/.bin/opcore");
+  if (normalizePath(entrypoint).endsWith("/.bin/opcore")) return true;
+  try {
+    return normalizePath(realpathSync(entrypoint)) === normalizePath(realpathSync(currentModulePath()));
+  } catch {
+    return import.meta.url === `file://${entrypoint}`;
+  }
+}
+
+function currentModulePath(): string {
+  const pathname = decodeURIComponent(new URL(import.meta.url).pathname);
+  if (process.platform === "win32") return pathname.replace(/^\/([A-Za-z]:)/u, "$1").replaceAll("/", "\\");
+  return pathname;
+}
+
+function normalizePath(path: string): string {
+  return path.replaceAll("\\", "/");
 }
