@@ -9,6 +9,7 @@ import { graphProviderBuild, graphProviderSearch, graphProviderUpdate } from "..
 
 const repoRoot = fileURLToPath(new URL("..", import.meta.url));
 const sourceFixtureRoot = resolve(repoRoot, "packages/fixtures/source-extraction/wave1");
+const pythonFixtureRoot = resolve(repoRoot, "packages/fixtures/source-extraction/python");
 const mixedRustTsFixtureRoot = resolve(repoRoot, "packages/fixtures/source-extraction/mixed-rust-ts");
 const searchFixture = JSON.parse(readFileSync(resolve(repoRoot, "packages/fixtures/graph-search/search-fixtures.json"), "utf8"));
 
@@ -147,6 +148,33 @@ describe("GraphProvider search conformance", () => {
     });
   });
 
+  it("indexes and ranks Python modules, async functions, and parse-error files deterministically", () => {
+    withPythonFixture((fixtureRoot) => {
+      const build = graphProviderBuild({ repoRoot: fixtureRoot });
+      assert.equal(build.status.state, "available");
+
+      const loadName = graphProviderSearch({ repoRoot: fixtureRoot }, { query: "load_name", limit: 5 });
+      assert.equal(loadName.status.state, "available");
+      assert.equal(loadName.searchMode.engine, "fts5");
+      assert.equal(loadName.results[0].nodeId, "function:src/pkg/async_tools.py#load_name");
+      assert.equal(loadName.results[0].path, "src/pkg/async_tools.py");
+      assert.ok(loadName.results[0].matches.includes("name"));
+      assert.equal(loadName.results[1].nodeId, "function:src/pkg/async_tools.py#load_name.inner");
+
+      const broken = graphProviderSearch({ repoRoot: fixtureRoot }, { query: "broken", limit: 5 });
+      assert.equal(broken.status.state, "available");
+      assert.equal(broken.results[0].nodeId, "module:src/pkg/broken.py#src.pkg.broken");
+      assert.equal(broken.results[1].nodeId, "file:src/pkg/broken.py");
+
+      const publicModel = graphProviderSearch({ repoRoot: fixtureRoot }, { query: "PublicModel", limit: 5 });
+      assert.equal(publicModel.status.state, "available");
+      assert.deepEqual(
+        publicModel.results.map((entry) => entry.nodeId).slice(0, 2),
+        ["class:src/pkg/models.py#PublicModel", "class:tests/test_models.py#TestPublicModel"]
+      );
+    });
+  });
+
   it("returns typed failures without search rows for missing schema and stale stores", () => {
     const missingRepo = mkdtempSync(join(tmpdir(), "lattice-search-missing-"));
     try {
@@ -261,6 +289,17 @@ function withRustFixture(run) {
   const fixtureRoot = join(temp, "mixed-rust-ts");
   try {
     cpSync(mixedRustTsFixtureRoot, fixtureRoot, { recursive: true, filter: skipGeneratedStore });
+    run(fixtureRoot);
+  } finally {
+    rmSync(temp, { recursive: true, force: true });
+  }
+}
+
+function withPythonFixture(run) {
+  const temp = mkdtempSync(join(tmpdir(), "lattice-search-python-"));
+  const fixtureRoot = join(temp, "python");
+  try {
+    cpSync(pythonFixtureRoot, fixtureRoot, { recursive: true, filter: skipGeneratedStore });
     run(fixtureRoot);
   } finally {
     rmSync(temp, { recursive: true, force: true });
