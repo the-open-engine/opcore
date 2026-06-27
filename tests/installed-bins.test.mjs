@@ -554,7 +554,7 @@ function createOnboardingFixtures(root) {
         "src/lib.rs": "pub fn answer() -> usize {\n    42\n}\n"
       },
       coverage: {
-        Rust: { files: 2, graphSupported: false, validationSupported: true }
+        Rust: { files: 2, graphSupported: true, graphSupportedFiles: 1, validationSupported: true }
       },
       scanEnv: sourceSafeOpcoreEnv()
     }),
@@ -566,7 +566,7 @@ function createOnboardingFixtures(root) {
       },
       coverage: {
         TypeScript: { files: 1, graphSupported: true, validationSupported: true },
-        Rust: { files: 2, graphSupported: false, validationSupported: true }
+        Rust: { files: 2, graphSupported: true, graphSupportedFiles: 1, validationSupported: true }
       },
       scanEnv: sourceSafeOpcoreEnv()
     }),
@@ -688,8 +688,13 @@ function expectedFixtureTotalFiles(fixture) {
 
 function expectedFixtureFiles(fixture, key) {
   return Object.values(fixture.coverage)
-    .filter((entry) => entry[key])
-    .reduce((sum, entry) => sum + entry.files, 0);
+    .reduce((sum, entry) => sum + expectedCoverageFiles(entry, key), 0);
+}
+
+function expectedCoverageFiles(entry, key) {
+  const countKey = `${key}Files`;
+  if (Number.isInteger(entry[countKey])) return entry[countKey];
+  return entry[key] ? entry.files : 0;
 }
 
 function snapshotFiles(repoRoot, paths) {
@@ -808,9 +813,7 @@ function fixtureRepoShape(fixture) {
     files: expected.files
   }));
   const totalFiles = languages.reduce((sum, entry) => sum + entry.files, 0);
-  const graphSupportedFiles = Object.values(fixture.coverage)
-    .filter((entry) => entry.graphSupported)
-    .reduce((sum, entry) => sum + entry.files, 0);
+  const graphSupportedFiles = expectedFixtureFiles(fixture, "graphSupported");
   return {
     totalFiles,
     languages,
