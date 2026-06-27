@@ -1,0 +1,9 @@
+# channel = "stable" (currently 1.93.0, matching CI and orchestra) rather than a version
+# literal: opcore's native CI jobs run `rustup target add x86_64-unknown-linux-musl` against
+# the `stable` toolchain, so pinning a version literal would select a separate toolchain
+# instance without the musl std and break the linux-x64 build. A strict version pin needs a
+# coordinated CI target-add change; deferred to a follow-up.
+[toolchain]
+channel = "stable"
+components = ["clippy", "rustfmt"]
+profile = "minimal"
