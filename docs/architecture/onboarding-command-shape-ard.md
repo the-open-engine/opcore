@@ -18,7 +18,7 @@ to a typed `required_missing` graph status, never crash.
 The onboarding UX must be honest and reversible: run a read-only scan first, show coverage
 before findings, propose additive repo setup, ask before writing, and write only approved
 files. EPIC #9 also requires onboarding to work in a freshly `git init`'d repo with no
-commits, across TS/JS, Rust, mixed, and unsupported (e.g. Python, counted not faked) stacks,
+commits, across TS/JS, Rust, Python, mixed, and unsupported (counted not faked) stacks,
 and to be proven on installed artifacts including the bin invoked outside `node_modules/.bin`.
 
 This ADR fixes the **command shape** so the implementation sub-issues (#40 wizard, #41 repo

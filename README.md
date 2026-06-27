@@ -86,14 +86,21 @@ content.
 
 ## Coverage honesty
 
-Opcore alpha is deep for TypeScript and JavaScript graph-backed validation.
-Rust coverage is validation and toolchain signal coverage only. Other
-languages are counted and reported unsupported instead of receiving fake
-findings.
+Opcore alpha is deep for TypeScript and JavaScript graph-backed validation:
+syntax, types, imports, relevant tests, dead exports, and graph structure when
+facts are available. Rust coverage is useful validation and toolchain signal
+coverage: source hygiene, oversized files, module evidence, cargo, fmt,
+clippy, rustdoc, and optional-tool evidence when available.
+
+Python is experimental and degraded-honest: graph-backed `.py`/`.pyi`
+structure, untested modules, dead exports, syntax, and source-hygiene signals.
+`python.types` depends on mypy or pyright and reports missing tools as
+degraded. Other non-TS/JS/Rust/Python languages are counted and reported
+unsupported instead of receiving fake findings.
 
 Reports use concrete counts, file paths, deltas, missing-tool notices, and
 degraded-check notices. Opcore does not collapse those signals into a single
-rating.
+rating or claim every-project Python coverage.
 
 ## Commands
 

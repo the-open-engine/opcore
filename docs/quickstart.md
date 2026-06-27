@@ -12,7 +12,7 @@ What this shows:
 - Approved init writes only additive `.opcore/config`, one delimited guidance block in an existing agent file or new `AGENTS.md`, a managed `.opcore/` line in `.gitignore` for Git repos, and `.opcore/init-undo.json`.
 - Undo recorded setup with `opcore init --undo`.
 
-Alpha support is `darwin-arm64`, `darwin-x64`, and `linux-x64` with Node >=22. Unsupported platforms return typed degraded status instead of crashing. Windows is out of scope for `0.1.0-alpha.0`. Unsupported-language files are counted in coverage; day-one checks skip them.
+Alpha support is `darwin-arm64`, `darwin-x64`, and `linux-x64` with Node >=22. Unsupported platforms return typed degraded status instead of crashing. Windows is out of scope for `0.1.0-alpha.0`. Language coverage is deep for TypeScript/JavaScript, useful for Rust, and experimental degraded-honest for Python. Other non-TS/JS/Rust/Python files are counted in coverage; day-one checks skip them.
 
 ## Repeat Use
 
@@ -58,6 +58,7 @@ Check changed files from agents or hooks:
 ```bash
 opcore check --changed --json
 opcore check --staged --json
+opcore check --changed --checks python.syntax,python.source-hygiene --json
 ```
 
 Agents should treat any non-zero exit as a blocked write unless their workflow has a typed recovery path.
@@ -71,7 +72,7 @@ opcore measure
 opcore measure --repo .
 ```
 
-`opcore measure` compares the latest scan with the baseline or previous scan and reports concrete deltas such as type errors, untested surface, dead exports, suppression abuse, oversized files, and unsupported-language coverage.
+`opcore measure` compares the latest scan with the baseline or previous scan and reports concrete deltas such as type errors, untested surface, dead exports, Python syntax/source-hygiene or optional type-tool degradation, suppression abuse, oversized files, and unsupported-language coverage.
 
 Approve setup non-interactively only when the plan is acceptable:
 
@@ -85,7 +86,7 @@ opcore init --repo . --approve
 
 ## Coverage Honesty
 
-Opcore alpha is deep for TypeScript/JavaScript graph-backed signals and useful for Rust validation signals. Other languages are counted and reported as unsupported in v0; they do not get fake findings or fake ratings.
+Opcore alpha is deep for TypeScript/JavaScript graph-backed signals and useful for Rust validation signals. Python is experimental and degraded-honest: `.py`/`.pyi` graph-backed structure, untested modules, dead exports, syntax, and source-hygiene are reported when available; `python.types` depends on mypy or pyright and reports missing tools as degraded. Other non-TS/JS/Rust/Python languages are counted and reported as unsupported; they do not get fake findings or fake ratings.
 
 ## Demo Loop
 
