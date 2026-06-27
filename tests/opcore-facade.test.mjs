@@ -67,8 +67,50 @@ describe("opcore public facade", () => {
       assert.equal(Object.hasOwn(result, "repoState"), true);
       assert.equal(Object.hasOwn(result, "validationResult"), false);
       assert.equal(Object.hasOwn(result, "validationStatus"), false);
+      assert.deepEqual(result.repoState.activation.asp, { state: "not_enrolled", paths: [] });
       assert.deepEqual(collectRepoPaths(fixtureRoot), before);
     });
+  });
+
+  it("hides ASP state from non-enrolled human status", () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-status-no-asp-"));
+    try {
+      const result = runOpcore(["status", "--repo", temp], temp, 0);
+
+      assert.equal(result.stderr, "");
+      assert.match(result.stdout, /^opcore status/m);
+      assert.doesNotMatch(result.stdout, /^ASP:/m);
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("shows ASP state in human status for enrolled repos", () => {
+    for (const marker of [".asp/asp.json", ".asp/local.json", "asp-server.json"]) {
+      const temp = mkdtempSync(join(tmpdir(), "opcore-status-asp-"));
+      try {
+        writeFixtureFile(temp, marker, "{}\n");
+
+        const result = runOpcore(["status", "--repo", temp], temp, 0);
+
+        assert.match(result.stdout, new RegExp(`^ASP: enrolled \\(${escapeRegExp(marker)}\\)$`, "m"));
+      } finally {
+        rmSync(temp, { recursive: true, force: true });
+      }
+    }
+  });
+
+  it("shows ASP state in human status for explicit display flags", () => {
+    for (const flag of ["--verbose", "--asp"]) {
+      const temp = mkdtempSync(join(tmpdir(), "opcore-status-asp-flag-"));
+      try {
+        const result = runOpcore(["status", "--repo", temp, flag], temp, 0);
+
+        assert.match(result.stdout, /^ASP: not_enrolled$/m);
+      } finally {
+        rmSync(temp, { recursive: true, force: true });
+      }
+    }
   });
 
   it("reports Python sources as graph-supported with validation support", () => {
@@ -1080,6 +1122,10 @@ function parseJson(stdout) {
 
 function firstNonEmptyLine(text) {
   return text.split(/\r?\n/).find((line) => line.trim().length > 0) ?? "";
+}
+
+function escapeRegExp(text) {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function collectRepoPaths(root) {

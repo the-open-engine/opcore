@@ -210,7 +210,7 @@ function opcoreHelpMessage(): string {
     "",
     "Usage:",
     "  opcore [--repo <path>] [--json]",
-    "  opcore status [--repo <path>] [--json]",
+    "  opcore status [--repo <path>] [--verbose] [--json]",
     "  opcore check --changed --json",
     "  opcore check --staged --json",
     "  opcore check <file...> --json",

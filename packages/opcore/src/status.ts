@@ -135,6 +135,10 @@ interface CensusTraversalFailure {
   message: string;
 }
 
+interface OpcoreStatusDisplayOptions {
+  includeAspLine: boolean;
+}
+
 export function routeOpcoreStatus(argv: readonly string[], parsed: ParsedCommandArgv): CommandRouterResult {
   const rest = parsed.args.slice(1);
   if (rest.some((arg) => helpArgs.has(arg))) {
@@ -148,7 +152,7 @@ export function routeOpcoreStatus(argv: readonly string[], parsed: ParsedCommand
       message: opcoreStatusHelpMessage()
     });
   }
-  const parsedStatus = parseOpcoreRepoArgs(rest, "opcore status");
+  const parsedStatus = parseOpcoreStatusArgs(rest);
   if (!parsedStatus.ok) {
     return createCommandRouterResult({
       bin: "opcore",
@@ -174,6 +178,7 @@ export function routeOpcoreStatus(argv: readonly string[], parsed: ParsedCommand
   }
 
   const repoState = createRepoState(resolution.resolution);
+  const includeAspLine = parsedStatus.showAspLine || repoState.activation.asp.state === "enrolled";
   return createCommandRouterResult({
     bin: "opcore",
     argv,
@@ -181,9 +186,39 @@ export function routeOpcoreStatus(argv: readonly string[], parsed: ParsedCommand
     owner: "runtime",
     status: "ok",
     json: parsed.json,
-    message: formatOpcoreStatus(repoState),
+    message: formatOpcoreStatus(repoState, { includeAspLine }),
     repoState
   });
+}
+
+export function parseOpcoreStatusArgs(
+  args: readonly string[]
+): { ok: true; repo: string; showAspLine: boolean } | { ok: false; message: string } {
+  let repo = process.cwd();
+  let showAspLine = false;
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (helpArgs.has(arg)) return { ok: false, message: opcoreStatusHelpMessage() };
+    if (arg === "--repo") {
+      const value = args[index + 1];
+      if (!value || value.startsWith("--")) return { ok: false, message: "opcore status: --repo requires a path" };
+      repo = value;
+      index += 1;
+      continue;
+    }
+    if (arg.startsWith("--repo=")) {
+      const value = arg.slice("--repo=".length);
+      if (!value) return { ok: false, message: "opcore status: --repo requires a path" };
+      repo = value;
+      continue;
+    }
+    if (arg === "--verbose" || arg === "--asp") {
+      showAspLine = true;
+      continue;
+    }
+    return { ok: false, message: `opcore status: unsupported argument ${arg}` };
+  }
+  return { ok: true, repo, showAspLine };
 }
 
 export function parseOpcoreRepoArgs(args: readonly string[], command: string): { ok: true; repo: string } | { ok: false; message: string } {
@@ -593,7 +628,10 @@ function activationSummary(
   return `Repo activation is degraded: ${graphAction(graphStatus)}`;
 }
 
-export function formatOpcoreStatus(repoState: OpcoreRepoStatePayload): string {
+export function formatOpcoreStatus(
+  repoState: OpcoreRepoStatePayload,
+  options: OpcoreStatusDisplayOptions
+): string {
   const unsupported = repoState.coverage.unsupported.stacks.length === 0
     ? "none"
     : repoState.coverage.unsupported.stacks.map((stack) => `${stack.language} ${stack.count}`).join(", ");
@@ -606,21 +644,28 @@ export function formatOpcoreStatus(repoState: OpcoreRepoStatePayload): string {
   const git = repoState.repo.git.available
     ? `git ${repoState.repo.git.branch ?? "unknown"} changed=${repoState.repo.git.changed ?? 0} staged=${repoState.repo.git.staged ?? 0} unstaged=${repoState.repo.git.unstaged ?? 0} untracked=${repoState.repo.git.untracked ?? 0}`
     : "non-Git repo";
-  return [
+  const lines = [
     "opcore status",
     `Repo: ${repoState.repo.root} (${git})`,
     `Coverage: files=${repoState.coverage.totalFiles} graph=${repoState.coverage.graph.supportedFiles} validation=${repoState.coverage.validation.supportedFiles} retained=${repoState.coverage.validation.retainedFiles} unsupported=${unsupported}`,
     `Graph: ${repoState.graph.state}; ${repoState.graph.action}`,
     `Validation: checks=${repoState.validation.checkCount} adapters=${adapters} degradedTools=${degradedTools}`,
-    `ASP: ${repoState.activation.asp.state}${repoState.activation.asp.paths.length > 0 ? ` (${repoState.activation.asp.paths.join(", ")})` : ""}`,
     `Activation: ${repoState.activation.level}; ${repoState.activation.summary}`,
     "Next:",
     ...repoState.nextActions.slice(0, 2).map((action) => `  ${action}`)
-  ].join("\n");
+  ];
+  if (options.includeAspLine) {
+    lines.splice(5, 0, formatAspStatusLine(repoState.activation.asp));
+  }
+  return lines.join("\n");
+}
+
+function formatAspStatusLine(asp: OpcoreRepoStatePayload["activation"]["asp"]): string {
+  return `ASP: ${asp.state}${asp.paths.length > 0 ? ` (${asp.paths.join(", ")})` : ""}`;
 }
 
 function opcoreStatusHelpMessage(): string {
-  return "opcore status [--repo <path>] [--json]";
+  return "opcore status [--repo <path>] [--verbose] [--json]";
 }
 
 function runGit(cwd: string, args: readonly string[]): { status: number | null; stdout: string; stderr: string } {
