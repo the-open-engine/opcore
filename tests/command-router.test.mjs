@@ -241,7 +241,7 @@ describe("lattice command router", () => {
     assert.equal(validate.owner, "validation");
     assert.equal(validate.status, "ok");
     assert.equal(validate.exitCode, 0);
-    assert.equal(validate.validationResult.manifest.entries.length, 21);
+    assert.equal(validate.validationResult.manifest.entries.length, 22);
     assertCommandTiming(validate);
     assert.equal(
       validate.validationResult.manifest.entries.some((entry) => entry.checkId === "rust.cargo-check"),
@@ -374,7 +374,7 @@ describe("lattice command router", () => {
     assert.doesNotMatch(help, /\bstart\b/);
     assert.doesNotMatch(help, /\bstop\b/);
     const status = await routeCommand(["status", "--json"], "lattice");
-    assert.equal(status.validationStatus.adapterRegistry.checkIds.length, 21);
+    assert.equal(status.validationStatus.adapterRegistry.checkIds.length, 22);
     assert.equal(status.validationStatus.adapterRegistry.checkIds.includes("rust.cargo-check"), true);
     assert.equal(status.validationStatus.adapterRegistry.checkIds.includes("rust.file-length"), true);
     assert.equal(status.validationStatus.adapterRegistry.checkIds.includes("python.syntax"), true);

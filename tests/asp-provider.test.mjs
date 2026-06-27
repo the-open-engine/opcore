@@ -23,6 +23,7 @@ const allCheckIds = [
   "rust.rustdoc",
   "rust.import-graph",
   "rust.dead-code",
+  "rust.graph-signals",
   "rust.unused-deps",
   "rust.file-length",
   "rust.function-metrics",

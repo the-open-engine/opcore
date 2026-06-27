@@ -16,6 +16,7 @@ import {
   RUST_FILE_LENGTH_CHECK_ID,
   RUST_FMT_CHECK_ID,
   RUST_FUNCTION_METRICS_CHECK_ID,
+  RUST_GRAPH_SIGNALS_CHECK_ID,
   RUST_IMPORT_GRAPH_CHECK_ID,
   RUST_RUSTDOC_CHECK_ID,
   RUST_SOURCE_HYGIENE_CHECK_ID,
@@ -47,6 +48,7 @@ const rustCheckIds = [
   RUST_RUSTDOC_CHECK_ID,
   RUST_IMPORT_GRAPH_CHECK_ID,
   RUST_DEAD_CODE_CHECK_ID,
+  RUST_GRAPH_SIGNALS_CHECK_ID,
   RUST_UNUSED_DEPS_CHECK_ID,
   RUST_FILE_LENGTH_CHECK_ID,
   RUST_FUNCTION_METRICS_CHECK_ID
@@ -61,6 +63,7 @@ const rustCheckIds = [
     assert.deepEqual(checks.map((check) => check.id), rustCheckIds);
     assert.equal(registry.byId.get(RUST_SOURCE_HYGIENE_CHECK_ID)?.adapter, "rust");
     assert.equal(registry.byId.get(RUST_IMPORT_GRAPH_CHECK_ID)?.requiresGraph, false);
+    assert.equal(registry.byId.get(RUST_GRAPH_SIGNALS_CHECK_ID)?.requiresGraph, true);
     assert.equal(status.adapter, "rust");
     assert.deepEqual(status.checkIds, rustCheckIds);
     assert.equal(status.tempWorkspaceRequired, true);
@@ -428,6 +431,117 @@ const rustCheckIds = [
     } finally {
       rmSync(temp, { recursive: true, force: true });
     }
+  });
+
+  it("reports Rust graph-backed untested and dead public export signals", async () => {
+    const result = await rustGraphRunner({
+      files: rustCrate({
+        "crates/app/src/lib.rs": "pub fn untested_dead() {}\npub fn covered_used() {}\n"
+      }),
+      graphProviderClient: graphClient({
+        factQuery: (query) =>
+          availableFactResult(
+            query,
+            graphNodesForSelector(query, [
+              fileNode("crates/app/src/lib.rs"),
+              rustSymbol("module:crates/app/src/lib.rs#crate", "Module", "crates/app/src/lib.rs", "crate", { exported: true }),
+              rustSymbol("function:crates/app/src/lib.rs#untested_dead", "Function", "crates/app/src/lib.rs", "untested_dead", {
+                exported: true
+              }),
+              rustSymbol("function:crates/app/src/lib.rs#covered_used", "Function", "crates/app/src/lib.rs", "covered_used", {
+                exported: true
+              })
+            ]),
+            graphEdgesForSelector(query, [
+              {
+                kind: "CALLS",
+                from: "function:crates/app/src/lib.rs#caller",
+                to: "function:crates/app/src/lib.rs#covered_used"
+              },
+              {
+                kind: "TESTED_BY",
+                from: "function:crates/app/src/lib.rs#covered_used",
+                to: "test:crates/app/src/lib.rs#tests::covered_used"
+              }
+            ])
+          )
+      })
+    }).runValidation(
+      request({
+        checks: [RUST_GRAPH_SIGNALS_CHECK_ID],
+        scope: {
+          kind: "files",
+          files: ["Cargo.toml", "crates/app/Cargo.toml", "crates/app/src/lib.rs"]
+        }
+      })
+    );
+
+    assert.equal(result.status, "passed", JSON.stringify(result, null, 2));
+    assert.deepEqual(
+      result.diagnostics.map((diagnostic) => diagnostic.code).sort(),
+      ["RUST_GRAPH_DEAD_PUB_EXPORT", "RUST_GRAPH_UNTESTED_SURFACE"]
+    );
+  });
+
+  it("reports Rust graph-backed module orphans and cycles from graph file edges", async () => {
+    const sourceFiles = [
+      "crates/app/src/lib.rs",
+      "crates/app/src/used.rs",
+      "crates/app/src/orphan.rs",
+      "crates/app/src/a.rs",
+      "crates/app/src/b.rs"
+    ];
+    const result = await rustGraphRunner({
+      files: rustCrate({
+        "crates/app/src/lib.rs": "pub mod used;\n",
+        "crates/app/src/used.rs": "pub fn used() {}\n",
+        "crates/app/src/orphan.rs": "pub fn orphan() {}\n",
+        "crates/app/src/a.rs": "pub mod b;\n",
+        "crates/app/src/b.rs": "pub mod a;\n"
+      }),
+      graphProviderClient: graphClient({
+        factQuery: (query) =>
+          availableFactResult(
+            query,
+            graphNodesForSelector(query, [
+              ...sourceFiles.map(fileNode),
+              rustSymbol("module:crates/app/src/lib.rs#crate", "Module", "crates/app/src/lib.rs", "crate", { exported: true })
+            ]),
+            graphEdgesForSelector(query, [
+              {
+                kind: "IMPORTS_FROM",
+                from: "file:crates/app/src/lib.rs",
+                to: "file:crates/app/src/used.rs"
+              },
+              {
+                kind: "IMPORTS_FROM",
+                from: "file:crates/app/src/a.rs",
+                to: "file:crates/app/src/b.rs"
+              },
+              {
+                kind: "IMPORTS_FROM",
+                from: "file:crates/app/src/b.rs",
+                to: "file:crates/app/src/a.rs"
+              }
+            ])
+          )
+      })
+    }).runValidation(
+      request({
+        checks: [RUST_GRAPH_SIGNALS_CHECK_ID],
+        scope: {
+          kind: "files",
+          files: ["Cargo.toml", "crates/app/Cargo.toml", ...sourceFiles]
+        }
+      })
+    );
+
+    assert.equal(result.status, "passed", JSON.stringify(result, null, 2));
+    assert.deepEqual(
+      result.diagnostics.map((diagnostic) => diagnostic.code).sort(),
+      ["RUST_GRAPH_MODULE_CYCLE", "RUST_GRAPH_MODULE_ORPHAN"]
+    );
+    assert.equal(result.diagnostics.some((diagnostic) => diagnostic.path === "crates/app/src/orphan.rs"), true);
   });
 
   it("resolves cfg-gated and path-qualified Rust module declarations without false import failures", async () => {
@@ -1371,4 +1485,119 @@ function restoreProcessEnv(key, value) {
     return;
   }
   process.env[key] = value;
+}
+
+function rustGraphRunner(options = {}) {
+  const content = new Map(Object.entries(options.files ?? rustCrate()));
+  return createValidationRunner({
+    workspace: {
+      readFile: (path) => (content.has(path) ? { status: "found", content: content.get(path) } : { status: "missing" }),
+      listChangedFiles: () => ({ files: [...content.keys()] }),
+      listStagedFiles: () => ({ files: [...content.keys()] }),
+      listRepoFiles: () => ({ files: [...content.keys()] }),
+      listTreeFiles: () => ({ files: [...content.keys()] }),
+      listPackageFiles: (_name, root) => ({ files: [...content.keys()].filter((path) => path.startsWith(`${root}/`)) })
+    },
+    checks: options.checks ?? createRustValidationChecks({ env: options.env, timeoutMs: options.timeoutMs }),
+    graphProviderClient: options.graphProviderClient
+  });
+}
+
+function graphClient(overrides = {}) {
+  return {
+    status: (validationRequest) => availableStatus(validationRequest.graph.mode, validationRequest.repo),
+    factQuery: (query) => availableFactResult(query, [], []),
+    namedQuery: () => {
+      throw new Error("unexpected namedQuery");
+    },
+    impact: () => {
+      throw new Error("unexpected impact");
+    },
+    reviewContext: () => {
+      throw new Error("unexpected reviewContext");
+    },
+    detectChanges: () => {
+      throw new Error("unexpected detectChanges");
+    },
+    ...overrides
+  };
+}
+
+function availableStatus(mode = "optional", repo = { repoId: "lattice-rust-test" }) {
+  return {
+    state: "available",
+    mode,
+    provider: "lattice-graph",
+    schemaVersion: 1,
+    repo,
+    freshness: freshness(),
+    nodes_by_kind: {},
+    edges_by_kind: {}
+  };
+}
+
+function availableFactResult(query, nodes, edges, metadataOverrides = {}) {
+  return {
+    requestId: query.requestId,
+    status: availableStatus(query.mode, query.repo),
+    metadata: {
+      schemaVersion: 1,
+      provider: "lattice-graph",
+      repo: query.repo,
+      generatedAt: "2026-06-05T00:00:00.000Z",
+      freshness: freshness(),
+      nodeKinds: ["File", "Module", "Function", "Method"],
+      edgeKinds: ["CONTAINS", "IMPORTS_FROM", "CALLS", "TESTED_BY"],
+      ...metadataOverrides
+    },
+    nodes,
+    edges
+  };
+}
+
+function graphNodesForSelector(query, nodes) {
+  if (query.selector.kind === "symbols") return nodes.filter((node) => node.kind !== "File" && node.kind !== "file");
+  if (query.selector.kind !== "nodes") return [];
+  const ids = new Set(query.selector.ids ?? []);
+  const kinds = new Set(query.selector.nodeKinds ?? []);
+  return nodes.filter((node) => (ids.size === 0 || ids.has(node.id)) && (kinds.size === 0 || kinds.has(node.kind)));
+}
+
+function graphEdgesForSelector(query, edges) {
+  if (query.selector.kind !== "edges") return [];
+  const edgeKinds = new Set(query.selector.edgeKinds ?? []);
+  return edges.filter((edge) => edgeKinds.size === 0 || edgeKinds.has(edge.kind));
+}
+
+function fileNode(path) {
+  return {
+    id: `file:${path}`,
+    kind: "File",
+    path,
+    attributes: {
+      language: "rust"
+    }
+  };
+}
+
+function rustSymbol(id, kind, path, name, attributes = {}) {
+  return {
+    id,
+    kind,
+    path,
+    name,
+    attributes: {
+      language: "rust",
+      ...attributes
+    }
+  };
+}
+
+function freshness(overrides = {}) {
+  return {
+    generatedAt: "2026-06-05T00:00:00.000Z",
+    ageMs: 0,
+    stale: false,
+    ...overrides
+  };
 }

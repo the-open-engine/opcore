@@ -35,7 +35,7 @@ describe("Opcore metrics", () => {
     assert.equal(signals.get("typescript.structure.high_fan_in").count, 1);
     assert.equal(signals.get("rust.source_hygiene").count, 1);
     assert.equal(signals.get("rust.oversized_files").count, 1);
-    assert.equal(signals.get("rust.module_graph").count, 1);
+    assert.equal(signals.get("rust.module_resolution").count, 1);
     assert.equal(signals.get("rust.toolchain_drift").count, 1);
     assert.equal(signals.get("coverage.unsupported_stacks").count, 2);
     assert.equal(report.signals.every((signal) => signal.count > 0 && signal.evidence.every((entry) => entry.path)), true);
@@ -43,6 +43,116 @@ describe("Opcore metrics", () => {
     assert.equal(report.degradations.some((entry) => entry.id === "rust.tool.cargo.unavailable"), true);
     assert.equal(JSON.stringify(report).includes("blendedScore"), false);
     assert.equal(Object.hasOwn(report, "score"), false);
+  });
+
+  it("separates graph-backed Rust signals from validation toolchain drift", () => {
+    const report = createOpcoreMetricReport({
+      repoState: repoState({ degradedToolchains: [] }),
+      validationResult: {
+        ok: false,
+        status: "policy_failure",
+        diagnostics: [
+          {
+            category: "graph",
+            severity: "warning",
+            path: "crates/app/src/orphan.rs",
+            code: "RUST_GRAPH_MODULE_ORPHAN",
+            message: "Rust module source has no incoming IMPORTS_FROM graph evidence."
+          },
+          {
+            category: "graph",
+            severity: "error",
+            path: "crates/app/src/cycle.rs",
+            code: "RUST_GRAPH_MODULE_CYCLE",
+            message: "Rust module cycle detected from graph facts."
+          },
+          {
+            category: "test",
+            severity: "info",
+            path: "crates/app/src/lib.rs",
+            code: "RUST_GRAPH_UNTESTED_SURFACE",
+            message: "Public Rust surface has no TESTED_BY graph evidence: dead_pub"
+          },
+          {
+            category: "graph",
+            severity: "warning",
+            path: "crates/app/src/lib.rs",
+            code: "RUST_GRAPH_DEAD_PUB_EXPORT",
+            message: "Public Rust export has no incoming CALLS graph evidence: dead_pub"
+          },
+          {
+            category: "graph",
+            severity: "warning",
+            path: "crates/app/src/dead-orphan.rs",
+            code: "RUST_DEAD_ORPHAN_SOURCE",
+            message: "Rust source file is unreachable from Cargo targets and may contain dead code."
+          },
+          {
+            category: "lint",
+            severity: "error",
+            path: "crates/app/src/lib.rs",
+            code: "RUST_FMT_DRIFT",
+            message: "Rust formatting drift."
+          },
+          {
+            category: "types",
+            severity: "error",
+            path: "crates/app/src/lib.rs",
+            code: "E0308",
+            message: "mismatched types"
+          }
+        ],
+        manifest: {
+          schemaVersion: 1,
+          checks: ["rust.graph-signals", "rust.import-graph", "rust.dead-code", "rust.fmt", "rust.cargo-check"],
+          generatedAt: "2026-06-25T00:00:00.000Z"
+        }
+      },
+      graphFacts: rustGraphFacts(),
+      generatedAt: "2026-06-25T00:00:00.000Z"
+    });
+
+    const signals = new Map(report.signals.map((signal) => [signal.id, signal]));
+    assert.equal(signals.get("rust.untested_surface").category, "graph");
+    assert.equal(signals.get("rust.untested_surface").count, 1);
+    assert.equal(signals.get("rust.untested_surface").evidence[0].checkId, "rust.graph-signals");
+    assert.equal(signals.get("rust.untested_surface").evidence[0].path, "crates/app/src/lib.rs");
+    assert.equal(signals.get("rust.dead_pub_exports").category, "graph");
+    assert.equal(signals.get("rust.dead_pub_exports").evidence[0].checkId, "rust.graph-signals");
+    assert.equal(signals.get("rust.dead_pub_exports").evidence[0].path, "crates/app/src/lib.rs");
+    assert.equal(signals.get("rust.module_orphans").evidence[0].checkId, "rust.graph-signals");
+    assert.equal(signals.get("rust.module_cycles").evidence[0].checkId, "rust.graph-signals");
+    assert.equal(signals.get("rust.dead_orphan_sources").evidence[0].checkId, "rust.dead-code");
+    assert.deepEqual(
+      signals.get("rust.toolchain_drift").evidence.map((entry) => entry.code).sort(),
+      ["E0308", "RUST_FMT_DRIFT"]
+    );
+    assert.equal(signals.has("rust.module_graph"), false);
+  });
+
+  it("derives Rust graph-backed surface signals from supplied graph facts when graph-signals did not run", () => {
+    const report = createOpcoreMetricReport({
+      repoState: repoState({ degradedToolchains: [] }),
+      validationResult: {
+        ok: true,
+        status: "passed",
+        diagnostics: [],
+        manifest: {
+          schemaVersion: 1,
+          checks: ["rust.fmt", "rust.cargo-check"],
+          generatedAt: "2026-06-25T00:00:00.000Z"
+        }
+      },
+      graphFacts: rustGraphFacts(),
+      generatedAt: "2026-06-25T00:00:00.000Z"
+    });
+
+    const signals = new Map(report.signals.map((signal) => [signal.id, signal]));
+    assert.equal(signals.get("rust.untested_surface").evidence[0].source, "graph_fact");
+    assert.equal(signals.get("rust.untested_surface").evidence[0].checkId, "rust.graph-signals");
+    assert.equal(signals.get("rust.dead_pub_exports").evidence[0].source, "graph_fact");
+    assert.equal(signals.get("rust.dead_pub_exports").evidence[0].code, "RUST_GRAPH_DEAD_PUB_EXPORT");
+    assert.equal(report.degradations.some((entry) => entry.id === "rust.graph_signals.not_run"), true);
   });
 
   it("degrades missing graph facts and skipped graph checks without zero findings", () => {
@@ -61,6 +171,16 @@ describe("Opcore metrics", () => {
               checkId: "typescript.relevant-tests",
               reason: "graph_unavailable",
               message: "Graph unavailable"
+            },
+            {
+              checkId: "rust.import-graph",
+              reason: "graph_unavailable",
+              message: "Rust graph unavailable"
+            },
+            {
+              checkId: "rust.dead-code",
+              reason: "graph_unavailable",
+              message: "Rust dead-code graph evidence unavailable"
             }
           ]
         }
@@ -70,8 +190,14 @@ describe("Opcore metrics", () => {
 
     assert.equal(report.signals.some((signal) => signal.count === 0), false);
     assert.equal(report.degradations.some((entry) => entry.id === "graph.facts.unavailable"), true);
+    assert.equal(report.degradations.some((entry) => entry.id === "rust.graph_facts.unavailable"), true);
     assert.equal(report.degradations.some((entry) => entry.id === "validation.typescript_relevant_tests.skipped"), true);
+    assert.equal(report.degradations.some((entry) => entry.id === "validation.rust_import_graph.skipped"), true);
+    assert.equal(report.degradations.some((entry) => entry.id === "validation.rust_dead_code.skipped"), true);
     assert.equal(report.degradations.some((entry) => entry.id === "typescript.dead_exports.not_run"), true);
+    assert.equal(report.degradations.some((entry) => entry.id === "rust.graph_signals.not_run"), true);
+    assert.equal(report.degradations.some((entry) => entry.id === "rust.module_graph.not_run"), true);
+    assert.equal(report.degradations.some((entry) => entry.id === "rust.dead_code.not_run"), true);
   });
 
   it("maps raw rustc cargo-check diagnostics into Rust toolchain drift", () => {
@@ -311,12 +437,13 @@ function repoState(overrides = {}) {
       languages: [
         { language: "Go", files: 2, graphSupported: false, validationSupported: false },
         { language: "TypeScript", files: 4, graphSupported: true, validationSupported: true },
-        { language: "Rust", files: 2, graphSupported: false, validationSupported: true },
+        { language: "Rust", files: 2, graphSupported: true, validationSupported: true },
         { language: "Python", files: 2, graphSupported: true, validationSupported: true }
       ],
       graph: {
-        supportedFiles: 6,
+        supportedFiles: 8,
         extensions: [
+          { extension: ".rs", count: 2 },
           { extension: ".py", count: 2 },
           { extension: ".ts", count: 4 }
         ]
@@ -419,6 +546,61 @@ function graphFacts() {
       },
       nodeKinds: ["file"],
       edgeKinds: ["CONTAINS", "IMPORTS_FROM"]
+    }
+  };
+}
+
+function rustGraphFacts() {
+  return {
+    nodes: [
+      { id: "file:crates/app/src/lib.rs", kind: "file", path: "crates/app/src/lib.rs" },
+      { id: "file:crates/app/src/covered.rs", kind: "file", path: "crates/app/src/covered.rs" },
+      {
+        id: "function:crates/app/src/lib.rs#dead_pub",
+        kind: "Function",
+        path: "crates/app/src/lib.rs",
+        name: "dead_pub",
+        attributes: { exported: true }
+      },
+      {
+        id: "function:crates/app/src/covered.rs#used_pub",
+        kind: "Function",
+        path: "crates/app/src/covered.rs",
+        name: "used_pub",
+        attributes: { exported: true }
+      },
+      {
+        id: "function:crates/app/src/lib.rs#private_helper",
+        kind: "Function",
+        path: "crates/app/src/lib.rs",
+        name: "private_helper",
+        attributes: { exported: false }
+      }
+    ],
+    edges: [
+      {
+        kind: "CALLS",
+        from: "function:crates/app/src/lib.rs#private_helper",
+        to: "function:crates/app/src/covered.rs#used_pub"
+      },
+      {
+        kind: "TESTED_BY",
+        from: "file:crates/app/src/covered.rs",
+        to: "file:crates/app/tests/covered_test.rs"
+      }
+    ],
+    metadata: {
+      schemaVersion: 1,
+      provider: "lattice-graph",
+      repo: { repoRoot: "/repo" },
+      generatedAt: "2026-06-25T00:00:00.000Z",
+      freshness: {
+        generatedAt: "2026-06-25T00:00:00.000Z",
+        ageMs: 0,
+        stale: false
+      },
+      nodeKinds: ["file", "Function"],
+      edgeKinds: ["CALLS", "CONTAINS", "IMPORTS_FROM", "TESTED_BY"]
     }
   };
 }
