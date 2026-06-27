@@ -16,6 +16,7 @@ import { dirname, join, relative, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import {
+  releaseCutoverRustCommandIds,
   releaseCutoverRequiredCommandIds,
   releaseReceiptPackageNames,
   validateManagedToolDescriptor,
@@ -40,6 +41,7 @@ const cutoverSummaryPath = "docs/release/cutover-receipt.summary.md";
 const artifactAttestationPath = "docs/release/artifact-attestation.md";
 const releasePackDestination = ".lattice/release/packages";
 const fixtureRoot = "packages/fixtures/source-extraction/wave1";
+const rustFixtureRoot = "packages/fixtures/source-extraction/rust-only";
 const currentToolEnvVars = [
   "LATTICE_CURRENT_TOOLS_DIR",
   "ACE_CURRENT_TOOLS_DIR",
@@ -101,6 +103,7 @@ function generateReceipt() {
     installFixture(project);
     writeFileSync(join(project, "src/cutover.ts"), "export const cutoverValue: number = 1;\n");
     const opcoreSmokeRepo = prepareOpcoreSmokeRepo(tempRoot);
+    const rustSmokeRepo = prepareRustSmokeRepo(tempRoot);
 
     const latticeBin = binPath(project, "lattice");
     const opcoreBin = binPath(project, "opcore");
@@ -110,6 +113,7 @@ function generateReceipt() {
     const commandEnv = sanitizedEnv();
     const commandTexts = [];
     const commandReceipts = [];
+    const rustCommandReceipts = [];
     const runOpcore = (id, args, expectedStatus, assertion) => {
       const result = run(opcoreBin, args, { cwd: opcoreSmokeRepo, env: commandEnv, expectedStatus });
       commandTexts.push({ label: `${id}:stdout`, text: result.stdout }, { label: `${id}:stderr`, text: result.stderr });
@@ -155,6 +159,29 @@ function generateReceipt() {
       });
       return parsed;
     };
+    const runRustLattice = (id, args, assertion) => {
+      const result = run(latticeBin, args, { cwd: rustSmokeRepo, env: commandEnv, expectedStatus: 0 });
+      commandTexts.push({ label: `${id}:stdout`, text: result.stdout }, { label: `${id}:stderr`, text: result.stderr });
+      const parsed = parseRouterJson(id, result.stdout);
+      if (parsed.exitCode !== 0 || result.status !== 0) {
+        throw new Error(`Cutover Rust command ${id} exit mismatch: router=${parsed.exitCode} process=${result.status}`);
+      }
+      assertCommandPayload(id, parsed);
+      assertRustCommandPayload(id, parsed);
+      rustCommandReceipts.push({
+        id,
+        command: parsed.canonicalCommand,
+        canonicalCommand: parsed.canonicalCommand,
+        owner: parsed.owner,
+        status: parsed.status,
+        exitCode: parsed.exitCode,
+        binPath: "node_modules/.bin/lattice",
+        stdoutSha256: sha256(result.stdout),
+        stderrSha256: sha256(result.stderr),
+        assertion
+      });
+      return parsed;
+    };
 
     runOpcore("opcore-scan", ["--json"], 0, "opcore scan wrote read-only report artifacts");
     runOpcore("opcore-status", ["status", "--json"], 0, "opcore status returned repoState");
@@ -187,6 +214,21 @@ function generateReceipt() {
     );
     runLattice("graph-search", ["graph", "search", "Greeting", "--limit", "5", "--json"], 0, "graph search returned ranked results");
     runLattice("graph-serve", ["graph", "serve", "--json"], 0, "graph serve status route is ready");
+    runRustLattice("graph-rust-build", ["graph", "build", "--json"], "Rust graph build completed with installed native artifact");
+    runRustLattice("graph-rust-status", ["graph", "status", "--json"], "Rust graph status available after build");
+    runRustLattice("graph-rust-query", ["graph", "query", "--json"], "Rust graph query returned Rust facts");
+    runRustLattice("graph-rust-impact", ["graph", "impact", "--files", "src/helpers.rs", "--json"], "Rust graph impact returned related Rust facts");
+    runRustLattice(
+      "graph-rust-review-context",
+      ["graph", "review-context", "--files", "src/helpers.rs", "--json"],
+      "Rust graph review-context returned related Rust facts"
+    );
+    runRustLattice(
+      "graph-rust-detect-changes",
+      ["graph", "detect-changes", "--files", "src/helpers.rs", "--json"],
+      "Rust graph detect-changes returned typed Rust change data"
+    );
+    runRustLattice("graph-rust-search", ["graph", "search", "Widget", "--limit", "5", "--json"], "Rust graph search returned ranked Rust symbols");
     runLattice("inspect-symbols", ["inspect", "symbols", "Greeting", "--limit", "5", "--json"], 0, "inspect symbols returned graph symbols");
     runLattice("inspect-definition", ["inspect", "definition", "GreetingCard", "--json"], 0, "inspect definition returned a symbol");
     runLattice(
@@ -317,6 +359,7 @@ function generateReceipt() {
         oldBinsAbsent: { crg: true, cix: true, rox: true }
       },
       commandReceipts: sortCommandReceipts(commandReceipts),
+      rustCommandReceipts: sortRustCommandReceipts(rustCommandReceipts),
       negativeChecks,
       forbiddenMarkerScan: {
         scannedTextCount: receiptScanTextsWithoutReceipt(project, descriptor, commandTexts, tarballs).length + 1,
@@ -449,6 +492,12 @@ function prepareOpcoreSmokeRepo(tempRoot) {
   run("git", ["branch", "-f", "main", commit], { cwd: smokeRepo });
   run("git", ["checkout", "-q", "main"], { cwd: smokeRepo });
   writeFileSync(join(smokeRepo, "src/index.ts"), "export const opcoreValue: number = 1;\n");
+  return smokeRepo;
+}
+
+function prepareRustSmokeRepo(tempRoot) {
+  const smokeRepo = join(tempRoot, "rust-smoke");
+  cpSync(join(repoRoot, rustFixtureRoot), smokeRepo, { recursive: true });
   return smokeRepo;
 }
 
@@ -620,6 +669,18 @@ function assertCommandPayload(id, parsed) {
   if (id === "validate-pre-write-fail" && parsed.receipt?.ok !== false) throw new Error("pre-write failure receipt must not be ok");
 }
 
+function assertRustCommandPayload(id, parsed) {
+  const text = JSON.stringify(parsed);
+  if (id === "graph-rust-query" || id === "graph-rust-search") {
+    for (const expected of ["src/lib.rs", "Widget"]) {
+      if (!text.includes(expected)) throw new Error(`${id} did not return Rust graph evidence for ${expected}`);
+    }
+  }
+  if (id === "graph-rust-impact" || id === "graph-rust-review-context" || id === "graph-rust-detect-changes") {
+    if (!text.includes("src/helpers.rs")) throw new Error(`${id} did not return Rust graph evidence for src/helpers.rs`);
+  }
+}
+
 function writeValidationRequest(project, filename, overrides = {}) {
   const path = join(project, filename);
   writeFileSync(
@@ -720,6 +781,7 @@ Machine receipt SHA-256: ${receiptSha256}
 
 Installed packages: ${receipt.installedPackages.length}
 Command receipts: ${receipt.commandReceipts.length}
+Rust command receipts: ${receipt.rustCommandReceipts.length}
 Forbidden marker findings: ${receipt.forbiddenMarkerScan.findingCount}
 Input evidence: ${receipt.inputEvidence.map((entry) => entry.issue).join(", ")}
 
@@ -733,7 +795,7 @@ function appendCutoverAttestation(receipt, receiptSha256) {
   const existing = existsSync(join(repoRoot, artifactAttestationPath))
     ? readFileSync(join(repoRoot, artifactAttestationPath), "utf8")
     : "# Artifact Attestation\n";
-  const block = `\n## Cutover Gate\n\nIssue #30 receipt: ${cutoverReceiptPath}\nCutover receipt SHA-256: ${receiptSha256}\nInstalled command receipts: ${receipt.commandReceipts.length}\n`;
+  const block = `\n## Cutover Gate\n\nIssue #30 receipt: ${cutoverReceiptPath}\nCutover receipt SHA-256: ${receiptSha256}\nInstalled command receipts: ${receipt.commandReceipts.length}\nRust command receipts: ${receipt.rustCommandReceipts.length}\n`;
   const withoutOld = existing.replace(/\n## Cutover Gate\n[\s\S]*$/, "");
   writeFileSync(join(repoRoot, artifactAttestationPath), `${withoutOld.trimEnd()}\n${block}`);
 }
@@ -742,6 +804,14 @@ function sortCommandReceipts(receipts) {
   return releaseCutoverRequiredCommandIds.map((id) => {
     const receipt = receipts.find((entry) => entry.id === id);
     if (!receipt) throw new Error(`Missing cutover command receipt: ${id}`);
+    return receipt;
+  });
+}
+
+function sortRustCommandReceipts(receipts) {
+  return releaseCutoverRustCommandIds.map((id) => {
+    const receipt = receipts.find((entry) => entry.id === id);
+    if (!receipt) throw new Error(`Missing cutover Rust command receipt: ${id}`);
     return receipt;
   });
 }

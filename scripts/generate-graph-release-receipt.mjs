@@ -26,12 +26,14 @@ import {
   graphReleaseDirectSqliteQueryIds,
   graphReleaseHandoffIssues,
   graphReleaseOptionalAnalysisSurfaces,
+  graphReleaseRustCommandIds,
   validateGraphReleaseReceipt
 } from "../packages/contracts/dist/index.js";
 
 const repoRoot = fileURLToPath(new URL("..", import.meta.url));
 const latticeBin = join(repoRoot, "packages/opcore/dist/lattice/index.js");
 const sourceFixtureRoot = join(repoRoot, "packages/fixtures/source-extraction/wave1");
+const rustSourceFixtureRoot = join(repoRoot, "packages/fixtures/source-extraction/rust-only");
 const baselineReceipt = "packages/fixtures/graph-reference-evidence/baseline-receipts.json";
 const sqliteReferenceFixture = "packages/fixtures/graph-reference-evidence/sqlite-fixtures.json";
 const graphPackageRoot = join(repoRoot, "packages/graph");
@@ -63,12 +65,15 @@ try {
 
 async function generateReceipt(tempRoot) {
   const { fixtureRoot, installSetupMs } = prepareReleaseFixture(tempRoot);
+  const rustFixtureRoot = prepareRustReleaseFixture(tempRoot);
   const coverage = runCommandCoverage(fixtureRoot);
+  const rustCoverage = runRustCommandCoverage(rustFixtureRoot);
   const serveEvidence = await collectServeEvidence(fixtureRoot);
   const baseReceipt = assembleBaseReceipt({
     fixtureRoot,
     installSetupMs,
     coverage,
+    rustCoverage,
     serveEvidence
   });
   return withHandoff(baseReceipt, checksumJson(baseReceipt));
@@ -79,6 +84,12 @@ function prepareReleaseFixture(tempRoot) {
   const setupStart = performance.now();
   cpSync(sourceFixtureRoot, fixtureRoot, { recursive: true, filter: skipGeneratedStore });
   return { fixtureRoot, installSetupMs: elapsed(setupStart) };
+}
+
+function prepareRustReleaseFixture(tempRoot) {
+  const fixtureRoot = join(tempRoot, "rust");
+  cpSync(rustSourceFixtureRoot, fixtureRoot, { recursive: true, filter: skipGeneratedStore });
+  return fixtureRoot;
 }
 
 function runCommandCoverage(fixtureRoot) {
@@ -99,6 +110,62 @@ function runCommandCoverage(fixtureRoot) {
     searchMs: search.durationMs,
     walSizeBytes: walSizeBytesFromGraphCore([build, update, basicReads.watch])
   };
+}
+
+function runRustCommandCoverage(fixtureRoot) {
+  const commandCoverage = [];
+  const build = recordCoverage(commandCoverage, "lattice-graph-rust-build", latticeBin, [
+    "graph",
+    "build",
+    "--repo",
+    fixtureRoot,
+    "--json"
+  ], "packages/fixtures/source-extraction/rust-only");
+  writeFileSync(join(fixtureRoot, "src/helpers.rs"), "pub fn assist() -> usize { 2 }\n");
+  recordCoverage(commandCoverage, "lattice-graph-rust-update", latticeBin, [
+    "graph",
+    "update",
+    "--repo",
+    fixtureRoot,
+    "--base",
+    "HEAD",
+    "--json"
+  ], "packages/fixtures/source-extraction/rust-only");
+  recordCoverage(commandCoverage, "lattice-graph-rust-watch", latticeBin, [
+    "graph",
+    "watch",
+    "--repo",
+    fixtureRoot,
+    "--once",
+    "--poll-interval-ms",
+    "50",
+    "--json"
+  ], "packages/fixtures/source-extraction/rust-only");
+  recordCoverage(commandCoverage, "lattice-graph-rust-status", latticeBin, ["graph", "status", "--repo", fixtureRoot, "--json"], "packages/fixtures/source-extraction/rust-only");
+  const query = recordCoverage(commandCoverage, "lattice-graph-rust-query", latticeBin, ["graph", "query", "--repo", fixtureRoot, "--json"], "packages/fixtures/source-extraction/rust-only");
+  const impact = recordCoverage(commandCoverage, "lattice-graph-rust-impact", latticeBin, [
+    "graph",
+    "impact",
+    "--repo",
+    fixtureRoot,
+    "--files",
+    "src/helpers.rs",
+    "--json"
+  ], "packages/fixtures/source-extraction/rust-only");
+  const search = recordCoverage(commandCoverage, "lattice-graph-rust-search", latticeBin, [
+    "graph",
+    "search",
+    "Widget",
+    "--repo",
+    fixtureRoot,
+    "--limit",
+    "5",
+    "--json"
+  ], "packages/fixtures/source-extraction/rust-only");
+  recordCoverage(commandCoverage, "lattice-graph-rust-serve", latticeBin, ["graph", "serve", "--repo", fixtureRoot, "--json"], "packages/fixtures/source-extraction/rust-only");
+  assertRustGraphEvidence({ build, query, impact, search });
+  sortRustCommandCoverage(commandCoverage);
+  return commandCoverage;
 }
 
 function runBuildCoverage(fixtureRoot, commandCoverage) {
@@ -192,7 +259,7 @@ function requireServeTransportDuration(serveTransport, id) {
   return receipt.durationMs;
 }
 
-function assembleBaseReceipt({ fixtureRoot, installSetupMs, coverage, serveEvidence }) {
+function assembleBaseReceipt({ fixtureRoot, installSetupMs, coverage, rustCoverage, serveEvidence }) {
   const directSqliteQueries = runDirectSqliteQueries(fixtureRoot);
   const dbPath = join(realpathSync(fixtureRoot), ".lattice/graph/graph.db");
   return {
@@ -206,6 +273,7 @@ function assembleBaseReceipt({ fixtureRoot, installSetupMs, coverage, serveEvide
     requiredChildren: ["#35", "#8", "#9", "#10", "#11", "#12", "#19", "#47"],
     deferredChildren: graphReleaseDeferredChildren,
     commandCoverage: coverage.commandCoverage,
+    rustCommandCoverage: rustCoverage,
     directSqliteQueries,
     serveTransport: serveEvidence.serveReceipts,
     benchmarks: benchmarkReceipts({
@@ -229,8 +297,8 @@ function assembleBaseReceipt({ fixtureRoot, installSetupMs, coverage, serveEvide
   };
 }
 
-function recordCoverage(commandCoverage, id, script, args) {
-  const result = runCovered(id, script, args);
+function recordCoverage(commandCoverage, id, script, args, fixture = "packages/fixtures/source-extraction/wave1") {
+  const result = runCovered(id, script, args, fixture);
   commandCoverage.push(result.coverage);
   return result;
 }
@@ -244,7 +312,7 @@ function graphReleaseReportReceipts() {
   ];
 }
 
-function runCovered(id, script, args) {
+function runCovered(id, script, args, fixture = "packages/fixtures/source-extraction/wave1") {
   const start = performance.now();
   const result = spawnSync(process.execPath, [script, ...args], {
     cwd: repoRoot,
@@ -267,7 +335,7 @@ function runCovered(id, script, args) {
       canonicalCommand: canonicalCommandForId(id),
       status: "passed",
       exitCode: parsed.exitCode,
-      fixture: "packages/fixtures/source-extraction/wave1",
+      fixture,
       durationMs
     }
   };
@@ -759,12 +827,12 @@ Maintainer note: these graph release checks must pass before publishing alpha ar
 }
 
 function receiptCommandForId(id) {
-  const command = id.replace("lattice-graph-", "");
+  const command = id.startsWith("lattice-graph-rust-") ? id.replace("lattice-graph-rust-", "") : id.replace("lattice-graph-", "");
   return ["graph", command];
 }
 
 function canonicalCommandForId(id) {
-  const command = id.replace("lattice-graph-", "");
+  const command = id.startsWith("lattice-graph-rust-") ? id.replace("lattice-graph-rust-", "") : id.replace("lattice-graph-", "");
   return ["lattice", "graph", command];
 }
 
@@ -776,6 +844,18 @@ function requestOperation(requestId) {
 function sortCommandCoverage(coverage) {
   const rank = new Map(graphReleaseCoreCommandIds.map((id, index) => [id, index]));
   coverage.sort((left, right) => rank.get(left.id) - rank.get(right.id));
+}
+
+function sortRustCommandCoverage(coverage) {
+  const rank = new Map(graphReleaseRustCommandIds.map((id, index) => [id, index]));
+  coverage.sort((left, right) => rank.get(left.id) - rank.get(right.id));
+}
+
+function assertRustGraphEvidence({ build, query, impact, search }) {
+  const combined = JSON.stringify([build.parsed, query.parsed, impact.parsed, search.parsed]);
+  for (const expected of ["src/lib.rs", "src/helpers.rs", "Widget"]) {
+    if (!combined.includes(expected)) throw new Error(`Rust graph release coverage missing evidence for ${expected}`);
+  }
 }
 
 function fileSize(path) {

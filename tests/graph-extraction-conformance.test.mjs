@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, mkdtempSync, readFileSync, realpathSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -11,6 +11,7 @@ const sourceFixtureRoot = resolve(repoRoot, "../packages/fixtures/source-extract
 const expected = JSON.parse(readFileSync(resolve(sourceFixtureRoot, "wave1.expected.json"), "utf8"));
 const pythonFixtureRoot = resolve(repoRoot, "../packages/fixtures/source-extraction/python");
 const pythonExpected = JSON.parse(readFileSync(resolve(pythonFixtureRoot, "python.expected.json"), "utf8"));
+const rustOnlyFixtureRoot = resolve(repoRoot, "../packages/fixtures/source-extraction/rust-only");
 
 describe("graph source extraction conformance", () => {
   it("extracts Wave 1 TS/JS/TSX/JSX facts through the GraphProvider wrapper", () => {
@@ -55,15 +56,21 @@ describe("graph source extraction conformance", () => {
   });
 
   it("extracts Rust facts through the GraphProvider wrapper", () => {
-    withTempRepo("rust-extraction", (fixtureRoot) => {
-      writeRustFixture(fixtureRoot);
+    const rustOnlyExpected = JSON.parse(readFileSync(resolve(rustOnlyFixtureRoot, "rust-only.expected.json"), "utf8"));
 
+    withFixtureCopy(rustOnlyFixtureRoot, "rust-only", (fixtureRoot) => {
       assert.equal(graphProviderBuild({ repoRoot: fixtureRoot }).status.state, "available");
       const result = graphProviderQuery({ repoRoot: fixtureRoot });
       const nodes = nodeMap(result.nodes);
       const triples = edgeTriples(result.edges);
 
       assert.equal(result.status.state, "available");
+      assert.deepEqual(sortedUnique(result.metadata.nodeKinds), rustOnlyExpected.nodeKinds);
+      assert.deepEqual(sortedUnique(result.metadata.edgeKinds), rustOnlyExpected.edgeKinds);
+      assert.deepEqual(result.nodes.map((node) => node.id).sort(), rustOnlyExpected.nodeIds);
+      assert.deepEqual(triples, rustOnlyExpected.edgeTriples.sort(compareTuple));
+      assert.deepEqual(nodeAttributes(result.nodes), rustOnlyExpected.nodeAttributes);
+      assert.deepEqual(fileExports(result.nodes), rustOnlyExpected.fileExports);
       assert.deepEqual(result.diagnostics ?? [], []);
       assert.equal(nodes.get("file:src/lib.rs")?.kind, "File");
       assert.equal(nodes.get("module:src/lib.rs#crate")?.kind, "Module");
@@ -108,12 +115,7 @@ describe("graph source extraction conformance", () => {
   });
 
   it("resolves Rust crate module imports to module files through the GraphProvider wrapper", () => {
-    withTempRepo("rust-module-import", (fixtureRoot) => {
-      writeFixtureFile(fixtureRoot, "tsconfig.json", "{}\n");
-      writeFixtureFile(fixtureRoot, "src/lib.rs", "pub mod helpers;\npub mod user;\n");
-      writeFixtureFile(fixtureRoot, "src/helpers.rs", "pub fn assist() -> usize { 1 }\n");
-      writeFixtureFile(fixtureRoot, "src/user.rs", "use crate::helpers;\npub fn run() { helpers::assist(); }\n");
-
+    withFixtureCopy(rustOnlyFixtureRoot, "rust-module-import", (fixtureRoot) => {
       assert.equal(graphProviderBuild({ repoRoot: fixtureRoot }).status.state, "available");
       const result = graphProviderQuery({ repoRoot: fixtureRoot });
       const triples = edgeTriples(result.edges);
@@ -122,8 +124,8 @@ describe("graph source extraction conformance", () => {
       assert.deepEqual(result.diagnostics ?? [], []);
       assertIncludesTriple(triples, ["IMPORTS_FROM", "file:src/user.rs", "file:src/helpers.rs"]);
       assertIncludesTriple(triples, ["DEPENDS_ON", "file:src/user.rs", "file:src/helpers.rs"]);
-      assertExcludesTriple(triples, ["IMPORTS_FROM", "file:src/user.rs", "file:src/lib.rs"]);
-      assertExcludesTriple(triples, ["DEPENDS_ON", "file:src/user.rs", "file:src/lib.rs"]);
+      assertIncludesTriple(triples, ["IMPORTS_FROM", "file:src/user.rs", "file:src/lib.rs"]);
+      assertIncludesTriple(triples, ["DEPENDS_ON", "file:src/user.rs", "file:src/lib.rs"]);
     });
   });
 });
@@ -142,82 +144,6 @@ function withFixtureCopy(rootOrRun, nameOrRun, maybeRun) {
   }
 }
 
-function withTempRepo(name, run) {
-  const temp = mkdtempSync(join(tmpdir(), `lattice-${name}-`));
-  try {
-    run(temp);
-  } finally {
-    rmSync(temp, { recursive: true, force: true });
-  }
-}
-
-function writeRustFixture(root) {
-  writeFixtureFile(root, "tsconfig.json", "{}\n");
-  writeFixtureFile(
-    root,
-    "src/lib.rs",
-    `
-pub mod helpers;
-mod user;
-
-pub trait Service {
-    fn handle(&self);
-}
-
-pub struct Widget;
-
-pub enum Mode {
-    Fast,
-}
-
-impl Service for Widget {
-    fn handle(&self) {
-        helpers::assist();
-    }
-}
-
-pub type Alias = Widget;
-pub const LIMIT: usize = 1;
-pub static NAME: &str = "widget";
-
-macro_rules! trace {
-    () => {};
-}
-`
-  );
-  writeFixtureFile(root, "src/helpers.rs", "pub fn assist() -> usize { 1 }\n");
-  writeFixtureFile(
-    root,
-    "src/user.rs",
-    `
-use crate::helpers;
-use crate::{Service, Widget};
-
-pub fn run() {
-    helpers::assist();
-    let widget = Widget;
-    widget.handle();
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_run() {
-        run();
-    }
-}
-`
-  );
-}
-
-function writeFixtureFile(root, path, contents) {
-  const target = join(root, path);
-  mkdirSync(dirname(target), { recursive: true });
-  writeFileSync(target, contents);
-}
-
 function skipGeneratedStore(source) {
   const normalized = source.replaceAll("\\", "/");
   return !normalized.endsWith("/.lattice") && !normalized.includes("/.lattice/");
@@ -229,10 +155,6 @@ function edgeTriples(edges) {
 
 function assertIncludesTriple(triples, triple) {
   assert.equal(triples.some((candidate) => candidate.join("\0") === triple.join("\0")), true, triple.join(" "));
-}
-
-function assertExcludesTriple(triples, triple) {
-  assert.equal(triples.some((candidate) => candidate.join("\0") === triple.join("\0")), false, triple.join(" "));
 }
 
 function nodeMap(nodes) {

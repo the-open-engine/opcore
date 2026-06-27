@@ -12,6 +12,7 @@ import {
   graphReleaseDeferredChildren,
   graphReleaseDirectSqliteQueryIds,
   graphReleaseOptionalAnalysisSurfaces,
+  graphReleaseRustCommandIds,
   validateGraphReleaseReceipt
 } from "../packages/contracts/dist/index.js";
 import { withCompleteNativeArtifactFixtures } from "./native-artifact-fixture.mjs";
@@ -36,6 +37,10 @@ describe("graph release readiness receipt", () => {
     assert.deepEqual(
       receipt.commandCoverage.map((entry) => entry.id),
       graphReleaseCoreCommandIds
+    );
+    assert.deepEqual(
+      receipt.rustCommandCoverage.map((entry) => entry.id),
+      graphReleaseRustCommandIds
     );
     assert.deepEqual(
       receipt.benchmarks.map((entry) => entry.metric),
@@ -69,6 +74,11 @@ describe("graph release readiness receipt", () => {
       receipt.commandCoverage.map((entry) => entry.status),
       graphReleaseCoreCommandIds.map(() => "passed")
     );
+    assert.deepEqual(
+      receipt.rustCommandCoverage.map((entry) => entry.id),
+      graphReleaseRustCommandIds
+    );
+    assert.ok(receipt.rustCommandCoverage.every((entry) => entry.status === "passed" && entry.fixture === "packages/fixtures/source-extraction/rust-only"));
     assert.deepEqual(
       receipt.benchmarks.map((entry) => entry.metric),
       graphReleaseBenchmarkMetrics

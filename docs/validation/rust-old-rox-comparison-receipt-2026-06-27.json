@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 1,
+  "issue": "#29",
+  "origin": "covibes-authored-old-rox-comparison",
+  "generatedAt": "2026-06-27T00:00:00.000Z",
+  "privateRepo": true,
+  "oldToolReplacementClaimed": false,
+  "publicReleaseActions": [],
+  "surfaces": [
+    {
+      "id": "rust.rustdoc",
+      "graphEvidenceExists": false,
+      "graphEvidence": [
+        "No graph fact replaces rustdoc diagnostics."
+      ],
+      "stillUniquelyProvidedByCurrentTools": [
+        "rustdoc diagnostics, broken intra-doc links, and documentation-policy failures remain current-tool evidence."
+      ],
+      "replacementStatus": "retained"
+    },
+    {
+      "id": "rust.import-graph",
+      "graphEvidenceExists": true,
+      "graphEvidence": [
+        "Rust graph extraction emits IMPORTS_FROM and DEPENDS_ON edges for crate module files.",
+        "Rust graph query, impact, review-context, detect-changes, and search receipts exercise those facts on a Rust fixture."
+      ],
+      "stillUniquelyProvidedByCurrentTools": [
+        "rustdoc and cargo-depgraph-enriched import checks remain retained current-tool evidence where graph facts are not sufficient."
+      ],
+      "replacementStatus": "deferred"
+    },
+    {
+      "id": "rust.dead-code",
+      "graphEvidenceExists": true,
+      "graphEvidence": [
+        "Rust graph extraction emits exported symbol metadata and graph-backed dead-public-export signals."
+      ],
+      "stillUniquelyProvidedByCurrentTools": [
+        "Cargo dead_code diagnostics and retained current-tool gate behavior still uniquely cover compiler reachability."
+      ],
+      "replacementStatus": "retained"
+    },
+    {
+      "id": "rust.unused-deps",
+      "graphEvidenceExists": false,
+      "graphEvidence": [
+        "No graph fact replaces cargo-udeps unused dependency analysis."
+      ],
+      "stillUniquelyProvidedByCurrentTools": [
+        "cargo-udeps and retained current-tool unused dependency detection remain the unique evidence source."
+      ],
+      "replacementStatus": "retained"
+    },
+    {
+      "id": "rust.function-metrics",
+      "graphEvidenceExists": true,
+      "graphEvidence": [
+        "Rust graph extraction emits function and method symbols with source spans and signatures."
+      ],
+      "stillUniquelyProvidedByCurrentTools": [
+        "rust-code-analysis complexity, line-count, and parameter-threshold metrics remain retained current-tool evidence."
+      ],
+      "replacementStatus": "retained"
+    },
+    {
+      "id": "current-tools:validate-rust-graph",
+      "graphEvidenceExists": false,
+      "graphEvidence": [
+        "Graph receipts do not replace the aggregate current-tools Rust graph gate."
+      ],
+      "stillUniquelyProvidedByCurrentTools": [
+        "npm run current-tools:validate-rust-graph remains the retained aggregate guardrail until #30 makes a retirement decision."
+      ],
+      "replacementStatus": "retained"
+    }
+  ],
+  "guardrails": [
+    {
+      "id": "current-tools:validate-rust-graph",
+      "command": [
+        "npm",
+        "run",
+        "current-tools:validate-rust-graph"
+      ],
+      "replacementStatus": "retained",
+      "oldToolReplacementClaimed": false
+    }
+  ]
+}

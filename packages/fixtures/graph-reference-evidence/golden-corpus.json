@@ -23,6 +23,24 @@
       "language": "typescript",
       "symbols": ["login rejects invalid password"],
       "hash": "sha256:synthetic-auth-test"
+    },
+    {
+      "path": "src/lib.rs",
+      "language": "rust",
+      "symbols": ["Widget", "Service"],
+      "hash": "sha256:synthetic-rust-lib"
+    },
+    {
+      "path": "src/helpers.rs",
+      "language": "rust",
+      "symbols": ["helpers::assist"],
+      "hash": "sha256:synthetic-rust-helpers"
+    },
+    {
+      "path": "src/consumer.rs",
+      "language": "rust",
+      "symbols": ["consumer::run", "consumer.tests::test_run"],
+      "hash": "sha256:synthetic-rust-consumer"
     }
   ],
   "expectedFacts": {
@@ -66,6 +84,81 @@
           "kind": "Test",
           "name": "login rejects invalid password",
           "filePath": "tests/auth.test.ts"
+        },
+        {
+          "id": "file:src/lib.rs",
+          "kind": "File",
+          "name": "src/lib.rs"
+        },
+        {
+          "id": "file:src/helpers.rs",
+          "kind": "File",
+          "name": "src/helpers.rs"
+        },
+        {
+          "id": "file:src/consumer.rs",
+          "kind": "File",
+          "name": "src/consumer.rs"
+        },
+        {
+          "id": "module:src/lib.rs#crate",
+          "kind": "Module",
+          "name": "crate",
+          "filePath": "src/lib.rs"
+        },
+        {
+          "id": "module:src/helpers.rs#helpers",
+          "kind": "Module",
+          "name": "helpers",
+          "filePath": "src/helpers.rs"
+        },
+        {
+          "id": "module:src/consumer.rs#consumer",
+          "kind": "Module",
+          "name": "consumer",
+          "filePath": "src/consumer.rs"
+        },
+        {
+          "id": "struct:src/lib.rs#Widget",
+          "kind": "Struct",
+          "name": "Widget",
+          "filePath": "src/lib.rs"
+        },
+        {
+          "id": "trait:src/lib.rs#Service",
+          "kind": "Trait",
+          "name": "Service",
+          "filePath": "src/lib.rs"
+        },
+        {
+          "id": "impl:src/lib.rs#impl Service for Widget",
+          "kind": "Impl",
+          "name": "impl Service for Widget",
+          "filePath": "src/lib.rs"
+        },
+        {
+          "id": "method:src/lib.rs#Widget::handle",
+          "kind": "Method",
+          "name": "Widget::handle",
+          "filePath": "src/lib.rs"
+        },
+        {
+          "id": "function:src/helpers.rs#helpers::assist",
+          "kind": "Function",
+          "name": "helpers::assist",
+          "filePath": "src/helpers.rs"
+        },
+        {
+          "id": "function:src/consumer.rs#consumer::run",
+          "kind": "Function",
+          "name": "consumer::run",
+          "filePath": "src/consumer.rs"
+        },
+        {
+          "id": "test:src/consumer.rs#consumer.tests::test_run",
+          "kind": "Test",
+          "name": "consumer.tests::test_run",
+          "filePath": "src/consumer.rs"
         }
       ]
     },
@@ -104,6 +197,96 @@
           "kind": "TESTED_BY",
           "source": "function:src/auth.ts#login",
           "target": "test:tests/auth.test.ts#login rejects invalid password"
+        },
+        {
+          "kind": "CONTAINS",
+          "source": "file:src/lib.rs",
+          "target": "module:src/lib.rs#crate"
+        },
+        {
+          "kind": "CONTAINS",
+          "source": "file:src/helpers.rs",
+          "target": "module:src/helpers.rs#helpers"
+        },
+        {
+          "kind": "CONTAINS",
+          "source": "file:src/consumer.rs",
+          "target": "module:src/consumer.rs#consumer"
+        },
+        {
+          "kind": "CONTAINS",
+          "source": "module:src/lib.rs#crate",
+          "target": "struct:src/lib.rs#Widget"
+        },
+        {
+          "kind": "CONTAINS",
+          "source": "module:src/lib.rs#crate",
+          "target": "trait:src/lib.rs#Service"
+        },
+        {
+          "kind": "CONTAINS",
+          "source": "module:src/lib.rs#crate",
+          "target": "impl:src/lib.rs#impl Service for Widget"
+        },
+        {
+          "kind": "CONTAINS",
+          "source": "impl:src/lib.rs#impl Service for Widget",
+          "target": "method:src/lib.rs#Widget::handle"
+        },
+        {
+          "kind": "CONTAINS",
+          "source": "module:src/helpers.rs#helpers",
+          "target": "function:src/helpers.rs#helpers::assist"
+        },
+        {
+          "kind": "CONTAINS",
+          "source": "module:src/consumer.rs#consumer",
+          "target": "function:src/consumer.rs#consumer::run"
+        },
+        {
+          "kind": "CONTAINS",
+          "source": "module:src/consumer.rs#consumer",
+          "target": "test:src/consumer.rs#consumer.tests::test_run"
+        },
+        {
+          "kind": "IMPORTS_FROM",
+          "source": "file:src/consumer.rs",
+          "target": "file:src/helpers.rs"
+        },
+        {
+          "kind": "IMPORTS_FROM",
+          "source": "file:src/consumer.rs",
+          "target": "file:src/lib.rs"
+        },
+        {
+          "kind": "DEPENDS_ON",
+          "source": "file:src/consumer.rs",
+          "target": "file:src/helpers.rs"
+        },
+        {
+          "kind": "DEPENDS_ON",
+          "source": "file:src/consumer.rs",
+          "target": "file:src/lib.rs"
+        },
+        {
+          "kind": "IMPLEMENTS",
+          "source": "impl:src/lib.rs#impl Service for Widget",
+          "target": "trait:src/lib.rs#Service"
+        },
+        {
+          "kind": "CALLS",
+          "source": "function:src/consumer.rs#consumer::run",
+          "target": "function:src/helpers.rs#helpers::assist"
+        },
+        {
+          "kind": "CALLS",
+          "source": "test:src/consumer.rs#consumer.tests::test_run",
+          "target": "function:src/consumer.rs#consumer::run"
+        },
+        {
+          "kind": "TESTED_BY",
+          "source": "function:src/consumer.rs#consumer::run",
+          "target": "test:src/consumer.rs#consumer.tests::test_run"
         }
       ]
     },
@@ -125,19 +308,27 @@
       "requiredMetadataKeys": ["schema_version", "last_updated", "last_build_type"]
     },
     "status": {
-      "totalNodes": 7,
-      "totalEdges": 6,
+      "totalNodes": 20,
+      "totalEdges": 24,
       "nodesByKind": {
-        "File": 3,
-        "Function": 3,
-        "Test": 1
+        "File": 6,
+        "Function": 5,
+        "Test": 2,
+        "Module": 3,
+        "Struct": 1,
+        "Trait": 1,
+        "Impl": 1,
+        "Method": 1
       },
       "edgesByKind": {
-        "CALLS": 1,
-        "CONTAINS": 4,
-        "TESTED_BY": 1
+        "CALLS": 3,
+        "CONTAINS": 14,
+        "TESTED_BY": 2,
+        "IMPORTS_FROM": 2,
+        "DEPENDS_ON": 2,
+        "IMPLEMENTS": 1
       },
-      "languages": ["typescript"],
+      "languages": ["typescript", "rust"],
       "embeddingsCount": 0
     }
   }

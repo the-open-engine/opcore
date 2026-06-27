@@ -7281,6 +7281,18 @@
         "lattice-graph-serve"
       ]
     },
+    "GraphReleaseRustCommandId": {
+      "enum": [
+        "lattice-graph-rust-build",
+        "lattice-graph-rust-update",
+        "lattice-graph-rust-watch",
+        "lattice-graph-rust-status",
+        "lattice-graph-rust-query",
+        "lattice-graph-rust-impact",
+        "lattice-graph-rust-search",
+        "lattice-graph-rust-serve"
+      ]
+    },
     "GraphReleaseBenchmarkMetric": {
       "enum": [
         "install_setup_ms",
@@ -7770,6 +7782,425 @@
         }
       }
     },
+    "GraphReleaseRustCommandCoverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "id"
+            ],
+            "properties": {
+              "id": {
+                "const": "lattice-graph-rust-build"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "command": {
+                "type": "array",
+                "minItems": 2,
+                "maxItems": 2,
+                "prefixItems": [
+                  {
+                    "const": "graph"
+                  },
+                  {
+                    "const": "build"
+                  }
+                ],
+                "items": false
+              },
+              "canonicalCommand": {
+                "type": "array",
+                "minItems": 3,
+                "maxItems": 3,
+                "prefixItems": [
+                  {
+                    "const": "lattice"
+                  },
+                  {
+                    "const": "graph"
+                  },
+                  {
+                    "const": "build"
+                  }
+                ],
+                "items": false
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "id"
+            ],
+            "properties": {
+              "id": {
+                "const": "lattice-graph-rust-update"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "command": {
+                "type": "array",
+                "minItems": 2,
+                "maxItems": 2,
+                "prefixItems": [
+                  {
+                    "const": "graph"
+                  },
+                  {
+                    "const": "update"
+                  }
+                ],
+                "items": false
+              },
+              "canonicalCommand": {
+                "type": "array",
+                "minItems": 3,
+                "maxItems": 3,
+                "prefixItems": [
+                  {
+                    "const": "lattice"
+                  },
+                  {
+                    "const": "graph"
+                  },
+                  {
+                    "const": "update"
+                  }
+                ],
+                "items": false
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "id"
+            ],
+            "properties": {
+              "id": {
+                "const": "lattice-graph-rust-watch"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "command": {
+                "type": "array",
+                "minItems": 2,
+                "maxItems": 2,
+                "prefixItems": [
+                  {
+                    "const": "graph"
+                  },
+                  {
+                    "const": "watch"
+                  }
+                ],
+                "items": false
+              },
+              "canonicalCommand": {
+                "type": "array",
+                "minItems": 3,
+                "maxItems": 3,
+                "prefixItems": [
+                  {
+                    "const": "lattice"
+                  },
+                  {
+                    "const": "graph"
+                  },
+                  {
+                    "const": "watch"
+                  }
+                ],
+                "items": false
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "id"
+            ],
+            "properties": {
+              "id": {
+                "const": "lattice-graph-rust-status"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "command": {
+                "type": "array",
+                "minItems": 2,
+                "maxItems": 2,
+                "prefixItems": [
+                  {
+                    "const": "graph"
+                  },
+                  {
+                    "const": "status"
+                  }
+                ],
+                "items": false
+              },
+              "canonicalCommand": {
+                "type": "array",
+                "minItems": 3,
+                "maxItems": 3,
+                "prefixItems": [
+                  {
+                    "const": "lattice"
+                  },
+                  {
+                    "const": "graph"
+                  },
+                  {
+                    "const": "status"
+                  }
+                ],
+                "items": false
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "id"
+            ],
+            "properties": {
+              "id": {
+                "const": "lattice-graph-rust-query"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "command": {
+                "type": "array",
+                "minItems": 2,
+                "maxItems": 2,
+                "prefixItems": [
+                  {
+                    "const": "graph"
+                  },
+                  {
+                    "const": "query"
+                  }
+                ],
+                "items": false
+              },
+              "canonicalCommand": {
+                "type": "array",
+                "minItems": 3,
+                "maxItems": 3,
+                "prefixItems": [
+                  {
+                    "const": "lattice"
+                  },
+                  {
+                    "const": "graph"
+                  },
+                  {
+                    "const": "query"
+                  }
+                ],
+                "items": false
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "id"
+            ],
+            "properties": {
+              "id": {
+                "const": "lattice-graph-rust-impact"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "command": {
+                "type": "array",
+                "minItems": 2,
+                "maxItems": 2,
+                "prefixItems": [
+                  {
+                    "const": "graph"
+                  },
+                  {
+                    "const": "impact"
+                  }
+                ],
+                "items": false
+              },
+              "canonicalCommand": {
+                "type": "array",
+                "minItems": 3,
+                "maxItems": 3,
+                "prefixItems": [
+                  {
+                    "const": "lattice"
+                  },
+                  {
+                    "const": "graph"
+                  },
+                  {
+                    "const": "impact"
+                  }
+                ],
+                "items": false
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "id"
+            ],
+            "properties": {
+              "id": {
+                "const": "lattice-graph-rust-search"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "command": {
+                "type": "array",
+                "minItems": 2,
+                "maxItems": 2,
+                "prefixItems": [
+                  {
+                    "const": "graph"
+                  },
+                  {
+                    "const": "search"
+                  }
+                ],
+                "items": false
+              },
+              "canonicalCommand": {
+                "type": "array",
+                "minItems": 3,
+                "maxItems": 3,
+                "prefixItems": [
+                  {
+                    "const": "lattice"
+                  },
+                  {
+                    "const": "graph"
+                  },
+                  {
+                    "const": "search"
+                  }
+                ],
+                "items": false
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "id"
+            ],
+            "properties": {
+              "id": {
+                "const": "lattice-graph-rust-serve"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "command": {
+                "type": "array",
+                "minItems": 2,
+                "maxItems": 2,
+                "prefixItems": [
+                  {
+                    "const": "graph"
+                  },
+                  {
+                    "const": "serve"
+                  }
+                ],
+                "items": false
+              },
+              "canonicalCommand": {
+                "type": "array",
+                "minItems": 3,
+                "maxItems": 3,
+                "prefixItems": [
+                  {
+                    "const": "lattice"
+                  },
+                  {
+                    "const": "graph"
+                  },
+                  {
+                    "const": "serve"
+                  }
+                ],
+                "items": false
+              }
+            }
+          }
+        }
+      ],
+      "required": [
+        "id",
+        "bin",
+        "command",
+        "canonicalCommand",
+        "status",
+        "exitCode",
+        "fixture",
+        "durationMs"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/GraphReleaseRustCommandId"
+        },
+        "bin": {
+          "const": "lattice"
+        },
+        "command": {
+          "$ref": "#/$defs/GraphReleaseStringArray"
+        },
+        "canonicalCommand": {
+          "$ref": "#/$defs/GraphReleaseStringArray"
+        },
+        "status": {
+          "const": "passed"
+        },
+        "exitCode": {
+          "const": 0
+        },
+        "fixture": {
+          "$ref": "#/$defs/SourceFreeString"
+        },
+        "durationMs": {
+          "type": "number",
+          "minimum": 1
+        }
+      }
+    },
     "GraphReleaseDirectSqliteQueryReceipt": {
       "type": "object",
       "additionalProperties": false,
@@ -8179,6 +8610,7 @@
         "requiredChildren",
         "deferredChildren",
         "commandCoverage",
+        "rustCommandCoverage",
         "directSqliteQueries",
         "serveTransport",
         "benchmarks",
@@ -8506,6 +8938,136 @@
           ],
           "items": {
             "$ref": "#/$defs/GraphReleaseCommandCoverage"
+          }
+        },
+        "rustCommandCoverage": {
+          "type": "array",
+          "minItems": 8,
+          "maxItems": 8,
+          "allOf": [
+            {
+              "contains": {
+                "type": "object",
+                "required": [
+                  "id"
+                ],
+                "properties": {
+                  "id": {
+                    "const": "lattice-graph-rust-build"
+                  }
+                }
+              },
+              "minContains": 1,
+              "maxContains": 1
+            },
+            {
+              "contains": {
+                "type": "object",
+                "required": [
+                  "id"
+                ],
+                "properties": {
+                  "id": {
+                    "const": "lattice-graph-rust-update"
+                  }
+                }
+              },
+              "minContains": 1,
+              "maxContains": 1
+            },
+            {
+              "contains": {
+                "type": "object",
+                "required": [
+                  "id"
+                ],
+                "properties": {
+                  "id": {
+                    "const": "lattice-graph-rust-watch"
+                  }
+                }
+              },
+              "minContains": 1,
+              "maxContains": 1
+            },
+            {
+              "contains": {
+                "type": "object",
+                "required": [
+                  "id"
+                ],
+                "properties": {
+                  "id": {
+                    "const": "lattice-graph-rust-status"
+                  }
+                }
+              },
+              "minContains": 1,
+              "maxContains": 1
+            },
+            {
+              "contains": {
+                "type": "object",
+                "required": [
+                  "id"
+                ],
+                "properties": {
+                  "id": {
+                    "const": "lattice-graph-rust-query"
+                  }
+                }
+              },
+              "minContains": 1,
+              "maxContains": 1
+            },
+            {
+              "contains": {
+                "type": "object",
+                "required": [
+                  "id"
+                ],
+                "properties": {
+                  "id": {
+                    "const": "lattice-graph-rust-impact"
+                  }
+                }
+              },
+              "minContains": 1,
+              "maxContains": 1
+            },
+            {
+              "contains": {
+                "type": "object",
+                "required": [
+                  "id"
+                ],
+                "properties": {
+                  "id": {
+                    "const": "lattice-graph-rust-search"
+                  }
+                }
+              },
+              "minContains": 1,
+              "maxContains": 1
+            },
+            {
+              "contains": {
+                "type": "object",
+                "required": [
+                  "id"
+                ],
+                "properties": {
+                  "id": {
+                    "const": "lattice-graph-rust-serve"
+                  }
+                }
+              },
+              "minContains": 1,
+              "maxContains": 1
+            }
+          ],
+          "items": {
+            "$ref": "#/$defs/GraphReleaseRustCommandCoverage"
           }
         },
         "directSqliteQueries": {
@@ -14434,6 +14996,490 @@
         }
       ]
     },
+    "ReleaseCutoverRustCommandReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "command",
+        "canonicalCommand",
+        "owner",
+        "status",
+        "exitCode",
+        "binPath",
+        "stdoutSha256",
+        "stderrSha256",
+        "assertion"
+      ],
+      "properties": {
+        "id": {
+          "enum": [
+            "graph-rust-build",
+            "graph-rust-status",
+            "graph-rust-query",
+            "graph-rust-impact",
+            "graph-rust-review-context",
+            "graph-rust-detect-changes",
+            "graph-rust-search"
+          ]
+        },
+        "command": {
+          "type": "array",
+          "minItems": 1,
+          "prefixItems": [
+            {
+              "const": "lattice"
+            }
+          ],
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "canonicalCommand": {
+          "type": "array",
+          "minItems": 1,
+          "prefixItems": [
+            {
+              "const": "lattice"
+            }
+          ],
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "owner": {
+          "const": "graph"
+        },
+        "status": {
+          "const": "ok"
+        },
+        "exitCode": {
+          "const": 0
+        },
+        "binPath": {
+          "type": "string",
+          "pattern": "node_modules/\\.bin/lattice$"
+        },
+        "stdoutSha256": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "stderrSha256": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "assertion": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "id"
+            ],
+            "properties": {
+              "id": {
+                "const": "graph-rust-build"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "command": {
+                "type": "array",
+                "minItems": 3,
+                "maxItems": 3,
+                "prefixItems": [
+                  {
+                    "const": "lattice"
+                  },
+                  {
+                    "const": "graph"
+                  },
+                  {
+                    "const": "build"
+                  }
+                ],
+                "items": false
+              },
+              "canonicalCommand": {
+                "type": "array",
+                "minItems": 3,
+                "maxItems": 3,
+                "prefixItems": [
+                  {
+                    "const": "lattice"
+                  },
+                  {
+                    "const": "graph"
+                  },
+                  {
+                    "const": "build"
+                  }
+                ],
+                "items": false
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "id"
+            ],
+            "properties": {
+              "id": {
+                "const": "graph-rust-status"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "command": {
+                "type": "array",
+                "minItems": 3,
+                "maxItems": 3,
+                "prefixItems": [
+                  {
+                    "const": "lattice"
+                  },
+                  {
+                    "const": "graph"
+                  },
+                  {
+                    "const": "status"
+                  }
+                ],
+                "items": false
+              },
+              "canonicalCommand": {
+                "type": "array",
+                "minItems": 3,
+                "maxItems": 3,
+                "prefixItems": [
+                  {
+                    "const": "lattice"
+                  },
+                  {
+                    "const": "graph"
+                  },
+                  {
+                    "const": "status"
+                  }
+                ],
+                "items": false
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "id"
+            ],
+            "properties": {
+              "id": {
+                "const": "graph-rust-query"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "command": {
+                "type": "array",
+                "minItems": 3,
+                "maxItems": 3,
+                "prefixItems": [
+                  {
+                    "const": "lattice"
+                  },
+                  {
+                    "const": "graph"
+                  },
+                  {
+                    "const": "query"
+                  }
+                ],
+                "items": false
+              },
+              "canonicalCommand": {
+                "type": "array",
+                "minItems": 3,
+                "maxItems": 3,
+                "prefixItems": [
+                  {
+                    "const": "lattice"
+                  },
+                  {
+                    "const": "graph"
+                  },
+                  {
+                    "const": "query"
+                  }
+                ],
+                "items": false
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "id"
+            ],
+            "properties": {
+              "id": {
+                "const": "graph-rust-impact"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "command": {
+                "type": "array",
+                "minItems": 5,
+                "maxItems": 5,
+                "prefixItems": [
+                  {
+                    "const": "lattice"
+                  },
+                  {
+                    "const": "graph"
+                  },
+                  {
+                    "const": "impact"
+                  },
+                  {
+                    "const": "--files"
+                  },
+                  {
+                    "const": "src/helpers.rs"
+                  }
+                ],
+                "items": false
+              },
+              "canonicalCommand": {
+                "type": "array",
+                "minItems": 5,
+                "maxItems": 5,
+                "prefixItems": [
+                  {
+                    "const": "lattice"
+                  },
+                  {
+                    "const": "graph"
+                  },
+                  {
+                    "const": "impact"
+                  },
+                  {
+                    "const": "--files"
+                  },
+                  {
+                    "const": "src/helpers.rs"
+                  }
+                ],
+                "items": false
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "id"
+            ],
+            "properties": {
+              "id": {
+                "const": "graph-rust-review-context"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "command": {
+                "type": "array",
+                "minItems": 5,
+                "maxItems": 5,
+                "prefixItems": [
+                  {
+                    "const": "lattice"
+                  },
+                  {
+                    "const": "graph"
+                  },
+                  {
+                    "const": "review-context"
+                  },
+                  {
+                    "const": "--files"
+                  },
+                  {
+                    "const": "src/helpers.rs"
+                  }
+                ],
+                "items": false
+              },
+              "canonicalCommand": {
+                "type": "array",
+                "minItems": 5,
+                "maxItems": 5,
+                "prefixItems": [
+                  {
+                    "const": "lattice"
+                  },
+                  {
+                    "const": "graph"
+                  },
+                  {
+                    "const": "review-context"
+                  },
+                  {
+                    "const": "--files"
+                  },
+                  {
+                    "const": "src/helpers.rs"
+                  }
+                ],
+                "items": false
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "id"
+            ],
+            "properties": {
+              "id": {
+                "const": "graph-rust-detect-changes"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "command": {
+                "type": "array",
+                "minItems": 5,
+                "maxItems": 5,
+                "prefixItems": [
+                  {
+                    "const": "lattice"
+                  },
+                  {
+                    "const": "graph"
+                  },
+                  {
+                    "const": "detect-changes"
+                  },
+                  {
+                    "const": "--files"
+                  },
+                  {
+                    "const": "src/helpers.rs"
+                  }
+                ],
+                "items": false
+              },
+              "canonicalCommand": {
+                "type": "array",
+                "minItems": 5,
+                "maxItems": 5,
+                "prefixItems": [
+                  {
+                    "const": "lattice"
+                  },
+                  {
+                    "const": "graph"
+                  },
+                  {
+                    "const": "detect-changes"
+                  },
+                  {
+                    "const": "--files"
+                  },
+                  {
+                    "const": "src/helpers.rs"
+                  }
+                ],
+                "items": false
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "id"
+            ],
+            "properties": {
+              "id": {
+                "const": "graph-rust-search"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "command": {
+                "type": "array",
+                "minItems": 6,
+                "maxItems": 6,
+                "prefixItems": [
+                  {
+                    "const": "lattice"
+                  },
+                  {
+                    "const": "graph"
+                  },
+                  {
+                    "const": "search"
+                  },
+                  {
+                    "const": "Widget"
+                  },
+                  {
+                    "const": "--limit"
+                  },
+                  {
+                    "const": "5"
+                  }
+                ],
+                "items": false
+              },
+              "canonicalCommand": {
+                "type": "array",
+                "minItems": 6,
+                "maxItems": 6,
+                "prefixItems": [
+                  {
+                    "const": "lattice"
+                  },
+                  {
+                    "const": "graph"
+                  },
+                  {
+                    "const": "search"
+                  },
+                  {
+                    "const": "Widget"
+                  },
+                  {
+                    "const": "--limit"
+                  },
+                  {
+                    "const": "5"
+                  }
+                ],
+                "items": false
+              }
+            }
+          }
+        }
+      ]
+    },
     "ReleaseCutoverNegativeCheck": {
       "type": "object",
       "additionalProperties": false,
@@ -14471,6 +15517,240 @@
         "assertion": {
           "type": "string",
           "minLength": 1
+        }
+      }
+    },
+    "RustOldRoxComparisonSurfaceReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "graphEvidenceExists",
+        "graphEvidence",
+        "stillUniquelyProvidedByCurrentTools",
+        "replacementStatus"
+      ],
+      "properties": {
+        "id": {
+          "enum": [
+            "rust.rustdoc",
+            "rust.import-graph",
+            "rust.dead-code",
+            "rust.unused-deps",
+            "rust.function-metrics",
+            "current-tools:validate-rust-graph"
+          ]
+        },
+        "graphEvidenceExists": {
+          "type": "boolean"
+        },
+        "graphEvidence": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "stillUniquelyProvidedByCurrentTools": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "replacementStatus": {
+          "enum": [
+            "retained",
+            "deferred"
+          ]
+        }
+      }
+    },
+    "RustOldRoxComparisonGuardrailReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "command",
+        "replacementStatus",
+        "oldToolReplacementClaimed"
+      ],
+      "properties": {
+        "id": {
+          "const": "current-tools:validate-rust-graph"
+        },
+        "command": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "prefixItems": [
+            {
+              "const": "npm"
+            },
+            {
+              "const": "run"
+            },
+            {
+              "const": "current-tools:validate-rust-graph"
+            }
+          ],
+          "items": false
+        },
+        "replacementStatus": {
+          "const": "retained"
+        },
+        "oldToolReplacementClaimed": {
+          "const": false
+        }
+      }
+    },
+    "RustOldRoxComparisonReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "issue",
+        "origin",
+        "generatedAt",
+        "privateRepo",
+        "oldToolReplacementClaimed",
+        "publicReleaseActions",
+        "surfaces",
+        "guardrails"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "issue": {
+          "const": "#29"
+        },
+        "origin": {
+          "const": "covibes-authored-old-rox-comparison"
+        },
+        "generatedAt": {
+          "type": "string",
+          "minLength": 1
+        },
+        "privateRepo": {
+          "const": true
+        },
+        "oldToolReplacementClaimed": {
+          "const": false
+        },
+        "publicReleaseActions": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "surfaces": {
+          "type": "array",
+          "minItems": 6,
+          "maxItems": 6,
+          "allOf": [
+            {
+              "contains": {
+                "type": "object",
+                "required": [
+                  "id"
+                ],
+                "properties": {
+                  "id": {
+                    "const": "rust.rustdoc"
+                  }
+                }
+              },
+              "minContains": 1,
+              "maxContains": 1
+            },
+            {
+              "contains": {
+                "type": "object",
+                "required": [
+                  "id"
+                ],
+                "properties": {
+                  "id": {
+                    "const": "rust.import-graph"
+                  }
+                }
+              },
+              "minContains": 1,
+              "maxContains": 1
+            },
+            {
+              "contains": {
+                "type": "object",
+                "required": [
+                  "id"
+                ],
+                "properties": {
+                  "id": {
+                    "const": "rust.dead-code"
+                  }
+                }
+              },
+              "minContains": 1,
+              "maxContains": 1
+            },
+            {
+              "contains": {
+                "type": "object",
+                "required": [
+                  "id"
+                ],
+                "properties": {
+                  "id": {
+                    "const": "rust.unused-deps"
+                  }
+                }
+              },
+              "minContains": 1,
+              "maxContains": 1
+            },
+            {
+              "contains": {
+                "type": "object",
+                "required": [
+                  "id"
+                ],
+                "properties": {
+                  "id": {
+                    "const": "rust.function-metrics"
+                  }
+                }
+              },
+              "minContains": 1,
+              "maxContains": 1
+            },
+            {
+              "contains": {
+                "type": "object",
+                "required": [
+                  "id"
+                ],
+                "properties": {
+                  "id": {
+                    "const": "current-tools:validate-rust-graph"
+                  }
+                }
+              },
+              "minContains": 1,
+              "maxContains": 1
+            }
+          ],
+          "items": {
+            "$ref": "#/$defs/RustOldRoxComparisonSurfaceReceipt"
+          }
+        },
+        "guardrails": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "items": {
+            "$ref": "#/$defs/RustOldRoxComparisonGuardrailReceipt"
+          }
         }
       }
     },
@@ -15642,6 +16922,7 @@
         "descriptor",
         "environmentIsolation",
         "commandReceipts",
+        "rustCommandReceipts",
         "negativeChecks",
         "forbiddenMarkerScan",
         "inputEvidence"
@@ -16353,6 +17634,121 @@
                 "properties": {
                   "id": {
                     "const": "validate-pre-write-fail"
+                  }
+                }
+              },
+              "minContains": 1,
+              "maxContains": 1
+            }
+          ]
+        },
+        "rustCommandReceipts": {
+          "type": "array",
+          "minItems": 7,
+          "maxItems": 7,
+          "items": {
+            "$ref": "#/$defs/ReleaseCutoverRustCommandReceipt"
+          },
+          "allOf": [
+            {
+              "contains": {
+                "type": "object",
+                "required": [
+                  "id"
+                ],
+                "properties": {
+                  "id": {
+                    "const": "graph-rust-build"
+                  }
+                }
+              },
+              "minContains": 1,
+              "maxContains": 1
+            },
+            {
+              "contains": {
+                "type": "object",
+                "required": [
+                  "id"
+                ],
+                "properties": {
+                  "id": {
+                    "const": "graph-rust-status"
+                  }
+                }
+              },
+              "minContains": 1,
+              "maxContains": 1
+            },
+            {
+              "contains": {
+                "type": "object",
+                "required": [
+                  "id"
+                ],
+                "properties": {
+                  "id": {
+                    "const": "graph-rust-query"
+                  }
+                }
+              },
+              "minContains": 1,
+              "maxContains": 1
+            },
+            {
+              "contains": {
+                "type": "object",
+                "required": [
+                  "id"
+                ],
+                "properties": {
+                  "id": {
+                    "const": "graph-rust-impact"
+                  }
+                }
+              },
+              "minContains": 1,
+              "maxContains": 1
+            },
+            {
+              "contains": {
+                "type": "object",
+                "required": [
+                  "id"
+                ],
+                "properties": {
+                  "id": {
+                    "const": "graph-rust-review-context"
+                  }
+                }
+              },
+              "minContains": 1,
+              "maxContains": 1
+            },
+            {
+              "contains": {
+                "type": "object",
+                "required": [
+                  "id"
+                ],
+                "properties": {
+                  "id": {
+                    "const": "graph-rust-detect-changes"
+                  }
+                }
+              },
+              "minContains": 1,
+              "maxContains": 1
+            },
+            {
+              "contains": {
+                "type": "object",
+                "required": [
+                  "id"
+                ],
+                "properties": {
+                  "id": {
+                    "const": "graph-rust-search"
                   }
                 }
               },

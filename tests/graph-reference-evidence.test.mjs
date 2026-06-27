@@ -124,6 +124,22 @@ describe("graph reference evidence fixtures", () => {
     assert.deepEqual(countBy(edges, "kind"), goldenCorpus.expectedFacts.status.edgesByKind);
   });
 
+  it("records Rust fixture coverage without old-tool replacement claims", () => {
+    const coveredRows = new Set(manifest.goldenCorpus.covers);
+    for (const row of [
+      "rust-source-extraction-fixtures",
+      "rust-store-freshness-fts",
+      "rust-query-impact-search",
+      "mixed-rust-ts-source-fixture"
+    ]) {
+      assert.equal(coveredRows.has(row), true, `missing Rust coverage row ${row}`);
+    }
+    assert.ok(goldenCorpus.expectedFacts.status.languages.includes("rust"));
+    assert.ok(goldenCorpus.expectedFacts.parser.nodes.some((node) => node.id === "struct:src/lib.rs#Widget"));
+    assert.ok(goldenCorpus.expectedFacts.store.edges.some((edge) => edge.kind === "TESTED_BY"));
+    assert.equal(manifest.provenance.referenceReceiptsAreImplementationInput, false);
+  });
+
   it("records baseline receipts as non-implementation reference evidence", () => {
     assert.equal(baselineReceipts.label, "reference_evidence_non_implementation_input");
     assert.equal(baselineReceipts.sourceTool, "current external graph dev wrapper");
