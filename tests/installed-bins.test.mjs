@@ -2,16 +2,20 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { performance } from "node:perf_hooks";
 import {
+  commandLatencyTelemetryArtifactPolicy,
   graphCoreNativePackageNamesByTarget,
+  validateCommandLatencyRecord,
   validateManagedToolDescriptor
 } from "../packages/contracts/dist/index.js";
 import { releasePackageDirForName } from "../scripts/release-package-dirs.mjs";
 
 const removedLegacyCommandField = `legacy${"Command"}`;
+const onboardingForbiddenOutput = /\b(?:crg|cix|rox)\b|\.ace\/runtime|LATTICE_CURRENT_TOOLS_DIR|\/Users\/tom|oldToolReplacementClaimed"?\s*:\s*true/i;
 const currentTarget = `${process.platform}-${process.arch}`;
 const currentNativePackage = graphCoreNativePackageNamesByTarget[currentTarget];
 
@@ -221,6 +225,129 @@ describe("installed package bins", () => {
       rmSync(temp, { recursive: true, force: true });
     }
   });
+
+  it("runs installed Opcore onboarding smoke outside node_modules bin", { timeout: 180000 }, () => {
+    assert.ok(currentNativePackage, `unsupported local graph-core target ${currentTarget}`);
+    const temp = mkdtempSync(join(tmpdir(), "opcore-installed-onboarding-"));
+    try {
+      const tarballs = [
+        "@the-open-engine/opcore-contracts",
+        "@the-open-engine/opcore-graph",
+        currentNativePackage,
+        "@the-open-engine/opcore-edit",
+        "@the-open-engine/opcore-validation",
+        "@the-open-engine/opcore-validation-rust",
+        "@the-open-engine/opcore-validation-typescript",
+        "@the-open-engine/opcore"
+      ].map((packageName) => packWorkspace(packageName, temp));
+      const project = join(temp, "project");
+      const globalPrefix = join(temp, "global-prefix");
+      mkdirSync(project);
+      mkdirSync(globalPrefix);
+      run("npm", ["init", "-y"], { cwd: project });
+      run("npm", ["install", "--ignore-scripts", "--no-audit", "--no-fund", ...tarballs], { cwd: project });
+      run("npm", ["install", "-g", "--prefix", globalPrefix, "--ignore-scripts", "--no-audit", "--no-fund", ...tarballs], {
+        cwd: temp
+      });
+
+      const localRealOpcore = realpathSync(binPath(project, "opcore"));
+      assert.doesNotMatch(localRealOpcore.replaceAll("\\", "/"), /\/node_modules\/\.bin\//);
+      const telemetryPath = join(temp, "latency-artifacts", commandLatencyTelemetryArtifactPolicy.path);
+      assert.deepEqual(assertCliJson(localRealOpcore, ["status", "--json"], 0, project).canonicalCommand, ["opcore", "status"]);
+
+      const globalOpcore = globalBinPath(globalPrefix, "opcore");
+      assert.equal(existsSync(globalOpcore), true, globalOpcore);
+      assert.doesNotMatch(globalOpcore.replaceAll("\\", "/"), /\/node_modules\/\.bin\//);
+      assert.deepEqual(assertCliJson(globalOpcore, ["status", "--json"], 0, project).canonicalCommand, ["opcore", "status"]);
+
+      const fixtures = createOnboardingFixtures(join(temp, "fixtures"));
+      for (const fixture of fixtures) {
+        const status = assertCliJson(globalOpcore, ["status", "--repo", fixture.repoRoot, "--json"], 0, fixture.repoRoot);
+        assertFixtureCoverage(status.repoState, fixture);
+
+        const originalGitignore = readOptionalFile(join(fixture.repoRoot, ".gitignore"));
+        const sourceSnapshot = snapshotFiles(fixture.repoRoot, fixture.sourceFiles);
+        if (fixture.id === "fresh-git") assertHeadUnresolved(fixture.repoRoot);
+
+        const plan = assertCliJson(globalOpcore, ["init", "--repo", fixture.repoRoot, "--json"], 0, fixture.repoRoot, {
+          fixture,
+          telemetryPath
+        });
+        assert.deepEqual(plan.canonicalCommand, ["opcore", "init"], fixture.id);
+        assert.equal(plan.opcoreInit.mode, "plan", fixture.id);
+        assert.equal(plan.opcoreInit.approved, false, fixture.id);
+        assertTimingPayload(plan.opcoreInit.timings);
+        assert.equal(existsSync(join(fixture.repoRoot, ".opcore", "config")), false, fixture.id);
+        assert.equal(existsSync(join(fixture.repoRoot, "AGENTS.md")), false, fixture.id);
+        assertFixtureInitHonesty(plan.opcoreInit, fixture);
+        assertSourceSnapshot(fixture.repoRoot, sourceSnapshot);
+
+        const scan = assertCliJson(globalOpcore, ["--repo", fixture.repoRoot, "--json"], 0, fixture.repoRoot, {
+          env: fixture.scanEnv,
+          fixture,
+          telemetryPath
+        });
+        assert.deepEqual(scan.canonicalCommand, ["opcore", "scan"], fixture.id);
+        assert.equal(Object.hasOwn(scan, "validationResult"), true, fixture.id);
+        assertFixtureCoverage(scan.repoState, fixture);
+        assertSourceSnapshot(fixture.repoRoot, sourceSnapshot);
+
+        const apply = assertCliJson(globalOpcore, ["init", "--repo", fixture.repoRoot, "--approve", "--json"], 0, fixture.repoRoot, {
+          fixture,
+          telemetryPath
+        });
+        assert.equal(apply.opcoreInit.mode, "apply", fixture.id);
+        assert.equal(apply.opcoreInit.approved, true, fixture.id);
+        assertTimingPayload(apply.opcoreInit.timings);
+        assertFixtureInitHonesty(apply.opcoreInit, fixture);
+        assert.equal(opcoreGitignoreLineCount(fixture.repoRoot), 1, fixture.id);
+        assert.equal(existsSync(join(fixture.repoRoot, ".opcore", "config")), true, fixture.id);
+        assert.equal(existsSync(join(fixture.repoRoot, ".opcore", "init-undo.json")), true, fixture.id);
+        assertSourceSnapshot(fixture.repoRoot, sourceSnapshot);
+
+        if (fixture.id === "fresh-git") {
+          assertHeadUnresolved(fixture.repoRoot);
+          const beforeCheck = snapshotFiles(fixture.repoRoot, fixture.sourceFiles);
+          const check = assertCliJson(globalOpcore, ["check", "--changed", "--repo", fixture.repoRoot, "--json"], 0, fixture.repoRoot, {
+            fixture,
+            telemetryPath
+          });
+          assert.deepEqual(check.canonicalCommand, ["opcore", "check", "changed", "--base", "HEAD", "--repo", fixture.repoRoot]);
+          assert.equal(Object.hasOwn(check, "validationResult"), true);
+          assert.equal(check.validationResult.status, "passed");
+          assertSourceSnapshot(fixture.repoRoot, beforeCheck);
+          assertHeadUnresolved(fixture.repoRoot);
+        }
+
+        const undo = assertCliJson(globalOpcore, ["init", "--undo", "--repo", fixture.repoRoot, "--approve", "--json"], 0, fixture.repoRoot, {
+          fixture,
+          telemetryPath
+        });
+        assert.equal(undo.opcoreInit.mode, "undo", fixture.id);
+        assert.equal(undo.opcoreInit.approved, true, fixture.id);
+        assertTimingPayload(undo.opcoreInit.timings);
+        assert.equal(readOptionalFile(join(fixture.repoRoot, ".gitignore")), originalGitignore, fixture.id);
+        assert.equal(existsSync(join(fixture.repoRoot, "AGENTS.md")), false, fixture.id);
+        assert.equal(existsSync(join(fixture.repoRoot, ".opcore", "config")), false, fixture.id);
+        assert.equal(existsSync(join(fixture.repoRoot, ".opcore", "init-undo.json")), false, fixture.id);
+        assertSourceSnapshot(fixture.repoRoot, sourceSnapshot);
+        if (fixture.id === "fresh-git") assertHeadUnresolved(fixture.repoRoot);
+      }
+
+      const records = readLatencyRecords(telemetryPath);
+      assert.equal(records.length > fixtures.length * 3, true);
+      assert.equal(records.length <= commandLatencyTelemetryArtifactPolicy.maxRecords, true);
+      assert.equal(readFileSync(telemetryPath).byteLength <= commandLatencyTelemetryArtifactPolicy.maxBytes, true);
+      assert.deepEqual(
+        [...new Set(records.map((record) => record.canonicalCommand[1]))].sort(),
+        ["check", "init", "scan"]
+      );
+      assert.equal(records.every((record) => validateCommandLatencyRecord(record) === record), true);
+      assert.doesNotMatch(readFileSync(telemetryPath, "utf8"), onboardingForbiddenOutput);
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
 });
 
 function packWorkspace(packageName, destination) {
@@ -305,7 +432,15 @@ function assertManagedDescriptor(project) {
 }
 
 function assertSmoke(project, args, expectedExitCode, bin = "lattice") {
-  const result = run(binPath(project, bin), args, { cwd: project, expectedStatus: expectedExitCode });
+  return assertCliJson(binPath(project, bin), args, expectedExitCode, project);
+}
+
+function assertCliJson(command, args, expectedExitCode, cwd, options = {}) {
+  const startedAt = performance.now();
+  const result = run(command, args, { cwd, env: options.env, expectedStatus: expectedExitCode });
+  const durationMs = nonNegativeDuration(performance.now() - startedAt);
+  assert.doesNotMatch(result.stdout, onboardingForbiddenOutput);
+  assert.doesNotMatch(result.stderr, onboardingForbiddenOutput);
   const parsed = JSON.parse(result.stdout);
   assert.equal(parsed.exitCode, expectedExitCode);
   assert.equal(
@@ -314,6 +449,11 @@ function assertSmoke(project, args, expectedExitCode, bin = "lattice") {
   );
   assert.equal(Object.hasOwn(parsed, "alias"), false);
   assert.equal(Object.hasOwn(parsed, removedLegacyCommandField), false);
+  assert.notEqual(parsed.oldToolReplacementClaimed, true);
+  assert.doesNotMatch(JSON.stringify(parsed), onboardingForbiddenOutput);
+  if (options.telemetryPath) {
+    writeLatencyRecord(options.telemetryPath, createLatencyRecord(command, parsed, options.fixture, cwd, durationMs));
+  }
   return parsed;
 }
 
@@ -392,10 +532,360 @@ function binPath(project, bin) {
   return join(project, "node_modules", ".bin", process.platform === "win32" ? `${bin}.cmd` : bin);
 }
 
+function globalBinPath(prefix, bin) {
+  return process.platform === "win32" ? join(prefix, `${bin}.cmd`) : join(prefix, "bin", bin);
+}
+
+function createOnboardingFixtures(root) {
+  return [
+    createOnboardingFixture(root, "ts-js", {
+      files: {
+        "src/index.ts": "export const answer: number = 42;\n",
+        "src/util.js": "export function double(value) { return value * 2; }\n"
+      },
+      coverage: {
+        TypeScript: { files: 1, graphSupported: true, validationSupported: true },
+        JavaScript: { files: 1, graphSupported: true, validationSupported: true }
+      }
+    }),
+    createOnboardingFixture(root, "rust", {
+      files: {
+        "Cargo.toml": rustCargoToml("opcore_onboarding_rust"),
+        "src/lib.rs": "pub fn answer() -> usize {\n    42\n}\n"
+      },
+      coverage: {
+        Rust: { files: 2, graphSupported: false, validationSupported: true }
+      },
+      scanEnv: sourceSafeOpcoreEnv()
+    }),
+    createOnboardingFixture(root, "mixed", {
+      files: {
+        "src/index.ts": "export const label: string = 'mixed';\n",
+        "Cargo.toml": rustCargoToml("opcore_onboarding_mixed"),
+        "src/lib.rs": "pub fn label() -> &'static str {\n    \"mixed\"\n}\n"
+      },
+      coverage: {
+        TypeScript: { files: 1, graphSupported: true, validationSupported: true },
+        Rust: { files: 2, graphSupported: false, validationSupported: true }
+      },
+      scanEnv: sourceSafeOpcoreEnv()
+    }),
+    createOnboardingFixture(root, "python-unsupported", {
+      files: {
+        "src/app.py": "def answer() -> int:\n    return 42\n",
+        "src/app.pyi": "def answer() -> int: ...\n"
+      },
+      coverage: {
+        Python: { files: 2, graphSupported: true, validationSupported: false }
+      }
+    }),
+    createOnboardingFixture(root, "fresh-git", {
+      files: {
+        ".gitignore": "dist/\n",
+        "src/fresh.ts": "export const fresh: number = 1;\n"
+      },
+      sourceFiles: ["src/fresh.ts"],
+      extraFiles: 1,
+      coverage: {
+        TypeScript: { files: 1, graphSupported: true, validationSupported: true }
+      }
+    })
+  ];
+}
+
+function createOnboardingFixture(root, id, definition) {
+  const repoRoot = join(root, id);
+  mkdirSync(repoRoot, { recursive: true });
+  run("git", ["init", "-q"], { cwd: repoRoot });
+  run("git", ["symbolic-ref", "HEAD", "refs/heads/main"], { cwd: repoRoot });
+  for (const [path, content] of Object.entries(definition.files)) {
+    const absolute = join(repoRoot, path);
+    mkdirSync(dirname(absolute), { recursive: true });
+    writeFileSync(absolute, content);
+  }
+  return {
+    id,
+    repoRoot,
+    extraFiles: definition.extraFiles ?? 0,
+    sourceFiles: definition.sourceFiles ?? Object.keys(definition.files).filter((path) => path !== ".gitignore"),
+    coverage: definition.coverage,
+    scanEnv: definition.scanEnv
+  };
+}
+
+function rustCargoToml(name) {
+  return `[package]\nname = "${name}"\nversion = "0.1.0"\nedition = "2021"\n\n[lib]\npath = "src/lib.rs"\n`;
+}
+
+function sourceSafeOpcoreEnv() {
+  return {
+    PATH: [dirname(process.execPath), "/usr/bin", "/bin", "/opt/homebrew/bin"].join(":"),
+    NO_COLOR: "1"
+  };
+}
+
+function assertFixtureCoverage(repoState, fixture) {
+  assert.equal(repoState.repo.git.available, true, fixture.id);
+  assert.equal(repoState.coverage.totalFiles, expectedFixtureTotalFiles(fixture), `${fixture.id} total files`);
+  assert.equal(repoState.coverage.graph.supportedFiles, expectedFixtureFiles(fixture, "graphSupported"), `${fixture.id} graph aggregate`);
+  assert.equal(
+    repoState.coverage.validation.supportedFiles,
+    expectedFixtureFiles(fixture, "validationSupported"),
+    `${fixture.id} validation aggregate`
+  );
+  assert.equal(repoState.coverage.validation.retainedFiles, 0, `${fixture.id} retained aggregate`);
+  assert.equal(repoState.coverage.unsupported.totalFiles, 0, `${fixture.id} unsupported aggregate`);
+  assert.deepEqual(
+    repoState.coverage.languages.map((entry) => entry.language).sort(),
+    Object.keys(fixture.coverage).sort(),
+    `${fixture.id} language set`
+  );
+  for (const [language, expected] of Object.entries(fixture.coverage)) {
+    const actual = repoState.coverage.languages.find((entry) => entry.language === language);
+    assert.ok(actual, `${fixture.id} ${language}`);
+    assert.equal(actual.files, expected.files, `${fixture.id} ${language} files`);
+    assert.equal(actual.graphSupported, expected.graphSupported, `${fixture.id} ${language} graph`);
+    assert.equal(actual.validationSupported, expected.validationSupported, `${fixture.id} ${language} validation`);
+  }
+}
+
+function assertFixtureInitHonesty(initPayload, fixture) {
+  assert.equal(initPayload.scan.totalFiles, expectedFixtureTotalFiles(fixture), `${fixture.id} init total files`);
+  assert.equal(initPayload.scan.graphSupportedFiles, expectedFixtureFiles(fixture, "graphSupported"), `${fixture.id} init graph aggregate`);
+  assert.equal(
+    initPayload.scan.validationSupportedFiles,
+    expectedFixtureFiles(fixture, "validationSupported"),
+    `${fixture.id} init validation aggregate`
+  );
+  assert.equal(initPayload.scan.validationRetainedFiles, 0, `${fixture.id} init retained aggregate`);
+  assert.deepEqual(
+    initPayload.settings.languages.map((entry) => entry.language).sort(),
+    Object.keys(fixture.coverage).sort(),
+    `${fixture.id} init language set`
+  );
+  for (const [language, expected] of Object.entries(fixture.coverage)) {
+    const setting = initPayload.settings.languages.find((entry) => entry.language === language);
+    assert.ok(setting, `${fixture.id} init ${language}`);
+    assert.equal(setting.files, expected.files, `${fixture.id} init ${language} files`);
+    assert.equal(setting.graph, expected.graphSupported ? "supported" : "unsupported", `${fixture.id} init ${language} graph`);
+    assert.equal(
+      setting.validation === "supported" || setting.validation === "degraded" || setting.validation === "retained",
+      expected.validationSupported,
+      `${fixture.id} init ${language} validation`
+    );
+  }
+  if (fixture.id === "python-unsupported") {
+    const python = initPayload.settings.languages.find((entry) => entry.language === "Python");
+    assert.equal(python.validation, "unsupported");
+    assert.equal(python.state, "unsupported");
+    assert.equal(initPayload.scan.diagnosticCount, 0);
+  }
+}
+
+function expectedFixtureTotalFiles(fixture) {
+  return fixture.extraFiles + Object.values(fixture.coverage).reduce((sum, entry) => sum + entry.files, 0);
+}
+
+function expectedFixtureFiles(fixture, key) {
+  return Object.values(fixture.coverage)
+    .filter((entry) => entry[key])
+    .reduce((sum, entry) => sum + entry.files, 0);
+}
+
+function snapshotFiles(repoRoot, paths) {
+  return new Map(paths.map((path) => [path, createHash("sha256").update(readFileSync(join(repoRoot, path))).digest("hex")]));
+}
+
+function assertSourceSnapshot(repoRoot, snapshot) {
+  for (const [path, expected] of snapshot) {
+    assert.equal(createHash("sha256").update(readFileSync(join(repoRoot, path))).digest("hex"), expected, path);
+  }
+}
+
+function assertTimingPayload(timings) {
+  for (const field of ["scanMs", "planMs", "promptMs", "applyMs", "totalMs", "firstOutputMs"]) {
+    assert.equal(Number.isFinite(timings[field]), true, field);
+    assert.equal(timings[field] >= 0, true, field);
+  }
+  assert.equal(timings.firstOutputMs, timings.scanMs);
+  assert.equal(timings.totalMs >= timings.firstOutputMs, true);
+}
+
+function createLatencyRecord(command, parsed, fixture, cwd, durationMs) {
+  return validateCommandLatencyRecord({
+    schemaVersion: 1,
+    recordedAt: new Date().toISOString(),
+    bin: "opcore",
+    canonicalCommand: latencyCanonicalCommand(parsed.canonicalCommand),
+    owner: parsed.owner,
+    status: parsed.status,
+    exitCode: parsed.exitCode,
+    repo: latencyRepoShape(parsed, fixture, cwd),
+    timing: {
+      durationMs,
+      phases: latencyPhases(parsed, durationMs),
+      processState: "cold"
+    },
+    opcoreVersion: opcoreVersionForBin(command)
+  });
+}
+
+function writeLatencyRecord(path, record) {
+  const existing = existsSync(path)
+    ? readLatencyRecords(path)
+    : [];
+  const records = [...existing, validateCommandLatencyRecord(record)].slice(-commandLatencyTelemetryArtifactPolicy.maxRecords);
+  let lines = records.map((entry) => JSON.stringify(entry));
+  while (Buffer.byteLength(`${lines.join("\n")}\n`) > commandLatencyTelemetryArtifactPolicy.maxBytes && lines.length > 0) {
+    lines = lines.slice(1);
+  }
+  mkdirSync(dirname(path), { recursive: true });
+  writeFileSync(path, lines.length === 0 ? "" : `${lines.join("\n")}\n`);
+}
+
+function readLatencyRecords(path) {
+  return readFileSync(path, "utf8")
+    .trim()
+    .split(/\r?\n/)
+    .filter(Boolean)
+    .map((line) => JSON.parse(line));
+}
+
+function latencyCanonicalCommand(canonicalCommand) {
+  const safe = [];
+  for (let index = 0; index < canonicalCommand.length; index += 1) {
+    const token = canonicalCommand[index];
+    if (token === "--repo") {
+      index += 1;
+      continue;
+    }
+    if (!token.includes("/") && !token.includes("\\")) safe.push(token);
+  }
+  return safe;
+}
+
+function latencyRepoShape(parsed, fixture, cwd) {
+  const coverage = parsed.repoState?.coverage;
+  const git = parsed.repoState?.repo?.git;
+  if (coverage) {
+    return {
+      totalFiles: coverage.totalFiles,
+      languages: coverage.languages.map((entry) => ({ language: entry.language, files: entry.files })),
+      graph: {
+        supportedFiles: coverage.graph.supportedFiles,
+        unsupportedFiles: Math.max(0, coverage.totalFiles - coverage.graph.supportedFiles)
+      },
+      git: {
+        available: git?.available === true,
+        ...(typeof git?.clean === "boolean" ? { clean: git.clean } : {})
+      }
+    };
+  }
+  const scan = parsed.opcoreInit?.scan;
+  if (scan) {
+    return {
+      totalFiles: scan.totalFiles,
+      languages: scan.languages.map((entry) => ({ language: entry.language, files: entry.files })),
+      graph: {
+        supportedFiles: scan.graphSupportedFiles,
+        unsupportedFiles: Math.max(0, scan.totalFiles - scan.graphSupportedFiles)
+      },
+      git: gitShape(cwd)
+    };
+  }
+  if (fixture) return fixtureRepoShape(fixture);
+  return {
+    totalFiles: 0,
+    languages: [],
+    graph: { supportedFiles: 0, unsupportedFiles: 0 },
+    git: gitShape(cwd)
+  };
+}
+
+function fixtureRepoShape(fixture) {
+  const languages = Object.entries(fixture.coverage).map(([language, expected]) => ({
+    language,
+    files: expected.files
+  }));
+  const totalFiles = languages.reduce((sum, entry) => sum + entry.files, 0);
+  const graphSupportedFiles = Object.values(fixture.coverage)
+    .filter((entry) => entry.graphSupported)
+    .reduce((sum, entry) => sum + entry.files, 0);
+  return {
+    totalFiles,
+    languages,
+    graph: {
+      supportedFiles: graphSupportedFiles,
+      unsupportedFiles: Math.max(0, totalFiles - graphSupportedFiles)
+    },
+    git: gitShape(fixture.repoRoot)
+  };
+}
+
+function latencyPhases(parsed, durationMs) {
+  const phases = [{ phase: "total", durationMs }];
+  const firstOutputMs = parsed.opcoreInit?.timings?.firstOutputMs;
+  if (typeof firstOutputMs === "number") phases.unshift({ phase: "first_output", durationMs: nonNegativeDuration(firstOutputMs) });
+  return phases;
+}
+
+function gitShape(repoRoot) {
+  const available = spawnSync("git", ["rev-parse", "--is-inside-work-tree"], {
+    cwd: repoRoot,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"]
+  });
+  if (available.status !== 0) return { available: false };
+  const status = spawnSync("git", ["status", "--porcelain"], {
+    cwd: repoRoot,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"]
+  });
+  return { available: true, clean: status.status === 0 && status.stdout.trim() === "" };
+}
+
+function opcoreVersionForBin(command) {
+  let current = dirname(realpathSync(command));
+  while (current !== dirname(current)) {
+    const manifestPath = join(current, "package.json");
+    if (existsSync(manifestPath)) {
+      const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+      if (manifest.name === "@the-open-engine/opcore" && typeof manifest.version === "string") return manifest.version;
+    }
+    current = dirname(current);
+  }
+  return "0.1.0-alpha.0";
+}
+
+function opcoreGitignoreLineCount(repoRoot) {
+  return readFileSync(join(repoRoot, ".gitignore"), "utf8")
+    .split(/\r?\n/)
+    .filter((line) => line.trim() === ".opcore/")
+    .length;
+}
+
+function readOptionalFile(path) {
+  return existsSync(path) ? readFileSync(path, "utf8") : null;
+}
+
+function assertHeadUnresolved(repoRoot) {
+  const result = spawnSync("git", ["rev-parse", "--verify", "HEAD"], {
+    cwd: repoRoot,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"]
+  });
+  assert.notEqual(result.status, 0, `HEAD unexpectedly resolved:\nstdout:\n${result.stdout}\nstderr:\n${result.stderr}`);
+}
+
+function nonNegativeDuration(value) {
+  return Math.max(0, Math.round(value * 1000) / 1000);
+}
+
 function run(command, args, options = {}) {
   const result = spawnSync(command, args, {
     cwd: options.cwd,
     encoding: "utf8",
+    env: options.env,
     stdio: ["ignore", "pipe", "pipe"]
   });
   const expectedStatus = options.expectedStatus ?? 0;
