@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { realpathSync } from "node:fs";
+import { isServeTransportArgv, runGraphServeCli } from "@the-open-engine/opcore-graph";
 import { runOpcoreCli } from "./router.js";
 
 declare const process: {
@@ -32,9 +33,18 @@ export {
   timeCommand
 } from "./timing.js";
 
-if (isDirectExecution()) {
-  process.exitCode = await runOpcoreCli({
-    argv: process.argv.slice(2),
+if (isDirectExecution()) process.exitCode = await runDirectOpcoreCli();
+
+async function runDirectOpcoreCli(): Promise<number> {
+  const argv = process.argv.slice(2);
+  if (argv[0] === "graph" && isServeTransportArgv(argv.slice(1))) {
+    return runGraphServeCli({
+      argv: argv.slice(1),
+      bin: "opcore"
+    });
+  }
+  return runOpcoreCli({
+    argv,
     bin: "opcore"
   });
 }

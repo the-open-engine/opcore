@@ -5,7 +5,7 @@
   "generatedAt": "2026-06-23T22:18:30.000Z",
   "runtimeDecision": {
     "issue": "#21",
-    "decision": "no validation daemon and no hidden validation cache for initial Lattice cutover",
+    "decision": "no validation daemon and no hidden validation cache for initial Opcore cutover",
     "providerOnly": true
   },
   "nativeRetainedChecks": [
@@ -15,7 +15,7 @@
     "rust.unused-deps",
     "rust.function-metrics"
   ],
-  "lattice": {
+  "opcore": {
     "launchGate": {
       "fileLengthBaselinePresent": true,
       "evidence": [

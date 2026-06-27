@@ -45,14 +45,14 @@
   ],
   "commandCoverage": [
     {
-      "id": "lattice-graph-build",
-      "bin": "lattice",
+      "id": "opcore-graph-build",
+      "bin": "opcore",
       "command": [
         "graph",
         "build"
       ],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "graph",
         "build"
       ],
@@ -62,14 +62,14 @@
       "durationMs": 466
     },
     {
-      "id": "lattice-graph-update",
-      "bin": "lattice",
+      "id": "opcore-graph-update",
+      "bin": "opcore",
       "command": [
         "graph",
         "update"
       ],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "graph",
         "update"
       ],
@@ -79,14 +79,14 @@
       "durationMs": 171
     },
     {
-      "id": "lattice-graph-watch",
-      "bin": "lattice",
+      "id": "opcore-graph-watch",
+      "bin": "opcore",
       "command": [
         "graph",
         "watch"
       ],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "graph",
         "watch"
       ],
@@ -96,14 +96,14 @@
       "durationMs": 183
     },
     {
-      "id": "lattice-graph-status",
-      "bin": "lattice",
+      "id": "opcore-graph-status",
+      "bin": "opcore",
       "command": [
         "graph",
         "status"
       ],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "graph",
         "status"
       ],
@@ -113,14 +113,14 @@
       "durationMs": 172
     },
     {
-      "id": "lattice-graph-query",
-      "bin": "lattice",
+      "id": "opcore-graph-query",
+      "bin": "opcore",
       "command": [
         "graph",
         "query"
       ],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "graph",
         "query"
       ],
@@ -130,14 +130,14 @@
       "durationMs": 172
     },
     {
-      "id": "lattice-graph-impact",
-      "bin": "lattice",
+      "id": "opcore-graph-impact",
+      "bin": "opcore",
       "command": [
         "graph",
         "impact"
       ],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "graph",
         "impact"
       ],
@@ -147,14 +147,14 @@
       "durationMs": 174
     },
     {
-      "id": "lattice-graph-search",
-      "bin": "lattice",
+      "id": "opcore-graph-search",
+      "bin": "opcore",
       "command": [
         "graph",
         "search"
       ],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "graph",
         "search"
       ],
@@ -164,14 +164,14 @@
       "durationMs": 172
     },
     {
-      "id": "lattice-graph-serve",
-      "bin": "lattice",
+      "id": "opcore-graph-serve",
+      "bin": "opcore",
       "command": [
         "graph",
         "serve"
       ],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "graph",
         "serve"
       ],
@@ -183,14 +183,14 @@
   ],
   "rustCommandCoverage": [
     {
-      "id": "lattice-graph-rust-build",
-      "bin": "lattice",
+      "id": "opcore-graph-rust-build",
+      "bin": "opcore",
       "command": [
         "graph",
         "build"
       ],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "graph",
         "build"
       ],
@@ -200,14 +200,14 @@
       "durationMs": 1
     },
     {
-      "id": "lattice-graph-rust-update",
-      "bin": "lattice",
+      "id": "opcore-graph-rust-update",
+      "bin": "opcore",
       "command": [
         "graph",
         "update"
       ],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "graph",
         "update"
       ],
@@ -217,14 +217,14 @@
       "durationMs": 1
     },
     {
-      "id": "lattice-graph-rust-watch",
-      "bin": "lattice",
+      "id": "opcore-graph-rust-watch",
+      "bin": "opcore",
       "command": [
         "graph",
         "watch"
       ],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "graph",
         "watch"
       ],
@@ -234,14 +234,14 @@
       "durationMs": 1
     },
     {
-      "id": "lattice-graph-rust-status",
-      "bin": "lattice",
+      "id": "opcore-graph-rust-status",
+      "bin": "opcore",
       "command": [
         "graph",
         "status"
       ],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "graph",
         "status"
       ],
@@ -251,14 +251,14 @@
       "durationMs": 1
     },
     {
-      "id": "lattice-graph-rust-query",
-      "bin": "lattice",
+      "id": "opcore-graph-rust-query",
+      "bin": "opcore",
       "command": [
         "graph",
         "query"
       ],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "graph",
         "query"
       ],
@@ -268,14 +268,14 @@
       "durationMs": 1
     },
     {
-      "id": "lattice-graph-rust-impact",
-      "bin": "lattice",
+      "id": "opcore-graph-rust-impact",
+      "bin": "opcore",
       "command": [
         "graph",
         "impact"
       ],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "graph",
         "impact"
       ],
@@ -285,14 +285,14 @@
       "durationMs": 1
     },
     {
-      "id": "lattice-graph-rust-search",
-      "bin": "lattice",
+      "id": "opcore-graph-rust-search",
+      "bin": "opcore",
       "command": [
         "graph",
         "search"
       ],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "graph",
         "search"
       ],
@@ -302,14 +302,14 @@
       "durationMs": 1
     },
     {
-      "id": "lattice-graph-rust-serve",
-      "bin": "lattice",
+      "id": "opcore-graph-rust-serve",
+      "bin": "opcore",
       "command": [
         "graph",
         "serve"
       ],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "graph",
         "serve"
       ],
@@ -359,35 +359,35 @@
   "serveTransport": [
     {
       "id": "serve-jsonl-ping",
-      "protocol": "lattice.graph.daemon",
+      "protocol": "opcore.graph.daemon",
       "operation": "ping",
       "status": "passed",
       "exitCode": 0
     },
     {
       "id": "serve-jsonl-status",
-      "protocol": "lattice.graph.daemon",
+      "protocol": "opcore.graph.daemon",
       "operation": "status",
       "status": "passed",
       "exitCode": 0
     },
     {
       "id": "serve-jsonl-query",
-      "protocol": "lattice.graph.daemon",
+      "protocol": "opcore.graph.daemon",
       "operation": "query",
       "status": "passed",
       "exitCode": 0
     },
     {
       "id": "serve-jsonl-search",
-      "protocol": "lattice.graph.daemon",
+      "protocol": "opcore.graph.daemon",
       "operation": "search",
       "status": "passed",
       "exitCode": 0
     },
     {
       "id": "serve-jsonl-shutdown",
-      "protocol": "lattice.graph.daemon",
+      "protocol": "opcore.graph.daemon",
       "operation": "shutdown",
       "status": "passed",
       "exitCode": 0
@@ -559,11 +559,11 @@
     }
   ],
   "graphArtifact": {
-    "artifactName": "lattice-graph-core",
+    "artifactName": "opcore-graph-core",
     "artifactVersion": "0.1.0-alpha.0",
     "targetPlatform": "darwin-arm64",
-    "binaryPath": "lattice-graph-core",
-    "checksumPath": "lattice-graph-core.sha256",
+    "binaryPath": "opcore-graph-core",
+    "checksumPath": "opcore-graph-core.sha256",
     "checksumSha256": "1111111111111111111111111111111111111111111111111111111111111111",
     "buildProfile": "release"
   },
@@ -623,16 +623,16 @@
       "packageName": "@the-open-engine/opcore-graph-core-darwin-arm64",
       "targetPlatform": "darwin-arm64",
       "metadata": {
-        "artifactName": "lattice-graph-core",
+        "artifactName": "opcore-graph-core",
         "artifactVersion": "0.1.0-alpha.0",
         "targetPlatform": "darwin-arm64",
-        "binaryPath": "lattice-graph-core",
-        "checksumPath": "lattice-graph-core.sha256",
+        "binaryPath": "opcore-graph-core",
+        "checksumPath": "opcore-graph-core.sha256",
         "checksumSha256": "1111111111111111111111111111111111111111111111111111111111111111",
         "buildProfile": "release"
       },
-      "binaryPath": "lattice-graph-core",
-      "checksumPath": "lattice-graph-core.sha256",
+      "binaryPath": "opcore-graph-core",
+      "checksumPath": "opcore-graph-core.sha256",
       "metadataPath": "metadata.json",
       "binarySha256": "1111111111111111111111111111111111111111111111111111111111111111",
       "checksumFileSha256": "4444444444444444444444444444444444444444444444444444444444444444",
@@ -640,8 +640,8 @@
       "packageFiles": [
         "package.json",
         "README.md",
-        "lattice-graph-core",
-        "lattice-graph-core.sha256",
+        "opcore-graph-core",
+        "opcore-graph-core.sha256",
         "metadata.json"
       ]
     },
@@ -649,16 +649,16 @@
       "packageName": "@the-open-engine/opcore-graph-core-darwin-x64",
       "targetPlatform": "darwin-x64",
       "metadata": {
-        "artifactName": "lattice-graph-core",
+        "artifactName": "opcore-graph-core",
         "artifactVersion": "0.1.0-alpha.0",
         "targetPlatform": "darwin-x64",
-        "binaryPath": "lattice-graph-core",
-        "checksumPath": "lattice-graph-core.sha256",
+        "binaryPath": "opcore-graph-core",
+        "checksumPath": "opcore-graph-core.sha256",
         "checksumSha256": "2222222222222222222222222222222222222222222222222222222222222222",
         "buildProfile": "release"
       },
-      "binaryPath": "lattice-graph-core",
-      "checksumPath": "lattice-graph-core.sha256",
+      "binaryPath": "opcore-graph-core",
+      "checksumPath": "opcore-graph-core.sha256",
       "metadataPath": "metadata.json",
       "binarySha256": "2222222222222222222222222222222222222222222222222222222222222222",
       "checksumFileSha256": "5555555555555555555555555555555555555555555555555555555555555555",
@@ -666,8 +666,8 @@
       "packageFiles": [
         "package.json",
         "README.md",
-        "lattice-graph-core",
-        "lattice-graph-core.sha256",
+        "opcore-graph-core",
+        "opcore-graph-core.sha256",
         "metadata.json"
       ]
     },
@@ -675,16 +675,16 @@
       "packageName": "@the-open-engine/opcore-graph-core-linux-x64",
       "targetPlatform": "linux-x64",
       "metadata": {
-        "artifactName": "lattice-graph-core",
+        "artifactName": "opcore-graph-core",
         "artifactVersion": "0.1.0-alpha.0",
         "targetPlatform": "linux-x64",
-        "binaryPath": "lattice-graph-core",
-        "checksumPath": "lattice-graph-core.sha256",
+        "binaryPath": "opcore-graph-core",
+        "checksumPath": "opcore-graph-core.sha256",
         "checksumSha256": "3333333333333333333333333333333333333333333333333333333333333333",
         "buildProfile": "release"
       },
-      "binaryPath": "lattice-graph-core",
-      "checksumPath": "lattice-graph-core.sha256",
+      "binaryPath": "opcore-graph-core",
+      "checksumPath": "opcore-graph-core.sha256",
       "metadataPath": "metadata.json",
       "binarySha256": "3333333333333333333333333333333333333333333333333333333333333333",
       "checksumFileSha256": "6666666666666666666666666666666666666666666666666666666666666666",
@@ -692,8 +692,8 @@
       "packageFiles": [
         "package.json",
         "README.md",
-        "lattice-graph-core",
-        "lattice-graph-core.sha256",
+        "opcore-graph-core",
+        "opcore-graph-core.sha256",
         "metadata.json"
       ]
     }

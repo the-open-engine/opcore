@@ -312,7 +312,7 @@ function request(overrides = {}) {
     },
     graph: {
       mode: "optional",
-      provider: "lattice-graph"
+      provider: "opcore-graph"
     },
     overlays: [],
     checks: [PYTHON_SYNTAX_CHECK_ID],
@@ -376,7 +376,7 @@ function availableStatus(mode = "optional", repo = { repoId: "opcore-python-test
   return {
     state: "available",
     mode,
-    provider: "lattice-graph",
+    provider: "opcore-graph",
     schemaVersion: 1,
     repo,
     freshness: freshness(),
@@ -391,7 +391,7 @@ function availableFactResult(query, nodes, edges, metadataOverrides = {}) {
     status: availableStatus(query.mode, query.repo),
     metadata: {
       schemaVersion: 1,
-      provider: "lattice-graph",
+      provider: "opcore-graph",
       repo: query.repo,
       generatedAt: "2026-06-05T00:00:00.000Z",
       freshness: freshness(),

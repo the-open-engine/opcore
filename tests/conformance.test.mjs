@@ -147,21 +147,21 @@ describe("conformance fixture metadata", () => {
   it("describes descriptor discovery and installed artifact smoke metadata", () => {
     for (const id of ["descriptor-discovery-v1", "installed-artifact-smoke-v1"]) {
       const descriptor = fixtureById(id).descriptor;
-      assert.equal(descriptor.dataFile, "packages/fixtures/descriptors/lattice.managed-tool.json");
-      assert.equal(descriptor.descriptorKind, "aggregate_lattice");
+      assert.equal(descriptor.dataFile, "packages/fixtures/descriptors/opcore.managed-tool.json");
+      assert.equal(descriptor.descriptorKind, "aggregate_opcore");
       assert.equal(descriptor.packageName, "@the-open-engine/opcore");
       assert.ok(descriptor.entrypoints.length > 0);
       assert.deepEqual(descriptor.commandGroups, [
-        "lattice graph",
-        "lattice inspect",
-        "lattice edit",
-        "lattice check",
-        "lattice validate",
-        "lattice status",
-        "lattice doctor"
+        "opcore graph",
+        "opcore inspect",
+        "opcore edit",
+        "opcore check",
+        "opcore validate",
+        "opcore status",
+        "opcore doctor"
       ]);
-      assert.ok(descriptor.healthProbes.includes("lattice status --json"));
-      assert.ok(descriptor.healthProbes.includes("lattice doctor --json"));
+      assert.ok(descriptor.healthProbes.includes("opcore status --json"));
+      assert.ok(descriptor.healthProbes.includes("opcore doctor --json"));
       assert.ok(descriptor.capabilities.length > 0);
       assert.ok(descriptor.artifacts.length > 0);
       assert.ok(descriptor.checksums.length > 0);
@@ -177,9 +177,9 @@ describe("conformance fixture metadata", () => {
   });
 
   it("ships a strict aggregate descriptor fixture for #28", () => {
-    const descriptorPath = "packages/fixtures/descriptors/lattice.managed-tool.json";
+    const descriptorPath = "packages/fixtures/descriptors/opcore.managed-tool.json";
     const descriptor = validateManagedToolDescriptor(JSON.parse(readFileSync(descriptorPath, "utf8")));
-    assert.equal(descriptor.descriptorKind, "aggregate_lattice");
+    assert.equal(descriptor.descriptorKind, "aggregate_opcore");
     assert.deepEqual(
       descriptor.commandGroups.map((group) => group.name),
       ["graph", "inspect", "edit", "check", "validate", "status", "doctor"]
@@ -208,15 +208,15 @@ describe("conformance fixture metadata", () => {
 
   it("describes canonical router metadata for descriptor planning", () => {
     const router = fixtureById("command-router-v1").router;
-    assert.deepEqual(router.entrypoints, ["lattice"]);
+    assert.deepEqual(router.entrypoints, ["opcore"]);
     assert.deepEqual(router.commandGroups, [
-      "lattice graph",
-      "lattice inspect",
-      "lattice edit",
-      "lattice check",
-      "lattice validate",
-      "lattice status",
-      "lattice doctor"
+      "opcore graph",
+      "opcore inspect",
+      "opcore edit",
+      "opcore check",
+      "opcore validate",
+      "opcore status",
+      "opcore doctor"
     ]);
     assert.deepEqual(router.exitSemantics, {
       ok: 0,
@@ -254,7 +254,7 @@ describe("conformance fixture metadata", () => {
 
   it("describes package-owned command adapter metadata for #37", () => {
     const adapter = fixtureById("command-adapter-v1").adapter;
-    assert.equal(adapter.canonicalBin, "lattice");
+    assert.equal(adapter.canonicalBin, "opcore");
     assert.equal(Object.hasOwn(adapter, "aliasBins"), false);
     assert.deepEqual(adapter.packageAdapters, [
       "graphCommandAdapter",
@@ -264,17 +264,17 @@ describe("conformance fixture metadata", () => {
     ]);
     assert.ok(adapter.sharedResultFields.includes("providerStatus"));
     assert.ok(adapter.sharedResultFields.includes("graphPipeline"));
-    assert.equal(adapter.provider, "lattice-graph");
+    assert.equal(adapter.provider, "opcore-graph");
   });
 
   it("describes graph-core artifact handshake metadata for #21", () => {
     const graphCore = fixtureById("graph-core-artifact-handshake-v1").graphCore;
-    assert.equal(graphCore.artifactName, "lattice-graph-core");
+    assert.equal(graphCore.artifactName, "opcore-graph-core");
     assert.equal(graphCore.packageName, "@the-open-engine/opcore-graph-core-<target>");
     assert.deepEqual(graphCore.supportedTargets, ["darwin-arm64", "darwin-x64", "linux-x64"]);
-    assert.equal(graphCore.provider, "lattice-graph");
+    assert.equal(graphCore.provider, "opcore-graph");
     assert.deepEqual(graphCore.operations, ["build", "update", "watch", "status", "query", "ping", "health", "shutdown"]);
-    assert.equal(graphCore.nativePath, "lattice-graph-core");
+    assert.equal(graphCore.nativePath, "opcore-graph-core");
     assert.ok(graphCore.metadataPath.endsWith("metadata.json"));
     assert.ok(graphCore.checksumPath.endsWith(".sha256"));
   });
@@ -329,7 +329,7 @@ describe("conformance fixture metadata", () => {
     const graphServe = fixtureById("graph-serve-transport-v1").graphServe;
     const serveFixture = JSON.parse(readFileSync(graphServe.dataFile, "utf8"));
     assert.deepEqual(graphServe.commands, ["serve"]);
-    assert.deepEqual(graphServe.protocols, ["lattice.graph.daemon", "jsonrpc-2.0"]);
+    assert.deepEqual(graphServe.protocols, ["opcore.graph.daemon", "jsonrpc-2.0"]);
     assert.deepEqual(graphServe.operations, ["ping", "status", "query", "search", "shutdown"]);
     assert.ok(graphServe.failureStates.includes("schema_mismatch"));
     assert.equal(graphServe.dataFile, "packages/fixtures/graph-reference-evidence/daemon-socket-fixtures.json");

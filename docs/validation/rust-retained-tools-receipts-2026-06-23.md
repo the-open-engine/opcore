@@ -2,12 +2,12 @@
 
 Issue: #61.
 
-Runtime decision: #21 remains Option A: no validation daemon and no hidden validation cache. Lattice emits provider
+Runtime decision: #21 remains Option A: no validation daemon and no hidden validation cache. Opcore emits provider
 assessment evidence only; ASP hosts keep decision authority.
 
 ## Native Parity Closed
 
-The five retained Rust rows now have native Lattice behavior when supporting tools are available:
+The five retained Rust rows now have native Opcore behavior when supporting tools are available:
 
 | Check | Native receipt |
 |---|---|
@@ -26,7 +26,7 @@ With a full fake Rust toolchain, status and doctor tests prove the Rust adapter 
 
 `rust.dead-code` has no generic retained row when core Cargo is available.
 
-## Lattice Receipts
+## Opcore Receipts
 
 | Command | Result |
 |---|---|
@@ -60,6 +60,6 @@ Gateway remains retained evidence with exit 2 and 11 existing findings. The find
 
 - No validation daemon.
 - No hidden validation cache.
-- No Rox imports, Rox cache reads, or Rox shellouts from native Lattice checks.
+- No Rox imports, Rox cache reads, or Rox shellouts from native Opcore checks.
 - Current external Rox gates stay active until downstream #27/#28/#29 accept replacement evidence.
 - Results are provider assessments only, not ASP host decisions or release authority.

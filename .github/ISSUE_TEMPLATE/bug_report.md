@@ -1,6 +1,6 @@
 ---
 name: Bug report
-about: Report a reproducible Lattice bug
+about: Report a reproducible Opcore bug
 title: "[bug] "
 labels: bug
 ---
@@ -17,7 +17,7 @@ labels: bug
 
 ## Environment
 
-- Lattice package/version:
+- Opcore package/version:
 - Node version:
 - OS and architecture:
 - Install path: npm / source clone

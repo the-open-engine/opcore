@@ -41,7 +41,7 @@ export {
 export { invokeGraphCoreSidecar } from "./sidecar.js";
 export { graphServeRouterResult, isServeTransportArgv, runGraphServeCli } from "./serve.js";
 
-export const graphProviderName = "lattice-graph";
+export const graphProviderName = "opcore-graph";
 export const graphProviderSchemaVersion = 1;
 
 export function graphProviderStatus(
@@ -50,7 +50,7 @@ export function graphProviderStatus(
 ): GraphProviderStatus {
   const identity = repoIdentity(repo);
   return invokeGraphCoreSidecar({
-    protocol: "lattice.graph.daemon",
+    protocol: "opcore.graph.daemon",
     requestId: "graph-status",
     schemaVersion: graphProviderSchemaVersion,
     operation: "status",
@@ -66,7 +66,7 @@ export function graphProviderBuild(
 ): GraphPipelineResult {
   const identity = repoIdentity(repo);
   const response = invokeGraphCoreSidecar({
-    protocol: "lattice.graph.daemon",
+    protocol: "opcore.graph.daemon",
     requestId: "graph-build",
     schemaVersion: graphProviderSchemaVersion,
     operation: "build",
@@ -84,7 +84,7 @@ export function graphProviderUpdate(
 ): GraphPipelineResult {
   const identity = repoIdentity(repo);
   const response = invokeGraphCoreSidecar({
-    protocol: "lattice.graph.daemon",
+    protocol: "opcore.graph.daemon",
     requestId: "graph-update",
     schemaVersion: graphProviderSchemaVersion,
     operation: "update",
@@ -108,7 +108,7 @@ export function graphProviderWatch(
 ): GraphPipelineResult {
   const identity = repoIdentity(repo);
   const response = invokeGraphCoreSidecar({
-    protocol: "lattice.graph.daemon",
+    protocol: "opcore.graph.daemon",
     requestId: "graph-watch",
     schemaVersion: graphProviderSchemaVersion,
     operation: "watch",
@@ -130,7 +130,7 @@ export function graphProviderQuery(
 ): GraphFactQueryResult {
   const identity = repoIdentity(repo);
   const response = invokeGraphCoreSidecar({
-    protocol: "lattice.graph.daemon",
+    protocol: "opcore.graph.daemon",
     requestId: "graph-query",
     schemaVersion: graphProviderSchemaVersion,
     operation: "query",
@@ -453,7 +453,7 @@ function graphDetectChangesResult(request: CommandAdapterRequest): CommandRouter
 
 function graphSearchResult(request: CommandAdapterRequest): CommandRouterResult {
   const options = parseGraphOptions(request.args);
-  if (!options.searchQuery) throw new Error("lattice graph search requires query text");
+  if (!options.searchQuery) throw new Error("opcore graph search requires query text");
   const result = graphProviderSearch(options.repo, {
     query: options.searchQuery,
     files: options.files.length > 0 ? options.files : undefined,
@@ -485,47 +485,47 @@ function graphNotImplementedResult(request: CommandAdapterRequest): CommandRoute
 }
 
 function statusMessage(status: GraphProviderStatus): string {
-  if (status.state === "available") return "lattice graph status: graph-core sidecar available.";
-  if (status.state === "warming") return "lattice graph status: graph-core pipeline warming.";
-  if (status.state === "stale") return "lattice graph status: graph is stale. Run `lattice graph build`.";
-  if (status.state === "schema_mismatch") return "lattice graph status: graph metadata needs rebuild. Run `lattice graph build`.";
+  if (status.state === "available") return "opcore graph status: graph-core sidecar available.";
+  if (status.state === "warming") return "opcore graph status: graph-core pipeline warming.";
+  if (status.state === "stale") return "opcore graph status: graph is stale. Run `opcore graph build`.";
+  if (status.state === "schema_mismatch") return "opcore graph status: graph metadata needs rebuild. Run `opcore graph build`.";
   if (status.state === "required_missing" || status.state === "skipped") {
-    return "lattice graph status: graph store is missing. Run `lattice graph build`.";
+    return "opcore graph status: graph store is missing. Run `opcore graph build`.";
   }
-  return status.message ?? "lattice graph status: graph-core sidecar unavailable.";
+  return status.message ?? "opcore graph status: graph-core sidecar unavailable.";
 }
 
 function pipelineMessage(operation: "build" | "update" | "watch", status: GraphProviderStatus): string {
-  if (status.state === "available") return `lattice graph ${operation}: GraphProvider ${operation} complete.`;
-  if (status.state === "warming") return `lattice graph ${operation}: GraphProvider warming.`;
-  return status.message ?? `lattice graph ${operation}: GraphProvider returned ${status.state}.`;
+  if (status.state === "available") return `opcore graph ${operation}: GraphProvider ${operation} complete.`;
+  if (status.state === "warming") return `opcore graph ${operation}: GraphProvider warming.`;
+  return status.message ?? `opcore graph ${operation}: GraphProvider returned ${status.state}.`;
 }
 
 function queryMessage(status: GraphProviderStatus): string {
   if (status.state === "available") {
-    return "lattice graph query: graph-core returned graph data.";
+    return "opcore graph query: graph-core returned graph data.";
   }
-  return status.message ?? "lattice graph query: graph-core sidecar unavailable.";
+  return status.message ?? "opcore graph query: graph-core sidecar unavailable.";
 }
 
 function impactMessage(status: GraphProviderStatus): string {
-  if (status.state === "available") return "lattice graph impact: graph-core returned impact data.";
-  return status.message ?? "lattice graph impact: graph-core sidecar unavailable.";
+  if (status.state === "available") return "opcore graph impact: graph-core returned impact data.";
+  return status.message ?? "opcore graph impact: graph-core sidecar unavailable.";
 }
 
 function reviewContextMessage(status: GraphProviderStatus): string {
-  if (status.state === "available") return "lattice graph review-context: graph-core returned review context.";
-  return status.message ?? "lattice graph review-context: graph-core sidecar unavailable.";
+  if (status.state === "available") return "opcore graph review-context: graph-core returned review context.";
+  return status.message ?? "opcore graph review-context: graph-core sidecar unavailable.";
 }
 
 function detectChangesMessage(status: GraphProviderStatus): string {
-  if (status.state === "available") return "lattice graph detect-changes: graph-core returned change data.";
-  return status.message ?? "lattice graph detect-changes: graph-core sidecar unavailable.";
+  if (status.state === "available") return "opcore graph detect-changes: graph-core returned change data.";
+  return status.message ?? "opcore graph detect-changes: graph-core sidecar unavailable.";
 }
 
 function searchMessage(status: GraphProviderStatus): string {
-  if (status.state === "available") return "lattice graph search: graph-core returned search results.";
-  return status.message ?? "lattice graph search: graph-core sidecar unavailable.";
+  if (status.state === "available") return "opcore graph search: graph-core returned search results.";
+  return status.message ?? "opcore graph search: graph-core sidecar unavailable.";
 }
 
 function firstRouteArg(args: readonly string[]): string | undefined {
@@ -538,7 +538,7 @@ function baseDaemonRequest(
   repo: RepoIdentity
 ): GraphDaemonRequest {
   return {
-    protocol: "lattice.graph.daemon",
+    protocol: "opcore.graph.daemon",
     requestId,
     schemaVersion: graphProviderSchemaVersion,
     operation,
@@ -630,7 +630,7 @@ function parseGraphOptions(args: readonly string[]): {
   if (route === "query" && queryKind !== undefined && !namedQuery) {
     throw new Error(`unsupported graph named query: ${queryKind}`);
   }
-  if (namedQuery && namedQuery.target.length === 0) throw new Error(`lattice graph query ${queryKind} requires a target`);
+  if (namedQuery && namedQuery.target.length === 0) throw new Error(`opcore graph query ${queryKind} requires a target`);
   return {
     repo: options.repoRoot ? { repoRoot: options.repoRoot } : { repoRoot: process.cwd() },
     baseRef: options.baseRef,

@@ -12,7 +12,7 @@ type TestResult = Result<(), Box<dyn std::error::Error>>;
 
 fn repo() -> RepoIdentity {
     RepoIdentity {
-        repo_id: Some("lattice".to_string()),
+        repo_id: Some("opcore".to_string()),
         repo_root: None,
         remote_url: None,
         commit_sha: None,
@@ -30,7 +30,7 @@ fn fixture_repo(repo_root: &Path) -> Result<RepoIdentity, std::io::Error> {
 
 fn status_request() -> Result<GraphDaemonRequest, serde_json::Error> {
     serde_json::from_value(json!({
-        "protocol": "lattice.graph.daemon",
+        "protocol": "opcore.graph.daemon",
         "requestId": "status-1",
         "schemaVersion": GRAPH_SCHEMA_VERSION,
         "operation": "status",
@@ -68,8 +68,8 @@ fn status_handshake_reports_capabilities() -> TestResult {
     let response = handle_request(status_request()?);
 
     let value = serde_json::to_value(response)?;
-    assert_json_eq(&value, "/protocol", json!("lattice.graph.daemon"));
-    assert_json_eq(&value, "/status/provider", json!("lattice-graph"));
+    assert_json_eq(&value, "/protocol", json!("opcore.graph.daemon"));
+    assert_json_eq(&value, "/status/provider", json!("opcore-graph"));
     assert_json_eq(
         &value,
         "/status/handshake/supportedOperations/0",
@@ -88,7 +88,7 @@ fn status_handshake_reports_capabilities() -> TestResult {
     assert_json_eq(
         &value,
         "/status/handshake/artifact/artifactName",
-        json!("lattice-graph-core"),
+        json!("opcore-graph-core"),
     );
     Ok(())
 }
@@ -122,7 +122,7 @@ fn query_returns_extracted_graph_result() -> TestResult {
             .and_then(Value::as_str)
             .is_some_and(|to| node_ids.contains(&to)));
     }
-    assert_json_eq(&value, "/result/metadata/provider", json!("lattice-graph"));
+    assert_json_eq(&value, "/result/metadata/provider", json!("opcore-graph"));
     Ok(())
 }
 

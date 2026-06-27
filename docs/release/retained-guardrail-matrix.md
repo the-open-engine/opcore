@@ -16,7 +16,7 @@ No surface is marked `replaced` unless an installed Opcore receipt proves exact 
 
 - `docs/release/crg-graph-parity-ledger.md` (#53): CRG graph parity ledger and issue-number collision note.
 - `docs/release/graph-release-receipt.json` (#17): graph release command coverage and serve transport evidence.
-- `docs/release/cutover-receipt.json` (#30): installed `node_modules/.bin/lattice` and `node_modules/.bin/opcore` command receipts, with old bins absent from the cutover environment.
+- `docs/release/cutover-receipt.json` (#30): installed `node_modules/.bin/opcore` command receipts, with `opcoreBinOnly:true` and old bins absent from the cutover environment.
 - `docs/release/asp-dogfood-receipt.json` (#120): advisory ASP dogfood, retained current-tool guardrails, inspect/edit deferred coverage, and `oldToolReplacementClaimed: false`.
 - `docs/validation/rust-adapter-parity.md`, `docs/validation/rust-retained-tools-receipts-2026-06-23.md`, and `docs/validation/rust-old-rox-comparison-receipt-2026-06-27.json` (#29, PR #104 merge `ab0362d339ec2c41b0cc71ae5bb400c4b8254e36`): Rust adapter parity, retained Rox compatibility evidence, and the #29 comparison evidence consumed by #30 per-surface Rust decisions with `oldToolReplacementClaimed: false`.
 - `docs/release/inspect-signature-parity.md` and `docs/release/inspect-implementations-parity.md`: CIX inspect parity evidence and retained gaps.

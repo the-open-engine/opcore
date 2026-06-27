@@ -1,6 +1,6 @@
 # Code of Conduct
 
-We want Lattice to be a useful place to work on agent-safe developer tooling.
+We want Opcore to be a useful place to work on agent-safe developer tooling.
 
 Be direct, kind, and specific. Assume good intent, but do not excuse harmful behavior. Harassment, threats, personal attacks, or repeated disruption are not acceptable in issues, pull requests, discussions, or maintainer spaces.
 

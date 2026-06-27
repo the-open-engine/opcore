@@ -19,7 +19,7 @@ const receiptGatesRunSeparately = process.env.OPCORE_CI_RECEIPT_GATES_RUN_SEPARA
 const separateReceiptGateSkip = receiptGatesRunSeparately ? "covered by root CI receipt gate" : false;
 
 describe("cutover release receipt", () => {
-  it("proves installed lattice artifacts without current-tool fallback", { timeout: 180000, skip: separateReceiptGateSkip }, () => {
+  it("proves installed Opcore artifacts without current-tool fallback", { timeout: 180000, skip: separateReceiptGateSkip }, () => {
     withReleaseDocsLock(() => {
       run(["scripts/generate-release-receipt.mjs", "--inspect-packages-only", "--json"]);
       const result = withCompleteNativeArtifactFixtures(() =>
@@ -38,9 +38,9 @@ describe("cutover release receipt", () => {
       assert.equal(receipt.environmentIsolation.currentToolEnvCleared, true);
       assert.equal(receipt.environmentIsolation.aceRuntimeBinExcluded, true);
       assert.equal(receipt.environmentIsolation.siblingCovibesExcluded, true);
-      assert.equal(receipt.environmentIsolation.latticeBinOnly, true);
+      assert.equal(receipt.environmentIsolation.opcoreBinOnly, true);
       assert.deepEqual(receipt.environmentIsolation.oldBinsAbsent, { crg: true, cix: true, rox: true });
-      assert.equal(receipt.commandReceipts.every((entry) => entry.command[0] === "lattice" || entry.command[0] === "opcore"), true);
+      assert.equal(receipt.commandReceipts.every((entry) => entry.command[0] === "opcore" || entry.command[0] === "opcore"), true);
       assert.deepEqual(
         receipt.commandReceipts.filter((entry) => entry.status === "not_implemented").map((entry) => entry.id),
         []
@@ -59,10 +59,10 @@ describe("cutover release receipt", () => {
   });
 
   it("rejects cutover receipts with advertised placeholder command evidence", () => {
-    const temp = mkdtempSync(join(tmpdir(), "lattice-cutover-negative-"));
+    const temp = mkdtempSync(join(tmpdir(), "opcore-cutover-negative-"));
     try {
       const receiptPath = join(temp, "cutover.json");
-      const descriptor = JSON.parse(readFileSync(resolve(repoRoot, "packages/fixtures/descriptors/lattice.managed-tool.json"), "utf8"));
+      const descriptor = JSON.parse(readFileSync(resolve(repoRoot, "packages/fixtures/descriptors/opcore.managed-tool.json"), "utf8"));
       const cutover = {
         schemaVersion: 1,
         issue: "#30",
@@ -82,7 +82,7 @@ describe("cutover release receipt", () => {
               sha256: "c".repeat(64),
               bins:
                 packageName === "@the-open-engine/opcore"
-                  ? { opcore: "dist/index.js", lattice: "dist/lattice/index.js" }
+                  ? { opcore: "dist/index.js" }
                   : packageName === "@the-open-engine/opcore-asp-provider"
                     ? { "opcore-asp-provider": "dist/index.js" }
                     : {}
@@ -90,7 +90,7 @@ describe("cutover release receipt", () => {
             installedFiles: installedFilesFor(packageName)
           })),
         descriptor: {
-          path: "packages/opcore/dist/descriptors/lattice.managed-tool.json",
+          path: "packages/opcore/dist/descriptors/opcore.managed-tool.json",
           packageName: "@the-open-engine/opcore",
           checksumSha256: "d".repeat(64),
           descriptor,
@@ -107,18 +107,18 @@ describe("cutover release receipt", () => {
           pathSanitized: true,
           aceRuntimeBinExcluded: true,
           siblingCovibesExcluded: true,
-          latticeBinOnly: true,
+          opcoreBinOnly: true,
           oldBinsAbsent: { crg: true, cix: true, rox: true }
         },
         commandReceipts: [
           {
             id: "inspect-symbols",
-            command: ["lattice", "inspect", "symbols"],
-            canonicalCommand: ["lattice", "inspect", "symbols"],
+            command: ["opcore", "inspect", "symbols"],
+            canonicalCommand: ["opcore", "inspect", "symbols"],
             owner: "inspect",
             status: "not_implemented",
             exitCode: 2,
-            binPath: "node_modules/.bin/lattice",
+            binPath: "node_modules/.bin/opcore",
             stdoutSha256: "e".repeat(64),
             stderrSha256: "f".repeat(64),
             assertion: "bad placeholder"
@@ -144,7 +144,7 @@ describe("cutover release receipt", () => {
 function installedFilesFor(packageName) {
   const paths = [
     "package.json",
-    ...(packageName === "@the-open-engine/opcore" ? ["dist/index.js", "dist/lattice/index.js"] : []),
+    ...(packageName === "@the-open-engine/opcore" ? ["dist/index.js"] : []),
     ...(packageName === "@the-open-engine/opcore-asp-provider" ? ["dist/index.js", "dist/manifests/asp-server.json"] : [])
   ];
   return paths.map((path) => ({ path: `node_modules/${packageName}/${path}`, sha256: "4".repeat(64) }));

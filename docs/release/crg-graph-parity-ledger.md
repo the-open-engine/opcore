@@ -2,16 +2,16 @@
 
 Issue: #53
 
-Status: CRG graph parity is demonstrated for `lattice graph`; replacement remains deferred.
+Status: CRG graph parity is demonstrated for `opcore graph`; replacement remains deferred.
 
 ## Scope
 
-This ledger enumerates CRG-to-`lattice graph` parity from retained receipts only. It is release evidence, not a public retirement claim, npm publish action, ASP authority claim, or ACE wrapper cutover.
+This ledger enumerates CRG-to-`opcore graph` parity from retained receipts only. It is release evidence, not a public retirement claim, npm publish action, ASP authority claim, or ACE wrapper cutover.
 
 Receipt sources:
 
-- `docs/release/graph-release-receipt.json` issue `#17`, generated `2026-06-26T13:06:28.586Z`, in-repo fixture `packages/fixtures/source-extraction/wave1`.
-- `docs/release/cutover-receipt.json` issue `#30`, generated `2026-06-26T22:09:41.839Z`, installed `node_modules/.bin/lattice` proof with `environmentIsolation.oldBinsAbsent.{crg,cix,rox}: true`.
+- `docs/release/graph-release-receipt.json` issue `#17`, regenerated with in-repo fixture `packages/fixtures/source-extraction/wave1`.
+- `docs/release/cutover-receipt.json` issue `#30`, generated `2026-06-27T10:22:13.799Z`, installed `node_modules/.bin/opcore` proof with `environmentIsolation.opcoreBinOnly: true` and `environmentIsolation.oldBinsAbsent.{crg,cix,rox}: true`.
 - `docs/release/asp-dogfood-receipt.json` issue `#120`, generated `2026-06-26T19:04:19.583Z`, with `oldToolReplacementClaimed: false` and retained current-tool guardrails.
 
 ## Issue Namespace
@@ -24,16 +24,16 @@ Those numbers collide with the Opcore GitHub issue namespace. This document is O
 
 | Surface | Status | Receipt evidence |
 |---|---|---|
-| `lattice graph build` | implemented | `graph-release-receipt.json` `commandCoverage.id=lattice-graph-build`, passed exit 0 in 1080ms on `wave1`; `cutover-receipt.json` `commandReceipts.id=graph-build`, status `ok`, exit 0 from `node_modules/.bin/lattice`, assertion `graph build completed with native artifact`. |
-| `lattice graph update` | implemented | `graph-release-receipt.json` `commandCoverage.id=lattice-graph-update`, passed exit 0 in 664ms on `wave1`. The cutover receipt does not duplicate update. |
-| `lattice graph watch` | implemented | `graph-release-receipt.json` `commandCoverage.id=lattice-graph-watch`, passed exit 0 in 609ms on `wave1`. The cutover receipt does not duplicate watch. |
-| `lattice graph status` | implemented | `graph-release-receipt.json` `commandCoverage.id=lattice-graph-status`, passed exit 0 in 619ms on `wave1`; `cutover-receipt.json` `commandReceipts.id=graph-status`, status `ok`, exit 0, assertion `graph status available after build`. |
-| `lattice graph query` | implemented | `graph-release-receipt.json` `commandCoverage.id=lattice-graph-query`, passed exit 0 in 603ms on `wave1`; `cutover-receipt.json` `commandReceipts.id=graph-query`, status `ok`, exit 0, assertion `graph query returned facts`. |
-| `lattice graph impact` | implemented | `graph-release-receipt.json` `commandCoverage.id=lattice-graph-impact`, passed exit 0 in 617ms on `wave1`; `cutover-receipt.json` `commandReceipts.id=graph-impact`, status `ok`, exit 0, command includes `--files src/components/GreetingCard.tsx`, assertion `graph impact returned file impact`. |
-| `lattice graph review-context` | implemented | `cutover-receipt.json` `commandReceipts.id=graph-review-context`, status `ok`, exit 0 from `node_modules/.bin/lattice`, command includes `--files src/components/GreetingCard.tsx`, assertion `graph review-context returned related facts`. The graph-release receipt does not include review-context. |
-| `lattice graph detect-changes` | implemented | `cutover-receipt.json` `commandReceipts.id=graph-detect-changes`, status `ok`, exit 0 from `node_modules/.bin/lattice`, command includes `--files src/components/GreetingCard.tsx`, assertion `graph detect-changes returned typed change data`. The graph-release receipt does not include detect-changes. |
-| `lattice graph search` | implemented | `graph-release-receipt.json` `commandCoverage.id=lattice-graph-search`, passed exit 0 in 644ms on `wave1`; `cutover-receipt.json` `commandReceipts.id=graph-search`, status `ok`, exit 0, command `graph search Greeting --limit 5`, assertion `graph search returned ranked results`. |
-| `lattice graph serve` | implemented | `graph-release-receipt.json` `commandCoverage.id=lattice-graph-serve`, passed exit 0 in 555ms on `wave1`; `graph-release-receipt.json` `serveTransport` passed ping/status/query/search/shutdown over `lattice.graph.daemon`; `cutover-receipt.json` `commandReceipts.id=graph-serve`, status `ok`, exit 0, assertion `graph serve status route is ready`. |
+| `opcore graph build` | implemented | `graph-release-receipt.json` `commandCoverage.id=opcore-graph-build` on `wave1`; `cutover-receipt.json` `commandReceipts.id=graph-build`, status `ok`, exit 0 from `node_modules/.bin/opcore`, assertion `graph build completed with native artifact`. |
+| `opcore graph update` | implemented | `graph-release-receipt.json` `commandCoverage.id=opcore-graph-update`, passed exit 0 in 664ms on `wave1`. The cutover receipt does not duplicate update. |
+| `opcore graph watch` | implemented | `graph-release-receipt.json` `commandCoverage.id=opcore-graph-watch`, passed exit 0 in 609ms on `wave1`. The cutover receipt does not duplicate watch. |
+| `opcore graph status` | implemented | `graph-release-receipt.json` `commandCoverage.id=opcore-graph-status`, passed exit 0 in 619ms on `wave1`; `cutover-receipt.json` `commandReceipts.id=graph-status`, status `ok`, exit 0, assertion `graph status available after build`. |
+| `opcore graph query` | implemented | `graph-release-receipt.json` `commandCoverage.id=opcore-graph-query`, passed exit 0 in 603ms on `wave1`; `cutover-receipt.json` `commandReceipts.id=graph-query`, status `ok`, exit 0, assertion `graph query returned facts`. |
+| `opcore graph impact` | implemented | `graph-release-receipt.json` `commandCoverage.id=opcore-graph-impact`, passed exit 0 in 617ms on `wave1`; `cutover-receipt.json` `commandReceipts.id=graph-impact`, status `ok`, exit 0, command includes `--files src/components/GreetingCard.tsx`, assertion `graph impact returned file impact`. |
+| `opcore graph review-context` | implemented | `cutover-receipt.json` `commandReceipts.id=graph-review-context`, status `ok`, exit 0 from `node_modules/.bin/opcore`, command includes `--files src/components/GreetingCard.tsx`, assertion `graph review-context returned related facts`. The graph-release receipt does not include review-context. |
+| `opcore graph detect-changes` | implemented | `cutover-receipt.json` `commandReceipts.id=graph-detect-changes`, status `ok`, exit 0 from `node_modules/.bin/opcore`, command includes `--files src/components/GreetingCard.tsx`, assertion `graph detect-changes returned typed change data`. The graph-release receipt does not include detect-changes. |
+| `opcore graph search` | implemented | `graph-release-receipt.json` `commandCoverage.id=opcore-graph-search`, passed exit 0 in 644ms on `wave1`; `cutover-receipt.json` `commandReceipts.id=graph-search`, status `ok`, exit 0, command `graph search Greeting --limit 5`, assertion `graph search returned ranked results`. |
+| `opcore graph serve` | implemented | `graph-release-receipt.json` `commandCoverage.id=opcore-graph-serve`, passed exit 0 in 555ms on `wave1`; `graph-release-receipt.json` `serveTransport` passed ping/status/query/search/shutdown over `opcore.graph.daemon`; `cutover-receipt.json` `commandReceipts.id=graph-serve`, status `ok`, exit 0, assertion `graph serve status route is ready`. |
 
 Combined receipts cover all 10 required surfaces at least once. `graph-release-receipt.json` covers build, update, watch, status, query, impact, search, and serve. `cutover-receipt.json` covers build, status, query, impact, review-context, detect-changes, search, and serve from installed artifacts with old bins absent.
 
@@ -60,7 +60,7 @@ The graph-release receipt records direct SQLite reader evidence for status count
 
 ## Replacement Claim
 
-CRG graph parity is installed-receipt-backed: `cutover-receipt.json` runs `lattice graph` through `node_modules/.bin/lattice` while `environmentIsolation.oldBinsAbsent.crg`, `.cix`, and `.rox` are all `true`.
+CRG graph parity is installed-receipt-backed: `cutover-receipt.json` runs `opcore graph` through `node_modules/.bin/opcore` while `environmentIsolation.opcoreBinOnly` and `environmentIsolation.oldBinsAbsent.{crg,cix,rox}` are all `true`.
 
 The formal old-tool replacement claim remains withheld. `asp-dogfood-receipt.json` pins `oldToolReplacementClaimed: false`, records retained `current-tools:validate-changed` and `current-tools:validate-rust-graph` guardrails, and keeps inspect/edit gaps outside ASP dogfood authority. ACE wrappers remain on current tools until explicit downstream cutover work changes that.
 

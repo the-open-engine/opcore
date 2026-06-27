@@ -8,5 +8,5 @@ pub mod search;
 pub mod store;
 pub mod watch;
 
-pub const GRAPH_PROVIDER_NAME: &str = "lattice-graph";
+pub const GRAPH_PROVIDER_NAME: &str = "opcore-graph";
 pub const GRAPH_SCHEMA_VERSION: u32 = 1;

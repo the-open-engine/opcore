@@ -41,7 +41,7 @@ describe("validation graph client", () => {
       }
     ]);
 
-    assert.equal((await session.metadata())?.provider, "lattice-graph");
+    assert.equal((await session.metadata())?.provider, "opcore-graph");
     assert.deepEqual(
       (await session.importsFrom()).map((edge) => edge.id),
       ["import-1"]
@@ -420,7 +420,7 @@ describe("validation graph client", () => {
       detectChanges: 0
     };
     const session = await createValidationGraphQuerySession({
-      request: request({ graph: { mode: "required", provider: "lattice-graph" } }),
+      request: request({ graph: { mode: "required", provider: "opcore-graph" } }),
       client: fakeClient({
         status: (validationRequest) => availableStatus(validationRequest.graph.mode, validationRequest.repo),
         namedQuery: (query) => {
@@ -464,7 +464,7 @@ function request(overrides = {}) {
   return {
     requestId: "validation-1",
     repo: {
-      repoId: "lattice"
+      repoId: "opcore"
     },
     scope: {
       kind: "files",
@@ -472,7 +472,7 @@ function request(overrides = {}) {
     },
     graph: {
       mode: "optional",
-      provider: "lattice-graph"
+      provider: "opcore-graph"
     },
     overlays: [],
     checks: ["types"],
@@ -492,11 +492,11 @@ function fakeClient(overrides = {}) {
   };
 }
 
-function availableStatus(mode = "optional", repo = { repoId: "lattice" }) {
+function availableStatus(mode = "optional", repo = { repoId: "opcore" }) {
   return {
     state: "available",
     mode,
-    provider: "lattice-graph",
+    provider: "opcore-graph",
     schemaVersion: 1,
     repo,
     freshness: freshness(),
@@ -509,7 +509,7 @@ function failureStatus(mode, state, category) {
   const status = {
     state,
     mode,
-    provider: "lattice-graph",
+    provider: "opcore-graph",
     schemaVersion: 1,
     failure: {
       category,
@@ -518,7 +518,7 @@ function failureStatus(mode, state, category) {
   };
   if (state === "stale") {
     status.repo = {
-      repoId: "lattice"
+      repoId: "opcore"
     };
     status.freshness = freshness({ stale: true });
   }
@@ -528,7 +528,7 @@ function failureStatus(mode, state, category) {
 function metadata(query) {
   return {
     schemaVersion: 1,
-    provider: "lattice-graph",
+    provider: "opcore-graph",
     repo: query.repo,
     generatedAt: "2026-06-05T00:00:00.000Z",
     freshness: freshness(),

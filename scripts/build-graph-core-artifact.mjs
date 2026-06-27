@@ -15,7 +15,7 @@ const currentTarget = currentGraphCoreNativeTarget();
 const rustTarget = target === "linux-x64" || target !== currentTarget ? graphCoreRustTargetForNativeTarget(target) : undefined;
 const nativePackage = graphCoreNativePackageForTarget(target);
 const graphPackage = JSON.parse(readFileSync(join("packages", "graph", "package.json"), "utf8"));
-const binaryName = "lattice-graph-core";
+const binaryName = "opcore-graph-core";
 const sourceBinary = rustTarget ? join("target", rustTarget, "release", binaryName) : join("target", "release", binaryName);
 const nativeDir = nativePackage.packageDir;
 const obsoleteGraphNativeDir = join("packages", "graph", "dist", "native");
@@ -32,7 +32,7 @@ const rustPathRemapFlags = [
   "-C",
   "strip=symbols"
 ];
-const cargoArgs = ["build", "--package", "lattice-graph-core", "--release"];
+const cargoArgs = ["build", "--package", "opcore-graph-core", "--release"];
 if (rustTarget) cargoArgs.push("--target", rustTarget);
 
 run("cargo", cargoArgs, {
@@ -53,7 +53,7 @@ writeFileSync(
   destinationMetadata,
   `${JSON.stringify(
     {
-      artifactName: "lattice-graph-core",
+      artifactName: "opcore-graph-core",
       artifactVersion: graphPackage.version,
       targetPlatform: target,
       binaryPath: packageRelativeBinary,

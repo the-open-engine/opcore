@@ -17,7 +17,7 @@ use std::time::{Duration, Instant};
 mod args;
 use args::parse_watch_args;
 
-const GRAPH_DAEMON_PROTOCOL: &str = "lattice.graph.daemon";
+const GRAPH_DAEMON_PROTOCOL: &str = "opcore.graph.daemon";
 pub const DEFAULT_WATCH_IDLE_TIMEOUT_MS: u64 = 1_800_000;
 pub const WATCH_IDLE_TIMEOUT_ENV: &str = "LATTICE_GRAPH_WATCH_IDLE_TIMEOUT_MS";
 

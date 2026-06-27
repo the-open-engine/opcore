@@ -99,7 +99,7 @@ import {
 
 const removedLegacyMappingsField = `legacy${"Mappings"}`;
 
-describe("lattice shared contracts", () => {
+describe("Opcore shared contracts", () => {
   it("exports graph schema constants and status vocabularies", () => {
     assert.equal(GRAPH_SCHEMA_VERSION, 1);
     assert.deepEqual(graphProviderModes, ["optional", "required"]);
@@ -229,24 +229,24 @@ describe("lattice shared contracts", () => {
     assert.deepEqual(commandOwners, ["graph", "inspect", "edit", "validation", "runtime"]);
     assert.deepEqual(commandRouteStatuses, ["ok", "error", "not_implemented", "unsupported"]);
     assert.deepEqual(graphReleaseCoreCommandIds, [
-      "lattice-graph-build",
-      "lattice-graph-update",
-      "lattice-graph-watch",
-      "lattice-graph-status",
-      "lattice-graph-query",
-      "lattice-graph-impact",
-      "lattice-graph-search",
-      "lattice-graph-serve",
+      "opcore-graph-build",
+      "opcore-graph-update",
+      "opcore-graph-watch",
+      "opcore-graph-status",
+      "opcore-graph-query",
+      "opcore-graph-impact",
+      "opcore-graph-search",
+      "opcore-graph-serve",
           ]);
     assert.deepEqual(graphReleaseRustCommandIds, [
-      "lattice-graph-rust-build",
-      "lattice-graph-rust-update",
-      "lattice-graph-rust-watch",
-      "lattice-graph-rust-status",
-      "lattice-graph-rust-query",
-      "lattice-graph-rust-impact",
-      "lattice-graph-rust-search",
-      "lattice-graph-rust-serve"
+      "opcore-graph-rust-build",
+      "opcore-graph-rust-update",
+      "opcore-graph-rust-watch",
+      "opcore-graph-rust-status",
+      "opcore-graph-rust-query",
+      "opcore-graph-rust-impact",
+      "opcore-graph-rust-search",
+      "opcore-graph-rust-serve"
     ]);
     assert.deepEqual(releaseCutoverRustCommandIds, [
       "graph-rust-build",
@@ -298,10 +298,10 @@ describe("lattice shared contracts", () => {
     const status = validateProviderStatus({
       state: "available",
       mode: "required",
-      provider: "lattice-graph",
+      provider: "opcore-graph",
       schemaVersion: 1,
       repo: {
-        repoId: "lattice"
+        repoId: "opcore"
       },
       freshness: {
         generatedAt: "2026-06-04T00:00:00.000Z",
@@ -314,7 +314,7 @@ describe("lattice shared contracts", () => {
       handshake: validHandshake()
     });
     assert.equal(status.state, "available");
-    assert.equal(status.handshake.artifact.artifactName, "lattice-graph-core");
+    assert.equal(status.handshake.artifact.artifactName, "opcore-graph-core");
     assert.equal(status.walCheckpoint.checkpointed, true);
     assert.throws(
       () =>
@@ -331,7 +331,7 @@ describe("lattice shared contracts", () => {
 
   it("validates graph-core artifact metadata, handshakes, and daemon envelopes", () => {
     const artifact = validateGraphProviderArtifactMetadata(validArtifactMetadata());
-    assert.equal(artifact.binaryPath, "dist/native/test/lattice-graph-core");
+    assert.equal(artifact.binaryPath, "dist/native/test/opcore-graph-core");
     const handshake = validateGraphProviderCapabilityHandshake(validHandshake());
     assert.deepEqual(handshake.supportedOperations, ["build", "update", "watch", "status", "query", "ping", "health", "shutdown"]);
 
@@ -342,12 +342,12 @@ describe("lattice shared contracts", () => {
     assert.deepEqual(search.files, ["src/components/GreetingCard.tsx"]);
 
     const request = validateGraphDaemonRequest({
-      protocol: "lattice.graph.daemon",
+      protocol: "opcore.graph.daemon",
       requestId: "status-1",
       schemaVersion: 1,
       operation: "status",
       repo: {
-        repoId: "lattice"
+        repoId: "opcore"
       },
       idleTimeoutMs: 0
     });
@@ -363,16 +363,16 @@ describe("lattice shared contracts", () => {
     );
 
     const response = validateGraphDaemonResponse({
-      protocol: "lattice.graph.daemon",
+      protocol: "opcore.graph.daemon",
       requestId: "status-1",
       schemaVersion: 1,
       status: {
         state: "available",
         mode: "required",
-        provider: "lattice-graph",
+        provider: "opcore-graph",
         schemaVersion: 1,
         repo: {
-          repoId: "lattice"
+          repoId: "opcore"
         },
         freshness: {
           generatedAt: "2026-06-04T00:00:00.000Z",
@@ -389,7 +389,7 @@ describe("lattice shared contracts", () => {
       summary: {
         operation: "build",
         repo: {
-          repoId: "lattice"
+          repoId: "opcore"
         },
         startedAt: "2026-06-04T00:00:00.000Z",
         completedAt: "2026-06-04T00:00:00.001Z",
@@ -419,9 +419,9 @@ describe("lattice shared contracts", () => {
       pid: 1234,
       startedAt: "2026-06-04T00:00:00.000Z",
       updatedAt: "2026-06-04T00:00:00.001Z",
-      pidPath: "/tmp/lattice/pid",
-      statePath: "/tmp/lattice/state.json",
-      logPath: "/tmp/lattice/daemon.log",
+      pidPath: "/tmp/advanced/pid",
+      statePath: "/tmp/advanced/state.json",
+      logPath: "/tmp/advanced/daemon.log",
       pollIntervalMs: 50,
       idleTimeoutMs: 0,
       watchPaths: [],
@@ -438,7 +438,7 @@ describe("lattice shared contracts", () => {
     );
     const serveStatus = validateGraphServeTransportStatus(validGraphServeTransportStatus());
     assert.equal(serveStatus.state, "ready");
-    assert.equal(serveStatus.artifact.artifactName, "lattice-graph-core");
+    assert.equal(serveStatus.artifact.artifactName, "opcore-graph-core");
     assert.throws(
       () =>
         validateGraphServeTransportStatus({
@@ -451,12 +451,12 @@ describe("lattice shared contracts", () => {
     assert.throws(
       () =>
         validateGraphDaemonRequest({
-          protocol: "lattice.graph.daemon",
+          protocol: "opcore.graph.daemon",
           requestId: "query-1",
           schemaVersion: 1,
           operation: "query",
           repo: {
-            repoId: "lattice"
+            repoId: "opcore"
           }
         }),
       /must include query/
@@ -486,7 +486,7 @@ describe("lattice shared contracts", () => {
           status: {
             state: "required_missing",
             mode: "required",
-            provider: "lattice-graph",
+            provider: "opcore-graph",
             schemaVersion: 1,
             failure: {
               category: "provider_missing",
@@ -516,7 +516,7 @@ describe("lattice shared contracts", () => {
       () =>
         validateValidationRequestPayload({
           repo: {
-            repoId: "lattice"
+            repoId: "opcore"
           },
           scope: {
             kind: "files",
@@ -533,7 +533,7 @@ describe("lattice shared contracts", () => {
       () =>
         validateValidationRequestPayload({
           repo: {
-            repoId: "lattice"
+            repoId: "opcore"
           },
           scope: {
             kind: "files",
@@ -556,7 +556,7 @@ describe("lattice shared contracts", () => {
       () =>
         validateValidationRequestPayload({
           repo: {
-            repoId: "lattice"
+            repoId: "opcore"
           },
           scope: {
             kind: "files",
@@ -598,7 +598,7 @@ describe("lattice shared contracts", () => {
     assert.throws(
       () =>
         validateValidationRequestPayload(
-          validValidationRequest({ repo: { repoId: "lattice", repoRoot: "/repo" }, scope: { kind: "repo" } })
+          validValidationRequest({ repo: { repoId: "opcore", repoRoot: "/repo" }, scope: { kind: "repo" } })
         ),
       /ambiguous/
     );
@@ -655,7 +655,7 @@ describe("lattice shared contracts", () => {
         validValidationRequest({
           graph: {
             mode: "optional",
-            provider: "lattice-graph",
+            provider: "opcore-graph",
             status: providerFailureStatus("skipped", "optional", "provider_missing")
           }
         })
@@ -675,7 +675,7 @@ describe("lattice shared contracts", () => {
           validValidationRequest({
             graph: {
               mode: "required",
-              provider: "lattice-graph",
+              provider: "opcore-graph",
               status: providerFailureStatus(state, "required", category)
             }
           })
@@ -696,7 +696,7 @@ describe("lattice shared contracts", () => {
             validValidationRequest({
               graph: {
                 mode: "required",
-                provider: "lattice-graph",
+                provider: "opcore-graph",
                 status: providerFailureStatus(state, "required", category)
               }
             })
@@ -945,7 +945,7 @@ describe("lattice shared contracts", () => {
     assert.throws(
       () =>
         validateRepoIdentity({
-          repoId: "lattice",
+          repoId: "opcore",
           repoRoot: "/repo"
         }),
       /ambiguous/
@@ -954,7 +954,7 @@ describe("lattice shared contracts", () => {
       () =>
         validateValidationRequestPayload({
           repo: {
-            repoId: "lattice",
+            repoId: "opcore",
             repoRoot: "/repo"
           },
           scope: {
@@ -972,7 +972,7 @@ describe("lattice shared contracts", () => {
         validateProviderStatus({
           state: "daemon_unavailable",
           mode: "required",
-          provider: "lattice-graph",
+          provider: "opcore-graph",
           schemaVersion: 1
         }),
       /failure\.category/
@@ -982,7 +982,7 @@ describe("lattice shared contracts", () => {
         validateProviderStatus({
           state: "schema_mismatch",
           mode: "required",
-          provider: "lattice-graph",
+          provider: "opcore-graph",
           schemaVersion: 1,
           failure: {
             category: "schema_mismatch",
@@ -996,7 +996,7 @@ describe("lattice shared contracts", () => {
         validateProviderStatus({
           state: "stale",
           mode: "required",
-          provider: "lattice-graph",
+          provider: "opcore-graph",
           schemaVersion: 1,
           failure: {
             category: "stale_snapshot",
@@ -1008,7 +1008,7 @@ describe("lattice shared contracts", () => {
     const errorStatus = validateProviderStatus({
       state: "error",
       mode: "required",
-      provider: "lattice-graph",
+      provider: "opcore-graph",
       schemaVersion: 1,
       failure: {
         category: "query_failed",
@@ -1048,7 +1048,7 @@ describe("lattice shared contracts", () => {
           status: {
             state: "required_missing",
             mode: "required",
-            provider: "lattice-graph",
+            provider: "opcore-graph",
             schemaVersion: 1,
             failure: {
               category: "provider_missing",
@@ -1066,7 +1066,7 @@ describe("lattice shared contracts", () => {
           status: {
             state: "daemon_unavailable",
             mode: "required",
-            provider: "lattice-graph",
+            provider: "opcore-graph",
             schemaVersion: 1,
             failure: {
               category: "daemon_unavailable",
@@ -1083,10 +1083,10 @@ describe("lattice shared contracts", () => {
           status: {
             state: "stale",
             mode: "required",
-            provider: "lattice-graph",
+            provider: "opcore-graph",
             schemaVersion: 1,
             repo: {
-              repoId: "lattice"
+              repoId: "opcore"
             },
             freshness: {
               generatedAt: "2026-06-04T00:00:00.000Z",
@@ -1107,7 +1107,7 @@ describe("lattice shared contracts", () => {
         status: {
           state: "required_missing",
           mode: "required",
-          provider: "lattice-graph",
+          provider: "opcore-graph",
           schemaVersion: 1,
           failure: {
             category: "provider_missing",
@@ -1122,7 +1122,7 @@ describe("lattice shared contracts", () => {
   it("accepts command-router manifests and results", () => {
     const manifest = validRouterManifest();
     assert.equal(validateCommandRouterManifest(manifest).packageName, "@the-open-engine/opcore");
-    assert.equal(validateCommandRouterResult(validRouterResult()).canonicalCommand.join(" "), "lattice status");
+    assert.equal(validateCommandRouterResult(validRouterResult()).canonicalCommand.join(" "), "opcore status");
     assert.equal(
       validateCommandRouterResult({
         ...validRouterResult(),
@@ -1148,7 +1148,7 @@ describe("lattice shared contracts", () => {
       validateCommandRouterResult({
         ...validRouterResult(),
         owner: "inspect",
-        canonicalCommand: ["lattice", "inspect", "references", "src/models.ts", "GreetingModel"],
+        canonicalCommand: ["opcore", "inspect", "references", "src/models.ts", "GreetingModel"],
         providerStatus: availableGraphStatus(),
         inspectResult: validInspectRouteResult()
       }).inspectResult.status,
@@ -1296,7 +1296,7 @@ describe("lattice shared contracts", () => {
     ]);
     assert.equal(commandGroupByName("start"), undefined);
     assert.equal(commandGroupByName("stop"), undefined);
-    assert.deepEqual(commandRouterManifest.bins, ["lattice"]);
+    assert.deepEqual(commandRouterManifest.bins, ["opcore"]);
     assert.equal(Object.hasOwn(commandRouterManifest, "aliases"), false);
     assert.equal(Object.hasOwn(commandRouterManifest, removedLegacyMappingsField), false);
   });
@@ -1379,7 +1379,7 @@ describe("lattice shared contracts", () => {
         validateCommandRouterResult({
           ...validRouterResult(),
           owner: "validation",
-          canonicalCommand: ["lattice", "check", "all"],
+          canonicalCommand: ["opcore", "check", "all"],
           opcoreMeasure: delta
         }),
       /runtime owner/
@@ -1646,9 +1646,9 @@ describe("lattice shared contracts", () => {
     );
   });
 
-  it("accepts aggregate managed-tool descriptors for canonical lattice artifacts", () => {
+  it("accepts aggregate managed-tool descriptors for canonical Opcore artifacts", () => {
     const descriptor = validManagedToolDescriptor();
-    assert.equal(validateManagedToolDescriptor(descriptor).descriptorKind, "aggregate_lattice");
+    assert.equal(validateManagedToolDescriptor(descriptor).descriptorKind, "aggregate_opcore");
     assert.deepEqual(
       descriptor.commandGroups.map((group) => group.name),
       ["graph", "inspect", "edit", "check", "validate", "status", "doctor"]
@@ -1692,7 +1692,7 @@ describe("lattice shared contracts", () => {
           artifacts: [
             {
               ...validManagedToolDescriptor().artifacts[0],
-              path: "../lattice"
+              path: "../advanced"
             }
           ]
         }),
@@ -1774,7 +1774,7 @@ describe("lattice shared contracts", () => {
         validateManagedToolDescriptor({
           ...validManagedToolDescriptor(),
           commandGroups: validManagedToolDescriptor().commandGroups.map((group) =>
-            group.name === "graph" ? { ...group, canonicalCommand: ["graph", "lattice"] } : group
+            group.name === "graph" ? { ...group, canonicalCommand: ["graph", "opcore"] } : group
           )
         }),
       /canonicalCommand/
@@ -1878,7 +1878,7 @@ describe("lattice shared contracts", () => {
     const providerStatus = {
       state: "required_missing",
       mode: "required",
-      provider: "lattice-graph",
+      provider: "opcore-graph",
       schemaVersion: 1,
       failure: {
         category: "provider_missing",
@@ -1887,16 +1887,16 @@ describe("lattice shared contracts", () => {
     };
     const request = validateCommandAdapterRequest({
       schemaVersion: 1,
-      bin: "lattice",
+      bin: "opcore",
       argv: ["graph", "status", "--json"],
       args: ["status"],
       json: true,
       group,
-      canonicalCommand: ["lattice", "graph", "status"]
+      canonicalCommand: ["opcore", "graph", "status"]
     });
     assert.equal(request.group.name, "graph");
     const routed = await routeCommandAdapter({
-      bin: "lattice",
+      bin: "opcore",
       argv: ["status", "--json"],
       groupName: "graph",
       adapter: (adapterRequest) =>
@@ -1911,11 +1911,11 @@ describe("lattice shared contracts", () => {
           providerStatus
         })
     });
-    assert.equal(routed.providerStatus.provider, "lattice-graph");
+    assert.equal(routed.providerStatus.provider, "opcore-graph");
     assert.equal(routed.exitCode, 2);
     const serveRouted = validateCommandRouterResult({
       ...validRouterResult(),
-      canonicalCommand: ["lattice", "graph", "serve"],
+      canonicalCommand: ["opcore", "graph", "serve"],
       owner: "graph",
       graphServe: validGraphServeTransportStatus()
     });
@@ -1935,7 +1935,7 @@ describe("lattice shared contracts", () => {
                   degradedChecks: [
                     {
                       ...validValidationStatusPayload().adapterRegistry.adapters[0].degradedChecks[0],
-                      currentUsage: { lattice: true, orchestra: true, covibes: false }
+                      currentUsage: { opcore: true, orchestra: true, covibes: false }
                     }
                   ]
                 }
@@ -1948,7 +1948,7 @@ describe("lattice shared contracts", () => {
     const validationRouted = validateCommandRouterResult({
       ...validRouterResult(),
       owner: "validation",
-      canonicalCommand: ["lattice", "check", "manifest"],
+      canonicalCommand: ["opcore", "check", "manifest"],
       validationResult: validValidationResult(),
       validationStatus
     });
@@ -1958,7 +1958,7 @@ describe("lattice shared contracts", () => {
     const preWriteRouted = validateCommandRouterResult({
       ...validRouterResult(),
       owner: "validation",
-      canonicalCommand: ["lattice", "validate", "pre-write"],
+      canonicalCommand: ["opcore", "validate", "pre-write"],
       validationResult: validValidationResult(),
       receipt
     });
@@ -2000,7 +2000,7 @@ describe("lattice shared contracts", () => {
     const editRouted = validateCommandRouterResult({
       ...validRouterResult(),
       owner: "edit",
-      canonicalCommand: ["lattice", "edit", "exact"],
+      canonicalCommand: ["opcore", "edit", "exact"],
       editPlan,
       editResult: validEditCommandResult()
     });
@@ -2010,7 +2010,7 @@ describe("lattice shared contracts", () => {
         validateCommandRouterResult({
           ...validRouterResult(),
           owner: "edit",
-          canonicalCommand: ["lattice", "edit", "exact"],
+          canonicalCommand: ["opcore", "edit", "exact"],
           message: "{\"planId\":\"edit-plan-1\",\"changes\":[]}"
         }),
       /editPlan\/editResult/
@@ -2019,7 +2019,7 @@ describe("lattice shared contracts", () => {
       () =>
         validateCommandAdapterRequest({
           ...request,
-          canonicalCommand: ["lattice", "status"]
+          canonicalCommand: ["opcore", "status"]
         }),
       /canonicalCommand must start/
     );
@@ -2109,7 +2109,7 @@ describe("lattice shared contracts", () => {
       () =>
         validateGraphReleaseReceipt({
           ...receipt,
-          rustCommandCoverage: receipt.rustCommandCoverage.filter((entry) => entry.id !== "lattice-graph-rust-impact")
+          rustCommandCoverage: receipt.rustCommandCoverage.filter((entry) => entry.id !== "opcore-graph-rust-impact")
         }),
       /Graph release Rust command coverage ids must exactly match/
     );
@@ -2118,12 +2118,12 @@ describe("lattice shared contracts", () => {
         validateGraphReleaseReceipt({
           ...receipt,
           rustCommandCoverage: receipt.rustCommandCoverage.map((entry) =>
-            entry.id === "lattice-graph-rust-query"
-              ? { ...entry, command: ["graph", "search"], canonicalCommand: ["lattice", "graph", "search"] }
+            entry.id === "opcore-graph-rust-query"
+              ? { ...entry, command: ["graph", "search"], canonicalCommand: ["opcore", "graph", "search"] }
               : entry
           )
         }),
-      /Graph release Rust command lattice-graph-rust-query route must match/
+      /Graph release Rust command opcore-graph-rust-query route must match/
     );
     assert.throws(
       () =>
@@ -2175,8 +2175,8 @@ describe("lattice shared contracts", () => {
         validateGraphReleaseReceipt({
           ...receipt,
           commandCoverage: receipt.commandCoverage.map((entry) =>
-            entry.id === "lattice-graph-build"
-              ? { ...entry, bin: "old-graph", command: ["graph", "build"], canonicalCommand: ["lattice", "graph", "build"] }
+            entry.id === "opcore-graph-build"
+              ? { ...entry, bin: "old-graph", command: ["graph", "build"], canonicalCommand: ["opcore", "graph", "build"] }
               : entry
           )
         }),
@@ -2409,7 +2409,7 @@ describe("lattice shared contracts", () => {
           ...receipt,
           rustCommandReceipts: receipt.rustCommandReceipts.map((entry) =>
             entry.id === "graph-rust-query"
-              ? { ...entry, command: ["lattice", "graph", "status"], canonicalCommand: ["lattice", "graph", "status"] }
+              ? { ...entry, command: ["opcore", "graph", "status"], canonicalCommand: ["opcore", "graph", "status"] }
               : entry
           )
         }),
@@ -2423,8 +2423,8 @@ describe("lattice shared contracts", () => {
             entry.id === "validate-pre-write-fail"
               ? {
                   ...entry,
-                  command: ["lattice", "status"],
-                  canonicalCommand: ["lattice", "status"],
+                  command: ["opcore", "status"],
+                  canonicalCommand: ["opcore", "status"],
                   owner: "runtime",
                   status: "ok",
                   exitCode: 0
@@ -2528,8 +2528,8 @@ describe("lattice shared contracts", () => {
           ...receipt,
           provider: {
             ...receipt.provider,
-            command: ["lattice", "asp", "serve"],
-            entrypoint: { transport: "stdio", bin: "lattice", args: ["asp", "serve"] }
+            command: ["opcore", "asp", "serve"],
+            entrypoint: { transport: "stdio", bin: "opcore", args: ["asp", "serve"] }
           }
         }),
       /provider command|entrypoint/
@@ -2659,7 +2659,7 @@ describe("lattice shared contracts", () => {
             {
               name: "graph",
               owner: "engine",
-              canonicalCommand: ["lattice", "graph"],
+              canonicalCommand: ["opcore", "graph"],
               commands: ["status"],
               summary: "invalid"
             }
@@ -2698,7 +2698,7 @@ function validRouterManifest() {
   return {
     schemaVersion: 1,
     packageName: "@the-open-engine/opcore",
-    bins: ["lattice", "opcore"],
+    bins: ["opcore"],
     exitSemantics: {
       ok: 0,
       error: 1,
@@ -2716,7 +2716,7 @@ function validRouterManifest() {
       {
         name: "graph",
         owner: "graph",
-        canonicalCommand: ["lattice", "graph"],
+        canonicalCommand: ["opcore", "graph"],
         commands: ["status"],
         summary: "graph routes"
       }
@@ -2768,7 +2768,7 @@ function validOpcoreRepoState() {
     graph: {
       state: "available",
       mode: "required",
-      provider: "lattice-graph",
+      provider: "opcore-graph",
       action: "Graph is ready.",
       status: availableGraphStatus()
     },
@@ -2797,7 +2797,7 @@ function validOpcoreRepoState() {
     },
     warnings: ["Unsupported stacks: Python"],
     blockers: [],
-    nextActions: ["lattice check changed --repo /repo --json"]
+    nextActions: ["opcore check changed --repo /repo --json"]
   };
 }
 
@@ -2999,7 +2999,7 @@ function validOpcoreMetricReport(overrides = {}) {
     graph: {
       state: "available",
       mode: "required",
-      provider: "lattice-graph"
+      provider: "opcore-graph"
     },
     validation: {
       status: "policy_failure",
@@ -3152,10 +3152,10 @@ function validManagedToolDescriptor(overrides = {}) {
   const nativeArtifacts = descriptorNativeArtifacts();
   return {
     schemaVersion: 1,
-    descriptorKind: "aggregate_lattice",
+    descriptorKind: "aggregate_opcore",
     aggregateIdentity: {
-      name: "lattice",
-      releaseLine: "lattice",
+      name: "opcore",
+      releaseLine: "opcore",
       packageName: "@the-open-engine/opcore"
     },
     packageIdentity: {
@@ -3165,10 +3165,10 @@ function validManagedToolDescriptor(overrides = {}) {
     },
     entrypoints: [
       {
-        bin: "lattice",
+        bin: "opcore",
         packageName: "@the-open-engine/opcore",
-        path: "dist/lattice/index.js",
-        command: ["lattice"]
+        path: "dist/index.js",
+        command: ["opcore"]
       }
     ],
     commandGroups: [
@@ -3181,7 +3181,7 @@ function validManagedToolDescriptor(overrides = {}) {
       ["doctor", ["doctor"]]
     ].map(([name, commands]) => ({
       name,
-      canonicalCommand: ["lattice", name],
+      canonicalCommand: ["opcore", name],
       commands,
       packageName:
         name === "graph"
@@ -3195,32 +3195,32 @@ function validManagedToolDescriptor(overrides = {}) {
     healthProbes: [
       {
         id: "status-json",
-        command: ["lattice", "status", "--json"],
+        command: ["opcore", "status", "--json"],
         expectedExitCode: 0,
         output: "json"
       },
       {
         id: "doctor-json",
-        command: ["lattice", "doctor", "--json"],
+        command: ["opcore", "doctor", "--json"],
         expectedExitCode: 0,
         output: "json"
       },
       {
         id: "graph-status-json",
-        command: ["lattice", "graph", "status", "--json"],
+        command: ["opcore", "graph", "status", "--json"],
         expectedExitCode: 0,
         output: "json"
       },
       {
         id: "check-manifest-json",
-        command: ["lattice", "check", "manifest", "--json"],
+        command: ["opcore", "check", "manifest", "--json"],
         expectedExitCode: 0,
         output: "json"
       }
     ],
     capabilities: {
       graph: {
-        provider: "lattice-graph",
+        provider: "opcore-graph",
         schemaVersion: 1,
         commands: ["build", "update", "watch", "status", "query", "impact", "review-context", "detect-changes", "search", "serve"],
         queryKinds: ["nodes", "edges", "neighbors", "symbols", "impact", "review_context", "detect_changes", "search"],
@@ -3254,21 +3254,21 @@ function validManagedToolDescriptor(overrides = {}) {
       {
         id: "cli-entrypoint",
         packageName: "@the-open-engine/opcore",
-        path: "dist/lattice/index.js",
+        path: "dist/index.js",
         type: "entrypoint",
         required: true
       },
       {
         id: "descriptor",
         packageName: "@the-open-engine/opcore",
-        path: "dist/descriptors/lattice.managed-tool.json",
+        path: "dist/descriptors/opcore.managed-tool.json",
         type: "descriptor",
         required: true
       },
       {
         id: "contracts-schema",
         packageName: "@the-open-engine/opcore-contracts",
-        path: "schemas/lattice-contracts.schema.json",
+        path: "schemas/opcore-contracts.schema.json",
         type: "schema",
         required: true
       },
@@ -3296,9 +3296,9 @@ function descriptorNativeArtifacts() {
   return graphCoreNativeSupportedTargets.map((targetPlatform) => ({
     targetPlatform,
     packageName: graphCoreNativePackageNameForTarget(targetPlatform),
-    binaryPath: "lattice-graph-core",
+    binaryPath: "opcore-graph-core",
     metadataPath: "metadata.json",
-    checksumPath: "lattice-graph-core.sha256",
+    checksumPath: "opcore-graph-core.sha256",
     artifactIds: {
       binaryArtifactId: `graph-core-binary-${targetPlatform}`,
       metadataArtifactId: `graph-core-metadata-${targetPlatform}`,
@@ -3381,11 +3381,11 @@ function surfaceContracts(surfaces) {
 
 function validArtifactMetadata() {
   return {
-    artifactName: "lattice-graph-core",
+    artifactName: "opcore-graph-core",
     artifactVersion: "0.1.0-alpha.0",
     targetPlatform: "test",
-    binaryPath: "dist/native/test/lattice-graph-core",
-    checksumPath: "dist/native/test/lattice-graph-core.sha256",
+    binaryPath: "dist/native/test/opcore-graph-core",
+    checksumPath: "dist/native/test/opcore-graph-core.sha256",
     checksumSha256: "a".repeat(64),
     buildProfile: "release"
   };
@@ -3393,9 +3393,9 @@ function validArtifactMetadata() {
 
 function validHandshake() {
   return {
-    provider: "lattice-graph",
+    provider: "opcore-graph",
     graphSchemaVersion: 1,
-    artifactName: "lattice-graph-core",
+    artifactName: "opcore-graph-core",
     artifactVersion: "0.1.0-alpha.0",
     targetPlatform: "test",
     supportedOperations: ["build", "update", "watch", "status", "query", "ping", "health", "shutdown"],
@@ -3457,7 +3457,7 @@ function validValidationRequest(overrides = {}) {
   return {
     requestId: "validation-1",
     repo: {
-      repoId: "lattice"
+      repoId: "opcore"
     },
     scope: {
       kind: "files",
@@ -3465,7 +3465,7 @@ function validValidationRequest(overrides = {}) {
     },
     graph: {
       mode: "required",
-      provider: "lattice-graph"
+      provider: "opcore-graph"
     },
     overlays: [],
     checks: ["types"],
@@ -3550,7 +3550,7 @@ function validValidationStatusPayload(overrides = {}) {
 
 function retainedRustUsage() {
   return {
-    lattice: false,
+    opcore: false,
     orchestra: true,
     covibes: false,
     gateway: true
@@ -3562,14 +3562,14 @@ function validPreWriteValidationReceipt(overrides = {}) {
     schemaVersion: 1,
     kind: "pre_write_validation",
     route: "validate.pre-write",
-    canonicalCommand: ["lattice", "validate", "pre-write", "--request-file", "request.json", "--timeout-ms", "30000"],
+    canonicalCommand: ["opcore", "validate", "pre-write", "--request-file", "request.json", "--timeout-ms", "30000"],
     generatedAt: "2026-06-05T00:00:00.000Z",
     durationMs: 12,
     timeoutMs: 30000,
     ok: true,
     requestId: "validation-1",
     repo: {
-      repoId: "lattice"
+      repoId: "opcore"
     },
     scope: {
       kind: "files",
@@ -3578,7 +3578,7 @@ function validPreWriteValidationReceipt(overrides = {}) {
     checks: ["typescript.syntax"],
     graph: {
       mode: "required",
-      provider: "lattice-graph",
+      provider: "opcore-graph",
       status: availableGraphStatus()
     },
     overlays: {
@@ -3597,10 +3597,10 @@ function availableGraphStatus() {
   return {
     state: "available",
     mode: "required",
-    provider: "lattice-graph",
+    provider: "opcore-graph",
     schemaVersion: 1,
     repo: {
-      repoId: "lattice"
+      repoId: "opcore"
     },
     freshness: {
       generatedAt: "2026-06-05T00:00:00.000Z",
@@ -3626,7 +3626,7 @@ function providerFailureStatus(state, mode, category) {
   const status = {
     state,
     mode,
-    provider: "lattice-graph",
+    provider: "opcore-graph",
     schemaVersion: 1,
     failure: {
       category,
@@ -3635,7 +3635,7 @@ function providerFailureStatus(state, mode, category) {
   };
   if (state === "stale") {
     status.repo = {
-      repoId: "lattice"
+      repoId: "opcore"
     };
     status.freshness = {
       generatedAt: "2026-06-04T00:00:00.000Z",
@@ -3654,7 +3654,7 @@ function validGraphFactQueryRequest() {
   return {
     requestId: "query-1",
     repo: {
-      repoId: "lattice"
+      repoId: "opcore"
     },
     schemaVersion: 1,
     mode: "required",
@@ -3670,7 +3670,7 @@ function validGraphSearchRequest() {
   return {
     requestId: "search-1",
     repo: {
-      repoId: "lattice"
+      repoId: "opcore"
     },
     schemaVersion: 1,
     mode: "required",
@@ -3686,10 +3686,10 @@ function validGraphSearchResult() {
     status: {
       state: "available",
       mode: "required",
-      provider: "lattice-graph",
+      provider: "opcore-graph",
       schemaVersion: 1,
       repo: {
-        repoId: "lattice"
+        repoId: "opcore"
       },
       freshness: {
         generatedAt: "2026-06-04T00:00:00.000Z",
@@ -3701,9 +3701,9 @@ function validGraphSearchResult() {
     },
     metadata: {
       schemaVersion: 1,
-      provider: "lattice-graph",
+      provider: "opcore-graph",
       repo: {
-        repoId: "lattice"
+        repoId: "opcore"
       },
       generatedAt: "2026-06-04T00:00:00.000Z",
       freshness: {
@@ -3751,13 +3751,13 @@ function validGraphSearchResult() {
 function validGraphServeTransportStatus() {
   return {
     schemaVersion: 1,
-    protocol: "lattice.graph.daemon",
+    protocol: "opcore.graph.daemon",
     transport: "stdio",
     state: "ready",
     repo: {
-      repoId: "lattice"
+      repoId: "opcore"
     },
-    provider: "lattice-graph",
+    provider: "opcore-graph",
     pid: 1234,
     artifact: validArtifactMetadata(),
     message: "graph serve stdio transport ready"
@@ -3768,10 +3768,10 @@ function validWarmingStatus() {
   return {
     state: "warming",
     mode: "required",
-    provider: "lattice-graph",
+    provider: "opcore-graph",
     schemaVersion: 1,
     repo: {
-      repoId: "lattice"
+      repoId: "opcore"
     },
     freshness: {
       generatedAt: "2026-06-04T00:00:00.000Z",
@@ -3786,7 +3786,7 @@ function validEditPlan() {
   return {
     planId: "edit-plan-1",
     repo: {
-      repoId: "lattice"
+      repoId: "opcore"
     },
     changes: [
       {
@@ -3958,9 +3958,9 @@ function validInspectImplementationResult() {
 function validRouterResult() {
   return {
     schemaVersion: 1,
-    bin: "lattice",
+    bin: "opcore",
     argv: ["graph", "status", "--json"],
-    canonicalCommand: ["lattice", "status"],
+    canonicalCommand: ["opcore", "status"],
     owner: "runtime",
     status: "ok",
     exitCode: 0,
@@ -3986,7 +3986,7 @@ function validGraphReferenceEvidenceManifest() {
         classification: "required",
         referenceTool: "current external graph dev wrapper",
         referenceCommand: ["status"],
-        canonicalCommand: ["lattice", "graph", "status"],
+        canonicalCommand: ["opcore", "graph", "status"],
         flags: ["--repo", "--json"],
         positionals: [],
         fixtures: ["status-json"],
@@ -4028,7 +4028,7 @@ function validGraphReferenceEvidenceManifest() {
         id: "daemon-hot-query",
         classification: "required",
         fixture: "packages/fixtures/graph-reference-evidence/daemon-socket-fixtures.json",
-        protocol: "lattice.graph.daemon",
+        protocol: "opcore.graph.daemon",
         envelopes: ["ping-request", "success-response"],
         fixtures: ["daemon-fixtures"]
       }
@@ -4095,12 +4095,12 @@ function validGraphReferenceEvidenceManifest() {
 
 function validGraphReleaseReceipt() {
   const commandCoverage = graphReleaseCoreCommandIds.map((id) => {
-    const command = id.replace("lattice-graph-", "");
+    const command = id.replace("opcore-graph-", "");
     return {
       id,
-      bin: "lattice",
+      bin: "opcore",
       command: ["graph", command],
-      canonicalCommand: ["lattice", "graph", command],
+      canonicalCommand: ["opcore", "graph", command],
       status: "passed",
       exitCode: 0,
       fixture: "packages/fixtures/source-extraction/wave1",
@@ -4108,12 +4108,12 @@ function validGraphReleaseReceipt() {
     };
   });
   const rustCommandCoverage = graphReleaseRustCommandIds.map((id) => {
-    const command = id.replace("lattice-graph-rust-", "");
+    const command = id.replace("opcore-graph-rust-", "");
     return {
       id,
-      bin: "lattice",
+      bin: "opcore",
       command: ["graph", command],
-      canonicalCommand: ["lattice", "graph", command],
+      canonicalCommand: ["opcore", "graph", command],
       status: "passed",
       exitCode: 0,
       fixture: "packages/fixtures/source-extraction/rust-only",
@@ -4151,35 +4151,35 @@ function validGraphReleaseReceipt() {
     serveTransport: [
       {
         id: "serve-jsonl-ping",
-        protocol: "lattice.graph.daemon",
+        protocol: "opcore.graph.daemon",
         operation: "ping",
         status: "passed",
         exitCode: 0
       },
       {
         id: "serve-jsonl-status",
-        protocol: "lattice.graph.daemon",
+        protocol: "opcore.graph.daemon",
         operation: "status",
         status: "passed",
         exitCode: 0
       },
       {
         id: "serve-jsonl-query",
-        protocol: "lattice.graph.daemon",
+        protocol: "opcore.graph.daemon",
         operation: "query",
         status: "passed",
         exitCode: 0
       },
       {
         id: "serve-jsonl-search",
-        protocol: "lattice.graph.daemon",
+        protocol: "opcore.graph.daemon",
         operation: "search",
         status: "passed",
         exitCode: 0
       },
       {
         id: "serve-jsonl-shutdown",
-        protocol: "lattice.graph.daemon",
+        protocol: "opcore.graph.daemon",
         operation: "shutdown",
         status: "passed",
         exitCode: 0
@@ -4195,7 +4195,7 @@ function validGraphReleaseReceipt() {
     })),
     packageInspection: {
       packageName: "@the-open-engine/opcore-graph",
-      tarballName: "covibes-lattice-graph-0.1.0-alpha.0.tgz",
+      tarballName: "covibes-opcore-graph-0.1.0-alpha.0.tgz",
       fileCount: 1,
       files: ["dist/index.js"],
       forbiddenMarkersAbsent: true,
@@ -4214,17 +4214,17 @@ function validGraphReleaseReceipt() {
       metadata: {
         ...validArtifactMetadata(),
         targetPlatform,
-        binaryPath: "lattice-graph-core",
-        checksumPath: "lattice-graph-core.sha256",
+        binaryPath: "opcore-graph-core",
+        checksumPath: "opcore-graph-core.sha256",
         checksumSha256: "e".repeat(64)
       },
-      binaryPath: "lattice-graph-core",
-      checksumPath: "lattice-graph-core.sha256",
+      binaryPath: "opcore-graph-core",
+      checksumPath: "opcore-graph-core.sha256",
       metadataPath: "metadata.json",
       binarySha256: "e".repeat(64),
       checksumFileSha256: "f".repeat(64),
       metadataSha256: "a".repeat(64),
-      packageFiles: ["package.json", "README.md", "lattice-graph-core", "lattice-graph-core.sha256", "metadata.json"]
+      packageFiles: ["package.json", "README.md", "opcore-graph-core", "opcore-graph-core.sha256", "metadata.json"]
     })),
     reportReceipts: [
       {
@@ -4350,7 +4350,7 @@ function validReleaseReceipt() {
       ])
     ];
     const bins = isOpcore
-      ? { opcore: "dist/index.js", lattice: "dist/lattice/index.js" }
+      ? { opcore: "dist/index.js" }
       : packageName === "@the-open-engine/opcore-asp-provider"
         ? { "opcore-asp-provider": "dist/index.js" }
           : {};
@@ -4363,7 +4363,7 @@ function validReleaseReceipt() {
         version: "0.1.0-alpha.0",
         license: "MIT",
         ...(nativeTarget ? {} : { main: "dist/index.js", types: "dist/index.d.ts" }),
-        files: nativeTarget ? ["lattice-graph-core", "lattice-graph-core.sha256", "metadata.json", "README.md"] : ["dist", "README.md"],
+        files: nativeTarget ? ["opcore-graph-core", "opcore-graph-core.sha256", "metadata.json", "README.md"] : ["dist", "README.md"],
         bins,
         dependencies: {},
         bundledDependencies: []
@@ -4411,7 +4411,7 @@ function validReleaseReceipt() {
     commandGroups: releaseReceiptCommandGroups,
     packages,
     descriptor: {
-      path: "packages/opcore/dist/descriptors/lattice.managed-tool.json",
+      path: "packages/opcore/dist/descriptors/opcore.managed-tool.json",
       packageName: "@the-open-engine/opcore",
       checksumSha256: "b".repeat(64),
       descriptor,
@@ -4520,26 +4520,26 @@ function validReleaseCutoverReceipt() {
     ["opcore-check-changed", ["opcore", "check", "changed", "--base", "HEAD", "--checks", "typescript.syntax"], "validation"],
     ["opcore-measure", ["opcore", "measure"], "runtime"],
     ["opcore-try", ["opcore", "try"], "runtime"],
-    ["status", ["lattice", "status"], "runtime"],
-    ["doctor", ["lattice", "doctor"], "runtime"],
-    ["graph-build", ["lattice", "graph", "build"], "graph"],
-    ["graph-status", ["lattice", "graph", "status"], "graph"],
-    ["graph-query", ["lattice", "graph", "query"], "graph"],
-    ["graph-impact", ["lattice", "graph", "impact", "--files", "src/components/GreetingCard.tsx"], "graph"],
-    ["graph-review-context", ["lattice", "graph", "review-context", "--files", "src/components/GreetingCard.tsx"], "graph"],
-    ["graph-detect-changes", ["lattice", "graph", "detect-changes", "--files", "src/components/GreetingCard.tsx"], "graph"],
-    ["graph-search", ["lattice", "graph", "search", "Greeting", "--limit", "5"], "graph"],
-    ["graph-serve", ["lattice", "graph", "serve"], "graph"],
-    ["inspect-symbols", ["lattice", "inspect", "symbols", "Greeting", "--limit", "5"], "inspect"],
-    ["inspect-definition", ["lattice", "inspect", "definition", "GreetingCard"], "inspect"],
-    ["inspect-references", ["lattice", "inspect", "references", "function:src/components/GreetingCard.tsx#GreetingCard", "--limit", "5"], "inspect"],
-    ["inspect-signature", ["lattice", "inspect", "signature", "function:src/components/GreetingCard.tsx#GreetingCard"], "inspect"],
-    ["inspect-implementations", ["lattice", "inspect", "implementations", "class:src/models.ts#GreetingModel"], "inspect"],
-    ["inspect-search", ["lattice", "inspect", "search", "Greeting", "--limit", "5"], "inspect"],
+    ["status", ["opcore", "status"], "runtime"],
+    ["doctor", ["opcore", "doctor"], "runtime"],
+    ["graph-build", ["opcore", "graph", "build"], "graph"],
+    ["graph-status", ["opcore", "graph", "status"], "graph"],
+    ["graph-query", ["opcore", "graph", "query"], "graph"],
+    ["graph-impact", ["opcore", "graph", "impact", "--files", "src/components/GreetingCard.tsx"], "graph"],
+    ["graph-review-context", ["opcore", "graph", "review-context", "--files", "src/components/GreetingCard.tsx"], "graph"],
+    ["graph-detect-changes", ["opcore", "graph", "detect-changes", "--files", "src/components/GreetingCard.tsx"], "graph"],
+    ["graph-search", ["opcore", "graph", "search", "Greeting", "--limit", "5"], "graph"],
+    ["graph-serve", ["opcore", "graph", "serve"], "graph"],
+    ["inspect-symbols", ["opcore", "inspect", "symbols", "Greeting", "--limit", "5"], "inspect"],
+    ["inspect-definition", ["opcore", "inspect", "definition", "GreetingCard"], "inspect"],
+    ["inspect-references", ["opcore", "inspect", "references", "function:src/components/GreetingCard.tsx#GreetingCard", "--limit", "5"], "inspect"],
+    ["inspect-signature", ["opcore", "inspect", "signature", "function:src/components/GreetingCard.tsx#GreetingCard"], "inspect"],
+    ["inspect-implementations", ["opcore", "inspect", "implementations", "class:src/models.ts#GreetingModel"], "inspect"],
+    ["inspect-search", ["opcore", "inspect", "search", "Greeting", "--limit", "5"], "inspect"],
     [
       "edit-preview",
       [
-        "lattice",
+        "opcore",
         "edit",
         "exact",
         "--path",
@@ -4554,7 +4554,7 @@ function validReleaseCutoverReceipt() {
     [
       "edit-apply",
       [
-        "lattice",
+        "opcore",
         "edit",
         "exact",
         "--path",
@@ -4570,7 +4570,7 @@ function validReleaseCutoverReceipt() {
     [
       "edit-refused",
       [
-        "lattice",
+        "opcore",
         "edit",
         "exact",
         "--path",
@@ -4585,16 +4585,16 @@ function validReleaseCutoverReceipt() {
       "error",
       1
     ],
-    ["check-files", ["lattice", "check", "files", "src/cutover.ts", "--checks", "typescript.syntax,typescript.types"], "validation"],
-    ["validate-request", ["lattice", "validate", "request", "--request-file", "/tmp/lattice-cutover/project/validate-request.json"], "validation"],
+    ["check-files", ["opcore", "check", "files", "src/cutover.ts", "--checks", "typescript.syntax,typescript.types"], "validation"],
+    ["validate-request", ["opcore", "validate", "request", "--request-file", "/tmp/opcore-cutover/project/validate-request.json"], "validation"],
     [
       "validate-pre-write-pass",
-      ["lattice", "validate", "pre-write", "--request-file", "/tmp/lattice-cutover/project/pre-write-pass.json", "--timeout-ms", "30000"],
+      ["opcore", "validate", "pre-write", "--request-file", "/tmp/opcore-cutover/project/pre-write-pass.json", "--timeout-ms", "30000"],
       "validation"
     ],
     [
       "validate-pre-write-fail",
-      ["lattice", "validate", "pre-write", "--request-file", "/tmp/lattice-cutover/project/pre-write-fail.json", "--timeout-ms", "30000"],
+      ["opcore", "validate", "pre-write", "--request-file", "/tmp/opcore-cutover/project/pre-write-fail.json", "--timeout-ms", "30000"],
       "validation",
       "error",
       1
@@ -4615,13 +4615,13 @@ function validReleaseCutoverReceipt() {
     };
   });
   const rustCommandReceipts = [
-    ["graph-rust-build", ["lattice", "graph", "build"], "graph"],
-    ["graph-rust-status", ["lattice", "graph", "status"], "graph"],
-    ["graph-rust-query", ["lattice", "graph", "query"], "graph"],
-    ["graph-rust-impact", ["lattice", "graph", "impact", "--files", "src/helpers.rs"], "graph"],
-    ["graph-rust-review-context", ["lattice", "graph", "review-context", "--files", "src/helpers.rs"], "graph"],
-    ["graph-rust-detect-changes", ["lattice", "graph", "detect-changes", "--files", "src/helpers.rs"], "graph"],
-    ["graph-rust-search", ["lattice", "graph", "search", "Widget", "--limit", "5"], "graph"]
+    ["graph-rust-build", ["opcore", "graph", "build"], "graph"],
+    ["graph-rust-status", ["opcore", "graph", "status"], "graph"],
+    ["graph-rust-query", ["opcore", "graph", "query"], "graph"],
+    ["graph-rust-impact", ["opcore", "graph", "impact", "--files", "src/helpers.rs"], "graph"],
+    ["graph-rust-review-context", ["opcore", "graph", "review-context", "--files", "src/helpers.rs"], "graph"],
+    ["graph-rust-detect-changes", ["opcore", "graph", "detect-changes", "--files", "src/helpers.rs"], "graph"],
+    ["graph-rust-search", ["opcore", "graph", "search", "Widget", "--limit", "5"], "graph"]
   ].map(([id, command, owner]) => ({
     id,
     command,
@@ -4629,7 +4629,7 @@ function validReleaseCutoverReceipt() {
     owner,
     status: "ok",
     exitCode: 0,
-    binPath: "node_modules/.bin/lattice",
+    binPath: "node_modules/.bin/opcore",
     stdoutSha256: "7".repeat(64),
     stderrSha256: "8".repeat(64),
     assertion: `${id} passed on Rust fixture`
@@ -4657,7 +4657,7 @@ function validReleaseCutoverReceipt() {
       pathSanitized: true,
       aceRuntimeBinExcluded: true,
       siblingCovibesExcluded: true,
-      latticeBinOnly: true,
+      opcoreBinOnly: true,
       oldBinsAbsent: {
         crg: true,
         cix: true,
@@ -4669,7 +4669,7 @@ function validReleaseCutoverReceipt() {
     negativeChecks: [
       {
         id: "missing-required-graph-check",
-        command: ["lattice", "check", "files", "src/index.ts", "--graph-mode", "required"],
+        command: ["opcore", "check", "files", "src/index.ts", "--graph-mode", "required"],
         status: "passed",
         exitCode: 0,
         assertion: "required graph failure stayed typed"
@@ -4786,7 +4786,7 @@ function validAspDogfoodReceipt() {
       receiptId: "core-evaluate-allow-test",
       authorityEvidence: [
         {
-          identity: "lattice",
+          identity: "opcore",
           authority: { granted: false, requirement: "opcore/core-required-check", policyDigest: "sha256:test" }
         }
       ],
@@ -4795,7 +4795,7 @@ function validAspDogfoodReceipt() {
     },
     authorityEvidence: [
       {
-        identity: "lattice",
+        identity: "opcore",
         authority: { granted: false, requirement: "opcore/core-required-check", policyDigest: "sha256:test" }
       }
     ],

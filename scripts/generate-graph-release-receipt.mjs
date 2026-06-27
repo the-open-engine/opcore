@@ -31,7 +31,7 @@ import {
 } from "../packages/contracts/dist/index.js";
 
 const repoRoot = fileURLToPath(new URL("..", import.meta.url));
-const latticeBin = join(repoRoot, "packages/opcore/dist/lattice/index.js");
+const opcoreBin = join(repoRoot, "packages/opcore/dist/index.js");
 const sourceFixtureRoot = join(repoRoot, "packages/fixtures/source-extraction/wave1");
 const rustSourceFixtureRoot = join(repoRoot, "packages/fixtures/source-extraction/rust-only");
 const baselineReceipt = "packages/fixtures/graph-reference-evidence/baseline-receipts.json";
@@ -46,7 +46,7 @@ const writeDocs = args.has("--write");
 const jsonOutput = args.has("--json") || !writeDocs;
 const inspectPackageOnly = args.has("--inspect-package-only");
 
-const tempRoot = mkdtempSync(join(tmpdir(), "lattice-graph-release-"));
+const tempRoot = mkdtempSync(join(tmpdir(), "opcore-graph-release-"));
 try {
   if (inspectPackageOnly) {
     const inspection = inspectGraphPackage();
@@ -114,7 +114,7 @@ function runCommandCoverage(fixtureRoot) {
 
 function runRustCommandCoverage(fixtureRoot) {
   const commandCoverage = [];
-  const build = recordCoverage(commandCoverage, "lattice-graph-rust-build", latticeBin, [
+  const build = recordCoverage(commandCoverage, "opcore-graph-rust-build", opcoreBin, [
     "graph",
     "build",
     "--repo",
@@ -122,7 +122,7 @@ function runRustCommandCoverage(fixtureRoot) {
     "--json"
   ], "packages/fixtures/source-extraction/rust-only");
   writeFileSync(join(fixtureRoot, "src/helpers.rs"), "pub fn assist() -> usize { 2 }\n");
-  recordCoverage(commandCoverage, "lattice-graph-rust-update", latticeBin, [
+  recordCoverage(commandCoverage, "opcore-graph-rust-update", opcoreBin, [
     "graph",
     "update",
     "--repo",
@@ -131,7 +131,7 @@ function runRustCommandCoverage(fixtureRoot) {
     "HEAD",
     "--json"
   ], "packages/fixtures/source-extraction/rust-only");
-  recordCoverage(commandCoverage, "lattice-graph-rust-watch", latticeBin, [
+  recordCoverage(commandCoverage, "opcore-graph-rust-watch", opcoreBin, [
     "graph",
     "watch",
     "--repo",
@@ -141,9 +141,9 @@ function runRustCommandCoverage(fixtureRoot) {
     "50",
     "--json"
   ], "packages/fixtures/source-extraction/rust-only");
-  recordCoverage(commandCoverage, "lattice-graph-rust-status", latticeBin, ["graph", "status", "--repo", fixtureRoot, "--json"], "packages/fixtures/source-extraction/rust-only");
-  const query = recordCoverage(commandCoverage, "lattice-graph-rust-query", latticeBin, ["graph", "query", "--repo", fixtureRoot, "--json"], "packages/fixtures/source-extraction/rust-only");
-  const impact = recordCoverage(commandCoverage, "lattice-graph-rust-impact", latticeBin, [
+  recordCoverage(commandCoverage, "opcore-graph-rust-status", opcoreBin, ["graph", "status", "--repo", fixtureRoot, "--json"], "packages/fixtures/source-extraction/rust-only");
+  const query = recordCoverage(commandCoverage, "opcore-graph-rust-query", opcoreBin, ["graph", "query", "--repo", fixtureRoot, "--json"], "packages/fixtures/source-extraction/rust-only");
+  const impact = recordCoverage(commandCoverage, "opcore-graph-rust-impact", opcoreBin, [
     "graph",
     "impact",
     "--repo",
@@ -152,7 +152,7 @@ function runRustCommandCoverage(fixtureRoot) {
     "src/helpers.rs",
     "--json"
   ], "packages/fixtures/source-extraction/rust-only");
-  const search = recordCoverage(commandCoverage, "lattice-graph-rust-search", latticeBin, [
+  const search = recordCoverage(commandCoverage, "opcore-graph-rust-search", opcoreBin, [
     "graph",
     "search",
     "Widget",
@@ -162,14 +162,14 @@ function runRustCommandCoverage(fixtureRoot) {
     "5",
     "--json"
   ], "packages/fixtures/source-extraction/rust-only");
-  recordCoverage(commandCoverage, "lattice-graph-rust-serve", latticeBin, ["graph", "serve", "--repo", fixtureRoot, "--json"], "packages/fixtures/source-extraction/rust-only");
+  recordCoverage(commandCoverage, "opcore-graph-rust-serve", opcoreBin, ["graph", "serve", "--repo", fixtureRoot, "--json"], "packages/fixtures/source-extraction/rust-only");
   assertRustGraphEvidence({ build, query, impact, search });
   sortRustCommandCoverage(commandCoverage);
   return commandCoverage;
 }
 
 function runBuildCoverage(fixtureRoot, commandCoverage) {
-  const build = recordCoverage(commandCoverage, "lattice-graph-build", latticeBin, [
+  const build = recordCoverage(commandCoverage, "opcore-graph-build", opcoreBin, [
     "graph",
     "build",
     "--repo",
@@ -181,7 +181,7 @@ function runBuildCoverage(fixtureRoot, commandCoverage) {
 
 function runUpdateCoverage(fixtureRoot, commandCoverage) {
   writeFileSync(join(fixtureRoot, "src/math.js"), "export function add(left, right) { return left + right + 7; }\n");
-  const update = recordCoverage(commandCoverage, "lattice-graph-update", latticeBin, [
+  const update = recordCoverage(commandCoverage, "opcore-graph-update", opcoreBin, [
     "graph",
     "update",
     "--repo",
@@ -195,14 +195,14 @@ function runUpdateCoverage(fixtureRoot, commandCoverage) {
 
 function runBasicReadCoverage(fixtureRoot, commandCoverage) {
   const watchArgs = ["graph", "watch", "--repo", fixtureRoot, "--once", "--poll-interval-ms", "50", "--json"];
-  const watch = recordCoverage(commandCoverage, "lattice-graph-watch", latticeBin, watchArgs);
-  recordCoverage(commandCoverage, "lattice-graph-status", latticeBin, ["graph", "status", "--repo", fixtureRoot, "--json"]);
-  recordCoverage(commandCoverage, "lattice-graph-query", latticeBin, ["graph", "query", "--repo", fixtureRoot, "--json"]);
+  const watch = recordCoverage(commandCoverage, "opcore-graph-watch", opcoreBin, watchArgs);
+  recordCoverage(commandCoverage, "opcore-graph-status", opcoreBin, ["graph", "status", "--repo", fixtureRoot, "--json"]);
+  recordCoverage(commandCoverage, "opcore-graph-query", opcoreBin, ["graph", "query", "--repo", fixtureRoot, "--json"]);
   return { watch };
 }
 
 function runImpactCoverage(fixtureRoot, commandCoverage) {
-  const cold = recordCoverage(commandCoverage, "lattice-graph-impact", latticeBin, [
+  const cold = recordCoverage(commandCoverage, "opcore-graph-impact", opcoreBin, [
     "graph",
     "impact",
     "--repo",
@@ -211,7 +211,7 @@ function runImpactCoverage(fixtureRoot, commandCoverage) {
     "src/models.ts",
     "--json"
   ]);
-  const hot = runCovered("lattice-graph-impact", latticeBin, [
+  const hot = runCovered("opcore-graph-impact", opcoreBin, [
     "graph",
     "impact",
     "--repo",
@@ -224,7 +224,7 @@ function runImpactCoverage(fixtureRoot, commandCoverage) {
 }
 
 function runSearchCoverage(fixtureRoot, commandCoverage) {
-  const search = recordCoverage(commandCoverage, "lattice-graph-search", latticeBin, [
+  const search = recordCoverage(commandCoverage, "opcore-graph-search", opcoreBin, [
     "graph",
     "search",
     "Greeting",
@@ -238,7 +238,7 @@ function runSearchCoverage(fixtureRoot, commandCoverage) {
 }
 
 function runServeCommandCoverage(fixtureRoot, commandCoverage) {
-  recordCoverage(commandCoverage, "lattice-graph-serve", latticeBin, ["graph", "serve", "--repo", fixtureRoot, "--json"]);
+  recordCoverage(commandCoverage, "opcore-graph-serve", opcoreBin, ["graph", "serve", "--repo", fixtureRoot, "--json"]);
 }
 
 async function collectServeEvidence(fixtureRoot) {
@@ -330,7 +330,7 @@ function runCovered(id, script, args, fixture = "packages/fixtures/source-extrac
     parsed: releaseReceiptCommandOutput(parsed),
     coverage: {
       id,
-      bin: "lattice",
+      bin: "opcore",
       command: receiptCommandForId(id),
       canonicalCommand: canonicalCommandForId(id),
       status: "passed",
@@ -435,7 +435,7 @@ function createServeTransportState(fixtureRoot, reject) {
   const state = {
     requests,
     startById: new Map(requests.map((request) => [request.requestId, performance.now()])),
-    child: spawn(process.execPath, [latticeBin, "graph", "serve", "--repo", fixtureRoot], {
+    child: spawn(process.execPath, [opcoreBin, "graph", "serve", "--repo", fixtureRoot], {
       cwd: repoRoot,
       stdio: ["pipe", "pipe", "pipe"]
     }),
@@ -493,7 +493,7 @@ function serveResponseReceipt(response, startById) {
   if (!ok) throw new Error(`graph serve response failed:\n${JSON.stringify(response, null, 2)}`);
   return {
     id: `serve-jsonl-${operation}`,
-    protocol: "lattice.graph.daemon",
+    protocol: "opcore.graph.daemon",
     operation,
     status: "passed",
     exitCode: 0,
@@ -519,7 +519,7 @@ function serveRequests(fixtureRoot) {
 
 function serveRequest(repo, requestId, operation, extra = {}) {
   return {
-    protocol: "lattice.graph.daemon",
+    protocol: "opcore.graph.daemon",
     requestId,
     schemaVersion: 1,
     operation,
@@ -568,7 +568,7 @@ function inspectGraphPackage() {
   }
   return {
     packageName: "@the-open-engine/opcore-graph",
-    tarballName: parsed[0]?.filename ?? "covibes-lattice-graph-0.1.0-alpha.0.tgz",
+    tarballName: parsed[0]?.filename ?? "covibes-opcore-graph-0.1.0-alpha.0.tgz",
     fileCount: files.length,
     files,
     forbiddenMarkersAbsent: true,
@@ -710,8 +710,8 @@ function collectGraphReleaseNativeArtifacts() {
   return graphCoreNativeSupportedTargets.map((target) => {
     const packageName = graphCoreNativePackageNameForTarget(target);
     const packageRoot = join(repoRoot, "packages", packageName.replace("@the-open-engine/", ""));
-    const binaryPath = "lattice-graph-core";
-    const checksumPath = "lattice-graph-core.sha256";
+    const binaryPath = "opcore-graph-core";
+    const checksumPath = "opcore-graph-core.sha256";
     const metadataPath = "metadata.json";
     const binaryAbsolutePath = join(packageRoot, binaryPath);
     const checksumAbsolutePath = join(packageRoot, checksumPath);
@@ -827,13 +827,13 @@ Maintainer note: these graph release checks must pass before publishing alpha ar
 }
 
 function receiptCommandForId(id) {
-  const command = id.startsWith("lattice-graph-rust-") ? id.replace("lattice-graph-rust-", "") : id.replace("lattice-graph-", "");
+  const command = id.startsWith("opcore-graph-rust-") ? id.replace("opcore-graph-rust-", "") : id.replace("opcore-graph-", "");
   return ["graph", command];
 }
 
 function canonicalCommandForId(id) {
-  const command = id.startsWith("lattice-graph-rust-") ? id.replace("lattice-graph-rust-", "") : id.replace("lattice-graph-", "");
-  return ["lattice", "graph", command];
+  const command = id.startsWith("opcore-graph-rust-") ? id.replace("opcore-graph-rust-", "") : id.replace("opcore-graph-", "");
+  return ["opcore", "graph", command];
 }
 
 function requestOperation(requestId) {

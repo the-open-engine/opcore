@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-pub const ARTIFACT_NAME: &str = "lattice-graph-core";
+pub const ARTIFACT_NAME: &str = "opcore-graph-core";
 pub const ARTIFACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

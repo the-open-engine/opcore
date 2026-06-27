@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "issue": "#30",
   "origin": "covibes-authored-cutover-proof",
-  "generatedAt": "2026-06-27T03:35:03.933Z",
-  "commitSha": "45e1a401dd86db8f4a09dd0627cd8cf105a1f300",
+  "generatedAt": "2026-06-27T10:48:45.280Z",
+  "commitSha": "83ecc13c5bd4c6bcd348f54d4fece218009b3f2d",
   "privateRepo": true,
   "packageNames": [
     "@the-open-engine/opcore-contracts",
@@ -25,37 +25,37 @@
       "version": "0.1.0-alpha.0",
       "tarball": {
         "filename": "the-open-engine-opcore-contracts-0.1.0-alpha.0.tgz",
-        "sha256": "693e11b645855e0d11e9becb25aa0c399c693f06fb59225aa04fce5f521f1307"
+        "sha256": "1a8eb996a67e0f4c97513446e6243d706936c91b1e2a792c0b0d69d388916f09"
       },
       "installedManifest": {
         "path": "node_modules/@the-open-engine/opcore-contracts/package.json",
-        "sha256": "1ebdad8ea652a947488b010e8c7785588285e3ffcbe5e5f43bf9f0dccaf144e5",
+        "sha256": "e028f3f222509be5cd3231cd7425b77bc7dbc36942a0cda0f0b1bb84454e9517",
         "bins": {}
       },
       "installedFiles": [
         {
           "path": "node_modules/@the-open-engine/opcore-contracts/dist/index.d.ts",
-          "sha256": "448c642e3c0d824d769c3610f8575d2d621171fcb682b54aad73cfd09add8858"
+          "sha256": "1851db3bbb99db5bf9827b3c3de480b9b23fee4b6f67771988f0bbd407a377f5"
         },
         {
           "path": "node_modules/@the-open-engine/opcore-contracts/dist/index.d.ts.map",
-          "sha256": "28e188600fe4ca76685ae9361bc46a6fcee2e03acdc2c9cfbe25a3c8a0ab6681"
+          "sha256": "76df23c6e81c76b62d93ac3e9d4e2870a657ea92c684ff4f3cb912a22ecd6a5a"
         },
         {
           "path": "node_modules/@the-open-engine/opcore-contracts/dist/index.js",
-          "sha256": "e037f572afe121aef3b2d7abd1ab6706e9835e57b9d6e9cc9deb6ea4bb28fd3d"
+          "sha256": "d68249ec5516700fbda068759825f404b73203206eb0670ff3a9bd100025fb3b"
         },
         {
           "path": "node_modules/@the-open-engine/opcore-contracts/package.json",
-          "sha256": "1ebdad8ea652a947488b010e8c7785588285e3ffcbe5e5f43bf9f0dccaf144e5"
+          "sha256": "e028f3f222509be5cd3231cd7425b77bc7dbc36942a0cda0f0b1bb84454e9517"
         },
         {
           "path": "node_modules/@the-open-engine/opcore-contracts/README.md",
           "sha256": "e2bd6ac310e1bb47f2557522444df4797653c42e363cf261727ecd89b336ce28"
         },
         {
-          "path": "node_modules/@the-open-engine/opcore-contracts/schemas/lattice-contracts.schema.json",
-          "sha256": "cd7e8b867018c7284defa961d9155db4d6ded1b3b4b5b6f3610de864f00b062a"
+          "path": "node_modules/@the-open-engine/opcore-contracts/schemas/opcore-contracts.schema.json",
+          "sha256": "c3416e8ebf5681a1fad55af5e10b9621ddfcf4b6cb149d555d3e9582b056f8f4"
         }
       ]
     },
@@ -64,17 +64,124 @@
       "version": "0.1.0-alpha.0",
       "tarball": {
         "filename": "the-open-engine-opcore-0.1.0-alpha.0.tgz",
-        "sha256": "77929170990c6ebc6e36399364e952988701f1b6e16afb99e3dc49886143f7d0"
+        "sha256": "282392c6b455d51d9295918489731b4285a7abcb60e23f92d293b2b81971bf35"
       },
       "installedManifest": {
         "path": "node_modules/@the-open-engine/opcore/package.json",
-        "sha256": "c24d4115e97d13aa08bd47d14acd92c451dac2217cd6efae207aec2bbc49e445",
+        "sha256": "1d5b72e2d0f99282b82e155055ce485df2a4970f5ca1a128fb53868846182675",
         "bins": {
-          "opcore": "dist/index.js",
-          "lattice": "dist/lattice/index.js"
+          "opcore": "dist/index.js"
         }
       },
       "installedFiles": [
+        {
+          "path": "node_modules/@the-open-engine/opcore/dist/advanced/descriptor.d.ts",
+          "sha256": "8fe40d38433bfa97c360d3f4129a8840d3442ab31014bef55df774693d9c2c8d"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore/dist/advanced/descriptor.d.ts.map",
+          "sha256": "08c54a2c2f4245448efbca5ab68dfdaecc27f7348ea38d7881d06d0bdd0dd730"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore/dist/advanced/descriptor.js",
+          "sha256": "a70b53c28170d96e6f47a552116cf7edfd7af894fb372a90558e4fb7fc50a2ce"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore/dist/advanced/edit-composition.d.ts",
+          "sha256": "73e0510cddf0f228f0252beeec0b6f5684e5353e56d8538ba9158b19520d7879"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore/dist/advanced/edit-composition.d.ts.map",
+          "sha256": "73369e8ddf09b34f61220794b916dd880fd77db438ed419fb858fc11d1d50ff4"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore/dist/advanced/edit-composition.js",
+          "sha256": "0789036005f21747a5722f23dec617194b25cd5b3c904b23de718ce0be60b9b3"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore/dist/advanced/graph-provider-client.d.ts",
+          "sha256": "67fbd58561c1471ec38d18765c1e97b993f9ffbf2fb85310436f8151b70adad2"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore/dist/advanced/graph-provider-client.d.ts.map",
+          "sha256": "59bf2da00a80dc39badb181a2418e7434b8a9c569b28a155a6ba7042629687cc"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore/dist/advanced/graph-provider-client.js",
+          "sha256": "6bc112db7f27cb6a6ceebaf0a7d737b45ffcb61ac0b2d43dfa04cff3c1184808"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore/dist/advanced/index.d.ts",
+          "sha256": "dbfe47933c03ffe566ab9f84fc16309479e29d19e6001dbcfbb0a6f9d7b492f0"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore/dist/advanced/index.d.ts.map",
+          "sha256": "aa5aaf73d6fba91d2c5a9f0b142bac1a552b5c98f5e3a05a68692e69e75ab23c"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore/dist/advanced/index.js",
+          "sha256": "0340b7f1257b454b33c42408cf0fb5a7f423063164249df6ebc89aac0f13fd45"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore/dist/advanced/inspect-adapter.d.ts",
+          "sha256": "1abfa73fa0ad1d9c6f8ba0bf580116c054b87a987dc65e923b93f7c1a8a55d9d"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore/dist/advanced/inspect-adapter.d.ts.map",
+          "sha256": "188d3fe2c86bdaf166ba4150aa52a9808b82b20b26a5773e685db02cd167ede2"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore/dist/advanced/inspect-adapter.js",
+          "sha256": "811442f944ec8344bd58dbf5fb8514a198601680217012f06aa76a561c87d584"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore/dist/advanced/inspect-language-service.d.ts",
+          "sha256": "b53c50f23f53c7970ac9d58c2820c8db539ea57bbfed6df016470e8333b89480"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore/dist/advanced/inspect-language-service.d.ts.map",
+          "sha256": "aae9f54d23fc297ac7ed30befad70154d034722d36c1035dc9a46df45058c287"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore/dist/advanced/inspect-language-service.js",
+          "sha256": "303540e07daf0769e09dfd5196b408d768271f586314a06407c625af6b5b25ba"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore/dist/advanced/manifest.d.ts",
+          "sha256": "3a5aac0a441a585134677fd408bf28b71becace6071fa3a7b83452cb9c844b4e"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore/dist/advanced/manifest.d.ts.map",
+          "sha256": "813f6fe71261bcc9f1483bc7d45309afb33720f33ce66de818ef8985ac26bdfb"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore/dist/advanced/manifest.js",
+          "sha256": "e09a9a5ed6eb4f24f87e48fd6fbd744236db9c052d925a9a1d011a6770396cd9"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore/dist/advanced/router.d.ts",
+          "sha256": "69b48fb928ba02ae333e2ad37069c6b262eef960003bdc235cd484e71c3b76d5"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore/dist/advanced/router.d.ts.map",
+          "sha256": "fcdb1625529b75585f5008aea16f0f8e0a17c571f311844c2a4c7835d0b30f19"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore/dist/advanced/router.js",
+          "sha256": "34d84f46fab29ab5d89d6a22fcf26e6238526e254c0622feba2ef198d044cf47"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore/dist/advanced/validation-composition.d.ts",
+          "sha256": "994f8865b4bebf1a70f5d2f070408427e13df72a77fb7f8556ba70f62e48677f"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore/dist/advanced/validation-composition.d.ts.map",
+          "sha256": "b14b71823964de9b54b50149ca365e1d197c3f2e2c5a806278446b9e05b01267"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore/dist/advanced/validation-composition.js",
+          "sha256": "c48010c2352eea653d59d5588c7b273b83ff922f147f2066ea68edb6545ec4ce"
+        },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/check.d.ts",
           "sha256": "15d30e2078fc2104f71712006d91aff294fcb8f306e751894632de5dac7d700b"
@@ -85,11 +192,11 @@
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/check.js",
-          "sha256": "2ae9381b9f9501f9c5930e49471fd3be593177fdea06e4d41ad0d0c7549d1877"
+          "sha256": "e8aeec18f8063d8956859a92389681f7ff569331283c4de72b4eb0a9ec7ad362"
         },
         {
-          "path": "node_modules/@the-open-engine/opcore/dist/descriptors/lattice.managed-tool.json",
-          "sha256": "4845b9635feb3737f4dd5e69ab44dd06bf4015dbe79111ec0ff92dc7e406dac9"
+          "path": "node_modules/@the-open-engine/opcore/dist/descriptors/opcore.managed-tool.json",
+          "sha256": "5cb0293b5163df233dac491ca74f7720a0846b92d71012f9e0e08204d1f41755"
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/graph-provider-client.d.ts",
@@ -101,7 +208,7 @@
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/graph-provider-client.js",
-          "sha256": "eefa937d7c17afedae922166a3e298977f567980a1e44fb9f94f44e99c4a06f1"
+          "sha256": "d4519f8caa007222784fa747a2065149642e382ab57fbe416b5233ad79eee0b9"
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/index.d.ts",
@@ -109,11 +216,11 @@
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/index.d.ts.map",
-          "sha256": "0adbc3d0a5cb85f8477bea4409202cf656a439b3e1399612c3d9fdea6f48a9e2"
+          "sha256": "ed64f082ff9b51d2207023853a847e77096f540a6b86466e42164122feba390b"
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/index.js",
-          "sha256": "ea203fe5e694227e162800fc6122ac19254b38e2981d70a019d9de1ec03eeea6"
+          "sha256": "2697abb601be3fdfcd8059b447e46df15ca1e1935ecc09ee3fb03156a725034a"
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/init.d.ts",
@@ -126,114 +233,6 @@
         {
           "path": "node_modules/@the-open-engine/opcore/dist/init.js",
           "sha256": "ebaf8a4ba11dfaa5fd30cc42a8bd08e816b5ccb78359e4914d0f81033511df19"
-        },
-        {
-          "path": "node_modules/@the-open-engine/opcore/dist/lattice/descriptor.d.ts",
-          "sha256": "75db45a5ba95523f5535b6720f7d8b4c3f9c55e5a1f3058aa434ab9e6c93c378"
-        },
-        {
-          "path": "node_modules/@the-open-engine/opcore/dist/lattice/descriptor.d.ts.map",
-          "sha256": "037ff3bc75bab1491d5e53576e82fd2f56511c11d0079b4e78bb1bf597a15f67"
-        },
-        {
-          "path": "node_modules/@the-open-engine/opcore/dist/lattice/descriptor.js",
-          "sha256": "7521ea30beea75139542fd18243e08b922e71a1d0bb197ce69e946b150b7fbf2"
-        },
-        {
-          "path": "node_modules/@the-open-engine/opcore/dist/lattice/edit-composition.d.ts",
-          "sha256": "73e0510cddf0f228f0252beeec0b6f5684e5353e56d8538ba9158b19520d7879"
-        },
-        {
-          "path": "node_modules/@the-open-engine/opcore/dist/lattice/edit-composition.d.ts.map",
-          "sha256": "6b0e7fc9c36cefdccfea879fd672a5b8515b450210c4cb2dadce069acfdd7d8e"
-        },
-        {
-          "path": "node_modules/@the-open-engine/opcore/dist/lattice/edit-composition.js",
-          "sha256": "0789036005f21747a5722f23dec617194b25cd5b3c904b23de718ce0be60b9b3"
-        },
-        {
-          "path": "node_modules/@the-open-engine/opcore/dist/lattice/graph-provider-client.d.ts",
-          "sha256": "67fbd58561c1471ec38d18765c1e97b993f9ffbf2fb85310436f8151b70adad2"
-        },
-        {
-          "path": "node_modules/@the-open-engine/opcore/dist/lattice/graph-provider-client.d.ts.map",
-          "sha256": "b709f029b2bec5ce6349afc0f04676981756163b3fe15d631a24abf06c2d6de4"
-        },
-        {
-          "path": "node_modules/@the-open-engine/opcore/dist/lattice/graph-provider-client.js",
-          "sha256": "1bb43142177ba8c0f22d4fb8041813b6ba2fcaf09e9639797f62646e2ff049df"
-        },
-        {
-          "path": "node_modules/@the-open-engine/opcore/dist/lattice/index.d.ts",
-          "sha256": "dbfe47933c03ffe566ab9f84fc16309479e29d19e6001dbcfbb0a6f9d7b492f0"
-        },
-        {
-          "path": "node_modules/@the-open-engine/opcore/dist/lattice/index.d.ts.map",
-          "sha256": "fd946a5a632b2cd89ac5980e42aa0add55e47ea266ee82effbed4fff662ce927"
-        },
-        {
-          "path": "node_modules/@the-open-engine/opcore/dist/lattice/index.js",
-          "sha256": "5a6150e3b73be45de4c00ba744157e510d561b3f9cf911face29dac089b57bbc"
-        },
-        {
-          "path": "node_modules/@the-open-engine/opcore/dist/lattice/inspect-adapter.d.ts",
-          "sha256": "1abfa73fa0ad1d9c6f8ba0bf580116c054b87a987dc65e923b93f7c1a8a55d9d"
-        },
-        {
-          "path": "node_modules/@the-open-engine/opcore/dist/lattice/inspect-adapter.d.ts.map",
-          "sha256": "ee62a5960c63588a2353c3990bea90a53d4c89375b85abefbb9e52f72902b401"
-        },
-        {
-          "path": "node_modules/@the-open-engine/opcore/dist/lattice/inspect-adapter.js",
-          "sha256": "f67d3fbf75196bae0e86777c6fa71b17bf62f6bd4e88bfc3bb071e2b4c69c17d"
-        },
-        {
-          "path": "node_modules/@the-open-engine/opcore/dist/lattice/inspect-language-service.d.ts",
-          "sha256": "b53c50f23f53c7970ac9d58c2820c8db539ea57bbfed6df016470e8333b89480"
-        },
-        {
-          "path": "node_modules/@the-open-engine/opcore/dist/lattice/inspect-language-service.d.ts.map",
-          "sha256": "56565ce2d3a248c7a06b609ac46accd0be7bcbb4b3e4a2af8c65f6b630faff31"
-        },
-        {
-          "path": "node_modules/@the-open-engine/opcore/dist/lattice/inspect-language-service.js",
-          "sha256": "dfeb6aadb5a172fd36d7e224ef23d3672c8e04a4fc629ac0274237893a312e39"
-        },
-        {
-          "path": "node_modules/@the-open-engine/opcore/dist/lattice/manifest.d.ts",
-          "sha256": "3a5aac0a441a585134677fd408bf28b71becace6071fa3a7b83452cb9c844b4e"
-        },
-        {
-          "path": "node_modules/@the-open-engine/opcore/dist/lattice/manifest.d.ts.map",
-          "sha256": "2147ef68338c900beb76463579775562ef66af071a493b120beebbf42a892ef1"
-        },
-        {
-          "path": "node_modules/@the-open-engine/opcore/dist/lattice/manifest.js",
-          "sha256": "e09a9a5ed6eb4f24f87e48fd6fbd744236db9c052d925a9a1d011a6770396cd9"
-        },
-        {
-          "path": "node_modules/@the-open-engine/opcore/dist/lattice/router.d.ts",
-          "sha256": "69b48fb928ba02ae333e2ad37069c6b262eef960003bdc235cd484e71c3b76d5"
-        },
-        {
-          "path": "node_modules/@the-open-engine/opcore/dist/lattice/router.d.ts.map",
-          "sha256": "ec929cf4bdfead53f4d03c6eec832dd3842456b5533382e86e3c4698749aaf28"
-        },
-        {
-          "path": "node_modules/@the-open-engine/opcore/dist/lattice/router.js",
-          "sha256": "6afbadc5b7e6d6e217e6c3c08343390d053d7b3f69159afbecc5cc8c1b4d19f3"
-        },
-        {
-          "path": "node_modules/@the-open-engine/opcore/dist/lattice/validation-composition.d.ts",
-          "sha256": "994f8865b4bebf1a70f5d2f070408427e13df72a77fb7f8556ba70f62e48677f"
-        },
-        {
-          "path": "node_modules/@the-open-engine/opcore/dist/lattice/validation-composition.d.ts.map",
-          "sha256": "140363e8d57f67cf326e3e8ba3edfc34ea9e1e88d12a1fce772e56118fbae00e"
-        },
-        {
-          "path": "node_modules/@the-open-engine/opcore/dist/lattice/validation-composition.js",
-          "sha256": "c48010c2352eea653d59d5588c7b273b83ff922f147f2066ea68edb6545ec4ce"
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/reporting.d.ts",
@@ -253,11 +252,11 @@
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/router.d.ts.map",
-          "sha256": "1008bbb7d24658fc0b4e93df2c80a218ad57ea6e7e43cad19590782055a85b5a"
+          "sha256": "cbea9a9d80794d85b4b62892e6042028b1e4e0dbe2823213aa6b0d79136a766c"
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/router.js",
-          "sha256": "5cb8b836705c27215cbc6d15d6eadf80df2e78a32e39eb16cbef017b298a5249"
+          "sha256": "3d890160b2dd50495addd0f2d61aba3f39d9760fbeed741aa8c9f59ee793b45e"
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/scan.d.ts",
@@ -269,7 +268,7 @@
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/scan.js",
-          "sha256": "7a33cab486d7dda04fe12431a996426aece2f0314b44f5954a608e2d9536a681"
+          "sha256": "f212b60893aa0b73395e9be68143b0f8af2cd76296aba388eeca8fa4d92eca1a"
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/status.d.ts",
@@ -321,7 +320,7 @@
         },
         {
           "path": "node_modules/@the-open-engine/opcore/package.json",
-          "sha256": "c24d4115e97d13aa08bd47d14acd92c451dac2217cd6efae207aec2bbc49e445"
+          "sha256": "1d5b72e2d0f99282b82e155055ce485df2a4970f5ca1a128fb53868846182675"
         },
         {
           "path": "node_modules/@the-open-engine/opcore/README.md",
@@ -334,7 +333,7 @@
       "version": "0.1.0-alpha.0",
       "tarball": {
         "filename": "the-open-engine-opcore-graph-0.1.0-alpha.0.tgz",
-        "sha256": "0d0efe041b5736d92ca83d12ba0ce0c9c6d40b465fac345e3e5f697b8e54554d"
+        "sha256": "a8d02e39327a4e690c75bbc43daa8c5fa2437d55ae4e8b699a0699df2be1392f"
       },
       "installedManifest": {
         "path": "node_modules/@the-open-engine/opcore-graph/package.json",
@@ -352,19 +351,19 @@
         },
         {
           "path": "node_modules/@the-open-engine/opcore-graph/dist/artifact.js",
-          "sha256": "cd8f020a3247fca18b0b68681f1de1faaef91f5770404dbcfd52dc2776ff10af"
+          "sha256": "de6a83614d7210796ee70cece01b743476f5cf1b439fb086830f1592e0fe79b6"
         },
         {
           "path": "node_modules/@the-open-engine/opcore-graph/dist/index.d.ts",
-          "sha256": "9d7c658a4e9f023eb362401736df4b231f0f26027194ab451d37e36ea2ef8b4c"
+          "sha256": "b0cea7c9456522235eca38d4cc67a3b13030d547aa201c31bf7e321e1dc4eb2d"
         },
         {
           "path": "node_modules/@the-open-engine/opcore-graph/dist/index.d.ts.map",
-          "sha256": "23a76918fc61f2bc38da0fc041384835244fbcff6c5ea074005cfdec2486b783"
+          "sha256": "3ab4934563d0178d3527b54f7123bc0ea8577c938748e3e6aaac09c4e96feb1e"
         },
         {
           "path": "node_modules/@the-open-engine/opcore-graph/dist/index.js",
-          "sha256": "339898bbb8f45f0a35441bf679d1548dcc9197a0987ce6547a81ac99e5e8cf36"
+          "sha256": "27679634cc923e8a1c58fd614929fb17f0ae7293f4aa4f894c4bf154ce4a2049"
         },
         {
           "path": "node_modules/@the-open-engine/opcore-graph/dist/native-targets.d.ts",
@@ -380,15 +379,15 @@
         },
         {
           "path": "node_modules/@the-open-engine/opcore-graph/dist/serve.d.ts",
-          "sha256": "9bf20a22be8117d5175b511788296046325d5ba6b99c2e0947a3a9e18413acd0"
+          "sha256": "3f6fd22079cd75421b10aa90c9bb464548b47c9a327b5bffe8a8e1aca02b42d1"
         },
         {
           "path": "node_modules/@the-open-engine/opcore-graph/dist/serve.d.ts.map",
-          "sha256": "0f4bbbe070f91a415ef0f840f898e02e247e8cf8a59de4ffce396eabe5fa7a04"
+          "sha256": "6a38ba7f3b74e49ddb8483cfde17e64cb2fa14eafeb0cabf496106b811f68cf7"
         },
         {
           "path": "node_modules/@the-open-engine/opcore-graph/dist/serve.js",
-          "sha256": "22f208885b3a30885cbeb0b2a053857782f06b894242f3f6bddd4b6888d0b071"
+          "sha256": "bf0bdbfe112ed8d0862ea945a92f59ce0280433a57818ef189e5e06c0dfb7c7e"
         },
         {
           "path": "node_modules/@the-open-engine/opcore-graph/dist/sidecar.d.ts",
@@ -400,7 +399,7 @@
         },
         {
           "path": "node_modules/@the-open-engine/opcore-graph/dist/sidecar.js",
-          "sha256": "c0166816e9d4cea3729b69e4b8f353d0957ea1d495255ca302418b16b1d80e4a"
+          "sha256": "286153f22d158081ef9b7e26f92f7e508b320f46ff3964ba8e257ec2c6c1a70c"
         },
         {
           "path": "node_modules/@the-open-engine/opcore-graph/package.json",
@@ -417,33 +416,33 @@
       "version": "0.1.0-alpha.0",
       "tarball": {
         "filename": "the-open-engine-opcore-graph-core-darwin-arm64-0.1.0-alpha.0.tgz",
-        "sha256": "1fca60906876751a2d9e86b279ea57a69d0d56c7ea3160a3b48ce4062e6e6ea5"
+        "sha256": "9f1256e95d97946e82169010a44d15507c27cdf78caaff8b8e49d9fbfb61e8ec"
       },
       "installedManifest": {
         "path": "node_modules/@the-open-engine/opcore-graph-core-darwin-arm64/package.json",
-        "sha256": "c570f54a329c7785b6d57268e687b3fa14de5d2be21f129b95ab9a01db1eafb4",
+        "sha256": "0ec0ff64a0c70a599fb9650c7ed25642eceb72e18a99e4c9eca2c27dd04d0624",
         "bins": {}
       },
       "installedFiles": [
         {
-          "path": "node_modules/@the-open-engine/opcore-graph-core-darwin-arm64/lattice-graph-core",
-          "sha256": "b69845117d7e3c27858bc6a7bd6aed35990c5c4621c1fa0e6ab6b3149e427ce1"
-        },
-        {
-          "path": "node_modules/@the-open-engine/opcore-graph-core-darwin-arm64/lattice-graph-core.sha256",
-          "sha256": "a21a87b1e843b89e15434b66d8dfd68fe62b0f3d5eadf30341e8229cb7eac89e"
-        },
-        {
           "path": "node_modules/@the-open-engine/opcore-graph-core-darwin-arm64/metadata.json",
-          "sha256": "d5723066d7a6f1b04e2ead661776dca5294e250346c11c255fb9c0a1b10654a3"
+          "sha256": "837da3d2c4e981cbdf7aef9d39141aec33a4d55488fab11276856dfb829005b0"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-graph-core-darwin-arm64/opcore-graph-core",
+          "sha256": "4a6eb4c6c4be15df3e126b725d83476a10665f36b7801cab0e1d5df64c70e82d"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-graph-core-darwin-arm64/opcore-graph-core.sha256",
+          "sha256": "06c381e7f3e1380b5b22d0a670eccf1fdf44efb8e6f0990fcc5a499f2c7e3d20"
         },
         {
           "path": "node_modules/@the-open-engine/opcore-graph-core-darwin-arm64/package.json",
-          "sha256": "c570f54a329c7785b6d57268e687b3fa14de5d2be21f129b95ab9a01db1eafb4"
+          "sha256": "0ec0ff64a0c70a599fb9650c7ed25642eceb72e18a99e4c9eca2c27dd04d0624"
         },
         {
           "path": "node_modules/@the-open-engine/opcore-graph-core-darwin-arm64/README.md",
-          "sha256": "86a50005da9dbd99eaf0829eb8e09f062eeeb0602d0616704b8d70ccf41e34c0"
+          "sha256": "05f76a156a31fc9ccb88a30b09f11432adbd81d0feffd906c9ad2c141e7078c7"
         }
       ]
     },
@@ -452,7 +451,7 @@
       "version": "0.1.0-alpha.0",
       "tarball": {
         "filename": "the-open-engine-opcore-edit-0.1.0-alpha.0.tgz",
-        "sha256": "644a11cd599d33fedc3ba880b782d3256b2b7a9580c9863e34f50b7a0a98bfa8"
+        "sha256": "7900a3a25d06b5855201be1bb1157fbe3d9c5b95afe77e2501d8e4d9d6deafe0"
       },
       "installedManifest": {
         "path": "node_modules/@the-open-engine/opcore-edit/package.json",
@@ -518,7 +517,7 @@
         },
         {
           "path": "node_modules/@the-open-engine/opcore-edit/dist/command-parser.js",
-          "sha256": "1110c02768c7558a611917e448037b488b40bd16c6761043683fdf8abe885c6e"
+          "sha256": "c7dc760ed7c9546daf8f18c9bd89ba7f23b5f02fc45486d59b2863d9576a7a17"
         },
         {
           "path": "node_modules/@the-open-engine/opcore-edit/dist/content-policy.d.ts",
@@ -638,7 +637,7 @@
         },
         {
           "path": "node_modules/@the-open-engine/opcore-edit/dist/symbol-command.js",
-          "sha256": "3419ee6a1314727081e49396929bc11708a9d60259036c46a0121dd6532832e0"
+          "sha256": "272d20c6831725ed8ba318f4e437639cee93dbbab1faac5f59b702f158b8a556"
         },
         {
           "path": "node_modules/@the-open-engine/opcore-edit/dist/symbol-graph.d.ts",
@@ -650,7 +649,7 @@
         },
         {
           "path": "node_modules/@the-open-engine/opcore-edit/dist/symbol-graph.js",
-          "sha256": "31c77642e53dd38c920588591eadc1ff584873ca46c96345848aa8a382230fdd"
+          "sha256": "e4d2e1a0624b214913bde6134a645bcd93b83a029aacd9eedc7fae39ed254127"
         },
         {
           "path": "node_modules/@the-open-engine/opcore-edit/dist/symbol-preview.d.ts",
@@ -662,7 +661,7 @@
         },
         {
           "path": "node_modules/@the-open-engine/opcore-edit/dist/symbol-preview.js",
-          "sha256": "251db03f3c4fff70b57f2332ec78985a297e0c94e63b29ce5c958df9e631a980"
+          "sha256": "c62784b3ee0282cdfda6ca7e60fee3f5b027b6b013b007b1595b6b34158594da"
         },
         {
           "path": "node_modules/@the-open-engine/opcore-edit/dist/symbol-requests.d.ts",
@@ -710,7 +709,7 @@
         },
         {
           "path": "node_modules/@the-open-engine/opcore-edit/dist/validation-request.js",
-          "sha256": "6560c598dbb204e6bda92553c04b8fc8f530b2050af21bf1f33c042f4a8d2e24"
+          "sha256": "b6e0e77ea6d9f5c5e3dc71b1d067291ed7d88325b89b61c9564d03c8041ede9c"
         },
         {
           "path": "node_modules/@the-open-engine/opcore-edit/dist/validation.d.ts",
@@ -751,7 +750,7 @@
       "version": "0.1.0-alpha.0",
       "tarball": {
         "filename": "the-open-engine-opcore-validation-0.1.0-alpha.0.tgz",
-        "sha256": "196a250ddb3fee9d1083f56b3f3a8a1e0319db52ee5a65a4730629e7a66d8549"
+        "sha256": "90683d459be2129e57f52df9da29b5eb3b9f95d4bb894908f4878846665e4da4"
       },
       "installedManifest": {
         "path": "node_modules/@the-open-engine/opcore-validation/package.json",
@@ -793,7 +792,7 @@
         },
         {
           "path": "node_modules/@the-open-engine/opcore-validation/dist/command-options.js",
-          "sha256": "95f327580ad8c94a717d40e40380b7201a4d87c4555fb60484b0ee5f64fbc3d1"
+          "sha256": "33ab66014d47bc0e233192b85fbe05f85bd52e6ce121caaa7654e0635ddd6583"
         },
         {
           "path": "node_modules/@the-open-engine/opcore-validation/dist/graph-client.d.ts",
@@ -845,15 +844,15 @@
         },
         {
           "path": "node_modules/@the-open-engine/opcore-validation/dist/request.d.ts",
-          "sha256": "46cf63b4314e30b0490b397081c8b2473d900161188a67ace0ec4151b9c32d66"
+          "sha256": "cb1a55bcd2e03eba790eb974ff4a3c9c68dd21e1f3a6f040258ec28d0792f589"
         },
         {
           "path": "node_modules/@the-open-engine/opcore-validation/dist/request.d.ts.map",
-          "sha256": "85d36efc85b8bc863be1967877fd583ee70fff04f7ae41509538f375d79343a8"
+          "sha256": "31636500c4b26a00df3f4f58bdc9e073720c2aba0eca8061ebaa9d25f2174b9d"
         },
         {
           "path": "node_modules/@the-open-engine/opcore-validation/dist/request.js",
-          "sha256": "395237aebb63a670c895ec879c685e6f961579d38bce3e2a1993c969b55ba025"
+          "sha256": "9ab590a7264091a43dbecf10d71cb2f51502eebc3817d200252a2176e536cf60"
         },
         {
           "path": "node_modules/@the-open-engine/opcore-validation/dist/runner.d.ts",
@@ -1109,7 +1108,7 @@
       "version": "0.1.0-alpha.0",
       "tarball": {
         "filename": "the-open-engine-opcore-validation-rust-0.1.0-alpha.0.tgz",
-        "sha256": "46363cd3647bd76e46ae8c3775f1c11b1a4b5860f65ddca4bcf578870fb729ce"
+        "sha256": "18429fa20e181d1daefd327053802bea2a88471f84b6b53401d75c96893367d7"
       },
       "installedManifest": {
         "path": "node_modules/@the-open-engine/opcore-validation-rust/package.json",
@@ -1275,7 +1274,7 @@
         },
         {
           "path": "node_modules/@the-open-engine/opcore-validation-rust/dist/retained-compatibility.d.ts",
-          "sha256": "42d90ff1d6876b9ee7ff6f8962cde01d94e5bbd18e99d96495b768f189c7027f"
+          "sha256": "af26b986da0f99160b0bd55249f5458e3853555afbde919adfb329c86f9fc41f"
         },
         {
           "path": "node_modules/@the-open-engine/opcore-validation-rust/dist/retained-compatibility.d.ts.map",
@@ -1283,7 +1282,7 @@
         },
         {
           "path": "node_modules/@the-open-engine/opcore-validation-rust/dist/retained-compatibility.js",
-          "sha256": "58a6d47ea901fa7c786bfd7475f005e85dbd88cc8a52643625864179e8adc8e5"
+          "sha256": "e23f76bd76b998f2474233b6985ce1d9a5f1085893b2d1aeb8106a6e7d0b41b9"
         },
         {
           "path": "node_modules/@the-open-engine/opcore-validation-rust/dist/source-files.d.ts",
@@ -1527,7 +1526,7 @@
       "version": "0.1.0-alpha.0",
       "tarball": {
         "filename": "the-open-engine-opcore-asp-provider-0.1.0-alpha.0.tgz",
-        "sha256": "5e3f05015185fc8f5d49dffc9cd705173317d28793dc9f86077924010eef5b02"
+        "sha256": "ca09b53ec81c6f3a58c9d753918cbd85b65e6c9dd7124f55dc00f46cd7b4a7b4"
       },
       "installedManifest": {
         "path": "node_modules/@the-open-engine/opcore-asp-provider/package.json",
@@ -1599,19 +1598,19 @@
         },
         {
           "path": "node_modules/@the-open-engine/opcore-asp-provider/dist/mapping.d.ts.map",
-          "sha256": "aabb17db2b0730df60e9b159f6bb369645de666f8eb8185c1aa1969a55b85a64"
+          "sha256": "981bedf50889805c87da8570762fa025bc287ae3e075d71264b6b254ca36ddf6"
         },
         {
           "path": "node_modules/@the-open-engine/opcore-asp-provider/dist/mapping.js",
-          "sha256": "59d354970d6bdf0a0a819b2fad0c671b3eb758d063445bd48bc8535467486cfa"
+          "sha256": "8851d89c752eddaa8edc7e68419b0a5173ba294486d6f70861cfbae35c758a6d"
         },
         {
           "path": "node_modules/@the-open-engine/opcore-asp-provider/dist/protocol.d.ts",
-          "sha256": "8b4a550df2c08f683c97cfe0109ef64b1c977891796ab1c1af793d1b5a6dfaff"
+          "sha256": "659e0e25ca536576585f19b2a4324dddd6d28a6c2c0e98a523866085f8881948"
         },
         {
           "path": "node_modules/@the-open-engine/opcore-asp-provider/dist/protocol.d.ts.map",
-          "sha256": "4650fde75683ade2acbec0387e34f6341a1200a866a2cf13d56f25bde1b9a475"
+          "sha256": "990fd241a73f8082a10d3b923c99f746ab2223e85e3260b2f3b3c6a668eed4a3"
         },
         {
           "path": "node_modules/@the-open-engine/opcore-asp-provider/dist/protocol.js",
@@ -1627,7 +1626,7 @@
         },
         {
           "path": "node_modules/@the-open-engine/opcore-asp-provider/dist/validation-composition.js",
-          "sha256": "42e3fd02ab96baf4feecaa849c5cc184a4ae648f534a2e023057fc87e382763e"
+          "sha256": "0064d019d7c4bba6ebb727f55f1f0ec0be6cbad581ff8a35c67ecd26bc34f871"
         },
         {
           "path": "node_modules/@the-open-engine/opcore-asp-provider/dist/workspace.d.ts",
@@ -1653,15 +1652,15 @@
     }
   ],
   "descriptor": {
-    "path": "node_modules/@the-open-engine/opcore/dist/descriptors/lattice.managed-tool.json",
+    "path": "node_modules/@the-open-engine/opcore/dist/descriptors/opcore.managed-tool.json",
     "packageName": "@the-open-engine/opcore",
-    "checksumSha256": "4845b9635feb3737f4dd5e69ab44dd06bf4015dbe79111ec0ff92dc7e406dac9",
+    "checksumSha256": "5cb0293b5163df233dac491ca74f7720a0846b92d71012f9e0e08204d1f41755",
     "descriptor": {
       "schemaVersion": 1,
-      "descriptorKind": "aggregate_lattice",
+      "descriptorKind": "aggregate_opcore",
       "aggregateIdentity": {
-        "name": "lattice",
-        "releaseLine": "lattice",
+        "name": "opcore",
+        "releaseLine": "opcore",
         "packageName": "@the-open-engine/opcore",
         "version": "0.1.0-alpha.0"
       },
@@ -1672,11 +1671,11 @@
       },
       "entrypoints": [
         {
-          "bin": "lattice",
+          "bin": "opcore",
           "packageName": "@the-open-engine/opcore",
-          "path": "dist/lattice/index.js",
+          "path": "dist/index.js",
           "command": [
-            "lattice"
+            "opcore"
           ]
         }
       ],
@@ -1684,7 +1683,7 @@
         {
           "name": "graph",
           "canonicalCommand": [
-            "lattice",
+            "opcore",
             "graph"
           ],
           "commands": [
@@ -1704,7 +1703,7 @@
         {
           "name": "inspect",
           "canonicalCommand": [
-            "lattice",
+            "opcore",
             "inspect"
           ],
           "commands": [
@@ -1720,7 +1719,7 @@
         {
           "name": "edit",
           "canonicalCommand": [
-            "lattice",
+            "opcore",
             "edit"
           ],
           "commands": [
@@ -1740,7 +1739,7 @@
         {
           "name": "check",
           "canonicalCommand": [
-            "lattice",
+            "opcore",
             "check"
           ],
           "commands": [
@@ -1756,7 +1755,7 @@
         {
           "name": "validate",
           "canonicalCommand": [
-            "lattice",
+            "opcore",
             "validate"
           ],
           "commands": [
@@ -1770,7 +1769,7 @@
         {
           "name": "status",
           "canonicalCommand": [
-            "lattice",
+            "opcore",
             "status"
           ],
           "commands": [
@@ -1781,7 +1780,7 @@
         {
           "name": "doctor",
           "canonicalCommand": [
-            "lattice",
+            "opcore",
             "doctor"
           ],
           "commands": [
@@ -1794,7 +1793,7 @@
         {
           "id": "status-json",
           "command": [
-            "lattice",
+            "opcore",
             "status",
             "--json"
           ],
@@ -1804,7 +1803,7 @@
         {
           "id": "doctor-json",
           "command": [
-            "lattice",
+            "opcore",
             "doctor",
             "--json"
           ],
@@ -1814,7 +1813,7 @@
         {
           "id": "graph-status-json",
           "command": [
-            "lattice",
+            "opcore",
             "graph",
             "status",
             "--json"
@@ -1825,7 +1824,7 @@
         {
           "id": "check-manifest-json",
           "command": [
-            "lattice",
+            "opcore",
             "check",
             "manifest",
             "--json"
@@ -1836,7 +1835,7 @@
         {
           "id": "validate-manifest-json",
           "command": [
-            "lattice",
+            "opcore",
             "validate",
             "manifest",
             "--json"
@@ -1847,7 +1846,7 @@
       ],
       "capabilities": {
         "graph": {
-          "provider": "lattice-graph",
+          "provider": "opcore-graph",
           "schemaVersion": 1,
           "commands": [
             "build",
@@ -1889,9 +1888,9 @@
             {
               "targetPlatform": "darwin-arm64",
               "packageName": "@the-open-engine/opcore-graph-core-darwin-arm64",
-              "binaryPath": "lattice-graph-core",
+              "binaryPath": "opcore-graph-core",
               "metadataPath": "metadata.json",
-              "checksumPath": "lattice-graph-core.sha256",
+              "checksumPath": "opcore-graph-core.sha256",
               "artifactIds": {
                 "binaryArtifactId": "graph-core-binary-darwin-arm64",
                 "metadataArtifactId": "graph-core-metadata-darwin-arm64",
@@ -1902,9 +1901,9 @@
             {
               "targetPlatform": "darwin-x64",
               "packageName": "@the-open-engine/opcore-graph-core-darwin-x64",
-              "binaryPath": "lattice-graph-core",
+              "binaryPath": "opcore-graph-core",
               "metadataPath": "metadata.json",
-              "checksumPath": "lattice-graph-core.sha256",
+              "checksumPath": "opcore-graph-core.sha256",
               "artifactIds": {
                 "binaryArtifactId": "graph-core-binary-darwin-x64",
                 "metadataArtifactId": "graph-core-metadata-darwin-x64",
@@ -1915,9 +1914,9 @@
             {
               "targetPlatform": "linux-x64",
               "packageName": "@the-open-engine/opcore-graph-core-linux-x64",
-              "binaryPath": "lattice-graph-core",
+              "binaryPath": "opcore-graph-core",
               "metadataPath": "metadata.json",
-              "checksumPath": "lattice-graph-core.sha256",
+              "checksumPath": "opcore-graph-core.sha256",
               "artifactIds": {
                 "binaryArtifactId": "graph-core-binary-linux-x64",
                 "metadataArtifactId": "graph-core-metadata-linux-x64",
@@ -2018,28 +2017,28 @@
         {
           "id": "cli-entrypoint",
           "packageName": "@the-open-engine/opcore",
-          "path": "dist/lattice/index.js",
+          "path": "dist/index.js",
           "type": "entrypoint",
           "required": true
         },
         {
           "id": "descriptor",
           "packageName": "@the-open-engine/opcore",
-          "path": "dist/descriptors/lattice.managed-tool.json",
+          "path": "dist/descriptors/opcore.managed-tool.json",
           "type": "descriptor",
           "required": true
         },
         {
           "id": "contracts-schema",
           "packageName": "@the-open-engine/opcore-contracts",
-          "path": "schemas/lattice-contracts.schema.json",
+          "path": "schemas/opcore-contracts.schema.json",
           "type": "schema",
           "required": true
         },
         {
           "id": "graph-core-binary-darwin-arm64",
           "packageName": "@the-open-engine/opcore-graph-core-darwin-arm64",
-          "path": "lattice-graph-core",
+          "path": "opcore-graph-core",
           "type": "native_binary",
           "required": true,
           "checksumRef": "graph-core-binary-sha256-darwin-arm64"
@@ -2054,14 +2053,14 @@
         {
           "id": "graph-core-checksum-darwin-arm64",
           "packageName": "@the-open-engine/opcore-graph-core-darwin-arm64",
-          "path": "lattice-graph-core.sha256",
+          "path": "opcore-graph-core.sha256",
           "type": "checksum",
           "required": true
         },
         {
           "id": "graph-core-binary-darwin-x64",
           "packageName": "@the-open-engine/opcore-graph-core-darwin-x64",
-          "path": "lattice-graph-core",
+          "path": "opcore-graph-core",
           "type": "native_binary",
           "required": true,
           "checksumRef": "graph-core-binary-sha256-darwin-x64"
@@ -2076,14 +2075,14 @@
         {
           "id": "graph-core-checksum-darwin-x64",
           "packageName": "@the-open-engine/opcore-graph-core-darwin-x64",
-          "path": "lattice-graph-core.sha256",
+          "path": "opcore-graph-core.sha256",
           "type": "checksum",
           "required": true
         },
         {
           "id": "graph-core-binary-linux-x64",
           "packageName": "@the-open-engine/opcore-graph-core-linux-x64",
-          "path": "lattice-graph-core",
+          "path": "opcore-graph-core",
           "type": "native_binary",
           "required": true,
           "checksumRef": "graph-core-binary-sha256-linux-x64"
@@ -2098,7 +2097,7 @@
         {
           "id": "graph-core-checksum-linux-x64",
           "packageName": "@the-open-engine/opcore-graph-core-linux-x64",
-          "path": "lattice-graph-core.sha256",
+          "path": "opcore-graph-core.sha256",
           "type": "checksum",
           "required": true
         }
@@ -2107,7 +2106,7 @@
         {
           "id": "graph-core-binary-sha256-darwin-arm64",
           "packageName": "@the-open-engine/opcore-graph-core-darwin-arm64",
-          "path": "lattice-graph-core.sha256",
+          "path": "opcore-graph-core.sha256",
           "algorithm": "sha256",
           "artifactRef": "graph-core-binary-darwin-arm64",
           "required": true
@@ -2115,7 +2114,7 @@
         {
           "id": "graph-core-binary-sha256-darwin-x64",
           "packageName": "@the-open-engine/opcore-graph-core-darwin-x64",
-          "path": "lattice-graph-core.sha256",
+          "path": "opcore-graph-core.sha256",
           "algorithm": "sha256",
           "artifactRef": "graph-core-binary-darwin-x64",
           "required": true
@@ -2123,7 +2122,7 @@
         {
           "id": "graph-core-binary-sha256-linux-x64",
           "packageName": "@the-open-engine/opcore-graph-core-linux-x64",
-          "path": "lattice-graph-core.sha256",
+          "path": "opcore-graph-core.sha256",
           "algorithm": "sha256",
           "artifactRef": "graph-core-binary-linux-x64",
           "required": true
@@ -2180,7 +2179,7 @@
       {
         "id": "cli-entrypoint",
         "packageName": "@the-open-engine/opcore",
-        "path": "dist/lattice/index.js",
+        "path": "dist/index.js",
         "type": "entrypoint",
         "required": true,
         "packageFile": true
@@ -2188,7 +2187,7 @@
       {
         "id": "descriptor",
         "packageName": "@the-open-engine/opcore",
-        "path": "dist/descriptors/lattice.managed-tool.json",
+        "path": "dist/descriptors/opcore.managed-tool.json",
         "type": "descriptor",
         "required": true,
         "packageFile": true
@@ -2196,7 +2195,7 @@
       {
         "id": "contracts-schema",
         "packageName": "@the-open-engine/opcore-contracts",
-        "path": "schemas/lattice-contracts.schema.json",
+        "path": "schemas/opcore-contracts.schema.json",
         "type": "schema",
         "required": true,
         "packageFile": true
@@ -2204,7 +2203,7 @@
       {
         "id": "graph-core-binary-darwin-arm64",
         "packageName": "@the-open-engine/opcore-graph-core-darwin-arm64",
-        "path": "lattice-graph-core",
+        "path": "opcore-graph-core",
         "type": "native_binary",
         "required": true,
         "packageFile": true,
@@ -2221,7 +2220,7 @@
       {
         "id": "graph-core-checksum-darwin-arm64",
         "packageName": "@the-open-engine/opcore-graph-core-darwin-arm64",
-        "path": "lattice-graph-core.sha256",
+        "path": "opcore-graph-core.sha256",
         "type": "checksum",
         "required": true,
         "packageFile": true
@@ -2229,7 +2228,7 @@
       {
         "id": "graph-core-binary-darwin-x64",
         "packageName": "@the-open-engine/opcore-graph-core-darwin-x64",
-        "path": "lattice-graph-core",
+        "path": "opcore-graph-core",
         "type": "native_binary",
         "required": true,
         "packageFile": true,
@@ -2246,7 +2245,7 @@
       {
         "id": "graph-core-checksum-darwin-x64",
         "packageName": "@the-open-engine/opcore-graph-core-darwin-x64",
-        "path": "lattice-graph-core.sha256",
+        "path": "opcore-graph-core.sha256",
         "type": "checksum",
         "required": true,
         "packageFile": true
@@ -2254,7 +2253,7 @@
       {
         "id": "graph-core-binary-linux-x64",
         "packageName": "@the-open-engine/opcore-graph-core-linux-x64",
-        "path": "lattice-graph-core",
+        "path": "opcore-graph-core",
         "type": "native_binary",
         "required": true,
         "packageFile": true,
@@ -2271,7 +2270,7 @@
       {
         "id": "graph-core-checksum-linux-x64",
         "packageName": "@the-open-engine/opcore-graph-core-linux-x64",
-        "path": "lattice-graph-core.sha256",
+        "path": "opcore-graph-core.sha256",
         "type": "checksum",
         "required": true,
         "packageFile": true
@@ -2281,17 +2280,17 @@
       {
         "id": "graph-core-binary-sha256-darwin-arm64",
         "packageName": "@the-open-engine/opcore-graph-core-darwin-arm64",
-        "path": "lattice-graph-core.sha256",
+        "path": "opcore-graph-core.sha256",
         "algorithm": "sha256",
         "artifactRef": "graph-core-binary-darwin-arm64",
         "required": true,
         "packageFile": true,
-        "value": "b69845117d7e3c27858bc6a7bd6aed35990c5c4621c1fa0e6ab6b3149e427ce1"
+        "value": "4a6eb4c6c4be15df3e126b725d83476a10665f36b7801cab0e1d5df64c70e82d"
       },
       {
         "id": "graph-core-binary-sha256-darwin-x64",
         "packageName": "@the-open-engine/opcore-graph-core-darwin-x64",
-        "path": "lattice-graph-core.sha256",
+        "path": "opcore-graph-core.sha256",
         "algorithm": "sha256",
         "artifactRef": "graph-core-binary-darwin-x64",
         "required": true,
@@ -2301,7 +2300,7 @@
       {
         "id": "graph-core-binary-sha256-linux-x64",
         "packageName": "@the-open-engine/opcore-graph-core-linux-x64",
-        "path": "lattice-graph-core.sha256",
+        "path": "opcore-graph-core.sha256",
         "algorithm": "sha256",
         "artifactRef": "graph-core-binary-linux-x64",
         "required": true,
@@ -2316,7 +2315,7 @@
     "pathSanitized": true,
     "aceRuntimeBinExcluded": true,
     "siblingCovibesExcluded": true,
-    "latticeBinOnly": true,
+    "opcoreBinOnly": true,
     "oldBinsAbsent": {
       "crg": true,
       "cix": true,
@@ -2338,7 +2337,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/opcore",
-      "stdoutSha256": "c1f99872f20f1af3491be2a9f5d620e08d68d3049cb54eb63f0c0e95183713c4",
+      "stdoutSha256": "99b2008f3377c4697134e8082de95fb6e3a708b545cad63a1e49874938aa51b5",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "opcore scan wrote read-only report artifacts"
     },
@@ -2356,7 +2355,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/opcore",
-      "stdoutSha256": "6a266a9c7dd47c328771ea139ee43fa55a30120893c0a55ccee7aafe6f119b2d",
+      "stdoutSha256": "b709889de969c4f72b31e63c4130b19deccb3d721091d5860647ddb758d2aab8",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "opcore status returned repoState"
     },
@@ -2384,7 +2383,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/opcore",
-      "stdoutSha256": "ca34b967aa9bbdd9b25200898406f20f08a84f6246857f33374be76e29a02b2a",
+      "stdoutSha256": "8ddd8b99b98d4276a724fe2b13435eacf22495c25dba919edf956b642c1cf96c",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "opcore check changed defaulted base to HEAD"
     },
@@ -2402,7 +2401,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/opcore",
-      "stdoutSha256": "750e0642fa679a2008f649a20035f712adb92a3a623794628e12d87a26ebd733",
+      "stdoutSha256": "a92f1eb1d58e816f180652a8de099749e4156dc54556514da3b819d1cabc764c",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "opcore measure returned read-only report deltas"
     },
@@ -2420,117 +2419,117 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/opcore",
-      "stdoutSha256": "5e14617dcbb3faae001ea7124c5206386b309c78d02298c4a6332dfc77f48479",
+      "stdoutSha256": "f514056ce6826a323ba40c020cdbb84e3beb3f061ae25d63aae7b0cdb4430e68",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "opcore try generated local sample repos without publishing"
     },
     {
       "id": "status",
       "command": [
-        "lattice",
+        "opcore",
         "status"
       ],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "status"
       ],
       "owner": "runtime",
       "status": "ok",
       "exitCode": 0,
-      "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "6b493ff32e28ebf969f35585ba095ae80d5d4bc48a3801847903c5f9dc38df90",
+      "binPath": "node_modules/.bin/opcore",
+      "stdoutSha256": "8177ac6d9db87bcead50c71a9dda366a888c753b222b5797526c64f7dfbf8586",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "runtime status reports validation readiness"
     },
     {
       "id": "doctor",
       "command": [
-        "lattice",
+        "opcore",
         "doctor"
       ],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "doctor"
       ],
       "owner": "runtime",
       "status": "ok",
       "exitCode": 0,
-      "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "0e4ac6cfc4bc5725a1f235b5e095d86ef078ad8f032b55424e729b1092338cf1",
+      "binPath": "node_modules/.bin/opcore",
+      "stdoutSha256": "c987531ab39d45f3aaf9fe0fab8aa0c27e3bcecaa9364a221cd5b02857ff81cb",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "runtime doctor reports validation readiness"
     },
     {
       "id": "graph-build",
       "command": [
-        "lattice",
+        "opcore",
         "graph",
         "build"
       ],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "graph",
         "build"
       ],
       "owner": "graph",
       "status": "ok",
       "exitCode": 0,
-      "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "8d6caddc452ab8d34e4d34a7d921b3453248b94e7dc1c5fc7f4f383df084ed38",
+      "binPath": "node_modules/.bin/opcore",
+      "stdoutSha256": "b6f7251e39bd7572b97731a10a89c99f18256069aaa7950aca7697fbc6cd0380",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "graph build completed with native artifact"
     },
     {
       "id": "graph-status",
       "command": [
-        "lattice",
+        "opcore",
         "graph",
         "status"
       ],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "graph",
         "status"
       ],
       "owner": "graph",
       "status": "ok",
       "exitCode": 0,
-      "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "34934195aec6e793109d4f1de039667d776ca2d8c3684f5dda64999f62b42188",
+      "binPath": "node_modules/.bin/opcore",
+      "stdoutSha256": "c495ad0ded43cb8c8cc1b2b4d478a3d4fe7ac94a66b2d0ccc09df7ae94796b57",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "graph status available after build"
     },
     {
       "id": "graph-query",
       "command": [
-        "lattice",
+        "opcore",
         "graph",
         "query"
       ],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "graph",
         "query"
       ],
       "owner": "graph",
       "status": "ok",
       "exitCode": 0,
-      "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "2a7a262479ff6d8bcd46bd7820c3ce0547c5ad13b9534e38fdc1c3326d08b855",
+      "binPath": "node_modules/.bin/opcore",
+      "stdoutSha256": "d09b4770b973984b9d2529cde3f77cb22a3d364c48f5a839f60b3658367ee99c",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "graph query returned facts"
     },
     {
       "id": "graph-impact",
       "command": [
-        "lattice",
+        "opcore",
         "graph",
         "impact",
         "--files",
         "src/components/GreetingCard.tsx"
       ],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "graph",
         "impact",
         "--files",
@@ -2539,22 +2538,22 @@
       "owner": "graph",
       "status": "ok",
       "exitCode": 0,
-      "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "132f8963687e54c4b83c1938b741a9e5f33a7c3b40ce6063f6e62a0eb5941257",
+      "binPath": "node_modules/.bin/opcore",
+      "stdoutSha256": "200e8e1fa881efcafaa72b4ae5adf216c0b7a9e961a76d6492e78fd800463b9f",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "graph impact returned file impact"
     },
     {
       "id": "graph-review-context",
       "command": [
-        "lattice",
+        "opcore",
         "graph",
         "review-context",
         "--files",
         "src/components/GreetingCard.tsx"
       ],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "graph",
         "review-context",
         "--files",
@@ -2563,22 +2562,22 @@
       "owner": "graph",
       "status": "ok",
       "exitCode": 0,
-      "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "d1075276ed06f2cf624795db1d85c4a4eb8fce33fde6b12386ecd23968bf9c97",
+      "binPath": "node_modules/.bin/opcore",
+      "stdoutSha256": "07eac996f513e7e1e485b3fd5a266796bba1f4e4bf863764b27e413fdfa5b39a",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "graph review-context returned related facts"
     },
     {
       "id": "graph-detect-changes",
       "command": [
-        "lattice",
+        "opcore",
         "graph",
         "detect-changes",
         "--files",
         "src/components/GreetingCard.tsx"
       ],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "graph",
         "detect-changes",
         "--files",
@@ -2587,15 +2586,15 @@
       "owner": "graph",
       "status": "ok",
       "exitCode": 0,
-      "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "ce2109265e12929fa209c2ab4c3b282316f9c547d4d11ebb09100aa443868647",
+      "binPath": "node_modules/.bin/opcore",
+      "stdoutSha256": "cdef41a947907624ed5afc118203002522cef6145f03308369a12e590933b21c",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "graph detect-changes returned typed change data"
     },
     {
       "id": "graph-search",
       "command": [
-        "lattice",
+        "opcore",
         "graph",
         "search",
         "Greeting",
@@ -2603,7 +2602,7 @@
         "5"
       ],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "graph",
         "search",
         "Greeting",
@@ -2613,35 +2612,35 @@
       "owner": "graph",
       "status": "ok",
       "exitCode": 0,
-      "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "e867b5c51a972d2f8b6af00186663b719db5e3aa545e337b97e2232328f95d1d",
+      "binPath": "node_modules/.bin/opcore",
+      "stdoutSha256": "8ef095981611638a0d996fdd500dcf842708fec8837f7bb691ef9581b7729542",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "graph search returned ranked results"
     },
     {
       "id": "graph-serve",
       "command": [
-        "lattice",
+        "opcore",
         "graph",
         "serve"
       ],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "graph",
         "serve"
       ],
       "owner": "graph",
       "status": "ok",
       "exitCode": 0,
-      "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "624929e1bb6724531d21eefd2f9b2cb25ed0d1c5af19b1705dde902dddf39508",
+      "binPath": "node_modules/.bin/opcore",
+      "stdoutSha256": "458fe15375e38d48a27bf808e2977d9383f8735ad546408a1c69522d4edd65dd",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "graph serve status route is ready"
     },
     {
       "id": "inspect-symbols",
       "command": [
-        "lattice",
+        "opcore",
         "inspect",
         "symbols",
         "Greeting",
@@ -2649,7 +2648,7 @@
         "5"
       ],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "inspect",
         "symbols",
         "Greeting",
@@ -2659,21 +2658,21 @@
       "owner": "inspect",
       "status": "ok",
       "exitCode": 0,
-      "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "2b3bd142fa9d59ec6c2de51ef08fec02f50a4e4acab5f27231206acb4477f80a",
+      "binPath": "node_modules/.bin/opcore",
+      "stdoutSha256": "27200daf767b023dfbf326095785791c9592d377419b2b839154a5fe3da0ffc9",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "inspect symbols returned graph symbols"
     },
     {
       "id": "inspect-definition",
       "command": [
-        "lattice",
+        "opcore",
         "inspect",
         "definition",
         "GreetingCard"
       ],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "inspect",
         "definition",
         "GreetingCard"
@@ -2681,15 +2680,15 @@
       "owner": "inspect",
       "status": "ok",
       "exitCode": 0,
-      "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "1e05b54a35875922aa3d87cca8397f321ef73ff4f8820b11a724c64d07fce658",
+      "binPath": "node_modules/.bin/opcore",
+      "stdoutSha256": "6f044c39b53a0a4ef094d25fe8b752ae252020ab79e84d616e49e9a8f95b89de",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "inspect definition returned a symbol"
     },
     {
       "id": "inspect-references",
       "command": [
-        "lattice",
+        "opcore",
         "inspect",
         "references",
         "function:src/components/GreetingCard.tsx#GreetingCard",
@@ -2697,7 +2696,7 @@
         "5"
       ],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "inspect",
         "references",
         "function:src/components/GreetingCard.tsx#GreetingCard",
@@ -2707,21 +2706,21 @@
       "owner": "inspect",
       "status": "ok",
       "exitCode": 0,
-      "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "7d56cc6d55dec5c7dae9a4fb985a0bd38b0f32d3f705d55d11809b4ca9b8c166",
+      "binPath": "node_modules/.bin/opcore",
+      "stdoutSha256": "689073fa45d4c2f1ffa87ad844eb2fe5af765fc73b23d1e6376dfe8d9617305f",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "inspect references returned callers"
     },
     {
       "id": "inspect-signature",
       "command": [
-        "lattice",
+        "opcore",
         "inspect",
         "signature",
         "function:src/components/GreetingCard.tsx#GreetingCard"
       ],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "inspect",
         "signature",
         "function:src/components/GreetingCard.tsx#GreetingCard"
@@ -2729,21 +2728,21 @@
       "owner": "inspect",
       "status": "ok",
       "exitCode": 0,
-      "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "1715dd6aef310ae98ec4ae3aead3ecd8f435e9b545ffa40f0cdcf56a7e2d75fa",
+      "binPath": "node_modules/.bin/opcore",
+      "stdoutSha256": "856d12535bfa1b87a2bbaa4c928f27576910bb08dd2137f98de158b42337f822",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "inspect signature returned read-only language-service signatures"
     },
     {
       "id": "inspect-implementations",
       "command": [
-        "lattice",
+        "opcore",
         "inspect",
         "implementations",
         "class:src/models.ts#GreetingModel"
       ],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "inspect",
         "implementations",
         "class:src/models.ts#GreetingModel"
@@ -2751,15 +2750,15 @@
       "owner": "inspect",
       "status": "ok",
       "exitCode": 0,
-      "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "ce05e4ef0499ad848689f513e456d26c38e5f8e6d864c7db54c59e6656652d75",
+      "binPath": "node_modules/.bin/opcore",
+      "stdoutSha256": "482b665b70560fa2fee8a956538cf47e0bfb978641d39c774dbfc89bed94850b",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "inspect implementations returned implementation evidence"
     },
     {
       "id": "inspect-search",
       "command": [
-        "lattice",
+        "opcore",
         "inspect",
         "search",
         "Greeting",
@@ -2767,7 +2766,7 @@
         "5"
       ],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "inspect",
         "search",
         "Greeting",
@@ -2777,15 +2776,15 @@
       "owner": "inspect",
       "status": "ok",
       "exitCode": 0,
-      "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "fccce1746b62ed0d488facce393b69e39756f772753bb5306da539b83e298c16",
+      "binPath": "node_modules/.bin/opcore",
+      "stdoutSha256": "2b911f979a6ebbd26c00775b4109ee6f59b5c2f0395d9daa9ed3121fe3f65f1a",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "inspect search returned graph search results"
     },
     {
       "id": "edit-preview",
       "command": [
-        "lattice",
+        "opcore",
         "edit",
         "exact",
         "--path",
@@ -2796,7 +2795,7 @@
         "export const cutoverValue: number = 2;"
       ],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "edit",
         "exact",
         "--path",
@@ -2809,15 +2808,15 @@
       "owner": "edit",
       "status": "ok",
       "exitCode": 0,
-      "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "4232e59e34efbfd7f05dd492062331547e6fece9328be77f987c5993dd3dd93d",
+      "binPath": "node_modules/.bin/opcore",
+      "stdoutSha256": "a9e72001a5dcc18fa76bc171b175a439a35bf99b6a9061c7ceaf5e3d086a6a64",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "safe edit preview produced a plan without writing"
     },
     {
       "id": "edit-apply",
       "command": [
-        "lattice",
+        "opcore",
         "edit",
         "exact",
         "--path",
@@ -2829,7 +2828,7 @@
         "--apply"
       ],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "edit",
         "exact",
         "--path",
@@ -2843,15 +2842,15 @@
       "owner": "edit",
       "status": "ok",
       "exitCode": 0,
-      "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "5daada9ec870a839f8e82c4f04a6d53a9ad79edbe6b69689bd851a6109fe506e",
+      "binPath": "node_modules/.bin/opcore",
+      "stdoutSha256": "5ccace8dbf44c6b5138277de38d6d91e067868d445935c86d7fe1e5afde9533b",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "safe edit apply wrote after validation"
     },
     {
       "id": "edit-refused",
       "command": [
-        "lattice",
+        "opcore",
         "edit",
         "exact",
         "--path",
@@ -2863,7 +2862,7 @@
         "--apply"
       ],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "edit",
         "exact",
         "--path",
@@ -2877,15 +2876,15 @@
       "owner": "edit",
       "status": "error",
       "exitCode": 1,
-      "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "5a286ebf069fa44f23e4cfee20a922bf638e5006d13a898c16f391a9b6608b9f",
+      "binPath": "node_modules/.bin/opcore",
+      "stdoutSha256": "bad2872683f7350ef2924ba4af0d75cd95060c994c482cf2448dcb4ed2710cfa",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "validation-refused edit left file unchanged"
     },
     {
       "id": "check-files",
       "command": [
-        "lattice",
+        "opcore",
         "check",
         "files",
         "src/cutover.ts",
@@ -2893,7 +2892,7 @@
         "typescript.syntax,typescript.types"
       ],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "check",
         "files",
         "src/cutover.ts",
@@ -2903,88 +2902,88 @@
       "owner": "validation",
       "status": "ok",
       "exitCode": 0,
-      "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "1272a5a89ca7de23cea5138b82527a1d87de7e7532f08dcb7bff27a7e0501178",
+      "binPath": "node_modules/.bin/opcore",
+      "stdoutSha256": "c01c25f59d829fade24ef6606672469cb2579c95ee9bd217584cb318cd1659ce",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "check files passed syntax and type checks"
     },
     {
       "id": "validate-request",
       "command": [
-        "lattice",
+        "opcore",
         "validate",
         "request",
         "--request-file",
-        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/lattice-cutover-6e5INX/project/validate-request.json"
+        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-cutover-LvjxLY/project/validate-request.json"
       ],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "validate",
         "request",
         "--request-file",
-        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/lattice-cutover-6e5INX/project/validate-request.json"
+        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-cutover-LvjxLY/project/validate-request.json"
       ],
       "owner": "validation",
       "status": "ok",
       "exitCode": 0,
-      "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "5f0b98fade0d80061f4c1f1ce12acf24e42ce6324ba7676962f7ffd2f8044d98",
+      "binPath": "node_modules/.bin/opcore",
+      "stdoutSha256": "fa8cc5fa887b8fd0f22e6d3647125b5a800751ac45dd7f0442e920dcbe2f6eef",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "validate request passed"
     },
     {
       "id": "validate-pre-write-pass",
       "command": [
-        "lattice",
+        "opcore",
         "validate",
         "pre-write",
         "--request-file",
-        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/lattice-cutover-6e5INX/project/pre-write-pass.json",
+        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-cutover-LvjxLY/project/pre-write-pass.json",
         "--timeout-ms",
         "30000"
       ],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "validate",
         "pre-write",
         "--request-file",
-        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/lattice-cutover-6e5INX/project/pre-write-pass.json",
+        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-cutover-LvjxLY/project/pre-write-pass.json",
         "--timeout-ms",
         "30000"
       ],
       "owner": "validation",
       "status": "ok",
       "exitCode": 0,
-      "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "b2e18a81c0e6d9054b6d05020326030a39df8d69636d72fc712ffe73016deba5",
+      "binPath": "node_modules/.bin/opcore",
+      "stdoutSha256": "443aec84ecc9d535a6c236996cccad9bbc784685b994310118069f7528184453",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "pre-write pass receipt was ok"
     },
     {
       "id": "validate-pre-write-fail",
       "command": [
-        "lattice",
+        "opcore",
         "validate",
         "pre-write",
         "--request-file",
-        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/lattice-cutover-6e5INX/project/pre-write-fail.json",
+        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-cutover-LvjxLY/project/pre-write-fail.json",
         "--timeout-ms",
         "30000"
       ],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "validate",
         "pre-write",
         "--request-file",
-        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/lattice-cutover-6e5INX/project/pre-write-fail.json",
+        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-cutover-LvjxLY/project/pre-write-fail.json",
         "--timeout-ms",
         "30000"
       ],
       "owner": "validation",
       "status": "error",
       "exitCode": 1,
-      "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "dfba0aa1090b19d3f5bbca4197c7ceeb33b53a55c0635123753e553d3add871d",
+      "binPath": "node_modules/.bin/opcore",
+      "stdoutSha256": "661f350b515e00df48ee7550e4d6e9955129aa2fe3f3d620694fcd833d77376d",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "pre-write failure receipt failed closed"
     }
@@ -2993,74 +2992,74 @@
     {
       "id": "graph-rust-build",
       "command": [
-        "lattice",
+        "opcore",
         "graph",
         "build"
       ],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "graph",
         "build"
       ],
       "owner": "graph",
       "status": "ok",
       "exitCode": 0,
-      "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "31808e901605a642bc18cb794b2f76017fda82640e01c87a5cb79840bbbc56b2",
+      "binPath": "node_modules/.bin/opcore",
+      "stdoutSha256": "0688d00092e05aa334607e9a50cf7b71606f5cd329d5b868ec9fd7b91d2e6a0f",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "Rust graph build completed with installed native artifact"
     },
     {
       "id": "graph-rust-status",
       "command": [
-        "lattice",
+        "opcore",
         "graph",
         "status"
       ],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "graph",
         "status"
       ],
       "owner": "graph",
       "status": "ok",
       "exitCode": 0,
-      "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "400c3cae7bb5192b89163b911918644a490a831f5552299ff8738cfcc670cc5a",
+      "binPath": "node_modules/.bin/opcore",
+      "stdoutSha256": "965f0217720cabe66e1f18322381fb1bed34eaa89976de8015fb5eef158af5d4",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "Rust graph status available after build"
     },
     {
       "id": "graph-rust-query",
       "command": [
-        "lattice",
+        "opcore",
         "graph",
         "query"
       ],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "graph",
         "query"
       ],
       "owner": "graph",
       "status": "ok",
       "exitCode": 0,
-      "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "17326c61a9951dc059ca693134301818b32fa128d49617570eceb5c76a9555fd",
+      "binPath": "node_modules/.bin/opcore",
+      "stdoutSha256": "90ac5b512b935e8ef44846182e77c2d69317039a1f472c9d8f43151200de98af",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "Rust graph query returned Rust facts"
     },
     {
       "id": "graph-rust-impact",
       "command": [
-        "lattice",
+        "opcore",
         "graph",
         "impact",
         "--files",
         "src/helpers.rs"
       ],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "graph",
         "impact",
         "--files",
@@ -3069,22 +3068,22 @@
       "owner": "graph",
       "status": "ok",
       "exitCode": 0,
-      "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "73b43e6fe9f414385073cfc287f655a98de5aaaf97b950f2c852a15fd5fef9ce",
+      "binPath": "node_modules/.bin/opcore",
+      "stdoutSha256": "e6556fa099603b3d1bca4bc1fe032d79722f4edc85653e010f83ba29be29aa91",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "Rust graph impact returned related Rust facts"
     },
     {
       "id": "graph-rust-review-context",
       "command": [
-        "lattice",
+        "opcore",
         "graph",
         "review-context",
         "--files",
         "src/helpers.rs"
       ],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "graph",
         "review-context",
         "--files",
@@ -3093,22 +3092,22 @@
       "owner": "graph",
       "status": "ok",
       "exitCode": 0,
-      "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "b919d72fcac89b7e1c254235e07bba376937fccf4e0af1e75a48e154b0d97ace",
+      "binPath": "node_modules/.bin/opcore",
+      "stdoutSha256": "1ef0e4bec060f05e9d0183066195fb742b8b4cee06237dcb00b635367ad47667",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "Rust graph review-context returned related Rust facts"
     },
     {
       "id": "graph-rust-detect-changes",
       "command": [
-        "lattice",
+        "opcore",
         "graph",
         "detect-changes",
         "--files",
         "src/helpers.rs"
       ],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "graph",
         "detect-changes",
         "--files",
@@ -3117,15 +3116,15 @@
       "owner": "graph",
       "status": "ok",
       "exitCode": 0,
-      "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "f355d87034c5cc64dcb30d0c4877a621727310e23a78d47e903a1f98e7a4ecaf",
+      "binPath": "node_modules/.bin/opcore",
+      "stdoutSha256": "1145d27dce98fb6a5dbbb6d34f5f224714430cbe46b8328e17d3c691c9d8d75d",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "Rust graph detect-changes returned typed Rust change data"
     },
     {
       "id": "graph-rust-search",
       "command": [
-        "lattice",
+        "opcore",
         "graph",
         "search",
         "Widget",
@@ -3133,7 +3132,7 @@
         "5"
       ],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "graph",
         "search",
         "Widget",
@@ -3143,8 +3142,8 @@
       "owner": "graph",
       "status": "ok",
       "exitCode": 0,
-      "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "d374d5d466e2c72729045a96ae52d7b5c7a77b71fe0c7882d750f599ecd31fa9",
+      "binPath": "node_modules/.bin/opcore",
+      "stdoutSha256": "940409e419c70a68f68516ea1c7b45db5c2f723d0518bfbca202990bdcdda651",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "Rust graph search returned ranked Rust symbols"
     }
@@ -3153,12 +3152,12 @@
     {
       "id": "missing-required-graph-check",
       "command": [
-        "lattice",
+        "opcore",
         "check",
         "files",
         "src/index.ts",
         "--repo",
-        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/lattice-cutover-6e5INX/missing-graph",
+        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-cutover-LvjxLY/missing-graph",
         "--graph-mode",
         "required",
         "--checks",
@@ -3172,11 +3171,11 @@
     {
       "id": "missing-required-graph-validate",
       "command": [
-        "lattice",
+        "opcore",
         "validate",
         "request",
         "--request-file",
-        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/lattice-cutover-6e5INX/missing-graph/required-graph.json",
+        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-cutover-LvjxLY/missing-graph/required-graph.json",
         "--json"
       ],
       "status": "passed",
@@ -3198,17 +3197,17 @@
     {
       "issue": "#17",
       "path": "docs/release/graph-release-receipt.json",
-      "checksumSha256": "5258ffb8699909b46a5004adedb95509bb24ce01737301abde2a07d75bd0f5a8"
+      "checksumSha256": "ac34db9f3c4bd9b36fd66bdf4884f3034b9a3bc56b019710903fc84748754b7b"
     },
     {
       "issue": "#29",
       "path": "docs/release/release-receipt.json",
-      "checksumSha256": "cab7bf7cd21e9d0f5b0ba8efd4f24b54cdd48bf07cea576bb3f8edabf7ba8ddc"
+      "checksumSha256": "e1c8d7d000764818b9b76e27c042a2d0e836057b19eb23915d4f951c54c5f1ba"
     },
     {
       "issue": "#58",
       "path": "docs/integration/pre-write-validation.md",
-      "checksumSha256": "c7f40aeb71dd481072950ac43caacb129148d87b11c1430bc736a0825b030085"
+      "checksumSha256": "ec111c8a4c8b3c41aec245082f2e700173b8b54c50c471ded0003862abe9e2ac"
     }
   ]
 }

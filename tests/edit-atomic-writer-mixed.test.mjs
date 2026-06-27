@@ -40,7 +40,7 @@ function mixedPlan(repoRoot) {
       request: {
         repo: { repoRoot },
         scope: { kind: "files", files: ["src/create.ts", "src/delete.ts", "src/replace.ts"] },
-        graph: { mode: "required", provider: "lattice-graph" },
+        graph: { mode: "required", provider: "opcore-graph" },
         overlays: []
       }
     }

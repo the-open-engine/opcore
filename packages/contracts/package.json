@@ -11,7 +11,7 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
-    "./schemas/lattice-contracts.schema.json": "./schemas/lattice-contracts.schema.json"
+    "./schemas/opcore-contracts.schema.json": "./schemas/opcore-contracts.schema.json"
   },
   "files": [
     "dist",

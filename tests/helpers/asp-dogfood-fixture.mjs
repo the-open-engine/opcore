@@ -31,7 +31,7 @@ export function validAspDogfoodReceipt() {
 
 export function invalidAspDogfoodCases(receipt) {
   return [
-    ["lattice asp serve entrypoint", { ...receipt, provider: { ...receipt.provider, command: ["lattice", "asp", "serve"] } }, /provider command/],
+    ["opcore asp serve entrypoint", { ...receipt, provider: { ...receipt.provider, command: ["opcore", "asp", "serve"] } }, /provider command/],
     ["ACE runtime provider entrypoint", { ...receipt, provider: { ...receipt.provider, binPath: ".ace/runtime/bin/opcore-asp-provider" } }, /node_modules\/\.bin\/opcore-asp-provider|forbidden marker/],
     ["failed ASP server add", failedManagerServerAdd(receipt), /manager server add status must be passed/],
     ["failed ASP repo enable", failedRepoEnable(receipt), /repo enable status must be passed/],
@@ -76,7 +76,7 @@ function installedPackagesFixture() {
 }
 
 function binsFor(packageName) {
-  if (packageName === "@the-open-engine/opcore") return { opcore: "dist/index.js", lattice: "dist/lattice/index.js" };
+  if (packageName === "@the-open-engine/opcore") return { opcore: "dist/index.js" };
   if (packageName === "@the-open-engine/opcore-asp-provider") return { "opcore-asp-provider": "dist/index.js" };
   return {};
 }
@@ -84,7 +84,7 @@ function binsFor(packageName) {
 function installedFilesFor(packageName) {
   const paths = [
     "package.json",
-    ...(packageName === "@the-open-engine/opcore" ? ["dist/index.js", "dist/lattice/index.js"] : []),
+    ...(packageName === "@the-open-engine/opcore" ? ["dist/index.js"] : []),
     ...(packageName === "@the-open-engine/opcore-asp-provider" ? ["dist/index.js", "dist/manifests/asp-server.json"] : [])
   ];
   return paths.map((path) => ({ path: `node_modules/${packageName}/${path}`, sha256: "3".repeat(64) }));
@@ -194,8 +194,8 @@ function hostEvaluationFixture(hostDecision) {
 function hostDecisionFixture() {
   return {
     decision: "allow",
-    receipt: { receiptId: "core-evaluate-allow-test", authorityEvidence: [{ identity: "lattice" }], providerProvenance: [{ provider: "opcore", capability: "check" }], assurance: { mode: "gated", transactionGuarantee: "none" } },
-    authorityEvidence: [{ identity: "lattice" }],
+    receipt: { receiptId: "core-evaluate-allow-test", authorityEvidence: [{ identity: "opcore" }], providerProvenance: [{ provider: "opcore", capability: "check" }], assurance: { mode: "gated", transactionGuarantee: "none" } },
+    authorityEvidence: [{ identity: "opcore" }],
     providerProvenance: [{ provider: "opcore", capability: "check" }],
     assurance: { mode: "gated", transactionGuarantee: "none" }
   };

@@ -65,21 +65,19 @@ try {
   });
   installFixture(project);
 
-  const latticeBin = join(project, "node_modules", ".bin", process.platform === "win32" ? "lattice.cmd" : "lattice");
   const opcoreBin = join(project, "node_modules", ".bin", process.platform === "win32" ? "opcore.cmd" : "opcore");
-  if (!existsSync(latticeBin)) throw new Error("Installed lattice bin is missing");
   if (!existsSync(opcoreBin)) throw new Error("Installed opcore bin is missing");
 
-  const help = run(latticeBin, ["--help"], { cwd: project, env: sanitizedEnv() });
+  const help = run(opcoreBin, ["--help"], { cwd: project, env: sanitizedEnv() });
   if (!help.stdout.includes("Local code intelligence") || !help.stdout.includes("Examples:")) {
-    throw new Error("Installed lattice --help did not include public first-run help");
+    throw new Error("Installed opcore --help did not include public first-run help");
   }
 
-  runJson(latticeBin, ["graph", "build", "--json"], project, "graph-build");
+  runJson(opcoreBin, ["graph", "build", "--json"], project, "graph-build");
   runJson(opcoreBin, ["status", "--json"], project, "opcore-status");
-  runJson(latticeBin, ["graph", "search", "Greeting", "--limit", "5", "--json"], project, "graph-search");
-  runJson(latticeBin, ["graph", "impact", "--files", "src/components/GreetingCard.tsx", "--limit", "10", "--json"], project, "graph-impact");
-  runJson(latticeBin, ["check", "files", "src/components/GreetingCard.tsx", "--checks", "typescript.syntax", "--json"], project, "check-files");
+  runJson(opcoreBin, ["graph", "search", "Greeting", "--limit", "5", "--json"], project, "graph-search");
+  runJson(opcoreBin, ["graph", "impact", "--files", "src/components/GreetingCard.tsx", "--limit", "10", "--json"], project, "graph-impact");
+  runJson(opcoreBin, ["check", "files", "src/components/GreetingCard.tsx", "--checks", "typescript.syntax", "--json"], project, "check-files");
 
   const requestPath = join(project, "pre-write.json");
   writeFileSync(
@@ -87,13 +85,13 @@ try {
     `${JSON.stringify({
       repo: { repoRoot: project },
       scope: { kind: "files", files: ["src/models.ts"] },
-      graph: { mode: "optional", provider: "lattice-graph" },
+      graph: { mode: "optional", provider: "opcore-graph" },
       checks: ["typescript.syntax"],
       overlays: [{ path: "src/models.ts", action: "write", content: "export interface Greeting { message: string; }\n" }]
     })}\n`
   );
   const preWrite = runJson(
-    latticeBin,
+    opcoreBin,
     ["validate", "pre-write", "--request-file", requestPath, "--timeout-ms", "30000", "--json"],
     project,
     "validate-pre-write"
@@ -132,8 +130,8 @@ function prepareArtifacts() {
 function assertCompleteNativeArtifacts() {
   for (const nativeTarget of graphCoreSupportedTargets) {
     const nativePackage = graphCoreNativePackageForTarget(nativeTarget);
-    const binary = join(nativePackage.packageDir, "lattice-graph-core");
-    const checksum = join(nativePackage.packageDir, "lattice-graph-core.sha256");
+    const binary = join(nativePackage.packageDir, "opcore-graph-core");
+    const checksum = join(nativePackage.packageDir, "opcore-graph-core.sha256");
     const metadata = join(nativePackage.packageDir, "metadata.json");
     for (const path of [binary, checksum, metadata]) {
       if (!existsSync(path)) throw new Error(`release:dry-run requires prebuilt native artifact file ${path}`);
@@ -147,8 +145,8 @@ function assertCompleteNativeArtifacts() {
     if (parsedMetadata.targetPlatform !== nativeTarget) {
       throw new Error(`${metadata} targetPlatform ${parsedMetadata.targetPlatform}, expected ${nativeTarget}`);
     }
-    if (parsedMetadata.binaryPath !== "lattice-graph-core" || parsedMetadata.checksumPath !== "lattice-graph-core.sha256") {
-      throw new Error(`${metadata} must reference package-local lattice-graph-core and lattice-graph-core.sha256`);
+    if (parsedMetadata.binaryPath !== "opcore-graph-core" || parsedMetadata.checksumPath !== "opcore-graph-core.sha256") {
+      throw new Error(`${metadata} must reference package-local opcore-graph-core and opcore-graph-core.sha256`);
     }
     const actualChecksum = createHash("sha256").update(readFileSync(binary)).digest("hex");
     const checksumFile = readFileSync(checksum, "utf8").trim().split(/\s+/)[0];

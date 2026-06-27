@@ -7,8 +7,8 @@ import {
 } from "../packages/contracts/dist/index.js";
 
 const repoRoot = resolve(new URL("..", import.meta.url).pathname);
-const binaryName = "lattice-graph-core";
-const checksumName = "lattice-graph-core.sha256";
+const binaryName = "opcore-graph-core";
+const checksumName = "opcore-graph-core.sha256";
 const metadataName = "metadata.json";
 const nativeArtifactLockPath = join(repoRoot, "docs/release/.native-artifact-test.lock");
 const nativeArtifactLockTimeoutMs = 900000;
@@ -34,7 +34,7 @@ export function withCompleteNativeArtifactFixtures(runWithArtifacts) {
           metadataPath,
           `${JSON.stringify(
             {
-              artifactName: "lattice-graph-core",
+              artifactName: "opcore-graph-core",
               artifactVersion: "0.1.0-alpha.0",
               targetPlatform: target,
               binaryPath: binaryName,

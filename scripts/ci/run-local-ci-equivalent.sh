@@ -19,8 +19,8 @@ snapshot_generated_artifacts() {
     cp -p "${path}" "${generated_artifact_backup}/${path}"
   done < <(
     git ls-files \
-      'packages/opcore-graph-core-*/lattice-graph-core' \
-      'packages/opcore-graph-core-*/lattice-graph-core.sha256' \
+      'packages/opcore-graph-core-*/opcore-graph-core' \
+      'packages/opcore-graph-core-*/opcore-graph-core.sha256' \
       'packages/opcore-graph-core-*/metadata.json'
   )
 }
@@ -33,8 +33,8 @@ restore_generated_artifacts() {
     cp -p "${generated_artifact_backup}/${path}" "${path}"
   done < <(
     git ls-files \
-      'packages/opcore-graph-core-*/lattice-graph-core' \
-      'packages/opcore-graph-core-*/lattice-graph-core.sha256' \
+      'packages/opcore-graph-core-*/opcore-graph-core' \
+      'packages/opcore-graph-core-*/opcore-graph-core.sha256' \
       'packages/opcore-graph-core-*/metadata.json'
   )
   rm -rf "${generated_artifact_backup}"

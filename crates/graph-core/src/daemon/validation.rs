@@ -26,7 +26,7 @@ pub(super) fn validate_request(request: &GraphDaemonRequest) -> Result<(), Reque
 fn validate_request_envelope(request: &GraphDaemonRequest) -> Result<(), RequestValidationError> {
     if request.protocol != GRAPH_DAEMON_PROTOCOL {
         return Err(validation_error(
-            "Graph daemon request protocol must be lattice.graph.daemon",
+            "Graph daemon request protocol must be opcore.graph.daemon",
             request.schema_version,
         ));
     }

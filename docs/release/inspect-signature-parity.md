@@ -2,11 +2,11 @@
 
 Issue: #101
 
-Status: `lattice inspect signature` is implemented as read-only inspect-owned language-service evidence after mandatory fresh GraphProvider status. This does not retire CIX, change ACE guidance, or make ASP host decisions.
+Status: `opcore inspect signature` is implemented as read-only inspect-owned language-service evidence after mandatory fresh GraphProvider status. This does not retire CIX, change ACE guidance, or make ASP host decisions.
 
 ## Field Mapping
 
-| CIX `sig` field | Lattice field |
+| CIX `sig` field | Opcore field |
 |-----------------|---------------|
 | `name` | `inspectResult.signatures[].symbol.name` and `signature` text |
 | `kind` | `inspectResult.signatures[].kind` |
@@ -68,7 +68,7 @@ node packages/cli/dist/index.js graph build --repo packages/fixtures/inspect-sym
 node packages/cli/dist/index.js inspect signature src/models.ts formatGreeting --line 20 --repo packages/fixtures/inspect-symbol-parity --json
 ```
 
-Lattice output excerpt:
+Opcore output excerpt:
 
 ```json
 {
@@ -141,7 +141,7 @@ Output:
 node packages/cli/dist/index.js inspect signature src/overloads.ts describeGreeting --line 3 --repo packages/fixtures/inspect-symbol-parity --json
 ```
 
-Lattice returns two signatures with `overloadIndex` `0` and `1`:
+Opcore returns two signatures with `overloadIndex` `0` and `1`:
 
 ```json
 [
@@ -156,4 +156,4 @@ Lattice returns two signatures with `overloadIndex` `0` and `1`:
 ]
 ```
 
-Retained gap: `lattice inspect implementations` remains typed unsupported. CIX stays as the retained guardrail until the implementations parity issue lands and #17/#4 evidence is updated.
+Retained gap: `opcore inspect implementations` remains typed unsupported. CIX stays as the retained guardrail until the implementations parity issue lands and #17/#4 evidence is updated.

@@ -3,10 +3,10 @@ import assert from "node:assert/strict";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { routeCommand } from "../packages/opcore/dist/lattice/index.js";
+import { routeCommand } from "../packages/opcore/dist/advanced/index.js";
 import { calculateEditChecksum, createEditCommandAdapter } from "../packages/edit/dist/index.js";
 
-describe("lattice edit CLI", () => {
+describe("opcore edit CLI", () => {
   it("plans exact edits by default without writing", async () => {
     await withTempRepo(async (repo) => {
       writeFileSync(join(repo, "src/a.ts"), "const value = oldName;\n");
@@ -23,7 +23,7 @@ describe("lattice edit CLI", () => {
         "--replacement",
         "newName",
         "--json"
-      ], "lattice");
+      ], "opcore");
 
       assert.equal(routed.status, "ok");
       assert.equal(routed.editPlan.changes[0].content, "const value = newName;\n");
@@ -49,7 +49,7 @@ describe("lattice edit CLI", () => {
         "new",
         "--apply",
         "--json"
-      ], "lattice");
+      ], "opcore");
 
       assert.equal(routed.status, "error");
       assert.equal(routed.exitCode, 1);
@@ -82,13 +82,13 @@ describe("lattice edit CLI", () => {
           request: {
             repo: { repoRoot: repo },
             scope: { kind: "files", files: ["src/a.ts"] },
-            graph: { mode: "required", provider: "lattice-graph" },
+            graph: { mode: "required", provider: "opcore-graph" },
             overlays: []
           }
         }
       };
 
-      const routed = await routeCommand(["edit", "apply", "--repo", repo, "--request-json", JSON.stringify(plan), "--json"], "lattice");
+      const routed = await routeCommand(["edit", "apply", "--repo", repo, "--request-json", JSON.stringify(plan), "--json"], "opcore");
 
       assert.equal(routed.status, "error");
       assert.equal(routed.editResult.refusal.category, "unsupported_change");
@@ -105,7 +105,7 @@ describe("lattice edit CLI", () => {
         writeFileSync(join(repoB, "src/a.ts"), before);
         const plan = optionalReplacePlan(repoA, before, "new\n");
 
-        const routed = await routeCommand(["edit", "apply", "--repo", repoB, "--request-json", JSON.stringify(plan), "--json"], "lattice");
+        const routed = await routeCommand(["edit", "apply", "--repo", repoB, "--request-json", JSON.stringify(plan), "--json"], "opcore");
 
         assert.equal(routed.status, "error");
         assert.equal(routed.exitCode, 1);
@@ -137,7 +137,7 @@ describe("lattice edit CLI", () => {
             replacementText: "new"
           }),
           "--json"
-        ], "lattice");
+        ], "opcore");
 
         assert.equal(routed.status, "error");
         assert.equal(routed.exitCode, 1);
@@ -155,7 +155,7 @@ describe("lattice edit CLI", () => {
         writeFileSync(join(repo, "src/a.ts"), before);
         const plan = optionalReplacePlan(repo, before, "new\n");
 
-        const routed = await routeCommand(["edit", "apply", "--repo", repo, "--request-json", JSON.stringify(plan), flag, "--json"], "lattice");
+        const routed = await routeCommand(["edit", "apply", "--repo", repo, "--request-json", JSON.stringify(plan), flag, "--json"], "opcore");
 
         assert.equal(routed.status, "ok", flag);
         assert.equal(routed.editResult.applied, false, flag);
@@ -181,7 +181,7 @@ describe("lattice edit CLI", () => {
         ]
       };
 
-      const routed = await routeCommand(["edit", "multi", "--repo", repo, "--request-json", JSON.stringify(request), "--json"], "lattice");
+      const routed = await routeCommand(["edit", "multi", "--repo", repo, "--request-json", JSON.stringify(request), "--json"], "opcore");
 
       assert.equal(routed.status, "ok");
       assert.equal(routed.editPlan.changes[0].content, "two gamma");
@@ -211,7 +211,7 @@ describe("lattice edit CLI", () => {
         JSON.stringify(request),
         "--dry-run",
         "--json"
-      ], "lattice");
+      ], "opcore");
 
       assert.equal(routed.status, "ok");
       assert.equal(routed.editResult.matchCount, 2);
@@ -231,7 +231,7 @@ describe("lattice edit CLI", () => {
           operations: [{ search: "ALPHA", replace: "OMEGA", replace_all: true }]
         }),
         "--json"
-      ], "lattice");
+      ], "opcore");
       assert.equal(snakeCaseFilter.status, "ok");
       assert.equal(snakeCaseFilter.editResult.matchCount, 1);
       assert.deepEqual(snakeCaseFilter.editPlan.changes.map((change) => change.path), ["src/a.ts"]);
@@ -248,7 +248,7 @@ describe("lattice edit CLI", () => {
         "--replacement",
         "ignored",
         "--json"
-      ], "lattice");
+      ], "opcore");
       assert.equal(noMatch.status, "ok");
       assert.equal(noMatch.editPlan.changes.length, 0);
       assert.equal(noMatch.editResult.applied, false);
@@ -272,7 +272,7 @@ describe("lattice edit CLI", () => {
         "--replacement",
         "two",
         "--json"
-      ], "lattice");
+      ], "opcore");
 
       assert.equal(duplicate.status, "error");
       assert.equal(duplicate.exitCode, 1);
@@ -293,7 +293,7 @@ describe("lattice edit CLI", () => {
         "two",
         "--replace-all",
         "--json"
-      ], "lattice");
+      ], "opcore");
 
       assert.equal(replaceAll.status, "ok");
       assert.equal(replaceAll.editResult.matchCount, 2);
@@ -320,7 +320,7 @@ describe("lattice edit CLI", () => {
           "new",
           flag,
           "--json"
-        ], "lattice");
+        ], "opcore");
 
         assert.equal(routed.status, "error", flag);
         assert.equal(routed.exitCode, 1, flag);
@@ -346,7 +346,7 @@ describe("lattice edit CLI", () => {
         "x$&y",
         "--replace-all",
         "--json"
-      ], "lattice");
+      ], "opcore");
 
       assert.equal(routed.status, "ok");
       assert.equal(routed.editPlan.changes[0].content, "x$&y\n");
@@ -363,18 +363,18 @@ describe("lattice edit CLI", () => {
 
       const routed = await adapter({
         schemaVersion: 1,
-        bin: "lattice",
+        bin: "opcore",
         argv: ["edit", "exact", "--repo", repo, "--stdin", "--json"],
         args: ["exact", "--repo", repo, "--stdin"],
         json: true,
         group: {
           name: "edit",
           owner: "edit",
-          canonicalCommand: ["lattice", "edit"],
+          canonicalCommand: ["opcore", "edit"],
           commands: ["exact"],
           summary: "test"
         },
-        canonicalCommand: ["lattice", "edit", "exact", "--repo", repo, "--stdin"]
+        canonicalCommand: ["opcore", "edit", "exact", "--repo", repo, "--stdin"]
       });
 
       assert.equal(routed.status, "ok");
@@ -399,7 +399,7 @@ describe("lattice edit CLI", () => {
       ];
 
       for (const args of cases) {
-        const routed = await routeCommand(args, "lattice");
+        const routed = await routeCommand(args, "opcore");
         assert.equal(routed.status, "error", args.join(" "));
         assert.equal(routed.editResult.ok, false, args.join(" "));
         assert.equal(typeof routed.editResult.refusal.category, "string", args.join(" "));
@@ -414,7 +414,7 @@ describe("lattice edit CLI", () => {
         JSON.stringify({ patch: patchFor("src/a.ts", "one", "two") }),
         "--dry-run",
         "--json"
-      ], "lattice");
+      ], "opcore");
       assert.equal(patch.status, "ok");
       assert.equal(patch.editPlan.changes[0].content, "two\n");
       assert.equal(readFileSync(join(repo, "src/a.ts"), "utf8"), "one\n");
@@ -428,18 +428,18 @@ describe("lattice edit CLI", () => {
         JSON.stringify({ files: [{ path: "src/a.ts", content: "three\n" }] }),
         "--dry-run",
         "--json"
-      ], "lattice");
+      ], "opcore");
       assert.equal(tree.status, "ok");
       assert.equal(tree.editPlan.changes[0].content, "three\n");
       assert.equal(readFileSync(join(repo, "src/a.ts"), "utf8"), "one\n");
 
       for (const command of ["rename", "move", "signature"]) {
-        const routed = await routeCommand(["edit", command, "--json"], "lattice");
+        const routed = await routeCommand(["edit", command, "--json"], "opcore");
         assert.equal(routed.status, "error");
         assert.equal(routed.editResult.refusal.category, "unsupported_change");
       }
 
-      assert.equal((await routeCommand(["edit", "multi-edit", "--json"], "lattice")).status, "unsupported");
+      assert.equal((await routeCommand(["edit", "multi-edit", "--json"], "opcore")).status, "unsupported");
     });
   });
 });
@@ -462,7 +462,7 @@ function optionalReplacePlan(repo, before, after) {
       request: {
         repo: { repoRoot: repo },
         scope: { kind: "files", files: ["src/a.ts"] },
-        graph: { mode: "required", provider: "lattice-graph" },
+        graph: { mode: "required", provider: "opcore-graph" },
         overlays: []
       }
     }

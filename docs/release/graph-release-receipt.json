@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "issue": "#17",
   "origin": "covibes-authored-synthetic",
-  "generatedAt": "2026-06-27T03:32:07.722Z",
-  "commitSha": "45e1a401dd86db8f4a09dd0627cd8cf105a1f300",
+  "generatedAt": "2026-06-27T10:20:51.870Z",
+  "commitSha": "83ecc13c5bd4c6bcd348f54d4fece218009b3f2d",
   "graphPackageVersions": [
     {
       "packageName": "@the-open-engine/opcore-graph",
@@ -45,33 +45,101 @@
   ],
   "commandCoverage": [
     {
-      "id": "lattice-graph-build",
-      "bin": "lattice",
+      "id": "opcore-graph-build",
+      "bin": "opcore",
       "command": [
         "graph",
         "build"
       ],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "graph",
         "build"
       ],
       "status": "passed",
       "exitCode": 0,
       "fixture": "packages/fixtures/source-extraction/wave1",
-      "durationMs": 275
+      "durationMs": 295
     },
     {
-      "id": "lattice-graph-update",
-      "bin": "lattice",
+      "id": "opcore-graph-update",
+      "bin": "opcore",
       "command": [
         "graph",
         "update"
       ],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "graph",
         "update"
+      ],
+      "status": "passed",
+      "exitCode": 0,
+      "fixture": "packages/fixtures/source-extraction/wave1",
+      "durationMs": 283
+    },
+    {
+      "id": "opcore-graph-watch",
+      "bin": "opcore",
+      "command": [
+        "graph",
+        "watch"
+      ],
+      "canonicalCommand": [
+        "opcore",
+        "graph",
+        "watch"
+      ],
+      "status": "passed",
+      "exitCode": 0,
+      "fixture": "packages/fixtures/source-extraction/wave1",
+      "durationMs": 280
+    },
+    {
+      "id": "opcore-graph-status",
+      "bin": "opcore",
+      "command": [
+        "graph",
+        "status"
+      ],
+      "canonicalCommand": [
+        "opcore",
+        "graph",
+        "status"
+      ],
+      "status": "passed",
+      "exitCode": 0,
+      "fixture": "packages/fixtures/source-extraction/wave1",
+      "durationMs": 282
+    },
+    {
+      "id": "opcore-graph-query",
+      "bin": "opcore",
+      "command": [
+        "graph",
+        "query"
+      ],
+      "canonicalCommand": [
+        "opcore",
+        "graph",
+        "query"
+      ],
+      "status": "passed",
+      "exitCode": 0,
+      "fixture": "packages/fixtures/source-extraction/wave1",
+      "durationMs": 289
+    },
+    {
+      "id": "opcore-graph-impact",
+      "bin": "opcore",
+      "command": [
+        "graph",
+        "impact"
+      ],
+      "canonicalCommand": [
+        "opcore",
+        "graph",
+        "impact"
       ],
       "status": "passed",
       "exitCode": 0,
@@ -79,237 +147,169 @@
       "durationMs": 285
     },
     {
-      "id": "lattice-graph-watch",
-      "bin": "lattice",
+      "id": "opcore-graph-search",
+      "bin": "opcore",
       "command": [
         "graph",
-        "watch"
+        "search"
       ],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "graph",
-        "watch"
+        "search"
       ],
       "status": "passed",
       "exitCode": 0,
       "fixture": "packages/fixtures/source-extraction/wave1",
-      "durationMs": 281
+      "durationMs": 280
     },
     {
-      "id": "lattice-graph-status",
-      "bin": "lattice",
+      "id": "opcore-graph-serve",
+      "bin": "opcore",
       "command": [
         "graph",
-        "status"
+        "serve"
       ],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "graph",
-        "status"
+        "serve"
       ],
       "status": "passed",
       "exitCode": 0,
       "fixture": "packages/fixtures/source-extraction/wave1",
       "durationMs": 268
-    },
-    {
-      "id": "lattice-graph-query",
-      "bin": "lattice",
-      "command": [
-        "graph",
-        "query"
-      ],
-      "canonicalCommand": [
-        "lattice",
-        "graph",
-        "query"
-      ],
-      "status": "passed",
-      "exitCode": 0,
-      "fixture": "packages/fixtures/source-extraction/wave1",
-      "durationMs": 272
-    },
-    {
-      "id": "lattice-graph-impact",
-      "bin": "lattice",
-      "command": [
-        "graph",
-        "impact"
-      ],
-      "canonicalCommand": [
-        "lattice",
-        "graph",
-        "impact"
-      ],
-      "status": "passed",
-      "exitCode": 0,
-      "fixture": "packages/fixtures/source-extraction/wave1",
-      "durationMs": 275
-    },
-    {
-      "id": "lattice-graph-search",
-      "bin": "lattice",
-      "command": [
-        "graph",
-        "search"
-      ],
-      "canonicalCommand": [
-        "lattice",
-        "graph",
-        "search"
-      ],
-      "status": "passed",
-      "exitCode": 0,
-      "fixture": "packages/fixtures/source-extraction/wave1",
-      "durationMs": 274
-    },
-    {
-      "id": "lattice-graph-serve",
-      "bin": "lattice",
-      "command": [
-        "graph",
-        "serve"
-      ],
-      "canonicalCommand": [
-        "lattice",
-        "graph",
-        "serve"
-      ],
-      "status": "passed",
-      "exitCode": 0,
-      "fixture": "packages/fixtures/source-extraction/wave1",
-      "durationMs": 265
     }
   ],
   "rustCommandCoverage": [
     {
-      "id": "lattice-graph-rust-build",
-      "bin": "lattice",
+      "id": "opcore-graph-rust-build",
+      "bin": "opcore",
       "command": [
         "graph",
         "build"
       ],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "graph",
         "build"
       ],
       "status": "passed",
       "exitCode": 0,
       "fixture": "packages/fixtures/source-extraction/rust-only",
-      "durationMs": 279
+      "durationMs": 290
     },
     {
-      "id": "lattice-graph-rust-update",
-      "bin": "lattice",
+      "id": "opcore-graph-rust-update",
+      "bin": "opcore",
       "command": [
         "graph",
         "update"
       ],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "graph",
         "update"
       ],
       "status": "passed",
       "exitCode": 0,
       "fixture": "packages/fixtures/source-extraction/rust-only",
-      "durationMs": 271
+      "durationMs": 292
     },
     {
-      "id": "lattice-graph-rust-watch",
-      "bin": "lattice",
+      "id": "opcore-graph-rust-watch",
+      "bin": "opcore",
       "command": [
         "graph",
         "watch"
       ],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "graph",
         "watch"
       ],
       "status": "passed",
       "exitCode": 0,
       "fixture": "packages/fixtures/source-extraction/rust-only",
-      "durationMs": 287
+      "durationMs": 313
     },
     {
-      "id": "lattice-graph-rust-status",
-      "bin": "lattice",
+      "id": "opcore-graph-rust-status",
+      "bin": "opcore",
       "command": [
         "graph",
         "status"
       ],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "graph",
         "status"
       ],
       "status": "passed",
       "exitCode": 0,
       "fixture": "packages/fixtures/source-extraction/rust-only",
-      "durationMs": 271
+      "durationMs": 285
     },
     {
-      "id": "lattice-graph-rust-query",
-      "bin": "lattice",
+      "id": "opcore-graph-rust-query",
+      "bin": "opcore",
       "command": [
         "graph",
         "query"
       ],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "graph",
         "query"
       ],
       "status": "passed",
       "exitCode": 0,
       "fixture": "packages/fixtures/source-extraction/rust-only",
-      "durationMs": 277
+      "durationMs": 284
     },
     {
-      "id": "lattice-graph-rust-impact",
-      "bin": "lattice",
+      "id": "opcore-graph-rust-impact",
+      "bin": "opcore",
       "command": [
         "graph",
         "impact"
       ],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "graph",
         "impact"
       ],
       "status": "passed",
       "exitCode": 0,
       "fixture": "packages/fixtures/source-extraction/rust-only",
-      "durationMs": 273
+      "durationMs": 307
     },
     {
-      "id": "lattice-graph-rust-search",
-      "bin": "lattice",
+      "id": "opcore-graph-rust-search",
+      "bin": "opcore",
       "command": [
         "graph",
         "search"
       ],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "graph",
         "search"
       ],
       "status": "passed",
       "exitCode": 0,
       "fixture": "packages/fixtures/source-extraction/rust-only",
-      "durationMs": 277
+      "durationMs": 288
     },
     {
-      "id": "lattice-graph-rust-serve",
-      "bin": "lattice",
+      "id": "opcore-graph-rust-serve",
+      "bin": "opcore",
       "command": [
         "graph",
         "serve"
       ],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "graph",
         "serve"
       ],
@@ -359,35 +359,35 @@
   "serveTransport": [
     {
       "id": "serve-jsonl-ping",
-      "protocol": "lattice.graph.daemon",
+      "protocol": "opcore.graph.daemon",
       "operation": "ping",
       "status": "passed",
       "exitCode": 0
     },
     {
       "id": "serve-jsonl-status",
-      "protocol": "lattice.graph.daemon",
+      "protocol": "opcore.graph.daemon",
       "operation": "status",
       "status": "passed",
       "exitCode": 0
     },
     {
       "id": "serve-jsonl-query",
-      "protocol": "lattice.graph.daemon",
+      "protocol": "opcore.graph.daemon",
       "operation": "query",
       "status": "passed",
       "exitCode": 0
     },
     {
       "id": "serve-jsonl-search",
-      "protocol": "lattice.graph.daemon",
+      "protocol": "opcore.graph.daemon",
       "operation": "search",
       "status": "passed",
       "exitCode": 0
     },
     {
       "id": "serve-jsonl-shutdown",
-      "protocol": "lattice.graph.daemon",
+      "protocol": "opcore.graph.daemon",
       "operation": "shutdown",
       "status": "passed",
       "exitCode": 0
@@ -404,7 +404,7 @@
     },
     {
       "metric": "cold_build_ms",
-      "value": 275,
+      "value": 295,
       "unit": "ms",
       "baselineIssue": "#19",
       "baselineReceipt": "packages/fixtures/graph-reference-evidence/baseline-receipts.json",
@@ -412,7 +412,7 @@
     },
     {
       "metric": "incremental_update_ms",
-      "value": 285,
+      "value": 283,
       "unit": "ms",
       "baselineIssue": "#19",
       "baselineReceipt": "packages/fixtures/graph-reference-evidence/baseline-receipts.json",
@@ -420,7 +420,7 @@
     },
     {
       "metric": "impact_cold_ms",
-      "value": 275,
+      "value": 285,
       "unit": "ms",
       "baselineIssue": "#19",
       "baselineReceipt": "packages/fixtures/graph-reference-evidence/baseline-receipts.json",
@@ -428,7 +428,7 @@
     },
     {
       "metric": "impact_hot_ms",
-      "value": 276,
+      "value": 281,
       "unit": "ms",
       "baselineIssue": "#19",
       "baselineReceipt": "packages/fixtures/graph-reference-evidence/baseline-receipts.json",
@@ -436,7 +436,7 @@
     },
     {
       "metric": "search_ms",
-      "value": 274,
+      "value": 280,
       "unit": "ms",
       "baselineIssue": "#19",
       "baselineReceipt": "packages/fixtures/graph-reference-evidence/baseline-receipts.json",
@@ -444,7 +444,7 @@
     },
     {
       "metric": "daemon_startup_ms",
-      "value": 274,
+      "value": 279,
       "unit": "ms",
       "baselineIssue": "#19",
       "baselineReceipt": "packages/fixtures/graph-reference-evidence/baseline-receipts.json",
@@ -452,7 +452,7 @@
     },
     {
       "metric": "daemon_query_ms",
-      "value": 274,
+      "value": 279,
       "unit": "ms",
       "baselineIssue": "#19",
       "baselineReceipt": "packages/fixtures/graph-reference-evidence/baseline-receipts.json",
@@ -522,25 +522,25 @@
       "packageName": "@the-open-engine/opcore-graph-core-darwin-arm64",
       "targetPlatform": "darwin-arm64",
       "metadata": {
-        "artifactName": "lattice-graph-core",
+        "artifactName": "opcore-graph-core",
         "artifactVersion": "0.1.0-alpha.0",
         "targetPlatform": "darwin-arm64",
-        "binaryPath": "lattice-graph-core",
-        "checksumPath": "lattice-graph-core.sha256",
-        "checksumSha256": "b69845117d7e3c27858bc6a7bd6aed35990c5c4621c1fa0e6ab6b3149e427ce1",
+        "binaryPath": "opcore-graph-core",
+        "checksumPath": "opcore-graph-core.sha256",
+        "checksumSha256": "4a6eb4c6c4be15df3e126b725d83476a10665f36b7801cab0e1d5df64c70e82d",
         "buildProfile": "release"
       },
-      "binaryPath": "lattice-graph-core",
-      "checksumPath": "lattice-graph-core.sha256",
+      "binaryPath": "opcore-graph-core",
+      "checksumPath": "opcore-graph-core.sha256",
       "metadataPath": "metadata.json",
-      "binarySha256": "b69845117d7e3c27858bc6a7bd6aed35990c5c4621c1fa0e6ab6b3149e427ce1",
-      "checksumFileSha256": "a21a87b1e843b89e15434b66d8dfd68fe62b0f3d5eadf30341e8229cb7eac89e",
-      "metadataSha256": "d5723066d7a6f1b04e2ead661776dca5294e250346c11c255fb9c0a1b10654a3",
+      "binarySha256": "4a6eb4c6c4be15df3e126b725d83476a10665f36b7801cab0e1d5df64c70e82d",
+      "checksumFileSha256": "06c381e7f3e1380b5b22d0a670eccf1fdf44efb8e6f0990fcc5a499f2c7e3d20",
+      "metadataSha256": "837da3d2c4e981cbdf7aef9d39141aec33a4d55488fab11276856dfb829005b0",
       "packageFiles": [
         "package.json",
         "README.md",
-        "lattice-graph-core",
-        "lattice-graph-core.sha256",
+        "opcore-graph-core",
+        "opcore-graph-core.sha256",
         "metadata.json"
       ]
     },
@@ -548,25 +548,25 @@
       "packageName": "@the-open-engine/opcore-graph-core-darwin-x64",
       "targetPlatform": "darwin-x64",
       "metadata": {
-        "artifactName": "lattice-graph-core",
+        "artifactName": "opcore-graph-core",
         "artifactVersion": "0.1.0-alpha.0",
         "targetPlatform": "darwin-x64",
-        "binaryPath": "lattice-graph-core",
-        "checksumPath": "lattice-graph-core.sha256",
+        "binaryPath": "opcore-graph-core",
+        "checksumPath": "opcore-graph-core.sha256",
         "checksumSha256": "6652d43eec8f39e7c1b930b92e032eb268d1e4263454a89614e0d8299fc3b4e7",
         "buildProfile": "release"
       },
-      "binaryPath": "lattice-graph-core",
-      "checksumPath": "lattice-graph-core.sha256",
+      "binaryPath": "opcore-graph-core",
+      "checksumPath": "opcore-graph-core.sha256",
       "metadataPath": "metadata.json",
       "binarySha256": "6652d43eec8f39e7c1b930b92e032eb268d1e4263454a89614e0d8299fc3b4e7",
-      "checksumFileSha256": "1dec7f16ea99ceb1f7c1c7798b2841b77328d7546ab7eef09e90c898f83eea74",
-      "metadataSha256": "090548988a137c9f3f900fb736f3ae1176a2fd438742975dcb3eba04f827f413",
+      "checksumFileSha256": "6ff56465a5137949b0c3d2539d9d2915763b1e8c263e39c9924b92698a96afd7",
+      "metadataSha256": "835f5da8173b0387da296d5f508176d88c64770706ef1388472326655806cc52",
       "packageFiles": [
         "package.json",
         "README.md",
-        "lattice-graph-core",
-        "lattice-graph-core.sha256",
+        "opcore-graph-core",
+        "opcore-graph-core.sha256",
         "metadata.json"
       ]
     },
@@ -574,25 +574,25 @@
       "packageName": "@the-open-engine/opcore-graph-core-linux-x64",
       "targetPlatform": "linux-x64",
       "metadata": {
-        "artifactName": "lattice-graph-core",
+        "artifactName": "opcore-graph-core",
         "artifactVersion": "0.1.0-alpha.0",
         "targetPlatform": "linux-x64",
-        "binaryPath": "lattice-graph-core",
-        "checksumPath": "lattice-graph-core.sha256",
+        "binaryPath": "opcore-graph-core",
+        "checksumPath": "opcore-graph-core.sha256",
         "checksumSha256": "4654c6ba6383886e759fe3c805ec8c0df3b31d2e1db9d5c18626de6b2cfe758a",
         "buildProfile": "release"
       },
-      "binaryPath": "lattice-graph-core",
-      "checksumPath": "lattice-graph-core.sha256",
+      "binaryPath": "opcore-graph-core",
+      "checksumPath": "opcore-graph-core.sha256",
       "metadataPath": "metadata.json",
       "binarySha256": "4654c6ba6383886e759fe3c805ec8c0df3b31d2e1db9d5c18626de6b2cfe758a",
-      "checksumFileSha256": "d2b196e6c2bd94f803d77741de855779347b2704634b5ca06a2ab0ad4fe3d14e",
-      "metadataSha256": "bbe9341144b043ae9828d7c75fee71696281b9280bf3443831c61ef2cf56a07f",
+      "checksumFileSha256": "f4f8b3b456fe52c1632aaf626f71322faa264e3c4b29f02521091fddb3be6c2f",
+      "metadataSha256": "bba2b54ac28f8c2f643f943ea32abfe7de70b0c282d452b9e30af52b93b0a6e1",
       "packageFiles": [
         "package.json",
         "README.md",
-        "lattice-graph-core",
-        "lattice-graph-core.sha256",
+        "opcore-graph-core",
+        "opcore-graph-core.sha256",
         "metadata.json"
       ]
     }
@@ -644,12 +644,12 @@
     }
   ],
   "graphArtifact": {
-    "artifactName": "lattice-graph-core",
+    "artifactName": "opcore-graph-core",
     "artifactVersion": "0.1.0-alpha.0",
     "targetPlatform": "darwin-arm64",
-    "binaryPath": "lattice-graph-core",
-    "checksumPath": "lattice-graph-core.sha256",
-    "checksumSha256": "b69845117d7e3c27858bc6a7bd6aed35990c5c4621c1fa0e6ab6b3149e427ce1",
+    "binaryPath": "opcore-graph-core",
+    "checksumPath": "opcore-graph-core.sha256",
+    "checksumSha256": "4a6eb4c6c4be15df3e126b725d83476a10665f36b7801cab0e1d5df64c70e82d",
     "buildProfile": "release"
   },
   "optionalSurfaces": [
@@ -682,19 +682,19 @@
     {
       "issue": "#7",
       "receiptPath": "docs/release/graph-release-receipt.payload.json",
-      "checksumSha256": "92ace03abae3c5c11e0613ffc6c85f974440b805c1396deec4dfdb872c23b12d",
+      "checksumSha256": "601061a07beea0053c7a1d92ca227ce497ec502283f566766cfef2807d5a48b7",
       "rollbackNote": "Keep ACE wrappers on current external tools if receipt regresses."
     },
     {
       "issue": "#28",
       "receiptPath": "docs/release/graph-release-receipt.payload.json",
-      "checksumSha256": "92ace03abae3c5c11e0613ffc6c85f974440b805c1396deec4dfdb872c23b12d",
+      "checksumSha256": "601061a07beea0053c7a1d92ca227ce497ec502283f566766cfef2807d5a48b7",
       "rollbackNote": "Keep ACE wrappers on current external tools if receipt regresses."
     },
     {
       "issue": "#29",
       "receiptPath": "docs/release/graph-release-receipt.payload.json",
-      "checksumSha256": "92ace03abae3c5c11e0613ffc6c85f974440b805c1396deec4dfdb872c23b12d",
+      "checksumSha256": "601061a07beea0053c7a1d92ca227ce497ec502283f566766cfef2807d5a48b7",
       "rollbackNote": "Keep ACE wrappers on current external tools if receipt regresses."
     }
   ]

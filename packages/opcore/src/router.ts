@@ -15,6 +15,7 @@ import { routeOpcoreScan } from "./scan.js";
 import { parseOpcoreRepoArgs, resolveRepo, routeOpcoreStatus } from "./status.js";
 import { createCommandLatencyRecord, timeCommand } from "./timing.js";
 import { routeOpcoreTry } from "./try.js";
+import { routeCommand as routeAdvancedOpcoreCommand } from "./advanced/router.js";
 
 declare const process: {
   stdin: {
@@ -42,6 +43,7 @@ export interface RunOpcoreCliOptions {
 }
 
 const helpArgs = new Set(["--help", "-h", "help"]);
+const advancedCommandGroups = new Set(["graph", "inspect", "edit", "validate", "doctor"]);
 
 export async function routeOpcoreCommand(
   argv: readonly string[],
@@ -98,6 +100,7 @@ async function routeOpcoreParsed(
   if (head === "init") return routeOpcoreInit(argv, parsed, runtime);
   if (head === "measure") return routeMeasure(argv, parsed);
   if (head === "try") return routeOpcoreTry(argv, parsed);
+  if (advancedCommandGroups.has(head)) return routeAdvancedOpcoreCommand(argv, "opcore");
   return createCommandRouterResult({
     bin: "opcore",
     argv,
@@ -203,7 +206,7 @@ function routeHelp(argv: readonly string[], json: boolean): CommandRouterResult 
 
 function opcoreHelpMessage(): string {
   return [
-    "Opcore - code scan, agent setup, and validation gate.",
+    "Opcore - Local code intelligence, agent setup, and validation gate.",
     "",
     "Usage:",
     "  opcore [--repo <path>] [--json]",
@@ -215,6 +218,16 @@ function opcoreHelpMessage(): string {
     "  opcore init --undo --approve [--repo <path>] [--json]",
     "  opcore measure [--repo <path>] [--json]",
     "  opcore try [--json]",
+    "  opcore graph <build|status|search|impact|query> --repo . [--json]",
+    "  opcore inspect <symbols|definition|references|signature|implementations|search> <target> --repo . [--json]",
+    "  opcore edit <exact|patch|tree|rename|move|signature> --repo . [--json]",
+    "  opcore validate <request|hypothetical|pre-write|manifest> --request-file <file> --json",
+    "  opcore doctor [--json]",
+    "",
+    "Examples:",
+    "  opcore init --repo . --approve",
+    "  opcore graph search \"GreetingCard\" --repo . --limit 5",
+    "  opcore validate pre-write --request-file ./validation-request.json --timeout-ms 30000 --json",
     "",
     "Exit codes: 0 passed, 1 findings or errors, 64 unsupported."
   ].join("\n");

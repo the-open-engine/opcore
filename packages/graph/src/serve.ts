@@ -66,7 +66,7 @@ export type GraphServeArtifactResolution =
 
 export interface GraphServeCliOptions {
   argv: readonly string[];
-  bin: "lattice" | string;
+  bin: "opcore" | string;
   cwd?: string;
   stdin?: Readable;
   stdout?: Writer;
@@ -86,14 +86,14 @@ declare const process: {
 const serveHelpArgs = new Set(["--help", "-h", "help"]);
 const graphServeCapabilities = {
   operations: ["ping", "status", "query", "search", "shutdown"],
-  jsonlProtocol: "lattice.graph.daemon",
+  jsonlProtocol: "opcore.graph.daemon",
   mcpMethods: [
     "initialize",
-    "lattice.graph/ping",
-    "lattice.graph/status",
-    "lattice.graph/query",
-    "lattice.graph/search",
-    "lattice.graph/shutdown"
+    "opcore.graph/ping",
+    "opcore.graph/status",
+    "opcore.graph/query",
+    "opcore.graph/search",
+    "opcore.graph/shutdown"
   ]
 } as const;
 
@@ -115,8 +115,8 @@ export function graphServeRouterResult(request: CommandAdapterRequest): CommandR
       json: request.json,
       message:
         graphServe.state === "ready"
-          ? "lattice graph serve: stdio transport ready."
-          : (graphServe.message ?? "lattice graph serve: stdio transport unavailable."),
+          ? "opcore graph serve: stdio transport ready."
+          : (graphServe.message ?? "opcore graph serve: stdio transport unavailable."),
       providerStatus: resolution.ok ? undefined : resolution.status,
       graphServe
     });
@@ -320,7 +320,7 @@ function parseServeFrame(line: string, repo: RepoIdentity): ParsedServeFrame {
     };
   }
   if (isJsonRpcRequest(parsed)) return parseMcpFrame(parsed, repo);
-  if (isRecord(parsed) && parsed.protocol === "lattice.graph.daemon") {
+  if (isRecord(parsed) && parsed.protocol === "opcore.graph.daemon") {
     return daemonFrame(parsed, repo);
   }
   return {
@@ -338,7 +338,7 @@ function parseMcpFrame(request: JsonRpcRequest, repo: RepoIdentity): ParsedServe
         result: {
           protocolVersion: "2024-11-05",
           serverInfo: {
-            name: "lattice-graph",
+            name: "opcore-graph",
             version: "0.1.0-alpha.0"
           },
           capabilities: graphServeCapabilities
@@ -348,7 +348,7 @@ function parseMcpFrame(request: JsonRpcRequest, repo: RepoIdentity): ParsedServe
   }
   const method = graphMethod(request.method);
   if (!method) {
-    return { directResponse: jsonRpcError(request.id, -32600, `Unsupported lattice graph MCP method: ${request.method}`) };
+    return { directResponse: jsonRpcError(request.id, -32600, `Unsupported opcore graph MCP method: ${request.method}`) };
   }
   const params = isRecord(request.params) ? request.params : {};
   const rawRequest = isRecord(params.request)
@@ -357,7 +357,7 @@ function parseMcpFrame(request: JsonRpcRequest, repo: RepoIdentity): ParsedServe
   const parsed = daemonFrame(rawRequest, repo);
   if ("directResponse" in parsed) {
     return {
-      directResponse: jsonRpcError(request.id, -32600, "Invalid lattice graph MCP request", jsonRpcErrorData(parsed.directResponse))
+      directResponse: jsonRpcError(request.id, -32600, "Invalid opcore graph MCP request", jsonRpcErrorData(parsed.directResponse))
     };
   }
   if ("noResponse" in parsed) return parsed;
@@ -411,7 +411,7 @@ function daemonRequestFromMethod(
 ): Record<string, unknown> {
   const operation: GraphDaemonOperation = method === "query" || method === "search" ? "query" : method;
   const base = {
-    protocol: "lattice.graph.daemon",
+    protocol: "opcore.graph.daemon",
     requestId,
     schemaVersion: 1,
     operation,
@@ -500,7 +500,7 @@ function writeRawFrame(stdout: Writer, value: unknown): void {
 
 function failureResponse(requestId: string, status: GraphProviderStatus): GraphDaemonResponse {
   return validateGraphDaemonResponse({
-    protocol: "lattice.graph.daemon",
+    protocol: "opcore.graph.daemon",
     requestId,
     schemaVersion: 1,
     status
@@ -574,11 +574,11 @@ function graphServeStatusFromResolution(repo: RepoIdentity, resolution: GraphSer
   if (!resolution.ok) return graphServeErrorStatus(repo, resolution.status);
   return validateGraphServeTransportStatus({
     schemaVersion: 1,
-    protocol: "lattice.graph.daemon",
+    protocol: "opcore.graph.daemon",
     transport: "stdio",
     state: "ready",
     repo,
-    provider: "lattice-graph",
+    provider: "opcore-graph",
     pid: process.pid,
     artifact: artifactMetadata(resolution.artifact),
     message: "graph serve stdio transport ready"
@@ -595,11 +595,11 @@ function graphServeErrorStatus(repo: RepoIdentity, providerStatus: GraphProvider
         };
   return validateGraphServeTransportStatus({
     schemaVersion: 1,
-    protocol: "lattice.graph.daemon",
+    protocol: "opcore.graph.daemon",
     transport: "stdio",
     state: "error",
     repo,
-    provider: "lattice-graph",
+    provider: "opcore-graph",
     failure,
     message: providerStatus.message ?? failure.message
   });
@@ -620,7 +620,7 @@ function artifactMetadata(artifact: GraphServeResolvedArtifact): GraphProviderAr
 type GraphServeMethod = "ping" | "status" | "query" | "search" | "shutdown";
 
 function graphMethod(method: string): GraphServeMethod | undefined {
-  const normalized = method.startsWith("lattice.graph/") ? method.slice("lattice.graph/".length) : method;
+  const normalized = method.startsWith("opcore.graph/") ? method.slice("opcore.graph/".length) : method;
   if (["ping", "status", "query", "search", "shutdown"].includes(normalized)) return normalized as GraphServeMethod;
   return undefined;
 }

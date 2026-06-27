@@ -103,7 +103,7 @@ describe("validation command adapters", () => {
             checks: ["validation.repo"],
             graph: {
               mode: "optional",
-              provider: "lattice-graph",
+              provider: "opcore-graph",
               status: availableGraphStatus(repoA)
             }
           })
@@ -176,7 +176,7 @@ describe("validation command adapters", () => {
         JSON.stringify({
           repo: { repoRoot: temp },
           scope: { kind: "files", files: ["src/index.ts"] },
-          graph: { mode: "optional", provider: "lattice-graph" },
+          graph: { mode: "optional", provider: "opcore-graph" },
           overlays: [{ path: "src/index.ts", action: "write", content: "export const value = 'overlay';" }]
         })
       );
@@ -215,7 +215,7 @@ describe("validation command adapters", () => {
           requestId: "pre-write-1",
           repo: { repoRoot: temp },
           scope: { kind: "files", files: ["src/index.ts"] },
-          graph: { mode: "optional", provider: "lattice-graph" },
+          graph: { mode: "optional", provider: "opcore-graph" },
           overlays: [{ path: "src/index.ts", action: "write", content: "export const value = 'overlay';" }]
         })
       );
@@ -331,9 +331,9 @@ describe("validation command adapters", () => {
       });
 
       for (const graph of [
-        { mode: "required", provider: "lattice-graph" },
-        { mode: "required", provider: "lattice-graph", status: staleGraphStatus(temp) },
-        { mode: "required", provider: "lattice-graph", status: schemaMismatchGraphStatus() }
+        { mode: "required", provider: "opcore-graph" },
+        { mode: "required", provider: "opcore-graph", status: staleGraphStatus(temp) },
+        { mode: "required", provider: "opcore-graph", status: schemaMismatchGraphStatus() }
       ]) {
         const requestPath = join(temp, `request-${graph.status?.state ?? "missing"}.json`);
         writeFileSync(requestPath, JSON.stringify(validRequest(temp, { graph })));
@@ -507,21 +507,21 @@ describe("validation command adapters", () => {
 function request(args, groupName = "check") {
   return {
     schemaVersion: 1,
-    bin: "lattice",
+    bin: "opcore",
     argv: [groupName, ...args, "--json"],
     args,
     json: true,
     group: {
       name: groupName,
       owner: "validation",
-      canonicalCommand: ["lattice", groupName],
+      canonicalCommand: ["opcore", groupName],
       commands:
         groupName === "check"
           ? ["files", "staged", "changed", "tree", "all", "manifest"]
           : ["request", "hypothetical", "pre-write", "manifest"],
       summary: "validation"
     },
-    canonicalCommand: ["lattice", groupName, ...args]
+    canonicalCommand: ["opcore", groupName, ...args]
   };
 }
 
@@ -529,7 +529,7 @@ function validRequest(repoRoot, overrides = {}) {
   return {
     repo: { repoRoot },
     scope: { kind: "files", files: ["src/index.ts"] },
-    graph: { mode: "optional", provider: "lattice-graph" },
+    graph: { mode: "optional", provider: "opcore-graph" },
     overlays: [],
     ...overrides
   };
@@ -539,7 +539,7 @@ function availableGraphStatus(repoRoot) {
   return {
     state: "available",
     mode: "optional",
-    provider: "lattice-graph",
+    provider: "opcore-graph",
     schemaVersion: 1,
     repo: { repoRoot },
     freshness: {
@@ -636,7 +636,7 @@ function staleGraphStatus(repoRoot) {
   return {
     state: "stale",
     mode: "required",
-    provider: "lattice-graph",
+    provider: "opcore-graph",
     schemaVersion: 1,
     repo: { repoRoot },
     freshness: {
@@ -656,7 +656,7 @@ function schemaMismatchGraphStatus() {
   return {
     state: "schema_mismatch",
     mode: "required",
-    provider: "lattice-graph",
+    provider: "opcore-graph",
     schemaVersion: 2,
     expectedSchemaVersion: 1,
     actualSchemaVersion: 2,
@@ -675,10 +675,10 @@ function initializeGitSnapshot(repoRoot, files) {
   }
   const tree = git(repoRoot, ["write-tree"]).stdout.trim();
   const commit = git(repoRoot, ["commit-tree", tree, "-m", "initial"], {
-    GIT_AUTHOR_NAME: "Lattice",
+    GIT_AUTHOR_NAME: "Opcore",
     GIT_AUTHOR_EMAIL: "lattice@example.invalid",
     GIT_AUTHOR_DATE: "2026-06-05T00:00:00Z",
-    GIT_COMMITTER_NAME: "Lattice",
+    GIT_COMMITTER_NAME: "Opcore",
     GIT_COMMITTER_EMAIL: "lattice@example.invalid",
     GIT_COMMITTER_DATE: "2026-06-05T00:00:00Z"
   }).stdout.trim();
@@ -690,10 +690,10 @@ function commitWorktreeFile(repoRoot, file, message) {
   trackGitFile(repoRoot, file);
   const tree = git(repoRoot, ["write-tree"]).stdout.trim();
   const commit = git(repoRoot, ["commit-tree", tree, "-p", "HEAD", "-m", message], {
-    GIT_AUTHOR_NAME: "Lattice",
+    GIT_AUTHOR_NAME: "Opcore",
     GIT_AUTHOR_EMAIL: "lattice@example.invalid",
     GIT_AUTHOR_DATE: "2026-06-05T00:01:00Z",
-    GIT_COMMITTER_NAME: "Lattice",
+    GIT_COMMITTER_NAME: "Opcore",
     GIT_COMMITTER_EMAIL: "lattice@example.invalid",
     GIT_COMMITTER_DATE: "2026-06-05T00:01:00Z"
   }).stdout.trim();

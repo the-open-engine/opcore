@@ -18,11 +18,11 @@ export const retainedRustCompatibilityCheckIds = [
 export type RetainedRustCompatibilityCheckId = (typeof retainedRustCompatibilityCheckIds)[number];
 
 export const rustRetainedCompatibilityCurrentUsage = {
-  rustdoc: currentUsage({ lattice: false, orchestra: true, covibes: false, gateway: true }),
-  importGraph: currentUsage({ lattice: false, orchestra: true, covibes: false, gateway: true }),
-  deadCode: currentUsage({ lattice: false, orchestra: true, covibes: false, gateway: true }),
-  unusedDeps: currentUsage({ lattice: false, orchestra: true, covibes: false, gateway: true }),
-  functionMetrics: currentUsage({ lattice: true, orchestra: true, covibes: false, gateway: true })
+  rustdoc: currentUsage({ opcore: false, orchestra: true, covibes: false, gateway: true }),
+  importGraph: currentUsage({ opcore: false, orchestra: true, covibes: false, gateway: true }),
+  deadCode: currentUsage({ opcore: false, orchestra: true, covibes: false, gateway: true }),
+  unusedDeps: currentUsage({ opcore: false, orchestra: true, covibes: false, gateway: true }),
+  functionMetrics: currentUsage({ opcore: true, orchestra: true, covibes: false, gateway: true })
 } as const;
 
 export function createMissingToolRetainedChecks(missing: ReadonlySet<string>): readonly ValidationAdapterDegradedCheckStatus[] {

@@ -184,7 +184,7 @@ function request(overrides = {}) {
   return {
     requestId: "validation-1",
     repo: {
-      repoId: "lattice"
+      repoId: "opcore"
     },
     scope: {
       kind: "files",
@@ -192,7 +192,7 @@ function request(overrides = {}) {
     },
     graph: {
       mode: "optional",
-      provider: "lattice-graph"
+      provider: "opcore-graph"
     },
     overlays: [],
     ...overrides

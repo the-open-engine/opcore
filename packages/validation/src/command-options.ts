@@ -61,7 +61,7 @@ export function parseCheckCommandOptions(args: readonly string[]): ParsedValidat
 
   if (positionalRoute === "manifest") {
     route = "manifest";
-    if (positionals.length > 1) throw new ValidationCommandOptionsError("lattice check manifest does not accept operands");
+    if (positionals.length > 1) throw new ValidationCommandOptionsError("opcore check manifest does not accept operands");
   } else if (positionalRoute === "files") {
     route = "files";
     const files = state.files.length > 0 ? state.files : normalizeFiles(positionals.slice(1));
@@ -73,20 +73,20 @@ export function parseCheckCommandOptions(args: readonly string[]): ParsedValidat
   } else if (positionalRoute === "changed") {
     route = "changed";
     rejectExtraPositionals(positionals, "changed");
-    if (state.baseRef === undefined) throw new ValidationCommandOptionsError("lattice check changed requires --base");
+    if (state.baseRef === undefined) throw new ValidationCommandOptionsError("opcore check changed requires --base");
     scopes.push({ kind: "changed", baseRef: state.baseRef });
   } else if (positionalRoute === "tree") {
     route = "tree";
     rejectExtraPositionals(positionals, "tree");
-    if (state.treeRef === undefined) throw new ValidationCommandOptionsError("lattice check tree requires --tree");
-    if (state.changedFrom === undefined) throw new ValidationCommandOptionsError("lattice check tree requires --changed-from");
+    if (state.treeRef === undefined) throw new ValidationCommandOptionsError("opcore check tree requires --tree");
+    if (state.changedFrom === undefined) throw new ValidationCommandOptionsError("opcore check tree requires --changed-from");
     scopes.push({ kind: "tree", treeRef: state.treeRef, changedFrom: state.changedFrom });
   } else if (positionalRoute === "all") {
     route = "all";
     rejectExtraPositionals(positionals, "all");
     scopes.push({ kind: "all" });
   } else if (positionalRoute !== undefined) {
-    throw new ValidationCommandOptionsError(`unsupported lattice check route: ${positionalRoute}`);
+    throw new ValidationCommandOptionsError(`unsupported opcore check route: ${positionalRoute}`);
   }
 
   if (state.files.length > 0 && route !== "files" && route !== "manifest") {
@@ -98,12 +98,12 @@ export function parseCheckCommandOptions(args: readonly string[]): ParsedValidat
     route = route ?? "staged";
   }
   if (state.changed) {
-    if (state.baseRef === undefined) throw new ValidationCommandOptionsError("lattice check --changed requires --base");
+    if (state.baseRef === undefined) throw new ValidationCommandOptionsError("opcore check --changed requires --base");
     scopes.push({ kind: "changed", baseRef: state.baseRef });
     route = route ?? "changed";
   }
   if (state.treeRef !== undefined && route !== "tree") {
-    if (state.changedFrom === undefined) throw new ValidationCommandOptionsError("lattice check --tree requires --changed-from");
+    if (state.changedFrom === undefined) throw new ValidationCommandOptionsError("opcore check --tree requires --changed-from");
     scopes.push({ kind: "tree", treeRef: state.treeRef, changedFrom: state.changedFrom });
     route = route ?? "tree";
   }
@@ -113,26 +113,26 @@ export function parseCheckCommandOptions(args: readonly string[]): ParsedValidat
   }
 
   if (route === "manifest") {
-    rejectManifestExecutionOptions("lattice check manifest", state);
-    if (scopes.length > 0) throw new ValidationCommandOptionsError("lattice check manifest cannot be combined with a scope");
+    rejectManifestExecutionOptions("opcore check manifest", state);
+    if (scopes.length > 0) throw new ValidationCommandOptionsError("opcore check manifest cannot be combined with a scope");
     return { route, repoRoot: state.repoRoot, graphMode: state.graphMode, graphModeOverride: state.graphModeOverride, checks: state.checks };
   }
-  rejectDisallowedOptions("lattice check", requestFileFlagNames(state));
-  rejectDisallowedOptions("lattice check", timeoutFlagNames(state));
+  rejectDisallowedOptions("opcore check", requestFileFlagNames(state));
+  rejectDisallowedOptions("opcore check", timeoutFlagNames(state));
   if (state.baseFlag && !state.changed && route !== "changed") {
-    throw new ValidationCommandOptionsError("lattice check --base requires the changed scope");
+    throw new ValidationCommandOptionsError("opcore check --base requires the changed scope");
   }
   if (state.changedFromFlag && route !== "tree") {
-    throw new ValidationCommandOptionsError("lattice check --changed-from requires the tree scope");
+    throw new ValidationCommandOptionsError("opcore check --changed-from requires the tree scope");
   }
   if (scopes.length !== 1) {
     throw new ValidationCommandOptionsError(
-      scopes.length === 0 ? "lattice check requires exactly one scope" : "lattice check accepts exactly one scope"
+      scopes.length === 0 ? "opcore check requires exactly one scope" : "opcore check accepts exactly one scope"
     );
   }
   scope = scopes[0];
   if (scope.kind === "files" && scope.files.length === 0) {
-    throw new ValidationCommandOptionsError("lattice check files requires at least one file");
+    throw new ValidationCommandOptionsError("opcore check files requires at least one file");
   }
   return {
     route: (route ?? scope.kind) as CheckCommandRoute,
@@ -151,32 +151,32 @@ export function parseValidateCommandOptions(args: readonly string[]): ParsedVali
   let route: ValidateCommandRoute = "request";
   if (head === "manifest") {
     route = "manifest";
-    if (rest.length > 0) throw new ValidationCommandOptionsError("lattice validate manifest does not accept operands");
+    if (rest.length > 0) throw new ValidationCommandOptionsError("opcore validate manifest does not accept operands");
   } else if (head === "hypothetical") {
     route = "hypothetical";
-    if (rest.length > 0) throw new ValidationCommandOptionsError("lattice validate hypothetical does not accept operands");
+    if (rest.length > 0) throw new ValidationCommandOptionsError("opcore validate hypothetical does not accept operands");
   } else if (head === "pre-write") {
     route = "pre-write";
-    if (rest.length > 0) throw new ValidationCommandOptionsError("lattice validate pre-write does not accept operands");
+    if (rest.length > 0) throw new ValidationCommandOptionsError("opcore validate pre-write does not accept operands");
   } else if (head === "request") {
     route = "request";
-    if (rest.length > 0) throw new ValidationCommandOptionsError("lattice validate request does not accept operands");
+    if (rest.length > 0) throw new ValidationCommandOptionsError("opcore validate request does not accept operands");
   } else if (head !== undefined) {
-    throw new ValidationCommandOptionsError(`unsupported lattice validate route: ${head}`);
+    throw new ValidationCommandOptionsError(`unsupported opcore validate route: ${head}`);
   }
 
   if (route === "manifest") {
-    rejectManifestExecutionOptions("lattice validate manifest", state);
+    rejectManifestExecutionOptions("opcore validate manifest", state);
     return { route, repoRoot: state.repoRoot, graphMode: state.graphMode, graphModeOverride: state.graphModeOverride, checks: state.checks };
   }
   if (route === "pre-write") {
-    rejectDisallowedOptions(`lattice validate ${route}`, [
+    rejectDisallowedOptions(`opcore validate ${route}`, [
       ...repoFlagNames(state),
       ...scopeFlagNames(state),
       ...checkFilterFlagNames(state),
       ...graphModeFlagNames(state)
     ]);
-    if (state.requestFile === undefined) throw new ValidationCommandOptionsError("lattice validate pre-write requires --request-file");
+    if (state.requestFile === undefined) throw new ValidationCommandOptionsError("opcore validate pre-write requires --request-file");
     if (state.requestFile === "-") throw new ValidationCommandOptionsError("stdin request payloads are not supported");
     return {
       route,
@@ -185,9 +185,9 @@ export function parseValidateCommandOptions(args: readonly string[]): ParsedVali
       timeoutMs: state.timeoutMs ?? DEFAULT_PRE_WRITE_TIMEOUT_MS
     };
   }
-  rejectDisallowedOptions(`lattice validate ${route}`, scopeFlagNames(state));
-  rejectDisallowedOptions(`lattice validate ${route}`, timeoutFlagNames(state));
-  if (state.requestFile === undefined) throw new ValidationCommandOptionsError("lattice validate requires --request-file");
+  rejectDisallowedOptions(`opcore validate ${route}`, scopeFlagNames(state));
+  rejectDisallowedOptions(`opcore validate ${route}`, timeoutFlagNames(state));
+  if (state.requestFile === undefined) throw new ValidationCommandOptionsError("opcore validate requires --request-file");
   return {
     route,
     repoRoot: state.repoRoot,
@@ -425,7 +425,7 @@ function normalizeChecks(checks: readonly string[]): readonly string[] {
 }
 
 function rejectExtraPositionals(positionals: readonly string[], route: string): void {
-  if (positionals.length > 1) throw new ValidationCommandOptionsError(`lattice check ${route} does not accept operands`);
+  if (positionals.length > 1) throw new ValidationCommandOptionsError(`opcore check ${route} does not accept operands`);
 }
 
 function requiredValue(args: readonly string[], index: number, flag: string): string {

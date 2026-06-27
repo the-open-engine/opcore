@@ -44,7 +44,7 @@ Evidence anchors:
 | `rust.source-hygiene` | Rejects `.inc`, `include!(...)`, `rustfmt::skip`, `allow(dead_code)`, broad `allow`/`expect`, and owned lint suppressions. | none for covered inputs |
 | `rust.fmt` | Runs rustfmt or cargo fmt in a temporary workspace. | current external gate stays until #27 self-dogfood proof |
 | `rust.cargo-check` | Runs structured Cargo metadata and `cargo check --message-format=json`. | current external gate stays until #21 runtime/cache decision |
-| `rust.clippy` | Runs `cargo clippy` with Lattice-owned lint set. | current external gate stays until #21 runtime/cache decision |
+| `rust.clippy` | Runs `cargo clippy` with Opcore-owned lint set. | current external gate stays until #21 runtime/cache decision |
 | `rust.rustdoc` | Runs `cargo doc --no-deps --all-features --message-format=json`; rustdoc diagnostics are blocking policy evidence. | unsupported when rustdoc is missing; retain old gate |
 | `rust.import-graph` | Reports unresolved `mod`, unresolved `crate`/`self`/`super` use paths, orphan source files, and module cycles from fileView after-state content. | cargo-depgraph enrichment remains degraded when unavailable |
 | `rust.dead-code` | Runs `cargo check` with `dead_code` denied and adds native orphan-source dead-code evidence. | core Cargo absence makes adapter unavailable; old gates stay active |
@@ -54,12 +54,12 @@ Evidence anchors:
 
 ## Retained Compatibility Ledger
 
-`lattice status --json` and `lattice doctor --json` must report retained blockers in `degradedChecks` only when a
+`opcore status --json` and `opcore doctor --json` must report retained blockers in `degradedChecks` only when a
 supporting retained tool is missing. With `rustdoc`, `cargo-depgraph`, `cargo-udeps`, and `rust-code-analysis-cli`
 available, the Rust adapter is `available` with `degradedChecks: []`. Missing-tool entries are not passing no-op checks;
 they are machine-readable cutover blockers for #27/#28/#29.
 
-| Check | Lattice | Orchestra | CoVibes | Gateway | Required tool when degraded | Follow-up |
+| Check | Opcore | Orchestra | CoVibes | Gateway | Required tool when degraded | Follow-up |
 |---|---:|---:|---:|---:|---|---|
 | `rust.rustdoc` | no | yes | no | yes | `rustdoc` | #27/#28/#29 |
 | `rust.import-graph` | no | yes | no | yes | `cargo-depgraph` | #27/#28/#29 |
@@ -75,7 +75,7 @@ Cargo.lock-only changes are retained compatibility too. Current native ownership
 
 Rust-owned inputs are `.rs`, `.inc`, and `Cargo.toml`. Cargo.lock-only changes are explicitly skipped as retained compatibility. Tree scope uses committed Git tree content through the validation workspace. Pre-write and hypothetical requests use fileView after-state overlays and temporary materialization for Cargo tools.
 
-Representative Lattice diffs:
+Representative Opcore diffs:
 
 ```diff
 diff --git a/crates/graph-core/src/lib.rs b/crates/graph-core/src/lib.rs
@@ -109,14 +109,14 @@ Expected native result: `rust.clippy` reports owned lint diagnostics when run be
 - Missing `cargo`, `rustfmt`, or `clippy` makes the Rust adapter unavailable. Missing `rustdoc`, `cargo-udeps`,
   `cargo-depgraph`, or `rust-code-analysis-cli` keeps the Rust adapter degraded and annotates the retained blocker
   entry with `requiredTool`; no generic retained entries remain when those tools are available.
-- Retained blocker entries include `currentUsage` booleans for Lattice, Orchestra, CoVibes, and gateway consumers.
+- Retained blocker entries include `currentUsage` booleans for Opcore, Orchestra, CoVibes, and gateway consumers.
 - cargo-depgraph is optional enrichment for `rust.import-graph`; missing state is degraded, not a policy failure.
 - cargo-udeps and rust-code-analysis-cli are required for their selected checks; missing state returns `unsupported_request`.
 - #61 adds no validation daemon, hidden validation cache, Rox import, Rox cache read, or Rox shellout from native checks.
 
 ## Retained Guardrails
 
-Keep Lattice current external Rust guardrails until #21/#27 accept parity and runtime behavior:
+Keep Opcore current external Rust guardrails until #21/#27 accept parity and runtime behavior:
 
 ```sh
 npm run current-tools:validate-rust-graph

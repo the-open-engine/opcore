@@ -183,7 +183,7 @@ export function providerFailureStatus(
     return {
       state,
       mode,
-      provider: "lattice-graph",
+      provider: "opcore-graph",
       schemaVersion: 1,
       message,
       failure: {
@@ -196,7 +196,7 @@ export function providerFailureStatus(
     return {
       state,
       mode,
-      provider: "lattice-graph",
+      provider: "opcore-graph",
       schemaVersion: 1,
       message,
       failure: {
@@ -209,7 +209,7 @@ export function providerFailureStatus(
   return {
     state: "error",
     mode,
-    provider: "lattice-graph",
+    provider: "opcore-graph",
     schemaVersion: 1,
     message,
     failure: {
@@ -223,7 +223,7 @@ export function schemaMismatchStatus(message: string, actualSchemaVersion = 0): 
   return {
     state: "schema_mismatch",
     mode: "required",
-    provider: "lattice-graph",
+    provider: "opcore-graph",
     schemaVersion: 1,
     expectedSchemaVersion: 1,
     actualSchemaVersion,

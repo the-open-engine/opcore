@@ -17,7 +17,7 @@ const expectedWorkspacePackages = new Map([
 ]);
 
 const forbiddenPackagePattern =
-  /@the-open-engine\/lattice-(contracts|cli|graph|edit|validation|validation-python|validation-rust|validation-typescript|fixtures)|github\.com\/the-open-engine\/lattice/g;
+  /@the-open-engine\/lattice-(contracts|cli|graph|edit|validation|validation-python|validation-rust|validation-typescript|fixtures)|github\.com\/the-open-engine\/advanced/g;
 
 describe("Opcore public package identity", () => {
   it("uses Opcore package names for workspace package manifests", () => {
@@ -33,15 +33,14 @@ describe("Opcore public package identity", () => {
     }
   });
 
-  it("ships the lattice bin and descriptor from the Opcore package", () => {
+  it("ships the Opcore bin and descriptor from the Opcore package", () => {
     const manifest = readJson("packages/opcore/package.json");
     assert.deepEqual(manifest.bin, {
-      opcore: "dist/index.js",
-      lattice: "dist/lattice/index.js"
+      opcore: "dist/index.js"
     });
     assert.equal(
-      manifest.exports["./descriptors/lattice.managed-tool.json"],
-      "./dist/descriptors/lattice.managed-tool.json"
+      manifest.exports["./descriptors/opcore.managed-tool.json"],
+      "./dist/descriptors/opcore.managed-tool.json"
     );
     const oldCliPackage = ["packages", "cli"].join("/");
     assert.equal(existsSync(oldCliPackage), false, `${oldCliPackage} must not remain a package`);

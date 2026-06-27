@@ -1,20 +1,20 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { descriptorArtifactPath, latticeManagedToolDescriptor } from "../packages/opcore/dist/lattice/descriptor.js";
+import { descriptorArtifactPath, opcoreManagedToolDescriptor } from "../packages/opcore/dist/advanced/descriptor.js";
 import { validateManagedToolDescriptor } from "../packages/contracts/dist/index.js";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const outputPath = resolve(repoRoot, "packages", "opcore", descriptorArtifactPath);
 const cliManifest = JSON.parse(readFileSync(resolve(repoRoot, "packages", "opcore", "package.json"), "utf8"));
 const descriptor = validateManagedToolDescriptor({
-  ...latticeManagedToolDescriptor,
+  ...opcoreManagedToolDescriptor,
   aggregateIdentity: {
-    ...latticeManagedToolDescriptor.aggregateIdentity,
+    ...opcoreManagedToolDescriptor.aggregateIdentity,
     version: cliManifest.version
   },
   packageIdentity: {
-    ...latticeManagedToolDescriptor.packageIdentity,
+    ...opcoreManagedToolDescriptor.packageIdentity,
     version: cliManifest.version
   }
 });

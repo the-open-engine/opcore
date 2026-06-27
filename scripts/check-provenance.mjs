@@ -105,7 +105,7 @@ function checkTrackedFile(path) {
   if (entry === "tsconfig.json") checkTsconfig(path);
   if (!isTextFile(path)) return;
   const content = readFileSync(path, "utf8");
-  if (path.endsWith("descriptors/lattice.managed-tool.json")) checkDescriptorStrings(path, content);
+  if (path.endsWith("descriptors/opcore.managed-tool.json")) checkDescriptorStrings(path, content);
   if (isPythonSourceOrMetadataPath(path) && /code[-_]review[-_]graph|gungnir|tirth8205|Tirth Kanani/i.test(content)) {
     throw new Error(`Forbidden Python code-review-graph source marker in ${path}`);
   }
@@ -150,7 +150,7 @@ function checkGeneratedGraphArtifactMetadata() {
 }
 
 async function checkGeneratedCliDescriptor() {
-  const descriptorPath = "packages/opcore/dist/descriptors/lattice.managed-tool.json";
+  const descriptorPath = "packages/opcore/dist/descriptors/opcore.managed-tool.json";
   if (!existsSync(descriptorPath)) return;
   const descriptorText = readFileSync(descriptorPath, "utf8");
   checkDescriptorStrings(descriptorPath, descriptorText);
@@ -286,7 +286,7 @@ function isProvenancePolicyPath(path) {
     /^scripts\/generate-release-receipt\.mjs$/,
     /^scripts\/generate-cutover-receipt\.mjs$/,
     /^packages\/contracts\/src\/index\.ts$/,
-    /^packages\/contracts\/schemas\/lattice-contracts\.schema\.json$/,
+    /^packages\/contracts\/schemas\/opcore-contracts\.schema\.json$/,
     /^tests\//
   ].some((pattern) => pattern.test(path));
 }
@@ -308,7 +308,7 @@ function isAllowedOldToolMentionPath(path) {
 function provenanceMarkdown(scannedFileCount, historyCommitCount) {
   return `# Provenance Receipts
 
-Maintainer provenance evidence for the Lattice alpha release gate.
+Maintainer provenance evidence for the Opcore alpha release gate.
 
 - Current-tree files scanned: ${scannedFileCount}
 - Git-history commits scanned: ${historyCommitCount}

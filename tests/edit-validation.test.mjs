@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { routeCommandAdapter } from "../packages/contracts/dist/index.js";
 import { calculateEditChecksum, createEditCommandAdapter } from "../packages/edit/dist/index.js";
 
-describe("lattice edit validation integration", () => {
+describe("opcore edit validation integration", () => {
   it("applies exact edits only after passing validation", async () => {
     await withTempRepo(async (repo) => {
       writeFileSync(join(repo, "src/a.ts"), "old\n");
@@ -268,7 +268,7 @@ describe("lattice edit validation integration", () => {
 
 async function routeEdit(args, validationRunner, options = {}) {
   return routeCommandAdapter({
-    bin: "lattice",
+    bin: "opcore",
     argv: [...args, "--json"],
     groupName: "edit",
     adapter: createEditCommandAdapter({ validationRunner, ...options })
@@ -334,7 +334,7 @@ function providerStatus(state) {
   const base = {
     state,
     mode: "required",
-    provider: "lattice-graph",
+    provider: "opcore-graph",
     schemaVersion: 1,
     failure: {
       category: "provider_error",
@@ -345,7 +345,7 @@ function providerStatus(state) {
     base.failure.category = "provider_missing";
   } else if (state === "stale") {
     base.failure.category = "stale_snapshot";
-    base.repo = { repoId: "lattice" };
+    base.repo = { repoId: "opcore" };
     base.freshness = { generatedAt: "2026-06-05T00:00:00.000Z", ageMs: 10, stale: true };
   } else if (state === "schema_mismatch") {
     base.failure.category = "schema_mismatch";
@@ -361,7 +361,7 @@ function availableStatus(repo) {
   return {
     state: "available",
     mode: "required",
-    provider: "lattice-graph",
+    provider: "opcore-graph",
     schemaVersion: 1,
     repo: { repoRoot: repo },
     freshness: {
@@ -392,7 +392,7 @@ function requiredReplacePlan(repo, before, after) {
       request: {
         repo: { repoRoot: repo },
         scope: { kind: "files", files: ["src/a.ts"] },
-        graph: { mode: "required", provider: "lattice-graph" },
+        graph: { mode: "required", provider: "opcore-graph" },
         overlays: []
       }
     }

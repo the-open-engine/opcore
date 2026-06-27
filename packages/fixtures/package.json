@@ -13,7 +13,7 @@
       "default": "./dist/index.js"
     },
     "./graph-release/release-readiness-fixture.json": "./graph-release/release-readiness-fixture.json",
-    "./descriptors/lattice.managed-tool.json": "./descriptors/lattice.managed-tool.json",
+    "./descriptors/opcore.managed-tool.json": "./descriptors/opcore.managed-tool.json",
     "./graph-search/search-fixtures.json": "./graph-search/search-fixtures.json",
     "./graph-query/query-fixtures.json": "./graph-query/query-fixtures.json",
     "./graph-pipeline/pipeline-fixtures.json": "./graph-pipeline/pipeline-fixtures.json",

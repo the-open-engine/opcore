@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { routeCommand } from "../packages/opcore/dist/lattice/index.js";
+import { routeCommand } from "../packages/opcore/dist/advanced/index.js";
 import { createEditCommandAdapter } from "../packages/edit/dist/index.js";
 
 test("patch CLI accepts stdin, raw request-file, and request-json payloads", async () => {
@@ -16,10 +16,10 @@ test("patch CLI accepts stdin, raw request-file, and request-json payloads", asy
     assert.equal(stdin.editPlan.changes[0].content, "two\n");
     const requestFile = join(repo, "patch.diff");
     writeFileSync(requestFile, patchFor("src/a.ts", "one", "three"));
-    const file = await routeCommand(["edit", "patch", "--repo", repo, "--request-file", requestFile, "--dry-run", "--json"], "lattice");
+    const file = await routeCommand(["edit", "patch", "--repo", repo, "--request-file", requestFile, "--dry-run", "--json"], "opcore");
     assert.equal(file.status, "ok");
     assert.equal(file.editPlan.changes[0].content, "three\n");
-    const json = await routeCommand(["edit", "patch", "--repo", repo, "--request-json", JSON.stringify({ patch: patchFor("src/a.ts", "one", "four") }), "--dry-run", "--json"], "lattice");
+    const json = await routeCommand(["edit", "patch", "--repo", repo, "--request-json", JSON.stringify({ patch: patchFor("src/a.ts", "one", "four") }), "--dry-run", "--json"], "opcore");
     assert.equal(json.status, "ok");
     assert.equal(json.editPlan.changes[0].content, "four\n");
     assert.equal(readFileSync(join(repo, "src/a.ts"), "utf8"), "one\n");
@@ -57,12 +57,12 @@ async function routeEditWithAdapter(args, options) {
   const adapter = createEditCommandAdapter(options);
   return adapter({
     schemaVersion: 1,
-    bin: "lattice",
+    bin: "opcore",
     argv: ["edit", ...args, "--json"],
     args,
     json: true,
-    group: { name: "edit", owner: "edit", canonicalCommand: ["lattice", "edit"], commands: [args[0]], summary: "test" },
-    canonicalCommand: ["lattice", "edit", ...args]
+    group: { name: "edit", owner: "edit", canonicalCommand: ["opcore", "edit"], commands: [args[0]], summary: "test" },
+    canonicalCommand: ["opcore", "edit", ...args]
   });
 }
 

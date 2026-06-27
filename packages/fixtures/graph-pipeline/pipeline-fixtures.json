@@ -68,7 +68,7 @@
     {
       "id": "graph-pipeline-daemon-health-v1",
       "operation": "health",
-      "expectedProtocol": "lattice.graph.daemon",
+      "expectedProtocol": "opcore.graph.daemon",
       "expectedStatus": "available"
     },
     {

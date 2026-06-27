@@ -4,7 +4,7 @@ import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } f
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { routeCommand } from "../packages/opcore/dist/lattice/index.js";
+import { routeCommand } from "../packages/opcore/dist/advanced/index.js";
 
 const repoRoot = fileURLToPath(new URL("..", import.meta.url));
 const sourceFixtureRoot = resolve(repoRoot, "packages/fixtures/inspect-symbol-parity");
@@ -77,7 +77,7 @@ it("preserves node-id references with graphQuery and typed inspectResult", async
       "--limit",
       "5",
       "--json"
-    ], "lattice");
+    ], "opcore");
     assert.equal(result.owner, "inspect");
     assert.equal(result.status, "ok");
     assert.equal(result.providerStatus.state, "available");
@@ -102,7 +102,7 @@ it("returns Rust graph-backed references and degrades unsupported Rust signature
       "--repo",
       fixtureRoot,
       "--json"
-    ], "lattice");
+    ], "opcore");
     assert.equal(references.owner, "inspect");
     assert.equal(references.status, "ok");
     assert.equal(references.providerStatus.state, "available");
@@ -123,7 +123,7 @@ it("returns Rust graph-backed references and degrades unsupported Rust signature
       "--repo",
       fixtureRoot,
       "--json"
-    ], "lattice");
+    ], "opcore");
     assert.equal(signature.owner, "inspect");
     assert.equal(signature.status, "unsupported");
     assert.equal(signature.inspectResult.status, "degraded");
@@ -137,7 +137,7 @@ it("returns Rust graph-backed references and degrades unsupported Rust signature
       "--repo",
       fixtureRoot,
       "--json"
-    ], "lattice");
+    ], "opcore");
     assert.equal(implementations.owner, "inspect");
     assert.equal(implementations.status, "unsupported");
     assert.equal(implementations.inspectResult.status, "degraded");
@@ -228,11 +228,11 @@ async function inspectReferences(fixtureRoot, path, symbolName, extra = []) {
     "--repo",
     fixtureRoot,
     "--json"
-  ], "lattice");
+  ], "opcore");
 }
 
 async function buildGraph(fixtureRoot) {
-  const result = await routeCommand(["graph", "build", "--repo", fixtureRoot, "--json"], "lattice");
+  const result = await routeCommand(["graph", "build", "--repo", fixtureRoot, "--json"], "opcore");
   assert.equal(result.status, "ok");
   assert.equal(result.providerStatus.state, "available");
 }

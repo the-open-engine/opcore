@@ -11,7 +11,7 @@ import {
   createSymbolEditPlan
 } from "../packages/edit/dist/index.js";
 
-describe("lattice edit symbol operations", () => {
+describe("opcore edit symbol operations", () => {
   it("plans deterministic graph-backed rename previews across declaration and references", async () => {
     await withSymbolRepo(async (repo) => {
       writeFileSync(join(repo, "src/a.ts"), "export function greet(name: string) {\n  return name;\n}\n");
@@ -653,7 +653,7 @@ describe("lattice edit symbol operations", () => {
 
 async function routeEdit(args, options = {}) {
   return routeCommandAdapter({
-    bin: "lattice",
+    bin: "opcore",
     argv: [...args, "--json"],
     groupName: "edit",
     adapter: createEditCommandAdapter(options)
@@ -679,7 +679,7 @@ function fakeGraphClient(repo, nodes = [], options = {}) {
   const renamedFiles = options.renamedFiles ?? [];
   const metadata = () => ({
     schemaVersion: 1,
-    provider: "lattice-graph",
+    provider: "opcore-graph",
     repo: { repoRoot: repo },
     generatedAt: status.freshness.generatedAt,
     freshness: status.freshness,
@@ -759,7 +759,7 @@ function availableStatus(repo, freshnessId) {
   return {
     state: "available",
     mode: "required",
-    provider: "lattice-graph",
+    provider: "opcore-graph",
     schemaVersion: 1,
     repo: { repoRoot: repo },
     freshness: {
@@ -795,7 +795,7 @@ function passedValidation() {
     graphStatus: {
       state: "available",
       mode: "required",
-      provider: "lattice-graph",
+      provider: "opcore-graph",
       schemaVersion: 1,
       repo: { repoId: "validation" },
       freshness: { generatedAt: "2026-06-05T00:00:00.000Z", ageMs: 0, stale: false },

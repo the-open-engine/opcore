@@ -8,7 +8,7 @@ import type {
 } from "@the-open-engine/opcore-contracts";
 import { validateValidationRequestPayload } from "@the-open-engine/opcore-contracts";
 
-export const defaultValidationGraphProvider = "lattice-graph" as const;
+export const defaultValidationGraphProvider = "opcore-graph" as const;
 
 export interface NormalizeValidationRequestOptions {
   provider?: string;

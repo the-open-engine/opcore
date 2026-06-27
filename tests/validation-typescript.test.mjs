@@ -269,7 +269,7 @@ describe("validation-typescript adapter", () => {
           checks: [TYPE_SCRIPT_IMPORT_GRAPH_CHECK_ID],
           graph: {
             mode: "required",
-            provider: "lattice-graph"
+            provider: "opcore-graph"
           }
         })
       );
@@ -523,7 +523,7 @@ describe("validation-typescript adapter", () => {
         "import type { Payload, Shape } from './types';\nfunction describe(shape: Shape, payload: Payload) { return `${payload.id}:${shape.width}`; }\nvoid describe;\n"
       );
 
-      const graphBuild = spawnSync(process.execPath, ["packages/opcore/dist/lattice/index.js", "graph", "build", "--repo", repo, "--json"], {
+      const graphBuild = spawnSync(process.execPath, ["packages/opcore/dist/advanced/index.js", "graph", "build", "--repo", repo, "--json"], {
         cwd: process.cwd(),
         encoding: "utf8"
       });
@@ -532,7 +532,7 @@ describe("validation-typescript adapter", () => {
       const check = spawnSync(
         process.execPath,
         [
-          "packages/opcore/dist/lattice/index.js",
+          "packages/opcore/dist/advanced/index.js",
           "check",
           "files",
           "src/types.ts",
@@ -587,7 +587,7 @@ describe("validation-typescript adapter", () => {
       );
       writeFileSync(join(repo, "src/index.ts"), "export { missing as renamed };\nfunction internal(){return 1;}\n");
 
-      const graphBuild = spawnSync(process.execPath, ["packages/opcore/dist/lattice/index.js", "graph", "build", "--repo", repo, "--json"], {
+      const graphBuild = spawnSync(process.execPath, ["packages/opcore/dist/advanced/index.js", "graph", "build", "--repo", repo, "--json"], {
         cwd: process.cwd(),
         encoding: "utf8"
       });
@@ -595,7 +595,7 @@ describe("validation-typescript adapter", () => {
 
       const nodeQuery = spawnSync(
         process.execPath,
-        ["packages/opcore/dist/lattice/index.js", "graph", "query", "--repo", repo, "--kind", "nodes", "--json"],
+        ["packages/opcore/dist/advanced/index.js", "graph", "query", "--repo", repo, "--kind", "nodes", "--json"],
         {
           cwd: process.cwd(),
           encoding: "utf8"
@@ -617,7 +617,7 @@ describe("validation-typescript adapter", () => {
       const check = spawnSync(
         process.execPath,
         [
-          "packages/opcore/dist/lattice/index.js",
+          "packages/opcore/dist/advanced/index.js",
           "check",
           "files",
           "src/index.ts",
@@ -668,7 +668,7 @@ describe("validation-typescript adapter", () => {
         "export { laterNested as exportedLaterNested };\nfunction container(){ function laterNested(){ return 1; } return laterNested(); }\n"
       );
 
-      const graphBuild = spawnSync(process.execPath, ["packages/opcore/dist/lattice/index.js", "graph", "build", "--repo", repo, "--json"], {
+      const graphBuild = spawnSync(process.execPath, ["packages/opcore/dist/advanced/index.js", "graph", "build", "--repo", repo, "--json"], {
         cwd: process.cwd(),
         encoding: "utf8"
       });
@@ -676,7 +676,7 @@ describe("validation-typescript adapter", () => {
 
       const nodeQuery = spawnSync(
         process.execPath,
-        ["packages/opcore/dist/lattice/index.js", "graph", "query", "--repo", repo, "--kind", "nodes", "--json"],
+        ["packages/opcore/dist/advanced/index.js", "graph", "query", "--repo", repo, "--kind", "nodes", "--json"],
         {
           cwd: process.cwd(),
           encoding: "utf8"
@@ -700,7 +700,7 @@ describe("validation-typescript adapter", () => {
       const check = spawnSync(
         process.execPath,
         [
-          "packages/opcore/dist/lattice/index.js",
+          "packages/opcore/dist/advanced/index.js",
           "check",
           "files",
           "src/index.ts",
@@ -752,7 +752,7 @@ describe("validation-typescript adapter", () => {
         "import usedDefault from './dep';\nfunction run() { return usedDefault(); }\nrun();\n"
       );
 
-      const graphBuild = spawnSync(process.execPath, ["packages/opcore/dist/lattice/index.js", "graph", "build", "--repo", repo, "--json"], {
+      const graphBuild = spawnSync(process.execPath, ["packages/opcore/dist/advanced/index.js", "graph", "build", "--repo", repo, "--json"], {
         cwd: process.cwd(),
         encoding: "utf8"
       });
@@ -760,7 +760,7 @@ describe("validation-typescript adapter", () => {
 
       const edgeQuery = spawnSync(
         process.execPath,
-        ["packages/opcore/dist/lattice/index.js", "graph", "query", "--repo", repo, "--kind", "edges", "--json"],
+        ["packages/opcore/dist/advanced/index.js", "graph", "query", "--repo", repo, "--kind", "edges", "--json"],
         {
           cwd: process.cwd(),
           encoding: "utf8"
@@ -781,7 +781,7 @@ describe("validation-typescript adapter", () => {
       const check = spawnSync(
         process.execPath,
         [
-          "packages/opcore/dist/lattice/index.js",
+          "packages/opcore/dist/advanced/index.js",
           "check",
           "files",
           "src/dep.ts",
@@ -836,7 +836,7 @@ describe("validation-typescript adapter", () => {
         "import { publicName } from './dep';\nfunction run() { return publicName(); }\nrun();\n"
       );
 
-      const graphBuild = spawnSync(process.execPath, ["packages/opcore/dist/lattice/index.js", "graph", "build", "--repo", repo, "--json"], {
+      const graphBuild = spawnSync(process.execPath, ["packages/opcore/dist/advanced/index.js", "graph", "build", "--repo", repo, "--json"], {
         cwd: process.cwd(),
         encoding: "utf8"
       });
@@ -844,7 +844,7 @@ describe("validation-typescript adapter", () => {
 
       const edgeQuery = spawnSync(
         process.execPath,
-        ["packages/opcore/dist/lattice/index.js", "graph", "query", "--repo", repo, "--kind", "edges", "--json"],
+        ["packages/opcore/dist/advanced/index.js", "graph", "query", "--repo", repo, "--kind", "edges", "--json"],
         {
           cwd: process.cwd(),
           encoding: "utf8"
@@ -865,7 +865,7 @@ describe("validation-typescript adapter", () => {
       const check = spawnSync(
         process.execPath,
         [
-          "packages/opcore/dist/lattice/index.js",
+          "packages/opcore/dist/advanced/index.js",
           "check",
           "files",
           "src/dep.ts",
@@ -921,7 +921,7 @@ describe("validation-typescript adapter", () => {
         "import { addFromBarrel } from './barrel';\nfunction run() { return addFromBarrel(); }\nrun();\n"
       );
 
-      const graphBuild = spawnSync(process.execPath, ["packages/opcore/dist/lattice/index.js", "graph", "build", "--repo", repo, "--json"], {
+      const graphBuild = spawnSync(process.execPath, ["packages/opcore/dist/advanced/index.js", "graph", "build", "--repo", repo, "--json"], {
         cwd: process.cwd(),
         encoding: "utf8"
       });
@@ -929,7 +929,7 @@ describe("validation-typescript adapter", () => {
 
       const edgeQuery = spawnSync(
         process.execPath,
-        ["packages/opcore/dist/lattice/index.js", "graph", "query", "--repo", repo, "--kind", "edges", "--json"],
+        ["packages/opcore/dist/advanced/index.js", "graph", "query", "--repo", repo, "--kind", "edges", "--json"],
         {
           cwd: process.cwd(),
           encoding: "utf8"
@@ -947,7 +947,7 @@ describe("validation-typescript adapter", () => {
 
       const nodeQuery = spawnSync(
         process.execPath,
-        ["packages/opcore/dist/lattice/index.js", "graph", "query", "--repo", repo, "--kind", "nodes", "--json"],
+        ["packages/opcore/dist/advanced/index.js", "graph", "query", "--repo", repo, "--kind", "nodes", "--json"],
         {
           cwd: process.cwd(),
           encoding: "utf8"
@@ -969,7 +969,7 @@ describe("validation-typescript adapter", () => {
       const check = spawnSync(
         process.execPath,
         [
-          "packages/opcore/dist/lattice/index.js",
+          "packages/opcore/dist/advanced/index.js",
           "check",
           "files",
           "src/source.ts",
@@ -1043,7 +1043,7 @@ describe("validation-typescript adapter", () => {
         checks: [TYPE_SCRIPT_IMPORT_GRAPH_CHECK_ID],
         graph: {
           mode: "required",
-          provider: "lattice-graph"
+          provider: "opcore-graph"
         }
       })
     );
@@ -1099,7 +1099,7 @@ function request(overrides = {}) {
   return {
     requestId: "validation-typescript-1",
     repo: {
-      repoId: "lattice"
+      repoId: "opcore"
     },
     scope: {
       kind: "files",
@@ -1107,7 +1107,7 @@ function request(overrides = {}) {
     },
     graph: {
       mode: "optional",
-      provider: "lattice-graph"
+      provider: "opcore-graph"
     },
     overlays: [],
     checks: [TYPE_SCRIPT_SYNTAX_CHECK_ID],
@@ -1175,11 +1175,11 @@ function graphClient(overrides = {}) {
   };
 }
 
-function availableStatus(mode = "optional", repo = { repoId: "lattice" }) {
+function availableStatus(mode = "optional", repo = { repoId: "opcore" }) {
   return {
     state: "available",
     mode,
-    provider: "lattice-graph",
+    provider: "opcore-graph",
     schemaVersion: 1,
     repo,
     freshness: freshness(),
@@ -1190,9 +1190,9 @@ function availableStatus(mode = "optional", repo = { repoId: "lattice" }) {
 
 function graphHandshake(overrides = {}) {
   return {
-    provider: "lattice-graph",
+    provider: "opcore-graph",
     graphSchemaVersion: 1,
-    artifactName: "lattice-graph-core",
+    artifactName: "opcore-graph-core",
     artifactVersion: "0.1.0-alpha.0",
     targetPlatform: "test",
     supportedOperations: ["build", "update", "watch", "status", "query", "ping", "health", "shutdown"],
@@ -1216,11 +1216,11 @@ function graphHandshake(overrides = {}) {
       "search"
     ],
     artifact: {
-      artifactName: "lattice-graph-core",
+      artifactName: "opcore-graph-core",
       artifactVersion: "0.1.0-alpha.0",
       targetPlatform: "test",
-      binaryPath: "dist/native/test/lattice-graph-core",
-      checksumPath: "dist/native/test/lattice-graph-core.sha256",
+      binaryPath: "dist/native/test/opcore-graph-core",
+      checksumPath: "dist/native/test/opcore-graph-core.sha256",
       checksumSha256: "0".repeat(64),
       buildProfile: "test"
     },
@@ -1232,7 +1232,7 @@ function graphFailure(state, category, mode = "optional") {
   const status = {
     state,
     mode,
-    provider: "lattice-graph",
+    provider: "opcore-graph",
     schemaVersion: 1,
     failure: {
       category,
@@ -1241,7 +1241,7 @@ function graphFailure(state, category, mode = "optional") {
   };
   if (state === "stale" || state === "schema_mismatch" || state === "daemon_unavailable") {
     status.repo = {
-      repoId: "lattice"
+      repoId: "opcore"
     };
     status.freshness = freshness({ stale: true });
   }
@@ -1258,7 +1258,7 @@ function availableFactResult(query, nodes, edges, metadataOverrides = {}) {
     status: availableStatus(query.mode, query.repo),
     metadata: {
       schemaVersion: 1,
-      provider: "lattice-graph",
+      provider: "opcore-graph",
       repo: query.repo,
       generatedAt: "2026-06-05T00:00:00.000Z",
       freshness: freshness(),

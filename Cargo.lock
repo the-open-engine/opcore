@@ -347,33 +347,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8f42a60cbdf9a97f5d2305f08a87dc4e09308d1276d28c869c684d7777685682"
 
 [[package]]
-name = "lattice-graph-core"
-version = "0.1.0-alpha.0"
-dependencies = [
- "ctrlc",
- "globset",
- "oxc_allocator",
- "oxc_ast",
- "oxc_ast_visit",
- "oxc_parser",
- "oxc_span",
- "oxc_syntax",
- "proc-macro2",
- "quote",
- "rusqlite",
- "serde",
- "serde_json",
- "sha2",
- "syn",
- "tempfile",
- "thiserror",
- "time",
- "tree-sitter",
- "tree-sitter-python",
- "walkdir",
-]
-
-[[package]]
 name = "leb128fmt"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -486,6 +459,33 @@ name = "once_cell"
 version = "1.21.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9f7c3e4beb33f85d45ae3e3a1792185706c8e16d043238c593331cc7cd313b50"
+
+[[package]]
+name = "opcore-graph-core"
+version = "0.1.0-alpha.0"
+dependencies = [
+ "ctrlc",
+ "globset",
+ "oxc_allocator",
+ "oxc_ast",
+ "oxc_ast_visit",
+ "oxc_parser",
+ "oxc_span",
+ "oxc_syntax",
+ "proc-macro2",
+ "quote",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "sha2",
+ "syn",
+ "tempfile",
+ "thiserror",
+ "time",
+ "tree-sitter",
+ "tree-sitter-python",
+ "walkdir",
+]
 
 [[package]]
 name = "owo-colors"

@@ -140,7 +140,7 @@ for (const path of ["Cargo.toml", "Cargo.lock", "crates/graph-core/Cargo.toml"])
 }
 validateRustLintPolicy();
 const cargoManifest = readFileSync("crates/graph-core/Cargo.toml", "utf8");
-for (const token of ["name = \"lattice-graph-core\"", "name = \"lattice_graph_core\"", "name = \"lattice-graph-core\""]) {
+for (const token of ["name = \"opcore-graph-core\"", "name = \"opcore_graph_core\""]) {
   requireIncludes("crates/graph-core/Cargo.toml", cargoManifest, token);
 }
 requireIncludes("crates/graph-core/Cargo.toml", cargoManifest, "[lints]");
@@ -212,13 +212,13 @@ for (const token of [
   "Decision: hybrid",
   "Rust graph core",
   "TypeScript contracts",
-  "lattice graph",
-  "lattice inspect",
-  "lattice edit",
-  "lattice check",
-  "lattice validate",
-  "lattice status",
-  "lattice doctor",
+  "opcore graph",
+  "opcore inspect",
+  "opcore edit",
+  "opcore check",
+  "opcore validate",
+  "opcore status",
+  "opcore doctor",
   "do not collapse graph, edit, and policy ownership into one muddled abstraction",
   "#21"
 ]) {
@@ -264,7 +264,7 @@ for (const mode of ["staged", "changed", "files"]) {
   }
 }
 const rustGates = rox.extensionConfig?.rustGates;
-if (rustGates?.workspace !== "Cargo.toml" || rustGates?.package !== "lattice-graph-core") {
+if (rustGates?.workspace !== "Cargo.toml" || rustGates?.package !== "opcore-graph-core") {
   fail("rox.json must include schema-compatible Rust graph-core gate metadata under extensionConfig.rustGates");
 }
 for (const rustCheck of ["cargo fmt --check", "cargo clippy --all-targets --all-features -- -D warnings", "cargo test"]) {
@@ -338,8 +338,8 @@ function validatePackageManifest(packagePath, manifest, track) {
   assertDeepEqual(manifest.exports?.["."], { types: "./dist/index.d.ts", default: "./dist/index.js" }, `${manifest.name} exports["."]`);
   if (track.dir === "contracts") {
     assertDeepEqual(
-      manifest.exports?.["./schemas/lattice-contracts.schema.json"],
-      "./schemas/lattice-contracts.schema.json",
+      manifest.exports?.["./schemas/opcore-contracts.schema.json"],
+      "./schemas/opcore-contracts.schema.json",
       `${manifest.name} schema export`
     );
     assertDeepEqual(manifest.files, ["dist", "schemas", "README.md"], `${manifest.name} files`);
@@ -383,7 +383,7 @@ function validatePackageManifest(packagePath, manifest, track) {
     fail(`${manifest.name} uses a forbidden public package name`);
   }
   if (track.dir === "opcore") {
-    assertDeepEqual(manifest.bin, { opcore: "dist/index.js", lattice: "dist/lattice/index.js" }, `${manifest.name} bin`);
+    assertDeepEqual(manifest.bin, { opcore: "dist/index.js" }, `${manifest.name} bin`);
   } else if (track.dir === "asp-provider") {
     assertDeepEqual(manifest.bin, { "opcore-asp-provider": "dist/index.js" }, `${manifest.name} bin`);
   } else if (hasOwn(manifest, "bin")) {
@@ -558,7 +558,7 @@ function validateGraphConsumerBoundaries() {
   const forbidden = [
     /@the-open-engine\/opcore-graph/,
     /graph-core/i,
-    /lattice-graph-core/i,
+    /opcore-graph-core/i,
     /resolveGraphCoreArtifact/i,
     /native artifact loader/i,
     /graph sqlite/i,

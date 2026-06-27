@@ -204,7 +204,7 @@ describe("negative gate fixtures", () => {
 
   it("rejects bad descriptor artifact references in release descriptor inspection", () => {
     const repo = tempRepo({ includeDist: true });
-    const descriptorPath = join(repo, "packages/opcore/dist/descriptors/lattice.managed-tool.json");
+    const descriptorPath = join(repo, "packages/opcore/dist/descriptors/opcore.managed-tool.json");
     const descriptor = JSON.parse(readFileSync(descriptorPath, "utf8"));
     descriptor.artifacts = descriptor.artifacts.map((artifact) =>
       artifact.id === "descriptor" ? { ...artifact, path: "dist/descriptors/missing.json" } : artifact
@@ -222,7 +222,7 @@ describe("negative gate fixtures", () => {
       repo,
       "packages",
       packageName.replace("@the-open-engine/", ""),
-      "lattice-graph-core.sha256"
+      "opcore-graph-core.sha256"
     );
     rmSync(checksumPath, { force: true });
 
@@ -232,7 +232,7 @@ describe("negative gate fixtures", () => {
 
   it("rejects current-tool markers in cutover descriptor inspection", () => {
     const repo = tempRepo({ includeDist: true });
-    const descriptorPath = join(repo, "packages/opcore/dist/descriptors/lattice.managed-tool.json");
+    const descriptorPath = join(repo, "packages/opcore/dist/descriptors/opcore.managed-tool.json");
     const descriptor = JSON.parse(readFileSync(descriptorPath, "utf8"));
     descriptor.artifacts[0].path = ".ace/runtime/bin/lattice";
     writeFileSync(descriptorPath, `${JSON.stringify(descriptor, null, 2)}\n`);
@@ -277,7 +277,7 @@ describe("negative gate fixtures", () => {
     const result = run(repo, "node", ["scripts/generate-cutover-receipt.mjs", "--inspect-installed-bin-dir", "tmp-installed-project"], {
       expectFailure: true
     });
-    assert.match(stderrAndStdout(result), /old public bin.*crg/);
+    assert.match(stderrAndStdout(result), /old public bin.*lattice/);
   });
 
   it("rejects sibling file dependencies", () => {
@@ -358,8 +358,8 @@ describe("negative gate fixtures", () => {
     const legacyGraphTool = "cr" + "g";
     const content = readFileSync(contributingPath, "utf8")
       .replace(
-        "Lattice is a public alpha for local code intelligence, edit planning, and pre-write validation for coding agents.",
-        `Lattice is a public alpha code-intelligence monorepo for \`${legacyGraphTool}\`, edit, and validation.`
+        "Opcore is a public alpha for local code intelligence, edit planning, and pre-write validation for coding agents.",
+        `Opcore is a public alpha code-intelligence monorepo for \`${legacyGraphTool}\`, edit, and validation.`
       )
       .replace(
         "Graph extraction, persistence, query, search, and impact belong in `@the-open-engine/opcore-graph`.",
@@ -394,7 +394,7 @@ describe("negative gate fixtures", () => {
     const repo = tempRepo();
     const manifestPath = join(repo, "crates/graph-core/Cargo.toml");
     const manifest = readFileSync(manifestPath, "utf8").replace(
-      'name = "lattice-graph-core"',
+      'name = "opcore-graph-core"',
       `name = "lattice-${"crg"}-core"`
     );
     writeFileSync(manifestPath, manifest);
@@ -551,7 +551,7 @@ function stderrAndStdout(result) {
 
 function minimalCutoverReceipt(repo, commandOverrides = {}) {
   const packageNames = releaseReceiptPackageNames;
-  const descriptor = JSON.parse(readFileSync(join(repo, "packages/fixtures/descriptors/lattice.managed-tool.json"), "utf8"));
+  const descriptor = JSON.parse(readFileSync(join(repo, "packages/fixtures/descriptors/opcore.managed-tool.json"), "utf8"));
   const commandReceipts = cutoverCommandExpectations().map((expectation) => ({
     id: expectation.id,
     command: expectation.command,
@@ -591,7 +591,7 @@ function minimalCutoverReceipt(repo, commandOverrides = {}) {
           sha256: "3".repeat(64),
           bins:
             packageName === "@the-open-engine/opcore"
-              ? { opcore: "dist/index.js", lattice: "dist/lattice/index.js" }
+              ? { opcore: "dist/index.js" }
               : packageName === "@the-open-engine/opcore-asp-provider"
                 ? { "opcore-asp-provider": "dist/index.js" }
                 : {}
@@ -599,7 +599,7 @@ function minimalCutoverReceipt(repo, commandOverrides = {}) {
         installedFiles: installedFilesFor(packageName)
       })),
     descriptor: {
-      path: "node_modules/@the-open-engine/opcore/dist/descriptors/lattice.managed-tool.json",
+      path: "node_modules/@the-open-engine/opcore/dist/descriptors/opcore.managed-tool.json",
       packageName: "@the-open-engine/opcore",
       checksumSha256: "7".repeat(64),
       descriptor,
@@ -612,14 +612,14 @@ function minimalCutoverReceipt(repo, commandOverrides = {}) {
       pathSanitized: true,
       aceRuntimeBinExcluded: true,
       siblingCovibesExcluded: true,
-      latticeBinOnly: true,
+      opcoreBinOnly: true,
       oldBinsAbsent: { crg: true, cix: true, rox: true }
     },
     commandReceipts,
     negativeChecks: [
       {
         id: "missing-required-graph-check",
-        command: ["lattice", "check", "files", "src/index.ts", "--graph-mode", "required"],
+        command: ["opcore", "check", "files", "src/index.ts", "--graph-mode", "required"],
         status: "passed",
         exitCode: 0,
         assertion: "typed provider failure"
@@ -641,7 +641,7 @@ function minimalCutoverReceipt(repo, commandOverrides = {}) {
 function installedFilesFor(packageName) {
   const paths = [
     "package.json",
-    ...(packageName === "@the-open-engine/opcore" ? ["dist/index.js", "dist/lattice/index.js"] : []),
+    ...(packageName === "@the-open-engine/opcore" ? ["dist/index.js"] : []),
     ...(packageName === "@the-open-engine/opcore-asp-provider" ? ["dist/index.js", "dist/manifests/asp-server.json"] : [])
   ];
   return paths.map((path) => ({ path: `node_modules/${packageName}/${path}`, sha256: "4".repeat(64) }));
@@ -654,26 +654,26 @@ function cutoverCommandExpectations() {
     ["opcore-check-changed", ["opcore", "check", "changed", "--base", "HEAD", "--checks", "typescript.syntax"], "validation"],
     ["opcore-measure", ["opcore", "measure"], "runtime"],
     ["opcore-try", ["opcore", "try"], "runtime"],
-    ["status", ["lattice", "status"], "runtime"],
-    ["doctor", ["lattice", "doctor"], "runtime", "ok", 0],
-    ["graph-build", ["lattice", "graph", "build"], "graph", "ok", 0],
-    ["graph-status", ["lattice", "graph", "status"], "graph", "ok", 0],
-    ["graph-query", ["lattice", "graph", "query"], "graph", "ok", 0],
-    ["graph-impact", ["lattice", "graph", "impact", "--files", "src/components/GreetingCard.tsx"], "graph", "ok", 0],
-    ["graph-review-context", ["lattice", "graph", "review-context", "--files", "src/components/GreetingCard.tsx"], "graph", "ok", 0],
-    ["graph-detect-changes", ["lattice", "graph", "detect-changes", "--files", "src/components/GreetingCard.tsx"], "graph", "ok", 0],
-    ["graph-search", ["lattice", "graph", "search", "Greeting", "--limit", "5"], "graph", "ok", 0],
-    ["graph-serve", ["lattice", "graph", "serve"], "graph", "ok", 0],
-    ["inspect-symbols", ["lattice", "inspect", "symbols", "Greeting", "--limit", "5"], "inspect", "ok", 0],
-    ["inspect-definition", ["lattice", "inspect", "definition", "GreetingCard"], "inspect", "ok", 0],
-    ["inspect-references", ["lattice", "inspect", "references", "function:src/components/GreetingCard.tsx#GreetingCard", "--limit", "5"], "inspect", "ok", 0],
-    ["inspect-signature", ["lattice", "inspect", "signature", "function:src/components/GreetingCard.tsx#GreetingCard"], "inspect", "ok", 0],
-    ["inspect-implementations", ["lattice", "inspect", "implementations", "class:src/models.ts#GreetingModel"], "inspect", "ok", 0],
-    ["inspect-search", ["lattice", "inspect", "search", "Greeting", "--limit", "5"], "inspect", "ok", 0],
+    ["status", ["opcore", "status"], "runtime"],
+    ["doctor", ["opcore", "doctor"], "runtime", "ok", 0],
+    ["graph-build", ["opcore", "graph", "build"], "graph", "ok", 0],
+    ["graph-status", ["opcore", "graph", "status"], "graph", "ok", 0],
+    ["graph-query", ["opcore", "graph", "query"], "graph", "ok", 0],
+    ["graph-impact", ["opcore", "graph", "impact", "--files", "src/components/GreetingCard.tsx"], "graph", "ok", 0],
+    ["graph-review-context", ["opcore", "graph", "review-context", "--files", "src/components/GreetingCard.tsx"], "graph", "ok", 0],
+    ["graph-detect-changes", ["opcore", "graph", "detect-changes", "--files", "src/components/GreetingCard.tsx"], "graph", "ok", 0],
+    ["graph-search", ["opcore", "graph", "search", "Greeting", "--limit", "5"], "graph", "ok", 0],
+    ["graph-serve", ["opcore", "graph", "serve"], "graph", "ok", 0],
+    ["inspect-symbols", ["opcore", "inspect", "symbols", "Greeting", "--limit", "5"], "inspect", "ok", 0],
+    ["inspect-definition", ["opcore", "inspect", "definition", "GreetingCard"], "inspect", "ok", 0],
+    ["inspect-references", ["opcore", "inspect", "references", "function:src/components/GreetingCard.tsx#GreetingCard", "--limit", "5"], "inspect", "ok", 0],
+    ["inspect-signature", ["opcore", "inspect", "signature", "function:src/components/GreetingCard.tsx#GreetingCard"], "inspect", "ok", 0],
+    ["inspect-implementations", ["opcore", "inspect", "implementations", "class:src/models.ts#GreetingModel"], "inspect", "ok", 0],
+    ["inspect-search", ["opcore", "inspect", "search", "Greeting", "--limit", "5"], "inspect", "ok", 0],
     [
       "edit-preview",
       [
-        "lattice",
+        "opcore",
         "edit",
         "exact",
         "--path",
@@ -690,7 +690,7 @@ function cutoverCommandExpectations() {
     [
       "edit-apply",
       [
-        "lattice",
+        "opcore",
         "edit",
         "exact",
         "--path",
@@ -708,7 +708,7 @@ function cutoverCommandExpectations() {
     [
       "edit-refused",
       [
-        "lattice",
+        "opcore",
         "edit",
         "exact",
         "--path",
@@ -723,18 +723,18 @@ function cutoverCommandExpectations() {
       "error",
       1
     ],
-    ["check-files", ["lattice", "check", "files", "src/cutover.ts", "--checks", "typescript.syntax,typescript.types"], "validation", "ok", 0],
-    ["validate-request", ["lattice", "validate", "request", "--request-file", "/tmp/lattice-cutover/project/validate-request.json"], "validation", "ok", 0],
+    ["check-files", ["opcore", "check", "files", "src/cutover.ts", "--checks", "typescript.syntax,typescript.types"], "validation", "ok", 0],
+    ["validate-request", ["opcore", "validate", "request", "--request-file", "/tmp/opcore-cutover/project/validate-request.json"], "validation", "ok", 0],
     [
       "validate-pre-write-pass",
-      ["lattice", "validate", "pre-write", "--request-file", "/tmp/lattice-cutover/project/pre-write-pass.json", "--timeout-ms", "30000"],
+      ["opcore", "validate", "pre-write", "--request-file", "/tmp/opcore-cutover/project/pre-write-pass.json", "--timeout-ms", "30000"],
       "validation",
       "ok",
       0
     ],
     [
       "validate-pre-write-fail",
-      ["lattice", "validate", "pre-write", "--request-file", "/tmp/lattice-cutover/project/pre-write-fail.json", "--timeout-ms", "30000"],
+      ["opcore", "validate", "pre-write", "--request-file", "/tmp/opcore-cutover/project/pre-write-fail.json", "--timeout-ms", "30000"],
       "validation",
       "error",
       1
