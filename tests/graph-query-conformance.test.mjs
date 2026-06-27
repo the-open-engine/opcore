@@ -15,6 +15,7 @@ import {
 
 const repoRoot = fileURLToPath(new URL("..", import.meta.url));
 const sourceFixtureRoot = resolve(repoRoot, "packages/fixtures/source-extraction/wave1");
+const pythonFixtureRoot = resolve(repoRoot, "packages/fixtures/source-extraction/python");
 const mixedRustTsFixtureRoot = resolve(repoRoot, "packages/fixtures/source-extraction/mixed-rust-ts");
 const queryFixture = JSON.parse(readFileSync(resolve(repoRoot, "packages/fixtures/graph-query/query-fixtures.json"), "utf8"));
 
@@ -194,6 +195,68 @@ describe("GraphProvider query conformance", () => {
     });
   });
 
+  it("returns Python named query, impact, detect-changes, and review-context facts", () => {
+    withPythonFixture((fixtureRoot) => {
+      const build = graphProviderBuild({ repoRoot: fixtureRoot });
+      assert.equal(build.status.state, "available");
+
+      const summary = graphProviderNamedQuery(
+        { repoRoot: fixtureRoot },
+        { queryKind: "file_summary", target: "src/pkg/async_tools.py", limit: 100 }
+      );
+      assert.equal(summary.status.state, "available");
+      assert.ok(summary.nodes.map((node) => node.id).includes("function:src/pkg/async_tools.py#load_name"));
+      assert.ok(summary.nodes.map((node) => node.id).includes("function:src/pkg/async_tools.py#load_name.inner"));
+      assert.ok(summary.edges.some((edge) => edge.kind === "IMPORTS_FROM" && edge.to === "file:src/pkg/helpers.py"));
+
+      const callers = graphProviderNamedQuery(
+        { repoRoot: fixtureRoot },
+        { queryKind: "callers_of", target: "function:src/pkg/helpers.py#build_name", maxDepth: 1, limit: 100 }
+      );
+      assert.equal(callers.status.state, "available");
+      assert.ok(callers.nodes.map((node) => node.id).includes("function:src/pkg/async_tools.py#load_name.inner"));
+      assert.ok(callers.nodes.map((node) => node.id).includes("function:src/pkg/models.py#PublicModel.render"));
+
+      const importers = graphProviderNamedQuery(
+        { repoRoot: fixtureRoot },
+        { queryKind: "importers_of", target: "src/pkg/helpers.py", maxDepth: 2, limit: 100 }
+      );
+      assert.equal(importers.status.state, "available");
+      assert.deepEqual(paths(importers.nodes), [
+        "src/pkg/__init__.py",
+        "src/pkg/async_tools.py",
+        "src/pkg/helpers.py",
+        "src/pkg/models.py",
+        "tests/test_models.py"
+      ]);
+
+      const tests = graphProviderNamedQuery(
+        { repoRoot: fixtureRoot },
+        { queryKind: "tests_for", target: "src/pkg/models.py", maxDepth: 1, limit: 100 }
+      );
+      assert.equal(tests.status.state, "available");
+      assert.ok(paths(tests.nodes).includes("tests/test_models.py"));
+
+      const impact = graphProviderImpact({ repoRoot: fixtureRoot }, { files: ["src/pkg/helpers.py"], maxDepth: 3, limit: 100 });
+      assert.equal(impact.status.state, "available");
+      assert.deepEqual(impact.changedFiles, ["src/pkg/helpers.py"]);
+      assert.ok(impact.impactedFiles.includes("src/pkg/async_tools.py"));
+      assert.ok(impact.impactedFiles.includes("tests/test_models.py"));
+      assert.ok(impact.impactedSymbols.includes("function:src/pkg/async_tools.py#load_name.inner"));
+      assert.deepEqual(impact.tests, ["tests/test_models.py"]);
+
+      const changes = graphProviderDetectChanges({ repoRoot: fixtureRoot }, { files: ["src/pkg/helpers.py"] });
+      assert.equal(changes.status.state, "available");
+      assert.deepEqual(changes.changedFiles, ["src/pkg/helpers.py"]);
+      assert.deepEqual(changes.deletedFiles, []);
+
+      const review = graphProviderReviewContext({ repoRoot: fixtureRoot }, { files: ["src/pkg/helpers.py"], maxDepth: 3 });
+      assert.equal(review.status.state, "available");
+      assert.ok(review.impactedFiles.includes("src/pkg/async_tools.py"));
+      assert.ok(review.tests.includes("tests/test_models.py"));
+    });
+  });
+
   it("normalizes duplicate separators in query file consumers", () => {
     withBuiltFixture((fixtureRoot) => {
       const changes = graphProviderDetectChanges({ repoRoot: fixtureRoot }, { files: ["src//models.ts"] });
@@ -264,6 +327,17 @@ function withRustFixture(runFixture) {
   const fixtureRoot = join(temp, "mixed-rust-ts");
   try {
     cpSync(mixedRustTsFixtureRoot, fixtureRoot, { recursive: true, filter: skipGeneratedStore });
+    runFixture(fixtureRoot);
+  } finally {
+    rmSync(temp, { recursive: true, force: true });
+  }
+}
+
+function withPythonFixture(runFixture) {
+  const temp = mkdtempSync(join(tmpdir(), "lattice-query-python-"));
+  const fixtureRoot = join(temp, "python");
+  try {
+    cpSync(pythonFixtureRoot, fixtureRoot, { recursive: true, filter: skipGeneratedStore });
     runFixture(fixtureRoot);
   } finally {
     rmSync(temp, { recursive: true, force: true });
