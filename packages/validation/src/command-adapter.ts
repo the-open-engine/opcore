@@ -270,7 +270,7 @@ function validationCommandResult(
     owner: "validation",
     status: result.ok ? "ok" : "error",
     json: request.json,
-    message: result.ok ? "lattice validation complete." : result.failure?.message ?? result.refusal?.message ?? "lattice validation failed.",
+    message: result.ok ? "opcore validation complete." : result.failure?.message ?? result.refusal?.message ?? "opcore validation failed.",
     validationResult: result,
     receipt
   });
@@ -295,7 +295,7 @@ function manifestCommandResult(
     owner: "validation",
     status: "ok",
     json: request.json,
-    message: `lattice ${label}: validation check manifest ready.`,
+    message: `opcore ${label}: validation check manifest ready.`,
     validationResult: result
   });
 }

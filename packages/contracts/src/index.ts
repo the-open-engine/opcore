@@ -2939,6 +2939,7 @@ export interface ReleaseCutoverEnvironmentIsolationEvidence {
   siblingCovibesExcluded: true;
   opcoreBinOnly: true;
   oldBinsAbsent: {
+    lattice: true;
     crg: true;
     cix: true;
     rox: true;
@@ -3471,7 +3472,7 @@ function validateManagedToolIdentity(descriptor: ManagedToolDescriptor): void {
 function validateManagedToolEntrypoints(entrypoints: readonly ManagedToolDescriptorEntrypoint[]): void {
   validateNonEmptyArray(entrypoints, "Managed tool descriptor entrypoints");
   for (const entrypoint of entrypoints) {
-    if (entrypoint?.bin !== "opcore" && ["crg", "cix", "rox"].includes(String(entrypoint?.bin))) {
+    if (entrypoint?.bin !== "opcore" && ["lattice", "crg", "cix", "rox"].includes(String(entrypoint?.bin))) {
       throw new Error("Managed tool descriptor must not reference old public aliases");
     }
   }
@@ -3766,7 +3767,7 @@ function validateManagedToolPackagePath(path: string, label: string): string {
 function validateManagedToolCommandTokens(tokens: readonly string[], label: string): void {
   for (const token of tokens) {
     validateNonEmptyString(token, label);
-    if (["crg", "cix", "rox"].includes(token)) throw new Error("Managed tool descriptor must not reference old public aliases");
+    if (["lattice", "crg", "cix", "rox"].includes(token)) throw new Error("Managed tool descriptor must not reference old public aliases");
     const normalizedToken = normalizeManagedToolDescriptorString(token);
     if (managedToolPrivateRuntimePathPattern.test(normalizedToken) || normalizedToken.includes("LATTICE_CURRENT_TOOLS_DIR")) {
       throw new Error("Managed tool descriptor must not reference current-tool runtime paths");
@@ -3775,7 +3776,7 @@ function validateManagedToolCommandTokens(tokens: readonly string[], label: stri
 }
 
 function validateManagedToolDescriptorForbiddenStrings(value: unknown): void {
-  const oldAliasPattern = /(^|[\\/\s])(?:crg|cix|rox)(?:$|[\\/\s])/i;
+  const oldAliasPattern = /(^|[\\/\s])(?:lattice|crg|cix|rox)(?:$|[\\/\s])/i;
   for (const text of collectStrings(value)) {
     if (oldAliasPattern.test(text)) throw new Error("Managed tool descriptor must not reference old public aliases");
     const normalizedText = normalizeManagedToolDescriptorString(text);
@@ -7353,7 +7354,7 @@ function validateReleaseReceiptPackageManifest(
 ): void {
   if (!manifest || typeof manifest !== "object") throw new Error("Release receipt package manifest is required");
   if (manifest.name !== packageName) throw new Error(`Release receipt package manifest name must match ${packageName}`);
-  if (manifest.name.includes("crg") || manifest.name.includes("cix") || manifest.name.includes("rox")) {
+  if (manifest.name.includes("lattice") || manifest.name.includes("crg") || manifest.name.includes("cix") || manifest.name.includes("rox")) {
     throw new Error(`Release receipt package manifest uses old public package identity: ${manifest.name}`);
   }
   validateNonEmptyString(manifest.version, "Release receipt package manifest version");
@@ -7763,7 +7764,7 @@ function validateReleaseCutoverEnvironmentIsolation(environment: ReleaseCutoverE
   if (environment.siblingCovibesExcluded !== true) throw new Error("Release cutover sibling Covibes paths must be excluded");
   if (environment.opcoreBinOnly !== true) throw new Error("Release cutover installed project must expose only opcore bin");
   const oldBins = environment.oldBinsAbsent;
-  if (!oldBins || oldBins.crg !== true || oldBins.cix !== true || oldBins.rox !== true) {
+  if (!oldBins || oldBins.lattice !== true || oldBins.crg !== true || oldBins.cix !== true || oldBins.rox !== true) {
     throw new Error("Release cutover old public bins must be absent");
   }
 }

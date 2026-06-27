@@ -391,7 +391,7 @@ function validatePackageManifest(packagePath, manifest, track) {
   } else if (hasOwn(manifest, "bin")) {
     fail(`${manifest.name} must not declare CLI bins`);
   }
-  for (const forbiddenBin of ["crg", "cix", "rox"]) {
+  for (const forbiddenBin of ["lattice", "crg", "cix", "rox"]) {
     if (manifest.bin && hasOwn(manifest.bin, forbiddenBin)) {
       fail(`${manifest.name} exposes forbidden old bin ${forbiddenBin}`);
     }

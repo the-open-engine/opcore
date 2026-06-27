@@ -13276,11 +13276,15 @@
           "type": "object",
           "additionalProperties": false,
           "required": [
+            "lattice",
             "crg",
             "cix",
             "rox"
           ],
           "properties": {
+            "lattice": {
+              "const": true
+            },
             "crg": {
               "const": true
             },

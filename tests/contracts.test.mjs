@@ -2550,6 +2550,17 @@ describe("Opcore shared contracts", () => {
       () =>
         validateReleaseCutoverReceipt({
           ...receipt,
+          environmentIsolation: {
+            ...receipt.environmentIsolation,
+            oldBinsAbsent: { crg: true, cix: true, rox: true }
+          }
+        }),
+      /old public bins/
+    );
+    assert.throws(
+      () =>
+        validateReleaseCutoverReceipt({
+          ...receipt,
           oldToolReplacementClaimed: true
         }),
       /old-tool replacement/
@@ -4801,6 +4812,7 @@ function validReleaseCutoverReceipt() {
       siblingCovibesExcluded: true,
       opcoreBinOnly: true,
       oldBinsAbsent: {
+        lattice: true,
         crg: true,
         cix: true,
         rox: true

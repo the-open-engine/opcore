@@ -31,6 +31,12 @@ import {
   isNativeReleasePackageName,
   releasePackageDirForName
 } from "./release-package-dirs.mjs";
+import {
+  collectInstalledPackageTextEntries,
+  collectPackageTarballTextEntries,
+  formatLaunchScrubFindings,
+  scrubLaunchTextEntries
+} from "./lib/launch-claim-scrub.mjs";
 
 const repoRoot = fileURLToPath(new URL("..", import.meta.url));
 const descriptorPath = "packages/opcore/dist/descriptors/opcore.managed-tool.json";
@@ -372,6 +378,8 @@ function generateReceipt() {
     const descriptor = collectInstalledDescriptor(project, tarballs);
     const installedPackages = collectInstalledPackages(project, tarballs);
     const currentToolGuardrails = currentToolGuardrailsForCutover();
+    const markerScanEntries = receiptScanTextsWithoutReceipt(project, descriptor, commandTexts, tarballs);
+    assertNoForbiddenMarkers(markerScanEntries);
     const receipt = {
       schemaVersion: 1,
       issue: "#30",
@@ -389,7 +397,7 @@ function generateReceipt() {
         aceRuntimeBinExcluded: true,
         siblingCovibesExcluded: true,
         opcoreBinOnly: true,
-        oldBinsAbsent: { crg: true, cix: true, rox: true }
+        oldBinsAbsent: { lattice: true, crg: true, cix: true, rox: true }
       },
       commandReceipts: sortCommandReceipts(commandReceipts),
       rustCommandReceipts: sortRustCommandReceipts(rustCommandReceipts),
@@ -398,14 +406,13 @@ function generateReceipt() {
       currentToolGuardrails,
       oldToolReplacementClaimed: false,
       forbiddenMarkerScan: {
-        scannedTextCount: receiptScanTextsWithoutReceipt(project, descriptor, commandTexts, tarballs).length + 1,
+        scannedTextCount: markerScanEntries.length + 1,
         findingCount: 0,
-        markersBlocked: ["private-runtime", "current-tool-env", "private-home", "old-tool-bins"]
+        markersBlocked: ["private-runtime", "current-tool-env", "private-home", "old-tool-bins", "old-product-name", "doubled-token"]
       },
       inputEvidence: collectInputEvidence()
     };
     assertSameSet(receipt.commandReceipts.map((entry) => entry.id), releaseCutoverRequiredCommandIds, "cutover command receipts");
-    assertNoForbiddenMarkers(receiptScanTextsWithoutReceipt(project, descriptor, commandTexts, tarballs));
     assertNoForbiddenMarkers(receiptScanTexts(receipt));
     return receipt;
   } finally {
@@ -1028,7 +1035,11 @@ function receiptScanTextsWithoutReceipt(project, descriptor, commandTexts, tarba
     return { label: `manifest:${packageName}`, text: readFileSync(manifestPath, "utf8") };
   });
   const descriptorText = JSON.stringify(descriptor.descriptor);
-  return [...packageManifestTexts, { label: "descriptor", text: descriptorText }, ...commandTexts];
+  const installedPackageTexts = collectInstalledPackageTextEntries(project, releaseReceiptPackageNames);
+  const tarballPackageTexts = tarballs.flatMap((tarball) =>
+    collectPackageTarballTextEntries(tarball.path, `npm-pack:${tarball.packageName}`)
+  );
+  return [...packageManifestTexts, ...installedPackageTexts, ...tarballPackageTexts, { label: "descriptor", text: descriptorText }, ...commandTexts];
 }
 
 function receiptScanTexts(receipt) {
@@ -1044,11 +1055,29 @@ function assertNoForbiddenMarkers(entries) {
   ];
   const findings = [];
   for (const entry of entries) {
-    for (const marker of forbidden) {
-      if (marker.pattern.test(entry.text)) findings.push(`${entry.label}: ${marker.label}`);
+    if (!isPackageTextScanEntry(entry.label)) {
+      for (const marker of forbidden) {
+        const lines = entry.text.split(/\r?\n/);
+        for (let index = 0; index < lines.length; index += 1) {
+          const line = lines[index];
+          if (!marker.pattern.test(line)) continue;
+          if (isAllowlistedCutoverMarkerLine(line, marker.label)) continue;
+          findings.push(`${entry.label}:${index + 1}: ${marker.label}: ${line.trim()}`);
+        }
+      }
     }
   }
+  findings.push(...formatLaunchScrubFindings(scrubLaunchTextEntries(entries)));
   if (findings.length > 0) throw new Error(`Cutover forbidden marker scan failed:\n${findings.join("\n")}`);
+}
+
+function isPackageTextScanEntry(label) {
+  return label.startsWith("installed-package:") || label.startsWith("npm-pack:");
+}
+
+function isAllowlistedCutoverMarkerLine(line, label) {
+  if (label !== "old tool bins") return false;
+  return /oldBins(?:Absent)?|old public bin|old tool bins|forbiddenPublicBins|forbiddenBin|oldBin|Release receipt package exposes old public bin|\["lattice",\s*"crg",\s*"cix",\s*"rox"\]|\["crg",\s*"cix",\s*"rox"\]/i.test(line);
 }
 
 function collectStringValues(value) {

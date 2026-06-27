@@ -23,7 +23,7 @@ const publicPackageNames = new Set([
   "@the-open-engine/opcore-validation-typescript",
   "@the-open-engine/opcore-asp-provider"
 ]);
-const forbiddenPublicBins = new Set(["crg", "cix", "rox"]);
+const forbiddenPublicBins = new Set(["lattice", "crg", "cix", "rox"]);
 const forbiddenGeneratedRoots = [
   ".ace/",
   ".agents/",
@@ -52,6 +52,7 @@ const files = trackedFiles();
 for (const path of files) checkTrackedFile(path);
 checkGeneratedGraphArtifactMetadata();
 await checkGeneratedCliDescriptor();
+await checkPackageOutputMarkers();
 const historyCommitCount = checkGitHistoryProvenance();
 
 const markdown = provenanceMarkdown(files.length, historyCommitCount);
@@ -177,9 +178,29 @@ function checkDescriptorStrings(path, content) {
   if (/(^|[\\/"'\s])\.ace(?:[\\/"'\s]|$)/i.test(content)) {
     throw new Error(`Forbidden private runtime path in generated descriptor: ${path}`);
   }
-  if (/(^|[\\/\s])(?:crg|cix|rox)(?:$|[\\/\s])/i.test(content)) {
+  if (/(^|[\\/\s])(?:lattice|crg|cix|rox)(?:$|[\\/\s])/i.test(content)) {
     throw new Error(`Forbidden old public alias in generated descriptor: ${path}`);
   }
+}
+
+async function checkPackageOutputMarkers() {
+  if (!existsSync("scripts/lib/launch-claim-scrub.mjs") || !existsSync("scripts/release-package-dirs.mjs")) return;
+  const {
+    collectBuiltDistTextEntries,
+    collectNpmPackTextEntries,
+    formatLaunchScrubFindings,
+    scrubLaunchTextEntries
+  } = await import("./lib/launch-claim-scrub.mjs");
+  const { releasePackageDirsByName } = await import("./release-package-dirs.mjs");
+  const findings = scrubLaunchTextEntries([
+    ...collectBuiltDistTextEntries(process.cwd()),
+    ...collectNpmPackTextEntries(process.cwd(), releasePackageInfos(releasePackageDirsByName))
+  ]);
+  if (findings.length > 0) throw new Error(`Package output marker scrub failed:\n${formatLaunchScrubFindings(findings).join("\n")}`);
+}
+
+function releasePackageInfos(releasePackageDirsByName) {
+  return Object.entries(releasePackageDirsByName).map(([packageName, packageRoot]) => ({ packageName, packageRoot }));
 }
 
 function checkGitHistoryProvenance() {

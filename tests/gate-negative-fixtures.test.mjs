@@ -680,7 +680,7 @@ function minimalCutoverReceipt(repo, commandOverrides = {}) {
       aceRuntimeBinExcluded: true,
       siblingCovibesExcluded: true,
       opcoreBinOnly: true,
-      oldBinsAbsent: { crg: true, cix: true, rox: true }
+      oldBinsAbsent: { lattice: true, crg: true, cix: true, rox: true }
     },
     commandReceipts,
     rustCommandReceipts,

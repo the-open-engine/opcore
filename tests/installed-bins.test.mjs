@@ -15,7 +15,7 @@ import {
 import { releasePackageDirForName } from "../scripts/release-package-dirs.mjs";
 
 const removedLegacyCommandField = `legacy${"Command"}`;
-const onboardingForbiddenOutput = /\b(?:crg|cix|rox)\b|\.ace\/runtime|LATTICE_CURRENT_TOOLS_DIR|\/Users\/tom|oldToolReplacementClaimed"?\s*:\s*true/i;
+const onboardingForbiddenOutput = /(^|[\\/"'\s])(?:lattice|crg|cix|rox)(?:$|[\\/"'\s])|\.ace\/runtime|LATTICE_CURRENT_TOOLS_DIR|\/Users\/tom|oldToolReplacementClaimed"?\s*:\s*true/i;
 const currentTarget = `${process.platform}-${process.arch}`;
 const currentNativePackage = graphCoreNativePackageNamesByTarget[currentTarget];
 
@@ -44,9 +44,8 @@ describe("installed package bins", () => {
       run("npm", ["install", "--ignore-scripts", ...tarballs], { cwd: project });
 
       assert.equal(existsSync(binPath(project, "opcore")), true);
-      assert.equal(existsSync(binPath(project, "opcore")), true);
       assert.equal(existsSync(binPath(project, "opcore-asp-provider")), true);
-      for (const oldBin of ["crg", "cix", "rox"]) assert.equal(existsSync(binPath(project, oldBin)), false, oldBin);
+      for (const oldBin of ["lattice", "crg", "cix", "rox"]) assert.equal(existsSync(binPath(project, oldBin)), false, oldBin);
 
       assertAspProviderInitializeSmoke(project);
       assertSmoke(project, ["status", "--json"], 0);
@@ -221,8 +220,7 @@ describe("installed package bins", () => {
       run("npm", ["install", "--ignore-scripts", "--no-audit", "--no-fund", ...tarballs], { cwd: project });
 
       assert.equal(existsSync(binPath(project, "opcore")), true);
-      assert.equal(existsSync(binPath(project, "opcore")), true);
-      for (const forbiddenBin of ["crg", "cix", "rox"]) {
+      for (const forbiddenBin of ["lattice", "crg", "cix", "rox"]) {
         assert.equal(existsSync(binPath(project, forbiddenBin)), false, forbiddenBin);
       }
       const status = assertSmoke(project, ["status", "--json"], 0, "opcore");
@@ -415,7 +413,7 @@ function assertManagedDescriptor(project) {
   const descriptorText = readFileSync(descriptorPath, "utf8");
   assert.doesNotMatch(
     descriptorText,
-    /(^|[\\/"'\s])\.ace(?:[\\/"'\s]|$)|LATTICE_CURRENT_TOOLS_DIR|\/Users\/tom|(^|[\\/\s])(?:crg|cix|rox)(?:$|[\\/\s])/i
+    /(^|[\\/"'\s])\.ace(?:[\\/"'\s]|$)|LATTICE_CURRENT_TOOLS_DIR|\/Users\/tom|(^|[\\/\s])(?:lattice|crg|cix|rox)(?:$|[\\/\s])/i
   );
   const descriptor = validateManagedToolDescriptor(JSON.parse(descriptorText));
   assert.deepEqual(

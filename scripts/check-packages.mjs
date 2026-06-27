@@ -1,5 +1,10 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
+import {
+  collectPackageSourceTextEntries,
+  formatLaunchScrubFindings,
+  scrubLaunchTextEntries
+} from "./lib/launch-claim-scrub.mjs";
 import { rootWorkspacePackageDirs } from "./release-package-dirs.mjs";
 
 const root = JSON.parse(readFileSync("package.json", "utf8"));
@@ -73,7 +78,7 @@ for (const packageName of expectedPackageNames) {
     assertSameSet(Object.keys(bin), ["opcore-asp-provider"], `${packageName} bins`);
   }
   else if (Object.keys(bin).length > 0) throw new Error(`${packageName} must not expose CLI bins`);
-  for (const forbiddenBin of ["crg", "cix", "rox"]) {
+  for (const forbiddenBin of ["lattice", "crg", "cix", "rox"]) {
     if (Object.hasOwn(bin, forbiddenBin)) throw new Error(`${packageName} exposes forbidden old bin ${forbiddenBin}`);
   }
   const files = parsed[0]?.files?.map((entry) => entry.path).sort() ?? [];
@@ -81,6 +86,12 @@ for (const packageName of expectedPackageNames) {
   for (const file of files) {
     const forbidden = forbiddenPathPatterns.find((pattern) => pattern.test(file));
     if (forbidden) throw new Error(`${packageName} pack includes forbidden path ${file}`);
+  }
+  const scrubFindings = scrubLaunchTextEntries(
+    collectPackageSourceTextEntries({ repoRoot: process.cwd(), packageName, packageRoot: packageDir, files })
+  );
+  if (scrubFindings.length > 0) {
+    throw new Error(`${packageName} package marker scrub failed:\n${formatLaunchScrubFindings(scrubFindings).join("\n")}`);
   }
   assertSameSet(files, allowed, `${packageName} pack files`);
 }
