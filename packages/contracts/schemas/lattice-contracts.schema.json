@@ -6436,6 +6436,79 @@
           "items": {
             "$ref": "#/$defs/OpcoreInitLanguageSetting"
           }
+        },
+        "python": {
+          "$ref": "#/$defs/OpcoreInitPythonEnvironment"
+        }
+      }
+    },
+    "OpcoreInitPythonEnvironment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dependencyManagers",
+        "virtualEnvironments",
+        "notes"
+      ],
+      "properties": {
+        "dependencyManagers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "kind",
+              "path"
+            ],
+            "properties": {
+              "kind": {
+                "enum": [
+                  "pyproject",
+                  "requirements",
+                  "pipfile",
+                  "poetry",
+                  "uv"
+                ]
+              },
+              "path": {
+                "type": "string",
+                "minLength": 1,
+                "not": {
+                  "pattern": "^(?:/|[A-Za-z]:[\\\\/]|.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$))"
+                }
+              }
+            }
+          }
+        },
+        "virtualEnvironments": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "kind",
+              "path"
+            ],
+            "properties": {
+              "kind": {
+                "const": "venv"
+              },
+              "path": {
+                "type": "string",
+                "minLength": 1,
+                "not": {
+                  "pattern": "^(?:/|[A-Za-z]:[\\\\/]|.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$))"
+                }
+              }
+            }
+          }
+        },
+        "notes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
         }
       }
     },

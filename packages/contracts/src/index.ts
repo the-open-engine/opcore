@@ -1926,8 +1926,21 @@ export interface OpcoreInitLanguageSetting {
   notes: readonly string[];
 }
 
+export interface OpcoreInitPythonEnvironment {
+  dependencyManagers: readonly {
+    kind: "pyproject" | "requirements" | "pipfile" | "poetry" | "uv";
+    path: string;
+  }[];
+  virtualEnvironments: readonly {
+    kind: "venv";
+    path: string;
+  }[];
+  notes: readonly string[];
+}
+
 export interface OpcoreInitSettings {
   languages: readonly OpcoreInitLanguageSetting[];
+  python?: OpcoreInitPythonEnvironment;
 }
 
 export interface OpcoreInitInteraction {
@@ -3993,6 +4006,7 @@ function validateOpcoreInitSettings(settings: OpcoreInitSettings): OpcoreInitSet
   for (const language of settings.languages) {
     validateOpcoreInitLanguageSetting(language);
   }
+  if (settings.python !== undefined) validateOpcoreInitPythonEnvironment(settings.python);
   return settings;
 }
 
@@ -4014,6 +4028,38 @@ function validateOpcoreInitLanguageSetting(setting: OpcoreInitLanguageSetting): 
   validateValidationChecks(setting.checks, "Opcore init language setting checks");
   validateStringArray(setting.notes, "Opcore init language setting notes", { allowEmpty: true });
   return setting;
+}
+
+function validateOpcoreInitPythonEnvironment(environment: OpcoreInitPythonEnvironment): OpcoreInitPythonEnvironment {
+  if (!environment || typeof environment !== "object") {
+    throw new Error("Opcore init Python environment is required");
+  }
+  if (!Array.isArray(environment.dependencyManagers)) {
+    throw new Error("Opcore init Python dependencyManagers must be an array");
+  }
+  for (const manager of environment.dependencyManagers) {
+    if (!manager || typeof manager !== "object") {
+      throw new Error("Opcore init Python dependency manager is required");
+    }
+    if (!includesString(["pyproject", "requirements", "pipfile", "poetry", "uv"] as const, manager.kind)) {
+      throw new Error(`Unknown Opcore init Python dependency manager kind: ${String(manager.kind)}`);
+    }
+    validateRepoRelativePath(manager.path);
+  }
+  if (!Array.isArray(environment.virtualEnvironments)) {
+    throw new Error("Opcore init Python virtualEnvironments must be an array");
+  }
+  for (const virtualEnvironment of environment.virtualEnvironments) {
+    if (!virtualEnvironment || typeof virtualEnvironment !== "object") {
+      throw new Error("Opcore init Python virtual environment is required");
+    }
+    if (virtualEnvironment.kind !== "venv") {
+      throw new Error(`Unknown Opcore init Python virtual environment kind: ${String(virtualEnvironment.kind)}`);
+    }
+    validateRepoRelativePath(virtualEnvironment.path);
+  }
+  validateStringArray(environment.notes, "Opcore init Python environment notes", { allowEmpty: true });
+  return environment;
 }
 
 function validateOpcoreInitInteraction(interaction: OpcoreInitInteraction): OpcoreInitInteraction {
