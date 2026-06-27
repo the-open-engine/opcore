@@ -22,7 +22,7 @@
     "asp-dogfood:receipt": "node scripts/generate-asp-dogfood-receipt.mjs --write --json",
     "asp-provider:manifest": "node scripts/write-asp-provider-manifest.mjs",
     "baseline:graph-reference": "node scripts/measure-graph-reference-baselines.mjs",
-    "ci": "npm run lint && npm run rust:check && npm run build && npm run test:ci && npm run graph-release:check && npm run release-receipt:check && OPCORE_CUTOVER_REUSE_RELEASE_PACKAGES=1 npm run cutover:check",
+    "ci": "npm run lint && npm run rust:check && npm run build && npm run test:ci && npm run graph-release:check && npm run release-receipt:check && OPCORE_CUTOVER_REUSE_RELEASE_PACKAGES=1 OPCORE_CUTOVER_REUSE_CURRENT_TOOL_GUARDRAILS=1 npm run cutover:check",
     "ci:local": "bash ./scripts/ci/run-local-ci-equivalent.sh",
     "conformance:check": "node --test tests/conformance.test.mjs",
     "descriptor:artifact": "node scripts/write-cli-descriptor.mjs",

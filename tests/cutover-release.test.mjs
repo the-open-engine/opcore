@@ -27,10 +27,15 @@ describe("cutover release receipt", () => {
       run(["scripts/generate-release-receipt.mjs", "--inspect-packages-only", "--json"]);
       const result = withCompleteNativeArtifactFixtures(() =>
         run(["scripts/generate-cutover-receipt.mjs", "--json"], {
-          env: { ...process.env, OPCORE_CUTOVER_REUSE_RELEASE_PACKAGES: "1" }
+          env: {
+            ...process.env,
+            OPCORE_CUTOVER_REUSE_RELEASE_PACKAGES: "1",
+            OPCORE_CUTOVER_REUSE_CURRENT_TOOL_GUARDRAILS: "1"
+          }
         })
       );
       const receipt = validateReleaseCutoverReceipt(JSON.parse(result.stdout));
+      const recordedReceipt = validateReleaseCutoverReceipt(JSON.parse(readFileSync(resolve(repoRoot, "docs/release/cutover-receipt.json"), "utf8")));
       assert.equal(receipt.issue, "#30");
       assert.deepEqual(receipt.packageNames, releaseReceiptPackageNames);
       assert.equal(receipt.installedPackages.filter((entry) => graphCoreNativePackageNames.includes(entry.packageName)).length, 1);
@@ -62,6 +67,7 @@ describe("cutover release receipt", () => {
         receipt.currentToolGuardrails.map((entry) => entry.id),
         releaseCutoverCurrentToolGuardrailIds
       );
+      assert.deepEqual(receipt.currentToolGuardrails, recordedReceipt.currentToolGuardrails);
       assert.equal(receipt.currentToolGuardrails.every((entry) => entry.retained === true && entry.oldToolReplacementClaimed === false), true);
       assert.equal(receipt.oldToolReplacementClaimed, false);
       for (const id of ["inspect-symbols", "inspect-definition", "inspect-references", "inspect-signature", "inspect-implementations", "inspect-search"]) {

@@ -105,7 +105,8 @@ for (const ciToken of [
   "release-receipt:check",
   "graph-release:check",
   "cutover:check",
-  "OPCORE_CUTOVER_REUSE_RELEASE_PACKAGES=1"
+  "OPCORE_CUTOVER_REUSE_RELEASE_PACKAGES=1",
+  "OPCORE_CUTOVER_REUSE_CURRENT_TOOL_GUARDRAILS=1"
 ]) {
   requireIncludes("package.json scripts.ci", root.scripts.ci, ciToken);
 }
@@ -132,6 +133,7 @@ for (const token of ["scripts/check-release-hygiene.mjs", "scripts/check-provena
 }
 const cutoverReceiptScript = readFileSync("scripts/generate-cutover-receipt.mjs", "utf8");
 requireIncludes("scripts/generate-cutover-receipt.mjs", cutoverReceiptScript, "OPCORE_CUTOVER_REUSE_RELEASE_PACKAGES");
+requireIncludes("scripts/generate-cutover-receipt.mjs", cutoverReceiptScript, "OPCORE_CUTOVER_REUSE_CURRENT_TOOL_GUARDRAILS");
 validateDependencySpecs("package.json", root);
 assertDeepEqual(root.optionalDependencies ?? {}, Object.fromEntries(rootNativeOptionalDependencies), "Root native optionalDependencies");
 

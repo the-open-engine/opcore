@@ -55,6 +55,7 @@ const args = process.argv.slice(2);
 const writeDocs = args.includes("--write");
 const jsonOutput = args.includes("--json") || !writeDocs;
 const reuseReleasePackages = process.env.OPCORE_CUTOVER_REUSE_RELEASE_PACKAGES === "1";
+const reuseCurrentToolGuardrails = process.env.OPCORE_CUTOVER_REUSE_CURRENT_TOOL_GUARDRAILS === "1";
 
 try {
   const validateReceiptFile = valueAfter("--validate-receipt-file");
@@ -370,7 +371,7 @@ function generateReceipt() {
     ];
     const descriptor = collectInstalledDescriptor(project, tarballs);
     const installedPackages = collectInstalledPackages(project, tarballs);
-    const currentToolGuardrails = runCurrentToolGuardrailsForCutover();
+    const currentToolGuardrails = currentToolGuardrailsForCutover();
     const receipt = {
       schemaVersion: 1,
       issue: "#30",
@@ -556,6 +557,16 @@ function runPythonToolDegradationNegativeChecks(tempRoot, opcoreBin, env, comman
       assertion: "read-only status reported absent mypy, pyright, ruff, and pytest as degraded"
     }
   ];
+}
+
+function currentToolGuardrailsForCutover() {
+  if (reuseCurrentToolGuardrails) return recordedCurrentToolGuardrailsForCutover();
+  return runCurrentToolGuardrailsForCutover();
+}
+
+function recordedCurrentToolGuardrailsForCutover() {
+  const receipt = validateReleaseCutoverReceipt(readJson(join(repoRoot, cutoverReceiptPath)));
+  return receipt.currentToolGuardrails.map((entry) => ({ ...entry }));
 }
 
 function runCurrentToolGuardrailsForCutover() {
