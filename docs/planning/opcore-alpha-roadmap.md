@@ -2,7 +2,7 @@
 title: Opcore alpha roadmap
 status: active
 normative: false
-updated: 2026-06-26
+updated: 2026-06-27
 summary: Product-first launch plan for the Opcore robustness loop, with ASP kept as a private optional manager/provider seam.
 ---
 
@@ -25,7 +25,7 @@ ASP remains the independent protocol and manager seam for host/provider authorit
 
 ## Current Implementation Status
 
-The Opcore alpha issue tree is closed:
+The Opcore alpha implementation status is:
 
 | Issue | Status | Result |
 |---|---:|---|
@@ -36,10 +36,10 @@ The Opcore alpha issue tree is closed:
 | #129 Product facade | closed | `@the-open-engine/opcore` owns the public `opcore` bin, zero-command scan, and agent check wrapper. |
 | #130 Metrics/history | closed | Named drillable metric signals and `opcore measure` landed. |
 | #131 Init | closed | `opcore init` is plan-first, additive, approval-gated, and undo-aware. |
-| #132 Install skill | closed | `opcore-install` skill exists as a thin wrapper over the CLI. |
+| #132 Install skill | not shipped | No `opcore-install` skill is present in `.claude/skills`; installation remains through `opcore init`. |
 | #133 Launch docs/demo | closed | `opcore try`, demo docs, quickstart, and claim scrub landed. |
 
-No Opcore GitHub issue is open as of this roadmap update. Remaining work is release verification and surface cleanup, not another broad implementation tree.
+No broad Opcore implementation tree remains open as of this roadmap update. Remaining work is release verification, surface cleanup, and any follow-up issue reconciliation.
 
 ## Scope
 
