@@ -73,7 +73,7 @@ describe("installed package bins", () => {
       assert.equal(opcoreTry.opcoreTry.published, false);
       assert.deepEqual(
         opcoreTry.opcoreTry.scenarios.map((scenario) => scenario.id).sort(),
-        ["mixed-repo", "rust-crate", "typescript-app", "unsupported-files"]
+        ["mixed-repo", "python-package", "rust-crate", "typescript-app", "unsupported-files"]
       );
       rmSync(opcoreTry.opcoreTry.sampleRoot, { recursive: true, force: true });
       const graphStatus = assertSmoke(project, ["graph", "status", "--json"], 0);

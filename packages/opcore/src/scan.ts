@@ -157,7 +157,7 @@ function formatScanMessage(repoState: OpcoreRepoStatePayload, validationResult: 
   return [
     "Coverage:",
     `  files=${repoState.coverage.totalFiles}`,
-    `  graph-supported-ts-js=${repoState.coverage.graph.supportedFiles}`,
+    `  graph-supported=${repoState.coverage.graph.supportedFiles}`,
     `  validation-supported=${repoState.coverage.validation.supportedFiles}`,
     `  validation-retained=${repoState.coverage.validation.retainedFiles}`,
     `  unsupported=${unsupported}`,
