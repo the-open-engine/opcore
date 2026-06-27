@@ -468,14 +468,16 @@ fn attach_store_message(
             repo,
             freshness,
             db_path,
+            nodes_by_kind,
+            edges_by_kind,
             wal_checkpoint,
             ..
         } => available_status_with_wal_checkpoint(AvailableStatusInput {
             repo,
             freshness,
             db_path,
-            nodes_by_kind: None,
-            edges_by_kind: None,
+            nodes_by_kind: Some(nodes_by_kind),
+            edges_by_kind: Some(edges_by_kind),
             message: Some(format!(
                 "GraphProvider {operation} completed at {generated_at}"
             )),

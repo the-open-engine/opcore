@@ -113,6 +113,8 @@ fn status_response_round_trips_with_handshake() -> TestResult {
 
     let value = serde_json::to_value(&response)?;
     assert_json_eq(&value, "/status/state", json!("available"));
+    assert_json_eq(&value, "/status/nodes_by_kind", json!({}));
+    assert_json_eq(&value, "/status/edges_by_kind", json!({}));
     assert_json_eq(
         &value,
         "/status/handshake/artifactName",
