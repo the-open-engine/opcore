@@ -1,4 +1,4 @@
-import type { ValidationScopeKind } from "@the-open-engine/opcore-contracts";
+import type { CommandTiming, ValidationScopeKind } from "@the-open-engine/opcore-contracts";
 
 export type JsonPrimitive = string | number | boolean | null;
 export type JsonValue = JsonPrimitive | JsonValue[] | { [key: string]: JsonValue };
@@ -105,7 +105,7 @@ export type Assessment = {
     artifactDigest?: string;
     capabilityFamily: string;
   };
-  timing: JsonObject;
+  timing: CommandTiming;
   cache: JsonObject;
 };
 

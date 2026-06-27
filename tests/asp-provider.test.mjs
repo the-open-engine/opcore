@@ -44,12 +44,14 @@ describe("Opcore ASP provider", () => {
       writeFileSync(join(repo, "src/modify.ts"), "export const value = 1;\n");
       writeFileSync(join(repo, "src/delete.ts"), "export const deletedValue = 1;\n");
       writeFileSync(join(repo, "src/old-name.ts"), "export const renamedValue = 1;\n");
+      writeFileSync(join(repo, "src/lib.rs"), "pub fn answer() -> i32 { 42 }\n");
 
       const host = createHostWorkspace({
         "tsconfig.json": "{}\n",
         "src/modify.ts": "export const value = 1;\n",
         "src/delete.ts": "export const deletedValue = 1;\n",
-        "src/old-name.ts": "export const renamedValue = 1;\n"
+        "src/old-name.ts": "export const renamedValue = 1;\n",
+        "src/lib.rs": "pub fn answer() -> i32 { 42 }\n"
       });
       const peer = spawnProvider(host);
       try {
@@ -79,6 +81,7 @@ describe("Opcore ASP provider", () => {
 
         const changes = [
           host.modify("src/modify.ts", "export const value = ;\n"),
+          host.modify("src/lib.rs", "pub fn answer() -> i32 { 43 }\n"),
           host.create("src/create.ts", "export const createdValue = 1;\n"),
           host.delete("src/delete.ts"),
           host.rename("src/old-name.ts", "src/new-name.ts", "export const renamedValue = 2;\n")
@@ -91,7 +94,7 @@ describe("Opcore ASP provider", () => {
           changeset,
           changesetDigest,
           comparison: "introduced",
-          checks: ["typescript.syntax", "typescript.import-graph"]
+          checks: ["typescript.syntax", "typescript.import-graph", "rust.source-hygiene"]
         });
 
         assert.equal(assessment.provider.id, "opcore");
@@ -106,6 +109,15 @@ describe("Opcore ASP provider", () => {
         assert.ok(assessment.coverage.degraded.some((entry) => entry.reason === "unsupported" && /comparison/.test(entry.requirement)));
         assert.ok(assessment.coverage.degraded.some((entry) => entry.reason === "unavailable" && entry.requirement === "typescript.import-graph"));
         assert.equal(assessment.coverage.exhaustive, false);
+        assertCommandTiming(assessment.timing, {
+          expectedPhases: [
+            "changeset_overlay_mapping",
+            "host_workspace_binding",
+            "validation",
+            "validation_typescript_syntax",
+            "validation_rust_source-hygiene"
+          ]
+        });
         assertNoForbiddenKeys(assessment);
       } finally {
         peer.close();
@@ -444,6 +456,27 @@ function sha256File(path) {
 
 function assertKeys(value, expected) {
   assert.deepEqual(Object.keys(value).sort(), expected.sort());
+}
+
+function assertCommandTiming(timing, { expectedPhases }) {
+  assertKeys(timing, ["durationMs", "phases", "processState"]);
+  assert.equal(typeof timing.durationMs, "number");
+  assert.ok(timing.durationMs >= 0);
+  assert.match(timing.processState, /^(cold|warm)$/);
+  assert.equal(Array.isArray(timing.phases), true);
+  const phaseIds = new Set(timing.phases.map((phase) => phase.phase));
+  for (const expectedPhase of expectedPhases) {
+    assert.equal(phaseIds.has(expectedPhase), true, `missing timing phase ${expectedPhase}`);
+  }
+  for (const phase of timing.phases) {
+    assertKeys(phase, phase.fileCount === undefined ? ["durationMs", "phase"] : ["durationMs", "fileCount", "phase"]);
+    assert.match(phase.phase, /^[a-z][a-z0-9_-]*$/);
+    assert.equal(typeof phase.durationMs, "number");
+    assert.ok(phase.durationMs >= 0);
+  }
+  assert.equal(Object.hasOwn(timing, "startedAt"), false);
+  assert.equal(Object.hasOwn(timing, "endedAt"), false);
+  assert.equal(Object.hasOwn(timing, "elapsedMs"), false);
 }
 
 function canonicalJson(value) {
