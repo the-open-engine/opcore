@@ -1,6 +1,13 @@
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
-import { relative } from "node:path";
-import { launchClaimScrubFiles, scrubLaunchClaims } from "./lib/launch-claim-scrub.mjs";
+import {
+  collectBuiltDistTextEntries,
+  collectLaunchSourceTextEntries,
+  collectNpmPackTextEntries,
+  collectPublicRuntimeSourceTextEntries,
+  formatLaunchScrubFindings,
+  scrubLaunchTextEntries
+} from "./lib/launch-claim-scrub.mjs";
+import { releasePackageDirsByName } from "./release-package-dirs.mjs";
 
 const publicDocs = [
   "README.md",
@@ -73,6 +80,7 @@ for (const path of publicDocs) {
 
 checkLaunchNaming();
 checkLaunchClaims();
+checkRoadmapRenameDrift();
 
 for (const path of releaseEvidenceFiles) {
   requireFile(path);
@@ -106,14 +114,26 @@ function checkLaunchNaming() {
 }
 
 function checkLaunchClaims() {
-  const findings = [];
-  for (const path of launchClaimScrubFiles(process.cwd())) {
-    for (const label of scrubLaunchClaims(readFileSync(path, "utf8"))) {
-      findings.push(`${relative(process.cwd(), path)}: ${label}`);
-    }
-  }
+  const findings = scrubLaunchTextEntries([
+    ...collectLaunchSourceTextEntries(process.cwd()),
+    ...collectPublicRuntimeSourceTextEntries(process.cwd()),
+    ...collectBuiltDistTextEntries(process.cwd()),
+    ...collectNpmPackTextEntries(process.cwd(), releasePackageInfos())
+  ]);
   if (findings.length > 0) {
-    throw new Error(`Launch-facing claim scrub failed:\n${findings.join("\n")}`);
+    throw new Error(`Launch-facing claim scrub failed:\n${formatLaunchScrubFindings(findings).join("\n")}`);
+  }
+}
+
+function releasePackageInfos() {
+  return Object.entries(releasePackageDirsByName).map(([packageName, packageRoot]) => ({ packageName, packageRoot }));
+}
+
+function checkRoadmapRenameDrift() {
+  const roadmap = readFileSync("docs/planning/opcore-alpha-roadmap.md", "utf8");
+  if (/\bOpcore\/Opcore\b/.test(roadmap)) throw new Error("Opcore roadmap contains doubled Opcore/Opcore wording");
+  if (!roadmap.includes('"Lattice" as product or launch branding.')) {
+    throw new Error("Opcore roadmap must warn against Lattice as product or launch branding");
   }
 }
 

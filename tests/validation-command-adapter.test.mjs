@@ -18,7 +18,9 @@ describe("validation command adapters", () => {
       workspace: workspace()
     });
 
-    assert.equal((await adapter(request(["--files", "src/index.ts"]))).validationResult.status, "passed");
+    const filesResult = await adapter(request(["--files", "src/index.ts"]));
+    assert.equal(filesResult.validationResult.status, "passed");
+    assert.equal(filesResult.message, "opcore validation complete.");
     assert.equal((await adapter(request(["files", "--files", "src/index.ts"]))).validationResult.status, "passed");
     assert.equal((await adapter(request(["staged"]))).validationResult.status, "passed");
     assert.equal((await adapter(request(["changed", "--base", "HEAD"]))).validationResult.status, "passed");
@@ -47,6 +49,7 @@ describe("validation command adapters", () => {
     const manifestWithScope = await adapter(request(["manifest", "--files", "src/index.ts"]));
 
     assert.equal(manifest.status, "ok");
+    assert.equal(manifest.message, "opcore check manifest: validation check manifest ready.");
     assert.deepEqual(manifest.validationResult.manifest.entries.map((entry) => entry.checkId), ["validation.scope"]);
     assert.equal(malformed.status, "error");
     assert.equal(malformed.validationResult.status, "invalid_payload");
@@ -54,6 +57,12 @@ describe("validation command adapters", () => {
     assert.equal(manifestWithScope.status, "error");
     assert.equal(manifestWithScope.validationResult.status, "invalid_payload");
     assert.match(manifestWithScope.validationResult.failure.cause, /manifest.*--files/);
+
+    const validateManifest = await createValidateCommandAdapter({
+      checks: [scopeCheck([])]
+    })(request(["manifest"], "validate"));
+    assert.equal(validateManifest.status, "ok");
+    assert.equal(validateManifest.message, "opcore validate manifest: validation check manifest ready.");
   });
 
   it("rejects manifest routes with execution-only flags", async () => {

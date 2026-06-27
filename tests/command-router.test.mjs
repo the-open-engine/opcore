@@ -72,7 +72,7 @@ describe("Opcore command router", () => {
   });
 
   it("rejects non-Opcore entrypoints without alias metadata", async () => {
-    for (const bin of ["crg", "cix", "rox"]) {
+    for (const bin of ["lattice", "crg", "cix", "rox"]) {
       const routed = await routeCommand(["status", "--json"], bin);
       assert.equal(routed.status, "unsupported");
       assert.equal(routed.exitCode, 64);

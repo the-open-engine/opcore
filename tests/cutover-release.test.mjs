@@ -47,7 +47,7 @@ describe("cutover release receipt", () => {
       assert.equal(receipt.environmentIsolation.aceRuntimeBinExcluded, true);
       assert.equal(receipt.environmentIsolation.siblingCovibesExcluded, true);
       assert.equal(receipt.environmentIsolation.opcoreBinOnly, true);
-      assert.deepEqual(receipt.environmentIsolation.oldBinsAbsent, { crg: true, cix: true, rox: true });
+      assert.deepEqual(receipt.environmentIsolation.oldBinsAbsent, { lattice: true, crg: true, cix: true, rox: true });
       assert.equal(receipt.commandReceipts.every((entry) => entry.command[0] === "opcore" || entry.command[0] === "opcore"), true);
       assert.deepEqual(
         receipt.commandReceipts.filter((entry) => entry.status === "not_implemented").map((entry) => entry.id),
@@ -128,7 +128,7 @@ describe("cutover release receipt", () => {
           aceRuntimeBinExcluded: true,
           siblingCovibesExcluded: true,
           opcoreBinOnly: true,
-          oldBinsAbsent: { crg: true, cix: true, rox: true }
+          oldBinsAbsent: { lattice: true, crg: true, cix: true, rox: true }
         },
         commandReceipts: [
           {

@@ -203,7 +203,7 @@ describe("conformance fixture metadata", () => {
       ["#13", "#14", "#15", "#16"]
     );
     const text = JSON.stringify(descriptor);
-    assert.doesNotMatch(text, /(^|[\\/"'\s])\.ace(?:[\\/"'\s]|$)|LATTICE_CURRENT_TOOLS_DIR|\/Users\/tom|(^|[\\/\s])(?:crg|cix|rox)(?:$|[\\/\s])/i);
+    assert.doesNotMatch(text, /(^|[\\/"'\s])\.ace(?:[\\/"'\s]|$)|LATTICE_CURRENT_TOOLS_DIR|\/Users\/tom|(^|[\\/\s])(?:lattice|crg|cix|rox)(?:$|[\\/\s])/i);
   });
 
   it("describes canonical router metadata for descriptor planning", () => {

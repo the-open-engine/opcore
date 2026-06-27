@@ -4235,6 +4235,7 @@ function validReleaseCutoverReceipt() {
       siblingCovibesExcluded: true,
       opcoreBinOnly: true,
       oldBinsAbsent: {
+        lattice: true,
         crg: true,
         cix: true,
         rox: true

@@ -6,7 +6,8 @@ import { fileURLToPath } from "node:url";
 import {
   forbiddenLaunchClaims,
   launchClaimScrubFiles,
-  scrubLaunchClaims
+  scrubLaunchClaims,
+  scrubLaunchTextEntries
 } from "../scripts/lib/launch-claim-scrub.mjs";
 
 const repoRoot = fileURLToPath(new URL("..", import.meta.url));
@@ -25,7 +26,9 @@ const overclaimSamples = {
   "blended score claim": "Get a single robustness score for the whole repo.",
   "asp router command claim": "Run opcore asp serve to start the host.",
   "provider authority claim": "The provider grants gate authority to allow merges.",
-  "ACE-managed distribution claim": "Distributed as an ACE-managed tool."
+  "ACE-managed distribution claim": "Distributed as an ACE-managed tool.",
+  "old product name": "lattice validation complete.",
+  "doubled Opcore token": "No Opcore/Opcore issue is open."
 };
 
 test("every forbidden claim label has a catching sample and is detected", () => {
@@ -45,6 +48,44 @@ test("generic Opcore replacement wording is forbidden", () => {
   );
 });
 
+test("old product and doubled-token wording are forbidden", () => {
+  assert.ok(scrubLaunchClaims("lattice validation complete.").includes("old product name"));
+  assert.ok(scrubLaunchClaims("No Opcore/Opcore issue is open.").includes("doubled Opcore token"));
+});
+
+test("scrub reports source, dist, tarball, and installed-package marker leaks", () => {
+  const findings = scrubLaunchTextEntries([
+    { label: "source:packages/validation/src/command-adapter.ts", text: "lattice validation complete.\n" },
+    { label: "built-dist:packages/validation/dist/command-adapter.js", text: "lattice validation failed.\n" },
+    { label: "npm-pack:@the-open-engine/opcore-validation:package/dist/command-adapter.js", text: "lattice check manifest: validation check manifest ready.\n" },
+    { label: "installed-package:@the-open-engine/opcore-validation:dist/command-adapter.js", text: "No Opcore/Opcore issue is open.\n" }
+  ]);
+
+  assert.deepEqual(
+    findings.map((finding) => `${finding.entryLabel}: ${finding.label}`).sort(),
+    [
+      "built-dist:packages/validation/dist/command-adapter.js: old product name",
+      "installed-package:@the-open-engine/opcore-validation:dist/command-adapter.js: doubled Opcore token",
+      "npm-pack:@the-open-engine/opcore-validation:package/dist/command-adapter.js: old product name",
+      "source:packages/validation/src/command-adapter.ts: old product name"
+    ]
+  );
+});
+
+test("scrub allowlists intentional internal transitional markers", () => {
+  const findings = scrubLaunchTextEntries([
+    { label: "store", text: ".lattice/graph/graph.db\n" },
+    { label: "watch-env", text: "LATTICE_GRAPH_WATCH_PATHS=src\n" },
+    { label: "graph-package", text: "lattice-graph-core\n" },
+    { label: "daemon", text: "lattice.graph.daemon\n" },
+    { label: "generated-dist", text: "dist/lattice\n" },
+    { label: "old-bin-policy", text: "oldBinsAbsent: { lattice: true, crg: true, cix: true, rox: true }\n" },
+    { label: "roadmap-policy", text: '- "Lattice" as product or launch branding.\n' }
+  ]);
+
+  assert.deepEqual(findings, []);
+});
+
 test("honest launch wording passes the scrub", () => {
   const clean = [
     "Opcore is the robustness loop for agent-era repos.",
@@ -62,8 +103,9 @@ test("honest launch wording passes the scrub", () => {
 test("all launch-facing surfaces are currently claim-clean", () => {
   const findings = [];
   for (const path of launchClaimScrubFiles(repoRoot)) {
-    const labels = scrubLaunchClaims(readFileSync(path, "utf8"));
-    for (const label of labels) findings.push(`${relative(repoRoot, path)}: ${label}`);
+    const entryLabel = relative(repoRoot, path);
+    const labels = scrubLaunchTextEntries([{ label: entryLabel, text: readFileSync(path, "utf8") }]);
+    for (const finding of labels) findings.push(`${entryLabel}: ${finding.label}`);
   }
   assert.deepEqual(findings, [], `launch claim scrub findings:\n${findings.join("\n")}`);
 });

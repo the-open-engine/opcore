@@ -39,7 +39,7 @@ The Opcore alpha issue tree is closed:
 | #132 Install skill | closed | `opcore-install` skill exists as a thin wrapper over the CLI. |
 | #133 Launch docs/demo | closed | `opcore try`, demo docs, quickstart, and claim scrub landed. |
 
-No Opcore/Opcore GitHub issue is open as of this roadmap update. Remaining work is release verification and surface cleanup, not another broad implementation tree.
+No Opcore GitHub issue is open as of this roadmap update. Remaining work is release verification and surface cleanup, not another broad implementation tree.
 
 ## Scope
 
@@ -109,7 +109,7 @@ Avoid:
 - "Detects AI authorship."
 - "Security scanner" or "SAST."
 - "Automatically fixes your repo."
-- "Opcore" as product or launch branding.
+- "Lattice" as product or launch branding.
 
 ## Non-Goals
 

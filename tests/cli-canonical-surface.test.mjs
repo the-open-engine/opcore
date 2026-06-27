@@ -136,7 +136,7 @@ describe("canonical CLI surface", () => {
   });
 
   it("rejects direct old entrypoint execution through the router", async () => {
-    for (const bin of ["crg", "cix", "rox"]) {
+    for (const bin of ["lattice", "crg", "cix", "rox"]) {
       const result = await run(["status", "--json"], 64, bin);
       assert.equal(result.status, "unsupported");
       assert.deepEqual(result.canonicalCommand, ["opcore", "unsupported"]);

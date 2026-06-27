@@ -22,6 +22,10 @@ import {
   validateGraphReleaseReceipt,
   validateReleaseReceipt
 } from "../packages/contracts/dist/index.js";
+import {
+  assertLaunchScrubClean,
+  collectPackageSourceTextEntries
+} from "./lib/launch-claim-scrub.mjs";
 import { releasePackageDirForName } from "./release-package-dirs.mjs";
 
 const repoRoot = fileURLToPath(new URL("..", import.meta.url));
@@ -114,6 +118,10 @@ function collectOnePackageEvidence(packageName, packlists, descriptor) {
   const files = (pack.files ?? []).map((entry) => entry.path).sort();
   const expectedFiles = expectedPackFiles(fixture).sort();
   assertSameSet(files, expectedFiles, `${packageName} packed files`);
+  assertLaunchScrubClean(
+    collectPackageSourceTextEntries({ repoRoot, packageName, packageRoot, files }),
+    `${packageName} package output scrub failed`
+  );
   const tarballPath = `${packDestination}/${pack.filename}`;
   const tarballAbsolutePath = join(repoRoot, tarballPath);
   if (!existsSync(tarballAbsolutePath)) throw new Error(`npm pack did not write tarball: ${tarballPath}`);
@@ -678,11 +686,11 @@ function readDescriptor() {
 }
 
 function validateNoOldPublicIdentity(packageName, manifest, bins) {
-  if (/(?:^|[-/])(crg|cix|rox)(?:$|-)/i.test(String(manifest.name))) {
+  if (/(?:^|[-/])(lattice|crg|cix|rox)(?:$|-)/i.test(String(manifest.name))) {
     throw new Error(`${packageName} exposes forbidden old package identity ${manifest.name}`);
   }
   for (const bin of Object.keys(bins)) {
-    if (["crg", "cix", "rox"].includes(bin)) throw new Error(`${packageName} exposes forbidden old public bin ${bin}`);
+    if (["lattice", "crg", "cix", "rox"].includes(bin)) throw new Error(`${packageName} exposes forbidden old public bin ${bin}`);
   }
   if (packageName === "@the-open-engine/opcore") assertSameSet(Object.keys(bins), ["opcore"], `${packageName} bins`);
   else if (packageName === "@the-open-engine/opcore-asp-provider") {
