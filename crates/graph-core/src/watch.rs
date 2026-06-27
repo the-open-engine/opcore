@@ -156,6 +156,8 @@ fn watch_response_from_pipeline(
         db_path: Some(display_path(
             &repo_root.join(".lattice").join("graph").join("graph.db"),
         )),
+        nodes_by_kind: None,
+        edges_by_kind: None,
         message: Some("graph watch daemon available".to_string()),
         wal_checkpoint: pipeline.summary.wal_checkpoint.clone(),
     });

@@ -50,6 +50,7 @@ Opcore is the code-intelligence and robustness monorepo for graph context, edit 
 | Cutover receipt summary | @docs/release/cutover-receipt.summary.md |
 | ASP dogfood receipt | `docs/release/asp-dogfood-receipt.json` |
 | ASP dogfood receipt summary | @docs/release/asp-dogfood-receipt.summary.md |
+| Retained guardrail matrix | @docs/release/retained-guardrail-matrix.md |
 | Secret scan allowlist | @docs/release/secret-scan-allowlist.json |
 | Release receipt generator | `scripts/generate-release-receipt.mjs` |
 | Cutover receipt generator | `scripts/generate-cutover-receipt.mjs` |

@@ -245,6 +245,8 @@ export interface GraphProviderAvailableStatus extends GraphProviderStatusBase {
   repo: RepoIdentity;
   freshness: GraphFreshness;
   dbPath?: string;
+  nodes_by_kind: Readonly<Record<string, number>>;
+  edges_by_kind: Readonly<Record<string, number>>;
   capabilities?: readonly string[];
   handshake?: GraphProviderCapabilityHandshake;
   walCheckpoint?: GraphWalCheckpointSummary;
@@ -4768,6 +4770,8 @@ export function validateProviderStatus(status: GraphProviderStatus): GraphProvid
   if (status.state === "available") {
     validateRepoIdentity(status.repo);
     validateGraphFreshness(status.freshness, "Available");
+    validateGraphKindCounts(status.nodes_by_kind, "nodes_by_kind");
+    validateGraphKindCounts(status.edges_by_kind, "edges_by_kind");
     if (status.handshake !== undefined) validateGraphProviderCapabilityHandshake(status.handshake);
     if (status.walCheckpoint !== undefined) validateGraphWalCheckpointSummary(status.walCheckpoint);
     return status;
@@ -4780,6 +4784,18 @@ export function validateProviderStatus(status: GraphProviderStatus): GraphProvid
   }
   validateProviderFailureStatus(status);
   return status;
+}
+
+function validateGraphKindCounts(counts: Readonly<Record<string, number>>, label: string): void {
+  if (!counts || typeof counts !== "object" || Array.isArray(counts)) {
+    throw new Error(`Graph provider status ${label} must be an object`);
+  }
+  for (const [kind, count] of Object.entries(counts)) {
+    if (kind.length === 0) throw new Error(`Graph provider status ${label} kind must not be empty`);
+    if (!Number.isInteger(count) || count < 0) {
+      throw new Error(`Graph provider status ${label}.${kind} must be a non-negative integer`);
+    }
+  }
 }
 
 function validateProviderFailureStatus(status: GraphProviderFailureStatus): void {

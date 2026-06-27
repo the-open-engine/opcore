@@ -275,6 +275,8 @@ describe("lattice shared contracts", () => {
         ageMs: 0,
         stale: false
       },
+      nodes_by_kind: {},
+      edges_by_kind: {},
       walCheckpoint: validWalCheckpoint(),
       handshake: validHandshake()
     });
@@ -344,6 +346,8 @@ describe("lattice shared contracts", () => {
           ageMs: 0,
           stale: false
         },
+        nodes_by_kind: {},
+        edges_by_kind: {},
         handshake
       }
     });
@@ -3432,7 +3436,9 @@ function availableGraphStatus() {
       generatedAt: "2026-06-05T00:00:00.000Z",
       ageMs: 0,
       stale: false
-    }
+    },
+    nodes_by_kind: {},
+    edges_by_kind: {}
   };
 }
 
@@ -3519,7 +3525,9 @@ function validGraphSearchResult() {
         generatedAt: "2026-06-04T00:00:00.000Z",
         ageMs: 0,
         stale: false
-      }
+      },
+      nodes_by_kind: {},
+      edges_by_kind: {}
     },
     metadata: {
       schemaVersion: 1,

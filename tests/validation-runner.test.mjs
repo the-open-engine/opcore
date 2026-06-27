@@ -570,7 +570,9 @@ function availableStatus(mode = "optional", repo = { repoId: "lattice" }) {
       generatedAt: "2026-06-05T00:00:00.000Z",
       ageMs: 10,
       stale: false
-    }
+    },
+    nodes_by_kind: {},
+    edges_by_kind: {}
   };
 }
 

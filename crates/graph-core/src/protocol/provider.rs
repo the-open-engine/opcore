@@ -2,6 +2,7 @@ use super::daemon::{GraphDaemonOperation, GraphWalCheckpointSummary, GraphWatchL
 use crate::artifact::{runtime_artifact_metadata, GraphProviderArtifactMetadata};
 use crate::{GRAPH_PROVIDER_NAME, GRAPH_SCHEMA_VERSION};
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -124,6 +125,10 @@ pub enum GraphProviderStatus {
         freshness: GraphFreshness,
         #[serde(skip_serializing_if = "Option::is_none")]
         db_path: Option<String>,
+        #[serde(rename = "nodes_by_kind")]
+        nodes_by_kind: BTreeMap<String, u32>,
+        #[serde(rename = "edges_by_kind")]
+        edges_by_kind: BTreeMap<String, u32>,
         #[serde(skip_serializing_if = "Option::is_none")]
         message: Option<String>,
         #[serde(skip_serializing_if = "Vec::is_empty", default)]
@@ -296,6 +301,8 @@ pub fn available_status_with_freshness(
         repo,
         freshness,
         db_path,
+        nodes_by_kind: None,
+        edges_by_kind: None,
         message,
         wal_checkpoint: None,
     })
@@ -305,6 +312,8 @@ pub struct AvailableStatusInput {
     pub repo: RepoIdentity,
     pub freshness: GraphFreshness,
     pub db_path: Option<String>,
+    pub nodes_by_kind: Option<BTreeMap<String, u32>>,
+    pub edges_by_kind: Option<BTreeMap<String, u32>>,
     pub message: Option<String>,
     pub wal_checkpoint: Option<GraphWalCheckpointSummary>,
 }
@@ -317,6 +326,8 @@ pub fn available_status_with_wal_checkpoint(input: AvailableStatusInput) -> Grap
         repo: input.repo,
         freshness: input.freshness,
         db_path: input.db_path,
+        nodes_by_kind: input.nodes_by_kind.unwrap_or_default(),
+        edges_by_kind: input.edges_by_kind.unwrap_or_default(),
         message: input.message,
         capabilities: vec![
             "build".to_string(),

@@ -546,7 +546,9 @@ function availableGraphStatus(repoRoot) {
       generatedAt: "2026-06-05T00:00:00.000Z",
       ageMs: 0,
       stale: false
-    }
+    },
+    nodes_by_kind: {},
+    edges_by_kind: {}
   };
 }
 

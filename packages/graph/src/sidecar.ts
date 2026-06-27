@@ -230,6 +230,8 @@ function lifecycleStatus(request: GraphDaemonRequest, lifecycle: GraphWatchLifec
       repo: request.repo,
       freshness,
       dbPath: request.repo.repoRoot ? join(resolve(request.repo.repoRoot), ".lattice", "graph", "graph.db") : undefined,
+      nodes_by_kind: {},
+      edges_by_kind: {},
       message: lifecycle.message ?? "graph watch daemon available",
       capabilities: ["build", "update", "watch", "status", "query", "impact", "review-context", "detect-changes", "search"]
     };

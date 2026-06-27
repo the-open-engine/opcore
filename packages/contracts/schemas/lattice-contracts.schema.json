@@ -442,7 +442,9 @@
             "provider",
             "schemaVersion",
             "repo",
-            "freshness"
+            "freshness",
+            "nodes_by_kind",
+            "edges_by_kind"
           ],
           "properties": {
             "state": {
@@ -469,6 +471,20 @@
             },
             "dbPath": {
               "type": "string"
+            },
+            "nodes_by_kind": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "edges_by_kind": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "integer",
+                "minimum": 0
+              }
             },
             "message": {
               "type": "string"

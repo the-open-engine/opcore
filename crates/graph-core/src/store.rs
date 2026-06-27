@@ -10,6 +10,7 @@ use crate::protocol::{
 use crate::query::{select_graph_facts, GraphStoreQueryResult};
 use crate::search;
 use rusqlite::{params, Connection, OpenFlags, TransactionBehavior};
+use std::collections::BTreeMap;
 use std::path::Path;
 use time::format_description::well_known::Rfc3339;
 use time::OffsetDateTime;
@@ -233,6 +234,8 @@ impl GraphStore {
                     repo: metadata.repo,
                     freshness,
                     db_path: Some(display_path(&self.paths.db_path)),
+                    nodes_by_kind: Some(self.read_kind_counts("nodes")?),
+                    edges_by_kind: Some(self.read_kind_counts("edges")?),
                     message: Some("graph store snapshot available".to_string()),
                     wal_checkpoint,
                 }))
@@ -421,6 +424,21 @@ impl GraphStore {
         )?;
         let rows = statement.query_map([], read_edge_row)?;
         collect_rows(rows)
+    }
+
+    fn read_kind_counts(&self, table: &str) -> StoreResult<BTreeMap<String, u32>> {
+        let sql = match table {
+            "nodes" => "select kind, count(*) from nodes group by kind order by kind",
+            "edges" => "select kind, count(*) from edges group by kind order by kind",
+            _ => {
+                return Err(StoreError::InvalidSnapshot(format!(
+                    "unsupported graph store count table: {table}"
+                )))
+            }
+        };
+        let mut statement = self.connection.prepare(sql)?;
+        let rows = statement.query_map([], |row| Ok((row.get(0)?, row.get(1)?)))?;
+        Ok(collect_rows(rows)?.into_iter().collect())
     }
 }
 

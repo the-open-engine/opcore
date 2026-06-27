@@ -766,7 +766,9 @@ function availableStatus(repo, freshnessId) {
       generatedAt: `2026-06-05T00:00:00.000Z-${freshnessId}`,
       ageMs: 0,
       stale: false
-    }
+    },
+    nodes_by_kind: {},
+    edges_by_kind: {}
   };
 }
 
@@ -796,7 +798,9 @@ function passedValidation() {
       provider: "lattice-graph",
       schemaVersion: 1,
       repo: { repoId: "validation" },
-      freshness: { generatedAt: "2026-06-05T00:00:00.000Z", ageMs: 0, stale: false }
+      freshness: { generatedAt: "2026-06-05T00:00:00.000Z", ageMs: 0, stale: false },
+      nodes_by_kind: {},
+      edges_by_kind: {}
     }
   };
 }

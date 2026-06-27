@@ -3,7 +3,7 @@ use crate::store::StoreQueryOutput;
 use std::collections::{BTreeSet, VecDeque};
 
 use super::common::sorted_repo_paths;
-use super::index::{GraphIndex, Selection, SelectionAccumulator};
+use super::index::{is_test_node, GraphIndex, Selection, SelectionAccumulator};
 use super::GraphImpactOutput;
 
 pub(super) struct ImpactTraversal {
@@ -69,11 +69,7 @@ impl ImpactTraversal {
 
     fn add_contained_symbols(&self, index: &GraphIndex, selection: &mut SelectionAccumulator) {
         for file_id in selection.selected_file_ids(index) {
-            for edge in index.edges_from(&file_id, &["CONTAINS"]) {
-                if selection.add_node(index, &edge.to) {
-                    selection.add_edge_if_selected(edge);
-                }
-            }
+            selection.add_contained_descendants(index, &file_id);
         }
     }
 
@@ -108,13 +104,13 @@ impl ImpactTraversal {
         let impacted_symbols = traversal
             .nodes
             .iter()
-            .filter(|node| node.kind != "File" && node.kind != "Test")
+            .filter(|node| node.kind != "File" && !is_test_node(node))
             .map(|node| node.id.clone())
             .collect::<Vec<_>>();
         let tests = traversal
             .nodes
             .iter()
-            .filter(|node| node.kind == "Test")
+            .filter(|node| is_test_node(node))
             .filter_map(|node| index.node_file_path(&node.id))
             .collect::<BTreeSet<_>>()
             .into_iter()
