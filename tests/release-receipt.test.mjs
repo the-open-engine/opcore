@@ -34,6 +34,20 @@ describe("release receipt gate", () => {
       for (const artifact of receipt.descriptor.resolvedArtifacts) {
         assert.equal(descriptorFiles.get(artifact.packageName).has(artifact.path), true, artifact.id);
       }
+      assert.equal(receipt.packageNames.includes("@the-open-engine/opcore-validation-python"), true);
+      assert.equal(receipt.packageNames.includes("@the-open-engine/opcore-fixtures"), true);
+      const pythonValidationFiles = descriptorFiles.get("@the-open-engine/opcore-validation-python");
+      assert.equal(pythonValidationFiles.has("dist/index.js"), true);
+      assert.equal(pythonValidationFiles.has("dist/toolchain.js"), true);
+      const fixtureFiles = descriptorFiles.get("@the-open-engine/opcore-fixtures");
+      for (const path of [
+        "source-extraction/python/python.expected.json",
+        "source-extraction/python/src/pkg/models.py",
+        "source-extraction/python/src/pkg/stubs.pyi",
+        "validation-python/failing/pkg/app.py"
+      ]) {
+        assert.equal(fixtureFiles.has(path), true, path);
+      }
       assert.equal(receipt.license.unresolvedLicenseCount, 0);
       assert.equal(receipt.secretHistory.findingCount, 0);
       assert.equal(receipt.provenance.findingCount, 0);

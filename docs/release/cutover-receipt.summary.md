@@ -3,11 +3,14 @@
 Maintainer cutover gate proves installed Opcore artifacts handle canonical release commands without dev-tool fallback.
 
 Machine receipt: docs/release/cutover-receipt.json
-Machine receipt SHA-256: 97b4d37e1ba2cf070c34d8773ea42877877b19f1bb717a5c603c7df80a73d350
+Machine receipt SHA-256: 957417448d16ab802f950d7c721c0d841d27e270cac9d2016e2b22eceede4313
 
-Installed packages: 10
+Installed packages: 11
 Command receipts: 28
 Rust command receipts: 7
+Python command receipts: 8
+Current-tool guardrails retained: 2
+Old-tool replacement claimed: false
 Forbidden marker findings: 0
 Input evidence: #17, #29, #58
 
@@ -41,3 +44,18 @@ Input evidence: #17, #29, #58
 | validate-request | validation | ok | 0 | validate request passed |
 | validate-pre-write-pass | validation | ok | 0 | pre-write pass receipt was ok |
 | validate-pre-write-fail | validation | error | 1 | pre-write failure receipt failed closed |
+| graph-rust-build | graph | ok | 0 | Rust graph build completed with installed native artifact |
+| graph-rust-status | graph | ok | 0 | Rust graph status available after build |
+| graph-rust-query | graph | ok | 0 | Rust graph query returned Rust facts |
+| graph-rust-impact | graph | ok | 0 | Rust graph impact returned related Rust facts |
+| graph-rust-review-context | graph | ok | 0 | Rust graph review-context returned related Rust facts |
+| graph-rust-detect-changes | graph | ok | 0 | Rust graph detect-changes returned typed Rust change data |
+| graph-rust-search | graph | ok | 0 | Rust graph search returned ranked Rust symbols |
+| opcore-python-scan | runtime | ok | 0 | opcore scan returned Python repoState and validation evidence from installed artifacts |
+| opcore-python-status | runtime | ok | 0 | opcore status returned Python repoState from installed artifacts |
+| opcore-python-check-changed | validation | ok | 0 | opcore check changed validated Python syntax and hygiene from installed artifacts |
+| opcore-python-measure | runtime | ok | 0 | opcore measure returned Python metric deltas from installed artifacts |
+| graph-python-build | graph | ok | 0 | Python graph build completed with installed native artifact |
+| graph-python-status | graph | ok | 0 | Python graph status available after installed-artifact build |
+| graph-python-query | graph | ok | 0 | Python graph query returned installed-artifact Python facts |
+| graph-python-search | graph | ok | 0 | Python graph search returned ranked installed-artifact Python symbols |

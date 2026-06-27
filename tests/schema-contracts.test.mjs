@@ -2235,6 +2235,72 @@ describe("Opcore JSON schema wire constraints", () => {
     assert.equal(
       isValidDefinition("ReleaseCutoverReceipt", {
         ...receipt,
+        pythonCommandReceipts: receipt.pythonCommandReceipts.filter((entry) => entry.id !== "graph-python-query")
+      }),
+      false
+    );
+    assert.equal(
+      isValidDefinition("ReleaseCutoverReceipt", {
+        ...receipt,
+        pythonCommandReceipts: receipt.pythonCommandReceipts.map((entry) =>
+          entry.id === "graph-python-search"
+            ? { ...entry, command: ["lattice", "graph", "search", "Greeting"], canonicalCommand: ["lattice", "graph", "search", "Greeting"] }
+            : entry
+        )
+      }),
+      false
+    );
+    assert.equal(
+      isValidDefinition("ReleaseCutoverReceipt", {
+        ...receipt,
+        pythonCommandReceipts: receipt.pythonCommandReceipts.map((entry) =>
+          entry.id === "graph-python-query"
+            ? { ...entry, evidence: entry.evidence.filter((evidence) => evidence !== "build_name") }
+            : entry
+        )
+      }),
+      false
+    );
+    assert.equal(
+      isValidDefinition("ReleaseCutoverReceipt", {
+        ...receipt,
+        negativeChecks: receipt.negativeChecks.filter((entry) => entry.id !== "python-types-degraded-no-tools")
+      }),
+      false
+    );
+    assert.equal(
+      isValidDefinition("ReleaseCutoverReceipt", {
+        ...receipt,
+        negativeChecks: receipt.negativeChecks.map((entry) =>
+          entry.id === "missing-required-graph-check"
+            ? { ...entry, command: ["lattice", "check", "files", "src/index.ts", "--graph-mode", "required"] }
+            : entry
+        )
+      }),
+      false
+    );
+    assert.equal(
+      isValidDefinition("ReleaseCutoverReceipt", {
+        ...receipt,
+        currentToolGuardrails: receipt.currentToolGuardrails.filter((entry) => entry.id !== "current-tools-validate-changed")
+      }),
+      false
+    );
+    assert.equal(
+      isValidDefinition("ReleaseCutoverReceipt", {
+        ...receipt,
+        currentToolGuardrails: receipt.currentToolGuardrails.map((entry) =>
+          entry.id === "current-tools-validate-changed"
+            ? { ...entry, status: "retained-not-run", exitCode: null }
+            : entry
+        )
+      }),
+      false
+    );
+    assert.equal(isValidDefinition("ReleaseCutoverReceipt", { ...receipt, oldToolReplacementClaimed: true }), false);
+    assert.equal(
+      isValidDefinition("ReleaseCutoverReceipt", {
+        ...receipt,
         installedPackages: receipt.installedPackages.map((entry) =>
           entry.packageName === "@the-open-engine/opcore"
             ? { ...entry, installedManifest: { ...entry.installedManifest, bins: { lattice: "dist/index.js", crg: "dist/index.js" } } }
@@ -3777,7 +3843,8 @@ function validReleaseReceipt() {
     "@the-open-engine/opcore-validation-python",
     "@the-open-engine/opcore-validation-rust",
     "@the-open-engine/opcore-validation-typescript",
-    "@the-open-engine/opcore-asp-provider"
+    "@the-open-engine/opcore-asp-provider",
+    "@the-open-engine/opcore-fixtures"
   ];
   const commandGroups = ["graph", "inspect", "edit", "check", "validate", "status", "doctor"];
   const reportIds = ["package-inspection", "license", "provenance", "release-hygiene", "graph-release", "secret-history"];
@@ -3795,7 +3862,8 @@ function validReleaseReceipt() {
     ["@the-open-engine/opcore-validation-python", "packages/validation-python"],
     ["@the-open-engine/opcore-validation-rust", "packages/validation-rust"],
     ["@the-open-engine/opcore-validation-typescript", "packages/validation-typescript"],
-    ["@the-open-engine/opcore-asp-provider", "packages/asp-provider"]
+    ["@the-open-engine/opcore-asp-provider", "packages/asp-provider"],
+    ["@the-open-engine/opcore-fixtures", "packages/fixtures"]
   ]);
   const packages = packageNames.map((packageName) => {
     const isOpcore = packageName === "@the-open-engine/opcore";
@@ -4120,6 +4188,28 @@ function validReleaseCutoverReceipt() {
     stderrSha256: "8".repeat(64),
     assertion: `${id} passed on Rust fixture`
   }));
+  const pythonCommandReceipts = [
+    ["opcore-python-scan", ["opcore", "scan"], "runtime"],
+    ["opcore-python-status", ["opcore", "status"], "runtime"],
+    ["opcore-python-check-changed", ["opcore", "check", "changed", "--base", "HEAD", "--checks", "python.syntax,python.source-hygiene"], "validation"],
+    ["opcore-python-measure", ["opcore", "measure"], "runtime"],
+    ["graph-python-build", ["opcore", "graph", "build"], "graph"],
+    ["graph-python-status", ["opcore", "graph", "status"], "graph"],
+    ["graph-python-query", ["opcore", "graph", "query"], "graph"],
+    ["graph-python-search", ["opcore", "graph", "search", "Greeter", "--limit", "5"], "graph"]
+  ].map(([id, command, owner]) => ({
+    id,
+    command,
+    canonicalCommand: command,
+    evidence: pythonCutoverEvidence(id),
+    owner,
+    status: "ok",
+    exitCode: 0,
+    binPath: `node_modules/.bin/${command[0]}`,
+    stdoutSha256: "7".repeat(64),
+    stderrSha256: "8".repeat(64),
+    assertion: `${id} passed on Python fixture`
+  }));
   return {
     schemaVersion: 1,
     issue: "#30",
@@ -4152,15 +4242,76 @@ function validReleaseCutoverReceipt() {
     },
     commandReceipts,
     rustCommandReceipts,
+    pythonCommandReceipts,
     negativeChecks: [
       {
         id: "missing-required-graph-check",
-        command: ["opcore", "check", "files", "src/index.ts", "--graph-mode", "required"],
+        command: ["opcore", "check", "files", "src/index.ts", "--repo", "<missing-graph-repo>", "--graph-mode", "required", "--checks", "typescript.import-graph"],
         status: "passed",
         exitCode: 0,
         assertion: "required graph failure stayed typed"
+      },
+      {
+        id: "missing-required-graph-validate",
+        command: ["opcore", "validate", "request", "--request-file", "<required-graph-request>"],
+        status: "passed",
+        exitCode: 0,
+        assertion: "required graph validate failure stayed typed"
+      },
+      {
+        id: "python-types-degraded-no-tools",
+        command: ["opcore", "check", "files", "src/acme/app.py", "--checks", "python.types"],
+        status: "passed",
+        exitCode: 0,
+        assertion: "missing Python type tools stayed degraded"
+      },
+      {
+        id: "python-source-hygiene-no-ruff",
+        command: ["opcore", "check", "files", "src/acme/app.py", "--checks", "python.source-hygiene"],
+        status: "passed",
+        exitCode: 0,
+        assertion: "source hygiene stayed honest without ruff"
+      },
+      {
+        id: "python-relevant-tests-no-pytest",
+        command: ["opcore", "check", "files", "src/acme/app.py", "--checks", "python.relevant-tests"],
+        status: "passed",
+        exitCode: 0,
+        assertion: "relevant tests stayed graph-backed without pytest"
+      },
+      {
+        id: "python-toolchain-degraded-no-tools",
+        command: ["opcore", "status"],
+        status: "passed",
+        exitCode: 0,
+        assertion: "missing Python toolchain stayed degraded"
       }
     ],
+    currentToolGuardrails: [
+      {
+        id: "current-tools-validate-changed",
+        command: ["npm", "run", "current-tools:validate-changed"],
+        status: "passed",
+        exitCode: 0,
+        stdoutSha256: "7".repeat(64),
+        stderrSha256: "8".repeat(64),
+        retained: true,
+        assertion: "retained changed-file guardrail",
+        oldToolReplacementClaimed: false
+      },
+      {
+        id: "current-tools-validate-rust-graph",
+        command: ["npm", "run", "current-tools:validate-rust-graph"],
+        status: "passed",
+        exitCode: 0,
+        stdoutSha256: "7".repeat(64),
+        stderrSha256: "8".repeat(64),
+        retained: true,
+        assertion: "retained Rust graph guardrail",
+        oldToolReplacementClaimed: false
+      }
+    ],
+    oldToolReplacementClaimed: false,
     forbiddenMarkerScan: {
       scannedTextCount: 12,
       findingCount: 0,
@@ -4184,6 +4335,19 @@ function validReleaseCutoverReceipt() {
       }
     ]
   };
+}
+
+function pythonCutoverEvidence(id) {
+  return {
+    "opcore-python-scan": ["python-coverage", "python-validation", "python-types-degraded"],
+    "opcore-python-status": ["python-coverage", "python-validation"],
+    "opcore-python-check-changed": ["python-syntax", "python-source-hygiene"],
+    "opcore-python-measure": ["python-measure-delta"],
+    "graph-python-build": ["python-graph-provider"],
+    "graph-python-status": ["python-graph-provider"],
+    "graph-python-query": ["src/acme/app.py", "Greeter", "build_name"],
+    "graph-python-search": ["src/acme/app.py", "Greeter"]
+  }[id];
 }
 
 function validRustOldRoxComparisonReceipt() {

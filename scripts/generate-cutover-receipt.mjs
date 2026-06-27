@@ -12,10 +12,11 @@ import {
   statSync,
   writeFileSync
 } from "node:fs";
-import { dirname, join, relative, resolve } from "node:path";
+import { basename, dirname, join, relative, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import {
+  releaseCutoverPythonCommandIds,
   releaseCutoverRustCommandIds,
   releaseCutoverRequiredCommandIds,
   releaseReceiptPackageNames,
@@ -54,6 +55,7 @@ const args = process.argv.slice(2);
 const writeDocs = args.includes("--write");
 const jsonOutput = args.includes("--json") || !writeDocs;
 const reuseReleasePackages = process.env.OPCORE_CUTOVER_REUSE_RELEASE_PACKAGES === "1";
+const reuseCurrentToolGuardrails = process.env.OPCORE_CUTOVER_REUSE_CURRENT_TOOL_GUARDRAILS === "1";
 
 try {
   const validateReceiptFile = valueAfter("--validate-receipt-file");
@@ -104,6 +106,7 @@ function generateReceipt() {
     writeFileSync(join(project, "src/cutover.ts"), "export const cutoverValue: number = 1;\n");
     const opcoreSmokeRepo = prepareOpcoreSmokeRepo(tempRoot);
     const rustSmokeRepo = prepareRustSmokeRepo(tempRoot);
+    const pythonSmokeRepo = preparePythonSmokeRepo(tempRoot);
 
     const opcoreBin = binPath(project, "opcore");
     if (!existsSync(opcoreBin)) throw new Error("Installed opcore bin is missing");
@@ -112,18 +115,21 @@ function generateReceipt() {
     const commandTexts = [];
     const commandReceipts = [];
     const rustCommandReceipts = [];
-    const runOpcore = (id, args, expectedStatus, assertion) => {
-      const result = run(opcoreBin, args, { cwd: opcoreSmokeRepo, env: commandEnv, expectedStatus });
+    const pythonCommandReceipts = [];
+    const runOpcoreInRepo = (id, args, expectedStatus, assertion, cwd, receipts, evidence = undefined) => {
+      const result = run(opcoreBin, args, { cwd, env: commandEnv, expectedStatus });
       commandTexts.push({ label: `${id}:stdout`, text: result.stdout }, { label: `${id}:stderr`, text: result.stderr });
       const parsed = parseRouterJson(id, result.stdout);
       if (parsed.exitCode !== expectedStatus || result.status !== expectedStatus) {
         throw new Error(`Cutover command ${id} exit mismatch: router=${parsed.exitCode} process=${result.status}`);
       }
       assertCommandPayload(id, parsed);
-      commandReceipts.push({
+      const receiptCommand = sanitizeReceiptCommand(parsed.canonicalCommand);
+      receipts.push({
         id,
-        command: parsed.canonicalCommand,
-        canonicalCommand: parsed.canonicalCommand,
+        command: receiptCommand,
+        canonicalCommand: receiptCommand,
+        ...(evidence === undefined ? {} : { evidence }),
         owner: parsed.owner,
         status: parsed.status,
         exitCode: parsed.exitCode,
@@ -134,6 +140,8 @@ function generateReceipt() {
       });
       return parsed;
     };
+    const runOpcore = (id, args, expectedStatus, assertion) =>
+      runOpcoreInRepo(id, args, expectedStatus, assertion, opcoreSmokeRepo, commandReceipts);
     const runAdvancedOpcore = (id, args, expectedStatus, assertion) => {
       const result = run(opcoreBin, args, { cwd: project, env: commandEnv, expectedStatus });
       commandTexts.push({ label: `${id}:stdout`, text: result.stdout }, { label: `${id}:stderr`, text: result.stderr });
@@ -143,10 +151,11 @@ function generateReceipt() {
         throw new Error(`Cutover command ${id} exit mismatch: router=${parsed.exitCode} process=${result.status}`);
       }
       assertCommandPayload(id, parsed);
+      const receiptCommand = sanitizeReceiptCommand(parsed.canonicalCommand);
       commandReceipts.push({
         id,
-        command: parsed.canonicalCommand,
-        canonicalCommand: parsed.canonicalCommand,
+        command: receiptCommand,
+        canonicalCommand: receiptCommand,
         owner: parsed.owner,
         status: parsed.status,
         exitCode: parsed.exitCode,
@@ -155,6 +164,11 @@ function generateReceipt() {
         stderrSha256: sha256(result.stderr),
         assertion
       });
+      return parsed;
+    };
+    const runPythonOpcore = (id, args, assertion) => {
+      const parsed = runOpcoreInRepo(id, args, 0, assertion, pythonSmokeRepo, pythonCommandReceipts, pythonCommandEvidence(id));
+      assertPythonCommandPayload(id, parsed);
       return parsed;
     };
     const runRustOpcore = (id, args, assertion) => {
@@ -166,10 +180,11 @@ function generateReceipt() {
       }
       assertCommandPayload(id, parsed);
       assertRustCommandPayload(id, parsed);
+      const receiptCommand = sanitizeReceiptCommand(parsed.canonicalCommand);
       rustCommandReceipts.push({
         id,
-        command: parsed.canonicalCommand,
-        canonicalCommand: parsed.canonicalCommand,
+        command: receiptCommand,
+        canonicalCommand: receiptCommand,
         owner: parsed.owner,
         status: parsed.status,
         exitCode: parsed.exitCode,
@@ -227,6 +242,22 @@ function generateReceipt() {
       "Rust graph detect-changes returned typed Rust change data"
     );
     runRustOpcore("graph-rust-search", ["graph", "search", "Widget", "--limit", "5", "--json"], "Rust graph search returned ranked Rust symbols");
+    runPythonOpcore("opcore-python-scan", ["--json"], "opcore scan returned Python repoState and validation evidence from installed artifacts");
+    runPythonOpcore("opcore-python-status", ["status", "--json"], "opcore status returned Python repoState from installed artifacts");
+    runPythonOpcore(
+      "opcore-python-check-changed",
+      ["check", "--changed", "--checks", "python.syntax,python.source-hygiene", "--json"],
+      "opcore check changed validated Python syntax and hygiene from installed artifacts"
+    );
+    runPythonOpcore("opcore-python-measure", ["measure", "--json"], "opcore measure returned Python metric deltas from installed artifacts");
+    runPythonOpcore("graph-python-build", ["graph", "build", "--json"], "Python graph build completed with installed native artifact");
+    runPythonOpcore("graph-python-status", ["graph", "status", "--json"], "Python graph status available after installed-artifact build");
+    runPythonOpcore("graph-python-query", ["graph", "query", "--json"], "Python graph query returned installed-artifact Python facts");
+    runPythonOpcore(
+      "graph-python-search",
+      ["graph", "search", "Greeter", "--limit", "5", "--json"],
+      "Python graph search returned ranked installed-artifact Python symbols"
+    );
     runAdvancedOpcore("inspect-symbols", ["inspect", "symbols", "Greeting", "--limit", "5", "--json"], 0, "inspect symbols returned graph symbols");
     runAdvancedOpcore("inspect-definition", ["inspect", "definition", "GreetingCard", "--json"], 0, "inspect definition returned a symbol");
     runAdvancedOpcore(
@@ -334,9 +365,13 @@ function generateReceipt() {
       "pre-write failure receipt failed closed"
     );
 
-    const negativeChecks = runMissingGraphNegativeChecks(tempRoot, opcoreBin, commandEnv, commandTexts);
+    const negativeChecks = [
+      ...runMissingGraphNegativeChecks(tempRoot, opcoreBin, commandEnv, commandTexts),
+      ...runPythonToolDegradationNegativeChecks(tempRoot, opcoreBin, commandEnv, commandTexts)
+    ];
     const descriptor = collectInstalledDescriptor(project, tarballs);
     const installedPackages = collectInstalledPackages(project, tarballs);
+    const currentToolGuardrails = currentToolGuardrailsForCutover();
     const receipt = {
       schemaVersion: 1,
       issue: "#30",
@@ -358,7 +393,10 @@ function generateReceipt() {
       },
       commandReceipts: sortCommandReceipts(commandReceipts),
       rustCommandReceipts: sortRustCommandReceipts(rustCommandReceipts),
+      pythonCommandReceipts: sortPythonCommandReceipts(pythonCommandReceipts),
       negativeChecks,
+      currentToolGuardrails,
+      oldToolReplacementClaimed: false,
       forbiddenMarkerScan: {
         scannedTextCount: receiptScanTextsWithoutReceipt(project, descriptor, commandTexts, tarballs).length + 1,
         findingCount: 0,
@@ -420,12 +458,145 @@ function runMissingGraphNegativeChecks(tempRoot, opcoreBin, env, commandTexts) {
     }
     return {
       id: check.id,
-      command: ["opcore", ...check.args],
+      command:
+        check.id === "missing-required-graph-check"
+          ? ["opcore", "check", "files", "src/index.ts", "--repo", "<missing-graph-repo>", "--graph-mode", "required", "--checks", "typescript.import-graph"]
+          : ["opcore", "validate", "request", "--request-file", "<required-graph-request>"],
       status: "passed",
       exitCode: 0,
       assertion: "required graph provider failure stayed typed"
     };
   });
+}
+
+function runPythonToolDegradationNegativeChecks(tempRoot, opcoreBin, env, commandTexts) {
+  const degradedProject = preparePythonSmokeRepo(tempRoot, "python-no-tools-smoke");
+  const noToolBin = join(tempRoot, "no-python-tools-bin");
+  mkdirSync(noToolBin, { recursive: true });
+  const degradedEnv = {
+    ...env,
+    PATH: [dirname(process.execPath), noToolBin].join(":")
+  };
+  const result = run(opcoreBin, ["check", "files", "src/acme/app.py", "--checks", "python.types", "--json"], {
+    cwd: degradedProject,
+    env: degradedEnv,
+    expectedStatus: 1
+  });
+  commandTexts.push({ label: "python-types-degraded-no-tools:stdout", text: result.stdout }, { label: "python-types-degraded-no-tools:stderr", text: result.stderr });
+  const parsed = parseRouterJson("python-types-degraded-no-tools", result.stdout);
+  if (parsed.owner !== "validation" || parsed.validationResult?.status !== "unsupported_request") {
+    throw new Error("python-types-degraded-no-tools did not return unsupported_request validation evidence");
+  }
+  const diagnosticCodes = parsed.validationResult.diagnostics?.map((diagnostic) => diagnostic.code) ?? [];
+  if (!diagnosticCodes.includes("PYTHON_TYPES_UNSUPPORTED")) {
+    throw new Error("python-types-degraded-no-tools did not report PYTHON_TYPES_UNSUPPORTED");
+  }
+  const sourceHygieneResult = run(opcoreBin, ["check", "files", "src/acme/app.py", "--checks", "python.source-hygiene", "--json"], {
+    cwd: degradedProject,
+    env: degradedEnv,
+    expectedStatus: 0
+  });
+  commandTexts.push({ label: "python-source-hygiene-no-ruff:stdout", text: sourceHygieneResult.stdout }, { label: "python-source-hygiene-no-ruff:stderr", text: sourceHygieneResult.stderr });
+  const sourceHygieneParsed = parseRouterJson("python-source-hygiene-no-ruff", sourceHygieneResult.stdout);
+  if (sourceHygieneParsed.owner !== "validation" || sourceHygieneParsed.validationResult?.status !== "passed") {
+    throw new Error("python-source-hygiene-no-ruff did not pass with built-in source-hygiene evidence");
+  }
+  run(opcoreBin, ["graph", "build", "--json"], { cwd: degradedProject, env: degradedEnv, expectedStatus: 0 });
+  const relevantTestsResult = run(opcoreBin, ["check", "files", "src/acme/app.py", "--checks", "python.relevant-tests", "--json"], {
+    cwd: degradedProject,
+    env: degradedEnv,
+    expectedStatus: 0
+  });
+  commandTexts.push({ label: "python-relevant-tests-no-pytest:stdout", text: relevantTestsResult.stdout }, { label: "python-relevant-tests-no-pytest:stderr", text: relevantTestsResult.stderr });
+  const relevantTestsParsed = parseRouterJson("python-relevant-tests-no-pytest", relevantTestsResult.stdout);
+  if (relevantTestsParsed.owner !== "validation" || relevantTestsParsed.validationResult?.status !== "passed") {
+    throw new Error("python-relevant-tests-no-pytest did not pass with graph-backed relevant-test evidence");
+  }
+  const relevantTestCodes = relevantTestsParsed.validationResult.diagnostics?.map((diagnostic) => diagnostic.code) ?? [];
+  if (!relevantTestCodes.some((code) => code === "PY_RELEVANT_TESTS_FOUND" || code === "PY_RELEVANT_TESTS_ABSENT")) {
+    throw new Error("python-relevant-tests-no-pytest did not report Python relevant-test graph evidence");
+  }
+  const statusResult = run(opcoreBin, ["status", "--json"], {
+    cwd: degradedProject,
+    env: degradedEnv,
+    expectedStatus: 0
+  });
+  commandTexts.push({ label: "python-toolchain-degraded-no-tools:stdout", text: statusResult.stdout }, { label: "python-toolchain-degraded-no-tools:stderr", text: statusResult.stderr });
+  const statusParsed = parseRouterJson("python-toolchain-degraded-no-tools", statusResult.stdout);
+  if (statusParsed.owner !== "runtime" || statusParsed.validationResult !== undefined || statusParsed.repoState === undefined) {
+    throw new Error("python-toolchain-degraded-no-tools did not return read-only repoState status evidence");
+  }
+  assertPythonRepoState("python-toolchain-degraded-no-tools", statusParsed.repoState, ["mypy", "pyright", "ruff", "pytest"]);
+  return [
+    {
+      id: "python-types-degraded-no-tools",
+      command: ["opcore", "check", "files", "src/acme/app.py", "--checks", "python.types"],
+      status: "passed",
+      exitCode: 0,
+      assertion: "missing Python type tools stayed degraded instead of passing silently"
+    },
+    {
+      id: "python-source-hygiene-no-ruff",
+      command: ["opcore", "check", "files", "src/acme/app.py", "--checks", "python.source-hygiene"],
+      status: "passed",
+      exitCode: 0,
+      assertion: "source-hygiene check ran built-in policy while status reported ruff absent"
+    },
+    {
+      id: "python-relevant-tests-no-pytest",
+      command: ["opcore", "check", "files", "src/acme/app.py", "--checks", "python.relevant-tests"],
+      status: "passed",
+      exitCode: 0,
+      assertion: "relevant-tests check used graph evidence while status reported pytest absent"
+    },
+    {
+      id: "python-toolchain-degraded-no-tools",
+      command: ["opcore", "status"],
+      status: "passed",
+      exitCode: 0,
+      assertion: "read-only status reported absent mypy, pyright, ruff, and pytest as degraded"
+    }
+  ];
+}
+
+function currentToolGuardrailsForCutover() {
+  if (reuseCurrentToolGuardrails) return recordedCurrentToolGuardrailsForCutover();
+  return runCurrentToolGuardrailsForCutover();
+}
+
+function recordedCurrentToolGuardrailsForCutover() {
+  const receipt = validateReleaseCutoverReceipt(readJson(join(repoRoot, cutoverReceiptPath)));
+  return receipt.currentToolGuardrails.map((entry) => ({ ...entry }));
+}
+
+function runCurrentToolGuardrailsForCutover() {
+  return [
+    runCurrentToolGuardrail(
+      "current-tools-validate-changed",
+      ["run", "current-tools:validate-changed"],
+      "retained external changed-file guardrail passed during installed-artifact cutover proof"
+    ),
+    runCurrentToolGuardrail(
+      "current-tools-validate-rust-graph",
+      ["run", "current-tools:validate-rust-graph"],
+      "retained external Rust graph guardrail passed during installed-artifact cutover proof"
+    )
+  ];
+}
+
+function runCurrentToolGuardrail(id, npmArgs, assertion) {
+  const result = run("npm", npmArgs, { cwd: repoRoot, env: process.env, expectedStatus: 0 });
+  return {
+    id,
+    command: ["npm", ...npmArgs],
+    status: "passed",
+    exitCode: 0,
+    stdoutSha256: sha256(result.stdout),
+    stderrSha256: sha256(result.stderr),
+    retained: true,
+    assertion,
+    oldToolReplacementClaimed: false
+  };
 }
 
 function packWorkspace(packageName, destination) {
@@ -496,6 +667,73 @@ function prepareOpcoreSmokeRepo(tempRoot) {
 function prepareRustSmokeRepo(tempRoot) {
   const smokeRepo = join(tempRoot, "rust-smoke");
   cpSync(join(repoRoot, rustFixtureRoot), smokeRepo, { recursive: true });
+  return smokeRepo;
+}
+
+function preparePythonSmokeRepo(tempRoot, name = "python-smoke") {
+  const smokeRepo = join(tempRoot, name);
+  mkdirSync(join(smokeRepo, "src/acme"), { recursive: true });
+  mkdirSync(join(smokeRepo, "tests"), { recursive: true });
+  writeFileSync(
+    join(smokeRepo, "pyproject.toml"),
+    [
+      "[project]",
+      'name = "opcore-cutover-python-smoke"',
+      'version = "0.0.0"',
+      "",
+      "[tool.pytest.ini_options]",
+      'pythonpath = ["src"]',
+      ""
+    ].join("\n")
+  );
+  run("git", ["init"], { cwd: smokeRepo });
+  const emptyTree = "4b825dc642cb6eb9a060e54bf8d69288fbee4904";
+  const env = {
+    ...process.env,
+    GIT_AUTHOR_NAME: "Opcore Cutover",
+    GIT_AUTHOR_EMAIL: "opcore@example.invalid",
+    GIT_COMMITTER_NAME: "Opcore Cutover",
+    GIT_COMMITTER_EMAIL: "opcore@example.invalid"
+  };
+  const commit = run("git", ["commit-tree", emptyTree, "-m", "fixture"], { cwd: smokeRepo, env }).stdout.trim();
+  run("git", ["branch", "-f", "main", commit], { cwd: smokeRepo });
+  run("git", ["checkout", "-q", "main"], { cwd: smokeRepo });
+  writeFileSync(join(smokeRepo, "src/acme/__init__.py"), "from .app import Greeter\n\n__all__ = [\"Greeter\"]\n");
+  writeFileSync(
+    join(smokeRepo, "src/acme/helpers.py"),
+    [
+      "def build_name(value: str) -> str:",
+      "    return f\"hello {value}\"",
+      ""
+    ].join("\n")
+  );
+  writeFileSync(
+    join(smokeRepo, "src/acme/app.py"),
+    [
+      "from .helpers import build_name",
+      "",
+      "",
+      "class Greeter:",
+      "    def greet(self, value: str) -> str:",
+      "        return build_name(value)",
+      "",
+      "",
+      "async def load_name(value: str) -> str:",
+      "    return build_name(value)",
+      ""
+    ].join("\n")
+  );
+  writeFileSync(
+    join(smokeRepo, "tests/test_app.py"),
+    [
+      "from acme import Greeter",
+      "",
+      "",
+      "def test_greeter() -> None:",
+      "    assert Greeter().greet(\"cutover\") == \"hello cutover\"",
+      ""
+    ].join("\n")
+  );
   return smokeRepo;
 }
 
@@ -682,6 +920,80 @@ function assertRustCommandPayload(id, parsed) {
   }
 }
 
+function assertPythonCommandPayload(id, parsed) {
+  const text = JSON.stringify(parsed);
+  if (id === "opcore-python-scan") {
+    if (parsed.owner !== "runtime" || parsed.repoState === undefined || parsed.validationResult === undefined) {
+      throw new Error("opcore-python-scan must return repoState and validationResult");
+    }
+    assertPythonRepoState(id, parsed.repoState);
+    if (!text.includes("PYTHON_TYPES_UNSUPPORTED")) {
+      throw new Error("opcore-python-scan must record degraded Python type-tool evidence");
+    }
+  }
+  if (id === "opcore-python-status") {
+    if (parsed.owner !== "runtime" || parsed.repoState === undefined || parsed.validationResult !== undefined) {
+      throw new Error("opcore-python-status must return repoState only");
+    }
+    assertPythonRepoState(id, parsed.repoState);
+  }
+  if (id === "opcore-python-check-changed") {
+    if (parsed.owner !== "validation" || parsed.validationResult?.status !== "passed") {
+      throw new Error("opcore-python-check-changed must pass Python syntax/hygiene validation");
+    }
+  }
+  if (id === "opcore-python-measure") {
+    if (parsed.owner !== "runtime" || parsed.opcoreMeasure?.kind !== "opcore_measure_delta" || parsed.validationResult !== undefined || parsed.repoState !== undefined) {
+      throw new Error("opcore-python-measure must return read-only opcoreMeasure deltas only");
+    }
+    const measureText = JSON.stringify(parsed.opcoreMeasure);
+    if (!measureText.includes("Python") && !measureText.includes("python.")) {
+      throw new Error("opcore-python-measure did not include Python metric or coverage evidence");
+    }
+  }
+  if (id === "graph-python-query" || id === "graph-python-search") {
+    for (const expected of ["src/acme/app.py", "Greeter"]) {
+      if (!text.includes(expected)) throw new Error(`${id} did not return Python graph evidence for ${expected}`);
+    }
+  }
+  if (id === "graph-python-query" && !text.includes("build_name")) {
+    throw new Error("graph-python-query did not return Python call/import facts for build_name");
+  }
+  if (id === "graph-python-status" && parsed.providerStatus?.state !== "available") {
+    throw new Error("graph-python-status did not report available provider status");
+  }
+}
+
+function assertPythonRepoState(id, repoState, requiredTools = ["mypy", "pyright"]) {
+  const python = repoState?.coverage?.languages?.find((entry) => entry.language === "Python");
+  if (!python || python.files < 1 || python.graphSupported !== true || python.validationSupported !== true) {
+    throw new Error(`${id} did not report Python graph and validation coverage`);
+  }
+  const degradedTools = repoState.validation?.degradedToolchains?.filter((tool) => tool.adapter === "python").map((tool) => tool.tool).sort() ?? [];
+  for (const required of requiredTools) {
+    if (!degradedTools.includes(required)) throw new Error(`${id} did not report degraded Python tool ${required}`);
+  }
+}
+
+function pythonCommandEvidence(id) {
+  const evidence = {
+    "opcore-python-scan": ["python-coverage", "python-validation", "python-types-degraded"],
+    "opcore-python-status": ["python-coverage", "python-validation"],
+    "opcore-python-check-changed": ["python-syntax", "python-source-hygiene"],
+    "opcore-python-measure": ["python-measure-delta"],
+    "graph-python-build": ["python-graph-provider"],
+    "graph-python-status": ["python-graph-provider"],
+    "graph-python-query": ["src/acme/app.py", "Greeter", "build_name"],
+    "graph-python-search": ["src/acme/app.py", "Greeter"]
+  }[id];
+  if (!evidence) throw new Error(`Unknown Python command receipt id: ${id}`);
+  return evidence;
+}
+
+function sanitizeReceiptCommand(command) {
+  return command.map((part, index) => (command[index - 1] === "--request-file" ? basename(part) : part));
+}
+
 function writeValidationRequest(project, filename, overrides = {}) {
   const path = join(project, filename);
   writeFileSync(
@@ -770,7 +1082,7 @@ function writeCutoverDocs(receipt) {
 }
 
 function cutoverSummaryMarkdown(receipt, receiptSha256) {
-  const commandRows = receipt.commandReceipts
+  const commandRows = [...receipt.commandReceipts, ...receipt.rustCommandReceipts, ...receipt.pythonCommandReceipts]
     .map((entry) => `| ${entry.id} | ${entry.owner} | ${entry.status} | ${entry.exitCode} | ${entry.assertion} |`)
     .join("\n");
   return `# Cutover Receipt Summary
@@ -783,6 +1095,9 @@ Machine receipt SHA-256: ${receiptSha256}
 Installed packages: ${receipt.installedPackages.length}
 Command receipts: ${receipt.commandReceipts.length}
 Rust command receipts: ${receipt.rustCommandReceipts.length}
+Python command receipts: ${receipt.pythonCommandReceipts.length}
+Current-tool guardrails retained: ${receipt.currentToolGuardrails.length}
+Old-tool replacement claimed: ${receipt.oldToolReplacementClaimed}
 Forbidden marker findings: ${receipt.forbiddenMarkerScan.findingCount}
 Input evidence: ${receipt.inputEvidence.map((entry) => entry.issue).join(", ")}
 
@@ -796,7 +1111,7 @@ function appendCutoverAttestation(receipt, receiptSha256) {
   const existing = existsSync(join(repoRoot, artifactAttestationPath))
     ? readFileSync(join(repoRoot, artifactAttestationPath), "utf8")
     : "# Artifact Attestation\n";
-  const block = `\n## Cutover Gate\n\nIssue #30 receipt: ${cutoverReceiptPath}\nCutover receipt SHA-256: ${receiptSha256}\nInstalled command receipts: ${receipt.commandReceipts.length}\nRust command receipts: ${receipt.rustCommandReceipts.length}\n`;
+  const block = `\n## Cutover Gate\n\nIssue #30 receipt: ${cutoverReceiptPath}\nCutover receipt SHA-256: ${receiptSha256}\nInstalled command receipts: ${receipt.commandReceipts.length}\nRust command receipts: ${receipt.rustCommandReceipts.length}\nPython command receipts: ${receipt.pythonCommandReceipts.length}\nCurrent-tool guardrails retained: ${receipt.currentToolGuardrails.length}\nOld-tool replacement claimed: ${receipt.oldToolReplacementClaimed}\n`;
   const withoutOld = existing.replace(/\n## Cutover Gate\n[\s\S]*$/, "");
   writeFileSync(join(repoRoot, artifactAttestationPath), `${withoutOld.trimEnd()}\n${block}`);
 }
@@ -813,6 +1128,14 @@ function sortRustCommandReceipts(receipts) {
   return releaseCutoverRustCommandIds.map((id) => {
     const receipt = receipts.find((entry) => entry.id === id);
     if (!receipt) throw new Error(`Missing cutover Rust command receipt: ${id}`);
+    return receipt;
+  });
+}
+
+function sortPythonCommandReceipts(receipts) {
+  return releaseCutoverPythonCommandIds.map((id) => {
+    const receipt = receipts.find((entry) => entry.id === id);
+    if (!receipt) throw new Error(`Missing cutover Python command receipt: ${id}`);
     return receipt;
   });
 }

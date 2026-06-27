@@ -21,6 +21,9 @@ No package publishing happens in this gate.
 ## Cutover Gate
 
 Issue #30 receipt: docs/release/cutover-receipt.json
-Cutover receipt SHA-256: 97b4d37e1ba2cf070c34d8773ea42877877b19f1bb717a5c603c7df80a73d350
+Cutover receipt SHA-256: 957417448d16ab802f950d7c721c0d841d27e270cac9d2016e2b22eceede4313
 Installed command receipts: 28
 Rust command receipts: 7
+Python command receipts: 8
+Current-tool guardrails retained: 2
+Old-tool replacement claimed: false
