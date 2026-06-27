@@ -126,6 +126,7 @@ describe("opcore public facade", () => {
       );
       writeFileSync(join(temp, "src/lib.rs"), "pub fn value() -> u64 { 1 }\n");
 
+      const before = collectRepoPaths(temp);
       const result = parseJson(runOpcore(["status", "--repo", temp, "--json"], temp, 0).stdout);
       const coverage = result.repoState.coverage;
 
@@ -136,8 +137,21 @@ describe("opcore public facade", () => {
       assert.equal(coverage.graph.supportedFiles, 1);
       assert.deepEqual(coverage.graph.extensions, [{ extension: ".rs", count: 1 }]);
       assert.equal(coverage.validation.supportedFiles, 2);
+      assert.deepEqual(Object.fromEntries(coverage.validation.extensions.map((entry) => [entry.extension, entry.count])), {
+        ".rs": 1,
+        "Cargo.toml": 1
+      });
       assert.equal(coverage.unsupported.totalFiles, 0);
       assert.deepEqual(coverage.unsupported.stacks, []);
+      assert.equal(result.repoState.graph.state, "stale");
+      assert.equal(result.repoState.graph.status.failure.category, "stale_snapshot");
+      assert.equal(result.repoState.graph.status.walCheckpoint, undefined);
+      assert.equal(existsSync(join(temp, ".lattice")), false);
+
+      const human = runOpcore(["status", "--repo", temp], temp, 0);
+      assert.match(human.stdout, /Coverage: files=2 graph=1 validation=2 retained=0 unsupported=none/);
+      assert.match(human.stdout, /Validation: checks=\d+ adapters=.*degradedRustTools=/);
+      assert.deepEqual(collectRepoPaths(temp), before);
     } finally {
       rmSync(temp, { recursive: true, force: true });
     }

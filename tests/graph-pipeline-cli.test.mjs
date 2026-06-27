@@ -71,6 +71,61 @@ describe("graph pipeline CLI", () => {
     });
   });
 
+  it("builds, updates, watches, and reports status for Rust-only repos", () => {
+    const temp = mkdtempSync(join(tmpdir(), "lattice-graph-rust-only-"));
+    try {
+      writeRustOnlyRepo(temp);
+
+      const missing = run(latticeBin, ["graph", "status", "--repo", temp, "--json"]);
+      assert.equal(missing.providerStatus.state, "stale");
+      assert.equal(missing.providerStatus.failure.category, "stale_snapshot");
+      assert.equal(missing.providerStatus.walCheckpoint, undefined);
+      assert.equal(existsSync(join(temp, ".lattice")), false);
+
+      const build = run(latticeBin, ["graph", "build", "--repo", temp, "--json"]);
+      assert.equal(build.providerStatus.state, "available");
+      assert.equal(build.providerStatus.freshness.stale, false);
+      assert.ok(build.providerStatus.walCheckpoint);
+      assert.equal(build.graphPipeline.summary.discoveredFiles, 2);
+      assert.equal(build.graphPipeline.summary.parsedFiles, 2);
+      assert.deepEqual(build.graphPipeline.summary.changedFiles, ["src/lib.rs", "tests/widget_test.rs"]);
+
+      assertRustStoreRows(temp, { rustFiles: 2, requirePath: "tests/widget_test.rs" });
+
+      writeFileSync(
+        join(temp, "src/lib.rs"),
+        `${readFileSync(join(temp, "src/lib.rs"), "utf8")}\npub fn make_second_widget() -> Widget { Widget::new(\"second\") }\n`
+      );
+      unlinkSync(join(temp, "tests/widget_test.rs"));
+
+      const stale = run(latticeBin, ["graph", "status", "--repo", temp, "--json"]);
+      assert.equal(stale.providerStatus.state, "stale");
+      assert.match(stale.providerStatus.freshness.reason, /hash changed|removed/);
+
+      const update = run(latticeBin, ["graph", "update", "--repo", temp, "--base", "HEAD", "--json"]);
+      assert.equal(update.providerStatus.state, "available");
+      assert.equal(update.graphPipeline.summary.fullRebuildRequired, false);
+      assert.equal(update.graphPipeline.summary.parsedFiles, 1);
+      assert.deepEqual(update.graphPipeline.summary.changedFiles, ["src/lib.rs"]);
+      assert.deepEqual(update.graphPipeline.summary.deletedFiles, ["tests/widget_test.rs"]);
+      assertRustStoreRows(temp, { rustFiles: 1, requirePath: "src/lib.rs", missingPath: "tests/widget_test.rs" });
+
+      writeFileSync(join(temp, "src/extra.rs"), "pub fn extra() -> u64 { 2 }\n");
+      const watch = run(latticeBin, ["graph", "watch", "--repo", temp, "--once", "--poll-interval-ms", "50", "--json"]);
+      assert.equal(watch.providerStatus.state, "available");
+      assert.equal(watch.graphPipeline.summary.operation, "watch");
+      assert.deepEqual(watch.graphPipeline.summary.changedFiles, ["src/extra.rs"]);
+
+      const status = run(latticeBin, ["graph", "status", "--repo", temp, "--json"]);
+      assert.equal(status.providerStatus.state, "available");
+      assert.equal(status.providerStatus.freshness.stale, false);
+      assert.ok(status.providerStatus.walCheckpoint);
+      assertRustStoreRows(temp, { rustFiles: 2, requirePath: "src/extra.rs" });
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
   it("runs watch once and writes daemon lifecycle artifacts", () => {
     withFixtureCopy((fixtureRoot) => {
       const watch = run(latticeBin, ["graph", "watch", "--repo", fixtureRoot, "--once", "--poll-interval-ms", "50", "--json"]);
@@ -777,6 +832,79 @@ function withNegatedGitignoreRepo(runFixture) {
     runFixture(fixtureRoot);
   } finally {
     rmSync(fixtureRoot, { recursive: true, force: true });
+  }
+}
+
+function writeRustOnlyRepo(root) {
+  mkdirSync(join(root, "src"), { recursive: true });
+  mkdirSync(join(root, "tests"), { recursive: true });
+  writeFileSync(
+    join(root, "src/lib.rs"),
+    [
+      "pub trait Greeter {",
+      "    fn greet(&self) -> String;",
+      "}",
+      "",
+      "pub struct Widget {",
+      "    name: String,",
+      "}",
+      "",
+      "impl Widget {",
+      "    pub fn new(name: &str) -> Self {",
+      "        Self { name: name.to_string() }",
+      "    }",
+      "",
+      "    pub fn greet(&self) -> String {",
+      "        format!(\"hello {}\", self.name)",
+      "    }",
+      "}",
+      "",
+      "impl Greeter for Widget {",
+      "    fn greet(&self) -> String {",
+      "        self.greet()",
+      "    }",
+      "}",
+      "",
+      "pub fn make_widget() -> Widget {",
+      "    Widget::new(\"opcore\")",
+      "}",
+      "",
+      "#[cfg(test)]",
+      "mod tests {",
+      "    use super::*;",
+      "",
+      "    #[test]",
+      "    fn widget_smoke() {",
+      "        assert_eq!(make_widget().greet(), \"hello opcore\");",
+      "    }",
+      "}",
+      ""
+    ].join("\n")
+  );
+  writeFileSync(
+    join(root, "tests/widget_test.rs"),
+    ["use opcore_fixture::make_widget;", "", "#[test]", "fn integration_smoke() {", "    let _ = make_widget();", "}", ""].join("\n")
+  );
+}
+
+function assertRustStoreRows(repoRoot, options) {
+  const db = new DatabaseSync(join(repoRoot, ".lattice/graph/graph.db"), { readOnly: true });
+  try {
+    assert.equal(db.prepare("select count(*) as count from file_hashes where language = 'rust'").get().count, options.rustFiles);
+    assert.ok(db.prepare("select count(*) as count from nodes").get().count > 0);
+    assert.ok(db.prepare("select count(*) as count from edges").get().count > 0);
+    assert.ok(db.prepare("select count(*) as count from nodes_fts").get().count > 0);
+    if (options.requirePath) {
+      assert.ok(db.prepare("select count(*) as count from nodes where path = ?").get(options.requirePath).count > 0);
+      assert.ok(db.prepare("select count(*) as count from nodes_fts where path = ?").get(options.requirePath).count > 0);
+    }
+    if (options.missingPath) {
+      assert.equal(db.prepare("select count(*) as count from file_hashes where relative_path = ?").get(options.missingPath).count, 0);
+      assert.equal(db.prepare("select count(*) as count from nodes where path = ?").get(options.missingPath).count, 0);
+      assert.equal(db.prepare("select count(*) as count from nodes_fts where path = ?").get(options.missingPath).count, 0);
+    }
+  } finally {
+    db.close();
   }
 }
 
