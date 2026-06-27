@@ -20,6 +20,7 @@ Source rows: `agent-server-protocol/docs/planning/old-tool-compatibility-matrix.
 | `rust.rustdoc` | Runs `cargo doc --no-deps --all-features --message-format=json`; rustdoc diagnostics are blocking policy evidence. | unsupported when rustdoc is missing; retain old gate |
 | `rust.import-graph` | Reports unresolved `mod`, unresolved `crate`/`self`/`super` use paths, orphan source files, and module cycles from fileView after-state content. | cargo-depgraph enrichment remains degraded when unavailable |
 | `rust.dead-code` | Runs `cargo check` with `dead_code` denied and adds native orphan-source dead-code evidence. | core Cargo absence makes adapter unavailable; old gates stay active |
+| `rust.graph-signals` | Reports graph-backed untested public Rust surface, dead public exports, module orphans, and module cycles through `ValidationGraphProviderClient`. | requires available graph facts; does not replace cargo/rustdoc/clippy/Rox guardrails |
 | `rust.unused-deps` | Runs cargo-udeps with workspace or package scoping and parses unused dependency names into deterministic diagnostics. | unsupported when cargo-udeps is missing; retain old gate |
 | `rust.function-metrics` | Runs rust-code-analysis-cli JSON object/array output and enforces 80 lines, complexity 10, params 4. | unsupported when tool is missing; retain old gate |
 
@@ -35,6 +36,7 @@ they are machine-readable cutover blockers for #27/#28/#29.
 | `rust.rustdoc` | no | yes | no | yes | `rustdoc` | #27/#28/#29 |
 | `rust.import-graph` | no | yes | no | yes | `cargo-depgraph` | #27/#28/#29 |
 | `rust.dead-code` | no | yes | no | yes | core `cargo` only | #27/#28/#29 |
+| `rust.graph-signals` | yes | no | yes | yes | graph provider | #28/#29 |
 | `rust.unused-deps` | no | yes | no | yes | `cargo-udeps` | #27/#28/#29 |
 | `rust.function-metrics` | yes | yes | no | yes | `rust-code-analysis-cli` | #27/#28/#29 |
 

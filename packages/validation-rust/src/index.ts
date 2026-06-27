@@ -3,6 +3,7 @@ import { createCargoCheck, createClippyCheck, createDeadCodeCheck, createRustdoc
 import { createFileLengthCheck, type RustFileLengthThresholds } from "./file-length-check.js";
 import { createFmtCheck } from "./fmt-check.js";
 import { createFunctionMetricsCheck, type RustFunctionMetricThresholds } from "./function-metrics-check.js";
+import { createGraphSignalsCheck } from "./graph-signals-check.js";
 import { createImportGraphCheck } from "./import-graph-check.js";
 import { createSourceHygieneCheck } from "./source-hygiene-check.js";
 import { createUnusedDepsCheck } from "./unused-deps-check.js";
@@ -14,6 +15,7 @@ export {
   RUST_FILE_LENGTH_CHECK_ID,
   RUST_FMT_CHECK_ID,
   RUST_FUNCTION_METRICS_CHECK_ID,
+  RUST_GRAPH_SIGNALS_CHECK_ID,
   RUST_IMPORT_GRAPH_CHECK_ID,
   RUST_RUSTDOC_CHECK_ID,
   RUST_SOURCE_HYGIENE_CHECK_ID,
@@ -22,6 +24,7 @@ export {
   type RustValidationCheckId
 } from "./check-ids.js";
 export { createFileLengthCheck, type RustFileLengthThresholds } from "./file-length-check.js";
+export { createGraphSignalsCheck } from "./graph-signals-check.js";
 export { validationRustAdapterName } from "./check-constants.js";
 export {
   createMissingToolRetainedChecks,
@@ -46,6 +49,7 @@ export function createRustValidationChecks(options: CreateRustValidationChecksOp
     createRustdocCheck(options),
     createImportGraphCheck(options),
     createDeadCodeCheck(options),
+    createGraphSignalsCheck(),
     createUnusedDepsCheck(options),
     createFileLengthCheck({
       ...options,

@@ -67,6 +67,8 @@ const rustFmtCheckId = "rust.fmt";
 const rustCargoCheckId = "rust.cargo-check";
 const rustClippyCheckId = "rust.clippy";
 const rustImportGraphCheckId = "rust.import-graph";
+const rustDeadCodeCheckId = "rust.dead-code";
+const rustGraphSignalsCheckId = "rust.graph-signals";
 const rustFileLengthCheckId = "rust.file-length";
 
 const graphStructureThresholds = {
@@ -94,6 +96,9 @@ export function createOpcoreMetricReport(input: CreateOpcoreMetricReportInput): 
   const signals: OpcoreMetricSignal[] = [];
   const degradations: OpcoreMetricDegradation[] = [];
   const diagnostics = validationResult?.diagnostics ?? [];
+  const checks = new Set(validationResult?.manifest?.checks ?? []);
+  const hasRustGraphSignalEvidence = checks.has(rustGraphSignalsCheckId) ||
+    diagnostics.some((diagnostic) => diagnostic.code?.startsWith("RUST_GRAPH_") === true);
 
   addDiagnosticSignal(signals, {
     id: "typescript.syntax_errors",
@@ -144,12 +149,52 @@ export function createOpcoreMetricReport(input: CreateOpcoreMetricReportInput): 
     diagnostics: diagnostics.filter((diagnostic) => diagnostic.code === "RUST_FILE_LINES" && hasPath(diagnostic))
   });
   addDiagnosticSignal(signals, {
-    id: "rust.module_graph",
-    title: "Rust module graph gaps",
+    id: "rust.untested_surface",
+    title: "Rust public surface without TESTED_BY graph evidence",
+    category: "graph",
+    severity: "warning",
+    checkId: rustGraphSignalsCheckId,
+    diagnostics: diagnostics.filter((diagnostic) => diagnostic.code === "RUST_GRAPH_UNTESTED_SURFACE" && hasPath(diagnostic))
+  });
+  addDiagnosticSignal(signals, {
+    id: "rust.dead_pub_exports",
+    title: "Rust public exports without incoming CALLS evidence",
+    category: "graph",
+    severity: "warning",
+    checkId: rustGraphSignalsCheckId,
+    diagnostics: diagnostics.filter((diagnostic) => diagnostic.code === "RUST_GRAPH_DEAD_PUB_EXPORT" && hasPath(diagnostic))
+  });
+  addDiagnosticSignal(signals, {
+    id: "rust.module_resolution",
+    title: "Rust unresolved module/use paths",
     category: "rust",
     severity: "error",
     checkId: rustImportGraphCheckId,
-    diagnostics: diagnostics.filter((diagnostic) => isRustModuleGraphDiagnostic(diagnostic) && hasPath(diagnostic))
+    diagnostics: diagnostics.filter((diagnostic) => isRustModuleResolutionDiagnostic(diagnostic) && hasPath(diagnostic))
+  });
+  addMappedDiagnosticSignal(signals, {
+    id: "rust.module_orphans",
+    title: "Rust module orphan sources",
+    category: "graph",
+    severity: "warning",
+    diagnostics: diagnostics.filter((diagnostic) => isRustModuleOrphanDiagnostic(diagnostic) && hasPath(diagnostic)),
+    checkId: rustGraphBackedDiagnosticCheckId
+  });
+  addMappedDiagnosticSignal(signals, {
+    id: "rust.module_cycles",
+    title: "Rust module cycles",
+    category: "graph",
+    severity: "error",
+    diagnostics: diagnostics.filter((diagnostic) => isRustModuleCycleDiagnostic(diagnostic) && hasPath(diagnostic)),
+    checkId: rustGraphBackedDiagnosticCheckId
+  });
+  addDiagnosticSignal(signals, {
+    id: "rust.dead_orphan_sources",
+    title: "Rust dead orphan sources",
+    category: "graph",
+    severity: "warning",
+    checkId: rustDeadCodeCheckId,
+    diagnostics: diagnostics.filter((diagnostic) => diagnostic.code === "RUST_DEAD_ORPHAN_SOURCE" && hasPath(diagnostic))
   });
   addDiagnosticSignal(signals, {
     id: "rust.toolchain_drift",
@@ -161,6 +206,7 @@ export function createOpcoreMetricReport(input: CreateOpcoreMetricReportInput): 
   });
 
   addUnsupportedLanguageSignal(signals, input.repoState);
+  if (!hasRustGraphSignalEvidence) addRustGraphFactSignals(signals, degradations, input.repoState, input.graphFacts);
   addGraphStructureSignals(signals, degradations, input.repoState, input.graphFacts);
   addValidationDegradations(degradations, input.repoState, validationResult);
 
@@ -597,6 +643,29 @@ function addDiagnosticSignal(
   });
 }
 
+function addMappedDiagnosticSignal(
+  signals: OpcoreMetricSignal[],
+  args: {
+    id: string;
+    title: string;
+    category: OpcoreMetricSignal["category"];
+    severity: OpcoreMetricSignal["severity"];
+    diagnostics: readonly ValidationDiagnostic[];
+    checkId: (diagnostic: ValidationDiagnostic) => string;
+  }
+): void {
+  const evidence = args.diagnostics.flatMap((diagnostic) => diagnosticEvidence(diagnostic, args.checkId(diagnostic)));
+  if (evidence.length === 0) return;
+  signals.push({
+    id: args.id,
+    title: args.title,
+    category: args.category,
+    severity: args.severity,
+    count: evidence.length,
+    evidence
+  });
+}
+
 function addUnsupportedLanguageSignal(signals: OpcoreMetricSignal[], repoState: OpcoreRepoStatePayload): void {
   if (repoState.coverage.unsupported.totalFiles <= 0) return;
   const evidence = repoState.coverage.unsupported.stacks.flatMap((stack) =>
@@ -630,7 +699,7 @@ function addGraphStructureSignals(
       title: "Graph structure metrics unavailable",
       source: "graph_facts",
       severity: "warning",
-      message: "Graph facts were not supplied; TS/JS structure and fan-in metrics were not computed."
+      message: "Graph facts were not supplied; graph-backed structure metrics were not computed."
     });
     return;
   }
@@ -702,6 +771,106 @@ function addGraphStructureSignals(
   }
 }
 
+function addRustGraphFactSignals(
+  signals: OpcoreMetricSignal[],
+  degradations: OpcoreMetricDegradation[],
+  repoState: OpcoreRepoStatePayload,
+  graphFacts: OpcoreMetricGraphFacts | undefined
+): void {
+  if (!repoHasRustGraphSupport(repoState)) return;
+  if (graphFacts === undefined) {
+    degradations.push({
+      id: "rust.graph_facts.unavailable",
+      title: "Rust graph-backed metrics unavailable",
+      source: "graph_facts",
+      severity: "warning",
+      message: "Graph facts were not supplied; Rust untested-surface and dead-public-export metrics were not computed."
+    });
+    return;
+  }
+
+  const nodes = graphFacts.nodes ?? [];
+  const edges = graphFacts.edges ?? [];
+  const nodesById = new Map(nodes.map((node) => [node.id, node]));
+  const rustFileNodes = nodes.filter((node) => isRustGraphFileNode(node));
+  const rustExportedNodes = nodes.filter((node) => isRustExportedGraphNode(node));
+
+  if (rustFileNodes.length === 0 && rustExportedNodes.length === 0) {
+    degradations.push({
+      id: "rust.graph_facts.partial",
+      title: "Rust graph facts incomplete",
+      source: "graph_facts",
+      severity: "warning",
+      message: "Graph facts did not include Rust file or exported-symbol nodes; Rust graph-backed metrics were not computed."
+    });
+    return;
+  }
+
+  if (!graphSupportsEdgeKind(graphFacts, "TESTED_BY")) {
+    degradations.push({
+      id: "rust.untested_surface.unavailable",
+      title: "Rust untested-surface metric unavailable",
+      source: "graph_facts",
+      severity: "warning",
+      message: "Graph facts did not include TESTED_BY edge coverage for Rust source files."
+    });
+  } else {
+    const untestedEvidence = rustFileNodes
+      .filter((node) => {
+        const path = nodePath(node);
+        return path !== undefined && !edges.some((edge) => edge.kind === "TESTED_BY" && edgeReferencesPath(edge, path, nodesById));
+      })
+      .map((node): OpcoreMetricEvidence => ({
+        source: "graph_fact",
+        path: nodePath(node) ?? node.id,
+        message: `No TESTED_BY graph evidence found for ${nodePath(node) ?? node.id}.`,
+        checkId: rustGraphSignalsCheckId,
+        code: "RUST_GRAPH_UNTESTED_SURFACE"
+      }));
+    if (untestedEvidence.length > 0) {
+      signals.push({
+        id: "rust.untested_surface",
+        title: "Rust public surface without TESTED_BY graph evidence",
+        category: "graph",
+        severity: "warning",
+        count: untestedEvidence.length,
+        evidence: untestedEvidence
+      });
+    }
+  }
+
+  if (!graphSupportsEdgeKind(graphFacts, "CALLS")) {
+    degradations.push({
+      id: "rust.dead_pub_exports.unavailable",
+      title: "Rust dead-public-export metric unavailable",
+      source: "graph_facts",
+      severity: "warning",
+      message: "Graph facts did not include CALLS edge coverage for Rust exported symbols.",
+      checkId: rustGraphSignalsCheckId
+    });
+  } else {
+    const deadPubExportEvidence = rustExportedNodes
+      .filter((node) => !edges.some((edge) => edge.kind === "CALLS" && edge.to === node.id))
+      .map((node): OpcoreMetricEvidence => ({
+        source: "graph_fact",
+        path: nodePath(node) ?? node.id,
+        message: `${node.name ?? node.id} is exported but has no incoming CALLS graph evidence.`,
+        checkId: rustGraphSignalsCheckId,
+        code: "RUST_GRAPH_DEAD_PUB_EXPORT"
+      }));
+    if (deadPubExportEvidence.length > 0) {
+      signals.push({
+        id: "rust.dead_pub_exports",
+        title: "Rust public exports without incoming CALLS evidence",
+        category: "graph",
+        severity: "warning",
+        count: deadPubExportEvidence.length,
+        evidence: deadPubExportEvidence
+      });
+    }
+  }
+}
+
 function addValidationDegradations(
   degradations: OpcoreMetricDegradation[],
   repoState: OpcoreRepoStatePayload,
@@ -718,6 +887,16 @@ function addValidationDegradations(
         checkId: tsDeadCodeCheckId
       });
     }
+    if (diagnostic.code === "RUST_GRAPH_SIGNALS_UNSUPPORTED") {
+      degradations.push({
+        id: "rust.graph_signals.unavailable",
+        title: "Rust graph-backed signals unavailable",
+        source: "validation_diagnostic",
+        severity: "warning",
+        message: diagnostic.message,
+        checkId: rustGraphSignalsCheckId
+      });
+    }
   }
 
   const checks = new Set(validationResult?.manifest?.checks ?? []);
@@ -730,6 +909,36 @@ function addValidationDegradations(
       severity: "warning",
       message: "Validation manifest did not include typescript.dead-code; dead-export findings are unavailable.",
       checkId: tsDeadCodeCheckId
+    });
+  }
+  if (repoHasRustValidationSupport(repoState) && !checks.has(rustImportGraphCheckId)) {
+    degradations.push({
+      id: "rust.module_graph.not_run",
+      title: "Rust module graph checks not run",
+      source: "validation_manifest",
+      severity: "warning",
+      message: "Validation manifest did not include rust.import-graph; Rust module orphan/cycle findings are unavailable.",
+      checkId: rustImportGraphCheckId
+    });
+  }
+  if (repoHasRustGraphSupport(repoState) && !checks.has(rustGraphSignalsCheckId)) {
+    degradations.push({
+      id: "rust.graph_signals.not_run",
+      title: "Rust graph-backed signals not run",
+      source: "validation_manifest",
+      severity: "warning",
+      message: "Validation manifest did not include rust.graph-signals; Rust graph-backed surface findings are unavailable.",
+      checkId: rustGraphSignalsCheckId
+    });
+  }
+  if (repoHasRustValidationSupport(repoState) && !checks.has(rustDeadCodeCheckId)) {
+    degradations.push({
+      id: "rust.dead_code.not_run",
+      title: "Rust dead-code checks not run",
+      source: "validation_manifest",
+      severity: "warning",
+      message: "Validation manifest did not include rust.dead-code; Rust dead-code findings are unavailable.",
+      checkId: rustDeadCodeCheckId
     });
   }
 
@@ -775,8 +984,20 @@ function diagnosticEvidence(diagnostic: ValidationDiagnostic, checkId: string): 
   ];
 }
 
-function isRustModuleGraphDiagnostic(diagnostic: ValidationDiagnostic): boolean {
-  return diagnostic.code === "RUST_DEAD_ORPHAN_SOURCE" || diagnostic.code?.startsWith("RUST_IMPORT_") === true;
+function isRustModuleResolutionDiagnostic(diagnostic: ValidationDiagnostic): boolean {
+  return diagnostic.code === "RUST_IMPORT_UNRESOLVED_MODULE" || diagnostic.code === "RUST_IMPORT_UNRESOLVED_USE";
+}
+
+function isRustModuleOrphanDiagnostic(diagnostic: ValidationDiagnostic): boolean {
+  return diagnostic.code === "RUST_GRAPH_MODULE_ORPHAN" || diagnostic.code === "RUST_IMPORT_ORPHAN_SOURCE";
+}
+
+function isRustModuleCycleDiagnostic(diagnostic: ValidationDiagnostic): boolean {
+  return diagnostic.code === "RUST_GRAPH_MODULE_CYCLE" || diagnostic.code === "RUST_IMPORT_MODULE_CYCLE";
+}
+
+function rustGraphBackedDiagnosticCheckId(diagnostic: ValidationDiagnostic): string {
+  return diagnostic.code?.startsWith("RUST_GRAPH_") === true ? rustGraphSignalsCheckId : rustImportGraphCheckId;
 }
 
 function isRustToolchainDiagnostic(diagnostic: ValidationDiagnostic): boolean {
@@ -789,7 +1010,12 @@ function isRustToolchainDiagnostic(diagnostic: ValidationDiagnostic): boolean {
 }
 
 function graphBackedCheckId(checkId: string): boolean {
-  return checkId === tsRelevantTestsCheckId || checkId === tsDeadCodeCheckId || checkId === "typescript.import-graph";
+  return checkId === tsRelevantTestsCheckId ||
+    checkId === tsDeadCodeCheckId ||
+    checkId === "typescript.import-graph" ||
+    checkId === rustImportGraphCheckId ||
+    checkId === rustDeadCodeCheckId ||
+    checkId === rustGraphSignalsCheckId;
 }
 
 function previousHistoryEntry(
@@ -888,6 +1114,60 @@ function warningAndDegradationLines(
   return lines.length === 0 ? ["  none"] : lines;
 }
 
+function repoHasRustGraphSupport(repoState: OpcoreRepoStatePayload): boolean {
+  return repoState.coverage.languages.some(
+    (language) => language.language.toLowerCase() === "rust" && language.graphSupported && language.files > 0
+  ) || repoState.coverage.graph.extensions.some((entry) => entry.extension === ".rs" && entry.count > 0);
+}
+
+function repoHasRustValidationSupport(repoState: OpcoreRepoStatePayload): boolean {
+  return repoState.coverage.languages.some(
+    (language) => language.language.toLowerCase() === "rust" && language.validationSupported && language.files > 0
+  ) || repoState.coverage.validation.extensions.some((entry) => entry.extension === ".rs" && entry.count > 0);
+}
+
+function graphSupportsEdgeKind(graphFacts: OpcoreMetricGraphFacts, kind: GraphFactEdge["kind"]): boolean {
+  if (graphFacts.metadata !== undefined) return graphFacts.metadata.edgeKinds.includes(kind);
+  return (graphFacts.edges ?? []).some((edge) => edge.kind === kind);
+}
+
+function isRustGraphFileNode(node: GraphFactNode): boolean {
+  const path = nodePath(node);
+  return node.kind.toLowerCase() === "file" && isRustSourcePath(path) && !isTestGraphNode(node) && !isRustTestPath(path);
+}
+
+function isRustExportedGraphNode(node: GraphFactNode): boolean {
+  const path = nodePath(node);
+  return node.kind.toLowerCase() !== "file" &&
+    isRustSourcePath(path) &&
+    booleanAttribute(node.attributes, ["exported"]) === true &&
+    !isTestGraphNode(node);
+}
+
+function isTestGraphNode(node: GraphFactNode): boolean {
+  return node.kind.toLowerCase() === "test" || booleanAttribute(node.attributes, ["isTest", "test"]) === true;
+}
+
+function isRustTestPath(path: string | undefined): boolean {
+  return path !== undefined && (/(^|\/)tests\//.test(path) || /(?:^|_)test\.rs$/.test(path));
+}
+
+function edgeReferencesPath(
+  edge: GraphFactEdge,
+  path: string,
+  nodesById: ReadonlyMap<string, GraphFactNode>
+): boolean {
+  return endpointReferencesPath(edge.from, path, nodesById) || endpointReferencesPath(edge.to, path, nodesById);
+}
+
+function endpointReferencesPath(
+  endpoint: string,
+  path: string,
+  nodesById: ReadonlyMap<string, GraphFactNode>
+): boolean {
+  return endpoint === path || endpointPath(endpoint, nodesById) === path;
+}
+
 function endpointPath(endpoint: string, nodesById: ReadonlyMap<string, GraphFactNode>): string | undefined {
   const node = nodesById.get(endpoint);
   if (node !== undefined) return nodePath(node);
@@ -903,6 +1183,14 @@ function stringAttribute(attributes: Record<string, JsonValue> | undefined, keys
   for (const key of keys) {
     const value = attributes?.[key];
     if (typeof value === "string" && value.length > 0) return value;
+  }
+  return undefined;
+}
+
+function booleanAttribute(attributes: Record<string, JsonValue> | undefined, keys: readonly string[]): boolean | undefined {
+  for (const key of keys) {
+    const value = attributes?.[key];
+    if (typeof value === "boolean") return value;
   }
   return undefined;
 }
