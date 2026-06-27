@@ -206,7 +206,7 @@ function routeHelp(argv: readonly string[], json: boolean): CommandRouterResult 
 
 function opcoreHelpMessage(): string {
   return [
-    "Opcore - code scan, agent setup, and validation gate.",
+    "Opcore - Local code intelligence, agent setup, and validation gate.",
     "",
     "Usage:",
     "  opcore [--repo <path>] [--json]",
