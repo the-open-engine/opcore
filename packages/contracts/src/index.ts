@@ -194,7 +194,7 @@ export interface GraphFreshness {
 }
 
 export interface GraphProviderArtifactMetadata {
-  artifactName: "lattice-graph-core" | (string & {});
+  artifactName: "opcore-graph-core" | (string & {});
   artifactVersion: string;
   targetPlatform: string;
   binaryPath: string;
@@ -204,9 +204,9 @@ export interface GraphProviderArtifactMetadata {
 }
 
 export interface GraphProviderCapabilityHandshake {
-  provider: "lattice-graph" | (string & {});
+  provider: "opcore-graph" | (string & {});
   graphSchemaVersion: number;
-  artifactName: "lattice-graph-core" | (string & {});
+  artifactName: "opcore-graph-core" | (string & {});
   artifactVersion: string;
   targetPlatform: string;
   supportedOperations: readonly GraphDaemonOperation[];
@@ -791,11 +791,11 @@ export interface GraphWatchLifecycle {
 
 export interface GraphServeTransportStatus {
   schemaVersion: 1;
-  protocol: "lattice.graph.daemon";
+  protocol: "opcore.graph.daemon";
   transport: "stdio";
   state: "ready" | "error" | "stopped";
   repo: RepoIdentity;
-  provider: "lattice-graph" | (string & {});
+  provider: "opcore-graph" | (string & {});
   pid?: number;
   artifact?: GraphProviderArtifactMetadata;
   failure?: ProviderFailure;
@@ -812,7 +812,7 @@ export type GraphDaemonOperation = "build" | "update" | "watch" | "status" | "qu
 export const graphDaemonOperations = ["build", "update", "watch", "status", "query", "ping", "health", "shutdown"] as const;
 
 export interface GraphDaemonRequest {
-  protocol: "lattice.graph.daemon";
+  protocol: "opcore.graph.daemon";
   requestId: string;
   schemaVersion: number;
   operation: GraphDaemonOperation;
@@ -833,7 +833,7 @@ export interface GraphDaemonRequest {
 }
 
 export interface GraphDaemonResponse {
-  protocol: "lattice.graph.daemon";
+  protocol: "opcore.graph.daemon";
   requestId: string;
   schemaVersion: number;
   status: GraphProviderStatus;
@@ -1103,7 +1103,7 @@ export interface ValidationAdapterDegradedCheckStatus {
   retainedCompatibility?: boolean;
   followUpIssue?: string;
   currentUsage?: {
-    lattice: boolean;
+    opcore: boolean;
     orchestra: boolean;
     covibes: boolean;
     gateway: boolean;
@@ -1166,10 +1166,10 @@ export type ManagedToolDescriptorArtifactType = (typeof managedToolDescriptorArt
 
 export interface ManagedToolDescriptor {
   schemaVersion: 1;
-  descriptorKind: "aggregate_lattice";
+  descriptorKind: "aggregate_opcore";
   aggregateIdentity: {
-    name: "lattice";
-    releaseLine: "lattice";
+    name: "opcore";
+    releaseLine: "opcore";
     packageName: "@the-open-engine/opcore";
     version?: string;
   };
@@ -1189,7 +1189,7 @@ export interface ManagedToolDescriptor {
 }
 
 export interface ManagedToolDescriptorEntrypoint {
-  bin: "lattice";
+  bin: "opcore";
   packageName: "@the-open-engine/opcore";
   path: string;
   command: readonly string[];
@@ -1211,7 +1211,7 @@ export interface ManagedToolDescriptorHealthProbe {
 
 export interface ManagedToolDescriptorCapabilities {
   graph: {
-    provider: "lattice-graph";
+    provider: "opcore-graph";
     schemaVersion: 1;
     commands: readonly string[];
     queryKinds: readonly string[];
@@ -1239,9 +1239,9 @@ export interface ManagedToolDescriptorCapabilities {
 export interface ManagedToolDescriptorNativeArtifact {
   targetPlatform: GraphCoreNativeSupportedTarget;
   packageName: GraphCoreNativePackageName;
-  binaryPath: "lattice-graph-core";
+  binaryPath: "opcore-graph-core";
   metadataPath: "metadata.json";
-  checksumPath: "lattice-graph-core.sha256";
+  checksumPath: "opcore-graph-core.sha256";
   artifactIds: {
       binaryArtifactId: string;
       metadataArtifactId: string;
@@ -1290,7 +1290,7 @@ export type CommandTimingDegradationReason = (typeof commandTimingDegradationRea
 export const latencyBudgetResultStatuses = ["pass", "over"] as const;
 export type LatencyBudgetResultStatus = (typeof latencyBudgetResultStatuses)[number];
 
-export const commandLatencyTelemetryBins = ["lattice", "opcore", "opcore-asp-provider"] as const;
+export const commandLatencyTelemetryBins = ["opcore", "opcore-asp-provider"] as const;
 export type CommandLatencyTelemetryBin = (typeof commandLatencyTelemetryBins)[number];
 
 export const commandLatencyTelemetryArtifactPolicy = {
@@ -1304,26 +1304,26 @@ export const graphReferenceEvidenceClassifications = ["required", "supporting", 
 export type GraphReferenceEvidenceClassification = (typeof graphReferenceEvidenceClassifications)[number];
 
 export const graphReleaseCoreCommandIds = [
-  "lattice-graph-build",
-  "lattice-graph-update",
-  "lattice-graph-watch",
-  "lattice-graph-status",
-  "lattice-graph-query",
-  "lattice-graph-impact",
-  "lattice-graph-search",
-  "lattice-graph-serve"
+  "opcore-graph-build",
+  "opcore-graph-update",
+  "opcore-graph-watch",
+  "opcore-graph-status",
+  "opcore-graph-query",
+  "opcore-graph-impact",
+  "opcore-graph-search",
+  "opcore-graph-serve"
 ] as const;
 export type GraphReleaseCoreCommandId = (typeof graphReleaseCoreCommandIds)[number];
 
 export const graphReleaseRustCommandIds = [
-  "lattice-graph-rust-build",
-  "lattice-graph-rust-update",
-  "lattice-graph-rust-watch",
-  "lattice-graph-rust-status",
-  "lattice-graph-rust-query",
-  "lattice-graph-rust-impact",
-  "lattice-graph-rust-search",
-  "lattice-graph-rust-serve"
+  "opcore-graph-rust-build",
+  "opcore-graph-rust-update",
+  "opcore-graph-rust-watch",
+  "opcore-graph-rust-status",
+  "opcore-graph-rust-query",
+  "opcore-graph-rust-impact",
+  "opcore-graph-rust-search",
+  "opcore-graph-rust-serve"
 ] as const;
 export type GraphReleaseRustCommandId = (typeof graphReleaseRustCommandIds)[number];
 
@@ -1522,7 +1522,7 @@ export type AspDogfoodGuardrailId = (typeof aspDogfoodGuardrailIds)[number];
 export const aspDogfoodUnsupportedSurfaceIds = ["inspect", "edit"] as const;
 export type AspDogfoodUnsupportedSurfaceId = (typeof aspDogfoodUnsupportedSurfaceIds)[number];
 
-export const aspDogfoodForbiddenProviderMarkers = ["lattice asp serve", "lattice asp", "dist/bin/lattice", ".ace/runtime"] as const;
+export const aspDogfoodForbiddenProviderMarkers = ["opcore asp serve", "opcore asp", "dist/bin/lattice", ".ace/runtime"] as const;
 export type AspDogfoodForbiddenProviderMarker = (typeof aspDogfoodForbiddenProviderMarkers)[number];
 const legacyAspProviderBinMarker = ["lattice", "asp", "provider"].join("-");
 
@@ -1536,7 +1536,7 @@ interface ReleaseCutoverCommandExpectation {
   readonly owner: CommandOwner;
   readonly status: ReleaseCutoverExpectedCommandStatus;
   readonly exitCode: 0 | 1 | 2 | 64;
-  readonly bin: "lattice" | "opcore";
+  readonly bin: "opcore" | "opcore";
 }
 
 const releaseCutoverCommandExpectations = {
@@ -1551,85 +1551,85 @@ const releaseCutoverCommandExpectations = {
   },
   "opcore-measure": { canonicalCommand: ["opcore", "measure"], owner: "runtime", status: "ok", exitCode: 0, bin: "opcore" },
   "opcore-try": { canonicalCommand: ["opcore", "try"], owner: "runtime", status: "ok", exitCode: 0, bin: "opcore" },
-  status: { canonicalCommand: ["lattice", "status"], owner: "runtime", status: "ok", exitCode: 0, bin: "lattice" },
-  doctor: { canonicalCommand: ["lattice", "doctor"], owner: "runtime", status: "ok", exitCode: 0, bin: "lattice" },
-  "graph-build": { canonicalCommand: ["lattice", "graph", "build"], owner: "graph", status: "ok", exitCode: 0, bin: "lattice" },
-  "graph-status": { canonicalCommand: ["lattice", "graph", "status"], owner: "graph", status: "ok", exitCode: 0, bin: "lattice" },
-  "graph-query": { canonicalCommand: ["lattice", "graph", "query"], owner: "graph", status: "ok", exitCode: 0, bin: "lattice" },
+  status: { canonicalCommand: ["opcore", "status"], owner: "runtime", status: "ok", exitCode: 0, bin: "opcore" },
+  doctor: { canonicalCommand: ["opcore", "doctor"], owner: "runtime", status: "ok", exitCode: 0, bin: "opcore" },
+  "graph-build": { canonicalCommand: ["opcore", "graph", "build"], owner: "graph", status: "ok", exitCode: 0, bin: "opcore" },
+  "graph-status": { canonicalCommand: ["opcore", "graph", "status"], owner: "graph", status: "ok", exitCode: 0, bin: "opcore" },
+  "graph-query": { canonicalCommand: ["opcore", "graph", "query"], owner: "graph", status: "ok", exitCode: 0, bin: "opcore" },
   "graph-impact": {
-    canonicalCommand: ["lattice", "graph", "impact", "--files", "src/components/GreetingCard.tsx"],
+    canonicalCommand: ["opcore", "graph", "impact", "--files", "src/components/GreetingCard.tsx"],
     owner: "graph",
     status: "ok",
     exitCode: 0,
-    bin: "lattice"
+    bin: "opcore"
   },
   "graph-review-context": {
-    canonicalCommand: ["lattice", "graph", "review-context", "--files", "src/components/GreetingCard.tsx"],
+    canonicalCommand: ["opcore", "graph", "review-context", "--files", "src/components/GreetingCard.tsx"],
     owner: "graph",
     status: "ok",
     exitCode: 0,
-    bin: "lattice"
+    bin: "opcore"
   },
   "graph-detect-changes": {
-    canonicalCommand: ["lattice", "graph", "detect-changes", "--files", "src/components/GreetingCard.tsx"],
+    canonicalCommand: ["opcore", "graph", "detect-changes", "--files", "src/components/GreetingCard.tsx"],
     owner: "graph",
     status: "ok",
     exitCode: 0,
-    bin: "lattice"
+    bin: "opcore"
   },
   "graph-search": {
-    canonicalCommand: ["lattice", "graph", "search", "Greeting", "--limit", "5"],
+    canonicalCommand: ["opcore", "graph", "search", "Greeting", "--limit", "5"],
     owner: "graph",
     status: "ok",
     exitCode: 0,
-    bin: "lattice"
+    bin: "opcore"
   },
-  "graph-serve": { canonicalCommand: ["lattice", "graph", "serve"], owner: "graph", status: "ok", exitCode: 0, bin: "lattice" },
+  "graph-serve": { canonicalCommand: ["opcore", "graph", "serve"], owner: "graph", status: "ok", exitCode: 0, bin: "opcore" },
   "inspect-symbols": {
-    canonicalCommand: ["lattice", "inspect", "symbols", "Greeting", "--limit", "5"],
+    canonicalCommand: ["opcore", "inspect", "symbols", "Greeting", "--limit", "5"],
     owner: "inspect",
     status: "ok",
     exitCode: 0,
-    bin: "lattice"
+    bin: "opcore"
   },
   "inspect-definition": {
-    canonicalCommand: ["lattice", "inspect", "definition", "GreetingCard"],
+    canonicalCommand: ["opcore", "inspect", "definition", "GreetingCard"],
     owner: "inspect",
     status: "ok",
     exitCode: 0,
-    bin: "lattice"
+    bin: "opcore"
   },
   "inspect-references": {
-    canonicalCommand: ["lattice", "inspect", "references", "function:src/components/GreetingCard.tsx#GreetingCard", "--limit", "5"],
+    canonicalCommand: ["opcore", "inspect", "references", "function:src/components/GreetingCard.tsx#GreetingCard", "--limit", "5"],
     owner: "inspect",
     status: "ok",
     exitCode: 0,
-    bin: "lattice"
+    bin: "opcore"
   },
   "inspect-signature": {
-    canonicalCommand: ["lattice", "inspect", "signature", "function:src/components/GreetingCard.tsx#GreetingCard"],
+    canonicalCommand: ["opcore", "inspect", "signature", "function:src/components/GreetingCard.tsx#GreetingCard"],
     owner: "inspect",
     status: "ok",
     exitCode: 0,
-    bin: "lattice"
+    bin: "opcore"
   },
   "inspect-implementations": {
-    canonicalCommand: ["lattice", "inspect", "implementations", "class:src/models.ts#GreetingModel"],
+    canonicalCommand: ["opcore", "inspect", "implementations", "class:src/models.ts#GreetingModel"],
     owner: "inspect",
     status: "ok",
     exitCode: 0,
-    bin: "lattice"
+    bin: "opcore"
   },
   "inspect-search": {
-    canonicalCommand: ["lattice", "inspect", "search", "Greeting", "--limit", "5"],
+    canonicalCommand: ["opcore", "inspect", "search", "Greeting", "--limit", "5"],
     owner: "inspect",
     status: "ok",
     exitCode: 0,
-    bin: "lattice"
+    bin: "opcore"
   },
   "edit-preview": {
     canonicalCommand: [
-      "lattice",
+      "opcore",
       "edit",
       "exact",
       "--path",
@@ -1642,11 +1642,11 @@ const releaseCutoverCommandExpectations = {
     owner: "edit",
     status: "ok",
     exitCode: 0,
-    bin: "lattice"
+    bin: "opcore"
   },
   "edit-apply": {
     canonicalCommand: [
-      "lattice",
+      "opcore",
       "edit",
       "exact",
       "--path",
@@ -1660,11 +1660,11 @@ const releaseCutoverCommandExpectations = {
     owner: "edit",
     status: "ok",
     exitCode: 0,
-    bin: "lattice"
+    bin: "opcore"
   },
   "edit-refused": {
     canonicalCommand: [
-      "lattice",
+      "opcore",
       "edit",
       "exact",
       "--path",
@@ -1678,26 +1678,26 @@ const releaseCutoverCommandExpectations = {
     owner: "edit",
     status: "error",
     exitCode: 1,
-    bin: "lattice"
+    bin: "opcore"
   },
   "check-files": {
-    canonicalCommand: ["lattice", "check", "files", "src/cutover.ts", "--checks", "typescript.syntax,typescript.types"],
+    canonicalCommand: ["opcore", "check", "files", "src/cutover.ts", "--checks", "typescript.syntax,typescript.types"],
     owner: "validation",
     status: "ok",
     exitCode: 0,
-    bin: "lattice"
+    bin: "opcore"
   },
   "validate-request": {
-    canonicalCommand: ["lattice", "validate", "request", "--request-file", releaseCutoverRequestFilePlaceholder],
+    canonicalCommand: ["opcore", "validate", "request", "--request-file", releaseCutoverRequestFilePlaceholder],
     requestFileBasename: "validate-request.json",
     owner: "validation",
     status: "ok",
     exitCode: 0,
-    bin: "lattice"
+    bin: "opcore"
   },
   "validate-pre-write-pass": {
     canonicalCommand: [
-      "lattice",
+      "opcore",
       "validate",
       "pre-write",
       "--request-file",
@@ -1709,11 +1709,11 @@ const releaseCutoverCommandExpectations = {
     owner: "validation",
     status: "ok",
     exitCode: 0,
-    bin: "lattice"
+    bin: "opcore"
   },
   "validate-pre-write-fail": {
     canonicalCommand: [
-      "lattice",
+      "opcore",
       "validate",
       "pre-write",
       "--request-file",
@@ -1725,41 +1725,41 @@ const releaseCutoverCommandExpectations = {
     owner: "validation",
     status: "error",
     exitCode: 1,
-    bin: "lattice"
+    bin: "opcore"
   }
 } as const satisfies Record<ReleaseCutoverCommandId, ReleaseCutoverCommandExpectation>;
 
 const releaseCutoverRustCommandExpectations = {
-  "graph-rust-build": { canonicalCommand: ["lattice", "graph", "build"], owner: "graph", status: "ok", exitCode: 0, bin: "lattice" },
-  "graph-rust-status": { canonicalCommand: ["lattice", "graph", "status"], owner: "graph", status: "ok", exitCode: 0, bin: "lattice" },
-  "graph-rust-query": { canonicalCommand: ["lattice", "graph", "query"], owner: "graph", status: "ok", exitCode: 0, bin: "lattice" },
+  "graph-rust-build": { canonicalCommand: ["opcore", "graph", "build"], owner: "graph", status: "ok", exitCode: 0, bin: "opcore" },
+  "graph-rust-status": { canonicalCommand: ["opcore", "graph", "status"], owner: "graph", status: "ok", exitCode: 0, bin: "opcore" },
+  "graph-rust-query": { canonicalCommand: ["opcore", "graph", "query"], owner: "graph", status: "ok", exitCode: 0, bin: "opcore" },
   "graph-rust-impact": {
-    canonicalCommand: ["lattice", "graph", "impact", "--files", "src/helpers.rs"],
+    canonicalCommand: ["opcore", "graph", "impact", "--files", "src/helpers.rs"],
     owner: "graph",
     status: "ok",
     exitCode: 0,
-    bin: "lattice"
+    bin: "opcore"
   },
   "graph-rust-review-context": {
-    canonicalCommand: ["lattice", "graph", "review-context", "--files", "src/helpers.rs"],
+    canonicalCommand: ["opcore", "graph", "review-context", "--files", "src/helpers.rs"],
     owner: "graph",
     status: "ok",
     exitCode: 0,
-    bin: "lattice"
+    bin: "opcore"
   },
   "graph-rust-detect-changes": {
-    canonicalCommand: ["lattice", "graph", "detect-changes", "--files", "src/helpers.rs"],
+    canonicalCommand: ["opcore", "graph", "detect-changes", "--files", "src/helpers.rs"],
     owner: "graph",
     status: "ok",
     exitCode: 0,
-    bin: "lattice"
+    bin: "opcore"
   },
   "graph-rust-search": {
-    canonicalCommand: ["lattice", "graph", "search", "Widget", "--limit", "5"],
+    canonicalCommand: ["opcore", "graph", "search", "Widget", "--limit", "5"],
     owner: "graph",
     status: "ok",
     exitCode: 0,
-    bin: "lattice"
+    bin: "opcore"
   }
 } as const satisfies Record<ReleaseCutoverRustCommandId, ReleaseCutoverCommandExpectation>;
 
@@ -2315,7 +2315,7 @@ export const commandExitSemantics: CommandExitSemantics = {
 export const commandRouterManifest: CommandRouterManifest = {
   schemaVersion: 1,
   packageName: "@the-open-engine/opcore",
-  bins: ["lattice"],
+  bins: ["opcore"],
   exitSemantics: commandExitSemantics,
   ownershipBoundaries: [
     {
@@ -2343,7 +2343,7 @@ export const commandRouterManifest: CommandRouterManifest = {
     {
       name: "graph",
       owner: "graph",
-      canonicalCommand: ["lattice", "graph"],
+      canonicalCommand: ["opcore", "graph"],
       commands: [
         "build",
         "update",
@@ -2362,42 +2362,42 @@ export const commandRouterManifest: CommandRouterManifest = {
     {
       name: "inspect",
       owner: "inspect",
-      canonicalCommand: ["lattice", "inspect"],
+      canonicalCommand: ["opcore", "inspect"],
       commands: ["symbols", "definition", "references", "signature", "implementations", "search"],
       summary: "Read-only code intelligence over graph and inspect-owned language services."
     },
     {
       name: "edit",
       owner: "edit",
-      canonicalCommand: ["lattice", "edit"],
+      canonicalCommand: ["opcore", "edit"],
       commands: ["exact", "multi", "search-replace", "check", "apply", "patch", "tree", "rename", "move", "signature"],
       summary: "Exact edit, multi-edit, search-replace, patch/tree, graph-backed symbol rename/move/signature, preview/check, and apply routes."
     },
     {
       name: "check",
       owner: "validation",
-      canonicalCommand: ["lattice", "check"],
+      canonicalCommand: ["opcore", "check"],
       commands: ["files", "staged", "changed", "tree", "all", "manifest"],
       summary: "Mechanical check execution and check manifest behavior."
     },
     {
       name: "validate",
       owner: "validation",
-      canonicalCommand: ["lattice", "validate"],
+      canonicalCommand: ["opcore", "validate"],
       commands: ["request", "hypothetical", "pre-write", "manifest"],
       summary: "Hypothetical, pre-write, and validation request behavior."
     },
     {
       name: "status",
       owner: "runtime",
-      canonicalCommand: ["lattice", "status"],
+      canonicalCommand: ["opcore", "status"],
       commands: ["status"],
       summary: "Shared router and runtime health status."
     },
     {
       name: "doctor",
       owner: "runtime",
-      canonicalCommand: ["lattice", "doctor"],
+      canonicalCommand: ["opcore", "doctor"],
       commands: ["doctor"],
       summary: "Shared runtime diagnostic summary."
     }
@@ -2442,7 +2442,7 @@ export interface GraphReferenceEvidenceSqliteFixture extends GraphReferenceEvide
 
 export interface GraphReferenceEvidenceDaemonFixture extends GraphReferenceEvidenceSurfaceBase {
   fixture: string;
-  protocol: "lattice.graph.daemon" | "reference-mcp-stdio-baseline-only" | (string & {});
+  protocol: "opcore.graph.daemon" | "reference-mcp-stdio-baseline-only" | (string & {});
   envelopes: readonly string[];
 }
 
@@ -2491,7 +2491,7 @@ export interface GraphReferenceEvidenceManifest {
 
 export interface GraphReleaseCommandCoverage {
   id: GraphReleaseCoreCommandId;
-  bin: "lattice";
+  bin: "opcore";
   command: readonly string[];
   canonicalCommand: readonly string[];
   status: "passed";
@@ -2502,7 +2502,7 @@ export interface GraphReleaseCommandCoverage {
 
 export interface GraphReleaseRustCommandCoverage {
   id: GraphReleaseRustCommandId;
-  bin: "lattice";
+  bin: "opcore";
   command: readonly string[];
   canonicalCommand: readonly string[];
   status: "passed";
@@ -2521,7 +2521,7 @@ export interface GraphReleaseDirectSqliteQueryReceipt {
 
 export interface GraphReleaseServeTransportReceipt {
   id: GraphReleaseServeTransportId;
-  protocol: "lattice.graph.daemon" | "jsonrpc-2.0" | (string & {});
+  protocol: "opcore.graph.daemon" | "jsonrpc-2.0" | (string & {});
   operation: "ping" | "status" | "query" | "search" | "shutdown" | (string & {});
   status: "passed";
   exitCode: 0;
@@ -2555,8 +2555,8 @@ export interface GraphReleaseNativeArtifactEvidence {
   packageName: GraphCoreNativePackageName;
   targetPlatform: GraphCoreNativeSupportedTarget;
   metadata: GraphProviderArtifactMetadata;
-  binaryPath: "lattice-graph-core";
-  checksumPath: "lattice-graph-core.sha256";
+  binaryPath: "opcore-graph-core";
+  checksumPath: "opcore-graph-core.sha256";
   metadataPath: "metadata.json";
   binarySha256: string;
   checksumFileSha256: string;
@@ -2833,7 +2833,7 @@ export interface ReleaseCutoverEnvironmentIsolationEvidence {
   pathSanitized: true;
   aceRuntimeBinExcluded: true;
   siblingCovibesExcluded: true;
-  latticeBinOnly: true;
+  opcoreBinOnly: true;
   oldBinsAbsent: {
     crg: true;
     cix: true;
@@ -3105,7 +3105,7 @@ export function parseCommandArgv(argv: readonly string[]): ParsedCommandArgv {
 
 export function normalizeCommandBin(bin: string): string {
   const normalized = bin.replaceAll("\\", "/").split("/").at(-1) ?? bin;
-  return normalized.endsWith(".js") ? "lattice" : normalized;
+  return normalized.endsWith(".js") ? "opcore" : normalized;
 }
 
 export function commandExitCodeForStatus(status: CommandRouteStatus): number {
@@ -3164,11 +3164,11 @@ export async function routeCommandAdapter(options: RouteCommandAdapterOptions): 
     return createCommandRouterResult({
       bin,
       argv: options.argv,
-      canonicalCommand: ["lattice", options.groupName],
+      canonicalCommand: ["opcore", options.groupName],
       owner: "runtime",
       status: "unsupported",
       json: parsed.json,
-      message: `Unsupported lattice command group: ${options.groupName}`
+      message: `Unsupported opcore command group: ${options.groupName}`
     });
   }
 
@@ -3237,7 +3237,7 @@ function commandHelpResult(
   groupName?: string
 ): CommandRouterResult {
   const group = groupName ? commandGroupByName(groupName) : undefined;
-  const canonicalCommand = group ? [...group.canonicalCommand, "help"] : ["lattice", "help"];
+  const canonicalCommand = group ? [...group.canonicalCommand, "help"] : ["opcore", "help"];
   return createCommandRouterResult({
     bin,
     argv,
@@ -3256,12 +3256,12 @@ function errorMessage(error: unknown): string {
 function commandHelpMessage(groupName?: string): string {
   if (!groupName) {
     return [
-      "Lattice - local code intelligence and edit safety for coding agents.",
+      "Opcore - local code intelligence and edit safety for coding agents.",
       "Groups: graph, inspect, edit, check, validate, status, doctor"
     ].join("\n");
   }
   const group = commandGroupByName(groupName);
-  if (!group) return `Unknown lattice command group: ${groupName}`;
+  if (!group) return `Unknown opcore command group: ${groupName}`;
   return [
     `${group.canonicalCommand.join(" ")} - ${group.summary}`,
     `Commands: ${group.commands.join(", ")}`,
@@ -3270,14 +3270,14 @@ function commandHelpMessage(groupName?: string): string {
 }
 
 function contractHelpExample(groupName: string): string {
-  if (groupName === "graph") return 'lattice graph search "GreetingCard" --repo . --limit 5';
-  if (groupName === "inspect") return "lattice inspect definition GreetingCard --repo .";
-  if (groupName === "edit") return 'lattice edit exact --path src/a.ts --expected "old" --replacement "new" --json';
-  if (groupName === "check") return "lattice check files --files src/index.ts --json";
-  if (groupName === "validate") return "lattice validate pre-write --request-file ./validation-request.json --timeout-ms 30000 --json";
-  if (groupName === "status") return "lattice status";
-  if (groupName === "doctor") return "lattice doctor --json";
-  return `lattice ${groupName} --help`;
+  if (groupName === "graph") return 'opcore graph search "GreetingCard" --repo . --limit 5';
+  if (groupName === "inspect") return "opcore inspect definition GreetingCard --repo .";
+  if (groupName === "edit") return 'opcore edit exact --path src/a.ts --expected "old" --replacement "new" --json';
+  if (groupName === "check") return "opcore check files --files src/index.ts --json";
+  if (groupName === "validate") return "opcore validate pre-write --request-file ./validation-request.json --timeout-ms 30000 --json";
+  if (groupName === "status") return "opcore status";
+  if (groupName === "doctor") return "opcore doctor --json";
+  return `opcore ${groupName} --help`;
 }
 
 export function validateCommandRouterManifest(manifest: CommandRouterManifest): CommandRouterManifest {
@@ -3296,8 +3296,8 @@ export function validateManagedToolDescriptor(descriptor: ManagedToolDescriptor)
     throw new Error("Managed tool descriptor is required");
   }
   if (descriptor.schemaVersion !== 1) throw new Error("Managed tool descriptor schemaVersion must be 1");
-  if (descriptor.descriptorKind !== "aggregate_lattice") {
-    throw new Error("Managed tool descriptor descriptorKind must be aggregate_lattice");
+  if (descriptor.descriptorKind !== "aggregate_opcore") {
+    throw new Error("Managed tool descriptor descriptorKind must be aggregate_opcore");
   }
   validateManagedToolIdentity(descriptor);
   validateManagedToolEntrypoints(descriptor.entrypoints);
@@ -3315,8 +3315,8 @@ export function validateManagedToolDescriptor(descriptor: ManagedToolDescriptor)
 function validateManagedToolIdentity(descriptor: ManagedToolDescriptor): void {
   const aggregate = descriptor.aggregateIdentity;
   if (!aggregate || typeof aggregate !== "object") throw new Error("Managed tool descriptor aggregateIdentity is required");
-  if (aggregate.name !== "lattice") throw new Error("Managed tool descriptor aggregateIdentity.name must be lattice");
-  if (aggregate.releaseLine !== "lattice") throw new Error("Managed tool descriptor aggregateIdentity.releaseLine must be lattice");
+  if (aggregate.name !== "opcore") throw new Error("Managed tool descriptor aggregateIdentity.name must be opcore");
+  if (aggregate.releaseLine !== "opcore") throw new Error("Managed tool descriptor aggregateIdentity.releaseLine must be opcore");
   if (aggregate.packageName !== "@the-open-engine/opcore") {
     throw new Error("Managed tool descriptor aggregateIdentity.packageName must be @the-open-engine/opcore");
   }
@@ -3338,26 +3338,26 @@ function validateManagedToolIdentity(descriptor: ManagedToolDescriptor): void {
 function validateManagedToolEntrypoints(entrypoints: readonly ManagedToolDescriptorEntrypoint[]): void {
   validateNonEmptyArray(entrypoints, "Managed tool descriptor entrypoints");
   for (const entrypoint of entrypoints) {
-    if (entrypoint?.bin !== "lattice" && ["crg", "cix", "rox"].includes(String(entrypoint?.bin))) {
+    if (entrypoint?.bin !== "opcore" && ["crg", "cix", "rox"].includes(String(entrypoint?.bin))) {
       throw new Error("Managed tool descriptor must not reference old public aliases");
     }
   }
   validateExactStringSet(
     entrypoints.map((entrypoint) => entrypoint.bin),
-    ["lattice"],
+    ["opcore"],
     "Managed tool descriptor entrypoint bins"
   );
   for (const entrypoint of entrypoints) {
     if (!entrypoint || typeof entrypoint !== "object") throw new Error("Managed tool descriptor entrypoint is required");
-    if (entrypoint.bin !== "lattice") throw new Error("Managed tool descriptor must not reference old public aliases");
+    if (entrypoint.bin !== "opcore") throw new Error("Managed tool descriptor must expose the opcore entrypoint");
     if (entrypoint.packageName !== "@the-open-engine/opcore") {
       throw new Error("Managed tool descriptor entrypoint packageName must be @the-open-engine/opcore");
     }
     validateManagedToolPackagePath(entrypoint.path, "Managed tool descriptor entrypoint path");
-    if (entrypoint.path !== "dist/lattice/index.js") {
-      throw new Error("Managed tool descriptor entrypoint path must be dist/lattice/index.js");
+    if (entrypoint.path !== "dist/index.js") {
+      throw new Error("Managed tool descriptor entrypoint path must be dist/index.js");
     }
-    validateExactStringSequence(entrypoint.command, ["lattice"], "Managed tool descriptor entrypoint command");
+    validateExactStringSequence(entrypoint.command, ["opcore"], "Managed tool descriptor entrypoint command");
   }
 }
 
@@ -3373,7 +3373,7 @@ function validateManagedToolCommandGroups(commandGroups: readonly ManagedToolDes
     if (!includesString(managedToolDescriptorCommandGroups, group.name)) {
       throw new Error(`Unknown managed tool descriptor command group: ${String(group.name)}`);
     }
-    const expectedCanonical = ["lattice", group.name];
+    const expectedCanonical = ["opcore", group.name];
     validateExactStringSequence(group.canonicalCommand, expectedCanonical, `Managed tool descriptor ${group.name} canonicalCommand`);
     validateStringArray(group.commands, `Managed tool descriptor ${group.name} commands`, { allowEmpty: false });
     const expectedPackageName = managedToolDescriptorCommandGroupPackageNames[group.name];
@@ -3393,11 +3393,11 @@ function validateManagedToolHealthProbes(healthProbes: readonly ManagedToolDescr
     validateNonEmptyString(probe.id, "Managed tool descriptor health probe id");
     validateStringArray(probe.command, "Managed tool descriptor health probe command", { allowEmpty: false });
     validateManagedToolCommandTokens(probe.command, "Managed tool descriptor health probe command");
-    if (probe.command[0] !== "lattice") throw new Error("Managed tool descriptor health probes must use lattice commands");
+    if (probe.command[0] !== "opcore") throw new Error("Managed tool descriptor health probes must use opcore commands");
     if (probe.expectedExitCode !== 0) throw new Error("Managed tool descriptor health probe expectedExitCode must be 0");
     if (probe.output !== "json") throw new Error("Managed tool descriptor health probe output must be json");
-    if (sameStringArray(probe.command, ["lattice", "status", "--json"])) hasStatus = true;
-    if (sameStringArray(probe.command, ["lattice", "doctor", "--json"])) hasDoctor = true;
+    if (sameStringArray(probe.command, ["opcore", "status", "--json"])) hasStatus = true;
+    if (sameStringArray(probe.command, ["opcore", "doctor", "--json"])) hasDoctor = true;
   }
   if (!hasStatus) throw new Error("Managed tool descriptor health probes must include status");
   if (!hasDoctor) throw new Error("Managed tool descriptor health probes must include doctor");
@@ -3412,7 +3412,7 @@ function validateManagedToolCapabilities(capabilities: ManagedToolDescriptorCapa
 
 function validateManagedToolGraphCapabilities(graph: ManagedToolDescriptorCapabilities["graph"]): void {
   if (!graph || typeof graph !== "object") throw new Error("Managed tool descriptor graph capabilities are required");
-  if (graph.provider !== "lattice-graph") throw new Error("Managed tool descriptor graph provider must be lattice-graph");
+  if (graph.provider !== "opcore-graph") throw new Error("Managed tool descriptor graph provider must be opcore-graph");
   if (graph.schemaVersion !== 1) throw new Error("Managed tool descriptor graph schemaVersion must be 1");
   validateExactStringSet(
     graph.commands,
@@ -3439,10 +3439,10 @@ function validateManagedToolGraphCapabilities(graph: ManagedToolDescriptorCapabi
     if (artifact.packageName !== expectedPackageName) {
       throw new Error(`Managed tool descriptor graph native packageName for ${artifact.targetPlatform} must be ${expectedPackageName}`);
     }
-    if (artifact.binaryPath !== "lattice-graph-core") throw new Error("Managed tool descriptor graph native binaryPath must be lattice-graph-core");
+    if (artifact.binaryPath !== "opcore-graph-core") throw new Error("Managed tool descriptor graph native binaryPath must be opcore-graph-core");
     if (artifact.metadataPath !== "metadata.json") throw new Error("Managed tool descriptor graph native metadataPath must be metadata.json");
-    if (artifact.checksumPath !== "lattice-graph-core.sha256") {
-      throw new Error("Managed tool descriptor graph native checksumPath must be lattice-graph-core.sha256");
+    if (artifact.checksumPath !== "opcore-graph-core.sha256") {
+      throw new Error("Managed tool descriptor graph native checksumPath must be opcore-graph-core.sha256");
     }
     if (!artifact.artifactIds || typeof artifact.artifactIds !== "object") {
       throw new Error("Managed tool descriptor graph native artifact ids are required");
@@ -3529,7 +3529,7 @@ function validateManagedToolArtifacts(artifacts: readonly ManagedToolDescriptorA
       binary.packageName !== packageName ||
       binary.type !== "native_binary" ||
       !binary.required ||
-      binary.path !== "lattice-graph-core" ||
+      binary.path !== "opcore-graph-core" ||
       binary.checksumRef !== `graph-core-binary-sha256-${target}`
     ) {
       throw new Error(`Managed tool descriptor must include graph native binary artifact for ${target}`);
@@ -3542,7 +3542,7 @@ function validateManagedToolArtifacts(artifacts: readonly ManagedToolDescriptorA
       checksum.packageName !== packageName ||
       checksum.type !== "checksum" ||
       !checksum.required ||
-      checksum.path !== "lattice-graph-core.sha256"
+      checksum.path !== "opcore-graph-core.sha256"
     ) {
       throw new Error(`Managed tool descriptor must include graph native checksum artifact for ${target}`);
     }
@@ -3552,7 +3552,7 @@ function validateManagedToolArtifacts(artifacts: readonly ManagedToolDescriptorA
       (artifact) =>
         artifact.id === "descriptor" &&
         artifact.packageName === "@the-open-engine/opcore" &&
-        artifact.path === "dist/descriptors/lattice.managed-tool.json" &&
+        artifact.path === "dist/descriptors/opcore.managed-tool.json" &&
         artifact.type === "descriptor" &&
         artifact.required
     )
@@ -5349,8 +5349,8 @@ export function validateGraphDaemonRequest(request: GraphDaemonRequest): GraphDa
   if (!request || typeof request !== "object") {
     throw new Error("Graph daemon request is required");
   }
-  if (request.protocol !== "lattice.graph.daemon") {
-    throw new Error("Graph daemon request protocol must be lattice.graph.daemon");
+  if (request.protocol !== "opcore.graph.daemon") {
+    throw new Error("Graph daemon request protocol must be opcore.graph.daemon");
   }
   validateNonEmptyString(request.requestId, "Graph daemon request requestId");
   if (request.schemaVersion !== GRAPH_SCHEMA_VERSION) {
@@ -5407,8 +5407,8 @@ export function validateGraphDaemonResponse(response: GraphDaemonResponse): Grap
   if (!response || typeof response !== "object") {
     throw new Error("Graph daemon response is required");
   }
-  if (response.protocol !== "lattice.graph.daemon") {
-    throw new Error("Graph daemon response protocol must be lattice.graph.daemon");
+  if (response.protocol !== "opcore.graph.daemon") {
+    throw new Error("Graph daemon response protocol must be opcore.graph.daemon");
   }
   validateNonEmptyString(response.requestId, "Graph daemon response requestId");
   if (response.schemaVersion !== GRAPH_SCHEMA_VERSION) {
@@ -5541,8 +5541,8 @@ export function validateGraphServeTransportStatus(status: GraphServeTransportSta
   if (status.schemaVersion !== 1) {
     throw new Error("Graph serve transport status schemaVersion must be 1");
   }
-  if (status.protocol !== "lattice.graph.daemon") {
-    throw new Error("Graph serve transport status protocol must be lattice.graph.daemon");
+  if (status.protocol !== "opcore.graph.daemon") {
+    throw new Error("Graph serve transport status protocol must be opcore.graph.daemon");
   }
   if (status.transport !== "stdio") {
     throw new Error("Graph serve transport status transport must be stdio");
@@ -5818,7 +5818,7 @@ function validateValidationAdapterCurrentUsage(
   if (!currentUsage || typeof currentUsage !== "object") {
     throw new Error("Validation adapter degraded check status currentUsage is required when present");
   }
-  for (const key of ["lattice", "orchestra", "covibes", "gateway"] as const) {
+  for (const key of ["opcore", "orchestra", "covibes", "gateway"] as const) {
     if (typeof currentUsage[key] !== "boolean") {
       throw new Error(`Validation adapter degraded check status currentUsage.${key} must be boolean`);
     }
@@ -6796,7 +6796,7 @@ function validateGraphReleaseCommandCoverage(coverage: readonly GraphReleaseComm
   for (const entry of coverage) {
     if (!entry || typeof entry !== "object") throw new Error("Graph release command coverage entry is required");
     validateGraphReleaseCoreCommandId(entry.id);
-    if (entry.bin !== "lattice") throw new Error(`Unknown graph release command bin: ${String(entry.bin)}`);
+    if (entry.bin !== "opcore") throw new Error(`Unknown graph release command bin: ${String(entry.bin)}`);
     validateStringArray(entry.command, "Graph release command coverage command", { allowEmpty: false });
     validateStringArray(entry.canonicalCommand, "Graph release command coverage canonicalCommand", { allowEmpty: false });
     if (entry.status !== "passed") throw new Error("Graph release command coverage status must be passed");
@@ -6826,7 +6826,7 @@ function validateGraphReleaseRustCommandCoverage(coverage: readonly GraphRelease
   for (const entry of coverage) {
     if (!entry || typeof entry !== "object") throw new Error("Graph release Rust command coverage entry is required");
     validateGraphReleaseRustCommandId(entry.id);
-    if (entry.bin !== "lattice") throw new Error(`Unknown graph release Rust command bin: ${String(entry.bin)}`);
+    if (entry.bin !== "opcore") throw new Error(`Unknown graph release Rust command bin: ${String(entry.bin)}`);
     validateStringArray(entry.command, "Graph release Rust command coverage command", { allowEmpty: false });
     validateStringArray(entry.canonicalCommand, "Graph release Rust command coverage canonicalCommand", { allowEmpty: false });
     if (entry.status !== "passed") throw new Error("Graph release Rust command coverage status must be passed");
@@ -6877,8 +6877,8 @@ function validateGraphReleaseServeTransport(receipts: readonly GraphReleaseServe
   for (const receipt of receipts) {
     if (!receipt || typeof receipt !== "object") throw new Error("Graph release serve transport receipt is required");
     validateGraphReleaseServeTransportId(receipt.id);
-    if (receipt.protocol !== "lattice.graph.daemon") {
-      throw new Error("Graph release serve transport protocol must be lattice.graph.daemon");
+    if (receipt.protocol !== "opcore.graph.daemon") {
+      throw new Error("Graph release serve transport protocol must be opcore.graph.daemon");
     }
     validateNonEmptyString(receipt.operation, "Graph release serve transport operation");
     if (receipt.operation !== graphReleaseOperationForServeTransportId(receipt.id)) {
@@ -6963,9 +6963,9 @@ function validateGraphReleaseNativeArtifacts(nativeArtifacts: readonly GraphRele
     if (nativeArtifact.metadata.targetPlatform !== nativeArtifact.targetPlatform) {
       throw new Error("Graph release native artifact targetPlatform must match metadata");
     }
-    if (nativeArtifact.binaryPath !== "lattice-graph-core") throw new Error("Graph release native binaryPath must be lattice-graph-core");
-    if (nativeArtifact.checksumPath !== "lattice-graph-core.sha256") {
-      throw new Error("Graph release native checksumPath must be lattice-graph-core.sha256");
+    if (nativeArtifact.binaryPath !== "opcore-graph-core") throw new Error("Graph release native binaryPath must be opcore-graph-core");
+    if (nativeArtifact.checksumPath !== "opcore-graph-core.sha256") {
+      throw new Error("Graph release native checksumPath must be opcore-graph-core.sha256");
     }
     if (nativeArtifact.metadataPath !== "metadata.json") throw new Error("Graph release native metadataPath must be metadata.json");
     if (nativeArtifact.metadata.binaryPath !== nativeArtifact.binaryPath) {
@@ -6982,7 +6982,7 @@ function validateGraphReleaseNativeArtifacts(nativeArtifacts: readonly GraphRele
     validateSha256(nativeArtifact.metadataSha256, "Graph release native artifact metadataSha256");
     validateExactStringSet(
       nativeArtifact.packageFiles,
-      ["package.json", "README.md", "lattice-graph-core", "lattice-graph-core.sha256", "metadata.json"],
+      ["package.json", "README.md", "opcore-graph-core", "opcore-graph-core.sha256", "metadata.json"],
       `Graph release native package files ${nativeArtifact.targetPlatform}`
     );
   }
@@ -7105,28 +7105,28 @@ function graphReleaseOperationForServeTransportId(id: GraphReleaseServeTransport
 }
 
 function graphReleaseRouteForCommandId(id: GraphReleaseCoreCommandId): {
-  bin: "lattice";
+  bin: "opcore";
   command: readonly string[];
   canonicalCommand: readonly string[];
 } {
-  const command = id.replace("lattice-graph-", "");
+  const command = id.replace("opcore-graph-", "");
   return {
-    bin: "lattice",
+    bin: "opcore",
     command: ["graph", command],
-    canonicalCommand: ["lattice", "graph", command]
+    canonicalCommand: ["opcore", "graph", command]
   };
 }
 
 function graphReleaseRouteForRustCommandId(id: GraphReleaseRustCommandId): {
-  bin: "lattice";
+  bin: "opcore";
   command: readonly string[];
   canonicalCommand: readonly string[];
 } {
-  const command = id.replace("lattice-graph-rust-", "");
+  const command = id.replace("opcore-graph-rust-", "");
   return {
-    bin: "lattice",
+    bin: "opcore",
     command: ["graph", command],
-    canonicalCommand: ["lattice", "graph", command]
+    canonicalCommand: ["opcore", "graph", command]
   };
 }
 
@@ -7234,7 +7234,7 @@ function validateReleaseReceiptDescriptor(
   );
   for (const group of descriptorEvidence.commandGroups) {
     validateReleaseReceiptCommandGroupName(group.name, "Release receipt descriptor command group name");
-    validateExactStringSequence(group.canonicalCommand, ["lattice", group.name], `Release receipt descriptor ${group.name} canonicalCommand`);
+    validateExactStringSequence(group.canonicalCommand, ["opcore", group.name], `Release receipt descriptor ${group.name} canonicalCommand`);
     const descriptorGroup = descriptor.commandGroups.find((entry) => entry.name === group.name);
     if (!descriptorGroup) throw new Error(`Release receipt descriptor command group missing from descriptor: ${group.name}`);
     if (group.packageName !== descriptorGroup.packageName) {
@@ -7460,11 +7460,11 @@ function validateReleaseReceiptBins(bins: Readonly<Record<string, string>>, pack
   const binNames = Object.keys(bins);
   for (const bin of binNames) {
     validateNonEmptyString(bin, "Release receipt bin name");
-    if (["crg", "cix", "rox"].includes(bin)) throw new Error(`Release receipt package exposes old public bin ${bin}`);
+    if (["lattice", "crg", "cix", "rox"].includes(bin)) throw new Error(`Release receipt package exposes old public bin ${bin}`);
     validateRepoRelativePath(bins[bin]);
   }
   if (packageName === "@the-open-engine/opcore") {
-    validateExactStringSet(binNames, ["lattice", "opcore"], "Release receipt Opcore package bins");
+    validateExactStringSet(binNames, ["opcore"], "Release receipt Opcore package bins");
   } else if (packageName === "@the-open-engine/opcore-asp-provider") {
     validateExactStringSet(binNames, ["opcore-asp-provider"], "Release receipt ASP provider package bins");
   } else if (binNames.length > 0) {
@@ -7590,7 +7590,7 @@ function validateReleaseCutoverEnvironmentIsolation(environment: ReleaseCutoverE
   if (environment.pathSanitized !== true) throw new Error("Release cutover PATH must be sanitized");
   if (environment.aceRuntimeBinExcluded !== true) throw new Error("Release cutover ACE runtime bin must be excluded");
   if (environment.siblingCovibesExcluded !== true) throw new Error("Release cutover sibling Covibes paths must be excluded");
-  if (environment.latticeBinOnly !== true) throw new Error("Release cutover installed project must expose only lattice bin");
+  if (environment.opcoreBinOnly !== true) throw new Error("Release cutover installed project must expose only opcore bin");
   const oldBins = environment.oldBinsAbsent;
   if (!oldBins || oldBins.crg !== true || oldBins.cix !== true || oldBins.rox !== true) {
     throw new Error("Release cutover old public bins must be absent");
@@ -7666,8 +7666,8 @@ function validateReleaseCutoverRustCommandReceipts(receipts: readonly ReleaseCut
     if (receipt.status !== "ok") throw new Error(`Release cutover Rust command ${receipt.id} status must be ok`);
     if (receipt.exitCode !== 0) throw new Error(`Release cutover Rust command ${receipt.id} exitCode must be 0`);
     validateNonEmptyString(receipt.binPath, "Release cutover Rust command receipt binPath");
-    if (!receipt.binPath.endsWith("node_modules/.bin/lattice")) {
-      throw new Error("Release cutover Rust command receipt binPath must use installed node_modules/.bin/lattice");
+    if (!receipt.binPath.endsWith("node_modules/.bin/opcore")) {
+      throw new Error("Release cutover Rust command receipt binPath must use installed node_modules/.bin/opcore");
     }
     validateSha256(receipt.stdoutSha256, "Release cutover Rust command receipt stdoutSha256");
     validateSha256(receipt.stderrSha256, "Release cutover Rust command receipt stderrSha256");
@@ -7715,7 +7715,7 @@ function validateReleaseCutoverNegativeChecks(checks: readonly ReleaseCutoverNeg
     if (!check || typeof check !== "object") throw new Error("Release cutover negative check is required");
     validateNonEmptyString(check.id, "Release cutover negative check id");
     validateStringArray(check.command, "Release cutover negative check command", { allowEmpty: false });
-    if (check.command[0] !== "lattice") throw new Error("Release cutover negative check command must be canonical lattice");
+    if (check.command[0] !== "opcore") throw new Error("Release cutover negative check command must be canonical opcore");
     if (check.status !== "passed") throw new Error("Release cutover negative check status must be passed");
     if (check.exitCode !== 0) throw new Error("Release cutover negative check exitCode must be 0");
     validateNonEmptyString(check.assertion, "Release cutover negative check assertion");

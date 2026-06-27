@@ -115,7 +115,7 @@ export interface SyntheticFixtureMetadata {
   };
   descriptor?: {
     dataFile?: string;
-    descriptorKind?: "aggregate_lattice";
+    descriptorKind?: "aggregate_opcore";
     packageName?: "@the-open-engine/opcore";
     entrypoints: readonly string[];
     commandGroups: readonly string[];
@@ -142,19 +142,19 @@ export interface SyntheticFixtureMetadata {
     };
   };
   adapter?: {
-    canonicalBin: "lattice";
+    canonicalBin: "opcore";
     packageAdapters: readonly string[];
     sharedResultFields: readonly string[];
-    provider: "lattice-graph";
+    provider: "opcore-graph";
   };
   graphCore?: {
-    artifactName: "lattice-graph-core";
+    artifactName: "opcore-graph-core";
     packageName: "@the-open-engine/opcore-graph" | "@the-open-engine/opcore-graph-core-<target>";
     supportedTargets?: readonly string[];
     nativePath: string;
     metadataPath: string;
     checksumPath: string;
-    provider: "lattice-graph";
+    provider: "opcore-graph";
     operations: readonly string[];
   };
   sourceExtraction?: {
@@ -249,7 +249,7 @@ export const conformanceFixtureMetadata = [
         {
           id: "repo:lattice",
           kind: "repo",
-          name: "lattice"
+          name: "opcore"
         },
         {
           id: "file:packages/contracts/src/index.ts",
@@ -391,30 +391,30 @@ export const conformanceFixtureMetadata = [
   {
     ...baseFixture,
     issue: "#28",
-    dataFile: "packages/fixtures/descriptors/lattice.managed-tool.json",
+    dataFile: "packages/fixtures/descriptors/opcore.managed-tool.json",
     id: "descriptor-discovery-v1",
     packageTrack: "contracts",
     status: "descriptor_discovery",
     descriptor: {
-      dataFile: "packages/fixtures/descriptors/lattice.managed-tool.json",
-      descriptorKind: "aggregate_lattice",
+      dataFile: "packages/fixtures/descriptors/opcore.managed-tool.json",
+      descriptorKind: "aggregate_opcore",
       packageName: "@the-open-engine/opcore",
-      entrypoints: ["lattice"],
+      entrypoints: ["opcore"],
       commandGroups: [
-        "lattice graph",
-        "lattice inspect",
-        "lattice edit",
-        "lattice check",
-        "lattice validate",
-        "lattice status",
-        "lattice doctor"
+        "opcore graph",
+        "opcore inspect",
+        "opcore edit",
+        "opcore check",
+        "opcore validate",
+        "opcore status",
+        "opcore doctor"
       ],
       healthProbes: [
-        "lattice status --json",
-        "lattice doctor --json",
-        "lattice graph status --json",
-        "lattice check manifest --json",
-        "lattice validate manifest --json"
+        "opcore status --json",
+        "opcore doctor --json",
+        "opcore graph status --json",
+        "opcore check manifest --json",
+        "opcore validate manifest --json"
       ],
       capabilities: [
         "graph.build",
@@ -443,16 +443,16 @@ export const conformanceFixtureMetadata = [
       ],
       artifacts: [
         "dist/index.js",
-        "dist/descriptors/lattice.managed-tool.json",
-        "schemas/lattice-contracts.schema.json",
-        "@the-open-engine/opcore-graph-core-darwin-arm64/lattice-graph-core",
-        "@the-open-engine/opcore-graph-core-darwin-x64/lattice-graph-core",
-        "@the-open-engine/opcore-graph-core-linux-x64/lattice-graph-core"
+        "dist/descriptors/opcore.managed-tool.json",
+        "schemas/opcore-contracts.schema.json",
+        "@the-open-engine/opcore-graph-core-darwin-arm64/opcore-graph-core",
+        "@the-open-engine/opcore-graph-core-darwin-x64/opcore-graph-core",
+        "@the-open-engine/opcore-graph-core-linux-x64/opcore-graph-core"
       ],
       checksums: [
-        "@the-open-engine/opcore-graph-core-darwin-arm64/lattice-graph-core.sha256",
-        "@the-open-engine/opcore-graph-core-darwin-x64/lattice-graph-core.sha256",
-        "@the-open-engine/opcore-graph-core-linux-x64/lattice-graph-core.sha256"
+        "@the-open-engine/opcore-graph-core-darwin-arm64/opcore-graph-core.sha256",
+        "@the-open-engine/opcore-graph-core-darwin-x64/opcore-graph-core.sha256",
+        "@the-open-engine/opcore-graph-core-linux-x64/opcore-graph-core.sha256"
       ],
       provenanceHooks: ["npm run pack:check", "npm run provenance:check"],
       artifactPackages: [
@@ -489,15 +489,15 @@ export const conformanceFixtureMetadata = [
     packageTrack: "cli",
     status: "command_router",
     router: {
-      entrypoints: ["lattice"],
+      entrypoints: ["opcore"],
       commandGroups: [
-        "lattice graph",
-        "lattice inspect",
-        "lattice edit",
-        "lattice check",
-        "lattice validate",
-        "lattice status",
-        "lattice doctor"
+        "opcore graph",
+        "opcore inspect",
+        "opcore edit",
+        "opcore check",
+        "opcore validate",
+        "opcore status",
+        "opcore doctor"
       ],
       exitSemantics: {
         ok: 0,
@@ -517,13 +517,13 @@ export const conformanceFixtureMetadata = [
     packageTrack: "graph",
     status: "graph_core_artifact_handshake",
     graphCore: {
-      artifactName: "lattice-graph-core",
+      artifactName: "opcore-graph-core",
       packageName: "@the-open-engine/opcore-graph-core-<target>",
       supportedTargets: ["darwin-arm64", "darwin-x64", "linux-x64"],
-      nativePath: "lattice-graph-core",
+      nativePath: "opcore-graph-core",
       metadataPath: "metadata.json",
-      checksumPath: "lattice-graph-core.sha256",
-      provider: "lattice-graph",
+      checksumPath: "opcore-graph-core.sha256",
+      provider: "opcore-graph",
       operations: ["build", "update", "watch", "status", "query", "ping", "health", "shutdown"]
     }
   },
@@ -572,7 +572,7 @@ export const conformanceFixtureMetadata = [
     packageTrack: "cli",
     status: "command_adapter",
     adapter: {
-      canonicalBin: "lattice",
+      canonicalBin: "opcore",
       packageAdapters: ["graphCommandAdapter", "editCommandAdapter", "checkCommandAdapter", "validateCommandAdapter"],
       sharedResultFields: [
         "canonicalCommand",
@@ -589,7 +589,7 @@ export const conformanceFixtureMetadata = [
         "graphChanges",
         "graphServe"
       ],
-      provider: "lattice-graph"
+      provider: "opcore-graph"
     }
   },
   {
@@ -667,7 +667,7 @@ export const conformanceFixtureMetadata = [
     dataFile: "packages/fixtures/graph-reference-evidence/daemon-socket-fixtures.json",
     graphServe: {
       commands: ["serve"],
-      protocols: ["lattice.graph.daemon", "jsonrpc-2.0"],
+      protocols: ["opcore.graph.daemon", "jsonrpc-2.0"],
       operations: ["ping", "status", "query", "search", "shutdown"],
       failureStates: ["required_missing", "stale", "schema_mismatch", "daemon_unavailable", "error"],
       dataFile: "packages/fixtures/graph-reference-evidence/daemon-socket-fixtures.json"
@@ -739,37 +739,37 @@ export const conformanceFixtureMetadata = [
   {
     ...baseFixture,
     issue: "#28",
-    dataFile: "packages/fixtures/descriptors/lattice.managed-tool.json",
+    dataFile: "packages/fixtures/descriptors/opcore.managed-tool.json",
     id: "installed-artifact-smoke-v1",
     packageTrack: "fixtures",
     status: "installed_artifact_smoke",
     descriptor: {
-      dataFile: "packages/fixtures/descriptors/lattice.managed-tool.json",
-      descriptorKind: "aggregate_lattice",
+      dataFile: "packages/fixtures/descriptors/opcore.managed-tool.json",
+      descriptorKind: "aggregate_opcore",
       packageName: "@the-open-engine/opcore",
-      entrypoints: ["lattice"],
+      entrypoints: ["opcore"],
       commandGroups: [
-        "lattice graph",
-        "lattice inspect",
-        "lattice edit",
-        "lattice check",
-        "lattice validate",
-        "lattice status",
-        "lattice doctor"
+        "opcore graph",
+        "opcore inspect",
+        "opcore edit",
+        "opcore check",
+        "opcore validate",
+        "opcore status",
+        "opcore doctor"
       ],
-      healthProbes: ["lattice status --json", "lattice doctor --json", "lattice check manifest --json"],
+      healthProbes: ["opcore status --json", "opcore doctor --json", "opcore check manifest --json"],
       capabilities: ["artifact.discovery", "descriptor.discovery", "validation.graph-modes"],
       artifacts: [
         "dist/index.js",
-        "dist/descriptors/lattice.managed-tool.json",
-        "@the-open-engine/opcore-graph-core-darwin-arm64/lattice-graph-core",
-        "@the-open-engine/opcore-graph-core-darwin-x64/lattice-graph-core",
-        "@the-open-engine/opcore-graph-core-linux-x64/lattice-graph-core"
+        "dist/descriptors/opcore.managed-tool.json",
+        "@the-open-engine/opcore-graph-core-darwin-arm64/opcore-graph-core",
+        "@the-open-engine/opcore-graph-core-darwin-x64/opcore-graph-core",
+        "@the-open-engine/opcore-graph-core-linux-x64/opcore-graph-core"
       ],
       checksums: [
-        "@the-open-engine/opcore-graph-core-darwin-arm64/lattice-graph-core.sha256",
-        "@the-open-engine/opcore-graph-core-darwin-x64/lattice-graph-core.sha256",
-        "@the-open-engine/opcore-graph-core-linux-x64/lattice-graph-core.sha256"
+        "@the-open-engine/opcore-graph-core-darwin-arm64/opcore-graph-core.sha256",
+        "@the-open-engine/opcore-graph-core-darwin-x64/opcore-graph-core.sha256",
+        "@the-open-engine/opcore-graph-core-linux-x64/opcore-graph-core.sha256"
       ],
       provenanceHooks: ["npm pack --dry-run", "npm run provenance:check"],
       artifactPackages: [

@@ -17,7 +17,7 @@
         "build"
       ],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "graph",
         "build"
       ],
@@ -44,7 +44,7 @@
         "update"
       ],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "graph",
         "update"
       ],
@@ -72,7 +72,7 @@
         "watch"
       ],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "graph",
         "watch"
       ],
@@ -96,7 +96,7 @@
         "status"
       ],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "graph",
         "status"
       ],
@@ -123,7 +123,7 @@
         "query"
       ],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "graph",
         "query"
       ],
@@ -153,7 +153,7 @@
         "impact"
       ],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "graph",
         "impact"
       ],
@@ -184,7 +184,7 @@
         "search"
       ],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "graph",
         "search"
       ],
@@ -216,7 +216,7 @@
         "serve"
       ],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "graph",
         "serve"
       ],
@@ -240,12 +240,12 @@
       }
     },
     {
-      "id": "lattice-graph-inspect",
+      "id": "opcore-graph-inspect",
       "classification": "deferred",
       "referenceTool": "crg",
       "referenceCommand": [],
       "canonicalCommand": [
-        "lattice",
+        "opcore",
         "graph",
         "inspect"
       ],
@@ -456,7 +456,7 @@
       "id": "daemon-hot-query",
       "classification": "required",
       "fixture": "packages/fixtures/graph-reference-evidence/daemon-socket-fixtures.json",
-      "protocol": "lattice.graph.daemon",
+      "protocol": "opcore.graph.daemon",
       "envelopes": [
         "ping-request",
         "ping-response",

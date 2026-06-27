@@ -465,12 +465,12 @@ function repoState(overrides = {}) {
     graph: {
       state: "available",
       mode: "optional",
-      provider: "lattice-graph",
+      provider: "opcore-graph",
       action: "Graph is ready.",
       status: {
         state: "available",
         mode: "optional",
-        provider: "lattice-graph",
+        provider: "opcore-graph",
         schemaVersion: 1,
         repo: { repoRoot: "/repo" },
         freshness: {
@@ -507,7 +507,7 @@ function repoState(overrides = {}) {
     },
     warnings: ["Unsupported stacks: Go"],
     blockers: [],
-    nextActions: ["lattice check changed --repo /repo --json"]
+    nextActions: ["opcore check changed --repo /repo --json"]
   };
 }
 
@@ -536,7 +536,7 @@ function graphFacts() {
     edges: [...contains, ...imports],
     metadata: {
       schemaVersion: 1,
-      provider: "lattice-graph",
+      provider: "opcore-graph",
       repo: { repoRoot: "/repo" },
       generatedAt: "2026-06-25T00:00:00.000Z",
       freshness: {
@@ -591,7 +591,7 @@ function rustGraphFacts() {
     ],
     metadata: {
       schemaVersion: 1,
-      provider: "lattice-graph",
+      provider: "opcore-graph",
       repo: { repoRoot: "/repo" },
       generatedAt: "2026-06-25T00:00:00.000Z",
       freshness: {

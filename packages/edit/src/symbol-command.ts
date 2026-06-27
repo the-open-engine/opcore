@@ -44,7 +44,7 @@ export function symbolPayloadRequired(parsed: ParsedEditCommand): { ok: true } |
       ok: false,
       refusal: {
         category: "unsupported_change",
-        message: `lattice edit ${parsed.command} requires a JSON request payload`
+        message: `opcore edit ${parsed.command} requires a JSON request payload`
       }
     };
   }

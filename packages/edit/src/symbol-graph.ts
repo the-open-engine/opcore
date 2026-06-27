@@ -50,7 +50,7 @@ export function missingEditGraphStatus(repo: RepoIdentity, mode: GraphProviderMo
   return validateProviderStatus({
     state: mode === "optional" ? "skipped" : "required_missing",
     mode,
-    provider: "lattice-graph",
+    provider: "opcore-graph",
     schemaVersion: GRAPH_SCHEMA_VERSION,
     message: "GraphProvider client is not configured",
     failure: {
@@ -112,7 +112,7 @@ export async function requiredGraphStatus(
     status = validateProviderStatus({
       state: "error",
       mode: "required",
-      provider: "lattice-graph",
+      provider: "opcore-graph",
       schemaVersion: GRAPH_SCHEMA_VERSION,
       message: `GraphProvider status failed: ${errorMessage(error)}`,
       failure: {

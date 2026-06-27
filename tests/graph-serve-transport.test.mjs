@@ -12,17 +12,17 @@ import { runGraphServeCli } from "../packages/graph/dist/index.js";
 
 const repoRoot = fileURLToPath(new URL("..", import.meta.url));
 const sourceFixtureRoot = resolve(repoRoot, "packages/fixtures/source-extraction/wave1");
-const latticeBin = fileURLToPath(new URL("../packages/opcore/dist/lattice/index.js", import.meta.url));
+const latticeBin = fileURLToPath(new URL("../packages/opcore/dist/advanced/index.js", import.meta.url));
 
 describe("graph serve stdio transport", () => {
-  it("answers lattice graph serve JSONL ping/status/query/search/shutdown", async () => {
+  it("answers opcore graph serve JSONL ping/status/query/search/shutdown", async () => {
     await withBuiltFixture(async (fixtureRoot) => {
       const responses = await serve(latticeBin, ["graph", "serve", "--repo", fixtureRoot], jsonlRequests(fixtureRoot));
       assertJsonlResponses(responses);
     });
   });
 
-  it("answers repeated lattice graph serve JSONL requests", async () => {
+  it("answers repeated opcore graph serve JSONL requests", async () => {
     await withBuiltFixture(async (fixtureRoot) => {
       const canonical = await serve(latticeBin, ["graph", "serve", "--repo", fixtureRoot], jsonlRequests(fixtureRoot));
       const repeated = await serve(latticeBin, ["graph", "serve", "--repo", fixtureRoot], jsonlRequests(fixtureRoot));
@@ -82,16 +82,16 @@ describe("graph serve stdio transport", () => {
       const responses = await serveRaw(latticeBin, ["graph", "serve", "--repo", fixtureRoot], [
         JSON.stringify({ jsonrpc: "2.0", id: "init-1", method: "initialize", params: {} }),
         JSON.stringify({ jsonrpc: "2.0", method: "notifications/initialized", params: {} }),
-        JSON.stringify({ jsonrpc: "2.0", id: "bad-1", method: "lattice.graph/unknown", params: {} }),
-        JSON.stringify({ jsonrpc: "2.0", id: "status-1", method: "lattice.graph/status", params: {} }),
-        JSON.stringify({ jsonrpc: "2.0", id: "query-1", method: "lattice.graph/query", params: { limit: 2 } }),
-        JSON.stringify({ jsonrpc: "2.0", id: "search-1", method: "lattice.graph/search", params: { query: "Greeting", limit: 2 } }),
-        JSON.stringify({ jsonrpc: "2.0", id: "shutdown-1", method: "lattice.graph/shutdown", params: {} })
+        JSON.stringify({ jsonrpc: "2.0", id: "bad-1", method: "opcore.graph/unknown", params: {} }),
+        JSON.stringify({ jsonrpc: "2.0", id: "status-1", method: "opcore.graph/status", params: {} }),
+        JSON.stringify({ jsonrpc: "2.0", id: "query-1", method: "opcore.graph/query", params: { limit: 2 } }),
+        JSON.stringify({ jsonrpc: "2.0", id: "search-1", method: "opcore.graph/search", params: { query: "Greeting", limit: 2 } }),
+        JSON.stringify({ jsonrpc: "2.0", id: "shutdown-1", method: "opcore.graph/shutdown", params: {} })
       ]);
       assert.equal(responses.status, 0);
       assert.equal(responses.stderr, "");
       assert.equal(responses.responses.length, 6);
-      assert.equal(responses.responses[0].result.serverInfo.name, "lattice-graph");
+      assert.equal(responses.responses[0].result.serverInfo.name, "opcore-graph");
       assert.equal(responses.responses[1].error.code, -32600);
       assert.equal(responses.responses[1].error.data.status.state, "schema_mismatch");
       assert.equal(responses.responses[2].result.status.state, "available");
@@ -124,7 +124,7 @@ describe("graph serve stdio transport", () => {
     let stdout = "";
     const exitCode = await runGraphServeCli({
       argv: ["serve"],
-      bin: "lattice",
+      bin: "opcore",
       stdin: input,
       stdout: new Writable({
         write(chunk, _encoding, callback) {
@@ -135,14 +135,14 @@ describe("graph serve stdio transport", () => {
       resolveArtifact: () => ({
         ok: true,
         artifact: {
-          artifactName: "lattice-graph-core",
+          artifactName: "opcore-graph-core",
           artifactVersion: "0.1.0-alpha.0",
           targetPlatform: "test",
-          binaryPath: "dist/native/test/lattice-graph-core",
-          checksumPath: "dist/native/test/lattice-graph-core.sha256",
+          binaryPath: "dist/native/test/opcore-graph-core",
+          checksumPath: "dist/native/test/opcore-graph-core.sha256",
           checksumSha256: "a".repeat(64),
           buildProfile: "release",
-          executablePath: "/missing/lattice-graph-core",
+          executablePath: "/missing/opcore-graph-core",
           metadataPath: "dist/native/test/metadata.json"
         }
       }),
@@ -172,7 +172,7 @@ function assertJsonlResponses(responses) {
 function jsonlRequests(repoRoot) {
   return [
     {
-      protocol: "lattice.graph.daemon",
+      protocol: "opcore.graph.daemon",
       requestId: "serve-ping",
       schemaVersion: 1,
       operation: "ping",
@@ -183,7 +183,7 @@ function jsonlRequests(repoRoot) {
     statusRequest("serve-status", repoRoot),
     queryRequest("serve-query"),
     {
-      protocol: "lattice.graph.daemon",
+      protocol: "opcore.graph.daemon",
       requestId: "serve-search",
       schemaVersion: 1,
       operation: "query",
@@ -204,7 +204,7 @@ function jsonlRequests(repoRoot) {
 
 function statusRequest(requestId, repoRoot) {
   return {
-    protocol: "lattice.graph.daemon",
+    protocol: "opcore.graph.daemon",
     requestId,
     schemaVersion: 1,
     operation: "status",
@@ -216,7 +216,7 @@ function statusRequest(requestId, repoRoot) {
 
 function queryRequest(requestId) {
   return {
-    protocol: "lattice.graph.daemon",
+    protocol: "opcore.graph.daemon",
     requestId,
     schemaVersion: 1,
     operation: "query",
@@ -235,7 +235,7 @@ function queryRequest(requestId) {
 
 function shutdownRequest(requestId, repoRoot) {
   return {
-    protocol: "lattice.graph.daemon",
+    protocol: "opcore.graph.daemon",
     requestId,
     schemaVersion: 1,
     operation: "shutdown",

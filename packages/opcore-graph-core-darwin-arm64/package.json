@@ -11,8 +11,8 @@
     "arm64"
   ],
   "files": [
-    "lattice-graph-core",
-    "lattice-graph-core.sha256",
+    "opcore-graph-core",
+    "opcore-graph-core.sha256",
     "metadata.json",
     "README.md"
   ],

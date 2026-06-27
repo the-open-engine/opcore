@@ -1,17 +1,17 @@
 [package]
-name = "lattice-graph-core"
-description = "Rust sidecar boundary for the Lattice GraphProvider."
+name = "opcore-graph-core"
+description = "Rust sidecar boundary for the Opcore GraphProvider."
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
 
 [lib]
-name = "lattice_graph_core"
+name = "opcore_graph_core"
 path = "src/lib.rs"
 
 [[bin]]
-name = "lattice-graph-core"
+name = "opcore-graph-core"
 path = "src/main.rs"
 
 [dependencies]

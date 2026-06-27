@@ -93,7 +93,7 @@ const commandBooleanFlags: Record<EditCommandName, ReadonlySet<string>> = {
 
 export function parseEditCommandArgs(args: readonly string[]): EditCommandParseResult {
   const [command, ...rest] = args;
-  if (!commands.has(command)) return refused("unsupported_change", `Unsupported lattice edit command: ${command ?? "(missing)"}`);
+  if (!commands.has(command)) return refused("unsupported_change", `Unsupported opcore edit command: ${command ?? "(missing)"}`);
   const editCommand = command as EditCommandName;
 
   const parsed: ParsedEditCommand = {

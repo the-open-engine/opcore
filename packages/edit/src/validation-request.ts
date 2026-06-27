@@ -26,7 +26,7 @@ export function createValidationRequest(
     },
     graph: {
       mode: "required",
-      provider: "lattice-graph"
+      provider: "opcore-graph"
     },
     overlays: overlays.map((overlay) => normalizeOverlay(overlay))
   };
@@ -84,7 +84,7 @@ export function createValidationRequestFromChanges(
         : seedScope,
     graph: seedRequest?.graph ?? {
       mode: "required",
-      provider: "lattice-graph"
+      provider: "opcore-graph"
     },
     overlays: normalizedOverlays
   };

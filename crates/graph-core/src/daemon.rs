@@ -26,7 +26,7 @@ use query::query_result;
 use response::{empty_parts, failure_response, query_failure_parts, status_only};
 use validation::validate_request;
 
-const GRAPH_DAEMON_PROTOCOL: &str = "lattice.graph.daemon";
+const GRAPH_DAEMON_PROTOCOL: &str = "opcore.graph.daemon";
 
 #[derive(Debug, Clone)]
 struct ResponseParts {

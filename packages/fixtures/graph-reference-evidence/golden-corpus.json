@@ -4,7 +4,7 @@
   "id": "graph-reference-evidence-golden-corpus-v1",
   "origin": "covibes-authored-synthetic",
   "containsSourceCode": false,
-  "description": "Synthetic graph reference corpus authored for Lattice contracts; file contents are descriptors, not upstream source.",
+  "description": "Synthetic graph reference corpus authored for Opcore contracts; file contents are descriptors, not upstream source.",
   "files": [
     {
       "path": "src/auth.ts",

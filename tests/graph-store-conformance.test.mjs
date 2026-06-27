@@ -799,7 +799,7 @@ function rawGraphReviewContext(repoRoot, options) {
 
 function baseRawGraphRequest(repoRoot, requestId, operation) {
   return {
-    protocol: "lattice.graph.daemon",
+    protocol: "opcore.graph.daemon",
     requestId,
     schemaVersion: 1,
     operation,

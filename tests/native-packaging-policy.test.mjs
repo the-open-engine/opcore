@@ -66,7 +66,7 @@ describe("native graph-core packaging policy", () => {
     const target = Object.keys(nativeTargets).find((candidate) => candidate !== currentTarget);
     assert.ok(target, "test requires at least one non-current supported native target");
 
-    const binary = `${nativePackageDir(target)}/lattice-graph-core`;
+    const binary = `${nativePackageDir(target)}/opcore-graph-core`;
     const originalMode = statSync(binary).mode & 0o777;
     try {
       chmodSync(binary, 0o644);

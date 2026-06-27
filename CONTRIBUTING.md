@@ -1,6 +1,6 @@
 # Contributing
 
-Lattice is a public alpha for local code intelligence, edit planning, and pre-write validation for coding agents.
+Opcore is a public alpha for local code intelligence, edit planning, and pre-write validation for coding agents.
 
 ## Setup
 
@@ -36,11 +36,11 @@ npm run ci:local
 
 ## Package Boundaries
 
-- Graph extraction, persistence, query, search, and impact belong in `@the-open-engine/lattice-graph`.
+- Graph extraction, persistence, query, search, and impact belong in `@the-open-engine/opcore-graph`.
 - Edit planning, patch/tree planning, symbol edit previews, and validation-gated apply belong in `@the-open-engine/lattice-edit`.
 - Validation scopes, overlays, graph-provider policy, and check/validate adapters belong in `@the-open-engine/lattice-validation`.
 - TypeScript-specific checks belong in `@the-open-engine/lattice-validation-typescript`.
-- Shared types, schemas, command envelopes, and validation helpers belong in `@the-open-engine/lattice-contracts`.
+- Shared types, schemas, command envelopes, and validation helpers belong in `@the-open-engine/opcore-contracts`.
 - CLI composition, help, status, doctor, and descriptor output belong in `@the-open-engine/lattice-cli`.
 
 Do not expose old command aliases or new bins. The public CLI bin is `lattice`.

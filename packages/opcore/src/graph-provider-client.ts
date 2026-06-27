@@ -27,7 +27,7 @@ import {
   graphProviderStatus
 } from "@the-open-engine/opcore-graph";
 
-const graphProviderName = "lattice-graph";
+const graphProviderName = "opcore-graph";
 
 export function opcoreGraphStatus(repo: RepoIdentity, mode: GraphProviderMode): GraphProviderStatus {
   try {

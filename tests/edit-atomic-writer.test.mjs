@@ -83,7 +83,7 @@ describe("edit atomic writer", () => {
           request: {
             repo: { repoRoot: root },
             scope: { kind: "files", files: ["src/create.ts"] },
-            graph: { mode: "required", provider: "lattice-graph" },
+            graph: { mode: "required", provider: "opcore-graph" },
             overlays: []
           }
         }
@@ -133,7 +133,7 @@ describe("edit atomic writer", () => {
           request: {
             repo: { repoRoot: root },
             scope: { kind: "files", files: ["src/renamed.ts"] },
-            graph: { mode: "required", provider: "lattice-graph" },
+            graph: { mode: "required", provider: "opcore-graph" },
             overlays: []
           }
         }

@@ -155,28 +155,16 @@ function isAllowlistedOldNameHit(path, line) {
   const trimmed = line.trim();
   const allowlist = [
     {
-      reason: "intentionally retained lattice command package metadata",
-      matches: () => path === "packages/opcore/package.json" && /lattice(?:\.managed-tool|")|dist\/lattice/.test(trimmed)
-    },
-    {
-      reason: "intentionally retained lattice bin README reference",
-      matches: () => path === "packages/opcore/README.md" && /`lattice`/.test(trimmed)
-    },
-    {
-      reason: "intentionally retained lattice command implementation",
-      matches: () => path.startsWith("packages/opcore/src/lattice/")
+      reason: "advanced command implementation",
+      matches: () => path.startsWith("packages/opcore/src/advanced/")
     },
     {
       reason: "internal graph provider id",
-      matches: () => path.startsWith("packages/opcore/src/") && /lattice-graph/.test(trimmed)
+      matches: () => path.startsWith("packages/opcore/src/") && /opcore-graph/.test(trimmed)
     },
     {
       reason: "internal skipped cache directory",
       matches: () => path.startsWith("packages/opcore/src/") && /"\.lattice"/.test(trimmed)
-    },
-    {
-      reason: "internal adapter message normalization",
-      matches: () => path === "packages/opcore/src/check.ts" && /replace\(\^?\/?\^?lattice/.test(trimmed)
     }
   ];
   return allowlist.some((entry) => entry.matches());

@@ -149,7 +149,7 @@ describe("graph release readiness receipt", () => {
 });
 
 function tempGraphPackageInspectionRepo() {
-  const tempRoot = mkdtempSync(join(tmpdir(), "lattice-graph-package-test-"));
+  const tempRoot = mkdtempSync(join(tmpdir(), "opcore-graph-package-test-"));
   mkdirSync(join(tempRoot, "scripts"), { recursive: true });
   mkdirSync(join(tempRoot, "packages/contracts/dist"), { recursive: true });
   mkdirSync(join(tempRoot, "packages/graph"), { recursive: true });

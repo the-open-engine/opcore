@@ -143,7 +143,7 @@ describe("package import boundaries", () => {
   it("keeps edit and validation integration on graph-provider contracts", () => {
     const forbidden = [
       /graph-core/i,
-      /lattice-graph-core/i,
+      /opcore-graph-core/i,
       /resolveGraphCoreArtifact/i,
       /native artifact loader/i,
       /raw sqlite/i,

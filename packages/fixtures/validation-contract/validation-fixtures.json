@@ -8,7 +8,7 @@
       "request": {
         "requestId": "validation-files-1",
         "repo": {
-          "repoId": "lattice"
+          "repoId": "opcore"
         },
         "scope": {
           "kind": "files",
@@ -18,7 +18,7 @@
         },
         "graph": {
           "mode": "required",
-          "provider": "lattice-graph",
+          "provider": "opcore-graph",
           "maxAgeMs": 60000
         },
         "overlays": [],
@@ -33,7 +33,7 @@
       "request": {
         "requestId": "validation-package-1",
         "repo": {
-          "repoId": "lattice"
+          "repoId": "opcore"
         },
         "scope": {
           "kind": "package",
@@ -42,7 +42,7 @@
         },
         "graph": {
           "mode": "optional",
-          "provider": "lattice-graph"
+          "provider": "opcore-graph"
         },
         "overlays": []
       }
@@ -72,7 +72,7 @@
       "error": "Repo-relative path must not be absolute",
       "request": {
         "repo": {
-          "repoId": "lattice"
+          "repoId": "opcore"
         },
         "scope": {
           "kind": "files",
@@ -91,7 +91,7 @@
       "error": "Validation request overlays include duplicate path",
       "request": {
         "repo": {
-          "repoId": "lattice"
+          "repoId": "opcore"
         },
         "scope": {
           "kind": "files",
@@ -120,7 +120,7 @@
       "error": "Validation delete overlay must not include content",
       "request": {
         "repo": {
-          "repoId": "lattice"
+          "repoId": "opcore"
         },
         "scope": {
           "kind": "files",
@@ -145,7 +145,7 @@
     "optionalSkip": {
       "state": "skipped",
       "mode": "optional",
-      "provider": "lattice-graph",
+      "provider": "opcore-graph",
       "schemaVersion": 1,
       "failure": {
         "category": "provider_missing",
@@ -156,7 +156,7 @@
       {
         "state": "required_missing",
         "mode": "required",
-        "provider": "lattice-graph",
+        "provider": "opcore-graph",
         "schemaVersion": 1,
         "failure": {
           "category": "provider_missing",
@@ -166,10 +166,10 @@
       {
         "state": "stale",
         "mode": "required",
-        "provider": "lattice-graph",
+        "provider": "opcore-graph",
         "schemaVersion": 1,
         "repo": {
-          "repoId": "lattice"
+          "repoId": "opcore"
         },
         "freshness": {
           "generatedAt": "2026-06-05T00:00:00.000Z",
@@ -186,7 +186,7 @@
       {
         "state": "schema_mismatch",
         "mode": "required",
-        "provider": "lattice-graph",
+        "provider": "opcore-graph",
         "schemaVersion": 1,
         "expectedSchemaVersion": 1,
         "actualSchemaVersion": 2,
@@ -198,7 +198,7 @@
       {
         "state": "daemon_unavailable",
         "mode": "required",
-        "provider": "lattice-graph",
+        "provider": "opcore-graph",
         "schemaVersion": 1,
         "failure": {
           "category": "daemon_unavailable",
@@ -208,7 +208,7 @@
       {
         "state": "error",
         "mode": "required",
-        "provider": "lattice-graph",
+        "provider": "opcore-graph",
         "schemaVersion": 1,
         "failure": {
           "category": "incompatible_provider",
@@ -218,7 +218,7 @@
       {
         "state": "error",
         "mode": "required",
-        "provider": "lattice-graph",
+        "provider": "opcore-graph",
         "schemaVersion": 1,
         "failure": {
           "category": "provider_error",
@@ -232,7 +232,7 @@
     "request": {
       "requestId": "edit-preflight-1",
       "repo": {
-        "repoId": "lattice"
+        "repoId": "opcore"
       },
       "scope": {
         "kind": "files",
@@ -243,7 +243,7 @@
       },
       "graph": {
         "mode": "required",
-        "provider": "lattice-graph"
+        "provider": "opcore-graph"
       },
       "overlays": [
         {

@@ -8,7 +8,7 @@ type TestResult = Result<(), Box<dyn std::error::Error>>;
 
 fn repo() -> RepoIdentity {
     RepoIdentity {
-        repo_id: Some("lattice".to_string()),
+        repo_id: Some("opcore".to_string()),
         repo_root: None,
         remote_url: None,
         commit_sha: None,
@@ -35,7 +35,7 @@ fn query_request() -> GraphFactQueryRequest {
 #[test]
 fn daemon_request_round_trips() -> TestResult {
     let request = GraphDaemonRequest {
-        protocol: "lattice.graph.daemon".to_string(),
+        protocol: "opcore.graph.daemon".to_string(),
         request_id: "status-1".to_string(),
         schema_version: GRAPH_SCHEMA_VERSION,
         operation: GraphDaemonOperation::Status,
@@ -58,7 +58,7 @@ fn daemon_request_round_trips() -> TestResult {
     let encoded = serde_json::to_string(&request)?;
     let decoded: GraphDaemonRequest = serde_json::from_str(&encoded)?;
     assert_eq!(decoded, request);
-    assert!(encoded.contains("\"protocol\":\"lattice.graph.daemon\""));
+    assert!(encoded.contains("\"protocol\":\"opcore.graph.daemon\""));
     assert!(encoded.contains("\"schemaVersion\":1"));
     assert!(encoded.contains("\"idleTimeoutMs\":0"));
     Ok(())
@@ -97,7 +97,7 @@ fn query_result_round_trips_without_graph_data_on_failure() -> TestResult {
 fn status_response_round_trips_with_handshake() -> TestResult {
     let status = available_status(repo(), "2026-06-04T00:00:00.000Z".to_string());
     let response = GraphDaemonResponse {
-        protocol: "lattice.graph.daemon".to_string(),
+        protocol: "opcore.graph.daemon".to_string(),
         request_id: "status-1".to_string(),
         schema_version: GRAPH_SCHEMA_VERSION,
         status,
@@ -118,7 +118,7 @@ fn status_response_round_trips_with_handshake() -> TestResult {
     assert_json_eq(
         &value,
         "/status/handshake/artifactName",
-        json!("lattice-graph-core"),
+        json!("opcore-graph-core"),
     );
     let node_kinds = value
         .pointer("/status/handshake/nodeKinds")
@@ -142,7 +142,7 @@ fn status_response_round_trips_with_handshake() -> TestResult {
 #[test]
 fn schema_defines_daemon_and_query_envelopes() -> TestResult {
     let schema =
-        fs::read_to_string("../../packages/contracts/schemas/lattice-contracts.schema.json")?;
+        fs::read_to_string("../../packages/contracts/schemas/opcore-contracts.schema.json")?;
     for token in [
         "GraphDaemonRequest",
         "GraphDaemonResponse",

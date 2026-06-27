@@ -73,7 +73,7 @@ const rustCheckIds = [
     assert.equal(status.degradedChecks.every((entry) => entry.retainedCompatibility === true), true);
     assert.deepEqual(
       rustRetainedCompatibilityCurrentUsage.rustdoc,
-      { lattice: false, orchestra: true, covibes: false, gateway: true }
+      { opcore: false, orchestra: true, covibes: false, gateway: true }
     );
   });
 
@@ -1527,7 +1527,7 @@ function availableStatus(mode = "optional", repo = { repoId: "lattice-rust-test"
   return {
     state: "available",
     mode,
-    provider: "lattice-graph",
+    provider: "opcore-graph",
     schemaVersion: 1,
     repo,
     freshness: freshness(),
@@ -1542,7 +1542,7 @@ function availableFactResult(query, nodes, edges, metadataOverrides = {}) {
     status: availableStatus(query.mode, query.repo),
     metadata: {
       schemaVersion: 1,
-      provider: "lattice-graph",
+      provider: "opcore-graph",
       repo: query.repo,
       generatedAt: "2026-06-05T00:00:00.000Z",
       freshness: freshness(),

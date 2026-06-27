@@ -39,12 +39,12 @@ describe("graph-core native artifact", () => {
     });
     assert.equal(result.ok, true);
     assert.equal(result.artifact.targetPlatform, currentTarget);
-    assert.equal(result.artifact.binaryPath, "lattice-graph-core");
-    assert.equal(result.artifact.checksumPath, "lattice-graph-core.sha256");
+    assert.equal(result.artifact.binaryPath, "opcore-graph-core");
+    assert.equal(result.artifact.checksumPath, "opcore-graph-core.sha256");
   });
 
   it("builds linux-x64 with the musl Rust target even on linux-x64 hosts", () => {
-    const temp = mkdtempSync(join(tmpdir(), "lattice-graph-core-musl-build-"));
+    const temp = mkdtempSync(join(tmpdir(), "opcore-graph-core-musl-build-"));
     try {
       mkdirSync(join(temp, "bin"), { recursive: true });
       mkdirSync(join(temp, "packages", "graph"), { recursive: true });
@@ -60,7 +60,7 @@ describe("graph-core native artifact", () => {
           "const args = process.argv.slice(2);",
           'writeFileSync(join(process.cwd(), "cargo-args.json"), `${JSON.stringify(args)}\\n`);',
           'mkdirSync(join(process.cwd(), "target", "x86_64-unknown-linux-musl", "release"), { recursive: true });',
-          'writeFileSync(join(process.cwd(), "target", "x86_64-unknown-linux-musl", "release", "lattice-graph-core"), "linux-musl-binary\\n");'
+          'writeFileSync(join(process.cwd(), "target", "x86_64-unknown-linux-musl", "release", "opcore-graph-core"), "linux-musl-binary\\n");'
         ].join("\n")
       );
       chmodSync(cargoStub, 0o755);
@@ -92,15 +92,15 @@ describe("graph-core native artifact", () => {
       assert.deepEqual(JSON.parse(readFileSync(join(temp, "cargo-args.json"), "utf8")), [
         "build",
         "--package",
-        "lattice-graph-core",
+        "opcore-graph-core",
         "--release",
         "--target",
         "x86_64-unknown-linux-musl"
       ]);
       const metadata = JSON.parse(readFileSync(join(temp, "packages", "opcore-graph-core-linux-x64", "metadata.json"), "utf8"));
       assert.equal(metadata.targetPlatform, "linux-x64");
-      assert.equal(metadata.binaryPath, "lattice-graph-core");
-      assert.equal(metadata.checksumPath, "lattice-graph-core.sha256");
+      assert.equal(metadata.binaryPath, "opcore-graph-core");
+      assert.equal(metadata.checksumPath, "opcore-graph-core.sha256");
     } finally {
       rmSync(temp, { recursive: true, force: true });
     }
@@ -108,7 +108,7 @@ describe("graph-core native artifact", () => {
 
   it("packs, installs, and answers GraphProvider daemon smoke envelopes", { timeout: 120000 }, () => {
     assert.ok(currentNativePackage, `unsupported local graph-core target ${currentTarget}`);
-    const temp = mkdtempSync(join(tmpdir(), "lattice-graph-core-artifact-"));
+    const temp = mkdtempSync(join(tmpdir(), "opcore-graph-core-artifact-"));
     try {
       const contracts = packWorkspace("@the-open-engine/opcore-contracts", temp);
       const native = packWorkspace(currentNativePackage, temp);
@@ -124,39 +124,39 @@ describe("graph-core native artifact", () => {
         project,
         "node_modules",
         ...currentNativePackage.split("/"),
-        "lattice-graph-core"
+        "opcore-graph-core"
       );
 
       const ping = invoke(sidecar, {
-        protocol: "lattice.graph.daemon",
+        protocol: "opcore.graph.daemon",
         requestId: "ping-1",
         schemaVersion: 1,
         operation: "ping",
         repo: {
-          repoId: "lattice"
+          repoId: "opcore"
         }
       });
       assert.equal(ping.status.state, "available");
       assert.equal(ping.status.handshake.supportedOperations.includes("health"), true);
 
       const status = invoke(sidecar, {
-        protocol: "lattice.graph.daemon",
+        protocol: "opcore.graph.daemon",
         requestId: "status-1",
         schemaVersion: 1,
         operation: "status",
         repo: {
-          repoId: "lattice"
+          repoId: "opcore"
         }
       });
-      assert.equal(status.protocol, "lattice.graph.daemon");
+      assert.equal(status.protocol, "opcore.graph.daemon");
       assert.equal(status.schemaVersion, 1);
       assert.equal(status.status.state, "available");
-      assert.equal(status.status.provider, "lattice-graph");
-      assert.equal(status.status.handshake.artifactName, "lattice-graph-core");
-      assert.equal(status.status.handshake.artifact.artifactName, "lattice-graph-core");
+      assert.equal(status.status.provider, "opcore-graph");
+      assert.equal(status.status.handshake.artifactName, "opcore-graph-core");
+      assert.equal(status.status.handshake.artifact.artifactName, "opcore-graph-core");
 
       const build = invoke(sidecar, {
-        protocol: "lattice.graph.daemon",
+        protocol: "opcore.graph.daemon",
         requestId: "build-1",
         schemaVersion: 1,
         operation: "build",
@@ -169,7 +169,7 @@ describe("graph-core native artifact", () => {
       assert.deepEqual(build.pipeline.summary.phaseTimings.map((timing) => timing.phase), ["discovery", "extraction", "store"]);
 
       const query = invoke(sidecar, {
-        protocol: "lattice.graph.daemon",
+        protocol: "opcore.graph.daemon",
         requestId: "query-1",
         schemaVersion: 1,
         operation: "query",
@@ -188,15 +188,15 @@ describe("graph-core native artifact", () => {
           }
         }
       });
-      assert.equal(query.protocol, "lattice.graph.daemon");
+      assert.equal(query.protocol, "opcore.graph.daemon");
       assert.equal(query.status.state, "available");
       assert.equal(query.result.status.state, "available");
       assert.ok(query.result.nodes.length > 0);
       assert.ok(query.result.edges.length > 0);
-      assert.equal(query.result.metadata.provider, "lattice-graph");
+      assert.equal(query.result.metadata.provider, "opcore-graph");
 
       const update = invoke(sidecar, {
-        protocol: "lattice.graph.daemon",
+        protocol: "opcore.graph.daemon",
         requestId: "update-1",
         schemaVersion: 1,
         operation: "update",
@@ -210,7 +210,7 @@ describe("graph-core native artifact", () => {
       assert.equal(update.pipeline.summary.baseRef, "HEAD");
 
       const watch = invoke(sidecar, {
-        protocol: "lattice.graph.daemon",
+        protocol: "opcore.graph.daemon",
         requestId: "watch-jsonl",
         schemaVersion: 1,
         operation: "watch",
@@ -235,7 +235,7 @@ describe("graph-core native artifact", () => {
       assert.equal(stoppedWatch.idleTimeoutMs, 0);
 
       const health = invoke(sidecar, {
-        protocol: "lattice.graph.daemon",
+        protocol: "opcore.graph.daemon",
         requestId: "health-1",
         schemaVersion: 1,
         operation: "health",
@@ -265,7 +265,7 @@ describe("graph-core native artifact", () => {
         })}\n`
       );
       const staleHealth = invoke(sidecar, {
-        protocol: "lattice.graph.daemon",
+        protocol: "opcore.graph.daemon",
         requestId: "health-stale-lifecycle",
         schemaVersion: 1,
         operation: "health",
@@ -294,7 +294,7 @@ describe("graph-core native artifact", () => {
         })}\n`
       );
       const staleAvailableHealth = invoke(sidecar, {
-        protocol: "lattice.graph.daemon",
+        protocol: "opcore.graph.daemon",
         requestId: "health-stale-available-lifecycle",
         schemaVersion: 1,
         operation: "health",
@@ -308,7 +308,7 @@ describe("graph-core native artifact", () => {
 
       writeFileSync(statePath, "{not json\n");
       const corruptHealth = invoke(sidecar, {
-        protocol: "lattice.graph.daemon",
+        protocol: "opcore.graph.daemon",
         requestId: "health-corrupt-lifecycle",
         schemaVersion: 1,
         operation: "health",
@@ -326,7 +326,7 @@ describe("graph-core native artifact", () => {
         schemaVersion: 99,
         operation: "status",
         repo: {
-          repoId: "lattice"
+          repoId: "opcore"
         }
       });
       assert.equal(badProtocol.status.state, "schema_mismatch");
@@ -336,12 +336,12 @@ describe("graph-core native artifact", () => {
       assert.equal(badProtocol.result, undefined);
 
       const missingQuery = invoke(sidecar, {
-        protocol: "lattice.graph.daemon",
+        protocol: "opcore.graph.daemon",
         requestId: "missing-query",
         schemaVersion: 1,
         operation: "query",
         repo: {
-          repoId: "lattice"
+          repoId: "opcore"
         }
       });
       assert.equal(missingQuery.status.state, "schema_mismatch");

@@ -33,7 +33,7 @@ const receipts = [
   measureFile("baseline-db-size", "db_size_bytes", ".code-review-graph/graph.db"),
   measureFile("baseline-wal-size", "wal_size_bytes", ".code-review-graph/graph.db-wal"),
   measureCommand("baseline-daemon-startup", "daemon_startup_ms", [referenceGraphTool, "serve", "--help"]),
-  syntheticReceipt("baseline-daemon-query", "daemon_query_ms", "lattice.graph.daemon synthetic query envelope")
+  syntheticReceipt("baseline-daemon-query", "daemon_query_ms", "opcore.graph.daemon synthetic query envelope")
 ];
 
 const payload = {

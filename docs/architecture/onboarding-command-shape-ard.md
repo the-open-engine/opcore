@@ -101,7 +101,7 @@ guidance section that must never weaken existing lint/test/CI/pre-commit or agen
 - Command names stay **#2-deferred / identity-agnostic**; this ADR refers to "the `opcore`
   product bin" and "the `init` route," not to any final package string.
 - Public wording rules: no old-tool-replacement, all-stack, security/SAST, AI-authorship,
-  automatic-fix, blended-score, or "Lattice"-as-product claims.
+  automatic-fix, blended-score, or "Opcore"-as-product claims.
 - No public release, npm publish, visibility change, announcement, or registry/certification
   claim without explicit maintainer approval.
 

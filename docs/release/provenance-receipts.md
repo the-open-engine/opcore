@@ -1,9 +1,9 @@
 # Provenance Receipts
 
-Maintainer provenance evidence for the Lattice alpha release gate.
+Maintainer provenance evidence for the Opcore alpha release gate.
 
-- Current-tree files scanned: 394
-- Git-history commits scanned: 58
+- Current-tree files scanned: 439
+- Git-history commits scanned: 111
 - Python code-review-graph source findings: 0
 - Python package metadata findings: 0
 - Copied git-history marker findings: 0

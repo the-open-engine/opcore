@@ -1142,12 +1142,12 @@ function metricRepoState(repoRoot) {
     graph: {
       state: "skipped",
       mode: "optional",
-      provider: "lattice-graph",
-      action: "build the graph with lattice graph build.",
+      provider: "opcore-graph",
+      action: "build the graph with opcore graph build.",
       status: {
         state: "skipped",
         mode: "optional",
-        provider: "lattice-graph",
+        provider: "opcore-graph",
         schemaVersion: 1,
         failure: {
           category: "provider_missing",
@@ -1172,7 +1172,7 @@ function metricRepoState(repoRoot) {
     },
     warnings: [],
     blockers: [],
-    nextActions: [`lattice graph build --repo ${root} --json`]
+    nextActions: [`opcore graph build --repo ${root} --json`]
   };
 }
 

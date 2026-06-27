@@ -16,7 +16,7 @@ describe("validation contract helpers", () => {
       {
         requestId: "request-1",
         repo: {
-          repoId: "lattice"
+          repoId: "opcore"
         },
         scope: {
           kind: "files",
@@ -50,7 +50,7 @@ describe("validation contract helpers", () => {
       () =>
         normalizeValidationRequest({
           repo: {
-            repoId: "lattice"
+            repoId: "opcore"
           },
           scope: {
             kind: "files",
@@ -67,7 +67,7 @@ describe("validation contract helpers", () => {
       () =>
         validateValidationRequestContract({
           repo: {
-            repoId: "lattice"
+            repoId: "opcore"
           },
           scope: {
             kind: "files",
@@ -89,7 +89,7 @@ describe("validation contract helpers", () => {
       () =>
         normalizeValidationRequest({
           repo: {
-            repoId: "lattice"
+            repoId: "opcore"
           },
           scope: {
             kind: "files",
@@ -108,7 +108,7 @@ describe("validation contract helpers", () => {
         normalizeValidationRequest(
           {
             repo: {
-              repoId: "lattice"
+              repoId: "opcore"
             },
             scope: {
               kind: "files",
@@ -215,10 +215,10 @@ describe("validation contract helpers", () => {
   it("exposes implemented validation manifest adapters", async () => {
     for (const adapter of [checkCommandAdapter, validateCommandAdapter]) {
       const result = await adapter({
-        bin: "lattice",
+        bin: "opcore",
         argv: ["check"],
         args: ["manifest"],
-        canonicalCommand: ["lattice", "check"],
+        canonicalCommand: ["opcore", "check"],
         json: true
       });
       assert.equal(result.owner, "validation");

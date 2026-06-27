@@ -77,7 +77,7 @@ function invokeGraphCoreWatch(
   const status = lifecycleStatus(request, lifecycle);
   if (lifecycle.state === "error" || lifecycle.state === "stopped") return failureResponse(request, status);
   return validateGraphDaemonResponse({
-    protocol: "lattice.graph.daemon",
+    protocol: "opcore.graph.daemon",
     requestId: request.requestId,
     schemaVersion: 1,
     status,
@@ -225,7 +225,7 @@ function lifecycleStatus(request: GraphDaemonRequest, lifecycle: GraphWatchLifec
     return {
       state: "available",
       mode: "required",
-      provider: "lattice-graph",
+      provider: "opcore-graph",
       schemaVersion: 1,
       repo: request.repo,
       freshness,
@@ -240,7 +240,7 @@ function lifecycleStatus(request: GraphDaemonRequest, lifecycle: GraphWatchLifec
     return {
       state: "error",
       mode: "required",
-      provider: "lattice-graph",
+      provider: "opcore-graph",
       schemaVersion: 1,
       message: lifecycle.message ?? "graph watch daemon error",
       failure: {
@@ -260,7 +260,7 @@ function lifecycleStatus(request: GraphDaemonRequest, lifecycle: GraphWatchLifec
   return {
     state: "warming",
     mode: "required",
-    provider: "lattice-graph",
+    provider: "opcore-graph",
     schemaVersion: 1,
     repo: request.repo,
     freshness,
@@ -351,7 +351,7 @@ function normalizeArtifactHandshake(status: GraphProviderStatus, artifact: Graph
 function failureResponse(request: GraphDaemonRequest, status: GraphProviderStatus): GraphDaemonResponse {
   const queryFailureStatus = status as GraphProviderFailureStatus;
   return {
-    protocol: "lattice.graph.daemon",
+    protocol: "opcore.graph.daemon",
     requestId: request.requestId,
     schemaVersion: 1,
     status,

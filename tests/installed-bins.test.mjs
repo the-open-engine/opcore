@@ -33,7 +33,7 @@ const packageNames = [
 ].filter(Boolean);
 
 describe("installed package bins", () => {
-  it("installs packed packages and exposes only canonical lattice bins", { timeout: 120000 }, () => {
+  it("installs packed packages and exposes only canonical Opcore bins", { timeout: 120000 }, () => {
     assert.ok(currentNativePackage, `unsupported local graph-core target ${currentTarget}`);
     const temp = mkdtempSync(join(tmpdir(), "lattice-installed-bins-"));
     try {
@@ -43,7 +43,7 @@ describe("installed package bins", () => {
       run("npm", ["init", "-y"], { cwd: project });
       run("npm", ["install", "--ignore-scripts", ...tarballs], { cwd: project });
 
-      assert.equal(existsSync(binPath(project, "lattice")), true);
+      assert.equal(existsSync(binPath(project, "opcore")), true);
       assert.equal(existsSync(binPath(project, "opcore")), true);
       assert.equal(existsSync(binPath(project, "opcore-asp-provider")), true);
       for (const oldBin of ["crg", "cix", "rox"]) assert.equal(existsSync(binPath(project, oldBin)), false, oldBin);
@@ -77,12 +77,12 @@ describe("installed package bins", () => {
       );
       rmSync(opcoreTry.opcoreTry.sampleRoot, { recursive: true, force: true });
       const graphStatus = assertSmoke(project, ["graph", "status", "--json"], 0);
-      assert.deepEqual(graphStatus.canonicalCommand, ["lattice", "graph", "status"]);
-      assert.equal(graphStatus.providerStatus.provider, "lattice-graph");
+      assert.deepEqual(graphStatus.canonicalCommand, ["opcore", "graph", "status"]);
+      assert.equal(graphStatus.providerStatus.provider, "opcore-graph");
       assert.equal(graphStatus.providerStatus.state, "stale");
       assertSmoke(project, ["graph", "build", "--json"], 0);
       assert.equal(assertSmoke(project, ["graph", "query", "--json"], 0).providerStatus.state, "available");
-      assert.equal(assertSmoke(project, ["graph", "search", "lattice", "--json"], 0).providerStatus.state, "available");
+      assert.equal(assertSmoke(project, ["graph", "search", "opcore", "--json"], 0).providerStatus.state, "available");
       assert.equal(assertSmoke(project, ["graph", "serve", "--json"], 0).graphServe.state, "ready");
       assertServeTransport(project);
       assertGraphArtifact(project);
@@ -142,10 +142,10 @@ describe("installed package bins", () => {
         const manifestPath = join(project, "node_modules", ...packageName.split("/"), "package.json");
         const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
         if (packageName === "@the-open-engine/opcore") {
-          assert.deepEqual(manifest.bin, { opcore: "dist/index.js", lattice: "dist/lattice/index.js" });
+          assert.deepEqual(manifest.bin, { opcore: "dist/index.js" });
           assert.equal(
-            manifest.exports["./descriptors/lattice.managed-tool.json"],
-            "./dist/descriptors/lattice.managed-tool.json"
+            manifest.exports["./descriptors/opcore.managed-tool.json"],
+            "./dist/descriptors/opcore.managed-tool.json"
           );
         } else if (packageName === "@the-open-engine/opcore-asp-provider") {
           assert.deepEqual(manifest.bin, { "opcore-asp-provider": "dist/index.js" });
@@ -202,7 +202,7 @@ describe("installed package bins", () => {
     }
   });
 
-  it("installs packed Opcore alone with the opcore and lattice bins", { timeout: 120000 }, () => {
+  it("installs packed Opcore alone with the opcore bin", { timeout: 120000 }, () => {
     const temp = mkdtempSync(join(tmpdir(), "opcore-installed-bin-"));
     try {
       const tarballs = [
@@ -221,7 +221,7 @@ describe("installed package bins", () => {
       run("npm", ["install", "--ignore-scripts", "--no-audit", "--no-fund", ...tarballs], { cwd: project });
 
       assert.equal(existsSync(binPath(project, "opcore")), true);
-      assert.equal(existsSync(binPath(project, "lattice")), true);
+      assert.equal(existsSync(binPath(project, "opcore")), true);
       for (const forbiddenBin of ["crg", "cix", "rox"]) {
         assert.equal(existsSync(binPath(project, forbiddenBin)), false, forbiddenBin);
       }
@@ -386,14 +386,14 @@ function assertGraphArtifact(project) {
     "node_modules",
         ...currentNativePackage.split("/")
       );
-  const binary = join(nativeDir, "lattice-graph-core");
-  const checksumPath = join(nativeDir, "lattice-graph-core.sha256");
+  const binary = join(nativeDir, "opcore-graph-core");
+  const checksumPath = join(nativeDir, "opcore-graph-core.sha256");
   const metadataPath = join(nativeDir, "metadata.json");
   assert.equal(existsSync(binary), true, binary);
   assert.equal(existsSync(checksumPath), true, checksumPath);
   assert.equal(existsSync(metadataPath), true, metadataPath);
   const metadata = JSON.parse(readFileSync(metadataPath, "utf8"));
-  assert.equal(metadata.artifactName, "lattice-graph-core");
+  assert.equal(metadata.artifactName, "opcore-graph-core");
   assert.equal(metadata.targetPlatform, currentTarget);
   const expected = readFileSync(checksumPath, "utf8").trim().split(/\s+/)[0];
   const actual = createHash("sha256").update(readFileSync(binary)).digest("hex");
@@ -409,7 +409,7 @@ function assertManagedDescriptor(project) {
     "opcore",
     "dist",
     "descriptors",
-    "lattice.managed-tool.json"
+    "opcore.managed-tool.json"
   );
   assert.equal(existsSync(descriptorPath), true, descriptorPath);
   const descriptorText = readFileSync(descriptorPath, "utf8");
@@ -422,7 +422,7 @@ function assertManagedDescriptor(project) {
     descriptor.commandGroups.map((group) => group.name),
     ["graph", "inspect", "edit", "check", "validate", "status", "doctor"]
   );
-  assert.equal(existsSync(binPath(project, "lattice")), true);
+  assert.equal(existsSync(binPath(project, "opcore")), true);
   const currentNativeDescriptor = descriptor.capabilities.graph.nativeArtifacts.find((entry) => entry.targetPlatform === currentTarget);
   assert.ok(currentNativeDescriptor, `descriptor native target ${currentTarget}`);
   const requiredReferenceIds = new Set([
@@ -441,7 +441,7 @@ function assertManagedDescriptor(project) {
   }
 }
 
-function assertSmoke(project, args, expectedExitCode, bin = "lattice") {
+function assertSmoke(project, args, expectedExitCode, bin = "opcore") {
   return assertCliJson(binPath(project, bin), args, expectedExitCode, project);
 }
 
@@ -470,7 +470,7 @@ function assertCliJson(command, args, expectedExitCode, cwd, options = {}) {
 function assertServeTransport(project) {
   const requests = [
     {
-      protocol: "lattice.graph.daemon",
+      protocol: "opcore.graph.daemon",
       requestId: "installed-ping",
       schemaVersion: 1,
       operation: "ping",
@@ -479,7 +479,7 @@ function assertServeTransport(project) {
       }
     },
     {
-      protocol: "lattice.graph.daemon",
+      protocol: "opcore.graph.daemon",
       requestId: "installed-shutdown",
       schemaVersion: 1,
       operation: "shutdown",
@@ -488,7 +488,7 @@ function assertServeTransport(project) {
       }
     }
   ];
-  const result = spawnSync(binPath(project, "lattice"), ["graph", "serve", "--repo", project], {
+  const result = spawnSync(binPath(project, "opcore"), ["graph", "serve", "--repo", project], {
     cwd: project,
     input: `${requests.map((request) => JSON.stringify(request)).join("\n")}\n`,
     encoding: "utf8",

@@ -23,7 +23,7 @@ describe("edit validation request contract boundary", () => {
     );
     assert.deepEqual(request.repo, { repoId: "current-worktree" });
     assert.deepEqual(request.scope, { kind: "files", files: ["src/index.ts"] });
-    assert.deepEqual(request.graph, { mode: "required", provider: "lattice-graph" });
+    assert.deepEqual(request.graph, { mode: "required", provider: "opcore-graph" });
     assert.deepEqual(
       request.overlays.map((overlay) => overlay.path),
       ["src/index.ts", "src/remove.ts"]
@@ -192,7 +192,7 @@ describe("edit validation request contract boundary", () => {
           requestId: "repo-wide",
           repo: { repoRoot: "/other" },
           scope: { kind: "repo" },
-          graph: { mode: "required", provider: "lattice-graph" },
+          graph: { mode: "required", provider: "opcore-graph" },
           overlays: []
         }
       }

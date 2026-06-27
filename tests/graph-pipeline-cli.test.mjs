@@ -18,12 +18,12 @@ import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = fileURLToPath(new URL("..", import.meta.url));
-const latticeBin = join(repoRoot, "packages/opcore/dist/lattice/index.js");
+const latticeBin = join(repoRoot, "packages/opcore/dist/advanced/index.js");
 const sourceFixtureRoot = resolve(repoRoot, "packages/fixtures/source-extraction/wave1");
 const robustnessFixtureRoot = resolve(repoRoot, "packages/fixtures/graph-robustness/watch-roots");
 
 describe("graph pipeline CLI", () => {
-  it("builds, updates, reports status, and uses canonical lattice routing", () => {
+  it("builds, updates, reports status, and uses canonical Opcore routing", () => {
     withFixtureCopy((fixtureRoot) => {
       const build = run(latticeBin, ["graph", "build", "--repo", fixtureRoot, "--json"]);
       const repeatBuild = run(latticeBin, ["graph", "build", "--repo", fixtureRoot, "--json"]);
@@ -72,7 +72,7 @@ describe("graph pipeline CLI", () => {
   });
 
   it("builds, updates, watches, and reports status for Rust-only repos", () => {
-    const temp = mkdtempSync(join(tmpdir(), "lattice-graph-rust-only-"));
+    const temp = mkdtempSync(join(tmpdir(), "opcore-graph-rust-only-"));
     try {
       writeRustOnlyRepo(temp);
 
@@ -416,7 +416,7 @@ describe("graph pipeline CLI", () => {
         assert.match(result.providerStatus.failure.message, /pid 999999 is not running/);
       }
       assert.deepEqual(repeated.canonicalCommand, canonical.canonicalCommand);
-      assert.equal(repeated.bin, "lattice");
+      assert.equal(repeated.bin, "opcore");
     });
   });
 
@@ -458,7 +458,7 @@ describe("graph pipeline CLI", () => {
         assert.match(result.providerStatus.failure.message, /pid 999999 is not running/);
       }
       assert.deepEqual(repeated.canonicalCommand, canonical.canonicalCommand);
-      assert.equal(repeated.bin, "lattice");
+      assert.equal(repeated.bin, "opcore");
     });
   });
 
@@ -485,7 +485,7 @@ describe("graph pipeline CLI", () => {
         assert.match(result.providerStatus.failure.message, /state file .* is invalid/);
       }
       assert.deepEqual(repeated.canonicalCommand, canonical.canonicalCommand);
-      assert.equal(repeated.bin, "lattice");
+      assert.equal(repeated.bin, "opcore");
     });
   });
 
@@ -665,7 +665,7 @@ describe("graph pipeline CLI", () => {
   });
 
   it("ignores watch path environment during unscoped build and status", () => {
-    const temp = mkdtempSync(join(tmpdir(), "lattice-graph-env-scope-"));
+    const temp = mkdtempSync(join(tmpdir(), "opcore-graph-env-scope-"));
     try {
       mkdirSync(join(temp, "src"), { recursive: true });
       writeFileSync(join(temp, "src/a.ts"), "export const a = 1;\n");
@@ -703,11 +703,11 @@ describe("graph pipeline CLI", () => {
     }
     assert.deepEqual(repeated.canonicalCommand, canonical.canonicalCommand);
     assert.equal(repeated.providerStatus.state, canonical.providerStatus.state);
-    assert.equal(repeated.bin, "lattice");
+    assert.equal(repeated.bin, "opcore");
   });
 
   it("reports missing graph stores without mutating fresh repos", () => {
-    const temp = mkdtempSync(join(tmpdir(), "lattice-graph-status-readonly-"));
+    const temp = mkdtempSync(join(tmpdir(), "opcore-graph-status-readonly-"));
     const repo = join(temp, "repo");
     try {
       mkdirSync(repo);
@@ -728,7 +728,7 @@ describe("graph pipeline CLI", () => {
   });
 
   it("defaults graph status to the current working repo without mutating it", () => {
-    const temp = mkdtempSync(join(tmpdir(), "lattice-graph-status-cwd-"));
+    const temp = mkdtempSync(join(tmpdir(), "opcore-graph-status-cwd-"));
     try {
       writeFileSync(join(temp, "a.ts"), "export const a = 1;\n");
 
@@ -759,7 +759,7 @@ describe("graph pipeline CLI", () => {
 
       assert.equal(canonical.status, "error");
       assert.equal(canonical.exitCode, 1);
-      assert.equal(canonical.providerStatus.provider, "lattice-graph");
+      assert.equal(canonical.providerStatus.provider, "opcore-graph");
       assert.equal(canonical.providerStatus.state, "error");
       assert.equal(canonical.providerStatus.failure.category, "unknown");
       assert.match(
@@ -786,7 +786,7 @@ function run(script, args, expectedStatus = 0, options = {}) {
 }
 
 function withFixtureCopy(runFixture) {
-  const temp = mkdtempSync(join(tmpdir(), "lattice-graph-pipeline-"));
+  const temp = mkdtempSync(join(tmpdir(), "opcore-graph-pipeline-"));
   const fixtureRoot = join(temp, "wave1");
   try {
     cpSync(sourceFixtureRoot, fixtureRoot, { recursive: true, filter: skipGeneratedStore });
@@ -797,7 +797,7 @@ function withFixtureCopy(runFixture) {
 }
 
 function withRobustnessFixtureCopy(runFixture) {
-  const temp = mkdtempSync(join(tmpdir(), "lattice-graph-robustness-"));
+  const temp = mkdtempSync(join(tmpdir(), "opcore-graph-robustness-"));
   const fixtureRoot = join(temp, "watch-roots");
   try {
     cpSync(robustnessFixtureRoot, fixtureRoot, { recursive: true, filter: skipGeneratedStore });

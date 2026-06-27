@@ -6,7 +6,7 @@ describe("validation runner", () => {
   it("returns invalid_payload for malformed requests without throwing validator errors", async () => {
     const result = await runner([check("types")]).runValidation({
       repo: {
-        repoId: "lattice"
+        repoId: "opcore"
       },
       scope: {
         kind: "files",
@@ -40,7 +40,7 @@ describe("validation runner", () => {
         request({
           graph: {
             mode: "required",
-            provider: "lattice-graph"
+            provider: "opcore-graph"
           }
         })
       );
@@ -297,7 +297,7 @@ describe("validation runner", () => {
           checks: ["imports.no-cycles"],
           graph: {
             mode: "optional",
-            provider: "lattice-graph"
+            provider: "opcore-graph"
           }
         })
       );
@@ -345,7 +345,7 @@ describe("validation runner", () => {
         checks: ["imports.no-cycles"],
         graph: {
           mode: "required",
-          provider: "lattice-graph"
+          provider: "opcore-graph"
         }
       })
     );
@@ -379,7 +379,7 @@ describe("validation runner", () => {
         checks: ["imports.no-cycles"],
         graph: {
           mode: "required",
-          provider: "lattice-graph"
+          provider: "opcore-graph"
         }
       })
     );
@@ -411,7 +411,7 @@ describe("validation runner", () => {
         checks: ["imports.no-cycles"],
         graph: {
           mode: "optional",
-          provider: "lattice-graph",
+          provider: "opcore-graph",
           status: availableStatus("optional")
         }
       })
@@ -425,7 +425,7 @@ describe("validation runner", () => {
         checks: ["imports.no-cycles"],
         graph: {
           mode: "required",
-          provider: "lattice-graph",
+          provider: "opcore-graph",
           status: availableStatus("required")
         }
       })
@@ -444,7 +444,7 @@ describe("validation runner", () => {
         checks: ["imports.no-cycles"],
         graph: {
           mode: "optional",
-          provider: "lattice-graph",
+          provider: "opcore-graph",
           status: optionalStatus
         }
       })
@@ -455,7 +455,7 @@ describe("validation runner", () => {
         checks: ["imports.no-cycles"],
         graph: {
           mode: "required",
-          provider: "lattice-graph",
+          provider: "opcore-graph",
           status: requiredStatus
         }
       })
@@ -488,7 +488,7 @@ function request(overrides = {}) {
   return {
     requestId: "validation-1",
     repo: {
-      repoId: "lattice"
+      repoId: "opcore"
     },
     scope: {
       kind: "files",
@@ -496,7 +496,7 @@ function request(overrides = {}) {
     },
     graph: {
       mode: "optional",
-      provider: "lattice-graph"
+      provider: "opcore-graph"
     },
     overlays: [],
     checks: ["types"],
@@ -559,11 +559,11 @@ function graphClient(overrides = {}) {
   };
 }
 
-function availableStatus(mode = "optional", repo = { repoId: "lattice" }) {
+function availableStatus(mode = "optional", repo = { repoId: "opcore" }) {
   return {
     state: "available",
     mode,
-    provider: "lattice-graph",
+    provider: "opcore-graph",
     schemaVersion: 1,
     repo,
     freshness: {
@@ -582,7 +582,7 @@ function availableFactResult(query, nodes, edges) {
     status: availableStatus(query.mode, query.repo),
     metadata: {
       schemaVersion: 1,
-      provider: "lattice-graph",
+      provider: "opcore-graph",
       repo: query.repo,
       generatedAt: "2026-06-05T00:00:00.000Z",
       freshness: {
@@ -602,7 +602,7 @@ function graphFailure(state, category, mode = "required") {
   const status = {
     state,
     mode,
-    provider: "lattice-graph",
+    provider: "opcore-graph",
     schemaVersion: 1,
     failure: {
       category,
@@ -611,7 +611,7 @@ function graphFailure(state, category, mode = "required") {
   };
   if (state === "stale") {
     status.repo = {
-      repoId: "lattice"
+      repoId: "opcore"
     };
     status.freshness = {
       generatedAt: "2026-06-05T00:00:00.000Z",

@@ -6,7 +6,7 @@ import { cpSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } fro
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { commandRouterManifest, routeCommand, runCli } from "../packages/opcore/dist/lattice/index.js";
+import { commandRouterManifest, routeCommand, runCli } from "../packages/opcore/dist/advanced/index.js";
 
 const removedLegacyCommandField = `legacy${"Command"}`;
 const removedLegacyMappingsField = `legacy${"Mappings"}`;
@@ -14,9 +14,9 @@ const removedLegacyMappingsField = `legacy${"Mappings"}`;
 const repoRoot = fileURLToPath(new URL("..", import.meta.url));
 const sourceFixtureRoot = resolve(repoRoot, "packages/fixtures/source-extraction/wave1");
 
-describe("lattice command router", () => {
-  it("declares lattice canonical command bin with lattice command groups", () => {
-    assert.deepEqual(commandRouterManifest.bins, ["lattice"]);
+describe("Opcore command router", () => {
+  it("declares the canonical Opcore command bin with command groups", () => {
+    assert.deepEqual(commandRouterManifest.bins, ["opcore"]);
     assert.equal(Object.hasOwn(commandRouterManifest, "aliases"), false);
     assert.equal(Object.hasOwn(commandRouterManifest, removedLegacyMappingsField), false);
     assert.deepEqual(
@@ -71,12 +71,12 @@ describe("lattice command router", () => {
     ]);
   });
 
-  it("rejects non-lattice entrypoints without alias metadata", async () => {
+  it("rejects non-Opcore entrypoints without alias metadata", async () => {
     for (const bin of ["crg", "cix", "rox"]) {
       const routed = await routeCommand(["status", "--json"], bin);
       assert.equal(routed.status, "unsupported");
       assert.equal(routed.exitCode, 64);
-      assert.deepEqual(routed.canonicalCommand, ["lattice", "unsupported"]);
+      assert.deepEqual(routed.canonicalCommand, ["opcore", "unsupported"]);
       assert.equal(routed.owner, "runtime");
       assert.equal(Object.hasOwn(routed, "alias"), false);
       assert.equal(Object.hasOwn(routed, removedLegacyCommandField), false);
@@ -86,32 +86,32 @@ describe("lattice command router", () => {
 
   it("routes canonical graph status, query, and search through the graph adapter", async () => {
     await withFixtureCopy(async (fixtureRoot) => {
-      await routeCommand(["graph", "build", "--repo", fixtureRoot, "--json"], "lattice");
-      const status = await routeCommand(["graph", "status", "--repo", fixtureRoot, "--json"], "lattice");
-      const query = await routeCommand(["graph", "query", "--repo", fixtureRoot, "--json"], "lattice");
-      const search = await routeCommand(["graph", "search", "Greeting", "--repo", fixtureRoot, "--limit", "5", "--json"], "lattice");
+      await routeCommand(["graph", "build", "--repo", fixtureRoot, "--json"], "opcore");
+      const status = await routeCommand(["graph", "status", "--repo", fixtureRoot, "--json"], "opcore");
+      const query = await routeCommand(["graph", "query", "--repo", fixtureRoot, "--json"], "opcore");
+      const search = await routeCommand(["graph", "search", "Greeting", "--repo", fixtureRoot, "--limit", "5", "--json"], "opcore");
 
       for (const result of [status, query, search]) {
         assert.equal(result.status, "ok");
         assert.equal(result.exitCode, 0);
-        assert.equal(result.providerStatus.provider, "lattice-graph");
+        assert.equal(result.providerStatus.provider, "opcore-graph");
         assert.equal(result.providerStatus.state, "available");
         assert.equal(Object.hasOwn(result, "alias"), false);
         assert.equal(Object.hasOwn(result, removedLegacyCommandField), false);
         assertCommandTiming(result);
       }
-      assert.deepEqual(status.canonicalCommand.slice(0, 3), ["lattice", "graph", "status"]);
-      assert.deepEqual(query.canonicalCommand.slice(0, 3), ["lattice", "graph", "query"]);
-      assert.deepEqual(search.canonicalCommand.slice(0, 3), ["lattice", "graph", "search"]);
+      assert.deepEqual(status.canonicalCommand.slice(0, 3), ["opcore", "graph", "status"]);
+      assert.deepEqual(query.canonicalCommand.slice(0, 3), ["opcore", "graph", "query"]);
+      assert.deepEqual(search.canonicalCommand.slice(0, 3), ["opcore", "graph", "search"]);
       assert.equal(search.graphSearch.results[0].path, "src/components/GreetingCard.tsx");
     });
   });
 
-  it("routes graph build, update, watch, and serve through canonical lattice commands", async () => {
+  it("routes graph build, update, watch, and serve through canonical Opcore commands", async () => {
     for (const command of ["build", "update", "watch"]) {
       await withFixtureCopy(async (fixtureRoot) => {
         const extra = command === "watch" ? ["--once"] : [];
-        const routed = await routeCommand(["graph", command, "--repo", fixtureRoot, ...extra, "--json"], "lattice");
+        const routed = await routeCommand(["graph", command, "--repo", fixtureRoot, ...extra, "--json"], "opcore");
         assert.equal(routed.status, "ok");
         assert.equal(routed.exitCode, 0);
         assert.equal(routed.providerStatus.state, "available");
@@ -126,7 +126,7 @@ describe("lattice command router", () => {
       });
     }
 
-    const serve = await routeCommand(["graph", "serve", "--json"], "lattice");
+    const serve = await routeCommand(["graph", "serve", "--json"], "opcore");
     assert.equal(serve.status, "ok");
     assert.equal(serve.graphServe.state, "ready");
     assertCommandTiming(serve);
@@ -134,10 +134,10 @@ describe("lattice command router", () => {
 
   it("returns graph adapter failures without throwing", async () => {
     const missingRepo = join(tmpdir(), `lattice-missing-query-${process.pid}-${Date.now()}`);
-    const routed = await routeCommand(["graph", "query", "--repo", missingRepo, "--json"], "lattice");
+    const routed = await routeCommand(["graph", "query", "--repo", missingRepo, "--json"], "opcore");
     assert.equal(routed.status, "error");
     assert.equal(routed.exitCode, 1);
-    assert.equal(routed.providerStatus.provider, "lattice-graph");
+    assert.equal(routed.providerStatus.provider, "opcore-graph");
     assert.equal(routed.providerStatus.state, "required_missing");
     assert.match(routed.message, /not a directory/);
     assertCommandTiming(routed);
@@ -150,7 +150,7 @@ describe("lattice command router", () => {
       ["graph", "watch", "--unknown-graph-flag", "--json"],
       ["inspect", "symbols", "Greeting", "--unknown-inspect-flag", "--json"]
     ]) {
-      const malformed = await routeCommand(args, "lattice");
+      const malformed = await routeCommand(args, "opcore");
       assert.equal(malformed.status, "error", args.join(" "));
       assert.equal(malformed.exitCode, 1, args.join(" "));
       assertCommandTiming(malformed);
@@ -158,18 +158,18 @@ describe("lattice command router", () => {
   });
 
   it("keeps unsupported and implemented edit routes typed", async () => {
-    assert.deepEqual(pick(await routeCommand(["graph", "refresh", "--json"], "lattice")), {
-      canonicalCommand: ["lattice", "graph", "refresh"],
+    assert.deepEqual(pick(await routeCommand(["graph", "refresh", "--json"], "opcore")), {
+      canonicalCommand: ["opcore", "graph", "refresh"],
       status: "unsupported",
       exitCode: 64
     });
-    assert.deepEqual(pick(await routeCommand(["graph", "inspect", "--json"], "lattice")), {
-      canonicalCommand: ["lattice", "graph", "inspect"],
+    assert.deepEqual(pick(await routeCommand(["graph", "inspect", "--json"], "opcore")), {
+      canonicalCommand: ["opcore", "graph", "inspect"],
       status: "unsupported",
       exitCode: 64
     });
-    assert.deepEqual(pick(await routeCommand(["edit", "multi-edit", "--json"], "lattice")), {
-      canonicalCommand: ["lattice", "edit", "multi-edit"],
+    assert.deepEqual(pick(await routeCommand(["edit", "multi-edit", "--json"], "opcore")), {
+      canonicalCommand: ["opcore", "edit", "multi-edit"],
       status: "unsupported",
       exitCode: 64
     });
@@ -189,7 +189,7 @@ describe("lattice command router", () => {
         "--replacement",
         "new",
         "--json"
-      ], "lattice");
+      ], "opcore");
       assert.equal(exact.status, "ok");
       assert.equal(exact.editPlan.changes[0].content, "new\n");
       assertCommandTiming(exact);
@@ -201,7 +201,7 @@ describe("lattice command router", () => {
         "--request-json",
         JSON.stringify({ patch: patchFor("src/a.ts", "old", "new") }),
         "--json"
-      ], "lattice");
+      ], "opcore");
       assert.equal(patch.status, "ok");
       assert.equal(patch.editPlan.changes[0].content, "new\n");
       assertCommandTiming(patch);
@@ -213,12 +213,12 @@ describe("lattice command router", () => {
         "--request-json",
         JSON.stringify({ files: [{ path: "src/a.ts", content: "tree\n" }] }),
         "--json"
-      ], "lattice");
+      ], "opcore");
       assert.equal(tree.status, "ok");
       assert.equal(tree.editPlan.changes[0].content, "tree\n");
       assertCommandTiming(tree);
       writeFileSync(join(editRepo, "src/symbol.ts"), "export function oldName() {\n  return 1;\n}\nexport const useName = oldName();\n");
-      const graphBuild = await routeCommand(["graph", "build", "--repo", editRepo, "--json"], "lattice");
+      const graphBuild = await routeCommand(["graph", "build", "--repo", editRepo, "--json"], "opcore");
       assert.equal(graphBuild.status, "ok");
       assertCommandTiming(graphBuild);
       const rename = await routeCommand([
@@ -229,7 +229,7 @@ describe("lattice command router", () => {
         "--request-json",
         JSON.stringify({ target: { path: "src/symbol.ts", name: "oldName" }, newName: "newName" }),
         "--json"
-      ], "lattice");
+      ], "opcore");
       assert.equal(rename.status, "ok");
       assert.match(rename.editPlan.changes[0].content, /newName/);
       assert.equal(typeof exact.message, "string");
@@ -237,7 +237,7 @@ describe("lattice command router", () => {
     } finally {
       rmSync(editRepo, { recursive: true, force: true });
     }
-    const validate = await routeCommand(["validate", "manifest", "--json"], "lattice");
+    const validate = await routeCommand(["validate", "manifest", "--json"], "opcore");
     assert.equal(validate.owner, "validation");
     assert.equal(validate.status, "ok");
     assert.equal(validate.exitCode, 0);
@@ -259,9 +259,9 @@ describe("lattice command router", () => {
 
   it("routes graph-backed inspect commands through top-level inspect ownership", async () => {
     await withFixtureCopy(async (fixtureRoot) => {
-      await routeCommand(["graph", "build", "--repo", fixtureRoot, "--json"], "lattice");
-      const symbols = await routeCommand(["inspect", "symbols", "Greeting", "--repo", fixtureRoot, "--limit", "5", "--json"], "lattice");
-      const definition = await routeCommand(["inspect", "definition", "GreetingCard", "--repo", fixtureRoot, "--json"], "lattice");
+      await routeCommand(["graph", "build", "--repo", fixtureRoot, "--json"], "opcore");
+      const symbols = await routeCommand(["inspect", "symbols", "Greeting", "--repo", fixtureRoot, "--limit", "5", "--json"], "opcore");
+      const definition = await routeCommand(["inspect", "definition", "GreetingCard", "--repo", fixtureRoot, "--json"], "opcore");
       const references = await routeCommand([
         "inspect",
         "references",
@@ -271,7 +271,7 @@ describe("lattice command router", () => {
         "--limit",
         "5",
         "--json"
-      ], "lattice");
+      ], "opcore");
       const signature = await routeCommand([
         "inspect",
         "signature",
@@ -279,7 +279,7 @@ describe("lattice command router", () => {
         "--repo",
         fixtureRoot,
         "--json"
-      ], "lattice");
+      ], "opcore");
       const implementations = await routeCommand([
         "inspect",
         "implementations",
@@ -287,8 +287,8 @@ describe("lattice command router", () => {
         "--repo",
         fixtureRoot,
         "--json"
-      ], "lattice");
-      const search = await routeCommand(["inspect", "search", "Greeting", "--repo", fixtureRoot, "--limit", "5", "--json"], "lattice");
+      ], "opcore");
+      const search = await routeCommand(["inspect", "search", "Greeting", "--repo", fixtureRoot, "--limit", "5", "--json"], "opcore");
 
       for (const result of [symbols, definition, references, signature, implementations, search]) {
         assert.equal(result.owner, "inspect");
@@ -328,7 +328,7 @@ describe("lattice command router", () => {
         "--repo",
         fixtureRoot,
         "--json"
-      ], "lattice");
+      ], "opcore");
       const implementations = await routeCommand([
         "inspect",
         "implementations",
@@ -336,7 +336,7 @@ describe("lattice command router", () => {
         "--repo",
         fixtureRoot,
         "--json"
-      ], "lattice");
+      ], "opcore");
 
       assert.equal(signature.owner, "inspect");
       assert.equal(signature.status, "error");
@@ -356,55 +356,55 @@ describe("lattice command router", () => {
   });
 
   it("returns exit 0 for status and help surfaces", async () => {
-    const statusJson = await routeCommand(["status", "--json"], "lattice");
-    const doctorJson = await routeCommand(["doctor", "--json"], "lattice");
-    const helpJson = await routeCommand(["--help", "--json"], "lattice");
+    const statusJson = await routeCommand(["status", "--json"], "opcore");
+    const doctorJson = await routeCommand(["doctor", "--json"], "opcore");
+    const helpJson = await routeCommand(["--help", "--json"], "opcore");
     assert.equal(statusJson.exitCode, 0);
     assert.equal(doctorJson.exitCode, 0);
     assert.equal(helpJson.exitCode, 0);
     assertCommandTiming(statusJson);
     assertCommandTiming(doctorJson);
     assertCommandTiming(helpJson);
-    const help = (await routeCommand(["--help"], "lattice")).message;
+    const help = (await routeCommand(["--help"], "opcore")).message;
     assert.doesNotMatch(help, /Aliases:/);
     assert.match(help, /Local code intelligence and edit safety/);
     assert.match(help, /Examples:/);
-    assert.match(help, /lattice validate pre-write/);
+    assert.match(help, /opcore validate pre-write/);
     assert.match(help, /Groups: graph, inspect, edit, check, validate, status, doctor/);
     assert.doesNotMatch(help, /\bstart\b/);
     assert.doesNotMatch(help, /\bstop\b/);
-    const status = await routeCommand(["status", "--json"], "lattice");
+    const status = await routeCommand(["status", "--json"], "opcore");
     assert.equal(status.validationStatus.adapterRegistry.checkIds.length, 22);
     assert.equal(status.validationStatus.adapterRegistry.checkIds.includes("rust.cargo-check"), true);
     assert.equal(status.validationStatus.adapterRegistry.checkIds.includes("rust.file-length"), true);
     assert.equal(status.validationStatus.adapterRegistry.checkIds.includes("python.syntax"), true);
-    assert.match((await routeCommand(["status"], "lattice")).message, /Run `lattice graph build`|Graph is available/);
-    assert.match((await routeCommand(["graph", "status"], "lattice")).message, /Run `lattice graph build`|graph-core sidecar available/);
+    assert.match((await routeCommand(["status"], "opcore")).message, /Run `opcore graph build`|Graph is available/);
+    assert.match((await routeCommand(["graph", "status"], "opcore")).message, /Run `opcore graph build`|graph-core sidecar available/);
   });
 
   it("rejects lifecycle start and stop as unsupported public groups", async () => {
     for (const command of ["start", "stop"]) {
-      const routed = await routeCommand([command, "--json"], "lattice");
+      const routed = await routeCommand([command, "--json"], "opcore");
       assert.equal(routed.owner, "runtime");
       assert.equal(routed.status, "unsupported");
       assert.equal(routed.exitCode, 64);
-      assert.deepEqual(routed.canonicalCommand, ["lattice", command]);
+      assert.deepEqual(routed.canonicalCommand, ["opcore", command]);
       assertCommandTiming(routed);
     }
   });
 
   it("rejects stray operands on top-level runtime commands", async () => {
-    const routed = await routeCommand(["status", "extra", "--json"], "lattice");
+    const routed = await routeCommand(["status", "extra", "--json"], "opcore");
     assert.equal(routed.status, "unsupported");
     assert.equal(routed.exitCode, 64);
-    assert.deepEqual(routed.canonicalCommand, ["lattice", "status", "extra"]);
+    assert.deepEqual(routed.canonicalCommand, ["opcore", "status", "extra"]);
     assertCommandTiming(routed);
   });
 
   it("emits stable JSON results from runCli", async () => {
     let output = "";
     const code = await runCli({
-      bin: "lattice",
+      bin: "opcore",
       argv: ["status", "--json"],
       stdout: (text) => {
         output += text;
@@ -413,7 +413,7 @@ describe("lattice command router", () => {
     assert.equal(code, 0);
     const parsed = JSON.parse(output);
     assert.equal(parsed.schemaVersion, 1);
-    assert.deepEqual(parsed.canonicalCommand, ["lattice", "status"]);
+    assert.deepEqual(parsed.canonicalCommand, ["opcore", "status"]);
     assert.equal(Object.hasOwn(parsed, "alias"), false);
     assert.equal(Object.hasOwn(parsed, removedLegacyCommandField), false);
     assertCommandTiming(parsed);

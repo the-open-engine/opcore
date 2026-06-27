@@ -5,12 +5,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
-import { routeCommand } from "../packages/opcore/dist/lattice/index.js";
+import { routeCommand } from "../packages/opcore/dist/advanced/index.js";
 import { routeOpcoreCommand } from "../packages/opcore/dist/index.js";
 import { fakeCargoScript, writeFakeRustToolchain } from "./helpers/validation-rust-fixtures.mjs";
 
 const repoRoot = fileURLToPath(new URL("..", import.meta.url));
-const latticeBin = fileURLToPath(new URL("../packages/opcore/dist/lattice/index.js", import.meta.url));
+const latticeBin = fileURLToPath(new URL("../packages/opcore/dist/advanced/index.js", import.meta.url));
 const typeScriptCheckIds = [
   "typescript.syntax",
   "typescript.types",
@@ -58,7 +58,7 @@ describe("validation CLI", () => {
       assertCommandTiming(result);
 
       const compatible = run(["status", "--json"]);
-      assert.deepEqual(compatible.canonicalCommand, ["lattice", "status"]);
+      assert.deepEqual(compatible.canonicalCommand, ["opcore", "status"]);
       assert.equal(compatible.validationStatus.adapterRegistry.checkIds.length, defaultCheckIds.length);
       assert.equal(Object.hasOwn(compatible, "repoState"), false);
     } finally {
@@ -234,7 +234,7 @@ describe("validation CLI", () => {
           requestId: "cli-rust-pre-write-1",
           repo: { repoRoot: temp },
           scope: { kind: "files", files: ["crates/app/src/lib.rs"] },
-          graph: { mode: "optional", provider: "lattice-graph" },
+          graph: { mode: "optional", provider: "opcore-graph" },
           overlays: [
             {
               path: "crates/app/src/lib.rs",
@@ -359,7 +359,7 @@ function validRequest(repoRootPath) {
   return {
     repo: { repoRoot: repoRootPath },
     scope: { kind: "files", files: ["src/index.ts"] },
-    graph: { mode: "optional", provider: "lattice-graph" },
+    graph: { mode: "optional", provider: "opcore-graph" },
     overlays: [],
     checks: ["typescript.syntax"]
   };
@@ -426,10 +426,10 @@ function commitWorktreeFile(repoRootPath, file, message) {
 
 function gitEnv(date) {
   return {
-    GIT_AUTHOR_NAME: "Lattice",
+    GIT_AUTHOR_NAME: "Opcore",
     GIT_AUTHOR_EMAIL: "lattice@example.invalid",
     GIT_AUTHOR_DATE: date,
-    GIT_COMMITTER_NAME: "Lattice",
+    GIT_COMMITTER_NAME: "Opcore",
     GIT_COMMITTER_EMAIL: "lattice@example.invalid",
     GIT_COMMITTER_DATE: date
   };

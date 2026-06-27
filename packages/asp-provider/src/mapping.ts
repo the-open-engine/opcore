@@ -110,7 +110,7 @@ export async function evaluateChangeset(
         },
         graph: {
           mode: graphMode,
-          provider: "lattice-graph"
+          provider: "opcore-graph"
         },
         checks: selectedIds,
         overlays

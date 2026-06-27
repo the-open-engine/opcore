@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 
 const repoRoot = fileURLToPath(new URL("..", import.meta.url));
-const latticeBin = join(repoRoot, "packages/opcore/dist/lattice/index.js");
+const latticeBin = join(repoRoot, "packages/opcore/dist/advanced/index.js");
 const sourceFixtureRoot = resolve(repoRoot, "packages/fixtures/source-extraction/wave1");
 
 describe("graph query CLI routes", () => {
@@ -33,7 +33,7 @@ describe("graph query CLI routes", () => {
     });
   });
 
-  it("routes named queries, review-context, and detect-changes through canonical lattice commands", () => {
+  it("routes named queries, review-context, and detect-changes through canonical Opcore commands", () => {
     withBuiltFixture((fixtureRoot) => {
       const query = run(latticeBin, ["graph", "query", "tests_for", "src/models.ts", "--repo", fixtureRoot, "--json"]);
       assert.equal(query.graphQuery.queryKind, "tests_for");
@@ -49,7 +49,7 @@ describe("graph query CLI routes", () => {
     });
   });
 
-  it("routes search through canonical lattice commands", () => {
+  it("routes search through canonical Opcore commands", () => {
     withBuiltFixture((fixtureRoot) => {
       const search = run(latticeBin, ["graph", "search", "Greeting", "--repo", fixtureRoot, "--files", "src/components/GreetingCard.tsx", "--limit", "5", "--json"]);
       assert.equal(search.status, "ok");
@@ -58,7 +58,7 @@ describe("graph query CLI routes", () => {
     });
   });
 
-  it("routes Rust query, impact, review-context, detect-changes, and search through canonical lattice commands", () => {
+  it("routes Rust query, impact, review-context, detect-changes, and search through canonical Opcore commands", () => {
     withBuiltRustFixture((fixtureRoot) => {
       const query = run(latticeBin, [
         "graph",

@@ -84,7 +84,7 @@
     },
     {
       "schemaVersion": 1,
-      "canonicalCommand": ["lattice", "graph", "build", "--repo", "arg", "--json"],
+      "canonicalCommand": ["opcore", "graph", "build", "--repo", "arg", "--json"],
       "scope": "cold",
       "repoShapeBucket": "small",
       "budgetMs": 4000,
@@ -95,7 +95,7 @@
     },
     {
       "schemaVersion": 1,
-      "canonicalCommand": ["lattice", "graph", "build", "--repo", "arg", "--json"],
+      "canonicalCommand": ["opcore", "graph", "build", "--repo", "arg", "--json"],
       "scope": "warm",
       "repoShapeBucket": "small",
       "budgetMs": 2500,
@@ -106,7 +106,7 @@
     },
     {
       "schemaVersion": 1,
-      "canonicalCommand": ["lattice", "graph", "build", "--repo", "arg", "--json"],
+      "canonicalCommand": ["opcore", "graph", "build", "--repo", "arg", "--json"],
       "scope": "cold",
       "repoShapeBucket": "medium",
       "budgetMs": 18000,
@@ -117,7 +117,7 @@
     },
     {
       "schemaVersion": 1,
-      "canonicalCommand": ["lattice", "graph", "build", "--repo", "arg", "--json"],
+      "canonicalCommand": ["opcore", "graph", "build", "--repo", "arg", "--json"],
       "scope": "warm",
       "repoShapeBucket": "medium",
       "budgetMs": 12000,
@@ -128,7 +128,7 @@
     },
     {
       "schemaVersion": 1,
-      "canonicalCommand": ["lattice", "graph", "update", "--repo", "arg", "--base", "HEAD", "--json"],
+      "canonicalCommand": ["opcore", "graph", "update", "--repo", "arg", "--base", "HEAD", "--json"],
       "scope": "cold",
       "repoShapeBucket": "small",
       "budgetMs": 2500,
@@ -139,7 +139,7 @@
     },
     {
       "schemaVersion": 1,
-      "canonicalCommand": ["lattice", "graph", "update", "--repo", "arg", "--base", "HEAD", "--json"],
+      "canonicalCommand": ["opcore", "graph", "update", "--repo", "arg", "--base", "HEAD", "--json"],
       "scope": "warm",
       "repoShapeBucket": "small",
       "budgetMs": 1500,
@@ -150,7 +150,7 @@
     },
     {
       "schemaVersion": 1,
-      "canonicalCommand": ["lattice", "graph", "update", "--repo", "arg", "--base", "HEAD", "--json"],
+      "canonicalCommand": ["opcore", "graph", "update", "--repo", "arg", "--base", "HEAD", "--json"],
       "scope": "cold",
       "repoShapeBucket": "medium",
       "budgetMs": 10000,
@@ -161,7 +161,7 @@
     },
     {
       "schemaVersion": 1,
-      "canonicalCommand": ["lattice", "graph", "update", "--repo", "arg", "--base", "HEAD", "--json"],
+      "canonicalCommand": ["opcore", "graph", "update", "--repo", "arg", "--base", "HEAD", "--json"],
       "scope": "warm",
       "repoShapeBucket": "medium",
       "budgetMs": 6500,
@@ -172,84 +172,84 @@
     },
     {
       "schemaVersion": 1,
-      "canonicalCommand": ["lattice", "graph", "status", "--repo", "arg", "--json"],
+      "canonicalCommand": ["opcore", "graph", "status", "--repo", "arg", "--json"],
       "scope": "cold",
       "repoShapeBucket": "small",
       "budgetMs": 800
     },
     {
       "schemaVersion": 1,
-      "canonicalCommand": ["lattice", "graph", "status", "--repo", "arg", "--json"],
+      "canonicalCommand": ["opcore", "graph", "status", "--repo", "arg", "--json"],
       "scope": "warm",
       "repoShapeBucket": "small",
       "budgetMs": 500
     },
     {
       "schemaVersion": 1,
-      "canonicalCommand": ["lattice", "graph", "status", "--repo", "arg", "--json"],
+      "canonicalCommand": ["opcore", "graph", "status", "--repo", "arg", "--json"],
       "scope": "cold",
       "repoShapeBucket": "medium",
       "budgetMs": 1200
     },
     {
       "schemaVersion": 1,
-      "canonicalCommand": ["lattice", "graph", "status", "--repo", "arg", "--json"],
+      "canonicalCommand": ["opcore", "graph", "status", "--repo", "arg", "--json"],
       "scope": "warm",
       "repoShapeBucket": "medium",
       "budgetMs": 800
     },
     {
       "schemaVersion": 1,
-      "canonicalCommand": ["lattice", "graph", "search", "arg", "--repo", "arg", "--limit", "5", "--json"],
+      "canonicalCommand": ["opcore", "graph", "search", "arg", "--repo", "arg", "--limit", "5", "--json"],
       "scope": "cold",
       "repoShapeBucket": "small",
       "budgetMs": 1200
     },
     {
       "schemaVersion": 1,
-      "canonicalCommand": ["lattice", "graph", "search", "arg", "--repo", "arg", "--limit", "5", "--json"],
+      "canonicalCommand": ["opcore", "graph", "search", "arg", "--repo", "arg", "--limit", "5", "--json"],
       "scope": "warm",
       "repoShapeBucket": "small",
       "budgetMs": 800
     },
     {
       "schemaVersion": 1,
-      "canonicalCommand": ["lattice", "graph", "search", "arg", "--repo", "arg", "--limit", "5", "--json"],
+      "canonicalCommand": ["opcore", "graph", "search", "arg", "--repo", "arg", "--limit", "5", "--json"],
       "scope": "cold",
       "repoShapeBucket": "medium",
       "budgetMs": 2500
     },
     {
       "schemaVersion": 1,
-      "canonicalCommand": ["lattice", "graph", "search", "arg", "--repo", "arg", "--limit", "5", "--json"],
+      "canonicalCommand": ["opcore", "graph", "search", "arg", "--repo", "arg", "--limit", "5", "--json"],
       "scope": "warm",
       "repoShapeBucket": "medium",
       "budgetMs": 1500
     },
     {
       "schemaVersion": 1,
-      "canonicalCommand": ["lattice", "graph", "query", "--repo", "arg", "--json"],
+      "canonicalCommand": ["opcore", "graph", "query", "--repo", "arg", "--json"],
       "scope": "cold",
       "repoShapeBucket": "small",
       "budgetMs": 1200
     },
     {
       "schemaVersion": 1,
-      "canonicalCommand": ["lattice", "graph", "query", "--repo", "arg", "--json"],
+      "canonicalCommand": ["opcore", "graph", "query", "--repo", "arg", "--json"],
       "scope": "warm",
       "repoShapeBucket": "small",
       "budgetMs": 800
     },
     {
       "schemaVersion": 1,
-      "canonicalCommand": ["lattice", "graph", "query", "--repo", "arg", "--json"],
+      "canonicalCommand": ["opcore", "graph", "query", "--repo", "arg", "--json"],
       "scope": "cold",
       "repoShapeBucket": "medium",
       "budgetMs": 2200
     },
     {
       "schemaVersion": 1,
-      "canonicalCommand": ["lattice", "graph", "query", "--repo", "arg", "--json"],
+      "canonicalCommand": ["opcore", "graph", "query", "--repo", "arg", "--json"],
       "scope": "warm",
       "repoShapeBucket": "medium",
       "budgetMs": 1400

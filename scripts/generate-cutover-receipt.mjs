@@ -32,7 +32,7 @@ import {
 } from "./release-package-dirs.mjs";
 
 const repoRoot = fileURLToPath(new URL("..", import.meta.url));
-const descriptorPath = "packages/opcore/dist/descriptors/lattice.managed-tool.json";
+const descriptorPath = "packages/opcore/dist/descriptors/opcore.managed-tool.json";
 const graphReleaseReceiptPath = "docs/release/graph-release-receipt.json";
 const releaseReceiptPath = "docs/release/release-receipt.json";
 const preWriteEvidencePath = "docs/integration/pre-write-validation.md";
@@ -82,7 +82,7 @@ try {
 }
 
 function generateReceipt() {
-  const tempRoot = mkdtempSync(join(tmpdir(), "lattice-cutover-"));
+  const tempRoot = mkdtempSync(join(tmpdir(), "opcore-cutover-"));
   try {
     const packDir = join(tempRoot, "packages");
     mkdirSync(packDir, { recursive: true });
@@ -105,9 +105,7 @@ function generateReceipt() {
     const opcoreSmokeRepo = prepareOpcoreSmokeRepo(tempRoot);
     const rustSmokeRepo = prepareRustSmokeRepo(tempRoot);
 
-    const latticeBin = binPath(project, "lattice");
     const opcoreBin = binPath(project, "opcore");
-    if (!existsSync(latticeBin)) throw new Error("Installed lattice bin is missing");
     if (!existsSync(opcoreBin)) throw new Error("Installed opcore bin is missing");
     inspectInstalledBins(project);
     const commandEnv = sanitizedEnv();
@@ -136,8 +134,8 @@ function generateReceipt() {
       });
       return parsed;
     };
-    const runLattice = (id, args, expectedStatus, assertion) => {
-      const result = run(latticeBin, args, { cwd: project, env: commandEnv, expectedStatus });
+    const runAdvancedOpcore = (id, args, expectedStatus, assertion) => {
+      const result = run(opcoreBin, args, { cwd: project, env: commandEnv, expectedStatus });
       commandTexts.push({ label: `${id}:stdout`, text: result.stdout }, { label: `${id}:stderr`, text: result.stderr });
       const parsed = parseRouterJson(id, result.stdout);
       if (parsed.status === "not_implemented") throw new Error(`Cutover command ${id} returned not_implemented`);
@@ -152,15 +150,15 @@ function generateReceipt() {
         owner: parsed.owner,
         status: parsed.status,
         exitCode: parsed.exitCode,
-        binPath: "node_modules/.bin/lattice",
+        binPath: "node_modules/.bin/opcore",
         stdoutSha256: sha256(result.stdout),
         stderrSha256: sha256(result.stderr),
         assertion
       });
       return parsed;
     };
-    const runRustLattice = (id, args, assertion) => {
-      const result = run(latticeBin, args, { cwd: rustSmokeRepo, env: commandEnv, expectedStatus: 0 });
+    const runRustOpcore = (id, args, assertion) => {
+      const result = run(opcoreBin, args, { cwd: rustSmokeRepo, env: commandEnv, expectedStatus: 0 });
       commandTexts.push({ label: `${id}:stdout`, text: result.stdout }, { label: `${id}:stderr`, text: result.stderr });
       const parsed = parseRouterJson(id, result.stdout);
       if (parsed.exitCode !== 0 || result.status !== 0) {
@@ -175,7 +173,7 @@ function generateReceipt() {
         owner: parsed.owner,
         status: parsed.status,
         exitCode: parsed.exitCode,
-        binPath: "node_modules/.bin/lattice",
+        binPath: "node_modules/.bin/opcore",
         stdoutSha256: sha256(result.stdout),
         stderrSha256: sha256(result.stderr),
         assertion
@@ -194,63 +192,63 @@ function generateReceipt() {
     runOpcore("opcore-measure", ["measure", "--json"], 0, "opcore measure returned read-only report deltas");
     runOpcore("opcore-try", ["try", "--json"], 0, "opcore try generated local sample repos without publishing");
 
-    runLattice("status", ["status", "--json"], 0, "runtime status reports validation readiness");
-    runLattice("doctor", ["doctor", "--json"], 0, "runtime doctor reports validation readiness");
-    runLattice("graph-build", ["graph", "build", "--json"], 0, "graph build completed with native artifact");
-    runLattice("graph-status", ["graph", "status", "--json"], 0, "graph status available after build");
-    runLattice("graph-query", ["graph", "query", "--json"], 0, "graph query returned facts");
-    runLattice("graph-impact", ["graph", "impact", "--files", "src/components/GreetingCard.tsx", "--json"], 0, "graph impact returned file impact");
-    runLattice(
+    runAdvancedOpcore("status", ["status", "--json"], 0, "runtime status reports validation readiness");
+    runAdvancedOpcore("doctor", ["doctor", "--json"], 0, "runtime doctor reports validation readiness");
+    runAdvancedOpcore("graph-build", ["graph", "build", "--json"], 0, "graph build completed with native artifact");
+    runAdvancedOpcore("graph-status", ["graph", "status", "--json"], 0, "graph status available after build");
+    runAdvancedOpcore("graph-query", ["graph", "query", "--json"], 0, "graph query returned facts");
+    runAdvancedOpcore("graph-impact", ["graph", "impact", "--files", "src/components/GreetingCard.tsx", "--json"], 0, "graph impact returned file impact");
+    runAdvancedOpcore(
       "graph-review-context",
       ["graph", "review-context", "--files", "src/components/GreetingCard.tsx", "--json"],
       0,
       "graph review-context returned related facts"
     );
-    runLattice(
+    runAdvancedOpcore(
       "graph-detect-changes",
       ["graph", "detect-changes", "--files", "src/components/GreetingCard.tsx", "--json"],
       0,
       "graph detect-changes returned typed change data"
     );
-    runLattice("graph-search", ["graph", "search", "Greeting", "--limit", "5", "--json"], 0, "graph search returned ranked results");
-    runLattice("graph-serve", ["graph", "serve", "--json"], 0, "graph serve status route is ready");
-    runRustLattice("graph-rust-build", ["graph", "build", "--json"], "Rust graph build completed with installed native artifact");
-    runRustLattice("graph-rust-status", ["graph", "status", "--json"], "Rust graph status available after build");
-    runRustLattice("graph-rust-query", ["graph", "query", "--json"], "Rust graph query returned Rust facts");
-    runRustLattice("graph-rust-impact", ["graph", "impact", "--files", "src/helpers.rs", "--json"], "Rust graph impact returned related Rust facts");
-    runRustLattice(
+    runAdvancedOpcore("graph-search", ["graph", "search", "Greeting", "--limit", "5", "--json"], 0, "graph search returned ranked results");
+    runAdvancedOpcore("graph-serve", ["graph", "serve", "--json"], 0, "graph serve status route is ready");
+    runRustOpcore("graph-rust-build", ["graph", "build", "--json"], "Rust graph build completed with installed native artifact");
+    runRustOpcore("graph-rust-status", ["graph", "status", "--json"], "Rust graph status available after build");
+    runRustOpcore("graph-rust-query", ["graph", "query", "--json"], "Rust graph query returned Rust facts");
+    runRustOpcore("graph-rust-impact", ["graph", "impact", "--files", "src/helpers.rs", "--json"], "Rust graph impact returned related Rust facts");
+    runRustOpcore(
       "graph-rust-review-context",
       ["graph", "review-context", "--files", "src/helpers.rs", "--json"],
       "Rust graph review-context returned related Rust facts"
     );
-    runRustLattice(
+    runRustOpcore(
       "graph-rust-detect-changes",
       ["graph", "detect-changes", "--files", "src/helpers.rs", "--json"],
       "Rust graph detect-changes returned typed Rust change data"
     );
-    runRustLattice("graph-rust-search", ["graph", "search", "Widget", "--limit", "5", "--json"], "Rust graph search returned ranked Rust symbols");
-    runLattice("inspect-symbols", ["inspect", "symbols", "Greeting", "--limit", "5", "--json"], 0, "inspect symbols returned graph symbols");
-    runLattice("inspect-definition", ["inspect", "definition", "GreetingCard", "--json"], 0, "inspect definition returned a symbol");
-    runLattice(
+    runRustOpcore("graph-rust-search", ["graph", "search", "Widget", "--limit", "5", "--json"], "Rust graph search returned ranked Rust symbols");
+    runAdvancedOpcore("inspect-symbols", ["inspect", "symbols", "Greeting", "--limit", "5", "--json"], 0, "inspect symbols returned graph symbols");
+    runAdvancedOpcore("inspect-definition", ["inspect", "definition", "GreetingCard", "--json"], 0, "inspect definition returned a symbol");
+    runAdvancedOpcore(
       "inspect-references",
       ["inspect", "references", "function:src/components/GreetingCard.tsx#GreetingCard", "--limit", "5", "--json"],
       0,
       "inspect references returned callers"
     );
-    runLattice(
+    runAdvancedOpcore(
       "inspect-signature",
       ["inspect", "signature", "function:src/components/GreetingCard.tsx#GreetingCard", "--json"],
       0,
       "inspect signature returned read-only language-service signatures"
     );
-    runLattice(
+    runAdvancedOpcore(
       "inspect-implementations",
       ["inspect", "implementations", "class:src/models.ts#GreetingModel", "--json"],
       0,
       "inspect implementations returned implementation evidence"
     );
-    runLattice("inspect-search", ["inspect", "search", "Greeting", "--limit", "5", "--json"], 0, "inspect search returned graph search results");
-    runLattice(
+    runAdvancedOpcore("inspect-search", ["inspect", "search", "Greeting", "--limit", "5", "--json"], 0, "inspect search returned graph search results");
+    runAdvancedOpcore(
       "edit-preview",
       [
         "edit",
@@ -266,7 +264,7 @@ function generateReceipt() {
       0,
       "safe edit preview produced a plan without writing"
     );
-    runLattice(
+    runAdvancedOpcore(
       "edit-apply",
       [
         "edit",
@@ -285,7 +283,7 @@ function generateReceipt() {
     );
     assertFileContains(project, "src/cutover.ts", "cutoverValue: number = 2");
     const beforeRefused = readFileSync(join(project, "src/cutover.ts"), "utf8");
-    runLattice(
+    runAdvancedOpcore(
       "edit-refused",
       [
         "edit",
@@ -305,7 +303,7 @@ function generateReceipt() {
     if (readFileSync(join(project, "src/cutover.ts"), "utf8") !== beforeRefused) {
       throw new Error("Validation-refused edit mutated src/cutover.ts");
     }
-    runLattice(
+    runAdvancedOpcore(
       "check-files",
       ["check", "files", "src/cutover.ts", "--checks", "typescript.syntax,typescript.types", "--json"],
       0,
@@ -314,12 +312,12 @@ function generateReceipt() {
     const requestPath = writeValidationRequest(project, "validate-request.json", {
       checks: ["typescript.syntax", "typescript.types"]
     });
-    runLattice("validate-request", ["validate", "request", "--request-file", requestPath, "--json"], 0, "validate request passed");
+    runAdvancedOpcore("validate-request", ["validate", "request", "--request-file", requestPath, "--json"], 0, "validate request passed");
     const preWritePass = writeValidationRequest(project, "pre-write-pass.json", {
       checks: ["typescript.syntax", "typescript.types"],
       overlays: [{ path: "src/cutover.ts", action: "write", content: "export const cutoverValue: number = 3;\n" }]
     });
-    runLattice(
+    runAdvancedOpcore(
       "validate-pre-write-pass",
       ["validate", "pre-write", "--request-file", preWritePass, "--timeout-ms", "30000", "--json"],
       0,
@@ -329,14 +327,14 @@ function generateReceipt() {
       checks: ["typescript.types"],
       overlays: [{ path: "src/cutover.ts", action: "write", content: "export const cutoverValue: number = 'bad';\n" }]
     });
-    runLattice(
+    runAdvancedOpcore(
       "validate-pre-write-fail",
       ["validate", "pre-write", "--request-file", preWriteFail, "--timeout-ms", "30000", "--json"],
       1,
       "pre-write failure receipt failed closed"
     );
 
-    const negativeChecks = runMissingGraphNegativeChecks(tempRoot, latticeBin, commandEnv, commandTexts);
+    const negativeChecks = runMissingGraphNegativeChecks(tempRoot, opcoreBin, commandEnv, commandTexts);
     const descriptor = collectInstalledDescriptor(project, tarballs);
     const installedPackages = collectInstalledPackages(project, tarballs);
     const receipt = {
@@ -355,7 +353,7 @@ function generateReceipt() {
         pathSanitized: true,
         aceRuntimeBinExcluded: true,
         siblingCovibesExcluded: true,
-        latticeBinOnly: true,
+        opcoreBinOnly: true,
         oldBinsAbsent: { crg: true, cix: true, rox: true }
       },
       commandReceipts: sortCommandReceipts(commandReceipts),
@@ -377,7 +375,7 @@ function generateReceipt() {
   }
 }
 
-function runMissingGraphNegativeChecks(tempRoot, latticeBin, env, commandTexts) {
+function runMissingGraphNegativeChecks(tempRoot, opcoreBin, env, commandTexts) {
   const missingProject = join(tempRoot, "missing-graph");
   mkdirSync(join(missingProject, "src"), { recursive: true });
   writeFileSync(join(missingProject, "src/index.ts"), "export const value = 1;\n");
@@ -387,7 +385,7 @@ function runMissingGraphNegativeChecks(tempRoot, latticeBin, env, commandTexts) 
     `${JSON.stringify({
       repo: { repoRoot: missingProject },
       scope: { kind: "files", files: ["src/index.ts"] },
-      graph: { mode: "required", provider: "lattice-graph" },
+      graph: { mode: "required", provider: "opcore-graph" },
       overlays: [],
       checks: ["typescript.import-graph"]
     })}\n`
@@ -414,7 +412,7 @@ function runMissingGraphNegativeChecks(tempRoot, latticeBin, env, commandTexts) 
     }
   ];
   return checks.map((check) => {
-    const result = run(latticeBin, check.args, { cwd: missingProject, env, expectedStatus: 1 });
+    const result = run(opcoreBin, check.args, { cwd: missingProject, env, expectedStatus: 1 });
     commandTexts.push({ label: `${check.id}:stdout`, text: result.stdout }, { label: `${check.id}:stderr`, text: result.stderr });
     const parsed = parseRouterJson(check.id, result.stdout);
     if (parsed.validationResult?.status !== "provider_failure") {
@@ -422,7 +420,7 @@ function runMissingGraphNegativeChecks(tempRoot, latticeBin, env, commandTexts) 
     }
     return {
       id: check.id,
-      command: ["lattice", ...check.args],
+      command: ["opcore", ...check.args],
       status: "passed",
       exitCode: 0,
       assertion: "required graph provider failure stayed typed"
@@ -502,10 +500,9 @@ function prepareRustSmokeRepo(tempRoot) {
 }
 
 function inspectInstalledBins(project) {
-  if (!existsSync(binPath(project, "lattice"))) throw new Error("installed project is missing lattice bin");
   if (!existsSync(binPath(project, "opcore"))) throw new Error("installed project is missing opcore bin");
   if (!existsSync(binPath(project, "opcore-asp-provider"))) throw new Error("installed project is missing opcore-asp-provider bin");
-  for (const oldBin of ["crg", "cix", "rox"]) {
+  for (const oldBin of ["lattice", "crg", "cix", "rox"]) {
     if (existsSync(binPath(project, oldBin))) throw new Error(`installed project exposes old public bin ${oldBin}`);
   }
 }
@@ -564,11 +561,11 @@ function collectInstalledDescriptor(project, tarballs) {
     "opcore",
     "dist",
     "descriptors",
-    "lattice.managed-tool.json"
+    "opcore.managed-tool.json"
   );
   const descriptor = validateManagedToolDescriptor(JSON.parse(readFileSync(descriptorAbsolutePath, "utf8")));
   return {
-    path: "node_modules/@the-open-engine/opcore/dist/descriptors/lattice.managed-tool.json",
+    path: "node_modules/@the-open-engine/opcore/dist/descriptors/opcore.managed-tool.json",
     packageName: "@the-open-engine/opcore",
     checksumSha256: sha256File(descriptorAbsolutePath),
     descriptor,
@@ -688,7 +685,7 @@ function writeValidationRequest(project, filename, overrides = {}) {
     `${JSON.stringify({
       repo: { repoRoot: project },
       scope: { kind: "files", files: ["src/cutover.ts"] },
-      graph: { mode: "optional", provider: "lattice-graph" },
+      graph: { mode: "optional", provider: "opcore-graph" },
       overlays: [],
       ...overrides
     })}\n`
@@ -774,7 +771,7 @@ function cutoverSummaryMarkdown(receipt, receiptSha256) {
     .join("\n");
   return `# Cutover Receipt Summary
 
-Maintainer cutover gate proves installed Lattice artifacts handle canonical release commands without dev-tool fallback.
+Maintainer cutover gate proves installed Opcore artifacts handle canonical release commands without dev-tool fallback.
 
 Machine receipt: ${cutoverReceiptPath}
 Machine receipt SHA-256: ${receiptSha256}

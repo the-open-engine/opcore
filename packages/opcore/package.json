@@ -11,7 +11,7 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
-    "./descriptors/lattice.managed-tool.json": "./dist/descriptors/lattice.managed-tool.json"
+    "./descriptors/opcore.managed-tool.json": "./dist/descriptors/opcore.managed-tool.json"
   },
   "files": [
     "dist",
@@ -29,8 +29,7 @@
     "access": "public"
   },
   "bin": {
-    "opcore": "dist/index.js",
-    "lattice": "dist/lattice/index.js"
+    "opcore": "dist/index.js"
   },
   "dependencies": {
     "@the-open-engine/opcore-edit": "0.1.0-alpha.0",

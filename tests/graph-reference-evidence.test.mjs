@@ -22,14 +22,14 @@ describe("graph reference evidence fixtures", () => {
   });
 
   it("records neutral command evidence for canonical graph routes", () => {
-    assertCommand("graph-reference-build", ["build"], ["lattice", "graph", "build"]);
-    assertCommand("graph-reference-update", ["update"], ["lattice", "graph", "update"]);
-    assertCommand("graph-reference-watch", ["watch"], ["lattice", "graph", "watch"]);
-    assertCommand("graph-reference-status", ["status"], ["lattice", "graph", "status"]);
-    assertCommand("graph-reference-query", ["query"], ["lattice", "graph", "query"]);
-    assertCommand("graph-reference-impact", ["impact"], ["lattice", "graph", "impact"]);
-    assertCommand("graph-reference-search", ["search"], ["lattice", "graph", "search"]);
-    assertCommand("graph-reference-serve", ["serve"], ["lattice", "graph", "serve"]);
+    assertCommand("graph-reference-build", ["build"], ["opcore", "graph", "build"]);
+    assertCommand("graph-reference-update", ["update"], ["opcore", "graph", "update"]);
+    assertCommand("graph-reference-watch", ["watch"], ["opcore", "graph", "watch"]);
+    assertCommand("graph-reference-status", ["status"], ["opcore", "graph", "status"]);
+    assertCommand("graph-reference-query", ["query"], ["opcore", "graph", "query"]);
+    assertCommand("graph-reference-impact", ["impact"], ["opcore", "graph", "impact"]);
+    assertCommand("graph-reference-search", ["search"], ["opcore", "graph", "search"]);
+    assertCommand("graph-reference-serve", ["serve"], ["opcore", "graph", "serve"]);
   });
 
   it("keeps SQLite and daemon evidence concrete", () => {

@@ -2,11 +2,11 @@
 
 Issue: #102
 
-`lattice inspect implementations` is read-only inspect evidence. It requires fresh graph provider status, uses graph `IMPLEMENTS` and `INHERITS` facts as mandatory input evidence, and materializes TypeScript/TSX locations through the inspect language-service path. It does not return edit plans, apply receipts, validation results, ASP host decisions, or gate authority.
+`opcore inspect implementations` is read-only inspect evidence. It requires fresh graph provider status, uses graph `IMPLEMENTS` and `INHERITS` facts as mandatory input evidence, and materializes TypeScript/TSX locations through the inspect language-service path. It does not return edit plans, apply receipts, validation results, ASP host decisions, or gate authority.
 
 ## CIX Field Mapping
 
-| Old `cix impls` field | Lattice field |
+| Old `cix impls` field | Opcore field |
 |-----------------------|---------------|
 | implementation file | `inspectResult.implementations[].file` |
 | line and column | `line`, `column`, `span` |
@@ -28,6 +28,6 @@ Issue: #102
 
 ## Retained Gap
 
-Constructor parameter usage from old `cix impls` output is retained as a compatibility gap. Lattice classifies constructor usage as reference evidence, not implementation evidence, so it is covered by inspect references rather than implementation results.
+Constructor parameter usage from old `cix impls` output is retained as a compatibility gap. Opcore classifies constructor usage as reference evidence, not implementation evidence, so it is covered by inspect references rather than implementation results.
 
-This evidence does not claim old-tool retirement, public certification, ASP host authority, or ACE-managed Lattice replacement.
+This evidence does not claim old-tool retirement, public certification, ASP host authority, or ACE-managed Opcore replacement.

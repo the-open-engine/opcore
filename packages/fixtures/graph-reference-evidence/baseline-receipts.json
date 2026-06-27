@@ -109,7 +109,7 @@
       "unit": "ms",
       "sourceAvailability": "available",
       "nonImplementationInput": true,
-      "command": "lattice.graph.daemon synthetic query envelope"
+      "command": "opcore.graph.daemon synthetic query envelope"
     }
   ]
 }

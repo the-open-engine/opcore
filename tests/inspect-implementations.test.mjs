@@ -5,7 +5,7 @@ import { cpSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, write
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { routeCommand } from "../packages/opcore/dist/lattice/index.js";
+import { routeCommand } from "../packages/opcore/dist/advanced/index.js";
 
 const repoRoot = fileURLToPath(new URL("..", import.meta.url));
 const sourceFixtureRoot = resolve(repoRoot, "packages/fixtures/inspect-symbol-parity");
@@ -161,11 +161,11 @@ async function assertStaleGraphFailure(fixtureRoot) {
 }
 
 async function inspectImplementations(fixtureRoot, args) {
-  return routeCommand(["inspect", "implementations", ...args, "--repo", fixtureRoot, "--json"], "lattice");
+  return routeCommand(["inspect", "implementations", ...args, "--repo", fixtureRoot, "--json"], "opcore");
 }
 
 async function buildGraph(fixtureRoot) {
-  const result = await routeCommand(["graph", "build", "--repo", fixtureRoot, "--json"], "lattice");
+  const result = await routeCommand(["graph", "build", "--repo", fixtureRoot, "--json"], "opcore");
   assert.equal(result.status, "ok");
   assert.equal(result.providerStatus.state, "available");
 }

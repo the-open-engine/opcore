@@ -6,7 +6,7 @@ Root package: opcore@0.1.0-alpha.0
 Lockfile version: 3
 Third-party packages: 11
 Bundled runtime packages: 0
-Workspace packages: 12
+Workspace packages: 13
 
 ## Third-Party Inventory
 
@@ -52,6 +52,7 @@ Workspace packages: 12
 | @the-open-engine/opcore-graph-core-darwin-x64 | 0.1.0-alpha.0 | MIT | packages/opcore-graph-core-darwin-x64/package.json |
 | @the-open-engine/opcore-graph-core-linux-x64 | 0.1.0-alpha.0 | MIT | packages/opcore-graph-core-linux-x64/package.json |
 | @the-open-engine/opcore-validation | 0.1.0-alpha.0 | MIT | packages/validation/package.json |
+| @the-open-engine/opcore-validation-python | 0.1.0-alpha.0 | MIT | packages/validation-python/package.json |
 | @the-open-engine/opcore-validation-rust | 0.1.0-alpha.0 | MIT | packages/validation-rust/package.json |
 | @the-open-engine/opcore-validation-typescript | 0.1.0-alpha.0 | MIT | packages/validation-typescript/package.json |
 

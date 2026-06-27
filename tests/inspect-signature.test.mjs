@@ -4,7 +4,7 @@ import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:f
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { routeCommand } from "../packages/opcore/dist/lattice/index.js";
+import { routeCommand } from "../packages/opcore/dist/advanced/index.js";
 
 const repoRoot = fileURLToPath(new URL("..", import.meta.url));
 const sourceFixtureRoot = resolve(repoRoot, "packages/fixtures/inspect-symbol-parity");
@@ -46,7 +46,7 @@ it("resolves graph node id signatures for class, function, interface, and type a
       "type:src/models.ts#Renderable",
       "type:src/models.ts#GreetingMessage"
     ]) {
-      const result = await routeCommand(["inspect", "signature", nodeId, "--repo", fixtureRoot, "--json"], "lattice");
+      const result = await routeCommand(["inspect", "signature", nodeId, "--repo", fixtureRoot, "--json"], "opcore");
       assert.equal(result.owner, "inspect");
       assert.equal(result.status, "ok", nodeId);
       assert.equal(result.exitCode, 0);
@@ -73,7 +73,7 @@ it("uses graph node id to disambiguate same-name signature targets", async () =>
   await withFixtureCopy(async (fixtureRoot) => {
     await buildGraph(fixtureRoot);
     const nodeId = "function:src/same-name.ts#duplicate";
-    const result = await routeCommand(["inspect", "signature", nodeId, "--repo", fixtureRoot, "--json"], "lattice");
+    const result = await routeCommand(["inspect", "signature", nodeId, "--repo", fixtureRoot, "--json"], "opcore");
     assert.equal(result.status, "ok");
     assert.equal(result.inspectResult.target.nodeId, nodeId);
     assert.deepEqual(result.inspectResult.signatures.map((entry) => entry.signature), ["duplicate(value: string): string"]);
@@ -185,7 +185,7 @@ async function assertUnbackedDeclarationFailure(fixtureRoot) {
 }
 
 async function assertUnknownNodeFailure(fixtureRoot) {
-  const result = await routeCommand(["inspect", "signature", "function:src/models.ts#Missing", "--repo", fixtureRoot, "--json"], "lattice");
+  const result = await routeCommand(["inspect", "signature", "function:src/models.ts#Missing", "--repo", fixtureRoot, "--json"], "opcore");
   assertInspectFailure(result, "target_not_found");
 }
 
@@ -207,11 +207,11 @@ async function inspectSignature(fixtureRoot, path, symbolName, extra = []) {
     "--repo",
     fixtureRoot,
     "--json"
-  ], "lattice");
+  ], "opcore");
 }
 
 async function buildGraph(fixtureRoot) {
-  const result = await routeCommand(["graph", "build", "--repo", fixtureRoot, "--json"], "lattice");
+  const result = await routeCommand(["graph", "build", "--repo", fixtureRoot, "--json"], "opcore");
   assert.equal(result.status, "ok");
   assert.equal(result.providerStatus.state, "available");
 }

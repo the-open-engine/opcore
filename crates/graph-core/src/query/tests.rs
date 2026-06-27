@@ -401,7 +401,7 @@ fn fixture_snapshot() -> StoreQueryOutput {
     StoreQueryOutput {
         metadata: GraphSnapshotMetadata {
             schema_version: 1,
-            provider: "lattice-graph".to_string(),
+            provider: "opcore-graph".to_string(),
             repo: repo(),
             generated_at: "2026-06-04T00:00:00.000Z".to_string(),
             freshness: GraphFreshness {
@@ -471,7 +471,7 @@ fn cycle_snapshot() -> StoreQueryOutput {
     StoreQueryOutput {
         metadata: GraphSnapshotMetadata {
             schema_version: 1,
-            provider: "lattice-graph".to_string(),
+            provider: "opcore-graph".to_string(),
             repo: repo(),
             generated_at: "2026-06-04T00:00:00.000Z".to_string(),
             freshness: GraphFreshness {
@@ -510,7 +510,7 @@ fn python_test_snapshot() -> StoreQueryOutput {
 fn python_test_metadata() -> GraphSnapshotMetadata {
     GraphSnapshotMetadata {
         schema_version: 1,
-        provider: "lattice-graph".to_string(),
+        provider: "opcore-graph".to_string(),
         repo: repo(),
         generated_at: "2026-06-04T00:00:00.000Z".to_string(),
         freshness: GraphFreshness {

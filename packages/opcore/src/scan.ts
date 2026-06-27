@@ -75,7 +75,7 @@ export async function createOpcoreScanAnalysis(resolution: RepoResolution): Prom
     },
     graph: {
       mode: graphMode,
-      provider: "lattice-graph"
+      provider: "opcore-graph"
     },
     overlays: []
   };

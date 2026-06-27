@@ -34,7 +34,7 @@ export function request(overrides = {}) {
     },
     graph: {
       mode: "optional",
-      provider: "lattice-graph"
+      provider: "opcore-graph"
     },
     overlays: [],
     checks: [RUST_SOURCE_HYGIENE_CHECK_ID],
@@ -207,10 +207,10 @@ export function defaultCargoMetadata(overrides = {}) {
 function gitEnv() {
   return {
     ...process.env,
-    GIT_AUTHOR_NAME: "Lattice Test",
+    GIT_AUTHOR_NAME: "Opcore Test",
     GIT_AUTHOR_EMAIL: "test@example.com",
     GIT_AUTHOR_DATE: "2026-06-05T00:00:00Z",
-    GIT_COMMITTER_NAME: "Lattice Test",
+    GIT_COMMITTER_NAME: "Opcore Test",
     GIT_COMMITTER_EMAIL: "test@example.com",
     GIT_COMMITTER_DATE: "2026-06-05T00:00:00Z"
   };

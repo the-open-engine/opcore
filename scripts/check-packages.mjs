@@ -68,7 +68,7 @@ for (const packageName of expectedPackageNames) {
   const parsed = JSON.parse(result.stdout);
   const manifest = JSON.parse(readFileSync(`${packageDir}/package.json`, "utf8"));
   const bin = manifest.bin ?? {};
-  if (packageName === "@the-open-engine/opcore") assertSameSet(Object.keys(bin), ["lattice", "opcore"], `${packageName} bins`);
+  if (packageName === "@the-open-engine/opcore") assertSameSet(Object.keys(bin), ["opcore"], `${packageName} bins`);
   else if (packageName === "@the-open-engine/opcore-asp-provider") {
     assertSameSet(Object.keys(bin), ["opcore-asp-provider"], `${packageName} bins`);
   }

@@ -255,7 +255,7 @@ function seededValidationRequest(repo: RepoIdentity, status: ValidationRequest["
     scope: { kind: "repo" },
     graph: {
       mode: "required",
-      provider: "lattice-graph",
+      provider: "opcore-graph",
       status
     },
     overlays: []

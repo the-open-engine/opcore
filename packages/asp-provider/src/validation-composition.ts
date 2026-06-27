@@ -141,7 +141,7 @@ function coerceGraphResultStatusMode(
 }
 
 function coerceGraphStatusMode(status: GraphProviderStatus, mode: GraphProviderMode): GraphProviderStatus {
-  const provider = status.provider || "lattice-graph";
+  const provider = status.provider || "opcore-graph";
   if (status.mode === mode) return validateProviderStatus({ ...status, provider });
   if (mode === "optional" && status.state === "required_missing") return graphOptionalSkipStatus(status, provider);
   if (mode === "required" && status.state === "skipped") return graphRequiredMissingStatus(status, provider);
@@ -175,7 +175,7 @@ function providerErrorStatus(mode: GraphProviderMode, error: unknown): GraphProv
   return validateProviderStatus({
     state: "error",
     mode,
-    provider: "lattice-graph",
+    provider: "opcore-graph",
     schemaVersion: GRAPH_SCHEMA_VERSION,
     message,
     failure: {

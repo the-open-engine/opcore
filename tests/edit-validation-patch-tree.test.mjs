@@ -28,7 +28,7 @@ test("patch and tree check mode return validation envelopes without writing", as
 
 async function routeEdit(args, validationRunner) {
   return routeCommandAdapter({
-    bin: "lattice",
+    bin: "opcore",
     argv: [...args, "--json"],
     groupName: "edit",
     adapter: createEditCommandAdapter({ validationRunner })

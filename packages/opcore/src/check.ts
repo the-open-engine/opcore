@@ -55,7 +55,7 @@ export async function routeOpcoreCheck(argv: readonly string[], parsed: ParsedCo
     owner: "validation",
     status: result.status,
     json: parsed.json,
-    message: result.message.replace(/^lattice validation/, "opcore validation").replace(/^lattice check/, "opcore check"),
+    message: result.message,
     validationResult: result.validationResult,
     receipt: result.receipt
   });

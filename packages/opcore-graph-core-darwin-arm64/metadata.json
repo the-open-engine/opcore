@@ -1,9 +1,9 @@
 {
-  "artifactName": "lattice-graph-core",
+  "artifactName": "opcore-graph-core",
   "artifactVersion": "0.1.0-alpha.0",
   "targetPlatform": "darwin-arm64",
-  "binaryPath": "lattice-graph-core",
-  "checksumPath": "lattice-graph-core.sha256",
-  "checksumSha256": "b69845117d7e3c27858bc6a7bd6aed35990c5c4621c1fa0e6ab6b3149e427ce1",
+  "binaryPath": "opcore-graph-core",
+  "checksumPath": "opcore-graph-core.sha256",
+  "checksumSha256": "4a6eb4c6c4be15df3e126b725d83476a10665f36b7801cab0e1d5df64c70e82d",
   "buildProfile": "release"
 }

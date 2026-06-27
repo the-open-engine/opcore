@@ -4,14 +4,14 @@
   "origin": "covibes-authored-synthetic",
   "classification": "required",
   "serveTransportIssue": "#47",
-  "protocols": ["lattice.graph.daemon", "jsonrpc-2.0", "reference-mcp-stdio-baseline-only"],
+  "protocols": ["opcore.graph.daemon", "jsonrpc-2.0", "reference-mcp-stdio-baseline-only"],
   "envelopes": [
     {
       "id": "ping-request",
       "direction": "client_to_daemon",
-      "protocol": "lattice.graph.daemon",
+      "protocol": "opcore.graph.daemon",
       "payload": {
-        "protocol": "lattice.graph.daemon",
+        "protocol": "opcore.graph.daemon",
         "requestId": "req-ping-1",
         "schemaVersion": 1,
         "operation": "status",
@@ -23,15 +23,15 @@
     {
       "id": "ping-response",
       "direction": "daemon_to_client",
-      "protocol": "lattice.graph.daemon",
+      "protocol": "opcore.graph.daemon",
       "payload": {
-        "protocol": "lattice.graph.daemon",
+        "protocol": "opcore.graph.daemon",
         "requestId": "req-ping-1",
         "schemaVersion": 1,
         "status": {
           "state": "available",
           "mode": "required",
-          "provider": "lattice-graph",
+          "provider": "opcore-graph",
           "schemaVersion": 1,
           "repo": {
             "repoId": "synthetic-reference"
@@ -47,9 +47,9 @@
     {
       "id": "health-status-request",
       "direction": "client_to_daemon",
-      "protocol": "lattice.graph.daemon",
+      "protocol": "opcore.graph.daemon",
       "payload": {
-        "protocol": "lattice.graph.daemon",
+        "protocol": "opcore.graph.daemon",
         "requestId": "req-health-1",
         "schemaVersion": 1,
         "operation": "status",
@@ -61,15 +61,15 @@
     {
       "id": "health-status-response",
       "direction": "daemon_to_client",
-      "protocol": "lattice.graph.daemon",
+      "protocol": "opcore.graph.daemon",
       "payload": {
-        "protocol": "lattice.graph.daemon",
+        "protocol": "opcore.graph.daemon",
         "requestId": "req-health-1",
         "schemaVersion": 1,
         "status": {
           "state": "available",
           "mode": "required",
-          "provider": "lattice-graph",
+          "provider": "opcore-graph",
           "schemaVersion": 1,
           "repo": {
             "repoId": "synthetic-reference"
@@ -87,9 +87,9 @@
     {
       "id": "query-request",
       "direction": "client_to_daemon",
-      "protocol": "lattice.graph.daemon",
+      "protocol": "opcore.graph.daemon",
       "payload": {
-        "protocol": "lattice.graph.daemon",
+        "protocol": "opcore.graph.daemon",
         "requestId": "req-query-1",
         "schemaVersion": 1,
         "operation": "query",
@@ -114,9 +114,9 @@
     {
       "id": "impact-request",
       "direction": "client_to_daemon",
-      "protocol": "lattice.graph.daemon",
+      "protocol": "opcore.graph.daemon",
       "payload": {
-        "protocol": "lattice.graph.daemon",
+        "protocol": "opcore.graph.daemon",
         "requestId": "req-impact-1",
         "schemaVersion": 1,
         "operation": "query",
@@ -141,15 +141,15 @@
     {
       "id": "success-response",
       "direction": "daemon_to_client",
-      "protocol": "lattice.graph.daemon",
+      "protocol": "opcore.graph.daemon",
       "payload": {
-        "protocol": "lattice.graph.daemon",
+        "protocol": "opcore.graph.daemon",
         "requestId": "req-query-1",
         "schemaVersion": 1,
         "status": {
           "state": "available",
           "mode": "required",
-          "provider": "lattice-graph",
+          "provider": "opcore-graph",
           "schemaVersion": 1,
           "repo": {
             "repoId": "synthetic-reference"
@@ -165,7 +165,7 @@
           "status": {
             "state": "available",
             "mode": "required",
-            "provider": "lattice-graph",
+            "provider": "opcore-graph",
             "schemaVersion": 1,
             "repo": {
               "repoId": "synthetic-reference"
@@ -178,7 +178,7 @@
           },
           "metadata": {
             "schemaVersion": 1,
-            "provider": "lattice-graph",
+            "provider": "opcore-graph",
             "repo": {
               "repoId": "synthetic-reference"
             },
@@ -212,15 +212,15 @@
     {
       "id": "stale-response",
       "direction": "daemon_to_client",
-      "protocol": "lattice.graph.daemon",
+      "protocol": "opcore.graph.daemon",
       "payload": {
-        "protocol": "lattice.graph.daemon",
+        "protocol": "opcore.graph.daemon",
         "requestId": "req-query-stale",
         "schemaVersion": 1,
         "status": {
           "state": "stale",
           "mode": "required",
-          "provider": "lattice-graph",
+          "provider": "opcore-graph",
           "schemaVersion": 1,
           "repo": {
             "repoId": "synthetic-reference"
@@ -243,15 +243,15 @@
     {
       "id": "schema-mismatch-response",
       "direction": "daemon_to_client",
-      "protocol": "lattice.graph.daemon",
+      "protocol": "opcore.graph.daemon",
       "payload": {
-        "protocol": "lattice.graph.daemon",
+        "protocol": "opcore.graph.daemon",
         "requestId": "req-schema-mismatch",
         "schemaVersion": 1,
         "status": {
           "state": "schema_mismatch",
           "mode": "required",
-          "provider": "lattice-graph",
+          "provider": "opcore-graph",
           "schemaVersion": 1,
           "expectedSchemaVersion": 1,
           "actualSchemaVersion": 0,
@@ -266,15 +266,15 @@
     {
       "id": "daemon-unavailable-response",
       "direction": "client_error",
-      "protocol": "lattice.graph.daemon",
+      "protocol": "opcore.graph.daemon",
       "payload": {
-        "protocol": "lattice.graph.daemon",
+        "protocol": "opcore.graph.daemon",
         "requestId": "req-daemon-unavailable",
         "schemaVersion": 1,
         "status": {
           "state": "daemon_unavailable",
           "mode": "required",
-          "provider": "lattice-graph",
+          "provider": "opcore-graph",
           "schemaVersion": 1,
           "failure": {
             "category": "daemon_unavailable",
@@ -287,10 +287,10 @@
     {
       "id": "serve-jsonl-ping",
       "direction": "client_to_daemon",
-      "protocol": "lattice.graph.daemon",
+      "protocol": "opcore.graph.daemon",
       "issue": "#47",
       "payload": {
-        "protocol": "lattice.graph.daemon",
+        "protocol": "opcore.graph.daemon",
         "requestId": "serve-ping-1",
         "schemaVersion": 1,
         "operation": "ping",
@@ -302,10 +302,10 @@
     {
       "id": "serve-jsonl-status",
       "direction": "client_to_daemon",
-      "protocol": "lattice.graph.daemon",
+      "protocol": "opcore.graph.daemon",
       "issue": "#47",
       "payload": {
-        "protocol": "lattice.graph.daemon",
+        "protocol": "opcore.graph.daemon",
         "requestId": "serve-status-1",
         "schemaVersion": 1,
         "operation": "status",
@@ -317,10 +317,10 @@
     {
       "id": "serve-jsonl-query",
       "direction": "client_to_daemon",
-      "protocol": "lattice.graph.daemon",
+      "protocol": "opcore.graph.daemon",
       "issue": "#47",
       "payload": {
-        "protocol": "lattice.graph.daemon",
+        "protocol": "opcore.graph.daemon",
         "requestId": "serve-query-1",
         "schemaVersion": 1,
         "operation": "query",
@@ -344,10 +344,10 @@
     {
       "id": "serve-jsonl-search",
       "direction": "client_to_daemon",
-      "protocol": "lattice.graph.daemon",
+      "protocol": "opcore.graph.daemon",
       "issue": "#47",
       "payload": {
-        "protocol": "lattice.graph.daemon",
+        "protocol": "opcore.graph.daemon",
         "requestId": "serve-search-1",
         "schemaVersion": 1,
         "operation": "query",
@@ -369,10 +369,10 @@
     {
       "id": "serve-jsonl-shutdown",
       "direction": "client_to_daemon",
-      "protocol": "lattice.graph.daemon",
+      "protocol": "opcore.graph.daemon",
       "issue": "#47",
       "payload": {
-        "protocol": "lattice.graph.daemon",
+        "protocol": "opcore.graph.daemon",
         "requestId": "serve-shutdown-1",
         "schemaVersion": 1,
         "operation": "shutdown",
@@ -384,16 +384,16 @@
     {
       "id": "serve-invalid-repo",
       "direction": "daemon_to_client",
-      "protocol": "lattice.graph.daemon",
+      "protocol": "opcore.graph.daemon",
       "issue": "#47",
       "payload": {
-        "protocol": "lattice.graph.daemon",
+        "protocol": "opcore.graph.daemon",
         "requestId": "serve-invalid-repo-1",
         "schemaVersion": 1,
         "status": {
           "state": "required_missing",
           "mode": "required",
-          "provider": "lattice-graph",
+          "provider": "opcore-graph",
           "schemaVersion": 1,
           "failure": {
             "category": "provider_missing",
@@ -405,16 +405,16 @@
     {
       "id": "serve-schema-mismatch",
       "direction": "daemon_to_client",
-      "protocol": "lattice.graph.daemon",
+      "protocol": "opcore.graph.daemon",
       "issue": "#47",
       "payload": {
-        "protocol": "lattice.graph.daemon",
+        "protocol": "opcore.graph.daemon",
         "requestId": "serve-schema-mismatch-1",
         "schemaVersion": 1,
         "status": {
           "state": "schema_mismatch",
           "mode": "required",
-          "provider": "lattice-graph",
+          "provider": "opcore-graph",
           "schemaVersion": 1,
           "expectedSchemaVersion": 1,
           "actualSchemaVersion": 2,
@@ -459,7 +459,7 @@
       "payload": {
         "jsonrpc": "2.0",
         "id": "mcp-status-1",
-        "method": "lattice.graph/status",
+        "method": "opcore.graph/status",
         "params": {
           "repo": {
             "repoId": "synthetic-reference"
@@ -475,7 +475,7 @@
       "payload": {
         "transport": "stdio",
         "command": ["crg", "serve", "--repo", "."],
-        "note": "Captured only to preserve downstream transport expectations; not a Lattice-owned daemon protocol."
+        "note": "Captured only to preserve downstream transport expectations; not a Opcore-owned daemon protocol."
       }
     }
   ]

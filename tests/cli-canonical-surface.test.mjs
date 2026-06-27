@@ -5,13 +5,13 @@ import { cpSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, wri
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { commandRouterManifest, routeCommand } from "../packages/opcore/dist/lattice/index.js";
+import { commandRouterManifest, routeCommand } from "../packages/opcore/dist/advanced/index.js";
 
 const removedLegacyCommandField = `legacy${"Command"}`;
 
 const repoRoot = fileURLToPath(new URL("..", import.meta.url));
 const sourceFixtureRoot = resolve(repoRoot, "packages/fixtures/source-extraction/wave1");
-const latticeBin = fileURLToPath(new URL("../packages/opcore/dist/lattice/index.js", import.meta.url));
+const latticeBin = fileURLToPath(new URL("../packages/opcore/dist/advanced/index.js", import.meta.url));
 
 describe("canonical CLI surface", () => {
   it("declares the canonical validate routes", () => {
@@ -31,7 +31,7 @@ describe("canonical CLI surface", () => {
     ]);
   });
 
-  it("runs canonical graph routes through the lattice bin", async () => {
+  it("runs canonical graph routes through the Opcore bin", async () => {
     await withFixtureCopy(async (fixtureRoot) => {
       await run(["graph", "build", "--repo", fixtureRoot, "--json"]);
       assert.equal((await run(["graph", "status", "--repo", fixtureRoot, "--json"])).providerStatus.state, "available");
@@ -43,7 +43,7 @@ describe("canonical CLI surface", () => {
     });
   });
 
-  it("runs graph-backed inspect routes through the lattice bin", async () => {
+  it("runs graph-backed inspect routes through the Opcore bin", async () => {
     await withFixtureCopy(async (fixtureRoot) => {
       await run(["graph", "build", "--repo", fixtureRoot, "--json"]);
       const symbols = await run(["inspect", "symbols", "Greeting", "--repo", fixtureRoot, "--limit", "5", "--json"]);
@@ -139,15 +139,15 @@ describe("canonical CLI surface", () => {
     for (const bin of ["crg", "cix", "rox"]) {
       const result = await run(["status", "--json"], 64, bin);
       assert.equal(result.status, "unsupported");
-      assert.deepEqual(result.canonicalCommand, ["lattice", "unsupported"]);
+      assert.deepEqual(result.canonicalCommand, ["opcore", "unsupported"]);
       assert.equal(Object.hasOwn(result, "alias"), false);
       assert.equal(Object.hasOwn(result, removedLegacyCommandField), false);
     }
   });
 
-  it("keeps lattice status on validationStatus without repoState", async () => {
-    const latticeStatus = await routeCommand(["status", "--json"], "lattice");
-    assert.deepEqual(latticeStatus.canonicalCommand, ["lattice", "status"]);
+  it("keeps opcore status on validationStatus without repoState", async () => {
+    const latticeStatus = await routeCommand(["status", "--json"], "opcore");
+    assert.deepEqual(latticeStatus.canonicalCommand, ["opcore", "status"]);
     assert.equal(Object.hasOwn(latticeStatus, "validationStatus"), true);
     assert.equal(Object.hasOwn(latticeStatus, "repoState"), false);
   });
@@ -157,7 +157,7 @@ describe("canonical CLI surface", () => {
       const result = await run([command, "--json"], 64);
       assert.equal(result.owner, "runtime");
       assert.equal(result.status, "unsupported");
-      assert.deepEqual(result.canonicalCommand, ["lattice", command]);
+      assert.deepEqual(result.canonicalCommand, ["opcore", command]);
     }
 
     const help = spawnSync(process.execPath, [latticeBin, "--help"], {
@@ -224,13 +224,13 @@ describe("canonical CLI surface", () => {
   });
 });
 
-async function run(args, expectedStatus = 0, bin = "lattice") {
+async function run(args, expectedStatus = 0, bin = "opcore") {
   const result = spawnSync(process.execPath, [latticeBin, ...args], {
     env: { ...process.env, npm_lifecycle_event: undefined },
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"]
   });
-  if (bin !== "lattice") {
+  if (bin !== "opcore") {
     const routed = await routeCommand(args, bin);
     assert.equal(routed.exitCode, expectedStatus);
     return routed;

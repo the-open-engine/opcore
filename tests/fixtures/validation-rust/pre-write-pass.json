@@ -12,7 +12,7 @@
   },
   "graph": {
     "mode": "optional",
-    "provider": "lattice-graph"
+    "provider": "opcore-graph"
   },
   "overlays": [],
   "checks": [
