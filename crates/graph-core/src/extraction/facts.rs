@@ -11,6 +11,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 mod collector;
 mod python;
+mod rust;
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -92,6 +93,7 @@ impl<'a> EdgeDraft<'a> {
 pub fn file_node(source: &DiscoveredSource) -> GraphFactNode {
     let parser = match source.language {
         SourceLanguage::Python => "tree_sitter_python",
+        SourceLanguage::Rust => "syn",
         SourceLanguage::TypeScript
         | SourceLanguage::TypeScriptJsx
         | SourceLanguage::JavaScript
@@ -142,6 +144,14 @@ pub fn extract_python_file_facts(
     python::collect_file_facts(source.relative_path.clone(), file_node, source_text, tree)
 }
 
+pub fn extract_rust_file_facts(
+    source: &DiscoveredSource,
+    file_node: GraphFactNode,
+    syntax: &syn::File,
+) -> FileFacts {
+    rust::collect_file_facts(source.relative_path.clone(), file_node, syntax)
+}
+
 pub fn finalize_facts(
     file_facts: &[FileFacts],
     tsconfig: Option<&TsConfig>,
@@ -171,6 +181,8 @@ impl ImportResolutionContext<'_> {
     fn resolve(&mut self, specifier: &str, path: &str) -> Option<String> {
         let resolution = if is_python_source_path(path) {
             python_imports::resolve_import(specifier, path, self.known_files)
+        } else if is_rust_source_path(path) {
+            rust::resolve_import(specifier, path, self.known_files)
         } else {
             resolve_import(specifier, path, self.known_files, self.tsconfig)
         };
@@ -578,6 +590,7 @@ fn module_parts_for_path(path: &str) -> Vec<String> {
         .or_else(|| path.strip_suffix(".tsx"))
         .or_else(|| path.strip_suffix(".js"))
         .or_else(|| path.strip_suffix(".jsx"))
+        .or_else(|| path.strip_suffix(".rs"))
         .unwrap_or(path);
     let mut parts = without_extension
         .split('/')
@@ -613,4 +626,8 @@ fn resolve_imported_name(
 
 fn is_python_source_path(path: &str) -> bool {
     path.ends_with(".py") || path.ends_with(".pyi")
+}
+
+fn is_rust_source_path(path: &str) -> bool {
+    path.ends_with(".rs")
 }

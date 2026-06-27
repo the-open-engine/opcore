@@ -80,7 +80,7 @@ const sourcePolicies = new Map<string, SourcePolicy>([
   [".jsx", supportedPolicy("JavaScript", true, true)],
   [".mts", supportedPolicy("TypeScript", false, true)],
   [".cts", supportedPolicy("TypeScript", false, true)],
-  [".rs", supportedPolicy("Rust", false, true)],
+  [".rs", supportedPolicy("Rust", true, true)],
   [".inc", supportedPolicy("Rust", false, true)],
   ["Cargo.toml", supportedPolicy("Rust", false, true)],
   ["Cargo.lock", retainedPolicy("Rust")],

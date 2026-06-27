@@ -22,10 +22,13 @@ oxc_ast_visit = "0.133.0"
 oxc_parser = "0.133.0"
 oxc_span = "0.133.0"
 oxc_syntax = "0.133.0"
+proc-macro2 = { version = "1.0.103", features = ["span-locations"] }
+quote = "1.0.42"
 serde.workspace = true
 serde_json.workspace = true
 sha2 = "0.11.0"
 rusqlite = { version = "0.32.1", features = ["bundled"] }
+syn = { version = "2.0.111", features = ["full", "visit"] }
 thiserror = "2.0.18"
 time = { version = "0.3.36", features = ["formatting", "parsing"] }
 tree-sitter = "0.26.9"

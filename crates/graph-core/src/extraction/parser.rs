@@ -17,6 +17,7 @@ pub struct ParsedSource<'a> {
 pub enum ParsedProgram<'a> {
     Oxc(Program<'a>),
     Python(Tree),
+    Rust(syn::File),
 }
 
 pub fn parse_source<'a>(
@@ -35,6 +36,9 @@ pub fn parse_source<'a>(
 
     if source.language == SourceLanguage::Python {
         return parse_python(source_text, source);
+    }
+    if source.language == SourceLanguage::Rust {
+        return parse_rust(source_text, source);
     }
     parse_oxc(allocator, source_text, source)
 }
@@ -93,6 +97,20 @@ fn parse_python<'a>(source_text: &str, source: &DiscoveredSource) -> ParsedSourc
     ParsedSource {
         program: Some(ParsedProgram::Python(tree)),
         diagnostics,
+    }
+}
+
+fn parse_rust<'a>(source_text: &str, source: &DiscoveredSource) -> ParsedSource<'a> {
+    match syn::parse_file(source_text) {
+        Ok(file) => ParsedSource {
+            program: Some(ParsedProgram::Rust(file)),
+            diagnostics: Vec::new(),
+        },
+        Err(error_value) => diagnostic_result(
+            source,
+            GraphExtractionDiagnosticCategory::ParseError,
+            format!("failed to parse Rust source: {error_value}"),
+        ),
     }
 }
 
