@@ -1933,6 +1933,24 @@ describe("lattice JSON schema wire constraints", () => {
     assert.equal(
       isValidDefinition("GraphReleaseReceipt", {
         ...receipt,
+        rustCommandCoverage: receipt.rustCommandCoverage.filter((entry) => entry.id !== "lattice-graph-rust-impact")
+      }),
+      false
+    );
+    assert.equal(
+      isValidDefinition("GraphReleaseReceipt", {
+        ...receipt,
+        rustCommandCoverage: receipt.rustCommandCoverage.map((entry) =>
+          entry.id === "lattice-graph-rust-query"
+            ? { ...entry, command: ["graph", "search"], canonicalCommand: ["lattice", "graph", "search"] }
+            : entry
+        )
+      }),
+      false
+    );
+    assert.equal(
+      isValidDefinition("GraphReleaseReceipt", {
+        ...receipt,
         benchmarks: receipt.benchmarks.map((entry) =>
           entry.metric === "db_size_bytes" ? { ...entry, unit: "ms" } : entry
         )
@@ -2199,6 +2217,24 @@ describe("lattice JSON schema wire constraints", () => {
     assert.equal(
       isValidDefinition("ReleaseCutoverReceipt", {
         ...receipt,
+        rustCommandReceipts: receipt.rustCommandReceipts.filter((entry) => entry.id !== "graph-rust-impact")
+      }),
+      false
+    );
+    assert.equal(
+      isValidDefinition("ReleaseCutoverReceipt", {
+        ...receipt,
+        rustCommandReceipts: receipt.rustCommandReceipts.map((entry) =>
+          entry.id === "graph-rust-query"
+            ? { ...entry, command: ["lattice", "graph", "status"], canonicalCommand: ["lattice", "graph", "status"] }
+            : entry
+        )
+      }),
+      false
+    );
+    assert.equal(
+      isValidDefinition("ReleaseCutoverReceipt", {
+        ...receipt,
         installedPackages: receipt.installedPackages.map((entry) =>
           entry.packageName === "@the-open-engine/opcore"
             ? { ...entry, installedManifest: { ...entry.installedManifest, bins: { lattice: "dist/index.js", crg: "dist/index.js" } } }
@@ -2227,6 +2263,38 @@ describe("lattice JSON schema wire constraints", () => {
       isValidDefinition("ReleaseCutoverReceipt", {
         ...receipt,
         environmentIsolation: { ...receipt.environmentIsolation, latticeBinOnly: false }
+      }),
+      false
+    );
+  });
+
+  it("accepts and rejects old-Rox comparison receipt schemas", () => {
+    const receipt = validRustOldRoxComparisonReceipt();
+    assert.equal(isValidDefinition("RustOldRoxComparisonReceipt", receipt), true);
+    assert.equal(
+      isValidDefinition("RustOldRoxComparisonReceipt", {
+        ...receipt,
+        surfaces: receipt.surfaces.filter((entry) => entry.id !== "rust.dead-code")
+      }),
+      false
+    );
+    assert.equal(isValidDefinition("RustOldRoxComparisonReceipt", { ...receipt, oldToolReplacementClaimed: true }), false);
+    assert.equal(isValidDefinition("RustOldRoxComparisonReceipt", { ...receipt, publicReleaseActions: ["publish"] }), false);
+    assert.equal(
+      isValidDefinition("RustOldRoxComparisonReceipt", {
+        ...receipt,
+        surfaces: receipt.surfaces.map((entry) =>
+          entry.id === "rust.function-metrics" ? { ...entry, replacementStatus: "replaced" } : entry
+        )
+      }),
+      false
+    );
+    assert.equal(
+      isValidDefinition("RustOldRoxComparisonReceipt", {
+        ...receipt,
+        surfaces: receipt.surfaces.map((entry) =>
+          entry.id === "rust.import-graph" ? { ...entry, graphEvidenceExists: true, graphEvidence: [] } : entry
+        )
       }),
       false
     );
@@ -3474,6 +3542,16 @@ function validGraphReleaseReceipt() {
     "lattice-graph-search",
     "lattice-graph-serve"
   ];
+  const rustCommandIds = [
+    "lattice-graph-rust-build",
+    "lattice-graph-rust-update",
+    "lattice-graph-rust-watch",
+    "lattice-graph-rust-status",
+    "lattice-graph-rust-query",
+    "lattice-graph-rust-impact",
+    "lattice-graph-rust-search",
+    "lattice-graph-rust-serve"
+  ];
   const metrics = [
     "install_setup_ms",
     "cold_build_ms",
@@ -3515,6 +3593,19 @@ function validGraphReleaseReceipt() {
         status: "passed",
         exitCode: 0,
         fixture: "packages/fixtures/source-extraction/wave1",
+        durationMs: 1
+      };
+    }),
+    rustCommandCoverage: rustCommandIds.map((id) => {
+      const command = id.replace("lattice-graph-rust-", "");
+      return {
+        id,
+        bin: "lattice",
+        command: ["graph", command],
+        canonicalCommand: ["lattice", "graph", command],
+        status: "passed",
+        exitCode: 0,
+        fixture: "packages/fixtures/source-extraction/rust-only",
         durationMs: 1
       };
     }),
@@ -4009,6 +4100,26 @@ function validReleaseCutoverReceipt() {
       assertion: `${id} passed`
     };
   });
+  const rustCommandReceipts = [
+    ["graph-rust-build", ["lattice", "graph", "build"], "graph"],
+    ["graph-rust-status", ["lattice", "graph", "status"], "graph"],
+    ["graph-rust-query", ["lattice", "graph", "query"], "graph"],
+    ["graph-rust-impact", ["lattice", "graph", "impact", "--files", "src/helpers.rs"], "graph"],
+    ["graph-rust-review-context", ["lattice", "graph", "review-context", "--files", "src/helpers.rs"], "graph"],
+    ["graph-rust-detect-changes", ["lattice", "graph", "detect-changes", "--files", "src/helpers.rs"], "graph"],
+    ["graph-rust-search", ["lattice", "graph", "search", "Widget", "--limit", "5"], "graph"]
+  ].map(([id, command, owner]) => ({
+    id,
+    command,
+    canonicalCommand: command,
+    owner,
+    status: "ok",
+    exitCode: 0,
+    binPath: "node_modules/.bin/lattice",
+    stdoutSha256: "7".repeat(64),
+    stderrSha256: "8".repeat(64),
+    assertion: `${id} passed on Rust fixture`
+  }));
   return {
     schemaVersion: 1,
     issue: "#30",
@@ -4040,6 +4151,7 @@ function validReleaseCutoverReceipt() {
       }
     },
     commandReceipts,
+    rustCommandReceipts,
     negativeChecks: [
       {
         id: "missing-required-graph-check",
@@ -4069,6 +4181,72 @@ function validReleaseCutoverReceipt() {
         issue: "#58",
         path: "docs/integration/pre-write-validation.md",
         checksumSha256: "b".repeat(64)
+      }
+    ]
+  };
+}
+
+function validRustOldRoxComparisonReceipt() {
+  const surface = (id, graphEvidenceExists, graphEvidence, stillUniquelyProvidedByCurrentTools, replacementStatus = "retained") => ({
+    id,
+    graphEvidenceExists,
+    graphEvidence,
+    stillUniquelyProvidedByCurrentTools,
+    replacementStatus
+  });
+  return {
+    schemaVersion: 1,
+    issue: "#29",
+    origin: "covibes-authored-old-rox-comparison",
+    generatedAt: "2026-06-27T00:00:00.000Z",
+    privateRepo: true,
+    oldToolReplacementClaimed: false,
+    publicReleaseActions: [],
+    surfaces: [
+      surface(
+        "rust.rustdoc",
+        false,
+        ["No graph fact replaces rustdoc diagnostics."],
+        ["rustdoc diagnostics and broken intra-doc link policy remain current-tool evidence."]
+      ),
+      surface(
+        "rust.import-graph",
+        true,
+        ["Rust graph emits IMPORTS_FROM and DEPENDS_ON edges for module files."],
+        ["Rox/current tooling still uniquely provides rustdoc and cargo-depgraph-enriched import checks."],
+        "deferred"
+      ),
+      surface(
+        "rust.dead-code",
+        true,
+        ["Rust graph emits exported symbol metadata and graph-backed dead public export signals."],
+        ["Cargo dead_code diagnostics and retained Rox gate behavior still uniquely cover compiler reachability."]
+      ),
+      surface(
+        "rust.unused-deps",
+        false,
+        ["No graph fact replaces cargo-udeps unused dependency analysis."],
+        ["cargo-udeps/Rox unused dependency detection remains current-tool evidence."]
+      ),
+      surface(
+        "rust.function-metrics",
+        true,
+        ["Rust graph emits symbol spans and signatures for functions and methods."],
+        ["rust-code-analysis complexity and parameter thresholds remain current-tool evidence."]
+      ),
+      surface(
+        "current-tools:validate-rust-graph",
+        false,
+        ["Graph receipts do not replace the aggregate current-tools Rust graph gate."],
+        ["npm run current-tools:validate-rust-graph remains the retained aggregate guardrail."]
+      )
+    ],
+    guardrails: [
+      {
+        id: "current-tools:validate-rust-graph",
+        command: ["npm", "run", "current-tools:validate-rust-graph"],
+        replacementStatus: "retained",
+        oldToolReplacementClaimed: false
       }
     ]
   };

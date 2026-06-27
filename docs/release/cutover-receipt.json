@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "issue": "#30",
   "origin": "covibes-authored-cutover-proof",
-  "generatedAt": "2026-06-26T22:09:41.839Z",
-  "commitSha": "54a8c987f70543000258a802d363a4f78942d0c6",
+  "generatedAt": "2026-06-27T03:35:03.933Z",
+  "commitSha": "45e1a401dd86db8f4a09dd0627cd8cf105a1f300",
   "privateRepo": true,
   "packageNames": [
     "@the-open-engine/opcore-contracts",
@@ -14,6 +14,7 @@
     "@the-open-engine/opcore-graph-core-linux-x64",
     "@the-open-engine/opcore-edit",
     "@the-open-engine/opcore-validation",
+    "@the-open-engine/opcore-validation-python",
     "@the-open-engine/opcore-validation-rust",
     "@the-open-engine/opcore-validation-typescript",
     "@the-open-engine/opcore-asp-provider"
@@ -24,7 +25,7 @@
       "version": "0.1.0-alpha.0",
       "tarball": {
         "filename": "the-open-engine-opcore-contracts-0.1.0-alpha.0.tgz",
-        "sha256": "3da144f40ae83ba1f0d965e2c86b4079de4745af40bf63ea3d7cde66dd3512f2"
+        "sha256": "693e11b645855e0d11e9becb25aa0c399c693f06fb59225aa04fce5f521f1307"
       },
       "installedManifest": {
         "path": "node_modules/@the-open-engine/opcore-contracts/package.json",
@@ -34,15 +35,15 @@
       "installedFiles": [
         {
           "path": "node_modules/@the-open-engine/opcore-contracts/dist/index.d.ts",
-          "sha256": "b9771e597b56a506aa5c0dd1fd84017969a87f077cdf800663ca588752e11b40"
+          "sha256": "448c642e3c0d824d769c3610f8575d2d621171fcb682b54aad73cfd09add8858"
         },
         {
           "path": "node_modules/@the-open-engine/opcore-contracts/dist/index.d.ts.map",
-          "sha256": "e6b90069af558646bd37a2df8ec56e1bba8553576a4ff5af1d15e85bbee4e1f9"
+          "sha256": "28e188600fe4ca76685ae9361bc46a6fcee2e03acdc2c9cfbe25a3c8a0ab6681"
         },
         {
           "path": "node_modules/@the-open-engine/opcore-contracts/dist/index.js",
-          "sha256": "d18ffe40d4243ca34a11da7d4ffacd8849bfad76047fe5d3a5614d7226c126a0"
+          "sha256": "e037f572afe121aef3b2d7abd1ab6706e9835e57b9d6e9cc9deb6ea4bb28fd3d"
         },
         {
           "path": "node_modules/@the-open-engine/opcore-contracts/package.json",
@@ -54,7 +55,7 @@
         },
         {
           "path": "node_modules/@the-open-engine/opcore-contracts/schemas/lattice-contracts.schema.json",
-          "sha256": "171f5b11c9c0f6412a1e819c653d20b11303c591183fcbe48ad1393ac9f3566e"
+          "sha256": "cd7e8b867018c7284defa961d9155db4d6ded1b3b4b5b6f3610de864f00b062a"
         }
       ]
     },
@@ -63,11 +64,11 @@
       "version": "0.1.0-alpha.0",
       "tarball": {
         "filename": "the-open-engine-opcore-0.1.0-alpha.0.tgz",
-        "sha256": "22405894781335943ad8678d97dc4922cd8f2ec38a28bf1b852201a79e2ec91d"
+        "sha256": "77929170990c6ebc6e36399364e952988701f1b6e16afb99e3dc49886143f7d0"
       },
       "installedManifest": {
         "path": "node_modules/@the-open-engine/opcore/package.json",
-        "sha256": "48b18f17559f8ad5a8a06055abcc39f290c12c744b8f1466c62d369554059219",
+        "sha256": "c24d4115e97d13aa08bd47d14acd92c451dac2217cd6efae207aec2bbc49e445",
         "bins": {
           "opcore": "dist/index.js",
           "lattice": "dist/lattice/index.js"
@@ -88,7 +89,7 @@
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/descriptors/lattice.managed-tool.json",
-          "sha256": "274f1e3cd81c7c8d6445610158f2ceda142f67727c0f5b4b8130371c481d0fc7"
+          "sha256": "4845b9635feb3737f4dd5e69ab44dd06bf4015dbe79111ec0ff92dc7e406dac9"
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/graph-provider-client.d.ts",
@@ -104,15 +105,15 @@
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/index.d.ts",
-          "sha256": "74a0f68587df3c36dbb5c6365843981c912b2f5ff566bc427008be829148f51f"
+          "sha256": "a234db18b7b3db19731014996e27c129666fc54ed0db1813077419b11d5b3685"
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/index.d.ts.map",
-          "sha256": "3fbe85e675090781832b7f397551c5ad0d8c7be09e5cb0a96ea9206e99ed05d8"
+          "sha256": "0adbc3d0a5cb85f8477bea4409202cf656a439b3e1399612c3d9fdea6f48a9e2"
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/index.js",
-          "sha256": "dd43145e6031bbeb11ee14fa3a6335a2070da63b31ce5aa6b68d831890fbc2a8"
+          "sha256": "ea203fe5e694227e162800fc6122ac19254b38e2981d70a019d9de1ec03eeea6"
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/init.d.ts",
@@ -124,7 +125,7 @@
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/init.js",
-          "sha256": "4ef2ac3392bd86d928c0939034894f5c946cfa2ece2f3a911b8ca057990603d2"
+          "sha256": "ebaf8a4ba11dfaa5fd30cc42a8bd08e816b5ccb78359e4914d0f81033511df19"
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/lattice/descriptor.d.ts",
@@ -132,11 +133,11 @@
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/lattice/descriptor.d.ts.map",
-          "sha256": "695db2b99da699f125abd91291fdfe941c5036d007be7acfded400129a4e9aaf"
+          "sha256": "037ff3bc75bab1491d5e53576e82fd2f56511c11d0079b4e78bb1bf597a15f67"
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/lattice/descriptor.js",
-          "sha256": "8880862ba0d9d9c4c8b8ea8d359fca416a5dd59a1dd8e0903cfcfa69862b929c"
+          "sha256": "7521ea30beea75139542fd18243e08b922e71a1d0bb197ce69e946b150b7fbf2"
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/lattice/edit-composition.d.ts",
@@ -168,11 +169,11 @@
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/lattice/index.d.ts.map",
-          "sha256": "4e9018ea9352e79585729a69cf25a4118172288fc37579c8c47929d25a056f1a"
+          "sha256": "fd946a5a632b2cd89ac5980e42aa0add55e47ea266ee82effbed4fff662ce927"
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/lattice/index.js",
-          "sha256": "33e2cc8d98df7288e6d79f9dff5b44d0524fd4b3f4d69182fdb83518e5994718"
+          "sha256": "5a6150e3b73be45de4c00ba744157e510d561b3f9cf911face29dac089b57bbc"
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/lattice/inspect-adapter.d.ts",
@@ -180,11 +181,11 @@
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/lattice/inspect-adapter.d.ts.map",
-          "sha256": "257a8595fffaa4b548613bdc945455c2d5c7a9dce70ca7cdf9c1737057492a13"
+          "sha256": "ee62a5960c63588a2353c3990bea90a53d4c89375b85abefbb9e52f72902b401"
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/lattice/inspect-adapter.js",
-          "sha256": "748853b38cc7b57fd9a456bc076a86e3464afee35763661e5a299c76a10d26d7"
+          "sha256": "f67d3fbf75196bae0e86777c6fa71b17bf62f6bd4e88bfc3bb071e2b4c69c17d"
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/lattice/inspect-language-service.d.ts",
@@ -216,11 +217,11 @@
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/lattice/router.d.ts.map",
-          "sha256": "1188310df2efdf93a7b4d8c1d54df6c28d295b0a598f453bd4ea74a45d8a0e2c"
+          "sha256": "ec929cf4bdfead53f4d03c6eec832dd3842456b5533382e86e3c4698749aaf28"
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/lattice/router.js",
-          "sha256": "c5bab14ce55e71e71382f82566e7b249a6b479b53b6732f750c0b13ea2b8d18d"
+          "sha256": "6afbadc5b7e6d6e217e6c3c08343390d053d7b3f69159afbecc5cc8c1b4d19f3"
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/lattice/validation-composition.d.ts",
@@ -228,23 +229,23 @@
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/lattice/validation-composition.d.ts.map",
-          "sha256": "ccf35eb9038b4c1c1e961743c91b6d8cafdb00cde2cc940bb06091a6ddda898c"
+          "sha256": "140363e8d57f67cf326e3e8ba3edfc34ea9e1e88d12a1fce772e56118fbae00e"
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/lattice/validation-composition.js",
-          "sha256": "e6b488468875c0950729a4585c29f845ebd021d1ba31f945a2afaa21f10818e1"
+          "sha256": "c48010c2352eea653d59d5588c7b273b83ff922f147f2066ea68edb6545ec4ce"
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/reporting.d.ts",
-          "sha256": "809ccfd5aa381121311fb0270286ecbe0a529ea0a32d18c8829564479a399800"
+          "sha256": "eca7e63da2dd9d68045931e2c8a398742342cc638070ccb0f3435ec65dfbf28d"
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/reporting.d.ts.map",
-          "sha256": "b74bad82eaa50bfaf45165c70691b42fee57ec156d2566cd721420203d95cdf4"
+          "sha256": "998a13a77a085678b0a937ded756e0cea7c22fa3698ecb1f3fac75277381765a"
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/reporting.js",
-          "sha256": "6cea4127579498a886fc5d454ae120dd773ea19351a9c3d85d01e99ff13f4317"
+          "sha256": "9c07cd9ccbf0345a6cc791d6e27bfb81d560574387144cd2ddbd48745881ada7"
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/router.d.ts",
@@ -252,11 +253,11 @@
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/router.d.ts.map",
-          "sha256": "e4ab2c748908a5c47dac64fc7e5110e50d46cb14fcc7bb7b211567f5c2c934e7"
+          "sha256": "1008bbb7d24658fc0b4e93df2c80a218ad57ea6e7e43cad19590782055a85b5a"
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/router.js",
-          "sha256": "26afd4e8048fabd9b6a12a362beebf82438dc77461ac44a48a7c3bea23c9a8f4"
+          "sha256": "5cb8b836705c27215cbc6d15d6eadf80df2e78a32e39eb16cbef017b298a5249"
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/scan.d.ts",
@@ -268,7 +269,7 @@
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/scan.js",
-          "sha256": "8782b898738fd5a35b6047d18baa27a517cccfbc68ebc853c984ffddecbd75e5"
+          "sha256": "7a33cab486d7dda04fe12431a996426aece2f0314b44f5954a608e2d9536a681"
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/status.d.ts",
@@ -280,7 +281,19 @@
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/status.js",
-          "sha256": "2387fb05982aa9acc139bcfef2fcf7e05f349afd6dafeec09b7372e2e045ac47"
+          "sha256": "da40e6ec4031b72442a8fff4f3cbce063ee7960569f567fc5153ef8ed62af7f6"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore/dist/timing.d.ts",
+          "sha256": "96b7a9820b6d9591e338a7763f43c730d7f16dfaadf62320295ed94b21e1605e"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore/dist/timing.d.ts.map",
+          "sha256": "45b758850195f9f70861d3102d6606f813ab2c59282021b7f575e806246eae5e"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore/dist/timing.js",
+          "sha256": "bc0eb0e19eacad60a9e920522918849ae9b71ccd950db3d30de838d121e9f248"
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/try.d.ts",
@@ -300,19 +313,19 @@
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/validation-composition.d.ts.map",
-          "sha256": "0926e7d16394a51e321055fe5e83e0470266d1c6b948f38dbc41e8fecc79dfa5"
+          "sha256": "75b7a35709e181f44eff514106e6c92db7a4f0bfb135885f40d9fb0f40c52506"
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/validation-composition.js",
-          "sha256": "e6cc8ab1b3457be825d545452d995f6a7e5c8632c44c67fd7cf6d92ca4ddee8f"
+          "sha256": "9fdef479a7808981be8ef406494cc8c636a3c08314795be19b7aeb5051a7d58c"
         },
         {
           "path": "node_modules/@the-open-engine/opcore/package.json",
-          "sha256": "48b18f17559f8ad5a8a06055abcc39f290c12c744b8f1466c62d369554059219"
+          "sha256": "c24d4115e97d13aa08bd47d14acd92c451dac2217cd6efae207aec2bbc49e445"
         },
         {
           "path": "node_modules/@the-open-engine/opcore/README.md",
-          "sha256": "9be9f4795f3fea1f64416c53e52f765819aecbf1b811e64df700aa45d502c056"
+          "sha256": "5fe41f03415f8a4642d62f36d9826f72fa5e860f8332ba33d115cd2ba004ef91"
         }
       ]
     },
@@ -321,7 +334,7 @@
       "version": "0.1.0-alpha.0",
       "tarball": {
         "filename": "the-open-engine-opcore-graph-0.1.0-alpha.0.tgz",
-        "sha256": "99b3543204a1919e261820d4e70522643e96e690d5caf7586ef1e0ac95c7e1d7"
+        "sha256": "0d0efe041b5736d92ca83d12ba0ce0c9c6d40b465fac345e3e5f697b8e54554d"
       },
       "installedManifest": {
         "path": "node_modules/@the-open-engine/opcore-graph/package.json",
@@ -383,11 +396,11 @@
         },
         {
           "path": "node_modules/@the-open-engine/opcore-graph/dist/sidecar.d.ts.map",
-          "sha256": "10e6804f1a1090dbbe7989cf0e86e14217bc05e863e587eef999b988921662be"
+          "sha256": "601838a36a0c358cc1bb5faffa1f76550a06141e0bc17d92595501a0360a1710"
         },
         {
           "path": "node_modules/@the-open-engine/opcore-graph/dist/sidecar.js",
-          "sha256": "11a73943804a9087cec88a21dced1b854f4a8b418ae40aeb4b56f73945c15b95"
+          "sha256": "c0166816e9d4cea3729b69e4b8f353d0957ea1d495255ca302418b16b1d80e4a"
         },
         {
           "path": "node_modules/@the-open-engine/opcore-graph/package.json",
@@ -404,7 +417,7 @@
       "version": "0.1.0-alpha.0",
       "tarball": {
         "filename": "the-open-engine-opcore-graph-core-darwin-arm64-0.1.0-alpha.0.tgz",
-        "sha256": "7e8ed3bca37fd01c5479a2ffb3b17f82dd88abc2e2ed53143146fdd353d2aa06"
+        "sha256": "1fca60906876751a2d9e86b279ea57a69d0d56c7ea3160a3b48ce4062e6e6ea5"
       },
       "installedManifest": {
         "path": "node_modules/@the-open-engine/opcore-graph-core-darwin-arm64/package.json",
@@ -414,15 +427,15 @@
       "installedFiles": [
         {
           "path": "node_modules/@the-open-engine/opcore-graph-core-darwin-arm64/lattice-graph-core",
-          "sha256": "9b67974520bc715cdebf440d03ed1ef04df36528023210f608d6fca102a696b2"
+          "sha256": "b69845117d7e3c27858bc6a7bd6aed35990c5c4621c1fa0e6ab6b3149e427ce1"
         },
         {
           "path": "node_modules/@the-open-engine/opcore-graph-core-darwin-arm64/lattice-graph-core.sha256",
-          "sha256": "f2f433f555c48f8179f0c5760302d790027f96fe7216913419121573931c34bd"
+          "sha256": "a21a87b1e843b89e15434b66d8dfd68fe62b0f3d5eadf30341e8229cb7eac89e"
         },
         {
           "path": "node_modules/@the-open-engine/opcore-graph-core-darwin-arm64/metadata.json",
-          "sha256": "14e0250917a190f34fdfc7bd55c47321a8af96ed3c0563e17c4d062bbd705c12"
+          "sha256": "d5723066d7a6f1b04e2ead661776dca5294e250346c11c255fb9c0a1b10654a3"
         },
         {
           "path": "node_modules/@the-open-engine/opcore-graph-core-darwin-arm64/package.json",
@@ -901,11 +914,202 @@
       ]
     },
     {
+      "packageName": "@the-open-engine/opcore-validation-python",
+      "version": "0.1.0-alpha.0",
+      "tarball": {
+        "filename": "the-open-engine-opcore-validation-python-0.1.0-alpha.0.tgz",
+        "sha256": "4e6ffe8f4fec52d8c1b2c423d14fefe79270ec8db4a5050ce75584b477d858cd"
+      },
+      "installedManifest": {
+        "path": "node_modules/@the-open-engine/opcore-validation-python/package.json",
+        "sha256": "89fbbc95ce01209690ed4e5444445260f0a1dd79b0aff2550b15769497893b26",
+        "bins": {}
+      },
+      "installedFiles": [
+        {
+          "path": "node_modules/@the-open-engine/opcore-validation-python/dist/check-constants.d.ts",
+          "sha256": "babf957545909b224b89df91285521d4aedb32c8c4ee5046c55764cbf0fcaa12"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-validation-python/dist/check-constants.d.ts.map",
+          "sha256": "0edd37af2ed613c906ef8036b08c78a0a5920daa021e9e549a9aa06a0d0ca3c5"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-validation-python/dist/check-constants.js",
+          "sha256": "e66c01006a5e8a59f3732c276afb67a981cf300f7bf3ef811cdfb0afbca9737e"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-validation-python/dist/check-ids.d.ts",
+          "sha256": "ae2f204719f2bd127a0ef22b2c0f9581fea6cc033a26ee360c994ee42bcbaf50"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-validation-python/dist/check-ids.d.ts.map",
+          "sha256": "2413c3099dcb5f56aef778c45a1f07ffe65acd79eeabbdafb0726f2092eae16b"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-validation-python/dist/check-ids.js",
+          "sha256": "5e1aef29466da1e49a13fa0f04c63eede39d6da3f686f946ad5c11afd90c8b35"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-validation-python/dist/dead-code-check.d.ts",
+          "sha256": "34df57eb88a9380f3f2f34aa7dba98665d4bb12923ccb5ddddb4bbd7b7211b91"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-validation-python/dist/dead-code-check.d.ts.map",
+          "sha256": "141aad6483a3637446048dac7275dbff7cea67f9008b15526e52ad647b1be51d"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-validation-python/dist/dead-code-check.js",
+          "sha256": "f41249c0b52bf8218ed22be30d91b4d4ba3a447287f7cefaa6e4b31927ace1e0"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-validation-python/dist/diagnostics.d.ts",
+          "sha256": "4aea379e9306f4ffed62e6e8c2f77ed13d40b007731b3fefe5d1057453023cd2"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-validation-python/dist/diagnostics.d.ts.map",
+          "sha256": "fbaf59fda1b55b679e541d824552ca60f2f394952d6b1b58f8a023b35c18e991"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-validation-python/dist/diagnostics.js",
+          "sha256": "ac25956f727f13def2665600003fb2f3d7a931de81eb410569c5d6c98dad80fc"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-validation-python/dist/graph-requirements.d.ts",
+          "sha256": "d8da29d17f5d8acc6212929f7f4dbb704ae2d95f515b0449fedde75d3ce2fb14"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-validation-python/dist/graph-requirements.d.ts.map",
+          "sha256": "a78fda7d7fdd26c7d201166d6a55fd0f606cf8a8b43d74c5036e072e3b53c476"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-validation-python/dist/graph-requirements.js",
+          "sha256": "84241e83aef79b8d14db29436aa2ff7f018d3d80349f7f149a21a5aae8af3ad2"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-validation-python/dist/import-graph-check.d.ts",
+          "sha256": "47fd892c611fc011d4ebee8874bee1a600a6594d1d0f3c385822d98878abca66"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-validation-python/dist/import-graph-check.d.ts.map",
+          "sha256": "670808449bee91e95f2f6e0b3802130aa906e81a20140b19bc084b5ca0f1af2c"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-validation-python/dist/import-graph-check.js",
+          "sha256": "e9da561e7b46c0eba3b0ff6b0201bb428190b1166b6df0eba56dc08a2c689601"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-validation-python/dist/index.d.ts",
+          "sha256": "0137b25dd97051f8e0e47130f15a592b4c80486778036d8c86c3aa6e5b47d20a"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-validation-python/dist/index.d.ts.map",
+          "sha256": "3935bab306ce9fff81db08c269e0a177ae4a606ca4312b606523cf3870be47de"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-validation-python/dist/index.js",
+          "sha256": "c5d64a3d50a4913a1c6848bcfd15629af4b3682e13f6d78b352ace17d081f458"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-validation-python/dist/process.d.ts",
+          "sha256": "44e3995c0a52d6cbbeb21256ac192527729f71e15a719bd69bf5d9237b9a9ec0"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-validation-python/dist/process.d.ts.map",
+          "sha256": "1444854cbb8477da9b102d6952bbf3e39e2861b4a7447ac320c499500d0ad394"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-validation-python/dist/process.js",
+          "sha256": "71692327f2dd7435308bba7b42b3e447525b4e24172172c465b5ff9d7235013b"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-validation-python/dist/relevant-tests-check.d.ts",
+          "sha256": "d14d753ed8d6253ad516d3b9f14c2cd6e9bcc61e02000cdd5d5a7dcc9ffe7f31"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-validation-python/dist/relevant-tests-check.d.ts.map",
+          "sha256": "d8ea11cedf3576573cab857702b69d48be0bb01fc555e42dd216f7f2db60b844"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-validation-python/dist/relevant-tests-check.js",
+          "sha256": "9d8de8dadac7d737659e6e2a23604cdfdbaffbc153cf89887e0e117fa004ff49"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-validation-python/dist/source-files.d.ts",
+          "sha256": "2edc85c1f35143928de9d8a205864d6145fc7ea5250b2187cd9db2c318ec1f5c"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-validation-python/dist/source-files.d.ts.map",
+          "sha256": "b62b5246da79d6436b5eab0b6e3e39740370c6dbc5d30a6bccaf74d9c9d9a414"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-validation-python/dist/source-files.js",
+          "sha256": "423e58a08992f25e915876c5fd63dc1992456c819e1902f6d2350aded8024d34"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-validation-python/dist/source-hygiene-check.d.ts",
+          "sha256": "28c39ce59936852dc512da0afef0b824420304495e1adadd2608afbaa823914f"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-validation-python/dist/source-hygiene-check.d.ts.map",
+          "sha256": "8b0f2cdfc9eed69a71495fb66923d033e30e6c5183a3ed91293767b270487583"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-validation-python/dist/source-hygiene-check.js",
+          "sha256": "6d627426dbb01e242e7259ab353a366e3a979ae7fec503305584b380e8f0dd68"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-validation-python/dist/syntax-check.d.ts",
+          "sha256": "c1ab74c11eebed90404117aab83d3c1141f456084878a8111a18fa12ba128693"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-validation-python/dist/syntax-check.d.ts.map",
+          "sha256": "55239332533dbbf75285fe0a9e3a3f0b9f6e580713bd9f8f1774f1ac3f73363b"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-validation-python/dist/syntax-check.js",
+          "sha256": "cd8234189b59fb58d693af5ee50a3ef672f638d824fc3d0def21b0d0a15ecd90"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-validation-python/dist/toolchain.d.ts",
+          "sha256": "85cb743c9984c5f61d09c4c3baf4304d648dc53eada22547be65d052927fcc47"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-validation-python/dist/toolchain.d.ts.map",
+          "sha256": "9e6f38caac0727e86453646343485ff5c84a7be1aa6ad2176b0e5f519115548d"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-validation-python/dist/toolchain.js",
+          "sha256": "52611c805e5768b7f3007ca1ef2ded7d3a8eb4170a49955bbffb05df0b9e08a8"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-validation-python/dist/type-check.d.ts",
+          "sha256": "96dbbac01080902b2ba17086310e539ae34161868781997174ecae34dc567023"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-validation-python/dist/type-check.d.ts.map",
+          "sha256": "3ceb9e6d5277c5e1a05ac006b404c5179d0c92bd33b8c9cccc411f9bad77ab34"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-validation-python/dist/type-check.js",
+          "sha256": "6b24f8cf55935dd1b5b91f366df734831dd46b2be1d5b60cc258f04d8f877ad2"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-validation-python/package.json",
+          "sha256": "89fbbc95ce01209690ed4e5444445260f0a1dd79b0aff2550b15769497893b26"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-validation-python/README.md",
+          "sha256": "ee51384001fcb696fa474c3685bccefa12c3589db77a9b89bf600ce500d411e4"
+        }
+      ]
+    },
+    {
       "packageName": "@the-open-engine/opcore-validation-rust",
       "version": "0.1.0-alpha.0",
       "tarball": {
         "filename": "the-open-engine-opcore-validation-rust-0.1.0-alpha.0.tgz",
-        "sha256": "62fbf3bd851a41cafff48c209f2da006215f2e8ad3218d66483e0ec1090d419b"
+        "sha256": "46363cd3647bd76e46ae8c3775f1c11b1a4b5860f65ddca4bcf578870fb729ce"
       },
       "installedManifest": {
         "path": "node_modules/@the-open-engine/opcore-validation-rust/package.json",
@@ -951,15 +1155,15 @@
         },
         {
           "path": "node_modules/@the-open-engine/opcore-validation-rust/dist/check-ids.d.ts",
-          "sha256": "f516f3830752f00add482020dbe94532b35336c7d6510f4cbdffb4cf2c5700f7"
+          "sha256": "e5f36d8c04cf4a60af15db95efe8f83dee624d702d055d3f24f917005bfd2b23"
         },
         {
           "path": "node_modules/@the-open-engine/opcore-validation-rust/dist/check-ids.d.ts.map",
-          "sha256": "44328bb1cc9a957fb8533a8af115bc79240e12674a5e60fc34168a923df2ddfb"
+          "sha256": "0fb5cff167f699b0c1b6b33469e80ff67d00a3eed7ea153a9a378cf35b06421c"
         },
         {
           "path": "node_modules/@the-open-engine/opcore-validation-rust/dist/check-ids.js",
-          "sha256": "ee73fb6dbe45287f97982e596ce8c3a3d9a0301d6e8c2eb8f415cdde0d097927"
+          "sha256": "96c4e048a68d0d55585ec74a80607785cf437070a8d889255d257a254c89746f"
         },
         {
           "path": "node_modules/@the-open-engine/opcore-validation-rust/dist/diagnostics.d.ts",
@@ -1010,6 +1214,18 @@
           "sha256": "c84f7a49e950ec4ae3d0b66268fbf54df5bfe3a7cfa473cb31008688719e2ff6"
         },
         {
+          "path": "node_modules/@the-open-engine/opcore-validation-rust/dist/graph-signals-check.d.ts",
+          "sha256": "9b9262db959ad3c8154f21867cc437753c607aabfca36e80636683c0388eb561"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-validation-rust/dist/graph-signals-check.d.ts.map",
+          "sha256": "10f21f6d3eb12f979c33a6da1ab7517412d9daba6e150b86628ea0759fdcee1b"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-validation-rust/dist/graph-signals-check.js",
+          "sha256": "30e20f385571b920a8385e65295ae58ae85c34693ad473c39ed63d40913581b1"
+        },
+        {
           "path": "node_modules/@the-open-engine/opcore-validation-rust/dist/import-graph-check.d.ts",
           "sha256": "fbf7a95ee8b5faeb482548db2b65ad9890b3fafe0288ef7b5e7f124337729dbc"
         },
@@ -1023,15 +1239,15 @@
         },
         {
           "path": "node_modules/@the-open-engine/opcore-validation-rust/dist/index.d.ts",
-          "sha256": "0767102cdee89a0f69ff37bdb840272649031d3fcda86fc505488211d679e6df"
+          "sha256": "376d9e2bbe30372b660102b90dd443f58abbc405dd350ed2f342031afd74a5c4"
         },
         {
           "path": "node_modules/@the-open-engine/opcore-validation-rust/dist/index.d.ts.map",
-          "sha256": "3301dfe4e4d8848795f04588d8901d7234c720feefd3c733f62fe0ec0f6e6e66"
+          "sha256": "0c3b2b074c61add9cf64c938e2011f2bf93766083140a5452ad33e79491fd5a4"
         },
         {
           "path": "node_modules/@the-open-engine/opcore-validation-rust/dist/index.js",
-          "sha256": "32dca46563e0e3d266ee1c6bd1585faaec0b6424de92e7a2a1abd5490c935a7d"
+          "sha256": "f2d459250d6935eee29a1c1a0593aa76ae2a30ce9557aeccfb7eb1f1298b0189"
         },
         {
           "path": "node_modules/@the-open-engine/opcore-validation-rust/dist/materialize.d.ts",
@@ -1311,11 +1527,11 @@
       "version": "0.1.0-alpha.0",
       "tarball": {
         "filename": "the-open-engine-opcore-asp-provider-0.1.0-alpha.0.tgz",
-        "sha256": "fab42dc3212f902a635e730760f82a9c604469eb980776bcc49cb8f5efa4849c"
+        "sha256": "5e3f05015185fc8f5d49dffc9cd705173317d28793dc9f86077924010eef5b02"
       },
       "installedManifest": {
         "path": "node_modules/@the-open-engine/opcore-asp-provider/package.json",
-        "sha256": "3add6637578872a69c4b7e623472438502207700f5d7e6cd37943c964f01735f",
+        "sha256": "7522425d39294831098698754554bbcb74a09edc5be6f8aebb7816abdd2f0b75",
         "bins": {
           "opcore-asp-provider": "dist/index.js"
         }
@@ -1375,7 +1591,7 @@
         },
         {
           "path": "node_modules/@the-open-engine/opcore-asp-provider/dist/manifests/opcore-asp-provider.provisional.json",
-          "sha256": "9eb1ca6882dcca5fffe1ad0aeee5c70e77b44cc9a794dc93ef74cb516599f4ee"
+          "sha256": "0ef8d444e9576cddfc3ea0d4e1e5c29609f7207a1de31c8f191ff468f5f38607"
         },
         {
           "path": "node_modules/@the-open-engine/opcore-asp-provider/dist/mapping.d.ts",
@@ -1407,11 +1623,11 @@
         },
         {
           "path": "node_modules/@the-open-engine/opcore-asp-provider/dist/validation-composition.d.ts.map",
-          "sha256": "0ca5499ab43efd485e33bd83c40ebec3ddeaeb1d186d71bd89d833a222e42b30"
+          "sha256": "1294fcb0940917906d596b62c98b5c0420eff4315666dffa4bf7db7eb2780480"
         },
         {
           "path": "node_modules/@the-open-engine/opcore-asp-provider/dist/validation-composition.js",
-          "sha256": "654703dd1816c326cdcd0af652b0e2db5b1a91ae796103c94e0e9222fcd296ac"
+          "sha256": "42e3fd02ab96baf4feecaa849c5cc184a4ae648f534a2e023057fc87e382763e"
         },
         {
           "path": "node_modules/@the-open-engine/opcore-asp-provider/dist/workspace.d.ts",
@@ -1427,7 +1643,7 @@
         },
         {
           "path": "node_modules/@the-open-engine/opcore-asp-provider/package.json",
-          "sha256": "3add6637578872a69c4b7e623472438502207700f5d7e6cd37943c964f01735f"
+          "sha256": "7522425d39294831098698754554bbcb74a09edc5be6f8aebb7816abdd2f0b75"
         },
         {
           "path": "node_modules/@the-open-engine/opcore-asp-provider/README.md",
@@ -1439,7 +1655,7 @@
   "descriptor": {
     "path": "node_modules/@the-open-engine/opcore/dist/descriptors/lattice.managed-tool.json",
     "packageName": "@the-open-engine/opcore",
-    "checksumSha256": "274f1e3cd81c7c8d6445610158f2ceda142f67727c0f5b4b8130371c481d0fc7",
+    "checksumSha256": "4845b9635feb3737f4dd5e69ab44dd06bf4015dbe79111ec0ff92dc7e406dac9",
     "descriptor": {
       "schemaVersion": 1,
       "descriptorKind": "aggregate_lattice",
@@ -1785,9 +2001,16 @@
             "rust.rustdoc",
             "rust.import-graph",
             "rust.dead-code",
+            "rust.graph-signals",
             "rust.unused-deps",
             "rust.file-length",
-            "rust.function-metrics"
+            "rust.function-metrics",
+            "python.syntax",
+            "python.source-hygiene",
+            "python.types",
+            "python.import-graph",
+            "python.dead-code",
+            "python.relevant-tests"
           ]
         }
       },
@@ -2063,7 +2286,7 @@
         "artifactRef": "graph-core-binary-darwin-arm64",
         "required": true,
         "packageFile": true,
-        "value": "9b67974520bc715cdebf440d03ed1ef04df36528023210f608d6fca102a696b2"
+        "value": "b69845117d7e3c27858bc6a7bd6aed35990c5c4621c1fa0e6ab6b3149e427ce1"
       },
       {
         "id": "graph-core-binary-sha256-darwin-x64",
@@ -2115,7 +2338,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/opcore",
-      "stdoutSha256": "01b008e3649c5aa6d00e20d6514f60616353f2c7d278a6f05fe514e7fa5ceff4",
+      "stdoutSha256": "c1f99872f20f1af3491be2a9f5d620e08d68d3049cb54eb63f0c0e95183713c4",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "opcore scan wrote read-only report artifacts"
     },
@@ -2133,7 +2356,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/opcore",
-      "stdoutSha256": "221d5fe811933220abe296d0a14efaba2be7aabaf0370510de67bcf000db62e7",
+      "stdoutSha256": "6a266a9c7dd47c328771ea139ee43fa55a30120893c0a55ccee7aafe6f119b2d",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "opcore status returned repoState"
     },
@@ -2161,7 +2384,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/opcore",
-      "stdoutSha256": "c6a0478f1c17a98311b2946e86d7fa8a30d2bd819eb8d13238d345eb19eac25e",
+      "stdoutSha256": "ca34b967aa9bbdd9b25200898406f20f08a84f6246857f33374be76e29a02b2a",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "opcore check changed defaulted base to HEAD"
     },
@@ -2179,7 +2402,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/opcore",
-      "stdoutSha256": "2493f76dd914d4c8b01bb4631e6fe307d862b01a07c787788c58644b19247b9f",
+      "stdoutSha256": "750e0642fa679a2008f649a20035f712adb92a3a623794628e12d87a26ebd733",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "opcore measure returned read-only report deltas"
     },
@@ -2197,7 +2420,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/opcore",
-      "stdoutSha256": "c21ab40ae00a02f617627461a129be8bfcc4c551e7a554f432fa0e4ebb6fa3b2",
+      "stdoutSha256": "5e14617dcbb3faae001ea7124c5206386b309c78d02298c4a6332dfc77f48479",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "opcore try generated local sample repos without publishing"
     },
@@ -2215,7 +2438,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "7c9d63717af7d7a16bf2fd04a59f5422005b007679cd02417d1fb89983d64e20",
+      "stdoutSha256": "6b493ff32e28ebf969f35585ba095ae80d5d4bc48a3801847903c5f9dc38df90",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "runtime status reports validation readiness"
     },
@@ -2233,7 +2456,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "aabb021484e000f65aa6805e1fb88bbe970859c85cb4051cb61e0815b41a20ba",
+      "stdoutSha256": "0e4ac6cfc4bc5725a1f235b5e095d86ef078ad8f032b55424e729b1092338cf1",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "runtime doctor reports validation readiness"
     },
@@ -2253,7 +2476,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "a8d1091c4f2a9f64dfc779d6a0bff523a4bafa2ded356ba52487af3e69deca09",
+      "stdoutSha256": "8d6caddc452ab8d34e4d34a7d921b3453248b94e7dc1c5fc7f4f383df084ed38",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "graph build completed with native artifact"
     },
@@ -2273,7 +2496,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "d9f33c171ee8fb4a7138fd693d6e28771f78d64071cd35b27ef823751f774350",
+      "stdoutSha256": "34934195aec6e793109d4f1de039667d776ca2d8c3684f5dda64999f62b42188",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "graph status available after build"
     },
@@ -2293,7 +2516,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "5d006306c931ea2f8f307231df1f8feb36ac123f469348df043eb77655d87d32",
+      "stdoutSha256": "2a7a262479ff6d8bcd46bd7820c3ce0547c5ad13b9534e38fdc1c3326d08b855",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "graph query returned facts"
     },
@@ -2317,7 +2540,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "f85891899b50e682a9f8eff67ef13a0a9a1f09d7d950495f1a0b04aeb50974e2",
+      "stdoutSha256": "132f8963687e54c4b83c1938b741a9e5f33a7c3b40ce6063f6e62a0eb5941257",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "graph impact returned file impact"
     },
@@ -2341,7 +2564,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "5952bf86f6e68b5d42d43b1bd7c9861b6a2b4194f7b873eacec427cb5bac0ca3",
+      "stdoutSha256": "d1075276ed06f2cf624795db1d85c4a4eb8fce33fde6b12386ecd23968bf9c97",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "graph review-context returned related facts"
     },
@@ -2365,7 +2588,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "a6ccfaa2ba7969ace288f4cac9795fab4979bbf9872039d76d7034ffb5bf6288",
+      "stdoutSha256": "ce2109265e12929fa209c2ab4c3b282316f9c547d4d11ebb09100aa443868647",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "graph detect-changes returned typed change data"
     },
@@ -2391,7 +2614,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "ce133bfc6d46dfe7b2eddfdc1f9924e365aa75d69fc3903df3e130604cf9933c",
+      "stdoutSha256": "e867b5c51a972d2f8b6af00186663b719db5e3aa545e337b97e2232328f95d1d",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "graph search returned ranked results"
     },
@@ -2411,7 +2634,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "206852789e1091c4b49c87c01ef1188b87e0c296b68caebb0a9eb2f3898ded0f",
+      "stdoutSha256": "624929e1bb6724531d21eefd2f9b2cb25ed0d1c5af19b1705dde902dddf39508",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "graph serve status route is ready"
     },
@@ -2437,7 +2660,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "c8f461e8b531365125e93e1e14304ce4e9886419cd62b02f54b410b1aab5cf8a",
+      "stdoutSha256": "2b3bd142fa9d59ec6c2de51ef08fec02f50a4e4acab5f27231206acb4477f80a",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "inspect symbols returned graph symbols"
     },
@@ -2459,7 +2682,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "8d6d8b86330f31d2d8302988a754fe1479c62a4d45b98046748b3e0a4fd1d9fb",
+      "stdoutSha256": "1e05b54a35875922aa3d87cca8397f321ef73ff4f8820b11a724c64d07fce658",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "inspect definition returned a symbol"
     },
@@ -2485,7 +2708,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "62a054c1b92ad225a4c6180c44c8ed2d1a290069309ca78fa9316bf8a457b0c9",
+      "stdoutSha256": "7d56cc6d55dec5c7dae9a4fb985a0bd38b0f32d3f705d55d11809b4ca9b8c166",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "inspect references returned callers"
     },
@@ -2507,7 +2730,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "2f565a353a412d3e7c1fec55f72712a1dc2d1d13ca916210b7ac7ef59cd14500",
+      "stdoutSha256": "1715dd6aef310ae98ec4ae3aead3ecd8f435e9b545ffa40f0cdcf56a7e2d75fa",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "inspect signature returned read-only language-service signatures"
     },
@@ -2529,7 +2752,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "87e3f44cad7a69c78a3a6cfba378652b1ec866447f51fe9397c6f035d81556e0",
+      "stdoutSha256": "ce05e4ef0499ad848689f513e456d26c38e5f8e6d864c7db54c59e6656652d75",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "inspect implementations returned implementation evidence"
     },
@@ -2555,7 +2778,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "112a8c94e469c98ac59cb0fb24e743877817fcdf399d0cade1ca54a46272bece",
+      "stdoutSha256": "fccce1746b62ed0d488facce393b69e39756f772753bb5306da539b83e298c16",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "inspect search returned graph search results"
     },
@@ -2587,7 +2810,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "6173a23423e9dba51998e51572ba90f90b8de546b723ce241a6abdb93932cafb",
+      "stdoutSha256": "4232e59e34efbfd7f05dd492062331547e6fece9328be77f987c5993dd3dd93d",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "safe edit preview produced a plan without writing"
     },
@@ -2621,7 +2844,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "3eeeba82fd8e8d29f463aa5fbe47d05445b2b416fcd0867ba4fb3dbeacec1f66",
+      "stdoutSha256": "5daada9ec870a839f8e82c4f04a6d53a9ad79edbe6b69689bd851a6109fe506e",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "safe edit apply wrote after validation"
     },
@@ -2655,7 +2878,7 @@
       "status": "error",
       "exitCode": 1,
       "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "f77c1794b310776462643b626393add83695284493e424b33d8025b325da68c6",
+      "stdoutSha256": "5a286ebf069fa44f23e4cfee20a922bf638e5006d13a898c16f391a9b6608b9f",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "validation-refused edit left file unchanged"
     },
@@ -2681,7 +2904,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "412e2303ae9acd657a1c5bf61ce3dc0391f48c50ed810058f543c8af31128458",
+      "stdoutSha256": "1272a5a89ca7de23cea5138b82527a1d87de7e7532f08dcb7bff27a7e0501178",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "check files passed syntax and type checks"
     },
@@ -2692,20 +2915,20 @@
         "validate",
         "request",
         "--request-file",
-        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/lattice-cutover-taPVmG/project/validate-request.json"
+        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/lattice-cutover-6e5INX/project/validate-request.json"
       ],
       "canonicalCommand": [
         "lattice",
         "validate",
         "request",
         "--request-file",
-        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/lattice-cutover-taPVmG/project/validate-request.json"
+        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/lattice-cutover-6e5INX/project/validate-request.json"
       ],
       "owner": "validation",
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "840af95621559e89023bfe32c910da5b418c29a2fb77c5a0f9ffce2ca7ed7dbb",
+      "stdoutSha256": "5f0b98fade0d80061f4c1f1ce12acf24e42ce6324ba7676962f7ffd2f8044d98",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "validate request passed"
     },
@@ -2716,7 +2939,7 @@
         "validate",
         "pre-write",
         "--request-file",
-        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/lattice-cutover-taPVmG/project/pre-write-pass.json",
+        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/lattice-cutover-6e5INX/project/pre-write-pass.json",
         "--timeout-ms",
         "30000"
       ],
@@ -2725,7 +2948,7 @@
         "validate",
         "pre-write",
         "--request-file",
-        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/lattice-cutover-taPVmG/project/pre-write-pass.json",
+        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/lattice-cutover-6e5INX/project/pre-write-pass.json",
         "--timeout-ms",
         "30000"
       ],
@@ -2733,7 +2956,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "9ece4b8cc6f867690a792989d86deb34828aefd0e4c67ff6717b71a39fda2102",
+      "stdoutSha256": "b2e18a81c0e6d9054b6d05020326030a39df8d69636d72fc712ffe73016deba5",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "pre-write pass receipt was ok"
     },
@@ -2744,7 +2967,7 @@
         "validate",
         "pre-write",
         "--request-file",
-        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/lattice-cutover-taPVmG/project/pre-write-fail.json",
+        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/lattice-cutover-6e5INX/project/pre-write-fail.json",
         "--timeout-ms",
         "30000"
       ],
@@ -2753,7 +2976,7 @@
         "validate",
         "pre-write",
         "--request-file",
-        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/lattice-cutover-taPVmG/project/pre-write-fail.json",
+        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/lattice-cutover-6e5INX/project/pre-write-fail.json",
         "--timeout-ms",
         "30000"
       ],
@@ -2761,9 +2984,169 @@
       "status": "error",
       "exitCode": 1,
       "binPath": "node_modules/.bin/lattice",
-      "stdoutSha256": "3b80cddd851a918dc01ef0ca0bcc7583bd2b98e0663c4434533fa0a363eda121",
+      "stdoutSha256": "dfba0aa1090b19d3f5bbca4197c7ceeb33b53a55c0635123753e553d3add871d",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "pre-write failure receipt failed closed"
+    }
+  ],
+  "rustCommandReceipts": [
+    {
+      "id": "graph-rust-build",
+      "command": [
+        "lattice",
+        "graph",
+        "build"
+      ],
+      "canonicalCommand": [
+        "lattice",
+        "graph",
+        "build"
+      ],
+      "owner": "graph",
+      "status": "ok",
+      "exitCode": 0,
+      "binPath": "node_modules/.bin/lattice",
+      "stdoutSha256": "31808e901605a642bc18cb794b2f76017fda82640e01c87a5cb79840bbbc56b2",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "assertion": "Rust graph build completed with installed native artifact"
+    },
+    {
+      "id": "graph-rust-status",
+      "command": [
+        "lattice",
+        "graph",
+        "status"
+      ],
+      "canonicalCommand": [
+        "lattice",
+        "graph",
+        "status"
+      ],
+      "owner": "graph",
+      "status": "ok",
+      "exitCode": 0,
+      "binPath": "node_modules/.bin/lattice",
+      "stdoutSha256": "400c3cae7bb5192b89163b911918644a490a831f5552299ff8738cfcc670cc5a",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "assertion": "Rust graph status available after build"
+    },
+    {
+      "id": "graph-rust-query",
+      "command": [
+        "lattice",
+        "graph",
+        "query"
+      ],
+      "canonicalCommand": [
+        "lattice",
+        "graph",
+        "query"
+      ],
+      "owner": "graph",
+      "status": "ok",
+      "exitCode": 0,
+      "binPath": "node_modules/.bin/lattice",
+      "stdoutSha256": "17326c61a9951dc059ca693134301818b32fa128d49617570eceb5c76a9555fd",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "assertion": "Rust graph query returned Rust facts"
+    },
+    {
+      "id": "graph-rust-impact",
+      "command": [
+        "lattice",
+        "graph",
+        "impact",
+        "--files",
+        "src/helpers.rs"
+      ],
+      "canonicalCommand": [
+        "lattice",
+        "graph",
+        "impact",
+        "--files",
+        "src/helpers.rs"
+      ],
+      "owner": "graph",
+      "status": "ok",
+      "exitCode": 0,
+      "binPath": "node_modules/.bin/lattice",
+      "stdoutSha256": "73b43e6fe9f414385073cfc287f655a98de5aaaf97b950f2c852a15fd5fef9ce",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "assertion": "Rust graph impact returned related Rust facts"
+    },
+    {
+      "id": "graph-rust-review-context",
+      "command": [
+        "lattice",
+        "graph",
+        "review-context",
+        "--files",
+        "src/helpers.rs"
+      ],
+      "canonicalCommand": [
+        "lattice",
+        "graph",
+        "review-context",
+        "--files",
+        "src/helpers.rs"
+      ],
+      "owner": "graph",
+      "status": "ok",
+      "exitCode": 0,
+      "binPath": "node_modules/.bin/lattice",
+      "stdoutSha256": "b919d72fcac89b7e1c254235e07bba376937fccf4e0af1e75a48e154b0d97ace",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "assertion": "Rust graph review-context returned related Rust facts"
+    },
+    {
+      "id": "graph-rust-detect-changes",
+      "command": [
+        "lattice",
+        "graph",
+        "detect-changes",
+        "--files",
+        "src/helpers.rs"
+      ],
+      "canonicalCommand": [
+        "lattice",
+        "graph",
+        "detect-changes",
+        "--files",
+        "src/helpers.rs"
+      ],
+      "owner": "graph",
+      "status": "ok",
+      "exitCode": 0,
+      "binPath": "node_modules/.bin/lattice",
+      "stdoutSha256": "f355d87034c5cc64dcb30d0c4877a621727310e23a78d47e903a1f98e7a4ecaf",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "assertion": "Rust graph detect-changes returned typed Rust change data"
+    },
+    {
+      "id": "graph-rust-search",
+      "command": [
+        "lattice",
+        "graph",
+        "search",
+        "Widget",
+        "--limit",
+        "5"
+      ],
+      "canonicalCommand": [
+        "lattice",
+        "graph",
+        "search",
+        "Widget",
+        "--limit",
+        "5"
+      ],
+      "owner": "graph",
+      "status": "ok",
+      "exitCode": 0,
+      "binPath": "node_modules/.bin/lattice",
+      "stdoutSha256": "d374d5d466e2c72729045a96ae52d7b5c7a77b71fe0c7882d750f599ecd31fa9",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "assertion": "Rust graph search returned ranked Rust symbols"
     }
   ],
   "negativeChecks": [
@@ -2775,7 +3158,7 @@
         "files",
         "src/index.ts",
         "--repo",
-        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/lattice-cutover-taPVmG/missing-graph",
+        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/lattice-cutover-6e5INX/missing-graph",
         "--graph-mode",
         "required",
         "--checks",
@@ -2793,7 +3176,7 @@
         "validate",
         "request",
         "--request-file",
-        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/lattice-cutover-taPVmG/missing-graph/required-graph.json",
+        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/lattice-cutover-6e5INX/missing-graph/required-graph.json",
         "--json"
       ],
       "status": "passed",
@@ -2802,7 +3185,7 @@
     }
   ],
   "forbiddenMarkerScan": {
-    "scannedTextCount": 73,
+    "scannedTextCount": 88,
     "findingCount": 0,
     "markersBlocked": [
       "private-runtime",
@@ -2815,7 +3198,7 @@
     {
       "issue": "#17",
       "path": "docs/release/graph-release-receipt.json",
-      "checksumSha256": "81ab958309c81ca98a855c392bb571f529ab64b0c02c37013d34d00b15a06c8d"
+      "checksumSha256": "5258ffb8699909b46a5004adedb95509bb24ce01737301abde2a07d75bd0f5a8"
     },
     {
       "issue": "#29",

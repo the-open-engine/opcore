@@ -1315,6 +1315,18 @@ export const graphReleaseCoreCommandIds = [
 ] as const;
 export type GraphReleaseCoreCommandId = (typeof graphReleaseCoreCommandIds)[number];
 
+export const graphReleaseRustCommandIds = [
+  "lattice-graph-rust-build",
+  "lattice-graph-rust-update",
+  "lattice-graph-rust-watch",
+  "lattice-graph-rust-status",
+  "lattice-graph-rust-query",
+  "lattice-graph-rust-impact",
+  "lattice-graph-rust-search",
+  "lattice-graph-rust-serve"
+] as const;
+export type GraphReleaseRustCommandId = (typeof graphReleaseRustCommandIds)[number];
+
 export const graphReleaseBenchmarkMetrics = [
   "install_setup_ms",
   "cold_build_ms",
@@ -1471,8 +1483,32 @@ export const releaseCutoverRequiredCommandIds = [
 ] as const;
 export type ReleaseCutoverCommandId = (typeof releaseCutoverRequiredCommandIds)[number];
 
+export const releaseCutoverRustCommandIds = [
+  "graph-rust-build",
+  "graph-rust-status",
+  "graph-rust-query",
+  "graph-rust-impact",
+  "graph-rust-review-context",
+  "graph-rust-detect-changes",
+  "graph-rust-search"
+] as const;
+export type ReleaseCutoverRustCommandId = (typeof releaseCutoverRustCommandIds)[number];
+
 export const releaseCutoverInputIssues = ["#17", "#29", "#58"] as const;
 export type ReleaseCutoverInputIssue = (typeof releaseCutoverInputIssues)[number];
+
+export const rustOldRoxComparisonSurfaceIds = [
+  "rust.rustdoc",
+  "rust.import-graph",
+  "rust.dead-code",
+  "rust.unused-deps",
+  "rust.function-metrics",
+  "current-tools:validate-rust-graph"
+] as const;
+export type RustOldRoxComparisonSurfaceId = (typeof rustOldRoxComparisonSurfaceIds)[number];
+
+export const rustOldRoxComparisonReplacementStatuses = ["retained", "deferred"] as const;
+export type RustOldRoxComparisonReplacementStatus = (typeof rustOldRoxComparisonReplacementStatuses)[number];
 
 export const aspDogfoodRequiredGuardrailIds = ["current-tools-validate-changed", "current-tools-validate-rust-graph"] as const;
 export type AspDogfoodRequiredGuardrailId = (typeof aspDogfoodRequiredGuardrailIds)[number];
@@ -1692,6 +1728,40 @@ const releaseCutoverCommandExpectations = {
     bin: "lattice"
   }
 } as const satisfies Record<ReleaseCutoverCommandId, ReleaseCutoverCommandExpectation>;
+
+const releaseCutoverRustCommandExpectations = {
+  "graph-rust-build": { canonicalCommand: ["lattice", "graph", "build"], owner: "graph", status: "ok", exitCode: 0, bin: "lattice" },
+  "graph-rust-status": { canonicalCommand: ["lattice", "graph", "status"], owner: "graph", status: "ok", exitCode: 0, bin: "lattice" },
+  "graph-rust-query": { canonicalCommand: ["lattice", "graph", "query"], owner: "graph", status: "ok", exitCode: 0, bin: "lattice" },
+  "graph-rust-impact": {
+    canonicalCommand: ["lattice", "graph", "impact", "--files", "src/helpers.rs"],
+    owner: "graph",
+    status: "ok",
+    exitCode: 0,
+    bin: "lattice"
+  },
+  "graph-rust-review-context": {
+    canonicalCommand: ["lattice", "graph", "review-context", "--files", "src/helpers.rs"],
+    owner: "graph",
+    status: "ok",
+    exitCode: 0,
+    bin: "lattice"
+  },
+  "graph-rust-detect-changes": {
+    canonicalCommand: ["lattice", "graph", "detect-changes", "--files", "src/helpers.rs"],
+    owner: "graph",
+    status: "ok",
+    exitCode: 0,
+    bin: "lattice"
+  },
+  "graph-rust-search": {
+    canonicalCommand: ["lattice", "graph", "search", "Widget", "--limit", "5"],
+    owner: "graph",
+    status: "ok",
+    exitCode: 0,
+    bin: "lattice"
+  }
+} as const satisfies Record<ReleaseCutoverRustCommandId, ReleaseCutoverCommandExpectation>;
 
 export interface CommandExitSemantics {
   ok: 0;
@@ -2430,6 +2500,17 @@ export interface GraphReleaseCommandCoverage {
   durationMs: number;
 }
 
+export interface GraphReleaseRustCommandCoverage {
+  id: GraphReleaseRustCommandId;
+  bin: "lattice";
+  command: readonly string[];
+  canonicalCommand: readonly string[];
+  status: "passed";
+  exitCode: 0;
+  fixture: string;
+  durationMs: number;
+}
+
 export interface GraphReleaseDirectSqliteQueryReceipt {
   id: GraphReleaseDirectSqliteQueryId;
   query: string;
@@ -2522,6 +2603,7 @@ export interface GraphReleaseReceipt {
   requiredChildren: readonly string[];
   deferredChildren: readonly string[];
   commandCoverage: readonly GraphReleaseCommandCoverage[];
+  rustCommandCoverage: readonly GraphReleaseRustCommandCoverage[];
   directSqliteQueries: readonly GraphReleaseDirectSqliteQueryReceipt[];
   serveTransport: readonly GraphReleaseServeTransportReceipt[];
   benchmarks: readonly GraphReleaseBenchmarkReceipt[];
@@ -2772,6 +2854,19 @@ export interface ReleaseCutoverCommandReceipt {
   assertion: string;
 }
 
+export interface ReleaseCutoverRustCommandReceipt {
+  id: ReleaseCutoverRustCommandId;
+  command: readonly string[];
+  canonicalCommand: readonly string[];
+  owner: "graph";
+  status: "ok";
+  exitCode: 0;
+  binPath: string;
+  stdoutSha256: string;
+  stderrSha256: string;
+  assertion: string;
+}
+
 export interface ReleaseCutoverNegativeCheck {
   id: string;
   command: readonly string[];
@@ -2804,9 +2899,37 @@ export interface ReleaseCutoverReceipt {
   descriptor: ReleaseCutoverDescriptorEvidence;
   environmentIsolation: ReleaseCutoverEnvironmentIsolationEvidence;
   commandReceipts: readonly ReleaseCutoverCommandReceipt[];
+  rustCommandReceipts: readonly ReleaseCutoverRustCommandReceipt[];
   negativeChecks: readonly ReleaseCutoverNegativeCheck[];
   forbiddenMarkerScan: ReleaseCutoverForbiddenMarkerScan;
   inputEvidence: readonly ReleaseCutoverInputEvidence[];
+}
+
+export interface RustOldRoxComparisonSurfaceReceipt {
+  id: RustOldRoxComparisonSurfaceId;
+  graphEvidenceExists: boolean;
+  graphEvidence: readonly string[];
+  stillUniquelyProvidedByCurrentTools: readonly string[];
+  replacementStatus: RustOldRoxComparisonReplacementStatus;
+}
+
+export interface RustOldRoxComparisonGuardrailReceipt {
+  id: "current-tools:validate-rust-graph";
+  command: readonly ["npm", "run", "current-tools:validate-rust-graph"];
+  replacementStatus: "retained";
+  oldToolReplacementClaimed: false;
+}
+
+export interface RustOldRoxComparisonReceipt {
+  schemaVersion: 1;
+  issue: "#29";
+  origin: "covibes-authored-old-rox-comparison";
+  generatedAt: string;
+  privateRepo: true;
+  oldToolReplacementClaimed: false;
+  publicReleaseActions: readonly [];
+  surfaces: readonly RustOldRoxComparisonSurfaceReceipt[];
+  guardrails: readonly RustOldRoxComparisonGuardrailReceipt[];
 }
 
 export interface AspDogfoodManagerEvidence {
@@ -4710,6 +4833,7 @@ export function validateGraphReleaseReceipt(receipt: GraphReleaseReceipt): Graph
   validateExactStringSet(receipt.requiredChildren, graphReleaseRequiredChildren, "Graph release required children");
   validateExactStringSet(receipt.deferredChildren, graphReleaseDeferredChildren, "Graph release deferred children");
   validateGraphReleaseCommandCoverage(receipt.commandCoverage);
+  validateGraphReleaseRustCommandCoverage(receipt.rustCommandCoverage);
   validateGraphReleaseDirectSqliteQueries(receipt.directSqliteQueries);
   validateGraphReleaseServeTransport(receipt.serveTransport);
   validateGraphReleaseBenchmarks(receipt.benchmarks);
@@ -4763,9 +4887,28 @@ export function validateReleaseCutoverReceipt(receipt: ReleaseCutoverReceipt): R
   validateReleaseCutoverDescriptor(receipt.descriptor);
   validateReleaseCutoverEnvironmentIsolation(receipt.environmentIsolation);
   validateReleaseCutoverCommandReceipts(receipt.commandReceipts);
+  validateReleaseCutoverRustCommandReceipts(receipt.rustCommandReceipts);
   validateReleaseCutoverNegativeChecks(receipt.negativeChecks);
   validateReleaseCutoverForbiddenMarkerScan(receipt.forbiddenMarkerScan);
   validateReleaseCutoverInputEvidence(receipt.inputEvidence);
+  return receipt;
+}
+
+export function validateRustOldRoxComparisonReceipt(receipt: RustOldRoxComparisonReceipt): RustOldRoxComparisonReceipt {
+  if (!receipt || typeof receipt !== "object") throw new Error("Rust old-Rox comparison receipt is required");
+  if (receipt.schemaVersion !== 1) throw new Error("Rust old-Rox comparison receipt schemaVersion must be 1");
+  if (receipt.issue !== "#29") throw new Error("Rust old-Rox comparison receipt issue must be #29");
+  if (receipt.origin !== "covibes-authored-old-rox-comparison") {
+    throw new Error("Rust old-Rox comparison receipt origin must be covibes-authored-old-rox-comparison");
+  }
+  validateNonEmptyString(receipt.generatedAt, "Rust old-Rox comparison generatedAt");
+  if (receipt.privateRepo !== true) throw new Error("Rust old-Rox comparison receipt privateRepo must be true");
+  if (receipt.oldToolReplacementClaimed !== false) throw new Error("Rust old-Rox comparison receipt must not claim old-tool replacement");
+  if (!Array.isArray(receipt.publicReleaseActions) || receipt.publicReleaseActions.length !== 0) {
+    throw new Error("Rust old-Rox comparison receipt public release actions must be empty");
+  }
+  validateRustOldRoxComparisonSurfaces(receipt.surfaces);
+  validateRustOldRoxComparisonGuardrails(receipt.guardrails);
   return receipt;
 }
 
@@ -6673,6 +6816,36 @@ function validateGraphReleaseCommandCoverage(coverage: readonly GraphReleaseComm
   }
 }
 
+function validateGraphReleaseRustCommandCoverage(coverage: readonly GraphReleaseRustCommandCoverage[]): void {
+  validateNonEmptyArray(coverage, "Graph release rustCommandCoverage");
+  validateExactStringSet(
+    coverage.map((entry) => entry.id),
+    graphReleaseRustCommandIds,
+    "Graph release Rust command coverage ids"
+  );
+  for (const entry of coverage) {
+    if (!entry || typeof entry !== "object") throw new Error("Graph release Rust command coverage entry is required");
+    validateGraphReleaseRustCommandId(entry.id);
+    if (entry.bin !== "lattice") throw new Error(`Unknown graph release Rust command bin: ${String(entry.bin)}`);
+    validateStringArray(entry.command, "Graph release Rust command coverage command", { allowEmpty: false });
+    validateStringArray(entry.canonicalCommand, "Graph release Rust command coverage canonicalCommand", { allowEmpty: false });
+    if (entry.status !== "passed") throw new Error("Graph release Rust command coverage status must be passed");
+    if (entry.exitCode !== 0) throw new Error("Graph release Rust command coverage exitCode must be 0");
+    validateNonEmptyString(entry.fixture, "Graph release Rust command coverage fixture");
+    if (typeof entry.durationMs !== "number" || entry.durationMs <= 0) {
+      throw new Error("Graph release Rust command coverage durationMs must be positive");
+    }
+    const route = graphReleaseRouteForRustCommandId(entry.id);
+    if (entry.bin !== route.bin) throw new Error(`Graph release Rust command ${entry.id} must use ${route.bin}`);
+    if (entry.command.join("\0") !== route.command.join("\0")) {
+      throw new Error(`Graph release Rust command ${entry.id} route must match ${route.command.join(" ")}`);
+    }
+    if (entry.canonicalCommand.join("\0") !== route.canonicalCommand.join("\0")) {
+      throw new Error(`Graph release Rust command ${entry.id} route must match ${route.canonicalCommand.join(" ")}`);
+    }
+  }
+}
+
 function validateGraphReleaseDirectSqliteQueries(queries: readonly GraphReleaseDirectSqliteQueryReceipt[]): void {
   validateNonEmptyArray(queries, "Graph release directSqliteQueries");
   validateExactStringSet(
@@ -6899,6 +7072,13 @@ function validateGraphReleaseCoreCommandId(id: unknown): GraphReleaseCoreCommand
   return id;
 }
 
+function validateGraphReleaseRustCommandId(id: unknown): GraphReleaseRustCommandId {
+  if (!includesString(graphReleaseRustCommandIds, id)) {
+    throw new Error(`Unknown graph release Rust command id: ${String(id)}`);
+  }
+  return id;
+}
+
 function validateGraphReleaseBenchmarkMetric(metric: unknown): GraphReleaseBenchmarkMetric {
   if (!includesString(graphReleaseBenchmarkMetrics, metric)) {
     throw new Error(`Unknown graph release benchmark metric: ${String(metric)}`);
@@ -6930,6 +7110,19 @@ function graphReleaseRouteForCommandId(id: GraphReleaseCoreCommandId): {
   canonicalCommand: readonly string[];
 } {
   const command = id.replace("lattice-graph-", "");
+  return {
+    bin: "lattice",
+    command: ["graph", command],
+    canonicalCommand: ["lattice", "graph", command]
+  };
+}
+
+function graphReleaseRouteForRustCommandId(id: GraphReleaseRustCommandId): {
+  bin: "lattice";
+  command: readonly string[];
+  canonicalCommand: readonly string[];
+} {
+  const command = id.replace("lattice-graph-rust-", "");
   return {
     bin: "lattice",
     command: ["graph", command],
@@ -7452,10 +7645,40 @@ function validateReleaseCutoverCommandReceipts(receipts: readonly ReleaseCutover
   }
 }
 
+function validateReleaseCutoverRustCommandReceipts(receipts: readonly ReleaseCutoverRustCommandReceipt[]): void {
+  validateNonEmptyArray(receipts, "Release cutover Rust command receipts");
+  validateExactStringSet(
+    receipts.map((entry) => entry.id),
+    releaseCutoverRustCommandIds,
+    "Release cutover Rust command receipts"
+  );
+  for (const receipt of receipts) {
+    if (!receipt || typeof receipt !== "object") throw new Error("Release cutover Rust command receipt is required");
+    if (!includesString(releaseCutoverRustCommandIds, receipt.id)) {
+      throw new Error(`Unknown release cutover Rust command receipt id: ${String(receipt.id)}`);
+    }
+    validateStringArray(receipt.command, "Release cutover Rust command receipt command", { allowEmpty: false });
+    validateStringArray(receipt.canonicalCommand, "Release cutover Rust command receipt canonicalCommand", { allowEmpty: false });
+    validateExactStringSequence(receipt.command, receipt.canonicalCommand, `Release cutover Rust ${receipt.id} command`);
+    const expected = releaseCutoverRustCommandExpectations[receipt.id];
+    validateReleaseCutoverExpectedCommand(receipt.canonicalCommand, expected, receipt.id);
+    if (receipt.owner !== "graph") throw new Error(`Release cutover Rust command ${receipt.id} owner must be graph`);
+    if (receipt.status !== "ok") throw new Error(`Release cutover Rust command ${receipt.id} status must be ok`);
+    if (receipt.exitCode !== 0) throw new Error(`Release cutover Rust command ${receipt.id} exitCode must be 0`);
+    validateNonEmptyString(receipt.binPath, "Release cutover Rust command receipt binPath");
+    if (!receipt.binPath.endsWith("node_modules/.bin/lattice")) {
+      throw new Error("Release cutover Rust command receipt binPath must use installed node_modules/.bin/lattice");
+    }
+    validateSha256(receipt.stdoutSha256, "Release cutover Rust command receipt stdoutSha256");
+    validateSha256(receipt.stderrSha256, "Release cutover Rust command receipt stderrSha256");
+    validateNonEmptyString(receipt.assertion, "Release cutover Rust command receipt assertion");
+  }
+}
+
 function validateReleaseCutoverExpectedCommand(
   command: readonly string[],
   expectation: ReleaseCutoverCommandExpectation,
-  id: ReleaseCutoverCommandId
+  id: ReleaseCutoverCommandId | ReleaseCutoverRustCommandId
 ): void {
   if (!releaseCutoverCommandMatchesExpectation(command, expectation)) {
     throw new Error(`Release cutover command ${id} canonicalCommand must match expected ${formatReleaseCutoverCommand(expectation)}`);
@@ -7521,6 +7744,60 @@ function validateReleaseCutoverInputEvidence(evidence: readonly ReleaseCutoverIn
     }
     validateNonEmptyString(entry.path, "Release cutover input evidence path");
     validateSha256(entry.checksumSha256, "Release cutover input evidence checksumSha256");
+  }
+}
+
+function validateRustOldRoxComparisonSurfaces(surfaces: readonly RustOldRoxComparisonSurfaceReceipt[]): void {
+  validateNonEmptyArray(surfaces, "Rust old-Rox comparison surfaces");
+  validateExactStringSet(
+    surfaces.map((entry) => entry.id),
+    rustOldRoxComparisonSurfaceIds,
+    "Rust old-Rox comparison surfaces"
+  );
+  for (const surface of surfaces) {
+    if (!surface || typeof surface !== "object") throw new Error("Rust old-Rox comparison surface is required");
+    if (!includesString(rustOldRoxComparisonSurfaceIds, surface.id)) {
+      throw new Error(`Unknown Rust old-Rox comparison surface: ${String(surface.id)}`);
+    }
+    if (typeof surface.graphEvidenceExists !== "boolean") {
+      throw new Error("Rust old-Rox comparison graphEvidenceExists must be boolean");
+    }
+    validateStringArray(surface.graphEvidence, "Rust old-Rox comparison graph evidence", { allowEmpty: false });
+    if (surface.graphEvidenceExists && surface.graphEvidence.length === 0) {
+      throw new Error("Rust old-Rox comparison graph evidence must describe existing evidence");
+    }
+    validateStringArray(surface.stillUniquelyProvidedByCurrentTools, "Rust old-Rox comparison current tool evidence", {
+      allowEmpty: false
+    });
+    if (!includesString(rustOldRoxComparisonReplacementStatuses, surface.replacementStatus)) {
+      throw new Error("Rust old-Rox comparison replacementStatus must be retained or deferred");
+    }
+  }
+}
+
+function validateRustOldRoxComparisonGuardrails(guardrails: readonly RustOldRoxComparisonGuardrailReceipt[]): void {
+  validateNonEmptyArray(guardrails, "Rust old-Rox comparison guardrails");
+  validateExactStringSet(
+    guardrails.map((entry) => entry.id),
+    ["current-tools:validate-rust-graph"] as const,
+    "Rust old-Rox comparison guardrails"
+  );
+  for (const guardrail of guardrails) {
+    if (!guardrail || typeof guardrail !== "object") throw new Error("Rust old-Rox comparison guardrail is required");
+    if (guardrail.id !== "current-tools:validate-rust-graph") {
+      throw new Error("Rust old-Rox comparison guardrail id must be current-tools:validate-rust-graph");
+    }
+    validateExactStringSequence(
+      guardrail.command,
+      ["npm", "run", "current-tools:validate-rust-graph"],
+      "Rust old-Rox comparison guardrail command"
+    );
+    if (guardrail.replacementStatus !== "retained") {
+      throw new Error("Rust old-Rox comparison guardrail replacementStatus must be retained");
+    }
+    if (guardrail.oldToolReplacementClaimed !== false) {
+      throw new Error("Rust old-Rox comparison guardrail must not claim old-tool replacement");
+    }
   }
 }
 

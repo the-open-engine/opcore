@@ -1,0 +1,617 @@
+{
+  "schemaVersion": 1,
+  "fixture": "source-extraction-rust-only",
+  "nodeKinds": [
+    "Const",
+    "Enum",
+    "File",
+    "Function",
+    "Impl",
+    "Macro",
+    "Method",
+    "Module",
+    "Static",
+    "Struct",
+    "Test",
+    "Trait",
+    "TypeAlias"
+  ],
+  "edgeKinds": [
+    "CALLS",
+    "CONTAINS",
+    "DEPENDS_ON",
+    "IMPLEMENTS",
+    "IMPORTS_FROM",
+    "TESTED_BY"
+  ],
+  "nodeIds": [
+    "const:src/lib.rs#LIMIT",
+    "enum:src/lib.rs#Mode",
+    "file:src/helpers.rs",
+    "file:src/lib.rs",
+    "file:src/user.rs",
+    "file:tests/widget_test.rs",
+    "function:src/helpers.rs#helpers::assist",
+    "function:src/lib.rs#make_widget",
+    "function:src/user.rs#user::run",
+    "impl:src/lib.rs#impl Service for Widget",
+    "impl:src/lib.rs#impl Widget",
+    "macro:src/lib.rs#trace",
+    "method:src/lib.rs#Widget::greet",
+    "method:src/lib.rs#Widget::handle",
+    "method:src/lib.rs#Widget::new",
+    "module:src/helpers.rs#helpers",
+    "module:src/lib.rs#crate",
+    "module:src/lib.rs#helpers",
+    "module:src/lib.rs#tests",
+    "module:src/lib.rs#user",
+    "module:src/user.rs#user",
+    "module:src/user.rs#user.tests",
+    "module:tests/widget_test.rs#widget_test",
+    "static:src/lib.rs#NAME",
+    "struct:src/lib.rs#Widget",
+    "test:src/lib.rs#widget_smoke",
+    "test:src/user.rs#user.tests::test_run",
+    "test:tests/widget_test.rs#widget_test::integration_smoke",
+    "trait:src/lib.rs#Service",
+    "type:src/lib.rs#Alias"
+  ],
+  "edgeTriples": [
+    [
+      "CALLS",
+      "function:src/user.rs#user::run",
+      "function:src/helpers.rs#helpers::assist"
+    ],
+    [
+      "CALLS",
+      "function:src/user.rs#user::run",
+      "struct:src/lib.rs#Widget"
+    ],
+    [
+      "CALLS",
+      "test:src/user.rs#user.tests::test_run",
+      "function:src/user.rs#user::run"
+    ],
+    [
+      "CONTAINS",
+      "file:src/helpers.rs",
+      "module:src/helpers.rs#helpers"
+    ],
+    [
+      "CONTAINS",
+      "file:src/lib.rs",
+      "module:src/lib.rs#crate"
+    ],
+    [
+      "CONTAINS",
+      "file:src/user.rs",
+      "module:src/user.rs#user"
+    ],
+    [
+      "CONTAINS",
+      "file:tests/widget_test.rs",
+      "module:tests/widget_test.rs#widget_test"
+    ],
+    [
+      "CONTAINS",
+      "impl:src/lib.rs#impl Service for Widget",
+      "method:src/lib.rs#Widget::handle"
+    ],
+    [
+      "CONTAINS",
+      "impl:src/lib.rs#impl Widget",
+      "method:src/lib.rs#Widget::greet"
+    ],
+    [
+      "CONTAINS",
+      "impl:src/lib.rs#impl Widget",
+      "method:src/lib.rs#Widget::new"
+    ],
+    [
+      "CONTAINS",
+      "module:src/helpers.rs#helpers",
+      "function:src/helpers.rs#helpers::assist"
+    ],
+    [
+      "CONTAINS",
+      "module:src/lib.rs#crate",
+      "const:src/lib.rs#LIMIT"
+    ],
+    [
+      "CONTAINS",
+      "module:src/lib.rs#crate",
+      "enum:src/lib.rs#Mode"
+    ],
+    [
+      "CONTAINS",
+      "module:src/lib.rs#crate",
+      "function:src/lib.rs#make_widget"
+    ],
+    [
+      "CONTAINS",
+      "module:src/lib.rs#crate",
+      "impl:src/lib.rs#impl Service for Widget"
+    ],
+    [
+      "CONTAINS",
+      "module:src/lib.rs#crate",
+      "impl:src/lib.rs#impl Widget"
+    ],
+    [
+      "CONTAINS",
+      "module:src/lib.rs#crate",
+      "macro:src/lib.rs#trace"
+    ],
+    [
+      "CONTAINS",
+      "module:src/lib.rs#crate",
+      "module:src/lib.rs#helpers"
+    ],
+    [
+      "CONTAINS",
+      "module:src/lib.rs#crate",
+      "module:src/lib.rs#tests"
+    ],
+    [
+      "CONTAINS",
+      "module:src/lib.rs#crate",
+      "module:src/lib.rs#user"
+    ],
+    [
+      "CONTAINS",
+      "module:src/lib.rs#crate",
+      "static:src/lib.rs#NAME"
+    ],
+    [
+      "CONTAINS",
+      "module:src/lib.rs#crate",
+      "struct:src/lib.rs#Widget"
+    ],
+    [
+      "CONTAINS",
+      "module:src/lib.rs#crate",
+      "trait:src/lib.rs#Service"
+    ],
+    [
+      "CONTAINS",
+      "module:src/lib.rs#crate",
+      "type:src/lib.rs#Alias"
+    ],
+    [
+      "CONTAINS",
+      "module:src/lib.rs#tests",
+      "test:src/lib.rs#widget_smoke"
+    ],
+    [
+      "CONTAINS",
+      "module:src/user.rs#user.tests",
+      "test:src/user.rs#user.tests::test_run"
+    ],
+    [
+      "CONTAINS",
+      "module:src/user.rs#user",
+      "function:src/user.rs#user::run"
+    ],
+    [
+      "CONTAINS",
+      "module:src/user.rs#user",
+      "module:src/user.rs#user.tests"
+    ],
+    [
+      "CONTAINS",
+      "module:tests/widget_test.rs#widget_test",
+      "test:tests/widget_test.rs#widget_test::integration_smoke"
+    ],
+    [
+      "DEPENDS_ON",
+      "file:src/user.rs",
+      "file:src/helpers.rs"
+    ],
+    [
+      "DEPENDS_ON",
+      "file:src/user.rs",
+      "file:src/lib.rs"
+    ],
+    [
+      "IMPLEMENTS",
+      "impl:src/lib.rs#impl Service for Widget",
+      "trait:src/lib.rs#Service"
+    ],
+    [
+      "IMPORTS_FROM",
+      "file:src/user.rs",
+      "file:src/helpers.rs"
+    ],
+    [
+      "IMPORTS_FROM",
+      "file:src/user.rs",
+      "file:src/lib.rs"
+    ],
+    [
+      "TESTED_BY",
+      "function:src/user.rs#user::run",
+      "test:src/user.rs#user.tests::test_run"
+    ]
+  ],
+  "nodeAttributes": {
+    "const:src/lib.rs#LIMIT": {
+      "columnEnd": 27,
+      "columnStart": 0,
+      "exportKind": "named",
+      "exportName": "LIMIT",
+      "exported": true,
+      "language": "rust",
+      "lineEnd": 35,
+      "lineStart": 35,
+      "qualifiedName": "LIMIT",
+      "signature": "pub const LIMIT : usize = 1 ;"
+    },
+    "enum:src/lib.rs#Mode": {
+      "columnEnd": 1,
+      "columnStart": 0,
+      "exportKind": "named",
+      "exportName": "Mode",
+      "exported": true,
+      "language": "rust",
+      "lineEnd": 26,
+      "lineStart": 24,
+      "qualifiedName": "Mode",
+      "signature": "pub enum Mode { Fast , }"
+    },
+    "function:src/helpers.rs#helpers::assist": {
+      "columnEnd": 1,
+      "columnStart": 0,
+      "exportKind": "named",
+      "exportName": "helpers::assist",
+      "exported": true,
+      "isTest": false,
+      "language": "rust",
+      "lineEnd": 3,
+      "lineStart": 1,
+      "qualifiedName": "helpers::assist",
+      "signature": "pub fn assist () -> usize"
+    },
+    "function:src/lib.rs#make_widget": {
+      "columnEnd": 1,
+      "columnStart": 0,
+      "exportKind": "named",
+      "exportName": "make_widget",
+      "exported": true,
+      "isTest": false,
+      "language": "rust",
+      "lineEnd": 44,
+      "lineStart": 42,
+      "qualifiedName": "make_widget",
+      "signature": "pub fn make_widget () -> Widget"
+    },
+    "function:src/user.rs#user::run": {
+      "columnEnd": 1,
+      "columnStart": 0,
+      "exportKind": "named",
+      "exportName": "user::run",
+      "exported": true,
+      "isTest": false,
+      "language": "rust",
+      "lineEnd": 8,
+      "lineStart": 4,
+      "qualifiedName": "user::run",
+      "signature": "pub fn run () -> usize"
+    },
+    "impl:src/lib.rs#impl Service for Widget": {
+      "columnEnd": 1,
+      "columnStart": 0,
+      "exported": false,
+      "language": "rust",
+      "lineEnd": 32,
+      "lineStart": 28,
+      "qualifiedName": "impl Service for Widget",
+      "signature": "impl Service for Widget"
+    },
+    "impl:src/lib.rs#impl Widget": {
+      "columnEnd": 1,
+      "columnStart": 0,
+      "exported": false,
+      "language": "rust",
+      "lineEnd": 22,
+      "lineStart": 12,
+      "qualifiedName": "impl Widget",
+      "signature": "impl Widget"
+    },
+    "macro:src/lib.rs#trace": {
+      "columnEnd": 1,
+      "columnStart": 0,
+      "exported": false,
+      "language": "rust",
+      "lineEnd": 40,
+      "lineStart": 38,
+      "qualifiedName": "trace",
+      "signature": "macro_rules ! trace { () => { } ; }"
+    },
+    "method:src/lib.rs#Widget::greet": {
+      "columnEnd": 5,
+      "columnStart": 4,
+      "exportKind": "named",
+      "exportName": "Widget::greet",
+      "exported": true,
+      "language": "rust",
+      "lineEnd": 21,
+      "lineStart": 19,
+      "qualifiedName": "Widget::greet",
+      "signature": "pub fn greet (& self) -> String"
+    },
+    "method:src/lib.rs#Widget::handle": {
+      "columnEnd": 5,
+      "columnStart": 4,
+      "exported": false,
+      "language": "rust",
+      "lineEnd": 31,
+      "lineStart": 29,
+      "qualifiedName": "Widget::handle",
+      "signature": "fn handle (& self) -> usize"
+    },
+    "method:src/lib.rs#Widget::new": {
+      "columnEnd": 5,
+      "columnStart": 4,
+      "exportKind": "named",
+      "exportName": "Widget::new",
+      "exported": true,
+      "language": "rust",
+      "lineEnd": 17,
+      "lineStart": 13,
+      "qualifiedName": "Widget::new",
+      "signature": "pub fn new (name : & str) -> Self"
+    },
+    "module:src/helpers.rs#helpers": {
+      "exported": false,
+      "language": "rust",
+      "qualifiedName": "helpers"
+    },
+    "module:src/lib.rs#crate": {
+      "exported": true,
+      "language": "rust",
+      "qualifiedName": "crate"
+    },
+    "module:src/lib.rs#helpers": {
+      "columnEnd": 16,
+      "columnStart": 0,
+      "exportKind": "named",
+      "exportName": "helpers",
+      "exported": true,
+      "isTest": false,
+      "language": "rust",
+      "lineEnd": 1,
+      "lineStart": 1,
+      "qualifiedName": "helpers",
+      "signature": "pub mod helpers"
+    },
+    "module:src/lib.rs#tests": {
+      "columnEnd": 1,
+      "columnStart": 0,
+      "exported": false,
+      "isTest": true,
+      "language": "rust",
+      "lineEnd": 54,
+      "lineStart": 46,
+      "qualifiedName": "tests",
+      "signature": "mod tests"
+    },
+    "module:src/lib.rs#user": {
+      "columnEnd": 9,
+      "columnStart": 0,
+      "exported": false,
+      "isTest": false,
+      "language": "rust",
+      "lineEnd": 2,
+      "lineStart": 2,
+      "qualifiedName": "user",
+      "signature": "mod user"
+    },
+    "module:src/user.rs#user": {
+      "exported": false,
+      "language": "rust",
+      "qualifiedName": "user"
+    },
+    "module:src/user.rs#user.tests": {
+      "columnEnd": 1,
+      "columnStart": 0,
+      "exported": false,
+      "isTest": true,
+      "language": "rust",
+      "lineEnd": 18,
+      "lineStart": 10,
+      "qualifiedName": "user.tests",
+      "signature": "mod tests"
+    },
+    "module:tests/widget_test.rs#widget_test": {
+      "exported": false,
+      "language": "rust",
+      "qualifiedName": "widget_test"
+    },
+    "static:src/lib.rs#NAME": {
+      "columnEnd": 33,
+      "columnStart": 0,
+      "exportKind": "named",
+      "exportName": "NAME",
+      "exported": true,
+      "language": "rust",
+      "lineEnd": 36,
+      "lineStart": 36,
+      "qualifiedName": "NAME",
+      "signature": "pub static NAME : & str = \"widget\" ;"
+    },
+    "struct:src/lib.rs#Widget": {
+      "columnEnd": 1,
+      "columnStart": 0,
+      "exportKind": "named",
+      "exportName": "Widget",
+      "exported": true,
+      "language": "rust",
+      "lineEnd": 10,
+      "lineStart": 8,
+      "qualifiedName": "Widget",
+      "signature": "pub struct Widget { name : String , }"
+    },
+    "test:src/lib.rs#widget_smoke": {
+      "columnEnd": 5,
+      "columnStart": 4,
+      "exported": false,
+      "isTest": true,
+      "language": "rust",
+      "lineEnd": 53,
+      "lineStart": 50,
+      "qualifiedName": "widget_smoke",
+      "signature": "fn widget_smoke ()"
+    },
+    "test:src/user.rs#user.tests::test_run": {
+      "columnEnd": 5,
+      "columnStart": 4,
+      "exported": false,
+      "isTest": true,
+      "language": "rust",
+      "lineEnd": 17,
+      "lineStart": 14,
+      "qualifiedName": "user.tests::test_run",
+      "signature": "fn test_run ()"
+    },
+    "test:tests/widget_test.rs#widget_test::integration_smoke": {
+      "columnEnd": 1,
+      "columnStart": 0,
+      "exported": false,
+      "isTest": true,
+      "language": "rust",
+      "lineEnd": 4,
+      "lineStart": 1,
+      "qualifiedName": "widget_test::integration_smoke",
+      "signature": "fn integration_smoke ()"
+    },
+    "trait:src/lib.rs#Service": {
+      "columnEnd": 1,
+      "columnStart": 0,
+      "exportKind": "named",
+      "exportName": "Service",
+      "exported": true,
+      "language": "rust",
+      "lineEnd": 6,
+      "lineStart": 4,
+      "qualifiedName": "Service",
+      "signature": "pub trait Service { fn handle (& self) -> usize ; }"
+    },
+    "type:src/lib.rs#Alias": {
+      "columnEnd": 24,
+      "columnStart": 0,
+      "exportKind": "named",
+      "exportName": "Alias",
+      "exported": true,
+      "language": "rust",
+      "lineEnd": 34,
+      "lineStart": 34,
+      "qualifiedName": "Alias",
+      "signature": "pub type Alias = Widget ;"
+    }
+  },
+  "fileExports": {
+    "file:src/helpers.rs": [
+      {
+        "exported": "assist",
+        "kind": "named",
+        "local": "assist",
+        "policy": "pub",
+        "source": null,
+        "supportedSymbol": true
+      }
+    ],
+    "file:src/lib.rs": [
+      {
+        "exported": "helpers",
+        "kind": "named",
+        "local": "helpers",
+        "policy": "pub",
+        "source": null,
+        "supportedSymbol": true
+      },
+      {
+        "exported": "Service",
+        "kind": "named",
+        "local": "Service",
+        "policy": "pub",
+        "source": null,
+        "supportedSymbol": true
+      },
+      {
+        "exported": "Widget",
+        "kind": "named",
+        "local": "Widget",
+        "policy": "pub",
+        "source": null,
+        "supportedSymbol": true
+      },
+      {
+        "exported": "new",
+        "kind": "named",
+        "local": "new",
+        "policy": "pub",
+        "source": null,
+        "supportedSymbol": true
+      },
+      {
+        "exported": "greet",
+        "kind": "named",
+        "local": "greet",
+        "policy": "pub",
+        "source": null,
+        "supportedSymbol": true
+      },
+      {
+        "exported": "Mode",
+        "kind": "named",
+        "local": "Mode",
+        "policy": "pub",
+        "source": null,
+        "supportedSymbol": true
+      },
+      {
+        "exported": "Alias",
+        "kind": "named",
+        "local": "Alias",
+        "policy": "pub",
+        "source": null,
+        "supportedSymbol": true
+      },
+      {
+        "exported": "LIMIT",
+        "kind": "named",
+        "local": "LIMIT",
+        "policy": "pub",
+        "source": null,
+        "supportedSymbol": true
+      },
+      {
+        "exported": "NAME",
+        "kind": "named",
+        "local": "NAME",
+        "policy": "pub",
+        "source": null,
+        "supportedSymbol": true
+      },
+      {
+        "exported": "make_widget",
+        "kind": "named",
+        "local": "make_widget",
+        "policy": "pub",
+        "source": null,
+        "supportedSymbol": true
+      }
+    ],
+    "file:src/user.rs": [
+      {
+        "exported": "run",
+        "kind": "named",
+        "local": "run",
+        "policy": "pub",
+        "source": null,
+        "supportedSymbol": true
+      }
+    ]
+  },
+  "diagnostics": []
+}

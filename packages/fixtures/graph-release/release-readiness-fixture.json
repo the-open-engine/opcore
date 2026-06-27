@@ -181,6 +181,144 @@
       "durationMs": 169
     }
   ],
+  "rustCommandCoverage": [
+    {
+      "id": "lattice-graph-rust-build",
+      "bin": "lattice",
+      "command": [
+        "graph",
+        "build"
+      ],
+      "canonicalCommand": [
+        "lattice",
+        "graph",
+        "build"
+      ],
+      "status": "passed",
+      "exitCode": 0,
+      "fixture": "packages/fixtures/source-extraction/rust-only",
+      "durationMs": 1
+    },
+    {
+      "id": "lattice-graph-rust-update",
+      "bin": "lattice",
+      "command": [
+        "graph",
+        "update"
+      ],
+      "canonicalCommand": [
+        "lattice",
+        "graph",
+        "update"
+      ],
+      "status": "passed",
+      "exitCode": 0,
+      "fixture": "packages/fixtures/source-extraction/rust-only",
+      "durationMs": 1
+    },
+    {
+      "id": "lattice-graph-rust-watch",
+      "bin": "lattice",
+      "command": [
+        "graph",
+        "watch"
+      ],
+      "canonicalCommand": [
+        "lattice",
+        "graph",
+        "watch"
+      ],
+      "status": "passed",
+      "exitCode": 0,
+      "fixture": "packages/fixtures/source-extraction/rust-only",
+      "durationMs": 1
+    },
+    {
+      "id": "lattice-graph-rust-status",
+      "bin": "lattice",
+      "command": [
+        "graph",
+        "status"
+      ],
+      "canonicalCommand": [
+        "lattice",
+        "graph",
+        "status"
+      ],
+      "status": "passed",
+      "exitCode": 0,
+      "fixture": "packages/fixtures/source-extraction/rust-only",
+      "durationMs": 1
+    },
+    {
+      "id": "lattice-graph-rust-query",
+      "bin": "lattice",
+      "command": [
+        "graph",
+        "query"
+      ],
+      "canonicalCommand": [
+        "lattice",
+        "graph",
+        "query"
+      ],
+      "status": "passed",
+      "exitCode": 0,
+      "fixture": "packages/fixtures/source-extraction/rust-only",
+      "durationMs": 1
+    },
+    {
+      "id": "lattice-graph-rust-impact",
+      "bin": "lattice",
+      "command": [
+        "graph",
+        "impact"
+      ],
+      "canonicalCommand": [
+        "lattice",
+        "graph",
+        "impact"
+      ],
+      "status": "passed",
+      "exitCode": 0,
+      "fixture": "packages/fixtures/source-extraction/rust-only",
+      "durationMs": 1
+    },
+    {
+      "id": "lattice-graph-rust-search",
+      "bin": "lattice",
+      "command": [
+        "graph",
+        "search"
+      ],
+      "canonicalCommand": [
+        "lattice",
+        "graph",
+        "search"
+      ],
+      "status": "passed",
+      "exitCode": 0,
+      "fixture": "packages/fixtures/source-extraction/rust-only",
+      "durationMs": 1
+    },
+    {
+      "id": "lattice-graph-rust-serve",
+      "bin": "lattice",
+      "command": [
+        "graph",
+        "serve"
+      ],
+      "canonicalCommand": [
+        "lattice",
+        "graph",
+        "serve"
+      ],
+      "status": "passed",
+      "exitCode": 0,
+      "fixture": "packages/fixtures/source-extraction/rust-only",
+      "durationMs": 1
+    }
+  ],
   "directSqliteQueries": [
     {
       "id": "status-counts",

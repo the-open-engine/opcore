@@ -5,7 +5,12 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { graphCoreNativePackageNames, releaseReceiptPackageNames, validateReleaseCutoverReceipt } from "../packages/contracts/dist/index.js";
+import {
+  graphCoreNativePackageNames,
+  releaseCutoverRustCommandIds,
+  releaseReceiptPackageNames,
+  validateReleaseCutoverReceipt
+} from "../packages/contracts/dist/index.js";
 import { withCompleteNativeArtifactFixtures } from "./native-artifact-fixture.mjs";
 
 const repoRoot = fileURLToPath(new URL("..", import.meta.url));
@@ -40,6 +45,11 @@ describe("cutover release receipt", () => {
         receipt.commandReceipts.filter((entry) => entry.status === "not_implemented").map((entry) => entry.id),
         []
       );
+      assert.deepEqual(
+        receipt.rustCommandReceipts.map((entry) => entry.id),
+        releaseCutoverRustCommandIds
+      );
+      assert.equal(receipt.rustCommandReceipts.every((entry) => entry.owner === "graph" && entry.status === "ok"), true);
       for (const id of ["inspect-symbols", "inspect-definition", "inspect-references", "inspect-signature", "inspect-implementations", "inspect-search"]) {
         assert.equal(receipt.commandReceipts.find((entry) => entry.id === id)?.owner, "inspect", id);
       }

@@ -22,6 +22,7 @@ import {
 const repoRoot = fileURLToPath(new URL("..", import.meta.url));
 const sourceFixtureRoot = resolve(repoRoot, "packages/fixtures/source-extraction/wave1");
 const pythonFixtureRoot = resolve(repoRoot, "packages/fixtures/source-extraction/python");
+const rustOnlyFixtureRoot = resolve(repoRoot, "packages/fixtures/source-extraction/rust-only");
 const robustnessFixtureRoot = resolve(repoRoot, "packages/fixtures/graph-robustness/watch-roots");
 const expected = JSON.parse(readFileSync(resolve(sourceFixtureRoot, "wave1.expected.json"), "utf8"));
 const pythonExpected = JSON.parse(readFileSync(resolve(pythonFixtureRoot, "python.expected.json"), "utf8"));
@@ -351,15 +352,15 @@ describe("GraphProvider SQLite store conformance", () => {
       assert.equal(build.status.freshness.stale, false);
       assert.equal(typeof build.status.freshness.generatedAt, "string");
       assert.ok(build.status.walCheckpoint);
-      assert.equal(build.summary.discoveredFiles, 2);
-      assert.equal(build.summary.parsedFiles, 2);
-      assert.deepEqual(build.summary.changedFiles, ["src/lib.rs", "tests/widget_test.rs"]);
+      assert.equal(build.summary.discoveredFiles, 4);
+      assert.equal(build.summary.parsedFiles, 4);
+      assert.deepEqual(build.summary.changedFiles, ["src/helpers.rs", "src/lib.rs", "src/user.rs", "tests/widget_test.rs"]);
       assert.equal(build.summary.fullRebuildRequired, false);
       assert.ok(existsSync(build.status.dbPath));
 
       const db = new DatabaseSync(build.status.dbPath, { readOnly: true });
       try {
-        assert.equal(db.prepare("select count(*) as count from file_hashes where language = 'rust'").get().count, 2);
+        assert.equal(db.prepare("select count(*) as count from file_hashes where language = 'rust'").get().count, 4);
         assert.ok(db.prepare("select count(*) as count from nodes").get().count > 0);
         assert.ok(db.prepare("select count(*) as count from edges").get().count > 0);
         assert.ok(db.prepare("select count(*) as count from nodes_fts").get().count > 0);
@@ -369,9 +370,9 @@ describe("GraphProvider SQLite store conformance", () => {
         }
         assert.equal(db.prepare("select count(*) as count from nodes where id = ?").get("struct:src/lib.rs#Widget").count, 1);
         assert.ok(db.prepare("select count(*) as count from nodes_fts where path = ?").get("src/lib.rs").count > 0);
-        assert.ok(
-          db.prepare("select count(*) as count from nodes_fts where path = ?").get("tests/widget_test.rs").count > 0
-        );
+        for (const path of ["src/helpers.rs", "src/user.rs", "tests/widget_test.rs"]) {
+          assert.ok(db.prepare("select count(*) as count from nodes_fts where path = ?").get(path).count > 0, path);
+        }
       } finally {
         db.close();
       }
@@ -392,7 +393,7 @@ describe("GraphProvider SQLite store conformance", () => {
       assert.deepEqual(update.summary.deletedFiles, ["tests/widget_test.rs"]);
       assert.equal(update.summary.fullRebuildRequired, false);
       assert.equal(update.summary.parsedFiles, 1);
-      assert.equal(update.summary.unchangedFiles, 0);
+      assert.equal(update.summary.unchangedFiles, 2);
 
       assertStoreMissingPath(update.status.dbPath, "tests/widget_test.rs");
       const updatedDb = new DatabaseSync(update.status.dbPath, { readOnly: true });
@@ -695,9 +696,10 @@ function withPythonFixtureCopy(run) {
 
 function withRustOnlyRepo(run) {
   const temp = mkdtempSync(join(tmpdir(), "lattice-store-rust-"));
+  const fixtureRoot = join(temp, "rust-only");
   try {
-    writeRustOnlyRepo(temp);
-    run(temp);
+    cpSync(rustOnlyFixtureRoot, fixtureRoot, { recursive: true, filter: skipGeneratedStore });
+    run(fixtureRoot);
   } finally {
     rmSync(temp, { recursive: true, force: true });
   }
@@ -712,58 +714,6 @@ function withRobustnessFixtureCopy(run) {
   } finally {
     rmSync(temp, { recursive: true, force: true });
   }
-}
-
-function writeRustOnlyRepo(root) {
-  mkdirSync(join(root, "src"), { recursive: true });
-  mkdirSync(join(root, "tests"), { recursive: true });
-  writeFileSync(
-    join(root, "src/lib.rs"),
-    [
-      "pub trait Greeter {",
-      "    fn greet(&self) -> String;",
-      "}",
-      "",
-      "pub struct Widget {",
-      "    name: String,",
-      "}",
-      "",
-      "impl Widget {",
-      "    pub fn new(name: &str) -> Self {",
-      "        Self { name: name.to_string() }",
-      "    }",
-      "",
-      "    pub fn greet(&self) -> String {",
-      "        format!(\"hello {}\", self.name)",
-      "    }",
-      "}",
-      "",
-      "impl Greeter for Widget {",
-      "    fn greet(&self) -> String {",
-      "        self.greet()",
-      "    }",
-      "}",
-      "",
-      "pub fn make_widget() -> Widget {",
-      "    Widget::new(\"opcore\")",
-      "}",
-      "",
-      "#[cfg(test)]",
-      "mod tests {",
-      "    use super::*;",
-      "",
-      "    #[test]",
-      "    fn widget_smoke() {",
-      "        assert_eq!(make_widget().greet(), \"hello opcore\");",
-      "    }",
-      "}",
-      ""
-    ].join("\n")
-  );
-  writeFileSync(
-    join(root, "tests/widget_test.rs"),
-    ["use opcore_fixture::make_widget;", "", "#[test]", "fn integration_smoke() {", "    let _ = make_widget();", "}", ""].join("\n")
-  );
 }
 
 function createRuntimeIgnoredFiles(fixtureRoot) {

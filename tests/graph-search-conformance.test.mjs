@@ -9,6 +9,7 @@ import { graphProviderBuild, graphProviderSearch, graphProviderUpdate } from "..
 
 const repoRoot = fileURLToPath(new URL("..", import.meta.url));
 const sourceFixtureRoot = resolve(repoRoot, "packages/fixtures/source-extraction/wave1");
+const mixedRustTsFixtureRoot = resolve(repoRoot, "packages/fixtures/source-extraction/mixed-rust-ts");
 const searchFixture = JSON.parse(readFileSync(resolve(repoRoot, "packages/fixtures/graph-search/search-fixtures.json"), "utf8"));
 
 describe("GraphProvider search conformance", () => {
@@ -139,6 +140,10 @@ describe("GraphProvider search conformance", () => {
         result.results.map((entry) => entry.nodeId).slice(0, 3),
         ["struct:src/lib.rs#Widget"]
       );
+
+      const tsResult = graphProviderSearch({ repoRoot: fixtureRoot }, { query: "renderWidgetLabel", limit: 5 });
+      assert.equal(tsResult.status.state, "available");
+      assert.equal(tsResult.results[0].nodeId, "function:src/widget-view.ts#renderWidgetLabel");
     });
   });
 
@@ -253,61 +258,13 @@ function withFixtureCopy(run) {
 
 function withRustFixture(run) {
   const temp = mkdtempSync(join(tmpdir(), "lattice-search-rust-"));
+  const fixtureRoot = join(temp, "mixed-rust-ts");
   try {
-    writeRustFixture(temp);
-    run(temp);
+    cpSync(mixedRustTsFixtureRoot, fixtureRoot, { recursive: true, filter: skipGeneratedStore });
+    run(fixtureRoot);
   } finally {
     rmSync(temp, { recursive: true, force: true });
   }
-}
-
-function writeRustFixture(root) {
-  mkdirSync(join(root, "src"), { recursive: true });
-  writeFileSync(
-    join(root, "src/lib.rs"),
-    [
-      "pub mod helpers;",
-      "pub mod consumer;",
-      "",
-      "pub trait Service {",
-      "    fn handle(&self) -> String;",
-      "}",
-      "",
-      "pub struct Widget;",
-      "",
-      "impl Widget {",
-      "    pub fn new() -> Self {",
-      "        Widget",
-      "    }",
-      "}",
-      ""
-    ].join("\n")
-  );
-  writeFileSync(join(root, "src/helpers.rs"), "pub fn assist() -> String { \"ok\".to_string() }\n");
-  writeFileSync(
-    join(root, "src/consumer.rs"),
-    [
-      "use crate::helpers;",
-      "use crate::{Service, Widget};",
-      "",
-      "pub fn run() -> String {",
-      "    let widget = Widget::new();",
-      "    helpers::assist();",
-      "    widget.handle()",
-      "}",
-      "",
-      "#[cfg(test)]",
-      "mod tests {",
-      "    use super::*;",
-      "",
-      "    #[test]",
-      "    fn test_run() {",
-      "        assert_eq!(run(), \"ok\");",
-      "    }",
-      "}",
-      ""
-    ].join("\n")
-  );
 }
 
 function skipGeneratedStore(source) {
