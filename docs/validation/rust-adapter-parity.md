@@ -1,11 +1,39 @@
 # Rust Adapter Parity Evidence
 
-Status: private dogfood evidence for #20, #21, and #28.
+Status: private dogfood and release-readiness evidence for #20, #21, #28, and the #30 validation-doc slice.
 
 Source rows: `agent-server-protocol/docs/planning/old-tool-compatibility-matrix.{md,json}` Rust validation rows
 `lattice-rox-rust-adapter-and-function-metrics`, `orchestra-rox-rust-gate`, `orchestra-rox-native-dependencies`,
 `covibes-gateway-rox-rust-gate`, `robustness-engine-rust-adapter-source`, and
 `robustness-engine-cargo-manifest-handling`.
+
+## #30 Validation Retirement Decisions
+
+This is private release-readiness documentation only. It is not a publish action, visibility change, public
+announcement, public replacement claim, or old-tool retirement approval.
+
+Decision policy for #30 validation docs: no surface is `replaced` unless installed-artifact receipt evidence proves the
+exact replacement and maintainer approval accepts retirement for that surface. The landed #29 comparison receipt does
+not make a retirement decision, pins `oldToolReplacementClaimed: false`, and records no public release actions. It
+landed through PR #104 at merge `ab0362d339ec2c41b0cc71ae5bb400c4b8254e36`.
+
+Evidence anchors:
+
+- [#29 Rust old-Rox comparison receipt](rust-old-rox-comparison-receipt-2026-06-27.json) and
+  [summary](rust-old-rox-comparison-receipt-2026-06-27.md).
+- [#30 cutover receipt](../release/cutover-receipt.json) and
+  [summary](../release/cutover-receipt.summary.md). The receipt proves installed command coverage, including Rust graph
+  command receipts, but it does not include maintainer approval to retire Rust retained-tool rows.
+
+| Surface | Decision | Evidence | Why retirement is not accepted | Current guardrail action |
+|---|---|---|---|---|
+| `rust.rustdoc` | retained | #29 receipt records no graph replacement evidence. | Rustdoc diagnostics, broken intra-doc links, and documentation-policy failures remain unique current-tool evidence. No installed-artifact receipt plus maintainer approval proves exact replacement. | Keep current external Rust guardrails active for rustdoc coverage. |
+| `rust.import-graph` | deferred | #29 records Rust graph `IMPORTS_FROM`/`DEPENDS_ON` facts; #30 records installed Rust graph build/query/impact/review-context/detect-changes/search receipts. | Graph facts are useful parity evidence, but rustdoc and cargo-depgraph-enriched import checks remain retained where graph facts are not sufficient. No maintainer approval flips this row. | Keep current external import-graph guardrails active while native graph evidence complements them. |
+| `rust.dead-code` | retained | #29 records exported symbol metadata and graph-backed dead-public-export signals. | Cargo `dead_code` diagnostics and compiler reachability remain uniquely provided by current tools. Graph dead-public-export evidence is not exact replacement evidence. | Keep current external dead-code guardrails active. |
+| `rust.unused-deps` | retained | #29 records no graph replacement evidence. | Cargo-udeps unused dependency analysis remains the unique evidence source. | Keep current external unused-dependency guardrails active. |
+| `rust.function-metrics` | retained | #29 records Rust function/method spans and signatures; #30 records installed Rust graph receipts. | Rust-code-analysis complexity, line-count, and parameter-threshold metrics remain unique current-tool evidence. Spans/signatures are not exact metric replacement evidence. | Keep current external function-metric guardrails active. |
+| `current-tools:validate-rust-graph` | retained | #29 records the aggregate Rust graph guardrail as retained; #30 Rust receipts are graph-owned installed command receipts. | No receipt proves an exact aggregate replacement for the current-tools Rust graph gate, and no maintainer approval retires it. | Continue running `npm run current-tools:validate-rust-graph`. |
+| Rust portion of `current-tools:validate-changed` | retained | #30 installed `opcore check changed` receipt uses `--checks typescript.syntax`; #29 carries only Rust comparison evidence with `oldToolReplacementClaimed: false`. | The installed changed-check receipt does not exercise Rust retained-tool coverage, and no Tom approval flips Rust changed-file guardrails. | Continue running `npm run current-tools:validate-changed` for changed Rust-owned inputs and mixed changes. |
 
 ## Native Rust Checks
 
