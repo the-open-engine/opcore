@@ -5695,6 +5695,137 @@
         }
       }
     },
+    "OpcoreMeasureLatencyStatus": {
+      "enum": [
+        "ok",
+        "slower",
+        "over_budget"
+      ]
+    },
+    "OpcoreMeasureLatencyPhase": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "phase",
+        "durationMs"
+      ],
+      "properties": {
+        "phase": {
+          "$ref": "#/$defs/LatencyStableId"
+        },
+        "durationMs": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "OpcoreMeasureLatencyFinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "canonicalCommand",
+        "repoShapeBucket",
+        "processState",
+        "status",
+        "currentDurationMs"
+      ],
+      "properties": {
+        "canonicalCommand": {
+          "$ref": "#/$defs/LatencyCanonicalCommand"
+        },
+        "repoShapeBucket": {
+          "$ref": "#/$defs/LatencyStableId"
+        },
+        "processState": {
+          "$ref": "#/$defs/CommandTimingProcessState"
+        },
+        "status": {
+          "enum": [
+            "slower",
+            "over_budget"
+          ]
+        },
+        "currentDurationMs": {
+          "type": "number",
+          "minimum": 0
+        },
+        "dominantPhase": {
+          "$ref": "#/$defs/OpcoreMeasureLatencyPhase"
+        },
+        "baselineDurationMs": {
+          "type": "number",
+          "minimum": 0
+        },
+        "previousDurationMs": {
+          "type": "number",
+          "minimum": 0
+        },
+        "baselineDeltaMs": {
+          "type": "number"
+        },
+        "previousDeltaMs": {
+          "type": "number"
+        },
+        "budgetMs": {
+          "type": "number",
+          "minimum": 0
+        },
+        "overBudgetMs": {
+          "type": "number",
+          "minimum": 0
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "over_budget"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "overBudgetMs"
+            ],
+            "properties": {
+              "overBudgetMs": {
+                "exclusiveMinimum": 0
+              }
+            }
+          }
+        }
+      ]
+    },
+    "OpcoreMeasureLatencyReport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "recordCount",
+        "budgetCount",
+        "findings"
+      ],
+      "properties": {
+        "kind": {
+          "const": "opcore_latency_report"
+        },
+        "recordCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "budgetCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "findings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/OpcoreMeasureLatencyFinding"
+          }
+        }
+      }
+    },
     "OpcoreMeasureComparison": {
       "type": "object",
       "additionalProperties": false,
@@ -5783,6 +5914,9 @@
         },
         "previous": {
           "$ref": "#/$defs/OpcoreMeasureComparison"
+        },
+        "latency": {
+          "$ref": "#/$defs/OpcoreMeasureLatencyReport"
         },
         "warnings": {
           "type": "array",

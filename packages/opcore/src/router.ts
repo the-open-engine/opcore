@@ -4,6 +4,8 @@ import { routeOpcoreCheck } from "./check.js";
 import {
   createOpcoreMeasureDelta,
   formatOpcoreMeasureHuman,
+  readCommandLatencyTelemetry,
+  readOpcoreLatencyBudgets,
   readOpcoreMetricHistory,
   readOpcoreMetricReport,
   writeCommandLatencyTelemetry
@@ -161,7 +163,9 @@ function routeMeasure(argv: readonly string[], parsed: ParsedCommandArgv): Comma
   try {
     const current = readOpcoreMetricReport(resolution.resolution.root);
     const history = readOpcoreMetricHistory(resolution.resolution.root);
-    const opcoreMeasure = createOpcoreMeasureDelta({ current, history });
+    const latencyRecords = readCommandLatencyTelemetry(resolution.resolution.root);
+    const latencyBudgets = readOpcoreLatencyBudgets(resolution.resolution.root);
+    const opcoreMeasure = createOpcoreMeasureDelta({ current, history, latencyRecords, latencyBudgets });
     return createCommandRouterResult({
       bin: "opcore",
       argv,

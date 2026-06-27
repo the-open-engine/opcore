@@ -7,7 +7,9 @@ import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   createOpcoreMetricReport,
+  routeOpcoreCommand,
   runOpcoreCli,
+  writeCommandLatencyTelemetry,
   writeOpcoreMetricArtifacts
 } from "../packages/opcore/dist/index.js";
 
@@ -222,6 +224,52 @@ describe("opcore public facade", () => {
       assert.equal(human.stdout.indexOf("Coverage:"), 0);
       assert.match(human.stdout, /baseline=-1/);
       assert.doesNotMatch(human.stdout, /0-100|score/i);
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("returns slow action latency evidence from telemetry without mutating measure artifacts", async () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-measure-latency-"));
+    try {
+      mkdirSync(join(temp, "src"), { recursive: true });
+      writeFileSync(join(temp, "src/index.ts"), "export const value = 1;\n");
+      writeOpcoreMetricArtifacts(temp, metricReport(temp, "2026-06-24T00:00:00.000Z", 1));
+      writeOpcoreMetricArtifacts(temp, metricReport(temp, "2026-06-25T00:00:00.000Z", 1));
+      writeCommandLatencyTelemetry(temp, measureLatencyRecord("2026-06-25T00:01:00.000Z", 1100, 900));
+      writeCommandLatencyTelemetry(temp, measureLatencyRecord("2026-06-25T00:02:00.000Z", 1150, 950));
+      writeCommandLatencyTelemetry(temp, measureLatencyRecord("2026-06-25T00:03:00.000Z", 1300, 1100));
+      const historyBefore = readFileSync(join(temp, ".opcore/history.jsonl"), "utf8");
+      const reportBefore = readFileSync(join(temp, ".opcore/report.json"), "utf8");
+      const telemetryBefore = readFileSync(join(temp, ".opcore/telemetry.jsonl"), "utf8");
+      const pathsBefore = collectRepoPaths(temp);
+
+      const measure = await routeOpcoreCommand(["measure", "--repo", temp, "--json"]);
+      const finding = measure.opcoreMeasure.latency.findings.find(
+        (entry) =>
+          entry.canonicalCommand.join(" ") === "opcore check changed --base HEAD --checks typescript.syntax" &&
+          entry.repoShapeBucket === "small" &&
+          entry.processState === "warm" &&
+          entry.dominantPhase.phase === "validation"
+      );
+
+      assert.ok(finding, "expected validation phase latency finding");
+      assert.equal(finding.status, "over_budget");
+      assert.equal(finding.overBudgetMs, 100);
+      assert.equal(finding.previousDeltaMs, 150);
+      assert.equal(finding.baselineDeltaMs, 200);
+
+      const human = await routeOpcoreCommand(["measure", "--repo", temp]);
+      assert.equal(human.status, "ok");
+      assert.match(human.message, /Latency:/);
+      assert.match(human.message, /opcore check changed --base HEAD --checks typescript\.syntax/);
+      assert.match(human.message, /over=100ms/);
+      assert.match(human.message, /previous=\+150ms/);
+      assert.match(human.message, /baseline=\+200ms/);
+      assert.equal(readFileSync(join(temp, ".opcore/history.jsonl"), "utf8"), historyBefore);
+      assert.equal(readFileSync(join(temp, ".opcore/report.json"), "utf8"), reportBefore);
+      assert.equal(readFileSync(join(temp, ".opcore/telemetry.jsonl"), "utf8"), telemetryBefore);
+      assert.deepEqual(collectRepoPaths(temp), pathsBefore);
     } finally {
       rmSync(temp, { recursive: true, force: true });
     }
@@ -1125,5 +1173,41 @@ function metricRepoState(repoRoot) {
     warnings: [],
     blockers: [],
     nextActions: [`lattice graph build --repo ${root} --json`]
+  };
+}
+
+function measureLatencyRecord(recordedAt, totalMs, validationMs) {
+  return {
+    schemaVersion: 1,
+    recordedAt,
+    bin: "opcore",
+    canonicalCommand: ["opcore", "check", "changed", "--base", "HEAD", "--checks", "typescript.syntax"],
+    owner: "validation",
+    status: "ok",
+    exitCode: 0,
+    repo: {
+      totalFiles: 24,
+      languages: [
+        { language: "typescript", files: 18 },
+        { language: "json", files: 6 }
+      ],
+      graph: {
+        supportedFiles: 18,
+        unsupportedFiles: 6
+      },
+      git: {
+        available: true,
+        clean: true
+      }
+    },
+    timing: {
+      durationMs: totalMs,
+      processState: "warm",
+      phases: [
+        { phase: "validation", durationMs: validationMs },
+        { phase: "validation_typescript_syntax", durationMs: Math.max(0, totalMs - validationMs) }
+      ]
+    },
+    opcoreVersion: "0.1.0-alpha.0"
   };
 }
