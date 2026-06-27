@@ -129,6 +129,64 @@ describe("GraphProvider query conformance", () => {
     });
   });
 
+  it("returns Rust named query, impact, detect-changes, and review-context facts", () => {
+    withRustFixture((fixtureRoot) => {
+      const build = graphProviderBuild({ repoRoot: fixtureRoot });
+      assert.equal(build.status.state, "available");
+
+      const callers = graphProviderNamedQuery(
+        { repoRoot: fixtureRoot },
+        { queryKind: "callers_of", target: "function:src/helpers.rs#helpers::assist", maxDepth: 1, limit: 100 }
+      );
+      assert.equal(callers.status.state, "available");
+      assert.ok(callers.nodes.map((node) => node.id).includes("function:src/consumer.rs#consumer::run"));
+      assert.ok(callers.edges.some((edge) => edge.kind === "CALLS" && edge.from === "function:src/consumer.rs#consumer::run"));
+
+      const importers = graphProviderNamedQuery(
+        { repoRoot: fixtureRoot },
+        { queryKind: "importers_of", target: "src/helpers.rs", maxDepth: 2, limit: 100 }
+      );
+      assert.equal(importers.status.state, "available");
+      assert.deepEqual(paths(importers.nodes), ["src/consumer.rs", "src/helpers.rs"]);
+
+      const tests = graphProviderNamedQuery(
+        { repoRoot: fixtureRoot },
+        { queryKind: "tests_for", target: "src/consumer.rs", maxDepth: 1, limit: 100 }
+      );
+      assert.equal(tests.status.state, "available");
+      assert.ok(tests.nodes.map((node) => node.id).includes("test:src/consumer.rs#consumer.tests::test_run"));
+      assert.ok(paths(tests.nodes).includes("src/consumer.rs"));
+
+      const children = graphProviderNamedQuery(
+        { repoRoot: fixtureRoot },
+        { queryKind: "children_of", target: "src/lib.rs", maxDepth: 2, limit: 100 }
+      );
+      assert.equal(children.status.state, "available");
+      assert.ok(children.nodes.map((node) => node.id).includes("struct:src/lib.rs#Widget"));
+      assert.ok(children.nodes.map((node) => node.id).includes("trait:src/lib.rs#Service"));
+
+      const impact = graphProviderImpact({ repoRoot: fixtureRoot }, { files: ["src/helpers.rs"], maxDepth: 3, limit: 100 });
+      assert.equal(impact.status.state, "available");
+      assert.deepEqual(impact.changedFiles, ["src/helpers.rs"]);
+      assert.ok(impact.impactedFiles.includes("src/consumer.rs"));
+      assert.ok(impact.impactedSymbols.includes("function:src/helpers.rs#helpers::assist"));
+      assert.ok(impact.impactedSymbols.includes("function:src/consumer.rs#consumer::run"));
+      assert.ok(impact.tests.includes("src/consumer.rs"));
+      assert.equal(impact.traversal.truncated, false);
+
+      const changes = graphProviderDetectChanges({ repoRoot: fixtureRoot }, { files: ["src/helpers.rs"] });
+      assert.equal(changes.status.state, "available");
+      assert.deepEqual(changes.changedFiles, ["src/helpers.rs"]);
+      assert.deepEqual(changes.deletedFiles, []);
+
+      const review = graphProviderReviewContext({ repoRoot: fixtureRoot }, { files: ["src/helpers.rs"], maxDepth: 3 });
+      assert.equal(review.status.state, "available");
+      assert.deepEqual(review.changedFiles, ["src/helpers.rs"]);
+      assert.ok(review.impactedFiles.includes("src/consumer.rs"));
+      assert.ok(review.tests.includes("src/consumer.rs"));
+    });
+  });
+
   it("normalizes duplicate separators in query file consumers", () => {
     withBuiltFixture((fixtureRoot) => {
       const changes = graphProviderDetectChanges({ repoRoot: fixtureRoot }, { files: ["src//models.ts"] });
@@ -192,6 +250,71 @@ function withBuiltFixture(runFixture) {
   } finally {
     rmSync(temp, { recursive: true, force: true });
   }
+}
+
+function withRustFixture(runFixture) {
+  const temp = mkdtempSync(join(tmpdir(), "lattice-query-rust-"));
+  try {
+    writeRustFixture(temp);
+    runFixture(temp);
+  } finally {
+    rmSync(temp, { recursive: true, force: true });
+  }
+}
+
+function writeRustFixture(root) {
+  mkdirSync(join(root, "src"), { recursive: true });
+  writeFileSync(
+    join(root, "src/lib.rs"),
+    [
+      "pub mod helpers;",
+      "pub mod consumer;",
+      "",
+      "pub trait Service {",
+      "    fn handle(&self) -> String;",
+      "}",
+      "",
+      "pub struct Widget;",
+      "",
+      "impl Widget {",
+      "    pub fn new() -> Self {",
+      "        Widget",
+      "    }",
+      "}",
+      "",
+      "impl Service for Widget {",
+      "    fn handle(&self) -> String {",
+      "        helpers::assist()",
+      "    }",
+      "}",
+      ""
+    ].join("\n")
+  );
+  writeFileSync(join(root, "src/helpers.rs"), "pub fn assist() -> String { \"ok\".to_string() }\n");
+  writeFileSync(
+    join(root, "src/consumer.rs"),
+    [
+      "use crate::helpers;",
+      "use crate::{Service, Widget};",
+      "",
+      "pub fn run() -> String {",
+      "    let widget = Widget::new();",
+      "    helpers::assist();",
+      "    widget.handle()",
+      "}",
+      "",
+      "#[cfg(test)]",
+      "mod tests {",
+      "    use super::*;",
+      "",
+      "    #[test]",
+      "    fn test_run() {",
+      "        assert_eq!(run(), \"ok\");",
+      "    }",
+      "}",
+      ""
+    ].join("\n")
+  );
 }
 
 function skipGeneratedStore(source) {

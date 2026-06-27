@@ -375,9 +375,19 @@ fn project_node(node: &GraphFactNode) -> SearchIndexRow {
 fn signature_for_node(node: &GraphFactNode, name: Option<&str>) -> String {
     let repo_path = node.path.as_deref().unwrap_or("");
     let display_name = name.unwrap_or(repo_path);
+    let extracted_signature = node
+        .attributes
+        .as_ref()
+        .and_then(|attributes| attributes.get("signature"))
+        .and_then(serde_json::Value::as_str)
+        .map(searchable_text)
+        .unwrap_or_default();
     let split_name = searchable_text(display_name);
     let qualified = searchable_text(&node.id);
-    format!("{} {} {} {}", node.kind, split_name, repo_path, qualified)
+    format!(
+        "{} {} {} {} {}",
+        node.kind, split_name, repo_path, qualified, extracted_signature
+    )
 }
 
 fn searchable_text(value: &str) -> String {

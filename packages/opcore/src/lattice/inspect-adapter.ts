@@ -4,13 +4,17 @@ import type {
   CommandAdapterRequest,
   CommandRouterResult,
   CommandRouteStatus,
+  GraphFactEdge,
+  GraphFactNode,
   GraphFactQuerySelector,
   GraphFactQueryResult,
   GraphProviderStatus,
   InspectFailureCategory,
+  InspectReferenceEntry,
   InspectRouteFailure,
   InspectRouteResult,
   InspectSymbolTarget,
+  InspectTextSpan,
   RepoIdentity
 } from "@the-open-engine/opcore-contracts";
 import { createCommandRouterResult } from "@the-open-engine/opcore-contracts";
@@ -133,6 +137,9 @@ function inspectNodeReferencesResult(request: CommandAdapterRequest, options: In
   if (!parsed) {
     return inspectFailureResult(request, "references", "target_not_found", `Inspect references node target is not a supported class/function/type node: ${nodeId}`, graphQuery.status, target, graphQuery);
   }
+  if (isRustInspectSourcePath(parsed.path)) {
+    return inspectRustGraphReferencesResult(request, options, target, candidate);
+  }
   if (!isSupportedInspectSourcePath(parsed.path)) {
     return inspectFailureResult(request, "references", "unsupported_language", `Unsupported inspect references target language: ${parsed.path}`, graphQuery.status, target, graphQuery);
   }
@@ -192,6 +199,9 @@ function inspectFileSymbolReferencesResult(
   }
   if (!target.path || !target.symbolName) {
     return inspectFailureResult(request, "references", "malformed_target", "lattice inspect references requires <file> <symbol>");
+  }
+  if (isRustInspectSourcePath(target.path)) {
+    return inspectRustFileSymbolReferencesResult(request, options, target, graphQuery);
   }
   if (!isSupportedInspectSourcePath(target.path)) {
     return inspectFailureResult(request, "references", "unsupported_language", `Unsupported inspect references target language: ${target.path}`, graphQuery.status, target, graphQuery);
@@ -260,6 +270,16 @@ function inspectNodeSignatureResult(request: CommandAdapterRequest, options: Ins
   if (!parsed) {
     return inspectFailureResult(request, "signature", "target_not_found", `Inspect signature node target is not a supported class/function/type node: ${nodeId}`, graphQuery.status, target, graphQuery);
   }
+  if (isRustInspectSourcePath(parsed.path)) {
+    return inspectUnsupportedRouteResult(
+      request,
+      "signature",
+      "Rust inspect signature requires language-service materialization and is not supported yet.",
+      graphQuery.status,
+      graphTargetForNode(target, candidate),
+      graphQuery
+    );
+  }
   if (!isSupportedInspectSourcePath(parsed.path)) {
     return inspectFailureResult(request, "signature", "unsupported_language", `Unsupported inspect signature target language: ${parsed.path}`, graphQuery.status, target, graphQuery);
   }
@@ -318,6 +338,16 @@ function inspectFileSymbolSignatureResult(
   if (!target.path || !target.symbolName) {
     return inspectFailureResult(request, "signature", "malformed_target", "lattice inspect signature requires <file> <symbol>");
   }
+  if (isRustInspectSourcePath(target.path)) {
+    return inspectUnsupportedRouteResult(
+      request,
+      "signature",
+      "Rust inspect signature requires language-service materialization and is not supported yet.",
+      graphQuery.status,
+      rustGraphCandidateForFileSymbol(graphQuery, target) ?? target,
+      graphQuery
+    );
+  }
   if (!isSupportedInspectSourcePath(target.path)) {
     return inspectFailureResult(request, "signature", "unsupported_language", `Unsupported inspect signature target language: ${target.path}`, graphQuery.status, target, graphQuery);
   }
@@ -375,6 +405,28 @@ function inspectImplementationsResult(request: CommandAdapterRequest, options: I
   }
   if (!("nodes" in graphQuery) || !("edges" in graphQuery)) {
     return inspectFailureResult(request, "implementations", "graph_unavailable", "Graph provider returned no symbol facts", graphQuery.status, target.target, graphQuery);
+  }
+  const implementationNodeTarget =
+    target.target.kind === "node" ? graphQuery.nodes.find((node) => node.id === target.target.nodeId) : undefined;
+  if (implementationNodeTarget?.path && isRustInspectSourcePath(implementationNodeTarget.path)) {
+    return inspectUnsupportedRouteResult(
+      request,
+      "implementations",
+      "Rust inspect implementations requires language-service materialization and is not supported yet.",
+      graphQuery.status,
+      graphTargetForNode(target.target, implementationNodeTarget),
+      graphQuery
+    );
+  }
+  if (target.target.kind === "file_symbol" && target.target.path && isRustInspectSourcePath(target.target.path)) {
+    return inspectUnsupportedRouteResult(
+      request,
+      "implementations",
+      "Rust inspect implementations requires language-service materialization and is not supported yet.",
+      graphQuery.status,
+      rustGraphCandidateForFileSymbol(graphQuery, target.target) ?? target.target,
+      graphQuery
+    );
   }
   if (!graphQuery.metadata.edgeKinds.includes("IMPLEMENTS") || !graphQuery.metadata.edgeKinds.includes("INHERITS")) {
     return inspectFailureResult(
@@ -501,6 +553,38 @@ function inspectFailureResult(
   });
 }
 
+function inspectUnsupportedRouteResult(
+  request: CommandAdapterRequest,
+  route: InspectRouteResult["route"],
+  message: string,
+  providerStatus?: GraphProviderStatus,
+  target?: InspectSymbolTarget,
+  graphQuery?: GraphFactQueryResult
+): CommandRouterResult {
+  const failure: InspectRouteFailure = {
+    category: "unsupported_route",
+    message
+  };
+  return createCommandRouterResult({
+    bin: request.bin,
+    argv: request.argv,
+    canonicalCommand: request.canonicalCommand,
+    owner: "inspect",
+    status: "unsupported",
+    json: request.json,
+    message,
+    providerStatus,
+    graphQuery,
+    inspectResult: {
+      route,
+      status: "degraded",
+      ...(target ? { target } : {}),
+      ...(providerStatus ? { providerStatus } : {}),
+      failure
+    }
+  });
+}
+
 function inspectStatus(status: GraphProviderStatus): CommandRouteStatus {
   return status.state === "available" ? "ok" : "error";
 }
@@ -530,6 +614,233 @@ function graphNodeTarget(
   const symbolName = name ?? parsed?.[2];
   if (!targetPath || !symbolName) return undefined;
   return { path: targetPath, symbolName };
+}
+
+function inspectRustGraphReferencesResult(
+  request: CommandAdapterRequest,
+  options: InspectOptions,
+  target: InspectSymbolTarget,
+  candidate: GraphFactNode
+): CommandRouterResult {
+  const graphQuery = graphProviderQuery(options.repo, {
+    kind: "neighbors",
+    ids: [candidate.id],
+    edgeKinds: ["CALLS", "TESTED_BY"],
+    limit: options.limit ?? 100
+  });
+  if (graphQuery.status.state !== "available") {
+    return inspectFailureResult(
+      request,
+      "references",
+      "graph_unavailable",
+      graphQuery.status.message ?? `Graph provider is ${graphQuery.status.state}`,
+      graphQuery.status,
+      graphTargetForNode(target, candidate),
+      graphQuery
+    );
+  }
+  if (!("nodes" in graphQuery) || !("edges" in graphQuery)) {
+    return inspectFailureResult(
+      request,
+      "references",
+      "graph_unavailable",
+      "Graph provider returned no Rust reference facts",
+      graphQuery.status,
+      graphTargetForNode(target, candidate),
+      graphQuery
+    );
+  }
+  const references = rustGraphReferences(candidate, graphQuery.nodes, graphQuery.edges, options.limit);
+  return createCommandRouterResult({
+    bin: request.bin,
+    argv: request.argv,
+    canonicalCommand: request.canonicalCommand,
+    owner: "inspect",
+    status: "ok",
+    json: request.json,
+    message: "lattice inspect references: graph provider returned read-only Rust references.",
+    providerStatus: graphQuery.status,
+    graphQuery,
+    inspectResult: {
+      route: "references",
+      status: "ok",
+      target: graphTargetForNode(target, candidate),
+      providerStatus: graphQuery.status,
+      references
+    }
+  });
+}
+
+function inspectRustFileSymbolReferencesResult(
+  request: CommandAdapterRequest,
+  options: InspectOptions,
+  target: InspectSymbolTarget,
+  graphQuery: GraphFactQueryResult
+): CommandRouterResult {
+  if (!("nodes" in graphQuery)) {
+    return inspectFailureResult(request, "references", "graph_unavailable", "Graph provider returned no symbol nodes", graphQuery.status, target, graphQuery);
+  }
+  const candidates = rustGraphCandidatesForFileSymbol(graphQuery, target);
+  if (candidates.length === 0) {
+    return inspectFailureResult(
+      request,
+      "references",
+      "target_not_found",
+      `Inspect references Rust target not found in graph facts: ${target.path ?? ""} ${target.symbolName ?? ""}`.trim(),
+      graphQuery.status,
+      target,
+      graphQuery
+    );
+  }
+  if (candidates.length > 1) {
+    return inspectFailureResult(
+      request,
+      "references",
+      "target_ambiguous",
+      `Ambiguous inspect references Rust target "${target.symbolName ?? ""}" in ${target.path ?? ""}`,
+      graphQuery.status,
+      target,
+      graphQuery,
+      { candidates: candidates.map((candidate) => graphTargetForNode(target, candidate)) }
+    );
+  }
+  return inspectRustGraphReferencesResult(request, options, target, candidates[0]);
+}
+
+function rustGraphReferences(
+  target: GraphFactNode,
+  nodes: readonly GraphFactNode[],
+  edges: readonly GraphFactEdge[],
+  limit: number | undefined
+): readonly InspectReferenceEntry[] {
+  const nodesById = new Map(nodes.map((node) => [node.id, node]));
+  nodesById.set(target.id, target);
+  const targetSymbol = inspectSymbolSummary(target);
+  const entries: InspectReferenceEntry[] = [inspectReferenceEntry(target, targetSymbol, [target.id], true)];
+  const seen = new Set([target.id]);
+  for (const edge of [...edges].sort(compareGraphReferenceEdges)) {
+    const referenceNodeId =
+      edge.kind === "CALLS" && edge.to === target.id
+        ? edge.from
+        : edge.kind === "TESTED_BY" && edge.from === target.id
+          ? edge.to
+          : undefined;
+    if (!referenceNodeId || seen.has(referenceNodeId)) continue;
+    const referenceNode = nodesById.get(referenceNodeId);
+    if (!referenceNode) continue;
+    seen.add(referenceNodeId);
+    entries.push(inspectReferenceEntry(referenceNode, targetSymbol, [target.id, referenceNode.id], false));
+  }
+  return limit === undefined ? entries : entries.slice(0, limit);
+}
+
+function inspectReferenceEntry(
+  node: GraphFactNode,
+  symbol: InspectReferenceEntry["symbol"],
+  graphNodeIds: readonly string[],
+  isDefinition: boolean
+): InspectReferenceEntry {
+  const span = spanFromGraphNode(node);
+  return {
+    file: node.path ?? pathFromGraphNodeId(node.id),
+    line: span.startLine,
+    column: span.startColumn,
+    text: node.name ?? node.id,
+    span,
+    symbol,
+    isDefinition,
+    isDeclaration: true,
+    evidence: {
+      graphNodeIds,
+      resolver: "graph"
+    }
+  };
+}
+
+function spanFromGraphNode(node: GraphFactNode): InspectTextSpan {
+  const attributes = graphNodeAttributes(node);
+  const startLine = positiveAttribute(attributes, "lineStart", 1);
+  const startColumn = positiveAttribute(attributes, "columnStart", 0) + 1;
+  const endLine = positiveAttribute(attributes, "lineEnd", startLine);
+  const rawEndColumn = positiveAttribute(attributes, "columnEnd", startColumn - 1) + 1;
+  const endColumn = endLine === startLine && rawEndColumn < startColumn ? startColumn : rawEndColumn;
+  return {
+    startLine,
+    startColumn,
+    endLine,
+    endColumn
+  };
+}
+
+function graphNodeAttributes(node: GraphFactNode): Record<string, unknown> {
+  return node.attributes && typeof node.attributes === "object" && !Array.isArray(node.attributes)
+    ? (node.attributes as Record<string, unknown>)
+    : {};
+}
+
+function positiveAttribute(attributes: Record<string, unknown>, key: string, fallback: number): number {
+  const value = attributes[key];
+  return typeof value === "number" && Number.isFinite(value) && value >= 0 ? Math.trunc(value) : fallback;
+}
+
+function inspectSymbolSummary(node: GraphFactNode): InspectReferenceEntry["symbol"] {
+  return {
+    id: node.id,
+    name: node.name ?? node.id,
+    kind: node.kind
+  };
+}
+
+function graphTargetForNode(base: InspectSymbolTarget, node: GraphFactNode): InspectSymbolTarget {
+  if (base.kind === "node") {
+    return {
+      kind: "node",
+      nodeId: node.id
+    };
+  }
+  return {
+    ...base,
+    nodeId: node.id,
+    path: node.path ?? base.path,
+    symbolName: node.name ?? base.symbolName
+  };
+}
+
+function rustGraphCandidateForFileSymbol(
+  graphQuery: GraphFactQueryResult,
+  target: InspectSymbolTarget
+): InspectSymbolTarget | undefined {
+  if (!("nodes" in graphQuery)) return undefined;
+  const [candidate] = rustGraphCandidatesForFileSymbol(graphQuery, target);
+  return candidate ? graphTargetForNode(target, candidate) : undefined;
+}
+
+function rustGraphCandidatesForFileSymbol(graphQuery: GraphFactQueryResult, target: InspectSymbolTarget): GraphFactNode[] {
+  if (!("nodes" in graphQuery) || !target.path || !target.symbolName) return [];
+  return graphQuery.nodes
+    .filter((node) => node.path === target.path)
+    .filter((node) => node.name === target.symbolName || graphNodeQualifiedName(node) === target.symbolName)
+    .sort((left, right) => left.id.localeCompare(right.id));
+}
+
+function graphNodeQualifiedName(node: GraphFactNode): string | undefined {
+  const attributes = graphNodeAttributes(node);
+  const qualifiedName = attributes.qualifiedName;
+  if (typeof qualifiedName === "string") return qualifiedName;
+  return node.id.split("#").at(1);
+}
+
+function pathFromGraphNodeId(nodeId: string): string {
+  const afterKind = nodeId.split(":").slice(1).join(":");
+  return afterKind.split("#")[0] || nodeId;
+}
+
+function compareGraphReferenceEdges(left: GraphFactEdge, right: GraphFactEdge): number {
+  return left.kind.localeCompare(right.kind) || left.from.localeCompare(right.from) || left.to.localeCompare(right.to);
+}
+
+function isRustInspectSourcePath(path: string): boolean {
+  return path.toLowerCase().endsWith(".rs");
 }
 
 function parseInspectSymbolTarget(

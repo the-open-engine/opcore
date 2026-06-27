@@ -123,6 +123,25 @@ describe("GraphProvider search conformance", () => {
     });
   });
 
+  it("indexes and ranks Rust symbol signatures deterministically", () => {
+    withRustFixture((fixtureRoot) => {
+      const build = graphProviderBuild({ repoRoot: fixtureRoot });
+      assert.equal(build.status.state, "available");
+
+      const result = graphProviderSearch({ repoRoot: fixtureRoot }, { query: "pub struct Widget", limit: 5 });
+      assert.equal(result.status.state, "available");
+      assert.equal(result.searchMode.engine, "fts5");
+      assert.equal(result.results[0].nodeId, "struct:src/lib.rs#Widget");
+      assert.equal(result.results[0].kind, "Struct");
+      assert.match(result.results[0].signature, /\bpub struct Widget\b/);
+      assert.ok(result.results[0].matches.includes("signature"));
+      assert.deepEqual(
+        result.results.map((entry) => entry.nodeId).slice(0, 3),
+        ["struct:src/lib.rs#Widget"]
+      );
+    });
+  });
+
   it("returns typed failures without search rows for missing schema and stale stores", () => {
     const missingRepo = mkdtempSync(join(tmpdir(), "lattice-search-missing-"));
     try {
@@ -230,6 +249,65 @@ function withFixtureCopy(run) {
   } finally {
     rmSync(temp, { recursive: true, force: true });
   }
+}
+
+function withRustFixture(run) {
+  const temp = mkdtempSync(join(tmpdir(), "lattice-search-rust-"));
+  try {
+    writeRustFixture(temp);
+    run(temp);
+  } finally {
+    rmSync(temp, { recursive: true, force: true });
+  }
+}
+
+function writeRustFixture(root) {
+  mkdirSync(join(root, "src"), { recursive: true });
+  writeFileSync(
+    join(root, "src/lib.rs"),
+    [
+      "pub mod helpers;",
+      "pub mod consumer;",
+      "",
+      "pub trait Service {",
+      "    fn handle(&self) -> String;",
+      "}",
+      "",
+      "pub struct Widget;",
+      "",
+      "impl Widget {",
+      "    pub fn new() -> Self {",
+      "        Widget",
+      "    }",
+      "}",
+      ""
+    ].join("\n")
+  );
+  writeFileSync(join(root, "src/helpers.rs"), "pub fn assist() -> String { \"ok\".to_string() }\n");
+  writeFileSync(
+    join(root, "src/consumer.rs"),
+    [
+      "use crate::helpers;",
+      "use crate::{Service, Widget};",
+      "",
+      "pub fn run() -> String {",
+      "    let widget = Widget::new();",
+      "    helpers::assist();",
+      "    widget.handle()",
+      "}",
+      "",
+      "#[cfg(test)]",
+      "mod tests {",
+      "    use super::*;",
+      "",
+      "    #[test]",
+      "    fn test_run() {",
+      "        assert_eq!(run(), \"ok\");",
+      "    }",
+      "}",
+      ""
+    ].join("\n")
+  );
 }
 
 function skipGeneratedStore(source) {
