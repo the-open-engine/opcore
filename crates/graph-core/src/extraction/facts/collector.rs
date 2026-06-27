@@ -256,6 +256,7 @@ impl FileFactCollector {
             self.references.push(ReferenceFact {
                 from: from.clone(),
                 name,
+                is_test: from.starts_with("test:"),
             });
         }
     }

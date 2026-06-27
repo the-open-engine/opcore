@@ -8,7 +8,7 @@ What this shows:
 
 - `npx @the-open-engine/opcore@0.1.0-alpha.0 init` starts the interactive onboarding wizard without a prior install.
 - The wizard runs a read-only scan first, prints Coverage before Findings, and asks before writing.
-- Approved init writes only additive `.opcore/config`, delimited agent guidance, undo metadata, a managed `.opcore/telemetry.jsonl` `.gitignore` line in Git repos, and opt-in hooks when requested.
+- Approved init writes only additive `.opcore/config`, delimited agent guidance, undo metadata, a managed `.opcore/` `.gitignore` line in Git repos, and opt-in hooks when requested.
 
 Alpha support is `darwin-arm64`, `darwin-x64`, and `linux-x64` with Node >=22. Unsupported platforms return typed degraded status instead of crashing. Windows is out of scope for `0.1.0-alpha.0`. Unsupported-language files are counted in coverage; day-one checks skip them.
 
@@ -76,7 +76,7 @@ opcore init --approve
 opcore init --repo . --approve
 ```
 
-`opcore init` runs the read-only scan first, prints coverage before findings, shows the additive setup plan, and prompts on a TTY. `opcore init --json` previews without writing. Approved init may add `.opcore/config`, delimited agent guidance, mirrors for existing agent files, undo metadata, a managed `.opcore/telemetry.jsonl` `.gitignore` line in Git repos, and optional hooks only when explicitly requested. Non-Git repos skip `.gitignore`; undo removes only the managed line. JSON output includes scan, language settings, interaction, and timing fields.
+`opcore init` runs the read-only scan first, prints coverage before findings, shows the additive setup plan, and prompts on a TTY. `opcore init --json` previews without writing. Approved init may add `.opcore/config`, delimited agent guidance, mirrors for existing agent files, undo metadata, a managed `.opcore/` `.gitignore` line in Git repos, and optional hooks only when explicitly requested. Non-Git repos skip `.gitignore`; undo removes only the managed line. The `.opcore/` ignore covers `.opcore/telemetry.jsonl`. JSON output includes scan, language settings, interaction, and timing fields.
 
 ## Coverage Honesty
 

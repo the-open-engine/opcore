@@ -15,6 +15,7 @@ const repoRoot = fileURLToPath(new URL("..", import.meta.url));
 const overclaimSamples = {
   "public ASP standard claim": "ASP is now the public standard for agent checks.",
   "old-tool replacement claim": "Opcore replaces Rox, CRG, and CIX in your pipeline.",
+  "generic Opcore replacement claim": "Opcore replaces your linters.",
   "universal stack claim": "Full coverage for every language and platform.",
   "universal agent claim": "Works with every agent on the market.",
   "AI authorship claim": "Opcore detects AI authored code in your diffs.",
@@ -36,6 +37,12 @@ test("every forbidden claim label has a catching sample and is detected", () => 
       `forbidden sample not caught for label: ${label}`
     );
   }
+});
+
+test("generic Opcore replacement wording is forbidden", () => {
+  assert.ok(
+    scrubLaunchClaims("Opcore replaces your linters.").includes("generic Opcore replacement claim")
+  );
 });
 
 test("honest launch wording passes the scrub", () => {

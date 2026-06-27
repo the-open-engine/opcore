@@ -16,7 +16,7 @@ declare const process: {
 };
 
 const helpArgs = new Set(["--help", "-h", "help"]);
-const skippedPathSegments = new Set([
+export const commonSkippedPathSegments = [
   ".git",
   "node_modules",
   ".pnpm",
@@ -28,7 +28,10 @@ const skippedPathSegments = new Set([
   ".lattice",
   ".opcore",
   ".rox-cache",
-  ".robustness-engine-cache",
+  ".robustness-engine-cache"
+] as const;
+const skippedPathSegments = new Set<string>([
+  ...commonSkippedPathSegments,
   ".venv",
   "venv",
   "env",
@@ -81,8 +84,8 @@ const sourcePolicies = new Map<string, SourcePolicy>([
   [".inc", supportedPolicy("Rust", false, true)],
   ["Cargo.toml", supportedPolicy("Rust", false, true)],
   ["Cargo.lock", retainedPolicy("Rust")],
-  [".py", extractionPendingPolicy("Python")],
-  [".pyi", extractionPendingPolicy("Python")],
+  [".py", supportedPolicy("Python", true, false)],
+  [".pyi", supportedPolicy("Python", true, false)],
   [".mjs", unsupportedPolicy("JavaScript")],
   [".cjs", unsupportedPolicy("JavaScript")],
   [".vue", unsupportedPolicy("Vue")],

@@ -48,7 +48,7 @@ const configPath = ".opcore/config";
 const undoPath = ".opcore/init-undo.json";
 const hookPath = ".opcore/hooks/pre-commit-opcore-check.sh";
 const gitignorePath = ".gitignore";
-const telemetryIgnoreLine = ".opcore/telemetry.jsonl";
+const opcoreIgnoreLine = ".opcore/";
 const allowedUndoPaths = new Set<string>([configPath, undoPath, hookPath, gitignorePath, ...AGENT_FILE_CANDIDATES]);
 const rustActiveValidationKinds = new Set([".rs", ".inc", "Cargo.toml"]);
 
@@ -504,11 +504,11 @@ function planInit(
   ];
   if (git) {
     const gitignore = readOptionalRepoFile(repoRoot, gitignorePath);
-    if (!gitignoreHasManagedTelemetryLine(gitignore ?? "")) {
+    if (!gitignoreIgnoresOpcore(gitignore ?? "")) {
       writes.push({
         kind: "append_managed_line",
         path: gitignorePath,
-        line: telemetryIgnoreLine
+        line: opcoreIgnoreLine
       });
     }
   }
@@ -667,7 +667,7 @@ function createInitActions(agentFiles: readonly string[], failClosedHook: boolea
     actions.push({
       kind: "write",
       path: gitignorePath,
-      summary: "Append managed .opcore/telemetry.jsonl gitignore entry.",
+      summary: "Append managed .opcore/ gitignore entry.",
       requiresApproval: true,
       outsideOpcore: true
     });
@@ -763,7 +763,7 @@ function initWarnings(scan: OpcoreInitScanSummary, git: boolean): string[] {
     warnings.push(`Degraded Rust tools: ${scan.degradedRustTools.map((tool) => tool.tool).join(", ")}`);
   }
   if (!git) {
-    warnings.push("No Git repository detected; .opcore/telemetry.jsonl ignore entry not written.");
+    warnings.push("No Git repository detected; .opcore/ ignore entry not written.");
   }
   warnings.push("Do not weaken existing lint, test, CI, pre-commit, or agent guardrails.");
   warnings.push("Fail-closed hooks are opt-in and are not created unless --fail-closed-hook is approved.");
@@ -865,14 +865,14 @@ function readUndoMetadata(repoRoot: string): UndoMetadata {
       if (entry.path !== gitignorePath) {
         throw new Error(`.opcore/init-undo.json append-managed-line entry targets unsupported path: ${entry.path}`);
       }
-      if (typeof entry.line !== "string" || entry.line !== telemetryIgnoreLine) {
+      if (typeof entry.line !== "string" || entry.line !== opcoreIgnoreLine) {
         throw new Error(`.opcore/init-undo.json append-managed-line entry for ${entry.path} has invalid line`);
       }
       if (
         "appended" in entry &&
         entry.appended !== undefined &&
-        entry.appended !== `${telemetryIgnoreLine}\n` &&
-        entry.appended !== `\n${telemetryIgnoreLine}\n`
+        entry.appended !== `${opcoreIgnoreLine}\n` &&
+        entry.appended !== `\n${opcoreIgnoreLine}\n`
       ) {
         throw new Error(`.opcore/init-undo.json append-managed-line entry for ${entry.path} has invalid appended text`);
       }
@@ -932,13 +932,32 @@ function readOptionalRepoFile(repoRoot: string, path: string): string | undefine
   return readFileSync(assertExistingRepoPath(repoRoot, path, "Existing repo file", "file"), "utf8");
 }
 
-function gitignoreHasManagedTelemetryLine(content: string): boolean {
-  return content.split(/\r\n|\n|\r/u).some((line) => line === telemetryIgnoreLine);
+function gitignoreIgnoresOpcore(content: string): boolean {
+  let ignored = false;
+  for (const rawLine of content.split(/\r\n|\n|\r/u)) {
+    const line = rawLine.trim();
+    if (line.length === 0 || line.startsWith("#")) continue;
+    const negated = line.startsWith("!");
+    const pattern = negated ? line.slice(1).trim() : line;
+    if (isOpcoreGitignorePattern(pattern)) {
+      ignored = !negated;
+    }
+  }
+  return ignored;
+}
+
+function isOpcoreGitignorePattern(pattern: string): boolean {
+  return pattern === ".opcore" ||
+    pattern === ".opcore/" ||
+    pattern === "/.opcore" ||
+    pattern === "/.opcore/" ||
+    pattern === ".opcore/**" ||
+    pattern === "/.opcore/**";
 }
 
 function appendManagedGitignoreLine(existing: string | undefined): string {
-  if (existing === undefined || existing.length === 0) return `${telemetryIgnoreLine}\n`;
-  return `${existing.endsWith("\n") || existing.endsWith("\r") ? "" : "\n"}${telemetryIgnoreLine}\n`;
+  if (existing === undefined || existing.length === 0) return `${opcoreIgnoreLine}\n`;
+  return `${existing.endsWith("\n") || existing.endsWith("\r") ? "" : "\n"}${opcoreIgnoreLine}\n`;
 }
 
 function removeManagedGitignoreLine(current: string, entry: ManagedLineUndoEntry): { content: string; removed: boolean } {

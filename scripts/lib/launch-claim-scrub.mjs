@@ -8,6 +8,7 @@ import { join, relative } from "node:path";
 export const forbiddenLaunchClaims = [
   { label: "public ASP standard claim", pattern: /\bASP\b.{0,80}\b(public standard|standard now|standardized|the standard)\b/i },
   { label: "old-tool replacement claim", pattern: /\breplaces?\s+(Rox|CRG|CIX)\b|\b(Rox|CRG|CIX)\b.{0,80}\breplaces?\b/i },
+  { label: "generic Opcore replacement claim", pattern: /\bopcore\b[^.\n]{0,40}\breplaces?\b/i },
   { label: "universal stack claim", pattern: /\b(every|all)\s+(stack|language|platform)\b|\buniversal\s+(stack|language|platform)\s+coverage\b/i },
   { label: "universal agent claim", pattern: /\b(every|all)\s+agents?\b|\bworks with every agent\b/i },
   { label: "AI authorship claim", pattern: /\bAI authorship\b|\bauthorship detection\b|\bdetects? AI\b/i },
@@ -15,7 +16,7 @@ export const forbiddenLaunchClaims = [
   { label: "automatic fix claim", pattern: /\bautomatic fixes\b|\bautomatically fixes\b|\bauto-?fix(?:es)?\b/i },
   { label: "unsupported coverage claim", pattern: /\bunsupported (platforms?|languages?|stacks?)\b.{0,80}\b(covered|supported|analyzed)\b/i },
   // EPIC #14 / #15 coordination additions.
-  { label: "blended score claim", pattern: /\b(blended|overall|composite|unified|single|aggregate)\s+(quality\s+|health\s+|robustness\s+)?score\b|\b(quality|health|robustness)\s+score\b/i },
+  { label: "blended score claim", pattern: /\b(blended|overall|composite|unified|single|aggregate)[\s-]+((quality|health|robustness)[\s-]+)?score\b|\b(quality|health|robustness)[\s-]+score\b/i },
   { label: "asp router command claim", pattern: /\b(opcore|lattice)\s+asp\b/i },
   { label: "provider authority claim", pattern: /\bgate\s+(authority|permission)\b|\bprovider\b[^.\n]{0,40}\b(grants?|confers?|owns?|holds?)\b[^.\n]{0,25}\b(authority|permission|gate decision)\b/i },
   { label: "ACE-managed distribution claim", pattern: /\bACE[- ]managed\b|\bACE[- ]provision/i }

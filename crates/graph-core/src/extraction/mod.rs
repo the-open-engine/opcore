@@ -3,6 +3,7 @@ mod discovery;
 mod facts;
 mod language;
 mod parser;
+mod python_imports;
 mod tsconfig;
 
 #[cfg(test)]
@@ -182,10 +183,17 @@ fn parse_file_fact(
         input.force_missing_parser,
     );
     diagnostics.extend(parsed.diagnostics);
-    if let Some(program) = parsed.program {
-        facts::extract_file_facts(input.source, input.file_node, &program)
-    } else {
-        facts::file_facts_without_ast(input.source, input.file_node)
+    match parsed.program {
+        Some(parser::ParsedProgram::Oxc(program)) => {
+            facts::extract_oxc_file_facts(input.source, input.file_node, &program)
+        }
+        Some(parser::ParsedProgram::Python(tree)) => facts::extract_python_file_facts(
+            input.source,
+            input.file_node,
+            input.source_text,
+            &tree,
+        ),
+        None => facts::file_facts_without_ast(input.source, input.file_node),
     }
 }
 
@@ -271,5 +279,5 @@ pub fn boundary_name() -> &'static str {
 }
 
 pub fn behavior_status() -> &'static str {
-    "wave1: staged TypeScript/JavaScript source extraction"
+    "wave1: staged TypeScript/JavaScript/Python source extraction"
 }

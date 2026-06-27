@@ -19,6 +19,7 @@ const expectedIds = [
   "command-router-v1",
   "graph-core-artifact-handshake-v1",
   "source-extraction-wave1-v1",
+  "source-extraction-python-v1",
   "command-adapter-v1",
   "graph-pipeline-v1",
   "graph-query-v1",
@@ -53,7 +54,12 @@ describe("conformance fixture metadata", () => {
     );
     for (const fixture of conformanceFixtureMetadata) {
       assert.equal(fixture.origin, "covibes-authored-synthetic");
-      assert.equal(fixture.containsSourceCode, fixture.id === "source-extraction-wave1-v1" || fixture.id === "inspect-symbol-parity-v1");
+      assert.equal(
+        fixture.containsSourceCode,
+        fixture.id === "source-extraction-wave1-v1" ||
+          fixture.id === "source-extraction-python-v1" ||
+          fixture.id === "inspect-symbol-parity-v1"
+      );
       assert.equal(
         fixture.issue,
         fixture.id === "command-router-v1"
@@ -62,6 +68,8 @@ describe("conformance fixture metadata", () => {
             ? "#21"
           : fixture.id === "source-extraction-wave1-v1"
               ? "#8"
+            : fixture.id === "source-extraction-python-v1"
+              ? "#17"
               : fixture.id === "command-adapter-v1"
                 ? "#37"
                 : fixture.id === "graph-pipeline-v1"
@@ -342,6 +350,15 @@ describe("conformance fixture metadata", () => {
     assert.deepEqual(sourceExtraction.nodeKinds, ["File", "Class", "Function", "Type", "Test", "Variable"]);
     assert.ok(sourceExtraction.edgeKinds.includes("TESTED_BY"));
     assert.deepEqual(sourceExtraction.diagnostics, []);
+  });
+
+  it("describes Python source extraction fixture metadata for #17", () => {
+    const sourceExtraction = fixtureById("source-extraction-python-v1").sourceExtraction;
+    assert.equal(sourceExtraction.fixtureRoot, "packages/fixtures/source-extraction/python");
+    assert.deepEqual(sourceExtraction.languages, ["py", "pyi"]);
+    assert.deepEqual(sourceExtraction.nodeKinds, ["File", "Module", "Class", "Function", "Variable"]);
+    assert.ok(sourceExtraction.edgeKinds.includes("TESTED_BY"));
+    assert.deepEqual(sourceExtraction.diagnostics, ["unresolved_import"]);
   });
 
   it("includes concrete source-free #19 reference evidence data files", () => {

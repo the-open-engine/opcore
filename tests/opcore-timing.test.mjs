@@ -55,11 +55,8 @@ describe("opcore router timing", () => {
       assertCommandTiming(init);
       assert.equal(existsSync(join(initRepo, ".opcore", "telemetry.jsonl")), false);
       const gitignore = readFileSync(join(initRepo, ".gitignore"), "utf8");
-      assert.equal(
-        gitignore.split(/\r?\n/).filter((line) => line === ".opcore/telemetry.jsonl").length,
-        1
-      );
-      assert.equal(gitignore.split(/\r?\n/).filter((line) => line === ".opcore/").length, 0);
+      assert.equal(gitignore.split(/\r?\n/).filter((line) => line === ".opcore/").length, 1);
+      run("git", ["check-ignore", ".opcore/telemetry.jsonl"], initRepo, 0);
 
       const opcoreTry = parseJson(runOpcore(["try", "--json"], tryCwd, 0).stdout);
       cleanupRoots.push(opcoreTry.opcoreTry.sampleRoot);

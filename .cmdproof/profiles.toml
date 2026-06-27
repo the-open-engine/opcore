@@ -1,0 +1,43 @@
+[profile.ci-equivalent]
+argv = ["bash", "./scripts/ci/run-local-ci-equivalent.sh"]
+cwd = "."
+read_only = true
+network = "declared"
+env_allowlist = ["CI", "NODE_ENV", "PATH"]
+timeout_ms = 600000
+require.default = "trusted-agent"
+require.validator = "trusted-agent-or-ci"
+require.ci = "ci"
+
+[profile.ci-equivalent.workspace]
+include_untracked = true
+generated = [
+  "target/**",
+  "node_modules/**",
+  "**/dist/**",
+  "**/*.tsbuildinfo",
+  "coverage/**",
+  "*.tgz",
+  "*.log",
+  ".code-review-graph/**",
+  ".ace/**",
+  ".agents/**",
+  ".claude/**",
+  ".cmdproof/cache/**",
+  ".cmdproof/tmp/**",
+  ".codex/**",
+  ".gemini/**",
+  ".opencode/**",
+  ".opcore/**",
+  ".asp/**",
+  ".rox-cache/**",
+  ".robustness-engine-cache/**",
+  "packages/opcore-graph-core-*/opcore-graph-core",
+  "packages/opcore-graph-core-*/opcore-graph-core.sha256",
+  "docs/graph-reference-evidence/**",
+]
+
+[profile.ci-equivalent.output]
+stdout = "digest"
+stderr = "digest"
+artifacts = []

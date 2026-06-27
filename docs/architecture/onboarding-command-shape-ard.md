@@ -73,9 +73,10 @@ npx @the-open-engine/opcore@<ver> init
   → prints Coverage before Findings (deep TS/JS graph; Rust validation/toolchain;
     unsupported-language counts — honest, never faked)
   → proposes additive setup (.opcore/config, delimited agent-guidance block,
-    optional opt-in hooks, exact .opcore/telemetry.jsonl gitignore line)
+    optional opt-in hooks, .opcore/ gitignore line in Git repos covering telemetry)
   → asks on a TTY (or applies deterministically with --approve)
-  → writes only approved files; records undo metadata (.opcore/init-undo.json)
+  → writes only approved files; skips .gitignore outside Git; records undo metadata (.opcore/init-undo.json)
+  → undo removes only the managed .gitignore line
 ```
 
 `opcore init --json` previews without writing (release-gate invariant). On an unsupported
@@ -107,7 +108,7 @@ guidance section that must never weaken existing lint/test/CI/pre-commit or agen
 ## Migration Impact
 
 Implementation sub-issues #40 (interactive `opcore init` wizard), #41 (repo-setup policy:
-exact `.opcore/telemetry.jsonl` ignore + additive/reversible hardening), and #43 (npx-primary docs + PATH
+managed `.opcore/` ignore coverage + additive/reversible hardening), and #43 (npx-primary docs + PATH
 troubleshooting) build against this decision. #39 (fresh-Git `opcore check --changed`) is an
 independent prerequisite for the wizard's first-check step. The canonical command table in
 [runtime-cli-ard.md](runtime-cli-ard.md) is unchanged — `init` remains the only writer and no

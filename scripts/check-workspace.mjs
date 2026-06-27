@@ -64,6 +64,7 @@ for (const scriptName of [
   "setup",
   "setup:tools",
   "verify",
+  "test:ci",
   "conformance:check",
   "pack:check",
   "release:hygiene",
@@ -98,16 +99,36 @@ for (const ciToken of [
   "lint",
   "rust:check",
   "build",
-  "test",
-  "conformance:check",
-  "pack:check",
+  "test:ci",
   "release-receipt:check",
+  "graph-release:check",
   "cutover:check",
-  "release:hygiene",
-  "provenance:check"
+  "OPCORE_CUTOVER_REUSE_RELEASE_PACKAGES=1"
 ]) {
   requireIncludes("package.json scripts.ci", root.scripts.ci, ciToken);
 }
+for (const duplicateCiToken of ["conformance:check", "pack:check", "release:hygiene", "provenance:check"]) {
+  if (root.scripts.ci.includes(duplicateCiToken)) {
+    fail(`package.json scripts.ci must not run duplicate standalone ${duplicateCiToken}`);
+  }
+}
+requireIncludes("package.json scripts.test", root.scripts.test, "tests/*.test.mjs");
+requireIncludes(
+  "package.json scripts.test:ci",
+  root.scripts["test:ci"],
+  "OPCORE_CI_RECEIPT_GATES_RUN_SEPARATELY=1"
+);
+requireIncludes("package.json scripts.test:ci", root.scripts["test:ci"], "tests/*.test.mjs");
+const graphReleaseReceiptScript = readFileSync("scripts/generate-graph-release-receipt.mjs", "utf8");
+for (const token of ["conformance:check", "pack:check", "license:report", "provenance:check"]) {
+  requireIncludes("scripts/generate-graph-release-receipt.mjs", graphReleaseReceiptScript, token);
+}
+const releaseReceiptScript = readFileSync("scripts/generate-release-receipt.mjs", "utf8");
+for (const token of ["scripts/check-release-hygiene.mjs", "scripts/check-provenance.mjs"]) {
+  requireIncludes("scripts/generate-release-receipt.mjs", releaseReceiptScript, token);
+}
+const cutoverReceiptScript = readFileSync("scripts/generate-cutover-receipt.mjs", "utf8");
+requireIncludes("scripts/generate-cutover-receipt.mjs", cutoverReceiptScript, "OPCORE_CUTOVER_REUSE_RELEASE_PACKAGES");
 validateDependencySpecs("package.json", root);
 assertDeepEqual(root.optionalDependencies ?? {}, Object.fromEntries(rootNativeOptionalDependencies), "Root native optionalDependencies");
 
@@ -142,6 +163,8 @@ const runtimeArdPath = "docs/architecture/runtime-cli-ard.md";
 if (!existsSync(runtimeArdPath)) fail(`Missing runtime CLI ARD: ${runtimeArdPath}`);
 const runtimeArd = readFileSync(runtimeArdPath, "utf8");
 const readme = readFileSync("README.md", "utf8");
+const quickstart = readFileSync("docs/quickstart.md", "utf8");
+const opcorePackageReadme = readFileSync("packages/opcore/README.md", "utf8");
 for (const [name, content] of [
   ["AGENTS.md", agents],
   ["CLAUDE.md", claude],
@@ -160,6 +183,27 @@ for (const token of [
   "opcore measure --repo ."
 ]) {
   requireIncludes("README.md", readme, token);
+}
+for (const [name, content] of [
+  ["README.md", readme],
+  ["docs/quickstart.md", quickstart],
+  ["packages/opcore/README.md", opcorePackageReadme]
+]) {
+  for (const token of [
+    "npx @the-open-engine/opcore@0.1.0-alpha.0 init",
+    "npm install -g @the-open-engine/opcore@0.1.0-alpha.0",
+    "npm prefix -g",
+    "$(npm prefix -g)/bin",
+    "darwin-arm64",
+    "darwin-x64",
+    "linux-x64",
+    "Unsupported platforms return typed degraded status",
+    "Windows is out of scope for `0.1.0-alpha.0`",
+    "freshly `git init` repo with no commits",
+    "opcore check --changed --json"
+  ]) {
+    requireIncludes(name, content, token);
+  }
 }
 for (const token of [
   "Decision: hybrid",

@@ -6,8 +6,12 @@ import { spawnSync } from "node:child_process";
 import { graphCoreNativeSupportedTargets, releaseReceiptPackageNames, validateReleaseReceipt } from "../packages/contracts/dist/index.js";
 import { withCompleteNativeArtifactFixtures } from "./native-artifact-fixture.mjs";
 
+const releaseDocsLockTimeoutMs = 900000;
+const receiptGatesRunSeparately = process.env.OPCORE_CI_RECEIPT_GATES_RUN_SEPARATELY === "1";
+const separateReceiptGateSkip = receiptGatesRunSeparately ? "covered by root CI receipt gate" : false;
+
 describe("release receipt gate", () => {
-  it("emits validated #29 release receipt JSON", () => {
+  it("emits validated #29 release receipt JSON", { skip: separateReceiptGateSkip }, () => {
     withReleaseDocsLock(() => {
       const result = withCompleteNativeArtifactFixtures(() => run("npm", ["run", "release-receipt:check", "--", "--json"]));
       const receipt = validateReleaseReceipt(parseJsonOutput(result.stdout));
@@ -40,7 +44,7 @@ describe("release receipt gate", () => {
     });
   });
 
-  it("write mode refreshes machine and human release receipt docs", () => {
+  it("write mode refreshes machine and human release receipt docs", { skip: separateReceiptGateSkip }, () => {
     withReleaseDocsLock(() => {
       rmSync("docs/release/release-receipt.json", { force: true });
       rmSync("docs/release/release-receipt.summary.md", { force: true });
@@ -66,7 +70,7 @@ function withReleaseDocsLock(runLocked) {
     "docs/release/provenance-receipts.md",
     "docs/release/artifact-attestation.md"
   ];
-  const deadline = Date.now() + 300000;
+  const deadline = Date.now() + releaseDocsLockTimeoutMs;
   while (Date.now() < deadline) {
     try {
       mkdirSync(lockPath);

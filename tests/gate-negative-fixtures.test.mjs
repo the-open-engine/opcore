@@ -13,6 +13,7 @@ import {
 } from "../packages/contracts/dist/index.js";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const releaseDocsLockTimeoutMs = 900000;
 const copiedRepoSkips = new Set([
   ".git",
   "node_modules",
@@ -179,6 +180,26 @@ describe("negative gate fixtures", () => {
     const result = run(repo, "node", ["scripts/check-release-hygiene.mjs"], { expectFailure: true });
     assert.match(stderrAndStdout(result), /Launch-facing claim scrub failed/);
     assert.match(stderrAndStdout(result), /packages\/asp-provider\/dist\/manifests\/asp-server\.json/);
+  });
+
+  it("rejects generic Opcore replacement overclaims in launch docs", () => {
+    const repo = tempRepo({ includeDist: true });
+    writeFileSync(join(repo, "docs/quickstart.md"), "Opcore replaces your linters.\n");
+
+    const result = run(repo, "node", ["scripts/check-release-hygiene.mjs"], { expectFailure: true });
+    assert.match(stderrAndStdout(result), /Launch-facing claim scrub failed/);
+    assert.match(stderrAndStdout(result), /generic Opcore replacement claim/);
+    assert.match(stderrAndStdout(result), /docs\/quickstart\.md/);
+  });
+
+  it("rejects blended quality score overclaims in launch docs", () => {
+    const repo = tempRepo({ includeDist: true });
+    writeFileSync(join(repo, "docs/quickstart.md"), "Opcore reports a blended quality score.\n");
+
+    const result = run(repo, "node", ["scripts/check-release-hygiene.mjs"], { expectFailure: true });
+    assert.match(stderrAndStdout(result), /Launch-facing claim scrub failed/);
+    assert.match(stderrAndStdout(result), /blended score claim/);
+    assert.match(stderrAndStdout(result), /docs\/quickstart\.md/);
   });
 
   it("rejects bad descriptor artifact references in release descriptor inspection", () => {
@@ -489,7 +510,7 @@ function tempRepo(options = {}) {
 
 function withReleaseDocsLock(runLocked) {
   const lockPath = join(repoRoot, "docs/release/.receipt-test.lock");
-  const deadline = Date.now() + 300000;
+  const deadline = Date.now() + releaseDocsLockTimeoutMs;
   while (Date.now() < deadline) {
     try {
       mkdirSync(lockPath);

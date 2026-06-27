@@ -69,7 +69,7 @@ describe("opcore public facade", () => {
     });
   });
 
-  it("reports Python sources as extraction-pending without graph or validation support", () => {
+  it("reports Python sources as graph-supported without validation support", () => {
     const temp = mkdtempSync(join(tmpdir(), "opcore-python-status-"));
     try {
       for (const [directory, file] of [
@@ -98,21 +98,18 @@ describe("opcore public facade", () => {
 
       assert.equal(coverage.totalFiles, 2);
       assert.deepEqual(coverage.languages, [
-        { language: "Python", files: 2, graphSupported: false, validationSupported: false }
+        { language: "Python", files: 2, graphSupported: true, validationSupported: false }
       ]);
-      assert.equal(coverage.graph.supportedFiles, 0);
+      assert.equal(coverage.graph.supportedFiles, 2);
       assert.equal(coverage.validation.supportedFiles, 0);
-      assert.equal(coverage.unsupported.totalFiles, 2);
+      assert.equal(coverage.unsupported.totalFiles, 0);
       assert.deepEqual(
         coverage.unsupported.stacks.map((stack) => ({
           extension: stack.extension,
           language: stack.language,
           count: stack.count
         })),
-        [
-          { extension: ".py", language: "Python", count: 1 },
-          { extension: ".pyi", language: "Python", count: 1 }
-        ]
+        []
       );
     } finally {
       rmSync(temp, { recursive: true, force: true });
@@ -232,7 +229,8 @@ describe("opcore public facade", () => {
       assert.equal(existsSync(join(temp, ".opcore", "history.jsonl")), false);
       assert.equal(existsSync(join(temp, ".opcore", "telemetry.jsonl")), false);
       assert.equal(existsSync(join(temp, ".opcore", "hooks", "pre-commit-opcore-check.sh")), false);
-      assert.equal(telemetryIgnoreLineCount(readFileSync(join(temp, ".gitignore"), "utf8")), 1);
+      assert.equal(opcoreIgnoreLineCount(readFileSync(join(temp, ".gitignore"), "utf8")), 1);
+      assertGitIgnored(temp, ".opcore/telemetry.jsonl");
       const config = JSON.parse(readFileSync(join(temp, ".opcore", "config"), "utf8"));
       assert.equal(config.schemaVersion, 1);
       assert.equal(config.guidance.checkCommand, "opcore check --changed");
@@ -247,20 +245,14 @@ describe("opcore public facade", () => {
       const undo = JSON.parse(readFileSync(join(temp, ".opcore", "init-undo.json"), "utf8"));
       assert.deepEqual(
         undo.entries.find((entry) => entry.path === ".gitignore"),
-        {
-          path: ".gitignore",
-          existed: false,
-          kind: "append_managed_line",
-          line: ".opcore/telemetry.jsonl",
-          appended: ".opcore/telemetry.jsonl\n"
-        }
+        { path: ".gitignore", existed: false, kind: "append_managed_line", line: ".opcore/", appended: ".opcore/\n" }
       );
     } finally {
       rmSync(temp, { recursive: true, force: true });
     }
   });
 
-  it("adds exact telemetry gitignore entry for approved Git init and undo restores it", () => {
+  it("adds managed .opcore gitignore coverage for approved Git init and undo restores it", () => {
     const withoutExisting = mkdtempSync(join(tmpdir(), "opcore-init-gitignore-new-"));
     const withExisting = mkdtempSync(join(tmpdir(), "opcore-init-gitignore-existing-"));
     try {
@@ -268,8 +260,8 @@ describe("opcore public facade", () => {
       runOpcore(["init", "--repo", withoutExisting, "--approve", "--json"], withoutExisting, 0);
       runOpcore(["init", "--repo", withoutExisting, "--approve", "--json"], withoutExisting, 0);
       const freshGitignore = readFileSync(join(withoutExisting, ".gitignore"), "utf8");
-      assert.equal(telemetryIgnoreLineCount(freshGitignore), 1);
-      assert.equal(opcoreDirectoryIgnoreLineCount(freshGitignore), 0);
+      assert.equal(opcoreIgnoreLineCount(freshGitignore), 1);
+      assertGitIgnored(withoutExisting, ".opcore/telemetry.jsonl");
       runOpcore(["init", "--repo", withoutExisting, "--undo", "--approve", "--json"], withoutExisting, 0);
       assert.equal(existsSync(join(withoutExisting, ".gitignore")), false);
 
@@ -277,8 +269,8 @@ describe("opcore public facade", () => {
       writeFileSync(join(withExisting, ".gitignore"), "node_modules\n");
       runOpcore(["init", "--repo", withExisting, "--approve", "--json"], withExisting, 0);
       const existingGitignore = readFileSync(join(withExisting, ".gitignore"), "utf8");
-      assert.equal(telemetryIgnoreLineCount(existingGitignore), 1);
-      assert.equal(opcoreDirectoryIgnoreLineCount(existingGitignore), 0);
+      assert.equal(opcoreIgnoreLineCount(existingGitignore), 1);
+      assertGitIgnored(withExisting, ".opcore/telemetry.jsonl");
       assert.match(existingGitignore, /^node_modules$/m);
       runOpcore(["init", "--repo", withExisting, "--undo", "--approve", "--json"], withExisting, 0);
       assert.equal(readFileSync(join(withExisting, ".gitignore"), "utf8"), "node_modules\n");
@@ -377,7 +369,7 @@ describe("opcore public facade", () => {
       {
         name: "python",
         files: [["scripts/app.py", "print('unsupported')\n"]],
-        expect: { totalFiles: 1, languages: ["Python"], unsupportedFiles: 1 }
+        expect: { totalFiles: 1, languages: ["Python"], unsupportedFiles: 0 }
       },
       {
         name: "fresh-git",
@@ -402,8 +394,12 @@ describe("opcore public facade", () => {
         assert.equal(result.opcoreInit.scan.diagnosticCount >= 0, true, fixture.name);
         assert.equal(existsSync(join(temp, ".opcore")), false, fixture.name);
         if (fixture.name === "python") {
-          assert.equal(result.opcoreInit.scan.unsupportedStacks[0].language, "Python");
+          assert.equal(result.opcoreInit.scan.graphSupportedFiles, 1);
+          assert.equal(result.opcoreInit.scan.validationSupportedFiles, 0);
+          assert.deepEqual(result.opcoreInit.scan.unsupportedStacks, []);
           assert.equal(result.opcoreInit.settings.languages[0].state, "unsupported");
+          assert.equal(result.opcoreInit.settings.languages[0].graph, "supported");
+          assert.equal(result.opcoreInit.settings.languages[0].validation, "unsupported");
           assert.equal(result.opcoreInit.scan.diagnosticCount, 0);
         }
         if (fixture.name === "mixed-cargo-lock-only") {
@@ -421,14 +417,29 @@ describe("opcore public facade", () => {
   it("updates init guidance idempotently and preserves existing AGENTS content", () => {
     const temp = mkdtempSync(join(tmpdir(), "opcore-init-idempotent-"));
     try {
+      initGitFixture(temp);
       writeFileSync(join(temp, "AGENTS.md"), "keep-before\n");
       runOpcore(["init", "--repo", temp, "--approve", "--json"], temp, 0);
+      const pathsAfterFirstRun = collectRepoPaths(temp);
+      const configAfterFirstRun = readFileSync(join(temp, ".opcore", "config"), "utf8");
+      const undoAfterFirstRun = readFileSync(join(temp, ".opcore", "init-undo.json"), "utf8");
+      const gitignoreAfterFirstRun = readFileSync(join(temp, ".gitignore"), "utf8");
+      const agentsAfterFirstRun = readFileSync(join(temp, "AGENTS.md"), "utf8");
+      const hookExistsAfterFirstRun = existsSync(join(temp, ".opcore", "hooks", "pre-commit-opcore-check.sh"));
       runOpcore(["init", "--repo", temp, "--approve", "--json"], temp, 0);
 
       const agents = readFileSync(join(temp, "AGENTS.md"), "utf8");
       assert.match(agents, /^keep-before/m);
       assert.equal(markerCount(agents), 1);
       assert.equal(endMarkerCount(agents), 1);
+      assert.deepEqual(collectRepoPaths(temp), pathsAfterFirstRun);
+      assert.equal(readFileSync(join(temp, ".opcore", "config"), "utf8"), configAfterFirstRun);
+      assert.equal(readFileSync(join(temp, ".opcore", "init-undo.json"), "utf8"), undoAfterFirstRun);
+      assert.equal(readFileSync(join(temp, ".gitignore"), "utf8"), gitignoreAfterFirstRun);
+      assert.equal(readFileSync(join(temp, "AGENTS.md"), "utf8"), agentsAfterFirstRun);
+      assert.equal(opcoreIgnoreLineCount(gitignoreAfterFirstRun), 1);
+      assert.equal(hookExistsAfterFirstRun, false);
+      assert.equal(existsSync(join(temp, ".opcore", "hooks", "pre-commit-opcore-check.sh")), false);
     } finally {
       rmSync(temp, { recursive: true, force: true });
     }
@@ -475,26 +486,47 @@ describe("opcore public facade", () => {
     const withExistingAgents = mkdtempSync(join(tmpdir(), "opcore-init-undo-existing-"));
     const withoutAgents = mkdtempSync(join(tmpdir(), "opcore-init-undo-created-"));
     try {
+      initGitFixture(withExistingAgents);
+      initGitFixture(withoutAgents);
       writeFileSync(join(withExistingAgents, "AGENTS.md"), "original agents\n");
+      writeFileSync(join(withExistingAgents, ".gitignore"), "node_modules/\n");
       runOpcore(["init", "--repo", withExistingAgents, "--approve", "--json"], withExistingAgents, 0);
       runOpcore(["init", "--repo", withExistingAgents, "--approve", "--json"], withExistingAgents, 0);
+      assert.equal(readFileSync(join(withExistingAgents, ".gitignore"), "utf8"), "node_modules/\n.opcore/\n");
       const undoPlan = parseJson(runOpcore(["init", "--repo", withExistingAgents, "--undo", "--json"], withExistingAgents, 0).stdout);
       assert.equal(undoPlan.opcoreInit.mode, "undo");
       assert.equal(undoPlan.opcoreInit.approved, false);
       runOpcore(["init", "--repo", withExistingAgents, "--undo", "--approve", "--json"], withExistingAgents, 0);
       assert.equal(readFileSync(join(withExistingAgents, "AGENTS.md"), "utf8"), "original agents\n");
+      assert.equal(readFileSync(join(withExistingAgents, ".gitignore"), "utf8"), "node_modules/\n");
 
       runOpcore(["init", "--repo", withoutAgents, "--approve", "--json"], withoutAgents, 0);
       runOpcore(["init", "--repo", withoutAgents, "--approve", "--json"], withoutAgents, 0);
+      assert.equal(readFileSync(join(withoutAgents, ".gitignore"), "utf8"), ".opcore/\n");
       const undoResult = parseJson(runOpcore(["init", "--repo", withoutAgents, "--undo", "--approve", "--json"], withoutAgents, 0).stdout);
       assert.equal(undoResult.opcoreInit.undoAvailable, false);
       assert.equal(undoResult.opcoreInit.nextActions.some((action) => action.includes("rerun opcore init")), true);
       assert.equal(undoResult.opcoreInit.nextActions.some((action) => action.includes("--undo --approve")), false);
       assert.equal(existsSync(join(withoutAgents, "AGENTS.md")), false);
+      assert.equal(existsSync(join(withoutAgents, ".gitignore")), false);
       assert.equal(existsSync(join(withoutAgents, ".opcore", "config")), false);
     } finally {
       rmSync(withExistingAgents, { recursive: true, force: true });
       rmSync(withoutAgents, { recursive: true, force: true });
+    }
+  });
+
+  it("undoes init without adding a trailing newline to existing .gitignore", () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-init-undo-gitignore-newline-"));
+    try {
+      initGitFixture(temp);
+      writeFileSync(join(temp, ".gitignore"), "node_modules/");
+      runOpcore(["init", "--repo", temp, "--approve", "--json"], temp, 0);
+      assert.equal(readFileSync(join(temp, ".gitignore"), "utf8"), "node_modules/\n.opcore/\n");
+      runOpcore(["init", "--repo", temp, "--undo", "--approve", "--json"], temp, 0);
+      assert.equal(readFileSync(join(temp, ".gitignore"), "utf8"), "node_modules/");
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
     }
   });
 
@@ -519,6 +551,31 @@ describe("opcore public facade", () => {
       assert.equal(result.status, "error");
       assert.match(result.message, /unsupported path/i);
       assert.equal(readFileSync(join(temp, "src", "app.ts"), "utf8"), "export const safe = true;\n");
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("refuses restore-file undo metadata for .gitignore", () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-init-undo-gitignore-restore-"));
+    try {
+      mkdirSync(join(temp, ".opcore"), { recursive: true });
+      writeFileSync(join(temp, ".gitignore"), "node_modules/\n");
+      writeFileSync(
+        join(temp, ".opcore", "init-undo.json"),
+        `${JSON.stringify({
+          schemaVersion: 1,
+          kind: "opcore_init_undo",
+          repoRoot: realpathSync(temp),
+          entries: [{ kind: "restore_file", path: ".gitignore", existed: true, content: "attacker\n" }]
+        })}\n`
+      );
+
+      const result = parseJson(runOpcore(["init", "--repo", temp, "--undo", "--approve", "--json"], temp, 1).stdout);
+
+      assert.equal(result.status, "error");
+      assert.match(result.message, /gitignore|managed line|restore/i);
+      assert.equal(readFileSync(join(temp, ".gitignore"), "utf8"), "node_modules/\n");
     } finally {
       rmSync(temp, { recursive: true, force: true });
     }
@@ -643,6 +700,56 @@ describe("opcore public facade", () => {
       assert.match(result.message, /symlink/i);
       assert.deepEqual(readdirSync(join(temp, "src")), []);
       assert.equal(existsSync(join(temp, "AGENTS.md")), false);
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("does not duplicate pre-existing .opcore gitignore coverage or record undo for it", () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-init-existing-gitignore-"));
+    try {
+      initGitFixture(temp);
+      writeFileSync(join(temp, ".gitignore"), "node_modules/\n/.opcore/**\n");
+
+      runOpcore(["init", "--repo", temp, "--approve", "--json"], temp, 0);
+
+      assert.equal(readFileSync(join(temp, ".gitignore"), "utf8"), "node_modules/\n/.opcore/**\n");
+      const undo = JSON.parse(readFileSync(join(temp, ".opcore", "init-undo.json"), "utf8"));
+      assert.equal(undo.entries.some((entry) => entry.path === ".gitignore"), false);
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("refuses approved init when .gitignore is a symlink", () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-init-gitignore-symlink-"));
+    try {
+      initGitFixture(temp);
+      mkdirSync(join(temp, "src"), { recursive: true });
+      writeFileSync(join(temp, "src", "ignore"), "outside-like\n");
+      symlinkSync("src/ignore", join(temp, ".gitignore"));
+
+      const result = parseJson(runOpcore(["init", "--repo", temp, "--approve", "--json"], temp, 1).stdout);
+
+      assert.equal(result.status, "error");
+      assert.match(result.message, /symlink/i);
+      assert.equal(existsSync(join(temp, "AGENTS.md")), false);
+      assert.equal(existsSync(join(temp, ".opcore", "init-undo.json")), false);
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("skips .gitignore writes outside Git repos", () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-init-no-git-"));
+    try {
+      const result = parseJson(runOpcore(["init", "--repo", temp, "--approve", "--json"], temp, 0).stdout);
+
+      assert.equal(result.opcoreInit.mode, "apply");
+      assert.equal(result.opcoreInit.warnings.includes("No Git repository detected; .opcore/ ignore entry not written."), true);
+      assert.equal(existsSync(join(temp, ".opcore", "config")), true);
+      assert.equal(existsSync(join(temp, "AGENTS.md")), true);
+      assert.equal(existsSync(join(temp, ".gitignore")), false);
     } finally {
       rmSync(temp, { recursive: true, force: true });
     }
@@ -883,12 +990,12 @@ function endMarkerCount(text) {
   return (text.match(/END OPCORE INIT/g) ?? []).length;
 }
 
-function telemetryIgnoreLineCount(text) {
-  return text.split(/\r?\n/).filter((line) => line === ".opcore/telemetry.jsonl").length;
+function opcoreIgnoreLineCount(text) {
+  return text.split(/\r?\n/).filter((line) => line === ".opcore/").length;
 }
 
-function opcoreDirectoryIgnoreLineCount(text) {
-  return text.split(/\r?\n/).filter((line) => line === ".opcore/").length;
+function assertGitIgnored(repo, path) {
+  run("git", ["check-ignore", path], repo, 0);
 }
 
 function metricReport(repoRoot, generatedAt, typeErrorCount) {
