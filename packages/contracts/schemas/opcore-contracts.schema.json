@@ -11472,7 +11472,8 @@
         "@the-open-engine/opcore-validation-python",
         "@the-open-engine/opcore-validation-rust",
         "@the-open-engine/opcore-validation-typescript",
-        "@the-open-engine/opcore-asp-provider"
+        "@the-open-engine/opcore-asp-provider",
+        "@the-open-engine/opcore-fixtures"
       ]
     },
     "ReleaseReceiptCommandGroupName": {
@@ -12280,7 +12281,7 @@
           "minimum": 0
         },
         "workspacePackageCount": {
-          "const": 12
+          "const": 13
         },
         "unresolvedLicenseCount": {
           "const": 0
@@ -12544,8 +12545,8 @@
         },
         "packageNames": {
           "type": "array",
-          "minItems": 12,
-          "maxItems": 12,
+          "minItems": 13,
+          "maxItems": 13,
           "items": {
             "$ref": "#/$defs/ReleaseReceiptPackageName"
           },
@@ -12633,6 +12634,13 @@
               },
               "minContains": 1,
               "maxContains": 1
+            },
+            {
+              "contains": {
+                "const": "@the-open-engine/opcore-fixtures"
+              },
+              "minContains": 1,
+              "maxContains": 1
             }
           ]
         },
@@ -12697,8 +12705,8 @@
         },
         "packages": {
           "type": "array",
-          "minItems": 12,
-          "maxItems": 12,
+          "minItems": 13,
+          "maxItems": 13,
           "items": {
             "$ref": "#/$defs/ReleaseReceiptPackageEvidence"
           },
@@ -12877,6 +12885,21 @@
                 "properties": {
                   "packageName": {
                     "const": "@the-open-engine/opcore-asp-provider"
+                  }
+                }
+              },
+              "minContains": 1,
+              "maxContains": 1
+            },
+            {
+              "contains": {
+                "type": "object",
+                "required": [
+                  "packageName"
+                ],
+                "properties": {
+                  "packageName": {
+                    "const": "@the-open-engine/opcore-fixtures"
                   }
                 }
               },
@@ -15564,8 +15587,14 @@
       ],
       "properties": {
         "id": {
-          "type": "string",
-          "minLength": 1
+          "enum": [
+            "missing-required-graph-check",
+            "missing-required-graph-validate",
+            "python-types-degraded-no-tools",
+            "python-source-hygiene-no-ruff",
+            "python-relevant-tests-no-pytest",
+            "python-toolchain-degraded-no-tools"
+          ]
         },
         "command": {
           "type": "array",
@@ -15590,7 +15619,258 @@
           "type": "string",
           "minLength": 1
         }
-      }
+      },
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "id"
+            ],
+            "properties": {
+              "id": {
+                "const": "missing-required-graph-check"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "command": {
+                "type": "array",
+                "minItems": 10,
+                "maxItems": 10,
+                "prefixItems": [
+                  {
+                    "const": "lattice"
+                  },
+                  {
+                    "const": "check"
+                  },
+                  {
+                    "const": "files"
+                  },
+                  {
+                    "const": "src/index.ts"
+                  },
+                  {
+                    "const": "--repo"
+                  },
+                  {
+                    "const": "<missing-graph-repo>"
+                  },
+                  {
+                    "const": "--graph-mode"
+                  },
+                  {
+                    "const": "required"
+                  },
+                  {
+                    "const": "--checks"
+                  },
+                  {
+                    "const": "typescript.import-graph"
+                  }
+                ],
+                "items": false
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "id"
+            ],
+            "properties": {
+              "id": {
+                "const": "missing-required-graph-validate"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "command": {
+                "type": "array",
+                "minItems": 5,
+                "maxItems": 5,
+                "prefixItems": [
+                  {
+                    "const": "lattice"
+                  },
+                  {
+                    "const": "validate"
+                  },
+                  {
+                    "const": "request"
+                  },
+                  {
+                    "const": "--request-file"
+                  },
+                  {
+                    "const": "<required-graph-request>"
+                  }
+                ],
+                "items": false
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "id"
+            ],
+            "properties": {
+              "id": {
+                "const": "python-types-degraded-no-tools"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "command": {
+                "type": "array",
+                "minItems": 6,
+                "maxItems": 6,
+                "prefixItems": [
+                  {
+                    "const": "lattice"
+                  },
+                  {
+                    "const": "check"
+                  },
+                  {
+                    "const": "files"
+                  },
+                  {
+                    "const": "src/acme/app.py"
+                  },
+                  {
+                    "const": "--checks"
+                  },
+                  {
+                    "const": "python.types"
+                  }
+                ],
+                "items": false
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "id"
+            ],
+            "properties": {
+              "id": {
+                "const": "python-source-hygiene-no-ruff"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "command": {
+                "type": "array",
+                "minItems": 6,
+                "maxItems": 6,
+                "prefixItems": [
+                  {
+                    "const": "lattice"
+                  },
+                  {
+                    "const": "check"
+                  },
+                  {
+                    "const": "files"
+                  },
+                  {
+                    "const": "src/acme/app.py"
+                  },
+                  {
+                    "const": "--checks"
+                  },
+                  {
+                    "const": "python.source-hygiene"
+                  }
+                ],
+                "items": false
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "id"
+            ],
+            "properties": {
+              "id": {
+                "const": "python-relevant-tests-no-pytest"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "command": {
+                "type": "array",
+                "minItems": 6,
+                "maxItems": 6,
+                "prefixItems": [
+                  {
+                    "const": "lattice"
+                  },
+                  {
+                    "const": "check"
+                  },
+                  {
+                    "const": "files"
+                  },
+                  {
+                    "const": "src/acme/app.py"
+                  },
+                  {
+                    "const": "--checks"
+                  },
+                  {
+                    "const": "python.relevant-tests"
+                  }
+                ],
+                "items": false
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "id"
+            ],
+            "properties": {
+              "id": {
+                "const": "python-toolchain-degraded-no-tools"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "command": {
+                "type": "array",
+                "minItems": 2,
+                "maxItems": 2,
+                "prefixItems": [
+                  {
+                    "const": "opcore"
+                  },
+                  {
+                    "const": "status"
+                  }
+                ],
+                "items": false
+              }
+            }
+          }
+        }
+      ]
     },
     "RustOldRoxComparisonSurfaceReceipt": {
       "type": "object",
@@ -16155,8 +16435,8 @@
         },
         "packageNames": {
           "type": "array",
-          "minItems": 12,
-          "maxItems": 12,
+          "minItems": 13,
+          "maxItems": 13,
           "items": {
             "$ref": "#/$defs/ReleaseReceiptPackageName"
           },
@@ -16244,13 +16524,20 @@
               },
               "minContains": 1,
               "maxContains": 1
+            },
+            {
+              "contains": {
+                "const": "@the-open-engine/opcore-fixtures"
+              },
+              "minContains": 1,
+              "maxContains": 1
             }
           ]
         },
         "installedPackages": {
           "type": "array",
-          "minItems": 10,
-          "maxItems": 10,
+          "minItems": 11,
+          "maxItems": 11,
           "items": {
             "$ref": "#/$defs/ReleaseCutoverInstalledPackageEvidence"
           },
@@ -16403,6 +16690,21 @@
                       "@the-open-engine/opcore-graph-core-darwin-x64",
                       "@the-open-engine/opcore-graph-core-linux-x64"
                     ]
+                  }
+                }
+              },
+              "minContains": 1,
+              "maxContains": 1
+            },
+            {
+              "contains": {
+                "type": "object",
+                "required": [
+                  "packageName"
+                ],
+                "properties": {
+                  "packageName": {
+                    "const": "@the-open-engine/opcore-fixtures"
                   }
                 }
               },
@@ -16995,7 +17297,10 @@
         "environmentIsolation",
         "commandReceipts",
         "rustCommandReceipts",
+        "pythonCommandReceipts",
         "negativeChecks",
+        "currentToolGuardrails",
+        "oldToolReplacementClaimed",
         "forbiddenMarkerScan",
         "inputEvidence"
       ],
@@ -17022,8 +17327,8 @@
         },
         "packageNames": {
           "type": "array",
-          "minItems": 12,
-          "maxItems": 12,
+          "minItems": 13,
+          "maxItems": 13,
           "items": {
             "$ref": "#/$defs/ReleaseReceiptPackageName"
           },
@@ -17111,13 +17416,20 @@
               },
               "minContains": 1,
               "maxContains": 1
+            },
+            {
+              "contains": {
+                "const": "@the-open-engine/opcore-fixtures"
+              },
+              "minContains": 1,
+              "maxContains": 1
             }
           ]
         },
         "installedPackages": {
           "type": "array",
-          "minItems": 10,
-          "maxItems": 10,
+          "minItems": 11,
+          "maxItems": 11,
           "items": {
             "$ref": "#/$defs/ReleaseCutoverInstalledPackageEvidence"
           },
@@ -17270,6 +17582,21 @@
                       "@the-open-engine/opcore-graph-core-darwin-x64",
                       "@the-open-engine/opcore-graph-core-linux-x64"
                     ]
+                  }
+                }
+              },
+              "minContains": 1,
+              "maxContains": 1
+            },
+            {
+              "contains": {
+                "type": "object",
+                "required": [
+                  "packageName"
+                ],
+                "properties": {
+                  "packageName": {
+                    "const": "@the-open-engine/opcore-fixtures"
                   }
                 }
               },
@@ -17831,10 +18158,97 @@
         },
         "negativeChecks": {
           "type": "array",
-          "minItems": 1,
+          "minItems": 6,
           "items": {
             "$ref": "#/$defs/ReleaseCutoverNegativeCheck"
-          }
+          },
+          "maxItems": 6,
+          "allOf": [
+            {
+              "contains": {
+                "properties": {
+                  "id": {
+                    "const": "missing-required-graph-check"
+                  }
+                },
+                "required": [
+                  "id"
+                ]
+              },
+              "minContains": 1,
+              "maxContains": 1
+            },
+            {
+              "contains": {
+                "properties": {
+                  "id": {
+                    "const": "missing-required-graph-validate"
+                  }
+                },
+                "required": [
+                  "id"
+                ]
+              },
+              "minContains": 1,
+              "maxContains": 1
+            },
+            {
+              "contains": {
+                "properties": {
+                  "id": {
+                    "const": "python-types-degraded-no-tools"
+                  }
+                },
+                "required": [
+                  "id"
+                ]
+              },
+              "minContains": 1,
+              "maxContains": 1
+            },
+            {
+              "contains": {
+                "properties": {
+                  "id": {
+                    "const": "python-source-hygiene-no-ruff"
+                  }
+                },
+                "required": [
+                  "id"
+                ]
+              },
+              "minContains": 1,
+              "maxContains": 1
+            },
+            {
+              "contains": {
+                "properties": {
+                  "id": {
+                    "const": "python-relevant-tests-no-pytest"
+                  }
+                },
+                "required": [
+                  "id"
+                ]
+              },
+              "minContains": 1,
+              "maxContains": 1
+            },
+            {
+              "contains": {
+                "properties": {
+                  "id": {
+                    "const": "python-toolchain-degraded-no-tools"
+                  }
+                },
+                "required": [
+                  "id"
+                ]
+              },
+              "minContains": 1,
+              "maxContains": 1
+            }
+          ]
         },
         "forbiddenMarkerScan": {
           "type": "object",
@@ -17929,6 +18343,149 @@
               }
             }
           }
+        },
+        "pythonCommandReceipts": {
+          "type": "array",
+          "minItems": 8,
+          "maxItems": 8,
+          "items": {
+            "$ref": "#/$defs/ReleaseCutoverPythonCommandReceipt"
+          },
+          "allOf": [
+            {
+              "contains": {
+                "properties": {
+                  "id": {
+                    "const": "opcore-python-scan"
+                  }
+                },
+                "required": [
+                  "id"
+                ]
+              }
+            },
+            {
+              "contains": {
+                "properties": {
+                  "id": {
+                    "const": "opcore-python-status"
+                  }
+                },
+                "required": [
+                  "id"
+                ]
+              }
+            },
+            {
+              "contains": {
+                "properties": {
+                  "id": {
+                    "const": "opcore-python-check-changed"
+                  }
+                },
+                "required": [
+                  "id"
+                ]
+              }
+            },
+            {
+              "contains": {
+                "properties": {
+                  "id": {
+                    "const": "opcore-python-measure"
+                  }
+                },
+                "required": [
+                  "id"
+                ]
+              }
+            },
+            {
+              "contains": {
+                "properties": {
+                  "id": {
+                    "const": "graph-python-build"
+                  }
+                },
+                "required": [
+                  "id"
+                ]
+              }
+            },
+            {
+              "contains": {
+                "properties": {
+                  "id": {
+                    "const": "graph-python-status"
+                  }
+                },
+                "required": [
+                  "id"
+                ]
+              }
+            },
+            {
+              "contains": {
+                "properties": {
+                  "id": {
+                    "const": "graph-python-query"
+                  }
+                },
+                "required": [
+                  "id"
+                ]
+              }
+            },
+            {
+              "contains": {
+                "properties": {
+                  "id": {
+                    "const": "graph-python-search"
+                  }
+                },
+                "required": [
+                  "id"
+                ]
+              }
+            }
+          ]
+        },
+        "currentToolGuardrails": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "$ref": "#/$defs/ReleaseCutoverCurrentToolGuardrailReceipt"
+          },
+          "allOf": [
+            {
+              "contains": {
+                "properties": {
+                  "id": {
+                    "const": "current-tools-validate-changed"
+                  }
+                },
+                "required": [
+                  "id"
+                ]
+              }
+            },
+            {
+              "contains": {
+                "properties": {
+                  "id": {
+                    "const": "current-tools-validate-rust-graph"
+                  }
+                },
+                "required": [
+                  "id"
+                ]
+              }
+            }
+          ]
+        },
+        "oldToolReplacementClaimed": {
+          "const": false
         }
       }
     },
@@ -18801,6 +19358,943 @@
             "properties": {
               "packageName": {
                 "const": "@the-open-engine/opcore-graph-core-linux-x64"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "ReleaseCutoverPythonCommandReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "command",
+        "canonicalCommand",
+        "evidence",
+        "owner",
+        "status",
+        "exitCode",
+        "binPath",
+        "stdoutSha256",
+        "stderrSha256",
+        "assertion"
+      ],
+      "properties": {
+        "id": {
+          "enum": [
+            "opcore-python-scan",
+            "opcore-python-status",
+            "opcore-python-check-changed",
+            "opcore-python-measure",
+            "graph-python-build",
+            "graph-python-status",
+            "graph-python-query",
+            "graph-python-search"
+          ]
+        },
+        "command": {
+          "type": "array",
+          "minItems": 1,
+          "prefixItems": [
+            {
+              "enum": [
+                "lattice",
+                "opcore"
+              ]
+            }
+          ],
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "canonicalCommand": {
+          "type": "array",
+          "minItems": 1,
+          "prefixItems": [
+            {
+              "enum": [
+                "lattice",
+                "opcore"
+              ]
+            }
+          ],
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "owner": {
+          "$ref": "#/$defs/CommandOwner"
+        },
+        "status": {
+          "const": "ok"
+        },
+        "exitCode": {
+          "const": 0
+        },
+        "binPath": {
+          "type": "string",
+          "pattern": "node_modules/\\.bin/(lattice|opcore)$"
+        },
+        "stdoutSha256": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "stderrSha256": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "assertion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidence": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "id"
+            ],
+            "properties": {
+              "id": {
+                "const": "opcore-python-scan"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "command": {
+                "type": "array",
+                "minItems": 2,
+                "maxItems": 2,
+                "prefixItems": [
+                  {
+                    "const": "opcore"
+                  },
+                  {
+                    "const": "scan"
+                  }
+                ],
+                "items": false
+              },
+              "canonicalCommand": {
+                "type": "array",
+                "minItems": 2,
+                "maxItems": 2,
+                "prefixItems": [
+                  {
+                    "const": "opcore"
+                  },
+                  {
+                    "const": "scan"
+                  }
+                ],
+                "items": false
+              },
+              "owner": {
+                "const": "runtime"
+              },
+              "status": {
+                "const": "ok"
+              },
+              "exitCode": {
+                "const": 0
+              },
+              "evidence": {
+                "type": "array",
+                "minItems": 3,
+                "maxItems": 3,
+                "allOf": [
+                  {
+                    "contains": {
+                      "const": "python-coverage"
+                    },
+                    "minContains": 1,
+                    "maxContains": 1
+                  },
+                  {
+                    "contains": {
+                      "const": "python-validation"
+                    },
+                    "minContains": 1,
+                    "maxContains": 1
+                  },
+                  {
+                    "contains": {
+                      "const": "python-types-degraded"
+                    },
+                    "minContains": 1,
+                    "maxContains": 1
+                  }
+                ],
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "id"
+            ],
+            "properties": {
+              "id": {
+                "const": "opcore-python-status"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "command": {
+                "type": "array",
+                "minItems": 2,
+                "maxItems": 2,
+                "prefixItems": [
+                  {
+                    "const": "opcore"
+                  },
+                  {
+                    "const": "status"
+                  }
+                ],
+                "items": false
+              },
+              "canonicalCommand": {
+                "type": "array",
+                "minItems": 2,
+                "maxItems": 2,
+                "prefixItems": [
+                  {
+                    "const": "opcore"
+                  },
+                  {
+                    "const": "status"
+                  }
+                ],
+                "items": false
+              },
+              "owner": {
+                "const": "runtime"
+              },
+              "status": {
+                "const": "ok"
+              },
+              "exitCode": {
+                "const": 0
+              },
+              "evidence": {
+                "type": "array",
+                "minItems": 2,
+                "maxItems": 2,
+                "allOf": [
+                  {
+                    "contains": {
+                      "const": "python-coverage"
+                    },
+                    "minContains": 1,
+                    "maxContains": 1
+                  },
+                  {
+                    "contains": {
+                      "const": "python-validation"
+                    },
+                    "minContains": 1,
+                    "maxContains": 1
+                  }
+                ],
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "id"
+            ],
+            "properties": {
+              "id": {
+                "const": "opcore-python-check-changed"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "command": {
+                "type": "array",
+                "minItems": 7,
+                "maxItems": 7,
+                "prefixItems": [
+                  {
+                    "const": "opcore"
+                  },
+                  {
+                    "const": "check"
+                  },
+                  {
+                    "const": "changed"
+                  },
+                  {
+                    "const": "--base"
+                  },
+                  {
+                    "const": "HEAD"
+                  },
+                  {
+                    "const": "--checks"
+                  },
+                  {
+                    "const": "python.syntax,python.source-hygiene"
+                  }
+                ],
+                "items": false
+              },
+              "canonicalCommand": {
+                "type": "array",
+                "minItems": 7,
+                "maxItems": 7,
+                "prefixItems": [
+                  {
+                    "const": "opcore"
+                  },
+                  {
+                    "const": "check"
+                  },
+                  {
+                    "const": "changed"
+                  },
+                  {
+                    "const": "--base"
+                  },
+                  {
+                    "const": "HEAD"
+                  },
+                  {
+                    "const": "--checks"
+                  },
+                  {
+                    "const": "python.syntax,python.source-hygiene"
+                  }
+                ],
+                "items": false
+              },
+              "owner": {
+                "const": "validation"
+              },
+              "status": {
+                "const": "ok"
+              },
+              "exitCode": {
+                "const": 0
+              },
+              "evidence": {
+                "type": "array",
+                "minItems": 2,
+                "maxItems": 2,
+                "allOf": [
+                  {
+                    "contains": {
+                      "const": "python-syntax"
+                    },
+                    "minContains": 1,
+                    "maxContains": 1
+                  },
+                  {
+                    "contains": {
+                      "const": "python-source-hygiene"
+                    },
+                    "minContains": 1,
+                    "maxContains": 1
+                  }
+                ],
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "id"
+            ],
+            "properties": {
+              "id": {
+                "const": "opcore-python-measure"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "command": {
+                "type": "array",
+                "minItems": 2,
+                "maxItems": 2,
+                "prefixItems": [
+                  {
+                    "const": "opcore"
+                  },
+                  {
+                    "const": "measure"
+                  }
+                ],
+                "items": false
+              },
+              "canonicalCommand": {
+                "type": "array",
+                "minItems": 2,
+                "maxItems": 2,
+                "prefixItems": [
+                  {
+                    "const": "opcore"
+                  },
+                  {
+                    "const": "measure"
+                  }
+                ],
+                "items": false
+              },
+              "owner": {
+                "const": "runtime"
+              },
+              "status": {
+                "const": "ok"
+              },
+              "exitCode": {
+                "const": 0
+              },
+              "evidence": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 1,
+                "allOf": [
+                  {
+                    "contains": {
+                      "const": "python-measure-delta"
+                    },
+                    "minContains": 1,
+                    "maxContains": 1
+                  }
+                ],
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "id"
+            ],
+            "properties": {
+              "id": {
+                "const": "graph-python-build"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "command": {
+                "type": "array",
+                "minItems": 3,
+                "maxItems": 3,
+                "prefixItems": [
+                  {
+                    "const": "lattice"
+                  },
+                  {
+                    "const": "graph"
+                  },
+                  {
+                    "const": "build"
+                  }
+                ],
+                "items": false
+              },
+              "canonicalCommand": {
+                "type": "array",
+                "minItems": 3,
+                "maxItems": 3,
+                "prefixItems": [
+                  {
+                    "const": "lattice"
+                  },
+                  {
+                    "const": "graph"
+                  },
+                  {
+                    "const": "build"
+                  }
+                ],
+                "items": false
+              },
+              "owner": {
+                "const": "graph"
+              },
+              "status": {
+                "const": "ok"
+              },
+              "exitCode": {
+                "const": 0
+              },
+              "evidence": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 1,
+                "allOf": [
+                  {
+                    "contains": {
+                      "const": "python-graph-provider"
+                    },
+                    "minContains": 1,
+                    "maxContains": 1
+                  }
+                ],
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "id"
+            ],
+            "properties": {
+              "id": {
+                "const": "graph-python-status"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "command": {
+                "type": "array",
+                "minItems": 3,
+                "maxItems": 3,
+                "prefixItems": [
+                  {
+                    "const": "lattice"
+                  },
+                  {
+                    "const": "graph"
+                  },
+                  {
+                    "const": "status"
+                  }
+                ],
+                "items": false
+              },
+              "canonicalCommand": {
+                "type": "array",
+                "minItems": 3,
+                "maxItems": 3,
+                "prefixItems": [
+                  {
+                    "const": "lattice"
+                  },
+                  {
+                    "const": "graph"
+                  },
+                  {
+                    "const": "status"
+                  }
+                ],
+                "items": false
+              },
+              "owner": {
+                "const": "graph"
+              },
+              "status": {
+                "const": "ok"
+              },
+              "exitCode": {
+                "const": 0
+              },
+              "evidence": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 1,
+                "allOf": [
+                  {
+                    "contains": {
+                      "const": "python-graph-provider"
+                    },
+                    "minContains": 1,
+                    "maxContains": 1
+                  }
+                ],
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "id"
+            ],
+            "properties": {
+              "id": {
+                "const": "graph-python-query"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "command": {
+                "type": "array",
+                "minItems": 3,
+                "maxItems": 3,
+                "prefixItems": [
+                  {
+                    "const": "lattice"
+                  },
+                  {
+                    "const": "graph"
+                  },
+                  {
+                    "const": "query"
+                  }
+                ],
+                "items": false
+              },
+              "canonicalCommand": {
+                "type": "array",
+                "minItems": 3,
+                "maxItems": 3,
+                "prefixItems": [
+                  {
+                    "const": "lattice"
+                  },
+                  {
+                    "const": "graph"
+                  },
+                  {
+                    "const": "query"
+                  }
+                ],
+                "items": false
+              },
+              "owner": {
+                "const": "graph"
+              },
+              "status": {
+                "const": "ok"
+              },
+              "exitCode": {
+                "const": 0
+              },
+              "evidence": {
+                "type": "array",
+                "minItems": 3,
+                "maxItems": 3,
+                "allOf": [
+                  {
+                    "contains": {
+                      "const": "src/acme/app.py"
+                    },
+                    "minContains": 1,
+                    "maxContains": 1
+                  },
+                  {
+                    "contains": {
+                      "const": "Greeter"
+                    },
+                    "minContains": 1,
+                    "maxContains": 1
+                  },
+                  {
+                    "contains": {
+                      "const": "build_name"
+                    },
+                    "minContains": 1,
+                    "maxContains": 1
+                  }
+                ],
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "id"
+            ],
+            "properties": {
+              "id": {
+                "const": "graph-python-search"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "command": {
+                "type": "array",
+                "minItems": 6,
+                "maxItems": 6,
+                "prefixItems": [
+                  {
+                    "const": "lattice"
+                  },
+                  {
+                    "const": "graph"
+                  },
+                  {
+                    "const": "search"
+                  },
+                  {
+                    "const": "Greeter"
+                  },
+                  {
+                    "const": "--limit"
+                  },
+                  {
+                    "const": "5"
+                  }
+                ],
+                "items": false
+              },
+              "canonicalCommand": {
+                "type": "array",
+                "minItems": 6,
+                "maxItems": 6,
+                "prefixItems": [
+                  {
+                    "const": "lattice"
+                  },
+                  {
+                    "const": "graph"
+                  },
+                  {
+                    "const": "search"
+                  },
+                  {
+                    "const": "Greeter"
+                  },
+                  {
+                    "const": "--limit"
+                  },
+                  {
+                    "const": "5"
+                  }
+                ],
+                "items": false
+              },
+              "owner": {
+                "const": "graph"
+              },
+              "status": {
+                "const": "ok"
+              },
+              "exitCode": {
+                "const": 0
+              },
+              "evidence": {
+                "type": "array",
+                "minItems": 2,
+                "maxItems": 2,
+                "allOf": [
+                  {
+                    "contains": {
+                      "const": "src/acme/app.py"
+                    },
+                    "minContains": 1,
+                    "maxContains": 1
+                  },
+                  {
+                    "contains": {
+                      "const": "Greeter"
+                    },
+                    "minContains": 1,
+                    "maxContains": 1
+                  }
+                ],
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "ReleaseCutoverCurrentToolGuardrailReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "command",
+        "status",
+        "exitCode",
+        "stdoutSha256",
+        "stderrSha256",
+        "retained",
+        "assertion",
+        "oldToolReplacementClaimed"
+      ],
+      "properties": {
+        "id": {
+          "enum": [
+            "current-tools-validate-changed",
+            "current-tools-validate-rust-graph"
+          ]
+        },
+        "command": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "prefixItems": [
+            {
+              "const": "npm"
+            },
+            {
+              "const": "run"
+            },
+            {
+              "enum": [
+                "current-tools:validate-changed",
+                "current-tools:validate-rust-graph"
+              ]
+            }
+          ],
+          "items": false
+        },
+        "status": {
+          "const": "passed"
+        },
+        "exitCode": {
+          "const": 0
+        },
+        "stdoutSha256": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "stderrSha256": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "retained": {
+          "const": true
+        },
+        "assertion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "oldToolReplacementClaimed": {
+          "const": false
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "id"
+            ],
+            "properties": {
+              "id": {
+                "const": "current-tools-validate-changed"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "command": {
+                "type": "array",
+                "minItems": 3,
+                "maxItems": 3,
+                "prefixItems": [
+                  {
+                    "const": "npm"
+                  },
+                  {
+                    "const": "run"
+                  },
+                  {
+                    "const": "current-tools:validate-changed"
+                  }
+                ],
+                "items": false
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "id"
+            ],
+            "properties": {
+              "id": {
+                "const": "current-tools-validate-rust-graph"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "command": {
+                "type": "array",
+                "minItems": 3,
+                "maxItems": 3,
+                "prefixItems": [
+                  {
+                    "const": "npm"
+                  },
+                  {
+                    "const": "run"
+                  },
+                  {
+                    "const": "current-tools:validate-rust-graph"
+                  }
+                ],
+                "items": false
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "status"
+            ],
+            "properties": {
+              "status": {
+                "const": "passed"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "exitCode": {
+                "const": 0
               }
             }
           }

@@ -1431,7 +1431,8 @@ export const releaseReceiptPackageNames = [
   "@the-open-engine/opcore-validation-python",
   "@the-open-engine/opcore-validation-rust",
   "@the-open-engine/opcore-validation-typescript",
-  "@the-open-engine/opcore-asp-provider"
+  "@the-open-engine/opcore-asp-provider",
+  "@the-open-engine/opcore-fixtures"
 ] as const;
 export type ReleaseReceiptPackageName = (typeof releaseReceiptPackageNames)[number];
 
@@ -1494,6 +1495,34 @@ export const releaseCutoverRustCommandIds = [
 ] as const;
 export type ReleaseCutoverRustCommandId = (typeof releaseCutoverRustCommandIds)[number];
 
+export const releaseCutoverPythonCommandIds = [
+  "opcore-python-scan",
+  "opcore-python-status",
+  "opcore-python-check-changed",
+  "opcore-python-measure",
+  "graph-python-build",
+  "graph-python-status",
+  "graph-python-query",
+  "graph-python-search"
+] as const;
+export type ReleaseCutoverPythonCommandId = (typeof releaseCutoverPythonCommandIds)[number];
+
+export const releaseCutoverNegativeCheckIds = [
+  "missing-required-graph-check",
+  "missing-required-graph-validate",
+  "python-types-degraded-no-tools",
+  "python-source-hygiene-no-ruff",
+  "python-relevant-tests-no-pytest",
+  "python-toolchain-degraded-no-tools"
+] as const;
+export type ReleaseCutoverNegativeCheckId = (typeof releaseCutoverNegativeCheckIds)[number];
+
+export const releaseCutoverCurrentToolGuardrailIds = [
+  "current-tools-validate-changed",
+  "current-tools-validate-rust-graph"
+] as const;
+export type ReleaseCutoverCurrentToolGuardrailId = (typeof releaseCutoverCurrentToolGuardrailIds)[number];
+
 export const releaseCutoverInputIssues = ["#17", "#29", "#58"] as const;
 export type ReleaseCutoverInputIssue = (typeof releaseCutoverInputIssues)[number];
 
@@ -1527,6 +1556,8 @@ export type AspDogfoodForbiddenProviderMarker = (typeof aspDogfoodForbiddenProvi
 const legacyAspProviderBinMarker = ["lattice", "asp", "provider"].join("-");
 
 const releaseCutoverRequestFilePlaceholder = "<request-file>";
+const releaseCutoverMissingGraphRepoPlaceholder = "<missing-graph-repo>";
+const releaseCutoverRequiredGraphRequestPlaceholder = "<required-graph-request>";
 
 type ReleaseCutoverExpectedCommandStatus = CommandRouteStatus;
 
@@ -1536,7 +1567,7 @@ interface ReleaseCutoverCommandExpectation {
   readonly owner: CommandOwner;
   readonly status: ReleaseCutoverExpectedCommandStatus;
   readonly exitCode: 0 | 1 | 2 | 64;
-  readonly bin: "opcore" | "opcore";
+  readonly bin: "opcore";
 }
 
 const releaseCutoverCommandExpectations = {
@@ -1762,6 +1793,66 @@ const releaseCutoverRustCommandExpectations = {
     bin: "opcore"
   }
 } as const satisfies Record<ReleaseCutoverRustCommandId, ReleaseCutoverCommandExpectation>;
+
+const releaseCutoverPythonCommandExpectations = {
+  "opcore-python-scan": { canonicalCommand: ["opcore", "scan"], owner: "runtime", status: "ok", exitCode: 0, bin: "opcore" },
+  "opcore-python-status": { canonicalCommand: ["opcore", "status"], owner: "runtime", status: "ok", exitCode: 0, bin: "opcore" },
+  "opcore-python-check-changed": {
+    canonicalCommand: ["opcore", "check", "changed", "--base", "HEAD", "--checks", "python.syntax,python.source-hygiene"],
+    owner: "validation",
+    status: "ok",
+    exitCode: 0,
+    bin: "opcore"
+  },
+  "opcore-python-measure": { canonicalCommand: ["opcore", "measure"], owner: "runtime", status: "ok", exitCode: 0, bin: "opcore" },
+  "graph-python-build": { canonicalCommand: ["opcore", "graph", "build"], owner: "graph", status: "ok", exitCode: 0, bin: "opcore" },
+  "graph-python-status": { canonicalCommand: ["opcore", "graph", "status"], owner: "graph", status: "ok", exitCode: 0, bin: "opcore" },
+  "graph-python-query": { canonicalCommand: ["opcore", "graph", "query"], owner: "graph", status: "ok", exitCode: 0, bin: "opcore" },
+  "graph-python-search": {
+    canonicalCommand: ["opcore", "graph", "search", "Greeter", "--limit", "5"],
+    owner: "graph",
+    status: "ok",
+    exitCode: 0,
+    bin: "opcore"
+  }
+} as const satisfies Record<ReleaseCutoverPythonCommandId, ReleaseCutoverCommandExpectation>;
+
+const releaseCutoverPythonEvidenceExpectations = {
+  "opcore-python-scan": ["python-coverage", "python-validation", "python-types-degraded"],
+  "opcore-python-status": ["python-coverage", "python-validation"],
+  "opcore-python-check-changed": ["python-syntax", "python-source-hygiene"],
+  "opcore-python-measure": ["python-measure-delta"],
+  "graph-python-build": ["python-graph-provider"],
+  "graph-python-status": ["python-graph-provider"],
+  "graph-python-query": ["src/acme/app.py", "Greeter", "build_name"],
+  "graph-python-search": ["src/acme/app.py", "Greeter"]
+} as const satisfies Record<ReleaseCutoverPythonCommandId, readonly string[]>;
+
+const releaseCutoverNegativeCheckExpectations = {
+  "missing-required-graph-check": [
+    "opcore",
+    "check",
+    "files",
+    "src/index.ts",
+    "--repo",
+    releaseCutoverMissingGraphRepoPlaceholder,
+    "--graph-mode",
+    "required",
+    "--checks",
+    "typescript.import-graph"
+  ],
+  "missing-required-graph-validate": [
+    "opcore",
+    "validate",
+    "request",
+    "--request-file",
+    releaseCutoverRequiredGraphRequestPlaceholder
+  ],
+  "python-types-degraded-no-tools": ["opcore", "check", "files", "src/acme/app.py", "--checks", "python.types"],
+  "python-source-hygiene-no-ruff": ["opcore", "check", "files", "src/acme/app.py", "--checks", "python.source-hygiene"],
+  "python-relevant-tests-no-pytest": ["opcore", "check", "files", "src/acme/app.py", "--checks", "python.relevant-tests"],
+  "python-toolchain-degraded-no-tools": ["opcore", "status"]
+} as const satisfies Record<ReleaseCutoverNegativeCheckId, readonly string[]>;
 
 export interface CommandExitSemantics {
   ok: 0;
@@ -2880,12 +2971,38 @@ export interface ReleaseCutoverRustCommandReceipt {
   assertion: string;
 }
 
+export interface ReleaseCutoverPythonCommandReceipt {
+  id: ReleaseCutoverPythonCommandId;
+  command: readonly string[];
+  canonicalCommand: readonly string[];
+  evidence: readonly string[];
+  owner: CommandOwner;
+  status: "ok";
+  exitCode: 0;
+  binPath: string;
+  stdoutSha256: string;
+  stderrSha256: string;
+  assertion: string;
+}
+
 export interface ReleaseCutoverNegativeCheck {
-  id: string;
+  id: ReleaseCutoverNegativeCheckId;
   command: readonly string[];
   status: "passed";
   exitCode: 0;
   assertion: string;
+}
+
+export interface ReleaseCutoverCurrentToolGuardrailReceipt {
+  id: ReleaseCutoverCurrentToolGuardrailId;
+  command: readonly ["npm", "run", "current-tools:validate-changed"] | readonly ["npm", "run", "current-tools:validate-rust-graph"];
+  status: "passed";
+  exitCode: 0;
+  stdoutSha256: string;
+  stderrSha256: string;
+  retained: true;
+  assertion: string;
+  oldToolReplacementClaimed: false;
 }
 
 export interface ReleaseCutoverForbiddenMarkerScan {
@@ -2913,7 +3030,10 @@ export interface ReleaseCutoverReceipt {
   environmentIsolation: ReleaseCutoverEnvironmentIsolationEvidence;
   commandReceipts: readonly ReleaseCutoverCommandReceipt[];
   rustCommandReceipts: readonly ReleaseCutoverRustCommandReceipt[];
+  pythonCommandReceipts: readonly ReleaseCutoverPythonCommandReceipt[];
   negativeChecks: readonly ReleaseCutoverNegativeCheck[];
+  currentToolGuardrails: readonly ReleaseCutoverCurrentToolGuardrailReceipt[];
+  oldToolReplacementClaimed: false;
   forbiddenMarkerScan: ReleaseCutoverForbiddenMarkerScan;
   inputEvidence: readonly ReleaseCutoverInputEvidence[];
 }
@@ -4934,7 +5054,12 @@ export function validateReleaseCutoverReceipt(receipt: ReleaseCutoverReceipt): R
   validateReleaseCutoverEnvironmentIsolation(receipt.environmentIsolation);
   validateReleaseCutoverCommandReceipts(receipt.commandReceipts);
   validateReleaseCutoverRustCommandReceipts(receipt.rustCommandReceipts);
+  validateReleaseCutoverPythonCommandReceipts(receipt.pythonCommandReceipts);
   validateReleaseCutoverNegativeChecks(receipt.negativeChecks);
+  validateReleaseCutoverCurrentToolGuardrails(receipt.currentToolGuardrails);
+  if (receipt.oldToolReplacementClaimed !== false) {
+    throw new Error("Release cutover receipt must not claim old-tool replacement");
+  }
   validateReleaseCutoverForbiddenMarkerScan(receipt.forbiddenMarkerScan);
   validateReleaseCutoverInputEvidence(receipt.inputEvidence);
   return receipt;
@@ -7721,10 +7846,55 @@ function validateReleaseCutoverRustCommandReceipts(receipts: readonly ReleaseCut
   }
 }
 
+function validateReleaseCutoverPythonCommandReceipts(receipts: readonly ReleaseCutoverPythonCommandReceipt[]): void {
+  validateNonEmptyArray(receipts, "Release cutover Python command receipts");
+  validateExactStringSet(
+    receipts.map((entry) => entry.id),
+    releaseCutoverPythonCommandIds,
+    "Release cutover Python command receipts"
+  );
+  for (const receipt of receipts) {
+    if (!receipt || typeof receipt !== "object") throw new Error("Release cutover Python command receipt is required");
+    if (!includesString(releaseCutoverPythonCommandIds, receipt.id)) {
+      throw new Error(`Unknown release cutover Python command receipt id: ${String(receipt.id)}`);
+    }
+    validateStringArray(receipt.command, "Release cutover Python command receipt command", { allowEmpty: false });
+    validateStringArray(receipt.canonicalCommand, "Release cutover Python command receipt canonicalCommand", { allowEmpty: false });
+    validateStringArray(receipt.evidence, "Release cutover Python command receipt evidence", { allowEmpty: false });
+    validateExactStringSequence(receipt.command, receipt.canonicalCommand, `Release cutover Python ${receipt.id} command`);
+    const expected = releaseCutoverPythonCommandExpectations[receipt.id];
+    validateExactStringSet(
+      receipt.evidence,
+      releaseCutoverPythonEvidenceExpectations[receipt.id],
+      `Release cutover Python command ${receipt.id} evidence`
+    );
+    if (receipt.command[0] !== expected.bin) {
+      throw new Error(`Release cutover Python command ${receipt.id} command must use canonical ${expected.bin} bin`);
+    }
+    if (receipt.canonicalCommand[0] !== expected.bin) {
+      throw new Error(`Release cutover Python command ${receipt.id} canonicalCommand must use canonical ${expected.bin} bin`);
+    }
+    validateCommandOwner(receipt.owner);
+    validateReleaseCutoverExpectedCommand(receipt.canonicalCommand, expected, receipt.id);
+    if (receipt.owner !== expected.owner) {
+      throw new Error(`Release cutover Python command ${receipt.id} owner must match expected ${expected.owner}`);
+    }
+    if (receipt.status !== "ok") throw new Error(`Release cutover Python command ${receipt.id} status must be ok`);
+    if (receipt.exitCode !== 0) throw new Error(`Release cutover Python command ${receipt.id} exitCode must be 0`);
+    validateNonEmptyString(receipt.binPath, "Release cutover Python command receipt binPath");
+    if (!receipt.binPath.endsWith(`node_modules/.bin/${expected.bin}`)) {
+      throw new Error(`Release cutover Python command receipt binPath must use installed node_modules/.bin/${expected.bin}`);
+    }
+    validateSha256(receipt.stdoutSha256, "Release cutover Python command receipt stdoutSha256");
+    validateSha256(receipt.stderrSha256, "Release cutover Python command receipt stderrSha256");
+    validateNonEmptyString(receipt.assertion, "Release cutover Python command receipt assertion");
+  }
+}
+
 function validateReleaseCutoverExpectedCommand(
   command: readonly string[],
   expectation: ReleaseCutoverCommandExpectation,
-  id: ReleaseCutoverCommandId | ReleaseCutoverRustCommandId
+  id: ReleaseCutoverCommandId | ReleaseCutoverRustCommandId | ReleaseCutoverPythonCommandId
 ): void {
   if (!releaseCutoverCommandMatchesExpectation(command, expectation)) {
     throw new Error(`Release cutover command ${id} canonicalCommand must match expected ${formatReleaseCutoverCommand(expectation)}`);
@@ -7757,14 +7927,54 @@ function formatReleaseCutoverCommand(expectation: ReleaseCutoverCommandExpectati
 
 function validateReleaseCutoverNegativeChecks(checks: readonly ReleaseCutoverNegativeCheck[]): void {
   validateNonEmptyArray(checks, "Release cutover negative checks");
+  validateExactStringSet(
+    checks.map((entry) => entry.id),
+    releaseCutoverNegativeCheckIds,
+    "Release cutover negative checks"
+  );
   for (const check of checks) {
     if (!check || typeof check !== "object") throw new Error("Release cutover negative check is required");
     validateNonEmptyString(check.id, "Release cutover negative check id");
+    if (!includesString(releaseCutoverNegativeCheckIds, check.id)) {
+      throw new Error(`Unknown release cutover negative check id: ${String(check.id)}`);
+    }
     validateStringArray(check.command, "Release cutover negative check command", { allowEmpty: false });
-    if (check.command[0] !== "opcore") throw new Error("Release cutover negative check command must be canonical opcore");
+    validateExactStringSequence(
+      check.command,
+      releaseCutoverNegativeCheckExpectations[check.id],
+      `Release cutover negative check ${check.id} command`
+    );
     if (check.status !== "passed") throw new Error("Release cutover negative check status must be passed");
     if (check.exitCode !== 0) throw new Error("Release cutover negative check exitCode must be 0");
     validateNonEmptyString(check.assertion, "Release cutover negative check assertion");
+  }
+}
+
+function validateReleaseCutoverCurrentToolGuardrails(guardrails: readonly ReleaseCutoverCurrentToolGuardrailReceipt[]): void {
+  validateNonEmptyArray(guardrails, "Release cutover current-tool guardrails");
+  validateExactStringSet(
+    guardrails.map((entry) => entry.id),
+    releaseCutoverCurrentToolGuardrailIds,
+    "Release cutover current-tool guardrails"
+  );
+  for (const guardrail of guardrails) {
+    if (!guardrail || typeof guardrail !== "object") throw new Error("Release cutover current-tool guardrail is required");
+    if (!includesString(releaseCutoverCurrentToolGuardrailIds, guardrail.id)) {
+      throw new Error(`Unknown release cutover current-tool guardrail id: ${String(guardrail.id)}`);
+    }
+    const expectedCommand = guardrail.id === "current-tools-validate-changed"
+      ? ["npm", "run", "current-tools:validate-changed"] as const
+      : ["npm", "run", "current-tools:validate-rust-graph"] as const;
+    validateExactStringSequence(guardrail.command, expectedCommand, `Release cutover guardrail ${guardrail.id} command`);
+    if (guardrail.status !== "passed") throw new Error("Release cutover current-tool guardrail status must be passed");
+    if (guardrail.exitCode !== 0) throw new Error("Release cutover current-tool guardrail exitCode must be 0");
+    validateSha256(guardrail.stdoutSha256, "Release cutover current-tool guardrail stdoutSha256");
+    validateSha256(guardrail.stderrSha256, "Release cutover current-tool guardrail stderrSha256");
+    if (guardrail.retained !== true) throw new Error("Release cutover current-tool guardrail must be retained");
+    validateNonEmptyString(guardrail.assertion, "Release cutover current-tool guardrail assertion");
+    if (guardrail.oldToolReplacementClaimed !== false) {
+      throw new Error("Release cutover current-tool guardrail must not claim old-tool replacement");
+    }
   }
 }
 

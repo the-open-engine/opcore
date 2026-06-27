@@ -8,7 +8,11 @@ import { spawnSync } from "node:child_process";
 import {
   graphCoreNativePackageNameForTarget,
   graphCoreNativePackageNames,
+  releaseCutoverCurrentToolGuardrailIds,
+  releaseCutoverNegativeCheckIds,
+  releaseCutoverPythonCommandIds,
   releaseCutoverRequiredCommandIds,
+  releaseCutoverRustCommandIds,
   releaseReceiptPackageNames
 } from "../packages/contracts/dist/index.js";
 
@@ -569,6 +573,69 @@ function minimalCutoverReceipt(repo, commandOverrides = {}) {
     commandReceipts.map((entry) => entry.id),
     releaseCutoverRequiredCommandIds
   );
+  const rustCommandReceipts = cutoverRustCommandExpectations().map((expectation) => commandReceipt(expectation, "opcore", "passed on Rust fixture"));
+  assert.deepEqual(
+    rustCommandReceipts.map((entry) => entry.id),
+    releaseCutoverRustCommandIds
+  );
+  const pythonCommandReceipts = cutoverPythonCommandExpectations().map((expectation) => commandReceipt(expectation, expectation.command[0], "passed on Python fixture"));
+  assert.deepEqual(
+    pythonCommandReceipts.map((entry) => entry.id),
+    releaseCutoverPythonCommandIds
+  );
+  const negativeChecks = [
+    {
+      id: "missing-required-graph-check",
+      command: ["opcore", "check", "files", "src/index.ts", "--repo", "<missing-graph-repo>", "--graph-mode", "required", "--checks", "typescript.import-graph"],
+      status: "passed",
+      exitCode: 0,
+      assertion: "typed provider failure"
+    },
+    {
+      id: "missing-required-graph-validate",
+      command: ["opcore", "validate", "request", "--request-file", "<required-graph-request>"],
+      status: "passed",
+      exitCode: 0,
+      assertion: "typed provider failure"
+    },
+    {
+      id: "python-types-degraded-no-tools",
+      command: ["opcore", "check", "files", "src/acme/app.py", "--checks", "python.types"],
+      status: "passed",
+      exitCode: 0,
+      assertion: "Python type tooling degraded instead of passing silently"
+    },
+    {
+      id: "python-source-hygiene-no-ruff",
+      command: ["opcore", "check", "files", "src/acme/app.py", "--checks", "python.source-hygiene"],
+      status: "passed",
+      exitCode: 0,
+      assertion: "Python source hygiene stayed honest without ruff"
+    },
+    {
+      id: "python-relevant-tests-no-pytest",
+      command: ["opcore", "check", "files", "src/acme/app.py", "--checks", "python.relevant-tests"],
+      status: "passed",
+      exitCode: 0,
+      assertion: "Python relevant-tests stayed graph-backed without pytest"
+    },
+    {
+      id: "python-toolchain-degraded-no-tools",
+      command: ["opcore", "status"],
+      status: "passed",
+      exitCode: 0,
+      assertion: "Python toolchain absence stayed degraded"
+    }
+  ];
+  assert.deepEqual(
+    negativeChecks.map((entry) => entry.id),
+    releaseCutoverNegativeCheckIds
+  );
+  const currentToolGuardrails = retainedCutoverGuardrails();
+  assert.deepEqual(
+    currentToolGuardrails.map((entry) => entry.id),
+    releaseCutoverCurrentToolGuardrailIds
+  );
   return {
     schemaVersion: 1,
     issue: "#30",
@@ -616,15 +683,11 @@ function minimalCutoverReceipt(repo, commandOverrides = {}) {
       oldBinsAbsent: { crg: true, cix: true, rox: true }
     },
     commandReceipts,
-    negativeChecks: [
-      {
-        id: "missing-required-graph-check",
-        command: ["opcore", "check", "files", "src/index.ts", "--graph-mode", "required"],
-        status: "passed",
-        exitCode: 0,
-        assertion: "typed provider failure"
-      }
-    ],
+    rustCommandReceipts,
+    pythonCommandReceipts,
+    negativeChecks,
+    currentToolGuardrails,
+    oldToolReplacementClaimed: false,
     forbiddenMarkerScan: {
       scannedTextCount: 1,
       findingCount: 0,
@@ -746,4 +809,90 @@ function cutoverCommandExpectations() {
     status,
     exitCode
   }));
+}
+
+function cutoverRustCommandExpectations() {
+  return [
+    ["graph-rust-build", ["opcore", "graph", "build"], "graph"],
+    ["graph-rust-status", ["opcore", "graph", "status"], "graph"],
+    ["graph-rust-query", ["opcore", "graph", "query"], "graph"],
+    ["graph-rust-impact", ["opcore", "graph", "impact", "--files", "src/helpers.rs"], "graph"],
+    ["graph-rust-review-context", ["opcore", "graph", "review-context", "--files", "src/helpers.rs"], "graph"],
+    ["graph-rust-detect-changes", ["opcore", "graph", "detect-changes", "--files", "src/helpers.rs"], "graph"],
+    ["graph-rust-search", ["opcore", "graph", "search", "Widget", "--limit", "5"], "graph"]
+  ].map(([id, command, owner]) => ({
+    id,
+    command,
+    owner,
+    status: "ok",
+    exitCode: 0
+  }));
+}
+
+function cutoverPythonCommandExpectations() {
+  return [
+    ["opcore-python-scan", ["opcore", "scan"], "runtime", ["python-coverage", "python-validation", "python-types-degraded"]],
+    ["opcore-python-status", ["opcore", "status"], "runtime", ["python-coverage", "python-validation"]],
+    [
+      "opcore-python-check-changed",
+      ["opcore", "check", "changed", "--base", "HEAD", "--checks", "python.syntax,python.source-hygiene"],
+      "validation",
+      ["python-syntax", "python-source-hygiene"]
+    ],
+    ["opcore-python-measure", ["opcore", "measure"], "runtime", ["python-measure-delta"]],
+    ["graph-python-build", ["opcore", "graph", "build"], "graph", ["python-graph-provider"]],
+    ["graph-python-status", ["opcore", "graph", "status"], "graph", ["python-graph-provider"]],
+    ["graph-python-query", ["opcore", "graph", "query"], "graph", ["src/acme/app.py", "Greeter", "build_name"]],
+    ["graph-python-search", ["opcore", "graph", "search", "Greeter", "--limit", "5"], "graph", ["src/acme/app.py", "Greeter"]]
+  ].map(([id, command, owner, evidence]) => ({
+    id,
+    command,
+    owner,
+    evidence,
+    status: "ok",
+    exitCode: 0
+  }));
+}
+
+function commandReceipt(expectation, bin = expectation.command[0], assertionSuffix = "passed") {
+  return {
+    id: expectation.id,
+    command: expectation.command,
+    canonicalCommand: expectation.command,
+    ...(expectation.evidence === undefined ? {} : { evidence: expectation.evidence }),
+    owner: expectation.owner,
+    status: expectation.status,
+    exitCode: expectation.exitCode,
+    binPath: `node_modules/.bin/${bin}`,
+    stdoutSha256: "1".repeat(64),
+    stderrSha256: "2".repeat(64),
+    assertion: `${expectation.id} ${assertionSuffix}`
+  };
+}
+
+function retainedCutoverGuardrails() {
+  return [
+    {
+      id: "current-tools-validate-changed",
+      command: ["npm", "run", "current-tools:validate-changed"],
+      status: "passed",
+      exitCode: 0,
+      stdoutSha256: "1".repeat(64),
+      stderrSha256: "2".repeat(64),
+      retained: true,
+      assertion: "retained changed-file guardrail",
+      oldToolReplacementClaimed: false
+    },
+    {
+      id: "current-tools-validate-rust-graph",
+      command: ["npm", "run", "current-tools:validate-rust-graph"],
+      status: "passed",
+      exitCode: 0,
+      stdoutSha256: "1".repeat(64),
+      stderrSha256: "2".repeat(64),
+      retained: true,
+      assertion: "retained Rust graph guardrail",
+      oldToolReplacementClaimed: false
+    }
+  ];
 }

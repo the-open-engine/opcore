@@ -7,6 +7,9 @@ import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   graphCoreNativePackageNames,
+  releaseCutoverCurrentToolGuardrailIds,
+  releaseCutoverNegativeCheckIds,
+  releaseCutoverPythonCommandIds,
   releaseCutoverRustCommandIds,
   releaseReceiptPackageNames,
   validateReleaseCutoverReceipt
@@ -50,6 +53,17 @@ describe("cutover release receipt", () => {
         releaseCutoverRustCommandIds
       );
       assert.equal(receipt.rustCommandReceipts.every((entry) => entry.owner === "graph" && entry.status === "ok"), true);
+      assert.deepEqual(
+        receipt.pythonCommandReceipts.map((entry) => entry.id),
+        releaseCutoverPythonCommandIds
+      );
+      assert.equal(receipt.pythonCommandReceipts.every((entry) => entry.status === "ok"), true);
+      assert.deepEqual(
+        receipt.currentToolGuardrails.map((entry) => entry.id),
+        releaseCutoverCurrentToolGuardrailIds
+      );
+      assert.equal(receipt.currentToolGuardrails.every((entry) => entry.retained === true && entry.oldToolReplacementClaimed === false), true);
+      assert.equal(receipt.oldToolReplacementClaimed, false);
       for (const id of ["inspect-symbols", "inspect-definition", "inspect-references", "inspect-signature", "inspect-implementations", "inspect-search"]) {
         assert.equal(receipt.commandReceipts.find((entry) => entry.id === id)?.owner, "inspect", id);
       }
@@ -124,7 +138,32 @@ describe("cutover release receipt", () => {
             assertion: "bad placeholder"
           }
         ],
-        negativeChecks: [],
+        rustCommandReceipts: releaseCutoverRustCommandIds.map((id) => releaseCutoverLanguageReceipt(id, rustCutoverCommand(id), "Rust")),
+        pythonCommandReceipts: releaseCutoverPythonCommandIds.map((id) =>
+          releaseCutoverLanguageReceipt(id, pythonCutoverCommand(id), "Python")
+        ),
+        negativeChecks: releaseCutoverNegativeCheckIds.map((id) => ({
+          id,
+          command: negativeCutoverCommand(id),
+          status: "passed",
+          exitCode: 0,
+          assertion: `${id} rejected the unsafe path`
+        })),
+        currentToolGuardrails: releaseCutoverCurrentToolGuardrailIds.map((id) => ({
+          id,
+          command:
+            id === "current-tools-validate-changed"
+              ? ["npm", "run", "current-tools:validate-changed"]
+              : ["npm", "run", "current-tools:validate-rust-graph"],
+          status: "passed",
+          exitCode: 0,
+          stdoutSha256: "5".repeat(64),
+          stderrSha256: "6".repeat(64),
+          retained: true,
+          assertion: `${id} remains retained`,
+          oldToolReplacementClaimed: false
+        })),
+        oldToolReplacementClaimed: false,
         forbiddenMarkerScan: { scannedTextCount: 1, findingCount: 0, markersBlocked: ["private-runtime"] },
         inputEvidence: [
           { issue: "#17", path: "docs/release/graph-release-receipt.json", checksumSha256: "1".repeat(64) },
@@ -148,6 +187,77 @@ function installedFilesFor(packageName) {
     ...(packageName === "@the-open-engine/opcore-asp-provider" ? ["dist/index.js", "dist/manifests/asp-server.json"] : [])
   ];
   return paths.map((path) => ({ path: `node_modules/${packageName}/${path}`, sha256: "4".repeat(64) }));
+}
+
+function releaseCutoverLanguageReceipt(id, command, language) {
+  return {
+    id,
+    command,
+    canonicalCommand: command,
+    ...(language === "Python" ? { evidence: pythonCutoverEvidence(id) } : {}),
+    owner: releaseCutoverLanguageOwner(id, command),
+    status: "ok",
+    exitCode: 0,
+    binPath: `node_modules/.bin/${command[0]}`,
+    stdoutSha256: "5".repeat(64),
+    stderrSha256: "6".repeat(64),
+    assertion: `${language} installed-artifact command passed`
+  };
+}
+
+function releaseCutoverLanguageOwner(id, command) {
+  if (command[1] === "graph") return "graph";
+  if (id === "opcore-python-check-changed") return "validation";
+  return "runtime";
+}
+
+function rustCutoverCommand(id) {
+  return {
+    "graph-rust-build": ["opcore", "graph", "build"],
+    "graph-rust-status": ["opcore", "graph", "status"],
+    "graph-rust-query": ["opcore", "graph", "query"],
+    "graph-rust-impact": ["opcore", "graph", "impact", "--files", "src/helpers.rs"],
+    "graph-rust-review-context": ["opcore", "graph", "review-context", "--files", "src/helpers.rs"],
+    "graph-rust-detect-changes": ["opcore", "graph", "detect-changes", "--files", "src/helpers.rs"],
+    "graph-rust-search": ["opcore", "graph", "search", "Widget", "--limit", "5"]
+  }[id];
+}
+
+function pythonCutoverCommand(id) {
+  return {
+    "opcore-python-scan": ["opcore", "scan"],
+    "opcore-python-status": ["opcore", "status"],
+    "opcore-python-check-changed": ["opcore", "check", "changed", "--base", "HEAD", "--checks", "python.syntax,python.source-hygiene"],
+    "opcore-python-measure": ["opcore", "measure"],
+    "graph-python-build": ["opcore", "graph", "build"],
+    "graph-python-status": ["opcore", "graph", "status"],
+    "graph-python-query": ["opcore", "graph", "query"],
+    "graph-python-search": ["opcore", "graph", "search", "Greeter", "--limit", "5"]
+  }[id];
+}
+
+function pythonCutoverEvidence(id) {
+  return {
+    "opcore-python-scan": ["python-coverage", "python-validation", "python-types-degraded"],
+    "opcore-python-status": ["python-coverage", "python-validation"],
+    "opcore-python-check-changed": ["python-syntax", "python-source-hygiene"],
+    "opcore-python-measure": ["python-measure-delta"],
+    "graph-python-build": ["python-graph-provider"],
+    "graph-python-status": ["python-graph-provider"],
+    "graph-python-query": ["src/acme/app.py", "Greeter", "build_name"],
+    "graph-python-search": ["src/acme/app.py", "Greeter"]
+  }[id];
+}
+
+function negativeCutoverCommand(id) {
+  return {
+    "missing-required-graph-check": ["opcore", "check", "files", "src/index.ts", "--repo", "<missing-graph-repo>", "--graph-mode", "required", "--checks", "typescript.import-graph"],
+    "missing-required-graph-validate": ["opcore", "validate", "request", "--request-file", "<required-graph-request>"],
+    "python-types-degraded-no-tools": ["opcore", "check", "files", "src/acme/app.py", "--checks", "python.types"],
+    "python-source-hygiene-no-ruff": ["opcore", "check", "files", "src/acme/app.py", "--checks", "python.source-hygiene"],
+    "python-relevant-tests-no-pytest": ["opcore", "check", "files", "src/acme/app.py", "--checks", "python.relevant-tests"],
+    "python-toolchain-degraded-no-tools": ["opcore", "status"]
+  }[id];
 }
 
 function withReleaseDocsLock(runLocked) {
