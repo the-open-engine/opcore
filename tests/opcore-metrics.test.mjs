@@ -290,7 +290,7 @@ function repoState(overrides = {}) {
         { language: "Go", files: 2, graphSupported: false, validationSupported: false },
         { language: "TypeScript", files: 4, graphSupported: true, validationSupported: true },
         { language: "Rust", files: 2, graphSupported: false, validationSupported: true },
-        { language: "Python", files: 2, graphSupported: true, validationSupported: false }
+        { language: "Python", files: 2, graphSupported: true, validationSupported: true }
       ],
       graph: {
         supportedFiles: 6,
@@ -300,9 +300,10 @@ function repoState(overrides = {}) {
         ]
       },
       validation: {
-        supportedFiles: 6,
+        supportedFiles: 8,
         retainedFiles: 0,
         extensions: [
+          { extension: ".py", count: 2 },
           { extension: ".ts", count: 4 },
           { extension: ".rs", count: 2 }
         ]

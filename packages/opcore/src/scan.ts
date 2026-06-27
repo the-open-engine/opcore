@@ -148,7 +148,7 @@ function formatScanMessage(repoState: OpcoreRepoStatePayload, validationResult: 
   const languages = repoState.coverage.languages.length === 0
     ? "none"
     : repoState.coverage.languages.map((entry) => `${entry.language} ${entry.files}`).join(", ");
-  const degradedRustTools = repoState.validation.degradedToolchains.length === 0
+  const degradedValidationTools = repoState.validation.degradedToolchains.length === 0
     ? "none"
     : repoState.validation.degradedToolchains.map((tool) => `${tool.adapter}:${tool.tool}`).join(", ");
   const failedChecks = validationResult.manifest?.runs
@@ -162,7 +162,7 @@ function formatScanMessage(repoState: OpcoreRepoStatePayload, validationResult: 
     `  validation-retained=${repoState.coverage.validation.retainedFiles}`,
     `  unsupported=${unsupported}`,
     `  languages=${languages}`,
-    `  degraded-rust-tools=${degradedRustTools}`,
+    `  degraded-validation-tools=${degradedValidationTools}`,
     "Findings:",
     `  diagnostics=${validationResult.diagnostics.length}`,
     `  validation=${validationResult.status}`,

@@ -10700,6 +10700,7 @@
         "@the-open-engine/opcore-graph-core-linux-x64",
         "@the-open-engine/opcore-edit",
         "@the-open-engine/opcore-validation",
+        "@the-open-engine/opcore-validation-python",
         "@the-open-engine/opcore-validation-rust",
         "@the-open-engine/opcore-validation-typescript",
         "@the-open-engine/opcore-asp-provider"
@@ -11510,7 +11511,7 @@
           "minimum": 0
         },
         "workspacePackageCount": {
-          "const": 11
+          "const": 12
         },
         "unresolvedLicenseCount": {
           "const": 0
@@ -11774,8 +11775,8 @@
         },
         "packageNames": {
           "type": "array",
-          "minItems": 11,
-          "maxItems": 11,
+          "minItems": 12,
+          "maxItems": 12,
           "items": {
             "$ref": "#/$defs/ReleaseReceiptPackageName"
           },
@@ -11832,6 +11833,13 @@
             {
               "contains": {
                 "const": "@the-open-engine/opcore-validation"
+              },
+              "minContains": 1,
+              "maxContains": 1
+            },
+            {
+              "contains": {
+                "const": "@the-open-engine/opcore-validation-python"
               },
               "minContains": 1,
               "maxContains": 1
@@ -11920,8 +11928,8 @@
         },
         "packages": {
           "type": "array",
-          "minItems": 11,
-          "maxItems": 11,
+          "minItems": 12,
+          "maxItems": 12,
           "items": {
             "$ref": "#/$defs/ReleaseReceiptPackageEvidence"
           },
@@ -11935,6 +11943,21 @@
                 "properties": {
                   "packageName": {
                     "const": "@the-open-engine/opcore-contracts"
+                  }
+                }
+              },
+              "minContains": 1,
+              "maxContains": 1
+            },
+            {
+              "contains": {
+                "type": "object",
+                "required": [
+                  "packageName"
+                ],
+                "properties": {
+                  "packageName": {
+                    "const": "@the-open-engine/opcore-validation-python"
                   }
                 }
               },
@@ -14646,8 +14669,8 @@
         },
         "packageNames": {
           "type": "array",
-          "minItems": 11,
-          "maxItems": 11,
+          "minItems": 12,
+          "maxItems": 12,
           "items": {
             "$ref": "#/$defs/ReleaseReceiptPackageName"
           },
@@ -14710,6 +14733,13 @@
             },
             {
               "contains": {
+                "const": "@the-open-engine/opcore-validation-python"
+              },
+              "minContains": 1,
+              "maxContains": 1
+            },
+            {
+              "contains": {
                 "const": "@the-open-engine/opcore-validation-rust"
               },
               "minContains": 1,
@@ -14733,8 +14763,8 @@
         },
         "installedPackages": {
           "type": "array",
-          "minItems": 9,
-          "maxItems": 9,
+          "minItems": 10,
+          "maxItems": 10,
           "items": {
             "$ref": "#/$defs/ReleaseCutoverInstalledPackageEvidence"
           },
@@ -14748,6 +14778,21 @@
                 "properties": {
                   "packageName": {
                     "const": "@the-open-engine/opcore-contracts"
+                  }
+                }
+              },
+              "minContains": 1,
+              "maxContains": 1
+            },
+            {
+              "contains": {
+                "type": "object",
+                "required": [
+                  "packageName"
+                ],
+                "properties": {
+                  "packageName": {
+                    "const": "@the-open-engine/opcore-validation-python"
                   }
                 }
               },
@@ -15490,8 +15535,8 @@
         },
         "packageNames": {
           "type": "array",
-          "minItems": 11,
-          "maxItems": 11,
+          "minItems": 12,
+          "maxItems": 12,
           "items": {
             "$ref": "#/$defs/ReleaseReceiptPackageName"
           },
@@ -15554,6 +15599,13 @@
             },
             {
               "contains": {
+                "const": "@the-open-engine/opcore-validation-python"
+              },
+              "minContains": 1,
+              "maxContains": 1
+            },
+            {
+              "contains": {
                 "const": "@the-open-engine/opcore-validation-rust"
               },
               "minContains": 1,
@@ -15577,8 +15629,8 @@
         },
         "installedPackages": {
           "type": "array",
-          "minItems": 9,
-          "maxItems": 9,
+          "minItems": 10,
+          "maxItems": 10,
           "items": {
             "$ref": "#/$defs/ReleaseCutoverInstalledPackageEvidence"
           },
@@ -15592,6 +15644,21 @@
                 "properties": {
                   "packageName": {
                     "const": "@the-open-engine/opcore-contracts"
+                  }
+                }
+              },
+              "minContains": 1,
+              "maxContains": 1
+            },
+            {
+              "contains": {
+                "type": "object",
+                "required": [
+                  "packageName"
+                ],
+                "properties": {
+                  "packageName": {
+                    "const": "@the-open-engine/opcore-validation-python"
                   }
                 }
               },

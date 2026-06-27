@@ -54,6 +54,32 @@ struct RustFileFactCollector {
     test_module_depth: usize,
 }
 
+struct ItemNodeDraft<'a> {
+    prefix: &'a str,
+    kind: &'a str,
+    name: &'a str,
+    visibility: &'a Visibility,
+    signature: String,
+    span: proc_macro2::Span,
+}
+
+struct NamedNodeDraft<'a> {
+    prefix: &'a str,
+    kind: &'a str,
+    name: &'a str,
+    exported: bool,
+    signature: String,
+    span: proc_macro2::Span,
+}
+
+struct GraphNodeDraft<'a> {
+    id: String,
+    kind: &'a str,
+    name: &'a str,
+    attributes: Value,
+    exported: bool,
+}
+
 impl RustFileFactCollector {
     fn new(path: String, file_node: GraphFactNode) -> Self {
         let module_name = file_module_name(&path);
@@ -153,7 +179,13 @@ impl RustFileFactCollector {
             Some(item.span()),
         );
         attributes_object(&mut attributes).insert("isTest".to_string(), Value::Bool(is_test));
-        self.insert_node(&id, "Module", &name, attributes, exported);
+        self.insert_node(GraphNodeDraft {
+            id: id.clone(),
+            kind: "Module",
+            name: &name,
+            attributes,
+            exported,
+        });
         self.with_module(id, name, is_test, |collector| {
             if let Some((_, items)) = &item.content {
                 collector.visit_items(items);
@@ -162,36 +194,36 @@ impl RustFileFactCollector {
     }
 
     fn visit_struct(&mut self, item: &ItemStruct) {
-        self.add_item_node(
-            "struct",
-            "Struct",
-            &item.ident.to_string(),
-            &item.vis,
-            signature_for_item(item),
-            item.span(),
-        );
+        self.add_item_node(ItemNodeDraft {
+            prefix: "struct",
+            kind: "Struct",
+            name: &item.ident.to_string(),
+            visibility: &item.vis,
+            signature: signature_for_item(item),
+            span: item.span(),
+        });
     }
 
     fn visit_enum(&mut self, item: &ItemEnum) {
-        self.add_item_node(
-            "enum",
-            "Enum",
-            &item.ident.to_string(),
-            &item.vis,
-            signature_for_item(item),
-            item.span(),
-        );
+        self.add_item_node(ItemNodeDraft {
+            prefix: "enum",
+            kind: "Enum",
+            name: &item.ident.to_string(),
+            visibility: &item.vis,
+            signature: signature_for_item(item),
+            span: item.span(),
+        });
     }
 
     fn visit_trait(&mut self, item: &ItemTrait) {
-        self.add_item_node(
-            "trait",
-            "Trait",
-            &item.ident.to_string(),
-            &item.vis,
-            signature_for_item(item),
-            item.span(),
-        );
+        self.add_item_node(ItemNodeDraft {
+            prefix: "trait",
+            kind: "Trait",
+            name: &item.ident.to_string(),
+            visibility: &item.vis,
+            signature: signature_for_item(item),
+            span: item.span(),
+        });
     }
 
     fn visit_impl(&mut self, item: &ItemImpl) {
@@ -203,7 +235,13 @@ impl RustFileFactCollector {
         let name = impl_name(trait_name.as_deref(), &self_type);
         let id = format!("impl:{}#{name}", self.path);
         let attributes = base_attributes(false, &name, Some(name.clone()), Some(item.span()));
-        self.insert_node(&id, "Impl", &name, attributes, false);
+        self.insert_node(GraphNodeDraft {
+            id: id.clone(),
+            kind: "Impl",
+            name: &name,
+            attributes,
+            exported: false,
+        });
         if let Some(trait_name) = trait_name {
             self.heritage.push(HeritageFact {
                 from: id.clone(),
@@ -224,7 +262,13 @@ impl RustFileFactCollector {
                     Some(signature_for_method(method)),
                     Some(method.span()),
                 );
-                self.insert_node(&id, "Method", &name, attributes, exported);
+                self.insert_node(GraphNodeDraft {
+                    id: id.clone(),
+                    kind: "Method",
+                    name: &name,
+                    attributes,
+                    exported,
+                });
                 self.collect_references_from_block(&id, &method.block, false);
             }
         }
@@ -246,41 +290,47 @@ impl RustFileFactCollector {
             Some(item.span()),
         );
         attributes_object(&mut attributes).insert("isTest".to_string(), Value::Bool(is_test));
-        self.insert_node(&id, kind, &name, attributes, exported);
+        self.insert_node(GraphNodeDraft {
+            id: id.clone(),
+            kind,
+            name: &name,
+            attributes,
+            exported,
+        });
         self.collect_references_from_block(&id, &item.block, is_test);
     }
 
     fn visit_type_alias(&mut self, item: &ItemType) {
-        self.add_item_node(
-            "type",
-            "TypeAlias",
-            &item.ident.to_string(),
-            &item.vis,
-            signature_for_item(item),
-            item.span(),
-        );
+        self.add_item_node(ItemNodeDraft {
+            prefix: "type",
+            kind: "TypeAlias",
+            name: &item.ident.to_string(),
+            visibility: &item.vis,
+            signature: signature_for_item(item),
+            span: item.span(),
+        });
     }
 
     fn visit_const(&mut self, item: &ItemConst) {
-        self.add_item_node(
-            "const",
-            "Const",
-            &item.ident.to_string(),
-            &item.vis,
-            signature_for_item(item),
-            item.span(),
-        );
+        self.add_item_node(ItemNodeDraft {
+            prefix: "const",
+            kind: "Const",
+            name: &item.ident.to_string(),
+            visibility: &item.vis,
+            signature: signature_for_item(item),
+            span: item.span(),
+        });
     }
 
     fn visit_static(&mut self, item: &ItemStatic) {
-        self.add_item_node(
-            "static",
-            "Static",
-            &item.ident.to_string(),
-            &item.vis,
-            signature_for_item(item),
-            item.span(),
-        );
+        self.add_item_node(ItemNodeDraft {
+            prefix: "static",
+            kind: "Static",
+            name: &item.ident.to_string(),
+            visibility: &item.vis,
+            signature: signature_for_item(item),
+            span: item.span(),
+        });
     }
 
     fn visit_macro(&mut self, item: &ItemMacro) {
@@ -300,70 +350,74 @@ impl RustFileFactCollector {
             return;
         };
         let macro_name = ident.to_string();
-        self.add_named_node(
-            "macro",
-            "Macro",
-            &macro_name,
-            false,
-            signature_for_item(item),
-            item.span(),
+        self.add_named_node(NamedNodeDraft {
+            prefix: "macro",
+            kind: "Macro",
+            name: &macro_name,
+            exported: false,
+            signature: signature_for_item(item),
+            span: item.span(),
+        });
+    }
+
+    fn add_item_node(&mut self, draft: ItemNodeDraft<'_>) -> String {
+        self.add_named_node(NamedNodeDraft {
+            prefix: draft.prefix,
+            kind: draft.kind,
+            name: draft.name,
+            exported: is_exported(draft.visibility),
+            signature: draft.signature,
+            span: draft.span,
+        })
+    }
+
+    fn add_named_node(&mut self, draft: NamedNodeDraft<'_>) -> String {
+        let qualified_name = self.item_qualified_name(draft.name);
+        let id = format!("{}:{}#{qualified_name}", draft.prefix, self.path);
+        let attributes = base_attributes(
+            draft.exported,
+            &qualified_name,
+            Some(draft.signature),
+            Some(draft.span),
         );
-    }
-
-    fn add_item_node(
-        &mut self,
-        prefix: &str,
-        kind: &str,
-        name: &str,
-        visibility: &Visibility,
-        signature: String,
-        span: proc_macro2::Span,
-    ) -> String {
-        self.add_named_node(prefix, kind, name, is_exported(visibility), signature, span)
-    }
-
-    fn add_named_node(
-        &mut self,
-        prefix: &str,
-        kind: &str,
-        name: &str,
-        exported: bool,
-        signature: String,
-        span: proc_macro2::Span,
-    ) -> String {
-        let qualified_name = self.item_qualified_name(name);
-        let id = format!("{prefix}:{}#{qualified_name}", self.path);
-        let attributes = base_attributes(exported, &qualified_name, Some(signature), Some(span));
-        self.insert_node(&id, kind, name, attributes, exported);
+        self.insert_node(GraphNodeDraft {
+            id: id.clone(),
+            kind: draft.kind,
+            name: draft.name,
+            attributes,
+            exported: draft.exported,
+        });
         id
     }
 
-    fn insert_node(&mut self, id: &str, kind: &str, name: &str, attributes: Value, exported: bool) {
-        match self.nodes.entry(id.to_string()) {
+    fn insert_node(&mut self, draft: GraphNodeDraft<'_>) {
+        match self.nodes.entry(draft.id.clone()) {
             Entry::Occupied(mut entry) => {
-                entry.get_mut().attributes = Some(attributes);
+                entry.get_mut().attributes = Some(draft.attributes);
             }
             Entry::Vacant(entry) => {
                 entry.insert(GraphFactNode {
-                    id: id.to_string(),
-                    kind: kind.to_string(),
+                    id: draft.id.clone(),
+                    kind: draft.kind.to_string(),
                     path: Some(self.path.clone()),
-                    name: Some(name.to_string()),
-                    attributes: Some(attributes),
+                    name: Some(draft.name.to_string()),
+                    attributes: Some(draft.attributes),
                 });
             }
         }
-        self.declarations.insert(name.to_string(), id.to_string());
-        if let Some(qualified_name) = id.split_once('#').map(|(_, name)| name.to_string()) {
+        self.declarations
+            .insert(draft.name.to_string(), draft.id.clone());
+        if let Some(qualified_name) = draft.id.split_once('#').map(|(_, name)| name.to_string()) {
             self.declarations
-                .insert(qualified_name.clone(), id.to_string());
-            if exported {
-                self.export_aliases.insert(name.to_string(), id.to_string());
-                self.export_aliases.insert(qualified_name, id.to_string());
+                .insert(qualified_name.clone(), draft.id.clone());
+            if draft.exported {
+                self.export_aliases
+                    .insert(draft.name.to_string(), draft.id.clone());
+                self.export_aliases.insert(qualified_name, draft.id.clone());
                 self.file_exports.push(json!({
                     "kind": "named",
-                    "local": name,
-                    "exported": name,
+                    "local": draft.name,
+                    "exported": draft.name,
                     "source": null,
                     "supportedSymbol": true,
                     "policy": "pub"
@@ -372,7 +426,7 @@ impl RustFileFactCollector {
         }
         insert_edge(
             &mut self.edges,
-            EdgeDraft::new("CONTAINS", &self.current_parent, id),
+            EdgeDraft::new("CONTAINS", &self.current_parent, &draft.id),
         );
     }
 

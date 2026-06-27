@@ -27,6 +27,7 @@ import {
   type ValidationGraphProviderClient,
   type ValidationWorkspace
 } from "@the-open-engine/opcore-validation";
+import { createPythonValidationChecks } from "@the-open-engine/opcore-validation-python";
 import { createRustValidationChecks } from "@the-open-engine/opcore-validation-rust";
 import { createTypeScriptValidationChecks } from "@the-open-engine/opcore-validation-typescript";
 import {
@@ -40,7 +41,8 @@ import {
 
 export const defaultAspProviderValidationChecks = [
   ...createTypeScriptValidationChecks(),
-  ...createRustValidationChecks()
+  ...createRustValidationChecks(),
+  ...createPythonValidationChecks()
 ];
 
 export const defaultAspProviderValidationCheckIds = defaultAspProviderValidationChecks.map((check) => check.id);

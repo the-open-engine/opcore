@@ -12,6 +12,7 @@ import {
   type ValidationCommandAdapterOptions,
   type ValidationGraphProviderClient
 } from "@the-open-engine/opcore-validation";
+import { createPythonValidationAdapterStatus, createPythonValidationChecks } from "@the-open-engine/opcore-validation-python";
 import { createRustValidationAdapterStatus, createRustValidationChecks } from "@the-open-engine/opcore-validation-rust";
 import { createTypeScriptValidationChecks } from "@the-open-engine/opcore-validation-typescript";
 import {
@@ -27,7 +28,11 @@ declare const process: {
   cwd(): string;
 };
 
-export const defaultValidationChecks = [...createTypeScriptValidationChecks(), ...createRustValidationChecks()];
+export const defaultValidationChecks = [
+  ...createTypeScriptValidationChecks(),
+  ...createRustValidationChecks(),
+  ...createPythonValidationChecks()
+];
 
 export const checkCommandAdapter = createCheckCommandAdapter(defaultValidationAdapterOptions());
 
@@ -48,7 +53,7 @@ export function createDefaultValidationStatusPayload(options: {
   const graphMode = options.graphMode ?? "optional";
   return createValidationStatusPayload({
     checks: defaultValidationChecks,
-    adapters: [createRustValidationAdapterStatus()],
+    adapters: [createRustValidationAdapterStatus(), createPythonValidationAdapterStatus()],
     graphMode,
     graphStatus: opcoreGraphStatus({ repoRoot: options.repoRoot }, graphMode)
   });

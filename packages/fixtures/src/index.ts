@@ -34,7 +34,15 @@ export type FixtureId = (typeof fixtureIds)[number];
 
 export interface SyntheticFixtureMetadata {
   id: FixtureId;
-  packageTrack: "contracts" | "cli" | "graph" | "edit" | "validation" | "validation-typescript" | "fixtures";
+  packageTrack:
+    | "contracts"
+    | "cli"
+    | "graph"
+    | "edit"
+    | "validation"
+    | "validation-python"
+    | "validation-typescript"
+    | "fixtures";
   origin: typeof fixtureOrigin;
   containsSourceCode: boolean;
   issue: "#3" | "#8" | "#10" | "#11" | "#12" | "#17" | "#19" | "#20" | "#21" | "#25" | "#28" | "#37" | "#47" | "#100";

@@ -306,7 +306,8 @@ function createInitScanSummary(repoState: OpcoreRepoStatePayload, validationResu
 
 function createInitSettings(repoState: OpcoreRepoStatePayload): OpcoreInitSettings {
   const unsupportedLanguages = new Set(repoState.coverage.unsupported.stacks.map((stack) => stack.language));
-  const degradedRustTools = repoState.validation.degradedToolchains.map((tool) => tool.tool);
+  const degradedRustTools = repoState.validation.degradedToolchains.filter((tool) => tool.adapter === "rust").map((tool) => tool.tool);
+  const degradedPythonTools = repoState.validation.degradedToolchains.filter((tool) => tool.adapter === "python").map((tool) => tool.tool);
   const rustHasActiveValidationInput = repoState.coverage.validation.extensions.some((entry) =>
     rustActiveValidationKinds.has(entry.extension)
   );
@@ -317,12 +318,13 @@ function createInitSettings(repoState: OpcoreRepoStatePayload): OpcoreInitSettin
         !rustHasActiveValidationInput &&
         repoState.coverage.validation.retainedFiles > 0;
       const rustDegraded = language.language === "Rust" && degradedRustTools.length > 0 && language.validationSupported && !rustRetainedOnly;
+      const pythonDegraded = language.language === "Python" && degradedPythonTools.length > 0 && language.validationSupported;
       const unsupported = unsupportedLanguages.has(language.language) && !language.validationSupported;
       const validation = unsupported
         ? "unsupported"
         : rustRetainedOnly
           ? "retained"
-          : rustDegraded
+          : rustDegraded || pythonDegraded
             ? "degraded"
             : language.validationSupported
               ? "supported"
@@ -341,7 +343,11 @@ function createInitSettings(repoState: OpcoreRepoStatePayload): OpcoreInitSettin
         graph: language.graphSupported ? "supported" : "unsupported",
         validation,
         checks: checksForLanguage(language.language, validation),
-        notes: notesForLanguage(language.language, validation, degradedRustTools)
+        notes: notesForLanguage(
+          language.language,
+          validation,
+          language.language === "Python" ? degradedPythonTools : degradedRustTools
+        )
       };
     })
   };
@@ -372,17 +378,27 @@ function checksForLanguage(language: string, validation: OpcoreInitLanguageSetti
       "rust.function-metrics"
     ];
   }
+  if (language === "Python") {
+    return [
+      "python.syntax",
+      "python.source-hygiene",
+      "python.types",
+      "python.import-graph",
+      "python.dead-code",
+      "python.relevant-tests"
+    ];
+  }
   return [];
 }
 
 function notesForLanguage(
   language: string,
   validation: OpcoreInitLanguageSetting["validation"],
-  degradedRustTools: readonly string[]
+  degradedTools: readonly string[]
 ): string[] {
   if (validation === "unsupported") return ["Unsupported stack counted without fabricated checks."];
   if (validation === "retained") return ["Retained for compatibility; no active checks configured."];
-  if (language === "Rust" && validation === "degraded") return [`Rust toolchain degraded: ${degradedRustTools.join(", ")}.`];
+  if (validation === "degraded") return [`${language} validation tools degraded: ${degradedTools.join(", ")}.`];
   return [];
 }
 
@@ -760,7 +776,7 @@ function initWarnings(scan: OpcoreInitScanSummary, git: boolean): string[] {
     warnings.push(`Unsupported stacks: ${scan.unsupportedStacks.map((stack) => `${stack.language} (${stack.count})`).join(", ")}`);
   }
   if (scan.degradedRustTools.length > 0) {
-    warnings.push(`Degraded Rust tools: ${scan.degradedRustTools.map((tool) => tool.tool).join(", ")}`);
+    warnings.push(`Degraded validation tools: ${scan.degradedRustTools.map((tool) => tool.tool).join(", ")}`);
   }
   if (!git) {
     warnings.push("No Git repository detected; .opcore/ ignore entry not written.");
@@ -1107,7 +1123,7 @@ function formatInitPlan(payload: OpcoreInitPlanPayload, applied: boolean): strin
   const unsupported = payload.scan.unsupportedStacks.length === 0
     ? "none"
     : payload.scan.unsupportedStacks.map((stack) => `${stack.language} ${stack.count}`).join(", ");
-  const degradedRustTools = payload.scan.degradedRustTools.length === 0
+  const degradedValidationTools = payload.scan.degradedRustTools.length === 0
     ? "none"
     : payload.scan.degradedRustTools.map((tool) => `${tool.adapter}:${tool.tool}`).join(", ");
   return [
@@ -1118,7 +1134,7 @@ function formatInitPlan(payload: OpcoreInitPlanPayload, applied: boolean): strin
     `  validation-retained=${payload.scan.validationRetainedFiles}`,
     `  unsupported=${unsupported}`,
     `  languages=${languages}`,
-    `  degraded-rust-tools=${degradedRustTools}`,
+    `  degraded-validation-tools=${degradedValidationTools}`,
     "Findings:",
     `  diagnostics=${payload.scan.diagnosticCount}`,
     `  validation=${payload.scan.validationStatus}`,

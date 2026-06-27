@@ -17,6 +17,9 @@
       "path": "packages/validation"
     },
     {
+      "path": "packages/validation-python"
+    },
+    {
       "path": "packages/validation-rust"
     },
     {

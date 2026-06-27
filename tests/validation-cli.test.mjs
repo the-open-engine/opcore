@@ -30,7 +30,15 @@ const rustCheckIds = [
   "rust.file-length",
   "rust.function-metrics"
 ];
-const defaultCheckIds = [...typeScriptCheckIds, ...rustCheckIds];
+const pythonCheckIds = [
+  "python.syntax",
+  "python.source-hygiene",
+  "python.types",
+  "python.import-graph",
+  "python.dead-code",
+  "python.relevant-tests"
+];
+const defaultCheckIds = [...typeScriptCheckIds, ...rustCheckIds, ...pythonCheckIds];
 
 describe("validation CLI", () => {
   it("keeps opcore status separate from validation execution results", async () => {
@@ -116,7 +124,7 @@ describe("validation CLI", () => {
     }
   });
 
-  it("returns check and validate manifests with stable TypeScript and Rust check ids", () => {
+  it("returns check and validate manifests with stable TypeScript, Rust, and Python check ids", () => {
     for (const args of [
       ["check", "manifest", "--json"],
       ["validate", "manifest", "--json"]
@@ -131,6 +139,8 @@ describe("validation CLI", () => {
         assert.equal(result.validationResult.manifest.checks.includes(checkId), true, checkId);
       }
       assert.equal(result.validationResult.manifest.checks.includes("rust.file-length"), true);
+      assert.equal(result.validationResult.manifest.checks.includes("python.syntax"), true);
+      assert.equal(result.validationResult.manifest.checks.includes("python.import-graph"), true);
     }
   });
 
@@ -299,9 +309,13 @@ describe("validation CLI", () => {
       assert.deepEqual(result.validationStatus.adapterRegistry.checkIds, defaultCheckIds);
       assert.equal(result.validationStatus.adapterRegistry.checkIds.includes("rust.file-length"), true);
       const rustAdapter = result.validationStatus.adapterRegistry.adapters.find((adapter) => adapter.adapter === "rust");
+      const pythonAdapter = result.validationStatus.adapterRegistry.adapters.find((adapter) => adapter.adapter === "python");
       assert.ok(rustAdapter);
+      assert.ok(pythonAdapter);
       assert.equal(rustAdapter.status, "available");
       assert.equal(rustAdapter.checkIds.includes("rust.file-length"), true);
+      assert.equal(pythonAdapter.checkIds.includes("python.syntax"), true);
+      assert.equal(pythonAdapter.checkIds.includes("python.import-graph"), true);
       assert.deepEqual(rustAdapter.degradedChecks, []);
       assert.equal(typeof result.validationStatus.graph.status.state, "string");
     }

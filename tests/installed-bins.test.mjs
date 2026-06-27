@@ -26,6 +26,7 @@ const packageNames = [
   currentNativePackage,
   "@the-open-engine/opcore-edit",
   "@the-open-engine/opcore-validation",
+  "@the-open-engine/opcore-validation-python",
   "@the-open-engine/opcore-validation-rust",
   "@the-open-engine/opcore-validation-typescript",
   "@the-open-engine/opcore-asp-provider"
@@ -124,7 +125,13 @@ describe("installed package bins", () => {
           "rust.dead-code",
           "rust.unused-deps",
           "rust.file-length",
-          "rust.function-metrics"
+          "rust.function-metrics",
+          "python.syntax",
+          "python.source-hygiene",
+          "python.types",
+          "python.import-graph",
+          "python.dead-code",
+          "python.relevant-tests"
         ]
       );
       assert.equal(assertSmoke(project, ["validate", "manifest", "--json"], 0).validationResult.status, "passed");
@@ -202,6 +209,7 @@ describe("installed package bins", () => {
         "@the-open-engine/opcore-graph",
         "@the-open-engine/opcore-edit",
         "@the-open-engine/opcore-validation",
+        "@the-open-engine/opcore-validation-python",
         "@the-open-engine/opcore-validation-rust",
         "@the-open-engine/opcore-validation-typescript",
         "@the-open-engine/opcore"
@@ -236,6 +244,7 @@ describe("installed package bins", () => {
         currentNativePackage,
         "@the-open-engine/opcore-edit",
         "@the-open-engine/opcore-validation",
+        "@the-open-engine/opcore-validation-python",
         "@the-open-engine/opcore-validation-rust",
         "@the-open-engine/opcore-validation-typescript",
         "@the-open-engine/opcore"
@@ -570,13 +579,13 @@ function createOnboardingFixtures(root) {
       },
       scanEnv: sourceSafeOpcoreEnv()
     }),
-    createOnboardingFixture(root, "python-unsupported", {
+    createOnboardingFixture(root, "python-degraded", {
       files: {
         "src/app.py": "def answer() -> int:\n    return 42\n",
         "src/app.pyi": "def answer() -> int: ...\n"
       },
       coverage: {
-        Python: { files: 2, graphSupported: true, validationSupported: false }
+        Python: { files: 2, graphSupported: true, validationSupported: true }
       }
     }),
     createOnboardingFixture(root, "fresh-git", {
@@ -674,11 +683,11 @@ function assertFixtureInitHonesty(initPayload, fixture) {
       `${fixture.id} init ${language} validation`
     );
   }
-  if (fixture.id === "python-unsupported") {
+  if (fixture.id === "python-degraded") {
     const python = initPayload.settings.languages.find((entry) => entry.language === "Python");
-    assert.equal(python.validation, "unsupported");
-    assert.equal(python.state, "unsupported");
-    assert.equal(initPayload.scan.diagnosticCount, 0);
+    assert.equal(python.validation, "degraded");
+    assert.equal(python.state, "degraded");
+    assert.equal(initPayload.scan.diagnosticCount, 2);
   }
 }
 

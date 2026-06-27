@@ -13,6 +13,7 @@ describe("lattice scaffold", () => {
       "packages/graph",
       "packages/edit",
       "packages/validation",
+      "packages/validation-python",
       "packages/validation-rust",
       "packages/validation-typescript",
       "packages/asp-provider",
@@ -22,9 +23,17 @@ describe("lattice scaffold", () => {
     assert.equal(root.optionalDependencies["@the-open-engine/opcore-graph-core-darwin-x64"], "file:packages/opcore-graph-core-darwin-x64");
     assert.equal(root.optionalDependencies["@the-open-engine/opcore-graph-core-linux-x64"], "file:packages/opcore-graph-core-linux-x64");
 
-    const packages = ["contracts", "opcore", "graph", "edit", "validation", "validation-rust", "validation-typescript", "fixtures"].map((name) =>
-      readJson(`packages/${name}/package.json`).name
-    );
+    const packages = [
+      "contracts",
+      "opcore",
+      "graph",
+      "edit",
+      "validation",
+      "validation-python",
+      "validation-rust",
+      "validation-typescript",
+      "fixtures"
+    ].map((name) => readJson(`packages/${name}/package.json`).name);
 
     assert.deepEqual(packages, [
       "@the-open-engine/opcore-contracts",
@@ -32,6 +41,7 @@ describe("lattice scaffold", () => {
       "@the-open-engine/opcore-graph",
       "@the-open-engine/opcore-edit",
       "@the-open-engine/opcore-validation",
+      "@the-open-engine/opcore-validation-python",
       "@the-open-engine/opcore-validation-rust",
       "@the-open-engine/opcore-validation-typescript",
       "@the-open-engine/opcore-fixtures"
@@ -39,7 +49,17 @@ describe("lattice scaffold", () => {
   });
 
   it("does not publish as code-review-graph or gungnir", () => {
-    for (const name of ["contracts", "opcore", "graph", "edit", "validation", "validation-rust", "validation-typescript", "fixtures"]) {
+    for (const name of [
+      "contracts",
+      "opcore",
+      "graph",
+      "edit",
+      "validation",
+      "validation-python",
+      "validation-rust",
+      "validation-typescript",
+      "fixtures"
+    ]) {
       const manifest = readJson(`packages/${name}/package.json`);
       assert.equal(manifest.name.includes("code-review-graph"), false);
       assert.equal(manifest.name.includes("gungnir"), false);
