@@ -86,11 +86,18 @@ function trackedFiles() {
     .filter((path) => path.length > 0 && existsSync(path));
 }
 
+// Hand-authored agent skills under .claude/skills/ are source of truth, not generated
+// runtime state, so they are the one allowed carve-out from the forbidden agent roots.
+function isForbiddenGeneratedRoot(path) {
+  if (path.startsWith(".claude/skills/")) return false;
+  return forbiddenGeneratedRoots.some((root) => path.startsWith(root));
+}
+
 function checkTrackedFile(path) {
   const entry = path.split("/").at(-1);
   if (forbiddenFileNames.has(entry)) throw new Error(`Forbidden Python packaging file in clean-room repo: ${path}`);
-  for (const root of forbiddenGeneratedRoots) {
-    if (path.startsWith(root)) throw new Error(`Generated/private runtime state must not be tracked: ${path}`);
+  if (isForbiddenGeneratedRoot(path)) {
+    throw new Error(`Generated/private runtime state must not be tracked: ${path}`);
   }
   if (path.endsWith(".tsbuildinfo")) throw new Error(`Generated TypeScript build info must not be tracked: ${path}`);
   if (path.startsWith("target/")) throw new Error(`Generated Rust target files must not be tracked: ${path}`);
