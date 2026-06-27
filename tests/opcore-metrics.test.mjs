@@ -178,6 +178,17 @@ describe("Opcore metrics", () => {
         historyEntry("2026-06-24T00:00:01.000Z", baseline),
         historyEntry("2026-06-25T00:00:01.000Z", previous)
       ],
+      latencyRecords: [latencyRecord(5), latencyRecord(6), latencyRecord(20)],
+      latencyBudgets: [
+        {
+          schemaVersion: 1,
+          canonicalCommand: ["opcore", "scan"],
+          scope: "warm",
+          repoShapeBucket: "small",
+          budgetMs: 10,
+          phaseBudgets: [{ phase: "validation", budgetMs: 8 }]
+        }
+      ],
       generatedAt: "2026-06-25T01:00:01.000Z"
     });
 
@@ -189,14 +200,25 @@ describe("Opcore metrics", () => {
       ]
     );
     assert.deepEqual(delta.previous.deltas.map((entry) => [entry.id, entry.delta]), [["typescript.type_errors", -1]]);
+    assert.equal(delta.latency.recordCount, 3);
+    assert.equal(delta.latency.findings[0].status, "over_budget");
+    assert.equal(delta.latency.findings[0].dominantPhase.phase, "validation");
+    assert.equal(delta.latency.findings[0].currentDurationMs, 20);
+    assert.equal(delta.latency.findings[0].budgetMs, 8);
+    assert.equal(delta.latency.findings[0].overBudgetMs, 12);
+    assert.equal(delta.latency.findings[0].previousDeltaMs, 14);
     const human = formatOpcoreMeasureHuman(delta);
     assert.equal(human.indexOf("Coverage:"), 0);
     assert.equal(human.indexOf("Signals:") > human.indexOf("Coverage:"), true);
-    assert.equal(human.indexOf("Warnings/degradations:") > human.indexOf("Signals:"), true);
+    assert.equal(human.indexOf("Latency:") > human.indexOf("Signals:"), true);
+    assert.equal(human.indexOf("Warnings/degradations:") > human.indexOf("Latency:"), true);
     assert.equal(human.indexOf("Next:") > human.indexOf("Warnings/degradations:"), true);
     assert.doesNotMatch(human, /0-100|score/i);
     assert.match(human, /baseline=-2/);
     assert.match(human, /previous=-1/);
+    assert.match(human, /opcore scan/);
+    assert.match(human, /warm\/small\/validation\/over_budget/);
+    assert.match(human, /over=12ms/);
   });
 });
 

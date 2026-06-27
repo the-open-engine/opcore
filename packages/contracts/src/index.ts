@@ -1972,6 +1972,38 @@ export interface OpcoreMeasureSignalDelta {
   delta: number;
 }
 
+export const opcoreMeasureLatencyStatuses = ["ok", "slower", "over_budget"] as const;
+export type OpcoreMeasureLatencyStatus = (typeof opcoreMeasureLatencyStatuses)[number];
+export const opcoreMeasureLatencyFindingStatuses = ["slower", "over_budget"] as const;
+export type OpcoreMeasureLatencyFindingStatus = (typeof opcoreMeasureLatencyFindingStatuses)[number];
+
+export interface OpcoreMeasureLatencyPhase {
+  phase: string;
+  durationMs: number;
+}
+
+export interface OpcoreMeasureLatencyFinding {
+  canonicalCommand: readonly string[];
+  repoShapeBucket: string;
+  processState: CommandTimingProcessState;
+  status: OpcoreMeasureLatencyFindingStatus;
+  currentDurationMs: number;
+  dominantPhase?: OpcoreMeasureLatencyPhase;
+  baselineDurationMs?: number;
+  previousDurationMs?: number;
+  baselineDeltaMs?: number;
+  previousDeltaMs?: number;
+  budgetMs?: number;
+  overBudgetMs?: number;
+}
+
+export interface OpcoreMeasureLatencyReport {
+  kind: "opcore_latency_report";
+  recordCount: number;
+  budgetCount: number;
+  findings: readonly OpcoreMeasureLatencyFinding[];
+}
+
 export interface OpcoreMeasureComparison {
   recordedAt: string;
   generatedAt: string;
@@ -1989,6 +2021,7 @@ export interface OpcoreMeasureDelta {
     coverage: OpcoreMetricReport["coverage"];
     signals: readonly OpcoreMeasureSignalCount[];
   };
+  latency?: OpcoreMeasureLatencyReport;
   baseline?: OpcoreMeasureComparison;
   previous?: OpcoreMeasureComparison;
   warnings: readonly string[];
@@ -4173,6 +4206,7 @@ export function validateOpcoreMeasureDelta(delta: OpcoreMeasureDelta): OpcoreMea
   validateNonEmptyString(delta.current.generatedAt, "Opcore measure delta current generatedAt");
   validateOpcoreMetricCoverage(delta.current.coverage, "Opcore measure delta current coverage");
   validateOpcoreMeasureSignalCounts(delta.current.signals, "Opcore measure delta current signals");
+  if (delta.latency !== undefined) validateOpcoreMeasureLatencyReport(delta.latency);
   if (delta.baseline !== undefined) validateOpcoreMeasureComparison(delta.baseline, "baseline");
   if (delta.previous !== undefined) validateOpcoreMeasureComparison(delta.previous, "previous");
   validateStringArray(delta.warnings, "Opcore measure delta warnings", { allowEmpty: true });
@@ -4358,6 +4392,65 @@ function validateOpcoreMetricDegradation(degradation: OpcoreMetricDegradation): 
     validateNonEmptyString(degradation.requiredTool, "Opcore metric degradation requiredTool");
   }
   return degradation;
+}
+
+function validateOpcoreMeasureLatencyReport(report: OpcoreMeasureLatencyReport): OpcoreMeasureLatencyReport {
+  assertNoOpaqueScoreFields(report, "Opcore measure latency report");
+  assertNoTelemetrySourceFields(report, "Opcore measure latency report");
+  if (!report || typeof report !== "object") {
+    throw new Error("Opcore measure latency report is required");
+  }
+  if (report.kind !== "opcore_latency_report") {
+    throw new Error("Opcore measure latency report kind must be opcore_latency_report");
+  }
+  validateNonNegativeInteger(report.recordCount, "Opcore measure latency report recordCount");
+  validateNonNegativeInteger(report.budgetCount, "Opcore measure latency report budgetCount");
+  if (!Array.isArray(report.findings)) {
+    throw new Error("Opcore measure latency report findings must be an array");
+  }
+  for (const finding of report.findings) validateOpcoreMeasureLatencyFinding(finding);
+  return report;
+}
+
+function validateOpcoreMeasureLatencyFinding(finding: OpcoreMeasureLatencyFinding): OpcoreMeasureLatencyFinding {
+  assertNoOpaqueScoreFields(finding, "Opcore measure latency finding");
+  assertNoTelemetrySourceFields(finding, "Opcore measure latency finding");
+  if (!finding || typeof finding !== "object") {
+    throw new Error("Opcore measure latency finding is required");
+  }
+  validateLatencyCanonicalCommand(finding.canonicalCommand, "Opcore measure latency finding canonicalCommand");
+  validateLatencyStableId(finding.repoShapeBucket, "Opcore measure latency finding repoShapeBucket");
+  if (!includesString(commandTimingProcessStates, finding.processState)) {
+    throw new Error(`Unknown Opcore measure latency processState: ${String(finding.processState)}`);
+  }
+  if (!includesString(opcoreMeasureLatencyFindingStatuses, finding.status)) {
+    throw new Error(`Unknown Opcore measure latency status: ${String(finding.status)}`);
+  }
+  validateNonNegativeNumber(finding.currentDurationMs, "Opcore measure latency finding currentDurationMs");
+  if (finding.dominantPhase !== undefined) validateOpcoreMeasureLatencyPhase(finding.dominantPhase);
+  if (finding.baselineDurationMs !== undefined) validateNonNegativeNumber(finding.baselineDurationMs, "Opcore measure latency finding baselineDurationMs");
+  if (finding.previousDurationMs !== undefined) validateNonNegativeNumber(finding.previousDurationMs, "Opcore measure latency finding previousDurationMs");
+  if (finding.baselineDeltaMs !== undefined && !Number.isFinite(finding.baselineDeltaMs)) {
+    throw new Error("Opcore measure latency finding baselineDeltaMs must be a finite number");
+  }
+  if (finding.previousDeltaMs !== undefined && !Number.isFinite(finding.previousDeltaMs)) {
+    throw new Error("Opcore measure latency finding previousDeltaMs must be a finite number");
+  }
+  if (finding.budgetMs !== undefined) validateNonNegativeNumber(finding.budgetMs, "Opcore measure latency finding budgetMs");
+  if (finding.overBudgetMs !== undefined) validateNonNegativeNumber(finding.overBudgetMs, "Opcore measure latency finding overBudgetMs");
+  if (finding.status === "over_budget" && (finding.overBudgetMs ?? 0) <= 0) {
+    throw new Error("Opcore measure latency over_budget finding must include overBudgetMs");
+  }
+  return finding;
+}
+
+function validateOpcoreMeasureLatencyPhase(phase: OpcoreMeasureLatencyPhase): OpcoreMeasureLatencyPhase {
+  if (!phase || typeof phase !== "object") {
+    throw new Error("Opcore measure latency phase is required");
+  }
+  validateLatencyStableId(phase.phase, "Opcore measure latency phase");
+  validateNonNegativeNumber(phase.durationMs, "Opcore measure latency phase durationMs");
+  return phase;
 }
 
 function validateOpcoreMeasureComparison(comparison: OpcoreMeasureComparison, label: string): OpcoreMeasureComparison {

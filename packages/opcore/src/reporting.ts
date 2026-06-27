@@ -4,8 +4,11 @@ import type {
   GraphSnapshotMetadata,
   JsonValue,
   CommandLatencyRecord,
+  LatencyBudget,
   OpcoreMeasureComparison,
   OpcoreMeasureDelta,
+  OpcoreMeasureLatencyFinding,
+  OpcoreMeasureLatencyReport,
   OpcoreMeasureSignalCount,
   OpcoreMetricDegradation,
   OpcoreMetricEvidence,
@@ -20,12 +23,14 @@ import type {
 import {
   commandLatencyTelemetryArtifactPolicy,
   validateCommandLatencyRecord,
+  validateLatencyBudget,
   validateOpcoreMeasureDelta,
   validateOpcoreMetricHistoryEntry,
   validateOpcoreMetricReport
 } from "@the-open-engine/opcore-contracts";
-import { appendFileSync, existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { appendFileSync, existsSync, mkdirSync, readFileSync, renameSync, statSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 export interface OpcoreMetricGraphFacts {
   nodes?: readonly GraphFactNode[];
@@ -68,6 +73,21 @@ const graphStructureThresholds = {
   maxContainedSymbolsPerFile: 50,
   maxImportFanIn: 10
 } as const;
+
+const latencyBudgetArtifactPolicy = {
+  maxBudgets: 200,
+  maxBytes: 64 * 1024
+} as const;
+
+interface LatencyObservation {
+  canonicalCommand: readonly string[];
+  repoShapeBucket: string;
+  processState: CommandLatencyRecord["timing"]["processState"];
+  phase: string;
+  recordedAt: string;
+  durationMs: number;
+  budgetMs?: number;
+}
 
 export function createOpcoreMetricReport(input: CreateOpcoreMetricReportInput): OpcoreMetricReport {
   const validationResult = input.validationResult;
@@ -217,8 +237,48 @@ export function writeCommandLatencyTelemetry(
   };
 }
 
+export function readCommandLatencyTelemetry(repoRoot: string): readonly CommandLatencyRecord[] {
+  return readCommandLatencyTelemetryRecords(join(repoRoot, commandLatencyTelemetryArtifactPolicy.path));
+}
+
+export function readOpcoreLatencyBudgets(repoRoot: string): readonly LatencyBudget[] {
+  const budgetPath = latencyBudgetPath(repoRoot);
+  if (budgetPath === undefined) return [];
+  const stats = statSync(budgetPath);
+  if (stats.size > latencyBudgetArtifactPolicy.maxBytes) {
+    throw new Error(`Opcore latency budget file exceeds ${latencyBudgetArtifactPolicy.maxBytes} byte cap`);
+  }
+  const parsed = JSON.parse(readFileSync(budgetPath, "utf8")) as unknown;
+  const entries = Array.isArray(parsed)
+    ? parsed
+    : parsed && typeof parsed === "object"
+      ? (parsed as { budgets?: unknown }).budgets
+      : undefined;
+  if (!Array.isArray(entries)) throw new Error("Opcore latency budget file must contain a budgets array");
+  if (entries.length > latencyBudgetArtifactPolicy.maxBudgets) {
+    throw new Error(`Opcore latency budget file exceeds ${latencyBudgetArtifactPolicy.maxBudgets} budget cap`);
+  }
+  return entries.map((budget) => validateLatencyBudget(budget as LatencyBudget));
+}
+
+function latencyBudgetPath(repoRoot: string): string | undefined {
+  const localBudgetPath = join(repoRoot, "docs", "performance", "latency-budgets.json");
+  if (existsSync(localBudgetPath)) return localBudgetPath;
+  const packageBudgetPath = join(packageRoot(), "docs", "performance", "latency-budgets.json");
+  if (existsSync(packageBudgetPath)) return packageBudgetPath;
+  return undefined;
+}
+
+function packageRoot(): string {
+  return join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
+}
+
 function readCommandLatencyTelemetryRecords(telemetryPath: string): CommandLatencyRecord[] {
   if (!existsSync(telemetryPath)) return [];
+  const stats = statSync(telemetryPath);
+  if (stats.size > commandLatencyTelemetryArtifactPolicy.maxBytes) {
+    throw new Error(`Opcore telemetry file exceeds ${commandLatencyTelemetryArtifactPolicy.maxBytes} byte artifact cap`);
+  }
   return readFileSync(telemetryPath, "utf8")
     .split(/\r?\n/)
     .map((line) => line.trim())
@@ -300,12 +360,18 @@ export function readOpcoreMetricReport(repoRoot: string): OpcoreMetricReport {
 export function createOpcoreMeasureDelta(args: {
   current: OpcoreMetricReport;
   history: readonly OpcoreMetricHistoryEntry[];
+  latencyRecords?: readonly CommandLatencyRecord[];
+  latencyBudgets?: readonly LatencyBudget[];
   generatedAt?: string;
 }): OpcoreMeasureDelta {
   const current = validateOpcoreMetricReport(args.current);
   const history = args.history.map((entry) => validateOpcoreMetricHistoryEntry(entry));
+  const latency = createOpcoreMeasureLatencyReport(args.latencyRecords ?? [], args.latencyBudgets ?? []);
   const baselineEntry = history[0];
   const previousEntry = previousHistoryEntry(current, history);
+  const nextActions = latency.findings.length > 0
+    ? [`Inspect slow command latency: ${formatCommand(latency.findings[0].canonicalCommand)}`, ...current.nextActions].slice(0, 3)
+    : current.nextActions;
   const delta: OpcoreMeasureDelta = {
     schemaVersion: 1,
     kind: "opcore_measure_delta",
@@ -315,11 +381,12 @@ export function createOpcoreMeasureDelta(args: {
       coverage: current.coverage,
       signals: signalCounts(current)
     },
+    ...(latency.recordCount > 0 ? { latency } : {}),
     ...(baselineEntry ? { baseline: comparisonFor(current, baselineEntry) } : {}),
     ...(previousEntry ? { previous: comparisonFor(current, previousEntry) } : {}),
     warnings: [...current.warnings],
     degradations: [...current.degradations],
-    nextActions: current.nextActions
+    nextActions
   };
   return validateOpcoreMeasureDelta(delta);
 }
@@ -345,11 +412,166 @@ export function formatOpcoreMeasureHuman(delta: OpcoreMeasureDelta): string {
     `  files=${validated.current.coverage.totalFiles} graph=${validated.current.coverage.graph.supportedFiles} validation=${validated.current.coverage.validation.supportedFiles} unsupported=${validated.current.coverage.unsupported.totalFiles}`,
     "Signals:",
     ...measureSignalLines(validated),
+    "Latency:",
+    ...latencyLines(validated.latency),
     "Warnings/degradations:",
     ...warningAndDegradationLines(validated.warnings, validated.degradations),
     "Next:",
     ...validated.nextActions.map((action) => `  ${action}`)
   ].join("\n");
+}
+
+function createOpcoreMeasureLatencyReport(
+  records: readonly CommandLatencyRecord[],
+  budgets: readonly LatencyBudget[]
+): OpcoreMeasureLatencyReport {
+  const validatedRecords = records.map((record) => validateCommandLatencyRecord(record));
+  const validatedBudgets = budgets.map((budget) => validateLatencyBudget(budget));
+  const groups = new Map<string, LatencyObservation[]>();
+  for (const record of validatedRecords) {
+    for (const observation of latencyObservations(record, validatedBudgets)) {
+      const key = latencyGroupKey(observation);
+      const group = groups.get(key) ?? [];
+      group.push(observation);
+      groups.set(key, group);
+    }
+  }
+  const findings = [...groups.values()]
+    .map((group) => latencyFinding(group))
+    .filter((action): action is OpcoreMeasureLatencyFinding => action.status !== "ok")
+    .sort(compareLatencyActions)
+    .slice(0, 20);
+  return {
+    kind: "opcore_latency_report",
+    recordCount: validatedRecords.length,
+    budgetCount: validatedBudgets.length,
+    findings
+  };
+}
+
+function latencyObservations(record: CommandLatencyRecord, budgets: readonly LatencyBudget[]): readonly LatencyObservation[] {
+  const repoShapeBucket = classifyRepoShapeBucket(record);
+  const matchingBudgets = budgets.filter((budget) =>
+    budget.scope === record.timing.processState &&
+    budget.repoShapeBucket === repoShapeBucket &&
+    commandMatchesBudget(record.canonicalCommand, budget.canonicalCommand)
+  );
+  if (matchingBudgets.length === 0) {
+    return [
+      {
+        canonicalCommand: record.canonicalCommand,
+        repoShapeBucket,
+        processState: record.timing.processState,
+        phase: "total",
+        recordedAt: record.recordedAt,
+        durationMs: record.timing.durationMs
+      }
+    ];
+  }
+
+  return matchingBudgets.flatMap((budget) => {
+    const observations: LatencyObservation[] = [
+      {
+        canonicalCommand: budget.canonicalCommand,
+        repoShapeBucket,
+        processState: record.timing.processState,
+        phase: "total",
+        recordedAt: record.recordedAt,
+        durationMs: record.timing.durationMs,
+        budgetMs: budget.budgetMs
+      }
+    ];
+    for (const phaseBudget of budget.phaseBudgets ?? []) {
+      const phase = record.timing.phases.find((entry) => entry.phase === phaseBudget.phase);
+      if (phase === undefined) continue;
+      observations.push({
+        canonicalCommand: budget.canonicalCommand,
+        repoShapeBucket,
+        processState: record.timing.processState,
+        phase: phase.phase,
+        recordedAt: record.recordedAt,
+        durationMs: phase.durationMs,
+        budgetMs: phaseBudget.budgetMs
+      });
+    }
+    return observations;
+  });
+}
+
+function latencyFinding(group: readonly LatencyObservation[]): OpcoreMeasureLatencyFinding | (Omit<OpcoreMeasureLatencyFinding, "status"> & { status: "ok" }) {
+  const sorted = [...group].sort((left, right) => left.recordedAt.localeCompare(right.recordedAt));
+  const current = sorted.at(-1);
+  if (!current) throw new Error("Latency action requires at least one telemetry record");
+  const previous = sorted.at(-2);
+  const baseline = sorted[0] === current ? undefined : sorted[0];
+  const overBudgetMs = current.budgetMs !== undefined ? Math.max(0, current.durationMs - current.budgetMs) : undefined;
+  const previousDeltaMs = previous ? current.durationMs - previous.durationMs : undefined;
+  const baselineDeltaMs = baseline ? current.durationMs - baseline.durationMs : undefined;
+  const status = overBudgetMs !== undefined && overBudgetMs > 0
+    ? "over_budget"
+    : (previousDeltaMs !== undefined && previousDeltaMs > 0) || (baselineDeltaMs !== undefined && baselineDeltaMs > 0)
+      ? "slower"
+      : "ok";
+  return {
+    canonicalCommand: current.canonicalCommand,
+    repoShapeBucket: current.repoShapeBucket,
+    processState: current.processState,
+    status,
+    currentDurationMs: current.durationMs,
+    dominantPhase: { phase: current.phase, durationMs: current.durationMs },
+    ...(baseline ? { baselineDurationMs: baseline.durationMs, baselineDeltaMs } : {}),
+    ...(previous ? { previousDurationMs: previous.durationMs, previousDeltaMs } : {}),
+    ...(current.budgetMs !== undefined ? { budgetMs: current.budgetMs } : {}),
+    ...(overBudgetMs !== undefined && overBudgetMs > 0 ? { overBudgetMs } : {})
+  };
+}
+
+function compareLatencyActions(left: OpcoreMeasureLatencyFinding, right: OpcoreMeasureLatencyFinding): number {
+  const leftOver = left.overBudgetMs ?? 0;
+  const rightOver = right.overBudgetMs ?? 0;
+  if (leftOver !== rightOver) return rightOver - leftOver;
+  const leftPrevious = left.previousDeltaMs ?? 0;
+  const rightPrevious = right.previousDeltaMs ?? 0;
+  if (leftPrevious !== rightPrevious) return rightPrevious - leftPrevious;
+  const leftBaseline = left.baselineDeltaMs ?? 0;
+  const rightBaseline = right.baselineDeltaMs ?? 0;
+  if (leftBaseline !== rightBaseline) return rightBaseline - leftBaseline;
+  const leftCommand = formatCommand(left.canonicalCommand);
+  const rightCommand = formatCommand(right.canonicalCommand);
+  if (leftCommand !== rightCommand) return leftCommand.localeCompare(rightCommand);
+  return right.currentDurationMs - left.currentDurationMs;
+}
+
+function commandMatchesBudget(observedCommand: readonly string[], budgetCommand: readonly string[]): boolean {
+  if (observedCommand.length < budgetCommand.length) return false;
+  return budgetCommand.every((token, index) => observedCommand[index] === token);
+}
+
+function latencyGroupKey(observation: LatencyObservation): string {
+  return JSON.stringify([
+    observation.canonicalCommand,
+    observation.processState,
+    observation.repoShapeBucket,
+    observation.phase
+  ]);
+}
+
+function classifyRepoShapeBucket(record: CommandLatencyRecord): string {
+  if (record.repo.totalFiles <= 100) return "small";
+  if (record.repo.totalFiles <= 5000) return "medium";
+  return "large";
+}
+
+function latencyLines(latency: OpcoreMeasureLatencyReport | undefined): readonly string[] {
+  if (!latency || latency.findings.length === 0) return ["  none"];
+  return latency.findings.map((action) => {
+    const phaseName = action.dominantPhase?.phase ?? "total";
+    const budget = action.budgetMs !== undefined ? ` budget=${action.budgetMs}ms` : "";
+    const over = action.overBudgetMs !== undefined && action.overBudgetMs > 0 ? ` over=${action.overBudgetMs}ms` : "";
+    const previous = action.previousDeltaMs !== undefined ? ` previous=${formatSigned(action.previousDeltaMs)}ms` : "";
+    const baseline = action.baselineDeltaMs !== undefined ? ` baseline=${formatSigned(action.baselineDeltaMs)}ms` : "";
+    return `  ${formatCommand(action.canonicalCommand)} [${action.processState}/${action.repoShapeBucket}/${phaseName}/${action.status}]: ${action.currentDurationMs}ms${budget}${over}${previous}${baseline}`;
+  });
 }
 
 function addDiagnosticSignal(
@@ -723,6 +945,10 @@ function safeId(value: string): string {
 
 function formatSigned(value: number): string {
   return value > 0 ? `+${value}` : String(value);
+}
+
+function formatCommand(command: readonly string[]): string {
+  return command.length > 0 ? command.join(" ") : "unknown";
 }
 
 function errorMessage(error: unknown): string {

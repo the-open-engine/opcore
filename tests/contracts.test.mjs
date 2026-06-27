@@ -26,6 +26,8 @@ import {
   graphReleaseHandoffIssues,
   graphReleaseOptionalAnalysisSurfaces,
   latencyBudgetResultStatuses,
+  opcoreMeasureLatencyFindingStatuses,
+  opcoreMeasureLatencyStatuses,
   releaseReceiptCommandGroups,
   releaseReceiptPackageNames,
   releaseReceiptReportIds,
@@ -1271,6 +1273,8 @@ describe("lattice shared contracts", () => {
   it("validates Opcore metric reports, history, deltas, and router payloads", () => {
     const report = validateOpcoreMetricReport(validOpcoreMetricReport());
     assert.equal(report.signals[0].count, 2);
+    assert.deepEqual(opcoreMeasureLatencyStatuses, ["ok", "slower", "over_budget"]);
+    assert.deepEqual(opcoreMeasureLatencyFindingStatuses, ["slower", "over_budget"]);
     assert.equal(
       validateOpcoreMetricHistoryEntry({
         schemaVersion: 1,
@@ -1282,6 +1286,7 @@ describe("lattice shared contracts", () => {
     );
     const delta = validateOpcoreMeasureDelta(validOpcoreMeasureDelta());
     assert.equal(delta.baseline.deltas[0].delta, -1);
+    assert.equal(delta.latency.findings[0].status, "over_budget");
     assert.equal(
       validateCommandRouterResult({
         ...validRouterResult(),
@@ -2907,6 +2912,30 @@ function validOpcoreMeasureDelta(overrides = {}) {
           id: "typescript.type_errors",
           title: "TS/JS type errors",
           count: 2
+        }
+      ]
+    },
+    latency: {
+      kind: "opcore_latency_report",
+      recordCount: 3,
+      budgetCount: 1,
+      findings: [
+        {
+          canonicalCommand: ["opcore", "check", "changed"],
+          repoShapeBucket: "small",
+          processState: "warm",
+          status: "over_budget",
+          currentDurationMs: 900,
+          dominantPhase: {
+            phase: "validation",
+            durationMs: 700
+          },
+          baselineDurationMs: 500,
+          previousDurationMs: 600,
+          baselineDeltaMs: 400,
+          previousDeltaMs: 300,
+          budgetMs: 800,
+          overBudgetMs: 100
         }
       ]
     },

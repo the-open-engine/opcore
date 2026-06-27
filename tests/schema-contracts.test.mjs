@@ -2706,6 +2706,30 @@ function validOpcoreMeasureDelta(overrides = {}) {
         }
       ]
     },
+    latency: {
+      kind: "opcore_latency_report",
+      recordCount: 3,
+      budgetCount: 1,
+      findings: [
+        {
+          canonicalCommand: ["opcore", "check", "changed"],
+          repoShapeBucket: "small",
+          processState: "warm",
+          status: "over_budget",
+          currentDurationMs: 900,
+          dominantPhase: {
+            phase: "validation",
+            durationMs: 700
+          },
+          baselineDurationMs: 500,
+          previousDurationMs: 600,
+          baselineDeltaMs: 400,
+          previousDeltaMs: 300,
+          budgetMs: 800,
+          overBudgetMs: 100
+        }
+      ]
+    },
     baseline: {
       recordedAt: "2026-06-24T00:00:00.000Z",
       generatedAt: "2026-06-24T00:00:00.000Z",

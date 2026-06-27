@@ -18,6 +18,8 @@ export {
   createOpcoreMetricReport,
   formatOpcoreMeasureHuman,
   formatOpcoreReportHuman,
+  readCommandLatencyTelemetry,
+  readOpcoreLatencyBudgets,
   readOpcoreMetricHistory,
   readOpcoreMetricReport,
   writeCommandLatencyTelemetry,
