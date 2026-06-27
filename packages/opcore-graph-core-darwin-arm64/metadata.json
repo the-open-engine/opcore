@@ -4,6 +4,6 @@
   "targetPlatform": "darwin-arm64",
   "binaryPath": "opcore-graph-core",
   "checksumPath": "opcore-graph-core.sha256",
-  "checksumSha256": "4a6eb4c6c4be15df3e126b725d83476a10665f36b7801cab0e1d5df64c70e82d",
+  "checksumSha256": "429c3aa6046a1fda3001ee797cca6db2583c65eb977221f7f97a7043de04ef77",
   "buildProfile": "release"
 }

@@ -3,7 +3,7 @@
 Issue #120 receipt for advisory standalone ASP manager dogfood.
 
 Machine receipt: docs/release/asp-dogfood-receipt.json
-Machine receipt SHA-256: b636c8a12bcfcccc75b8a2c3a3e46ca5353ff63445f0325bf5dadeeb6d038f32
+Machine receipt SHA-256: de1587447c37171eb51fc9226db25091d2cd569c2d0a064a50c1ae9adbbb1696
 Bootstrap source: local-sibling
 Repo enrollment mode: advisory
 Host fixture repo: temporary
