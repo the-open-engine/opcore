@@ -15640,7 +15640,7 @@
                 "maxItems": 10,
                 "prefixItems": [
                   {
-                    "const": "lattice"
+                    "const": "opcore"
                   },
                   {
                     "const": "check"
@@ -15694,7 +15694,7 @@
                 "maxItems": 5,
                 "prefixItems": [
                   {
-                    "const": "lattice"
+                    "const": "opcore"
                   },
                   {
                     "const": "validate"
@@ -15733,7 +15733,7 @@
                 "maxItems": 6,
                 "prefixItems": [
                   {
-                    "const": "lattice"
+                    "const": "opcore"
                   },
                   {
                     "const": "check"
@@ -15775,7 +15775,7 @@
                 "maxItems": 6,
                 "prefixItems": [
                   {
-                    "const": "lattice"
+                    "const": "opcore"
                   },
                   {
                     "const": "check"
@@ -15817,7 +15817,7 @@
                 "maxItems": 6,
                 "prefixItems": [
                   {
-                    "const": "lattice"
+                    "const": "opcore"
                   },
                   {
                     "const": "check"
@@ -19398,10 +19398,7 @@
           "minItems": 1,
           "prefixItems": [
             {
-              "enum": [
-                "lattice",
-                "opcore"
-              ]
+              "const": "opcore"
             }
           ],
           "items": {
@@ -19414,10 +19411,7 @@
           "minItems": 1,
           "prefixItems": [
             {
-              "enum": [
-                "lattice",
-                "opcore"
-              ]
+              "const": "opcore"
             }
           ],
           "items": {
@@ -19436,7 +19430,7 @@
         },
         "binPath": {
           "type": "string",
-          "pattern": "node_modules/\\.bin/(lattice|opcore)$"
+          "pattern": "node_modules/\\.bin/opcore$"
         },
         "stdoutSha256": {
           "$ref": "#/$defs/Sha256"
@@ -19819,7 +19813,7 @@
                 "maxItems": 3,
                 "prefixItems": [
                   {
-                    "const": "lattice"
+                    "const": "opcore"
                   },
                   {
                     "const": "graph"
@@ -19836,7 +19830,7 @@
                 "maxItems": 3,
                 "prefixItems": [
                   {
-                    "const": "lattice"
+                    "const": "opcore"
                   },
                   {
                     "const": "graph"
@@ -19896,7 +19890,7 @@
                 "maxItems": 3,
                 "prefixItems": [
                   {
-                    "const": "lattice"
+                    "const": "opcore"
                   },
                   {
                     "const": "graph"
@@ -19913,7 +19907,7 @@
                 "maxItems": 3,
                 "prefixItems": [
                   {
-                    "const": "lattice"
+                    "const": "opcore"
                   },
                   {
                     "const": "graph"
@@ -19973,7 +19967,7 @@
                 "maxItems": 3,
                 "prefixItems": [
                   {
-                    "const": "lattice"
+                    "const": "opcore"
                   },
                   {
                     "const": "graph"
@@ -19990,7 +19984,7 @@
                 "maxItems": 3,
                 "prefixItems": [
                   {
-                    "const": "lattice"
+                    "const": "opcore"
                   },
                   {
                     "const": "graph"
@@ -20064,7 +20058,7 @@
                 "maxItems": 6,
                 "prefixItems": [
                   {
-                    "const": "lattice"
+                    "const": "opcore"
                   },
                   {
                     "const": "graph"
@@ -20090,7 +20084,7 @@
                 "maxItems": 6,
                 "prefixItems": [
                   {
-                    "const": "lattice"
+                    "const": "opcore"
                   },
                   {
                     "const": "graph"

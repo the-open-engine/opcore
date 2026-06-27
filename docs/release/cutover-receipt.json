@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "issue": "#30",
   "origin": "covibes-authored-cutover-proof",
-  "generatedAt": "2026-06-27T10:48:45.280Z",
-  "commitSha": "83ecc13c5bd4c6bcd348f54d4fece218009b3f2d",
+  "generatedAt": "2026-06-27T11:47:20.902Z",
+  "commitSha": "cf4382eba462fb2929963fe5792b02c4b5d83105",
   "privateRepo": true,
   "packageNames": [
     "@the-open-engine/opcore-contracts",
@@ -17,7 +17,8 @@
     "@the-open-engine/opcore-validation-python",
     "@the-open-engine/opcore-validation-rust",
     "@the-open-engine/opcore-validation-typescript",
-    "@the-open-engine/opcore-asp-provider"
+    "@the-open-engine/opcore-asp-provider",
+    "@the-open-engine/opcore-fixtures"
   ],
   "installedPackages": [
     {
@@ -25,7 +26,7 @@
       "version": "0.1.0-alpha.0",
       "tarball": {
         "filename": "the-open-engine-opcore-contracts-0.1.0-alpha.0.tgz",
-        "sha256": "1a8eb996a67e0f4c97513446e6243d706936c91b1e2a792c0b0d69d388916f09"
+        "sha256": "49e11a2ecbbd9b321331abce09989eaa7b83b4a59c8a605e4b282d9941d3c0e3"
       },
       "installedManifest": {
         "path": "node_modules/@the-open-engine/opcore-contracts/package.json",
@@ -35,15 +36,15 @@
       "installedFiles": [
         {
           "path": "node_modules/@the-open-engine/opcore-contracts/dist/index.d.ts",
-          "sha256": "1851db3bbb99db5bf9827b3c3de480b9b23fee4b6f67771988f0bbd407a377f5"
+          "sha256": "30ce315e4d98e4c15dddc4621cd569a62e272d2c0dab65533171feb612b3f782"
         },
         {
           "path": "node_modules/@the-open-engine/opcore-contracts/dist/index.d.ts.map",
-          "sha256": "76df23c6e81c76b62d93ac3e9d4e2870a657ea92c684ff4f3cb912a22ecd6a5a"
+          "sha256": "26d27180bbc26d6fd811f9d2e511be5d97147d4caa70dee9867119cad817be15"
         },
         {
           "path": "node_modules/@the-open-engine/opcore-contracts/dist/index.js",
-          "sha256": "d68249ec5516700fbda068759825f404b73203206eb0670ff3a9bd100025fb3b"
+          "sha256": "d3fcdc9d3a8e0a59abb2498f2ea29947c1502060b2dec6233a41a5815deb8cbe"
         },
         {
           "path": "node_modules/@the-open-engine/opcore-contracts/package.json",
@@ -55,7 +56,7 @@
         },
         {
           "path": "node_modules/@the-open-engine/opcore-contracts/schemas/opcore-contracts.schema.json",
-          "sha256": "c3416e8ebf5681a1fad55af5e10b9621ddfcf4b6cb149d555d3e9582b056f8f4"
+          "sha256": "92ab4cd7a28e435d9ce924fc14f38566cc535b91fe53b613881f76375c4cf484"
         }
       ]
     },
@@ -64,7 +65,7 @@
       "version": "0.1.0-alpha.0",
       "tarball": {
         "filename": "the-open-engine-opcore-0.1.0-alpha.0.tgz",
-        "sha256": "282392c6b455d51d9295918489731b4285a7abcb60e23f92d293b2b81971bf35"
+        "sha256": "82ef2f3742b34955f56686d0dfa027fb51a96acbfedf219497f8033d1dd71e46"
       },
       "installedManifest": {
         "path": "node_modules/@the-open-engine/opcore/package.json",
@@ -228,11 +229,11 @@
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/init.d.ts.map",
-          "sha256": "27c3cdb6edcafb6189a3858d51876cda1a25b4fb0a0438fb9f59b73d64bcd844"
+          "sha256": "b1f0a0ef821e2747d1de74f0d507b6b4a7e9fe287240982806508bedce0932c2"
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/init.js",
-          "sha256": "ebaf8a4ba11dfaa5fd30cc42a8bd08e816b5ccb78359e4914d0f81033511df19"
+          "sha256": "51974d0a6f6645e991201b36cbb67c60e433744a89cf2840dd7d18b9476a62a8"
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/reporting.d.ts",
@@ -240,11 +241,11 @@
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/reporting.d.ts.map",
-          "sha256": "998a13a77a085678b0a937ded756e0cea7c22fa3698ecb1f3fac75277381765a"
+          "sha256": "d4094731557c97752b74ff2bae00d82add9144934d14170055ce309beda453b2"
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/reporting.js",
-          "sha256": "9c07cd9ccbf0345a6cc791d6e27bfb81d560574387144cd2ddbd48745881ada7"
+          "sha256": "f62d934b9ec1a7e7830b738852299f9b1962ad0bc52060f426b7d11ec4ab4315"
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/router.d.ts",
@@ -256,7 +257,7 @@
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/router.js",
-          "sha256": "3d890160b2dd50495addd0f2d61aba3f39d9760fbeed741aa8c9f59ee793b45e"
+          "sha256": "c99bb5d8875615838ef65f748a0e00aa5ee7145929daee8e6a48e2310c911a82"
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/scan.d.ts",
@@ -268,7 +269,7 @@
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/scan.js",
-          "sha256": "f212b60893aa0b73395e9be68143b0f8af2cd76296aba388eeca8fa4d92eca1a"
+          "sha256": "a060ba8689855a91560431d036e6d85218b569182d2edb8adaa9e2b3a66f8133"
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/status.d.ts",
@@ -300,11 +301,11 @@
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/try.d.ts.map",
-          "sha256": "830761d122e75c4cdb3baa629f8dbc294449f90979eeb67055b000d553dc4f45"
+          "sha256": "420c5f44ffb4932412b8d6b8cbb8dc13f53616ec6dfb761ad00e3dd0525cc344"
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/try.js",
-          "sha256": "ffebfb98c00ffde54308f10a836bfd65058425e825b2c25de4e33705b998a1aa"
+          "sha256": "49a6768a5f433e533606a4f0936ba959a4f02095f200398c210b1f3b5a18c1b2"
         },
         {
           "path": "node_modules/@the-open-engine/opcore/dist/validation-composition.d.ts",
@@ -917,7 +918,7 @@
       "version": "0.1.0-alpha.0",
       "tarball": {
         "filename": "the-open-engine-opcore-validation-python-0.1.0-alpha.0.tgz",
-        "sha256": "4e6ffe8f4fec52d8c1b2c423d14fefe79270ec8db4a5050ce75584b477d858cd"
+        "sha256": "50f94e3a345de4fb80ea6b744bbcee3cd14ac7a48aa2972d91aaae9212b9a518"
       },
       "installedManifest": {
         "path": "node_modules/@the-open-engine/opcore-validation-python/package.json",
@@ -1075,11 +1076,11 @@
         },
         {
           "path": "node_modules/@the-open-engine/opcore-validation-python/dist/toolchain.d.ts.map",
-          "sha256": "9e6f38caac0727e86453646343485ff5c84a7be1aa6ad2176b0e5f519115548d"
+          "sha256": "2a247bf45fe5db852df0622ac78e4b496d919faf1c8e50287daf6dd3eee0216a"
         },
         {
           "path": "node_modules/@the-open-engine/opcore-validation-python/dist/toolchain.js",
-          "sha256": "52611c805e5768b7f3007ca1ef2ded7d3a8eb4170a49955bbffb05df0b9e08a8"
+          "sha256": "86266fa88a2904ca4995b0c5749ae2a8c6e86ae41b3b66ecabd62dc0b97a72b1"
         },
         {
           "path": "node_modules/@the-open-engine/opcore-validation-python/dist/type-check.d.ts",
@@ -1647,6 +1648,305 @@
         {
           "path": "node_modules/@the-open-engine/opcore-asp-provider/README.md",
           "sha256": "f8b6127f03b57d1d990c8690f280536d865bf800517eaca0ae80841f2b8eb44e"
+        }
+      ]
+    },
+    {
+      "packageName": "@the-open-engine/opcore-fixtures",
+      "version": "0.1.0-alpha.0",
+      "tarball": {
+        "filename": "the-open-engine-opcore-fixtures-0.1.0-alpha.0.tgz",
+        "sha256": "9af1b8cf9d9715db778ff5046c18d63103aa1fbba0e55c3ac660dee56abf5f82"
+      },
+      "installedManifest": {
+        "path": "node_modules/@the-open-engine/opcore-fixtures/package.json",
+        "sha256": "12a90546b7e6b554e963185d50a51c854f8f88939706b9a58ccf61a4f9f64b8b",
+        "bins": {}
+      },
+      "installedFiles": [
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/descriptors/opcore.managed-tool.json",
+          "sha256": "a3dfa60a176d2ba39f7d2d13d43233004d5098d3def4a1da356b24ada01ec7cc"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/dist/index.d.ts",
+          "sha256": "0a24ebc8ffcf13320231d38033e9c20d0ce5291bddfba7083e7f7b93138ef386"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/dist/index.d.ts.map",
+          "sha256": "09a0fa050cd566bb9f04f3fe51552f420745df2b1557cd9a379f8102d482abd1"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/dist/index.js",
+          "sha256": "a98d15f315e51476b51379d8a2f4a0488e16f7d6ee8a659f243912f32e96ad42"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/graph-pipeline/pipeline-fixtures.json",
+          "sha256": "6d14f4267efd8664e6d5ba5ef9eb3bbe68b1a02c78daf33efdddf7f13048ce28"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/graph-query/query-fixtures.json",
+          "sha256": "b9ff6b419e6fc62abe513f85b0417ed721ed512540e560aa204967706240375f"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/graph-reference-evidence/baseline-receipts.json",
+          "sha256": "9243d09b1f63e17d5d898915039b108672eebe0216fac9de15e46666cc74d50c"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/graph-reference-evidence/daemon-socket-fixtures.json",
+          "sha256": "6e20e578b23fa52e469dfbef5fa19d5205b1479028e5c877e76f939fcef0da3f"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/graph-reference-evidence/golden-corpus.json",
+          "sha256": "dc0a466cc3a9ce8b96fc997994e68661ace243525291dd3706433b74632e8def"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/graph-reference-evidence/manifest.json",
+          "sha256": "807f2fc7700bcc6ca3971252536779fb47056f06846cc0faa5cf8d57fcbbcd5b"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/graph-reference-evidence/sqlite-fixtures.json",
+          "sha256": "4a43e4ce4c1085d55f896fbb860af1c74804687827a7016760a29710c71bd151"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/graph-release/release-readiness-fixture.json",
+          "sha256": "01c891c3e416f069bb543540e864ca9043ec546e99a6957df666c5d40f8f6b55"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/graph-search/search-fixtures.json",
+          "sha256": "4429488b0f8b43fda96972d9319c6ba9186ca7edfbe237b0f964ecf1da17faf4"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/inspect-symbol-parity/expected-implementations.json",
+          "sha256": "f9c1a023f934d7b080b52751b9112502bdcea42e64650e36af898746e2484d73"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/inspect-symbol-parity/expected-references.json",
+          "sha256": "bf5be060810a03249895a53adf45febcbabd4e82ecbac260ab3978c2ebe9a16d"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/inspect-symbol-parity/expected-signatures.json",
+          "sha256": "5d432853ae20f5721dace8d97545be73b92276f3ccc766035560278ba66971dc"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/inspect-symbol-parity/src/aliases.ts",
+          "sha256": "fc6065bcbe9a99e65f9339e7de3798872e1bec2f7e494c5c123c3ba911d8d71f"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/inspect-symbol-parity/src/components/GreetingCard.tsx",
+          "sha256": "e7bfd775e900731fcb6e05e3c29a2b2ab3495f39606092d57e78fffd0285df64"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/inspect-symbol-parity/src/inheritance.ts",
+          "sha256": "f1771feba88d496f599207bc03e3276991eb78c4179141f96d3192e38f18abfe"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/inspect-symbol-parity/src/js-module.js",
+          "sha256": "6eb4578651edea61c590b364446461244f95b93e030ce94b51baa8c7d5125afb"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/inspect-symbol-parity/src/jsx-widget.jsx",
+          "sha256": "b469ba0b167ffb53f182e3d8a7712e30b8fb90c78baeca51dc7b7d672be3afca"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/inspect-symbol-parity/src/models.ts",
+          "sha256": "efb81d6bb1b0a3c3f0fb2d5fb25561eb0c6d40691daebcc6270e08eef4efeb81"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/inspect-symbol-parity/src/overloads.ts",
+          "sha256": "cd6fbd586e2d75a0b4fe1b7c6ece1579fadbcb06bd61fb014d7aa59d3031336c"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/inspect-symbol-parity/src/same-name.ts",
+          "sha256": "6a91e63f52594d8ddc6409090b4ce5ab31de03b2de2bfc28dad62636384032ee"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/inspect-symbol-parity/tsconfig.json",
+          "sha256": "022e4bf2a29f351407aa65e9d5f92b0c149ce369a0279412dd7d8ad33e2aa3a5"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/package.json",
+          "sha256": "12a90546b7e6b554e963185d50a51c854f8f88939706b9a58ccf61a4f9f64b8b"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/README.md",
+          "sha256": "4ebd63d3ee0a4b3ee145c8128056b7318838dded64cb3d9c932984868cb68777"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/source-extraction/mixed-rust-ts/mixed-rust-ts.expected.json",
+          "sha256": "93c8617097fdd8134c801ce27a345852dbba97b8e1bac6ac0bfd127430ef16b8"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/source-extraction/mixed-rust-ts/src/consumer.rs",
+          "sha256": "a0c39feee3eaf9f8ca749da93715db164a41021c2910c009a9fd387d103d67fb"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/source-extraction/mixed-rust-ts/src/helpers.rs",
+          "sha256": "18f4a6cfff40fde5624ab78f3856dd1400e15d896eddae6cca6f657446e5a633"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/source-extraction/mixed-rust-ts/src/lib.rs",
+          "sha256": "8665d271bdc37f15f511c4527c0d4ca975313a361939f8c1fd4429fb98444248"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/source-extraction/mixed-rust-ts/src/widget-view.ts",
+          "sha256": "f7daff2a1e5b697a7d6d107d20a8fe4bca7a716878e9416891dd8f42ced71037"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/source-extraction/mixed-rust-ts/tsconfig.json",
+          "sha256": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/source-extraction/python/python.expected.json",
+          "sha256": "ce4450fec1d59f8ca4e6a278c0b82b64edd6115569cd43ca6911385a1df9c3ed"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/source-extraction/python/src/pkg/__init__.py",
+          "sha256": "6b4a88f78d377c33b01efa3520fb526f3741fa49afade904b527e644e57eb1d6"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/source-extraction/python/src/pkg/async_tools.py",
+          "sha256": "1e226a851436c2dc3cb8815dcbad92153f9de39fe75ee66d88e2039818e1d5c8"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/source-extraction/python/src/pkg/base.py",
+          "sha256": "f8985eda5344ae70faf8b838cdead097eb9e43b4a3c18f0205cfc8c70fb17d01"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/source-extraction/python/src/pkg/broken.py",
+          "sha256": "798a160ba7d19904f2c0ea70bdbaeb4c7ea41fceb97bb9406f0575a3a2fc15fa"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/source-extraction/python/src/pkg/helpers.py",
+          "sha256": "0d349acc679e0278ee6e471308dda8c442cc85295eef7ad1eb043d745312934d"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/source-extraction/python/src/pkg/models.py",
+          "sha256": "eb400ba6608b9fd7e6f80c7f8c6afefb62c105a27be10c18bb5710058ecef386"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/source-extraction/python/src/pkg/stubs.pyi",
+          "sha256": "c45fa43a1408f414f7c16cfb7304059f98a1c4882ffbbfb98dea29df4a2882a1"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/source-extraction/python/src/pkg/uses_stub.py",
+          "sha256": "83bdefc281cee5f2fa50f119a3b3bafda9904731bcbb6058cf5a2c4f2e1cc6b0"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/source-extraction/python/tests/test_models.py",
+          "sha256": "c7e8840c2834fde1a1520bae7421dca730f5f5a48a811c2a95997c86517a8493"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/source-extraction/python/tsconfig.json",
+          "sha256": "7eb28227fa55d265da58d76972d83f5cbe8eee98e7154d1400a320977b629e5c"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/source-extraction/rust-only/rust-only.expected.json",
+          "sha256": "b8026c4eb471a04c5eaa4e5660a5719d9d365506207b1339c551eec1112db915"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/source-extraction/rust-only/src/helpers.rs",
+          "sha256": "d413a32dcd44b344134ddd3ee37ae5264e7f9f6e3899277f1be72aab40d3339e"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/source-extraction/rust-only/src/lib.rs",
+          "sha256": "334cdb197e4084dbd9749fe5bf0762ffcc1b9a128f957f4ff368e71ea204168d"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/source-extraction/rust-only/src/user.rs",
+          "sha256": "b327e167956da3d02919928fa97a5425d9defe80228ef21515abc6cb0b5a964e"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/source-extraction/rust-only/tests/widget_test.rs",
+          "sha256": "73e6599edaec366be40929bce164ab063ad279eca27e024f92eaa80f1cc618ed"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/source-extraction/rust-only/tsconfig.json",
+          "sha256": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/source-extraction/wave1/src/__tests__/greeting.test.ts",
+          "sha256": "2013612e9b7add9aa8911916e5a416de46d1f9619f8424aa89ca901b43715b3a"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/source-extraction/wave1/src/barrel.ts",
+          "sha256": "9fd1d0d2333cf8f7f87fb3d4c5bbe2ce7e97479bd3f00ed1a60862decaf9eba0"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/source-extraction/wave1/src/components/GreetingCard.tsx",
+          "sha256": "9401caf17663596ff5d883686c70c3b7b363aba51dac289f7b698467692bdeb8"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/source-extraction/wave1/src/default-model.ts",
+          "sha256": "4fb7182737696624c5cf94343859af022de615c75b93fc958f76d16dca254c74"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/source-extraction/wave1/src/default-value.ts",
+          "sha256": "ac1d00f46f51c98c72eb930121784860a3520833981103e73560e2ae16ac118a"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/source-extraction/wave1/src/import-backed-barrel.js",
+          "sha256": "5834ab9bdc2591e8742fbabab6b45dfff75bba276da8f76b9dbab341a841804f"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/source-extraction/wave1/src/legacy-widget.jsx",
+          "sha256": "e477739f9261ce7d289bde6a3deff1ee7cd915b46aad76e6ed1df7b5194c4c89"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/source-extraction/wave1/src/math.js",
+          "sha256": "9cc23182056211c319abd88ac82c1ea9dd18c14c631d076c3b307a2c1d5c108d"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/source-extraction/wave1/src/models.ts",
+          "sha256": "bf17e70fc185063ad4286941a0d5cf2b68cc1112d2bc118ff6b47fd6931a1df6"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/source-extraction/wave1/tsconfig.json",
+          "sha256": "00ed813198bbf8f91b0ff8d74b6d85f840f752afd35929d99a14016982cd7d3a"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/source-extraction/wave1/wave1.expected.json",
+          "sha256": "259bbc636000c2bb19ff2685081bfd0f04f3268ec4fd813cf78ea781810b651c"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/validation-contract/validation-fixtures.json",
+          "sha256": "19aaf703d7f49d089fe4aa5a0ecf81eface63ece0714a43e2ccf2799ec23a68c"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/validation-python/clean/pkg/__init__.py",
+          "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/validation-python/clean/pkg/app.py",
+          "sha256": "57d53f1f53b75cfe2b4493b9b7c95f7044bbef4ba2c67ec02445f61b311add53"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/validation-python/clean/pkg/dep.py",
+          "sha256": "585c93666fcb046b7b264d3fa73202aa2a38254ae82a4b3ba19e873c2d5a9886"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/validation-python/degraded-tools/pkg/__init__.py",
+          "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/validation-python/degraded-tools/pkg/app.py",
+          "sha256": "61be929425c0ed810eda2490bb7b19805b2e92aa185fc6006911f45fe979afcb"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/validation-python/failing/pkg/__init__.py",
+          "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/validation-python/failing/pkg/app.py",
+          "sha256": "d3fda5e6d9cc32e437a74370ade6359c6be60d1bdb27ecd723f80dd67e60170c"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/validation-python/failing/pkg/dep.py",
+          "sha256": "585c93666fcb046b7b264d3fa73202aa2a38254ae82a4b3ba19e873c2d5a9886"
+        },
+        {
+          "path": "node_modules/@the-open-engine/opcore-fixtures/validation-python/README.md",
+          "sha256": "0c1ab4f649a7d5985bc91bb0f8ca768c8da77a37da16be1f6454e10c9b4aae3c"
         }
       ]
     }
@@ -2337,7 +2637,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/opcore",
-      "stdoutSha256": "99b2008f3377c4697134e8082de95fb6e3a708b545cad63a1e49874938aa51b5",
+      "stdoutSha256": "d5742b6fea901bd75f46818f9bc04f831966fadc2d3009b50336e7254cd7e186",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "opcore scan wrote read-only report artifacts"
     },
@@ -2355,7 +2655,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/opcore",
-      "stdoutSha256": "b709889de969c4f72b31e63c4130b19deccb3d721091d5860647ddb758d2aab8",
+      "stdoutSha256": "34309060585404b83124c707bacb5e2704face9a8f59cd3588fa3ff2a92a2c6a",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "opcore status returned repoState"
     },
@@ -2383,7 +2683,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/opcore",
-      "stdoutSha256": "8ddd8b99b98d4276a724fe2b13435eacf22495c25dba919edf956b642c1cf96c",
+      "stdoutSha256": "854b10d0af955d489ad3a25c6df879963b0695f8002a09558c28b90bb8e246da",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "opcore check changed defaulted base to HEAD"
     },
@@ -2401,7 +2701,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/opcore",
-      "stdoutSha256": "a92f1eb1d58e816f180652a8de099749e4156dc54556514da3b819d1cabc764c",
+      "stdoutSha256": "c504adcf503dc5211553812323ca92f856fa325816ef13e3a525d7f51437ca1c",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "opcore measure returned read-only report deltas"
     },
@@ -2419,7 +2719,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/opcore",
-      "stdoutSha256": "f514056ce6826a323ba40c020cdbb84e3beb3f061ae25d63aae7b0cdb4430e68",
+      "stdoutSha256": "de317b1e323cb029baf0810a3cae9d9c281559706c74f2632467b866e2b6d42b",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "opcore try generated local sample repos without publishing"
     },
@@ -2437,7 +2737,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/opcore",
-      "stdoutSha256": "8177ac6d9db87bcead50c71a9dda366a888c753b222b5797526c64f7dfbf8586",
+      "stdoutSha256": "2f6bd59f71618727b604f1879e2f05e66e28221034819c165bc031d72f24eaf2",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "runtime status reports validation readiness"
     },
@@ -2455,7 +2755,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/opcore",
-      "stdoutSha256": "c987531ab39d45f3aaf9fe0fab8aa0c27e3bcecaa9364a221cd5b02857ff81cb",
+      "stdoutSha256": "5db6a5719fb73d82b3a67e906a82624e51b668679bb1f6b78eb9155bd0c7e131",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "runtime doctor reports validation readiness"
     },
@@ -2475,7 +2775,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/opcore",
-      "stdoutSha256": "b6f7251e39bd7572b97731a10a89c99f18256069aaa7950aca7697fbc6cd0380",
+      "stdoutSha256": "6e547799a0ebca3fae496184ca186dc7f0047be90b8021ed6c0e673be10af9b3",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "graph build completed with native artifact"
     },
@@ -2495,7 +2795,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/opcore",
-      "stdoutSha256": "c495ad0ded43cb8c8cc1b2b4d478a3d4fe7ac94a66b2d0ccc09df7ae94796b57",
+      "stdoutSha256": "d86bc6c209ca7dcb2a5e811913bbdae427376e23817cd54ea8c16be9c8677642",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "graph status available after build"
     },
@@ -2515,7 +2815,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/opcore",
-      "stdoutSha256": "d09b4770b973984b9d2529cde3f77cb22a3d364c48f5a839f60b3658367ee99c",
+      "stdoutSha256": "ae8c1cdc67ed241b49ff8073799bb36f16c1ec184f856f1144565abcc0ca6395",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "graph query returned facts"
     },
@@ -2539,7 +2839,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/opcore",
-      "stdoutSha256": "200e8e1fa881efcafaa72b4ae5adf216c0b7a9e961a76d6492e78fd800463b9f",
+      "stdoutSha256": "4e6b6b7a4172d43b1ae10eab250374ad510a563ff97cb8c8120d7036082bbad9",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "graph impact returned file impact"
     },
@@ -2563,7 +2863,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/opcore",
-      "stdoutSha256": "07eac996f513e7e1e485b3fd5a266796bba1f4e4bf863764b27e413fdfa5b39a",
+      "stdoutSha256": "52881139019ebb2440be380b22f1b989458bd8be94915772087aa7a65a427ae0",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "graph review-context returned related facts"
     },
@@ -2587,7 +2887,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/opcore",
-      "stdoutSha256": "cdef41a947907624ed5afc118203002522cef6145f03308369a12e590933b21c",
+      "stdoutSha256": "7955b3551916a886456ba9622ea7bc308bc149b4bd89d575017cafc1e510b118",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "graph detect-changes returned typed change data"
     },
@@ -2613,7 +2913,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/opcore",
-      "stdoutSha256": "8ef095981611638a0d996fdd500dcf842708fec8837f7bb691ef9581b7729542",
+      "stdoutSha256": "228d04110b6121b1e2ee629842b2d9dddd96978bc4670db8b664106a07e0b338",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "graph search returned ranked results"
     },
@@ -2633,7 +2933,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/opcore",
-      "stdoutSha256": "458fe15375e38d48a27bf808e2977d9383f8735ad546408a1c69522d4edd65dd",
+      "stdoutSha256": "675cda47588f35e385ef74352c0b8a844ed925b7707ecb4ad1602119bc336bda",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "graph serve status route is ready"
     },
@@ -2659,7 +2959,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/opcore",
-      "stdoutSha256": "27200daf767b023dfbf326095785791c9592d377419b2b839154a5fe3da0ffc9",
+      "stdoutSha256": "edc215165193d63afcce9f6f2f92c9f75e219ee4debd82518c59f92bd76ccdb0",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "inspect symbols returned graph symbols"
     },
@@ -2681,7 +2981,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/opcore",
-      "stdoutSha256": "6f044c39b53a0a4ef094d25fe8b752ae252020ab79e84d616e49e9a8f95b89de",
+      "stdoutSha256": "e220ba785b0d9b2754758da37a09606ab83b3d94fe7bcb214fd6b5714d9ea3f5",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "inspect definition returned a symbol"
     },
@@ -2707,7 +3007,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/opcore",
-      "stdoutSha256": "689073fa45d4c2f1ffa87ad844eb2fe5af765fc73b23d1e6376dfe8d9617305f",
+      "stdoutSha256": "ab41e79dba5ae6e20339e9ab250d8b1f204adbae9df42079a7d85474ea568472",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "inspect references returned callers"
     },
@@ -2729,7 +3029,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/opcore",
-      "stdoutSha256": "856d12535bfa1b87a2bbaa4c928f27576910bb08dd2137f98de158b42337f822",
+      "stdoutSha256": "73f82bf11605b18fc536a50ce0df1cec40d636bab80c20de723bff017c90922c",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "inspect signature returned read-only language-service signatures"
     },
@@ -2751,7 +3051,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/opcore",
-      "stdoutSha256": "482b665b70560fa2fee8a956538cf47e0bfb978641d39c774dbfc89bed94850b",
+      "stdoutSha256": "a438f5f8ec51814fd09e0fba75f5de64906134ee8d67ab4b9825b2aac0b55b14",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "inspect implementations returned implementation evidence"
     },
@@ -2777,7 +3077,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/opcore",
-      "stdoutSha256": "2b911f979a6ebbd26c00775b4109ee6f59b5c2f0395d9daa9ed3121fe3f65f1a",
+      "stdoutSha256": "fc11551668c591baa70899927a25737e5f4f49dd228b097b48a3aca2e5e8c267",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "inspect search returned graph search results"
     },
@@ -2809,7 +3109,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/opcore",
-      "stdoutSha256": "a9e72001a5dcc18fa76bc171b175a439a35bf99b6a9061c7ceaf5e3d086a6a64",
+      "stdoutSha256": "f53f9d7f4a565e64bd8fc1d4298ed0fcc8af22ea832153574c8ac411bf3d0096",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "safe edit preview produced a plan without writing"
     },
@@ -2843,7 +3143,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/opcore",
-      "stdoutSha256": "5ccace8dbf44c6b5138277de38d6d91e067868d445935c86d7fe1e5afde9533b",
+      "stdoutSha256": "d0d90f9c346e5b35e0cb3f48573e31c1f6d4fa8c4ead1ce789483731f74341c3",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "safe edit apply wrote after validation"
     },
@@ -2877,7 +3177,7 @@
       "status": "error",
       "exitCode": 1,
       "binPath": "node_modules/.bin/opcore",
-      "stdoutSha256": "bad2872683f7350ef2924ba4af0d75cd95060c994c482cf2448dcb4ed2710cfa",
+      "stdoutSha256": "26cf9e8bc2da829a638cb21e7d14d59041b50ac255a252c66629be03310648ad",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "validation-refused edit left file unchanged"
     },
@@ -2903,7 +3203,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/opcore",
-      "stdoutSha256": "c01c25f59d829fade24ef6606672469cb2579c95ee9bd217584cb318cd1659ce",
+      "stdoutSha256": "e672977444c41f16dc6baaf6a45f8808440558134e035c080ae2b3bfd6691e31",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "check files passed syntax and type checks"
     },
@@ -2914,20 +3214,20 @@
         "validate",
         "request",
         "--request-file",
-        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-cutover-LvjxLY/project/validate-request.json"
+        "validate-request.json"
       ],
       "canonicalCommand": [
         "opcore",
         "validate",
         "request",
         "--request-file",
-        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-cutover-LvjxLY/project/validate-request.json"
+        "validate-request.json"
       ],
       "owner": "validation",
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/opcore",
-      "stdoutSha256": "fa8cc5fa887b8fd0f22e6d3647125b5a800751ac45dd7f0442e920dcbe2f6eef",
+      "stdoutSha256": "2f4431702c7bec1300148f4c4c39853aa9dd7461f275853ccd8df8c21648032a",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "validate request passed"
     },
@@ -2938,7 +3238,7 @@
         "validate",
         "pre-write",
         "--request-file",
-        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-cutover-LvjxLY/project/pre-write-pass.json",
+        "pre-write-pass.json",
         "--timeout-ms",
         "30000"
       ],
@@ -2947,7 +3247,7 @@
         "validate",
         "pre-write",
         "--request-file",
-        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-cutover-LvjxLY/project/pre-write-pass.json",
+        "pre-write-pass.json",
         "--timeout-ms",
         "30000"
       ],
@@ -2955,7 +3255,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/opcore",
-      "stdoutSha256": "443aec84ecc9d535a6c236996cccad9bbc784685b994310118069f7528184453",
+      "stdoutSha256": "cca1fc118efc4cbb7f7b2df40defd635887f4f5acf7235c17ce393ffbd004bd9",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "pre-write pass receipt was ok"
     },
@@ -2966,7 +3266,7 @@
         "validate",
         "pre-write",
         "--request-file",
-        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-cutover-LvjxLY/project/pre-write-fail.json",
+        "pre-write-fail.json",
         "--timeout-ms",
         "30000"
       ],
@@ -2975,7 +3275,7 @@
         "validate",
         "pre-write",
         "--request-file",
-        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-cutover-LvjxLY/project/pre-write-fail.json",
+        "pre-write-fail.json",
         "--timeout-ms",
         "30000"
       ],
@@ -2983,7 +3283,7 @@
       "status": "error",
       "exitCode": 1,
       "binPath": "node_modules/.bin/opcore",
-      "stdoutSha256": "661f350b515e00df48ee7550e4d6e9955129aa2fe3f3d620694fcd833d77376d",
+      "stdoutSha256": "c3bfea5d4677deb228e4b0feedfe0a63d421d8cabfedf13db215092bc9bae1d4",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "pre-write failure receipt failed closed"
     }
@@ -3005,7 +3305,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/opcore",
-      "stdoutSha256": "0688d00092e05aa334607e9a50cf7b71606f5cd329d5b868ec9fd7b91d2e6a0f",
+      "stdoutSha256": "67d380042494d2da480e43aca289ba839263de99861ea2aad3e119c569f34d94",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "Rust graph build completed with installed native artifact"
     },
@@ -3025,7 +3325,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/opcore",
-      "stdoutSha256": "965f0217720cabe66e1f18322381fb1bed34eaa89976de8015fb5eef158af5d4",
+      "stdoutSha256": "e78651cf20ae6de13310f7e1844d363f4a149c20ee56e820b7e95e5049483c5f",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "Rust graph status available after build"
     },
@@ -3045,7 +3345,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/opcore",
-      "stdoutSha256": "90ac5b512b935e8ef44846182e77c2d69317039a1f472c9d8f43151200de98af",
+      "stdoutSha256": "f88f34d0c274348ef6a7bf16e4faf7341e329e249c3e0051454f185869e6e8d0",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "Rust graph query returned Rust facts"
     },
@@ -3069,7 +3369,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/opcore",
-      "stdoutSha256": "e6556fa099603b3d1bca4bc1fe032d79722f4edc85653e010f83ba29be29aa91",
+      "stdoutSha256": "bef09ff66a5b292caaae71dc06a44c4debc95352003cd8016ff4f183128aea02",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "Rust graph impact returned related Rust facts"
     },
@@ -3093,7 +3393,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/opcore",
-      "stdoutSha256": "1ef0e4bec060f05e9d0183066195fb742b8b4cee06237dcb00b635367ad47667",
+      "stdoutSha256": "478ae0f44006625815b6a3585735fc81091e67d247ff287187dbe49311b8b4df",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "Rust graph review-context returned related Rust facts"
     },
@@ -3117,7 +3417,7 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/opcore",
-      "stdoutSha256": "1145d27dce98fb6a5dbbb6d34f5f224714430cbe46b8328e17d3c691c9d8d75d",
+      "stdoutSha256": "5ea0f0dd56f95175a86c47414cb35badd49a4118d78dba0d87d713681026994a",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "Rust graph detect-changes returned typed Rust change data"
     },
@@ -3143,9 +3443,210 @@
       "status": "ok",
       "exitCode": 0,
       "binPath": "node_modules/.bin/opcore",
-      "stdoutSha256": "940409e419c70a68f68516ea1c7b45db5c2f723d0518bfbca202990bdcdda651",
+      "stdoutSha256": "b068566f532e878b90a309571f8d9741b0e1632c6bc68b5cebc71d80f49d112d",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "Rust graph search returned ranked Rust symbols"
+    }
+  ],
+  "pythonCommandReceipts": [
+    {
+      "id": "opcore-python-scan",
+      "command": [
+        "opcore",
+        "scan"
+      ],
+      "canonicalCommand": [
+        "opcore",
+        "scan"
+      ],
+      "evidence": [
+        "python-coverage",
+        "python-validation",
+        "python-types-degraded"
+      ],
+      "owner": "runtime",
+      "status": "ok",
+      "exitCode": 0,
+      "binPath": "node_modules/.bin/opcore",
+      "stdoutSha256": "0a4774c1aee811f0449d8d53390b597d47040e0f0b1ca84df0c132701ed3408b",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "assertion": "opcore scan returned Python repoState and validation evidence from installed artifacts"
+    },
+    {
+      "id": "opcore-python-status",
+      "command": [
+        "opcore",
+        "status"
+      ],
+      "canonicalCommand": [
+        "opcore",
+        "status"
+      ],
+      "evidence": [
+        "python-coverage",
+        "python-validation"
+      ],
+      "owner": "runtime",
+      "status": "ok",
+      "exitCode": 0,
+      "binPath": "node_modules/.bin/opcore",
+      "stdoutSha256": "e463c823bfd010a15980d831dc98c839b06a4aa73e6d2645060c2d78d200a013",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "assertion": "opcore status returned Python repoState from installed artifacts"
+    },
+    {
+      "id": "opcore-python-check-changed",
+      "command": [
+        "opcore",
+        "check",
+        "changed",
+        "--base",
+        "HEAD",
+        "--checks",
+        "python.syntax,python.source-hygiene"
+      ],
+      "canonicalCommand": [
+        "opcore",
+        "check",
+        "changed",
+        "--base",
+        "HEAD",
+        "--checks",
+        "python.syntax,python.source-hygiene"
+      ],
+      "evidence": [
+        "python-syntax",
+        "python-source-hygiene"
+      ],
+      "owner": "validation",
+      "status": "ok",
+      "exitCode": 0,
+      "binPath": "node_modules/.bin/opcore",
+      "stdoutSha256": "e1d7af80c995c4cc5e7ccf1db4d0f772be2f0ffca7075d6b730e19ea18b5ebd2",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "assertion": "opcore check changed validated Python syntax and hygiene from installed artifacts"
+    },
+    {
+      "id": "opcore-python-measure",
+      "command": [
+        "opcore",
+        "measure"
+      ],
+      "canonicalCommand": [
+        "opcore",
+        "measure"
+      ],
+      "evidence": [
+        "python-measure-delta"
+      ],
+      "owner": "runtime",
+      "status": "ok",
+      "exitCode": 0,
+      "binPath": "node_modules/.bin/opcore",
+      "stdoutSha256": "0698c505abfcd57b8ecb06962609cdb2184200477540fb20b005bd0ca703340c",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "assertion": "opcore measure returned Python metric deltas from installed artifacts"
+    },
+    {
+      "id": "graph-python-build",
+      "command": [
+        "opcore",
+        "graph",
+        "build"
+      ],
+      "canonicalCommand": [
+        "opcore",
+        "graph",
+        "build"
+      ],
+      "evidence": [
+        "python-graph-provider"
+      ],
+      "owner": "graph",
+      "status": "ok",
+      "exitCode": 0,
+      "binPath": "node_modules/.bin/opcore",
+      "stdoutSha256": "0e926f03f9d689c7b2d297ca657aed35bc7b8ba3e393d877147a200b22adb062",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "assertion": "Python graph build completed with installed native artifact"
+    },
+    {
+      "id": "graph-python-status",
+      "command": [
+        "opcore",
+        "graph",
+        "status"
+      ],
+      "canonicalCommand": [
+        "opcore",
+        "graph",
+        "status"
+      ],
+      "evidence": [
+        "python-graph-provider"
+      ],
+      "owner": "graph",
+      "status": "ok",
+      "exitCode": 0,
+      "binPath": "node_modules/.bin/opcore",
+      "stdoutSha256": "15fe44ac9b56540870acda5588e78a1610164c901dfdfacc8356aefeba62ec55",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "assertion": "Python graph status available after installed-artifact build"
+    },
+    {
+      "id": "graph-python-query",
+      "command": [
+        "opcore",
+        "graph",
+        "query"
+      ],
+      "canonicalCommand": [
+        "opcore",
+        "graph",
+        "query"
+      ],
+      "evidence": [
+        "src/acme/app.py",
+        "Greeter",
+        "build_name"
+      ],
+      "owner": "graph",
+      "status": "ok",
+      "exitCode": 0,
+      "binPath": "node_modules/.bin/opcore",
+      "stdoutSha256": "253b045bc3a466a45ab4ac54e6817a36c9c53711c5ca51ef991a5e367f4524f8",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "assertion": "Python graph query returned installed-artifact Python facts"
+    },
+    {
+      "id": "graph-python-search",
+      "command": [
+        "opcore",
+        "graph",
+        "search",
+        "Greeter",
+        "--limit",
+        "5"
+      ],
+      "canonicalCommand": [
+        "opcore",
+        "graph",
+        "search",
+        "Greeter",
+        "--limit",
+        "5"
+      ],
+      "evidence": [
+        "src/acme/app.py",
+        "Greeter"
+      ],
+      "owner": "graph",
+      "status": "ok",
+      "exitCode": 0,
+      "binPath": "node_modules/.bin/opcore",
+      "stdoutSha256": "ebd0f46f4bc3fae3f289c94879e0b76854cb2b535536abf89773439a843f2926",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "assertion": "Python graph search returned ranked installed-artifact Python symbols"
     }
   ],
   "negativeChecks": [
@@ -3157,12 +3658,11 @@
         "files",
         "src/index.ts",
         "--repo",
-        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-cutover-LvjxLY/missing-graph",
+        "<missing-graph-repo>",
         "--graph-mode",
         "required",
         "--checks",
-        "typescript.import-graph",
-        "--json"
+        "typescript.import-graph"
       ],
       "status": "passed",
       "exitCode": 0,
@@ -3175,16 +3675,100 @@
         "validate",
         "request",
         "--request-file",
-        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-cutover-LvjxLY/missing-graph/required-graph.json",
-        "--json"
+        "<required-graph-request>"
       ],
       "status": "passed",
       "exitCode": 0,
       "assertion": "required graph provider failure stayed typed"
+    },
+    {
+      "id": "python-types-degraded-no-tools",
+      "command": [
+        "opcore",
+        "check",
+        "files",
+        "src/acme/app.py",
+        "--checks",
+        "python.types"
+      ],
+      "status": "passed",
+      "exitCode": 0,
+      "assertion": "missing Python type tools stayed degraded instead of passing silently"
+    },
+    {
+      "id": "python-source-hygiene-no-ruff",
+      "command": [
+        "opcore",
+        "check",
+        "files",
+        "src/acme/app.py",
+        "--checks",
+        "python.source-hygiene"
+      ],
+      "status": "passed",
+      "exitCode": 0,
+      "assertion": "source-hygiene check ran built-in policy while status reported ruff absent"
+    },
+    {
+      "id": "python-relevant-tests-no-pytest",
+      "command": [
+        "opcore",
+        "check",
+        "files",
+        "src/acme/app.py",
+        "--checks",
+        "python.relevant-tests"
+      ],
+      "status": "passed",
+      "exitCode": 0,
+      "assertion": "relevant-tests check used graph evidence while status reported pytest absent"
+    },
+    {
+      "id": "python-toolchain-degraded-no-tools",
+      "command": [
+        "opcore",
+        "status"
+      ],
+      "status": "passed",
+      "exitCode": 0,
+      "assertion": "read-only status reported absent mypy, pyright, ruff, and pytest as degraded"
     }
   ],
+  "currentToolGuardrails": [
+    {
+      "id": "current-tools-validate-changed",
+      "command": [
+        "npm",
+        "run",
+        "current-tools:validate-changed"
+      ],
+      "status": "passed",
+      "exitCode": 0,
+      "stdoutSha256": "d7bd056dc975173e0540fe454264b5a806004c90704d4b74d813797714581637",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "retained": true,
+      "assertion": "retained external changed-file guardrail passed during installed-artifact cutover proof",
+      "oldToolReplacementClaimed": false
+    },
+    {
+      "id": "current-tools-validate-rust-graph",
+      "command": [
+        "npm",
+        "run",
+        "current-tools:validate-rust-graph"
+      ],
+      "status": "passed",
+      "exitCode": 0,
+      "stdoutSha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "retained": true,
+      "assertion": "retained external Rust graph guardrail passed during installed-artifact cutover proof",
+      "oldToolReplacementClaimed": false
+    }
+  ],
+  "oldToolReplacementClaimed": false,
   "forbiddenMarkerScan": {
-    "scannedTextCount": 88,
+    "scannedTextCount": 113,
     "findingCount": 0,
     "markersBlocked": [
       "private-runtime",
@@ -3202,7 +3786,7 @@
     {
       "issue": "#29",
       "path": "docs/release/release-receipt.json",
-      "checksumSha256": "e1c8d7d000764818b9b76e27c042a2d0e836057b19eb23915d4f951c54c5f1ba"
+      "checksumSha256": "30550e5b0e604c2cf93b30476953693097f3a03aaaa907e4ebdf506bb7c2ea31"
     },
     {
       "issue": "#58",

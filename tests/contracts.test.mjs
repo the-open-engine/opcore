@@ -2473,7 +2473,7 @@ describe("Opcore shared contracts", () => {
               : entry
           )
         }),
-      /graph-python-search.*expected/
+      /graph-python-search.*canonical opcore bin/
     );
     assert.throws(
       () =>
