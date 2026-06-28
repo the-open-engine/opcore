@@ -1,14 +1,16 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { routeCommandAdapter } from "../packages/contracts/dist/index.js";
 import {
   calculateEditChecksum,
   createEditCommandAdapter,
   createNodeEditWorkspace,
-  createSymbolEditPlan
+  createSymbolEditPlan,
+  createSymbolEditLanguageServiceProject,
+  materializeRenameSymbolEdit
 } from "../packages/edit/dist/index.js";
 
 describe("opcore edit symbol operations", () => {
@@ -83,6 +85,49 @@ describe("opcore edit symbol operations", () => {
       assert.deepEqual(result.editPlan.changes.map((change) => change.path), ["packages/a/src/use.ts", "packages/b/src/mod.ts"]);
       assert.match(result.editPlan.changes.find((change) => change.path === "packages/a/src/use.ts").content, /import \{ welcome \} from "@b\/mod"/);
       assert.match(result.editPlan.changes.find((change) => change.path === "packages/a/src/use.ts").content, /welcome\("Ada"\)/);
+    });
+  });
+
+  it("scopes edit language service project construction and reverts injected project mutations", async () => {
+    await withSymbolRepo(async (rawRepo) => {
+      const repo = realpathSync(rawRepo);
+      writeFileSync(join(repo, "tsconfig.json"), JSON.stringify({ include: ["src/**/*"] }, null, 2));
+      writeFileSync(join(repo, "src/a.ts"), "import { helper } from \"./helper\";\nexport function greet(name: string) {\n  return helper(name);\n}\n");
+      writeFileSync(join(repo, "src/helper.ts"), "export function helper(value: string) {\n  return value;\n}\n");
+      writeFileSync(join(repo, "src/b.ts"), "import { greet } from \"./a\";\nexport const message = greet(\"Ada\");\n");
+      writeFileSync(join(repo, "src/unrelated.ts"), "export const unrelated = true;\n");
+
+      const scopedProject = createSymbolEditLanguageServiceProject(repo, "src/a.ts", { projectScope: "import_closure" });
+      assert.deepEqual(projectRepoPaths(repo, scopedProject), ["src/a.ts", "src/helper.ts"]);
+      const scopedInjectedResult = materializeRenameSymbolEdit(
+        repo,
+        { target: { path: "src/a.ts", name: "greet" }, newName: "salute" },
+        {
+          project: scopedProject,
+          snapshotProject,
+          revertProject
+        }
+      );
+      assert.equal(scopedInjectedResult.ok, true);
+      assert.deepEqual(scopedInjectedResult.changes.map((change) => change.path), ["src/a.ts", "src/b.ts"]);
+      assert.match(scopedInjectedResult.changes.find((change) => change.path === "src/b.ts").content, /salute\("Ada"\)/);
+
+      const injectedProject = createSymbolEditLanguageServiceProject(repo, "src/a.ts", { projectScope: "whole_repo" });
+      const beforeText = injectedProject.getSourceFile(join(repo, "src/a.ts")).getFullText();
+      const result = materializeRenameSymbolEdit(
+        repo,
+        { target: { path: "src/a.ts", name: "greet" }, newName: "welcome" },
+        {
+          project: injectedProject,
+          snapshotProject,
+          revertProject
+        }
+      );
+
+      assert.equal(result.ok, true);
+      assert.deepEqual(result.changes.map((change) => change.path), ["src/a.ts", "src/b.ts"]);
+      assert.match(result.changes.find((change) => change.path === "src/b.ts").content, /welcome\("Ada"\)/);
+      assert.equal(injectedProject.getSourceFile(join(repo, "src/a.ts")).getFullText(), beforeText);
     });
   });
 
@@ -650,6 +695,25 @@ describe("opcore edit symbol operations", () => {
     });
   });
 });
+
+function projectRepoPaths(repoRoot, project) {
+  return project.getSourceFiles()
+    .map((sourceFile) => resolve(sourceFile.getFilePath()))
+    .filter((filePath) => filePath.startsWith(resolve(repoRoot)))
+    .map((filePath) => filePath.slice(resolve(repoRoot).length + 1).replaceAll("\\", "/"))
+    .sort();
+}
+
+function snapshotProject(project) {
+  return new Map(project.getSourceFiles().map((sourceFile) => [sourceFile.getFilePath(), sourceFile.getFullText()]));
+}
+
+function revertProject(project, snapshot) {
+  for (const sourceFile of project.getSourceFiles()) {
+    const text = snapshot.get(sourceFile.getFilePath());
+    if (text !== undefined) sourceFile.replaceWithText(text);
+  }
+}
 
 async function routeEdit(args, options = {}) {
   return routeCommandAdapter({

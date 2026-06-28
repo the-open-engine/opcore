@@ -1,10 +1,11 @@
 import { it } from "node:test";
 import assert from "node:assert/strict";
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { routeCommand } from "../packages/opcore/dist/advanced/index.js";
+import { createInspectLanguageServiceProject } from "../packages/opcore/dist/advanced/inspect-language-service.js";
 
 const repoRoot = fileURLToPath(new URL("..", import.meta.url));
 const sourceFixtureRoot = resolve(repoRoot, "packages/fixtures/inspect-symbol-parity");
@@ -124,6 +125,45 @@ it("keeps signature inspection read-only and separate from edit/ASP payloads", a
     assert.equal(Object.hasOwn(result, "alias"), false);
     assert.equal(Object.hasOwn(result, removedLegacyCommandField), false);
   });
+});
+
+it("scopes inspected language service projects to the target import closure by default", async () => {
+  const temp = realpathSync(mkdtempSync(join(tmpdir(), "opcore-inspect-scope-")));
+  try {
+    mkdirSync(join(temp, "src/lib"), { recursive: true });
+    writeFileSync(join(temp, "tsconfig.json"), JSON.stringify({
+      compilerOptions: {
+        baseUrl: ".",
+        paths: {
+          "@lib/*": ["src/lib/*"]
+        }
+      },
+      include: ["src/**/*"]
+    }, null, 2));
+    writeFileSync(join(temp, "src/target.ts"), "import { helper } from \"./helper\";\nimport { alias } from \"@lib/alias\";\nexport const value = `${helper()}${alias}`;\n");
+    writeFileSync(join(temp, "src/helper.ts"), "export function helper() { return \"ok\"; }\n");
+    writeFileSync(join(temp, "src/lib/alias.ts"), "export const alias = \"alias\";\n");
+    writeFileSync(join(temp, "src/importer.ts"), "import { value } from \"./target\";\nexport const use = value;\n");
+    writeFileSync(join(temp, "src/unrelated.ts"), "export const unrelated = true;\n");
+
+    const scopedProject = createInspectLanguageServiceProject(temp, "src/target.ts");
+    assert.deepEqual(projectRepoPaths(temp, scopedProject), [
+      "src/helper.ts",
+      "src/lib/alias.ts",
+      "src/target.ts"
+    ]);
+
+    const fullProject = createInspectLanguageServiceProject(temp, "src/target.ts", { projectScope: "whole_repo" });
+    assert.deepEqual(projectRepoPaths(temp, fullProject), [
+      "src/helper.ts",
+      "src/importer.ts",
+      "src/lib/alias.ts",
+      "src/target.ts",
+      "src/unrelated.ts"
+    ]);
+  } finally {
+    rmSync(temp, { recursive: true, force: true });
+  }
 });
 
 async function assertSignatureTarget(fixtureRoot, target) {
@@ -246,6 +286,14 @@ function assertInspectFailure(result, category) {
   assert.equal(result.inspectResult.status, "error");
   assert.equal(result.inspectResult.failure.category, category);
   assert.equal(Object.hasOwn(result.inspectResult, "signatures"), false);
+}
+
+function projectRepoPaths(repoRoot, project) {
+  return project.getSourceFiles()
+    .map((sourceFile) => resolve(sourceFile.getFilePath()))
+    .filter((filePath) => filePath.startsWith(resolve(repoRoot)))
+    .map((filePath) => filePath.slice(resolve(repoRoot).length + 1).replaceAll("\\", "/"))
+    .sort();
 }
 
 async function withFixtureCopy(runFixture) {
