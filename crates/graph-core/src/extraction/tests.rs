@@ -608,13 +608,37 @@ fn source_re_export_alias_imports_resolve_to_source_exported_symbols() -> TestRe
 }
 
 #[test]
-fn parse_errors_are_typed_and_block_empty_success() -> TestResult {
+fn oxc_parse_errors_are_typed_warnings_and_non_fatal() -> TestResult {
     let repo = repo_with_tsconfig()?;
     write(&repo, "src/broken.ts", "export function broken(")?;
-    assert_error_category(
-        extract_sources(ExtractionOptions::new(repo.path())),
-        Category::ParseError,
+    write(
+        &repo,
+        "src/valid.ts",
+        "export function valid() { return 1; }",
+    )?;
+
+    let result = extract_sources(ExtractionOptions::new(repo.path()));
+
+    assert!(
+        result
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.category == Category::ParseError
+                && diagnostic.severity == Severity::Warning),
+        "{:?}",
+        result.diagnostics
     );
+    assert!(
+        !result
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.category == Category::ParseError
+                && diagnostic.severity == Severity::Error),
+        "{:?}",
+        result.diagnostics
+    );
+    required_attributes(&result.nodes, "file:src/broken.ts")?;
+    required_attributes(&result.nodes, "function:src/valid.ts#valid")?;
     Ok(())
 }
 
@@ -669,6 +693,31 @@ fn max_file_errors_are_typed_and_block_empty_success() -> TestResult {
     let mut options = ExtractionOptions::new(repo.path());
     options.max_files = 0;
     assert_error_category(extract_sources(options), Category::MaxFilesExceeded);
+    Ok(())
+}
+
+#[test]
+fn default_discovery_has_no_legacy_four_thousand_file_ceiling() -> TestResult {
+    let repo = repo_with_tsconfig()?;
+    for index in 0..4_001 {
+        write(
+            &repo,
+            &format!("src/generated/file_{index:04}.ts"),
+            "export const value = 1;\n",
+        )?;
+    }
+
+    let discovery = discover_sources_for_options(&ExtractionOptions::new(repo.path()));
+
+    assert_eq!(discovery.sources.len(), 4_001);
+    assert!(
+        !discovery
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.category == Category::MaxFilesExceeded),
+        "{:?}",
+        discovery.diagnostics
+    );
     Ok(())
 }
 

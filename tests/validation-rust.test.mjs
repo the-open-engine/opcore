@@ -1420,15 +1420,34 @@ const rustCheckIds = [
             {
               kind: "unit",
               name: "crates/app/src/lib.rs",
+              start_line: 1,
+              end_line: 200,
+              metrics: {
+                cyclomatic: { sum: 200 },
+                nargs: { total: 50 },
+                loc: { sloc: 200 }
+              },
               spaces: [
+                {
+                  kind: "impl",
+                  name: "Thing",
+                  start_line: 1,
+                  end_line: 120,
+                  metrics: {
+                    cyclomatic: { sum: 120 },
+                    nargs: { total: 20 },
+                    loc: { sloc: 120 }
+                  },
+                  spaces: []
+                },
                 {
                   kind: "function",
                   name: "too_much",
                   start_line: 1,
                   end_line: 9,
                   metrics: {
-                    cyclomatic: { sum: 7 },
-                    nargs: { total: 5 },
+                    cyclomatic: { max: 7 },
+                    nargs: { functions_max: 5 },
                     loc: { sloc: 9 }
                   }
                 }

@@ -24,7 +24,7 @@ pub use discovery::{
 pub use facts::FileFacts;
 pub use language::SourceLanguage;
 
-pub const DEFAULT_MAX_FILES: usize = 4_000;
+pub const DEFAULT_MAX_FILES: usize = usize::MAX;
 pub const DEFAULT_MAX_DEPTH: usize = 64;
 pub const EXTRACTION_GENERATED_AT: &str = "2026-06-04T00:00:00.000Z";
 
