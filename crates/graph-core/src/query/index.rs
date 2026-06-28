@@ -34,7 +34,7 @@ impl TraversalSpec {
 }
 
 #[derive(Debug)]
-pub(super) struct GraphIndex {
+pub(crate) struct GraphIndex {
     pub(super) nodes_by_id: BTreeMap<String, GraphFactNode>,
     pub(super) edges: Vec<GraphFactEdge>,
     pub(super) file_id_by_path: BTreeMap<String, String>,
@@ -157,7 +157,7 @@ impl SelectionAccumulator {
 }
 
 impl GraphIndex {
-    pub(super) fn new(nodes: &[GraphFactNode], edges: &[GraphFactEdge]) -> Self {
+    pub(crate) fn new(nodes: &[GraphFactNode], edges: &[GraphFactEdge]) -> Self {
         let nodes_by_id = nodes
             .iter()
             .map(|node| (node.id.clone(), node.clone()))

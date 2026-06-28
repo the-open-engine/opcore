@@ -1,11 +1,12 @@
 use super::*;
 use crate::protocol::{
-    GraphFactQueryKind, GraphFactQueryRequest, GraphFactQuerySelector, GraphProviderMode,
-    GraphSearchRequest, RepoIdentity,
+    GraphFactQueryKind, GraphFactQueryRequest, GraphFactQuerySelector, GraphImpactRequest,
+    GraphProviderMode, GraphSearchRequest, RepoIdentity,
 };
 use serde_json::{json, Value};
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::time::Duration;
 use tempfile::TempDir;
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
@@ -63,6 +64,60 @@ fn query_request(repo_root: &Path) -> Result<GraphDaemonRequest, std::io::Error>
     Ok(request)
 }
 
+fn impact_request(
+    repo_root: &Path,
+    request_id: &str,
+) -> Result<GraphDaemonRequest, std::io::Error> {
+    let repo = fixture_repo(repo_root)?;
+    let mut request = status_request().map_err(std::io::Error::other)?;
+    request.request_id = request_id.to_string();
+    request.operation = GraphDaemonOperation::Query;
+    request.repo = repo.clone();
+    request.impact = Some(GraphImpactRequest {
+        request_id: Some(request_id.to_string()),
+        repo,
+        schema_version: GRAPH_SCHEMA_VERSION,
+        mode: GraphProviderMode::Required,
+        files: vec!["src/models.ts".to_string()],
+        base_ref: None,
+        max_depth: Some(3),
+        limit: Some(25),
+    });
+    Ok(request)
+}
+
+fn search_request(
+    repo_root: &Path,
+    request_id: &str,
+) -> Result<GraphDaemonRequest, std::io::Error> {
+    let repo = fixture_repo(repo_root)?;
+    let mut request = status_request().map_err(std::io::Error::other)?;
+    request.request_id = request_id.to_string();
+    request.operation = GraphDaemonOperation::Query;
+    request.repo = repo.clone();
+    request.search = Some(GraphSearchRequest {
+        request_id: Some(request_id.to_string()),
+        repo,
+        schema_version: GRAPH_SCHEMA_VERSION,
+        mode: GraphProviderMode::Required,
+        query: "Greeting".to_string(),
+        limit: Some(5),
+        files: Vec::new(),
+    });
+    Ok(request)
+}
+
+fn build_fixture_store(repo_root: &Path) -> TestResult {
+    let mut build = status_request()?;
+    build.operation = GraphDaemonOperation::Build;
+    build.repo = fixture_repo(repo_root)?;
+    assert!(matches!(
+        handle_request(build).status,
+        GraphProviderStatus::Available { .. }
+    ));
+    Ok(())
+}
+
 #[test]
 fn status_handshake_reports_capabilities() -> TestResult {
     let response = handle_request(status_request()?);
@@ -96,13 +151,7 @@ fn status_handshake_reports_capabilities() -> TestResult {
 #[test]
 fn query_returns_extracted_graph_result() -> TestResult {
     let fixture = copied_wave1_fixture()?;
-    let mut build = status_request()?;
-    build.operation = GraphDaemonOperation::Build;
-    build.repo = fixture_repo(fixture.path())?;
-    assert!(matches!(
-        handle_request(build).status,
-        GraphProviderStatus::Available { .. }
-    ));
+    build_fixture_store(fixture.path())?;
     let response = handle_request(query_request(fixture.path())?);
 
     let value = serde_json::to_value(response)?;
@@ -123,6 +172,118 @@ fn query_returns_extracted_graph_result() -> TestResult {
             .is_some_and(|to| node_ids.contains(&to)));
     }
     assert_json_eq(&value, "/result/metadata/provider", json!("opcore-graph"));
+    Ok(())
+}
+
+#[test]
+fn serve_session_reuses_snapshot_index_and_status_for_repeated_impact() -> TestResult {
+    let fixture = copied_wave1_fixture()?;
+    build_fixture_store(fixture.path())?;
+    let mut cache = SessionCache::default();
+
+    let first = handle_request_with_cache(&mut cache, impact_request(fixture.path(), "impact-1")?);
+    let second = handle_request_with_cache(&mut cache, impact_request(fixture.path(), "impact-2")?);
+
+    assert!(matches!(
+        first.status,
+        GraphProviderStatus::Available { .. }
+    ));
+    assert!(matches!(
+        second.status,
+        GraphProviderStatus::Available { .. }
+    ));
+    assert!(first.impact.as_ref().is_some_and(|impact| {
+        matches!(impact, GraphImpactResult::Available { nodes, .. } if !nodes.is_empty())
+    }));
+    assert!(second.impact.as_ref().is_some_and(|impact| {
+        matches!(impact, GraphImpactResult::Available { nodes, .. } if !nodes.is_empty())
+    }));
+    assert_eq!(cache.status_loads(), 1);
+    assert_eq!(cache.snapshot_loads(), 1);
+    assert_eq!(cache.index_builds(), 1);
+    Ok(())
+}
+
+#[test]
+fn serve_session_search_uses_no_snapshot_and_fact_queries_load_once() -> TestResult {
+    let fixture = copied_wave1_fixture()?;
+    build_fixture_store(fixture.path())?;
+    let mut cache = SessionCache::default();
+
+    let search = handle_request_with_cache(&mut cache, search_request(fixture.path(), "search-1")?);
+    assert!(search.search.as_ref().is_some_and(|search| {
+        matches!(search, GraphSearchResult::Available { results, .. } if !results.is_empty())
+    }));
+    assert_eq!(cache.status_loads(), 1);
+    assert_eq!(cache.snapshot_loads(), 0);
+    assert_eq!(cache.index_builds(), 0);
+
+    let first = handle_request_with_cache(&mut cache, query_request(fixture.path())?);
+    let second = handle_request_with_cache(&mut cache, query_request(fixture.path())?);
+    assert!(first.result.as_ref().is_some_and(|result| {
+        matches!(result, GraphFactQueryResult::Available { nodes, .. } if !nodes.is_empty())
+    }));
+    assert!(second.result.as_ref().is_some_and(|result| {
+        matches!(result, GraphFactQueryResult::Available { nodes, .. } if !nodes.is_empty())
+    }));
+    assert_eq!(cache.status_loads(), 1);
+    assert_eq!(cache.snapshot_loads(), 1);
+    assert_eq!(cache.index_builds(), 0);
+    Ok(())
+}
+
+#[test]
+fn serve_session_reloads_snapshot_and_index_after_store_identity_changes() -> TestResult {
+    let fixture = copied_wave1_fixture()?;
+    build_fixture_store(fixture.path())?;
+    let mut cache = SessionCache::default();
+
+    let first = handle_request_with_cache(&mut cache, impact_request(fixture.path(), "impact-1")?);
+    assert!(matches!(
+        first.status,
+        GraphProviderStatus::Available { .. }
+    ));
+    assert_eq!(cache.status_loads(), 1);
+    assert_eq!(cache.snapshot_loads(), 1);
+    assert_eq!(cache.index_builds(), 1);
+
+    fs::write(
+        fixture.path().join("src/new-entry.ts"),
+        "export const newEntry = 42;\n",
+    )?;
+    std::thread::sleep(Duration::from_millis(5));
+    build_fixture_store(fixture.path())?;
+
+    let second = handle_request_with_cache(&mut cache, impact_request(fixture.path(), "impact-2")?);
+    assert!(matches!(
+        second.status,
+        GraphProviderStatus::Available { .. }
+    ));
+    assert_eq!(cache.status_loads(), 2);
+    assert_eq!(cache.snapshot_loads(), 2);
+    assert_eq!(cache.index_builds(), 2);
+    Ok(())
+}
+
+#[test]
+fn serve_session_stale_store_does_not_load_snapshot_or_index() -> TestResult {
+    let fixture = copied_wave1_fixture()?;
+    build_fixture_store(fixture.path())?;
+    fs::write(
+        fixture.path().join("src/models.ts"),
+        "export interface Model { id: string; changed: true }\n",
+    )?;
+    let mut cache = SessionCache::default();
+
+    let stale = handle_request_with_cache(&mut cache, impact_request(fixture.path(), "impact-1")?);
+
+    assert!(matches!(stale.status, GraphProviderStatus::Stale { .. }));
+    assert!(stale.impact.as_ref().is_some_and(|impact| {
+        matches!(impact, GraphImpactResult::Failure { status, .. } if matches!(status.as_ref(), GraphProviderStatus::Stale { .. }))
+    }));
+    assert_eq!(cache.status_loads(), 1);
+    assert_eq!(cache.snapshot_loads(), 0);
+    assert_eq!(cache.index_builds(), 0);
     Ok(())
 }
 
@@ -164,13 +325,7 @@ fn query_without_query_returns_failure_without_graph_data() -> TestResult {
 fn search_rejects_non_repo_relative_context_files() -> TestResult {
     let fixture = copied_wave1_fixture()?;
     let repo = fixture_repo(fixture.path())?;
-    let mut build = status_request()?;
-    build.operation = GraphDaemonOperation::Build;
-    build.repo = repo.clone();
-    assert!(matches!(
-        handle_request(build).status,
-        GraphProviderStatus::Available { .. }
-    ));
+    build_fixture_store(fixture.path())?;
 
     let mut request = query_request(fixture.path())?;
     request.query = None;
