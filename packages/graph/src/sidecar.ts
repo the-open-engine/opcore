@@ -9,7 +9,7 @@ import type {
 } from "@the-open-engine/opcore-contracts";
 import { validateGraphDaemonResponse, validateGraphWatchLifecycle } from "@the-open-engine/opcore-contracts";
 import { spawn, spawnSync, type SpawnSyncReturns } from "node:child_process";
-import { closeSync, existsSync, mkdtempSync, openSync, readFileSync, rmSync } from "node:fs";
+import { closeSync, existsSync, mkdtempSync, openSync, readFileSync, readSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import type { ResolvedGraphCoreArtifact } from "./artifact.js";
@@ -18,6 +18,8 @@ import { providerFailureStatus, resolveGraphCoreArtifact, schemaMismatchStatus }
 const GRAPH_CORE_PIPELINE_TIMEOUT_MS = 120_000;
 const GRAPH_CORE_QUERY_TIMEOUT_MS = 30_000;
 const GRAPH_CORE_WATCH_ONCE_TIMEOUT_MS = 120_000;
+const GRAPH_CORE_FAILURE_STDERR_EDGE_CHARS = 64 * 1024;
+const GRAPH_CORE_FAILURE_STDERR_MAX_CHARS = GRAPH_CORE_FAILURE_STDERR_EDGE_CHARS * 2;
 
 declare const process: {
   kill(pid: number, signal?: 0): boolean;
@@ -162,7 +164,7 @@ function spawnGraphCoreSidecarProcess(
     return {
       ...result,
       stdout: readFileSync(stdoutPath, "utf8"),
-      stderr: readFileSync(stderrPath, "utf8")
+      stderr: readBoundedSidecarStderr(stderrPath)
     };
   } finally {
     if (stdoutFd !== undefined) closeSync(stdoutFd);
@@ -331,6 +333,30 @@ function processFailureStatus(result: SpawnSyncReturns): GraphProviderStatus | u
     );
   }
   return undefined;
+}
+
+function readBoundedSidecarStderr(path: string): string {
+  const size = statSync(path).size;
+  if (size <= GRAPH_CORE_FAILURE_STDERR_MAX_CHARS) return readFileSync(path, "utf8");
+  const head = readFileWindow(path, 0, GRAPH_CORE_FAILURE_STDERR_EDGE_CHARS);
+  const tail = readFileWindow(path, size - GRAPH_CORE_FAILURE_STDERR_EDGE_CHARS, GRAPH_CORE_FAILURE_STDERR_EDGE_CHARS);
+  const omitted = size - GRAPH_CORE_FAILURE_STDERR_MAX_CHARS;
+  return [
+    head,
+    `[stderr truncated: ${omitted} bytes omitted]`,
+    tail
+  ].join("\n");
+}
+
+function readFileWindow(path: string, position: number, length: number): string {
+  const fd = openSync(path, "r");
+  try {
+    const buffer = new Uint8Array(length);
+    const bytesRead = readSync(fd, buffer, 0, length, position);
+    return new TextDecoder().decode(buffer.slice(0, bytesRead));
+  } finally {
+    closeSync(fd);
+  }
 }
 
 function firstStdoutLine(stdout: string): string | undefined {
