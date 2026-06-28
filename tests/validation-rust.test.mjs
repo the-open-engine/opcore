@@ -1,6 +1,6 @@
 import { it } from "node:test";
 import assert from "node:assert/strict";
-import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -39,6 +39,7 @@ import {
   rustCrate,
   writeFakeRustToolchain
 } from "./helpers/validation-rust-fixtures.mjs";
+import { cargoTargetDirForKey } from "../packages/validation-rust/dist/cargo-target-cache.js";
 
 const rustCheckIds = [
   RUST_SOURCE_HYGIENE_CHECK_ID,
@@ -1256,16 +1257,16 @@ const rustCheckIds = [
     );
   });
 
-  it("combines cargo dead_code diagnostics with native orphan-source dead-code evidence", async () => {
+  it("combines cargo dead_code diagnostics from shared cargo-check output with native orphan-source evidence", async () => {
     const temp = mkdtempSync(join(tmpdir(), "lattice-validation-rust-dead-code-"));
     try {
       const logPath = join(temp, "cargo.log");
       const { env } = writeFakeRustToolchain(join(temp, "bin"), {
         cargo: {
           logPath,
-          logEnvKeys: ["RUSTFLAGS"],
+          logEnvKeys: ["RUSTFLAGS", "CARGO_TARGET_DIR"],
           checkStdout: `${JSON.stringify(cargoMessage("warning", "function `unused_private` is never used", "dead_code"))}\n`,
-          checkStatus: 101
+          checkStatus: 0
         }
       });
       env.RUSTFLAGS = "explicit-flag";
@@ -1287,19 +1288,18 @@ const rustCheckIds = [
 
       assert.equal(result.status, "policy_failure", JSON.stringify(result, null, 2));
       assert.deepEqual(result.diagnostics.map((diagnostic) => diagnostic.code), ["dead_code", "RUST_DEAD_ORPHAN_SOURCE"]);
-      const cargoCheckLog = readFileSync(logPath, "utf8")
+      const cargoCheckLogs = readFileSync(logPath, "utf8")
         .split(/\r?\n/)
-        .find((line) => line.startsWith("check --message-format=json"));
-      assert.equal(
-        cargoCheckLog,
-        "check --message-format=json --all-targets --all-features\tRUSTFLAGS=explicit-flag -Ddead_code"
-      );
+        .filter((line) => line.startsWith("check --message-format=json"));
+      assert.equal(cargoCheckLogs.length, 1);
+      assert.match(cargoCheckLogs[0], /^check --message-format=json --all-targets --all-features\tRUSTFLAGS=explicit-flag\tCARGO_TARGET_DIR=/);
+      assert.doesNotMatch(cargoCheckLogs[0], /-Ddead_code/);
     } finally {
       rmSync(temp, { recursive: true, force: true });
     }
   });
 
-  it("runs rust.dead-code with process env PATH and appends RUSTFLAGS when no env option is supplied", async () => {
+  it("runs rust.dead-code with process env PATH without mutating RUSTFLAGS when no env option is supplied", async () => {
     const temp = mkdtempSync(join(tmpdir(), "lattice-validation-rust-dead-code-env-"));
     const originalPath = process.env.PATH;
     const originalRustflags = process.env.RUSTFLAGS;
@@ -1333,11 +1333,210 @@ const rustCheckIds = [
         .find((line) => line.startsWith("check --message-format=json"));
       assert.equal(
         cargoCheckLog,
-        `check --message-format=json --all-targets --all-features\tPATH=${bin}\tRUSTFLAGS=process-flag -Ddead_code`
+        `check --message-format=json --all-targets --all-features\tPATH=${bin}\tRUSTFLAGS=process-flag`
       );
     } finally {
       restoreProcessEnv("PATH", originalPath);
       restoreProcessEnv("RUSTFLAGS", originalRustflags);
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("reuses one cargo-check run for rust.cargo-check and rust.dead-code", async () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-validation-rust-shared-cargo-check-"));
+    try {
+      const logPath = join(temp, "cargo.log");
+      const { env } = writeFakeRustToolchain(join(temp, "bin"), {
+        cargo: {
+          logPath,
+          logEnvKeys: ["CARGO_TARGET_DIR"],
+          checkStdout: `${JSON.stringify(cargoMessage("warning", "function `unused_private` is never used", "dead_code"))}\n`,
+          checkStatus: 0
+        }
+      });
+      const result = await runner({
+        files: rustCrate({
+          "crates/app/src/lib.rs": "pub fn answer() -> i32 { 42 }\n"
+        }),
+        env
+      }).runValidation(request({ checks: [RUST_CARGO_CHECK_ID, RUST_DEAD_CODE_CHECK_ID] }));
+
+      assert.equal(result.status, "policy_failure", JSON.stringify(result, null, 2));
+      assert.deepEqual(result.manifest.runs.map((run) => [run.checkId, run.status]), [
+        [RUST_CARGO_CHECK_ID, "passed"],
+        [RUST_DEAD_CODE_CHECK_ID, "policy_failure"]
+      ]);
+      assert.deepEqual(result.diagnostics.map((diagnostic) => diagnostic.code), ["dead_code"]);
+      const cargoCheckLogs = readFileSync(logPath, "utf8")
+        .split(/\r?\n/)
+        .filter((line) => line.startsWith("check --message-format=json"));
+      assert.equal(cargoCheckLogs.length, 1);
+      assert.match(cargoCheckLogs[0], /\tCARGO_TARGET_DIR=/);
+      assert.doesNotMatch(cargoCheckLogs[0], /-Ddead_code/);
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("sets the same persistent cargo target dir for cargo-backed checks outside the real repo", async () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-validation-rust-cargo-target-"));
+    try {
+      const repoRoot = join(temp, "repo");
+      mkdirSync(join(repoRoot, "crates/app/src"), { recursive: true });
+      writeFileSync(join(repoRoot, "Cargo.toml"), rustCrate()["Cargo.toml"]);
+      writeFileSync(join(repoRoot, "crates/app/Cargo.toml"), rustCrate()["crates/app/Cargo.toml"]);
+      writeFileSync(join(repoRoot, "crates/app/src/lib.rs"), rustCrate()["crates/app/src/lib.rs"]);
+      const logPath = join(temp, "cargo.log");
+      const { env } = writeFakeRustToolchain(join(temp, "bin"), {
+        cargo: {
+          logPath,
+          logEnvKeys: ["CARGO_TARGET_DIR"]
+        }
+      });
+      const validationRunner = createValidationRunner({
+        workspace: createNodeValidationWorkspace({ repoRoot }),
+        checks: createRustValidationChecks({ env })
+      });
+
+      const result = await validationRunner.runValidation(
+        request({
+          repo: { repoRoot },
+          checks: [RUST_CARGO_CHECK_ID, RUST_CLIPPY_CHECK_ID, RUST_RUSTDOC_CHECK_ID, RUST_UNUSED_DEPS_CHECK_ID],
+          scope: {
+            kind: "files",
+            files: ["Cargo.toml", "crates/app/Cargo.toml", "crates/app/src/lib.rs"]
+          }
+        })
+      );
+
+      assert.equal(result.status, "passed", JSON.stringify(result, null, 2));
+      const targetDirs = readFileSync(logPath, "utf8")
+        .split(/\r?\n/)
+        .filter((line) =>
+          /^(check --message-format=json|clippy --message-format=json|doc --no-deps|\+nightly udeps --workspace|udeps --workspace)\b/.test(line)
+        )
+        .map((line) => /\tCARGO_TARGET_DIR=([^\t]+)/.exec(line)?.[1]);
+      assert.equal(targetDirs.length, 4);
+      assert.equal(targetDirs.every((targetDir) => typeof targetDir === "string" && targetDir.length > 0), true);
+      assert.equal(new Set(targetDirs).size, 1);
+      assert.match(targetDirs[0], /opcore-validation-rust-target/);
+      assert.equal(targetDirs[0]?.startsWith(repoRoot), false);
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("keys cargo target dirs by generic overlay after-state without writing overlays to the real repo", async () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-validation-rust-target-overlay-"));
+    try {
+      const repoRoot = join(temp, "repo");
+      mkdirSync(join(repoRoot, "crates/app/src"), { recursive: true });
+      writeFileSync(join(repoRoot, "Cargo.toml"), rustCrate()["Cargo.toml"]);
+      writeFileSync(join(repoRoot, "crates/app/Cargo.toml"), rustCrate()["crates/app/Cargo.toml"]);
+      writeFileSync(join(repoRoot, "crates/app/src/lib.rs"), "pub fn answer() -> i32 { 42 }\n");
+      const logPath = join(temp, "cargo.log");
+      const { env } = writeFakeRustToolchain(join(temp, "bin"), {
+        cargo: {
+          logPath,
+          logEnvKeys: ["CARGO_TARGET_DIR"]
+        }
+      });
+      const validationRunner = createValidationRunner({
+        workspace: createNodeValidationWorkspace({ repoRoot }),
+        checks: createRustValidationChecks({ env })
+      });
+
+      const overlayRequest = (content) =>
+        request({
+          repo: { repoRoot },
+          checks: [RUST_CARGO_CHECK_ID],
+          scope: {
+            kind: "files",
+            files: ["Cargo.toml", "crates/app/Cargo.toml", "crates/app/src/lib.rs"]
+          },
+          overlays: [{ path: "crates/app/src/lib.rs", action: "write", content }]
+        });
+      const first = await validationRunner.runValidation(overlayRequest("pub fn answer() -> i32 { 43 }\n"));
+      const second = await validationRunner.runValidation(overlayRequest("pub fn answer() -> i32 { 43 }\n"));
+      const changed = await validationRunner.runValidation(overlayRequest("pub fn answer() -> i32 { 44 }\n"));
+
+      assert.equal(first.status, "passed", JSON.stringify(first, null, 2));
+      assert.equal(second.status, "passed", JSON.stringify(second, null, 2));
+      assert.equal(changed.status, "passed", JSON.stringify(changed, null, 2));
+      const targetDirs = readFileSync(logPath, "utf8")
+        .split(/\r?\n/)
+        .filter((line) => line.startsWith("check --message-format=json"))
+        .map((line) => /\tCARGO_TARGET_DIR=([^\t]+)/.exec(line)?.[1]);
+      assert.equal(targetDirs.length, 3);
+      assert.equal(targetDirs[0], targetDirs[1]);
+      assert.notEqual(targetDirs[0], targetDirs[2]);
+      assert.equal(targetDirs.every((targetDir) => targetDir?.startsWith(repoRoot) === false), true);
+      assert.equal(readFileSync(join(repoRoot, "crates/app/src/lib.rs"), "utf8"), "pub fn answer() -> i32 { 42 }\n");
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("removes stale cargo target cache entries when resolving a target dir", () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-validation-rust-target-gc-"));
+    try {
+      const baseDir = join(temp, "target-cache");
+      const staleEntry = join(baseDir, "stale");
+      mkdirSync(staleEntry, { recursive: true });
+      writeFileSync(join(staleEntry, ".opcore-cache-touch"), "1");
+      writeFileSync(join(staleEntry, "artifact"), "stale");
+
+      const targetDir = cargoTargetDirForKey("fresh", process.env, {
+        baseDir,
+        cleanupIntervalMs: 0,
+        maxBytes: 1024 * 1024,
+        nowMs: 10_000,
+        ttlMs: 1
+      });
+
+      assert.equal(existsSync(staleEntry), false);
+      assert.equal(existsSync(targetDir), true);
+      assert.equal(targetDir.startsWith(baseDir), true);
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("keys cargo target dirs by Rust compiler and doc flags", () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-validation-rust-target-flags-"));
+    try {
+      const baseDir = join(temp, "target-cache");
+      const baseEnv = {
+        PATH: "/usr/bin",
+        CARGO: "cargo",
+        RUSTC: "rustc",
+        RUSTFLAGS: "-Dwarnings",
+        CARGO_ENCODED_RUSTFLAGS: "-Clink-arg=-fuse-ld=lld",
+        RUSTDOCFLAGS: "-Dwarnings"
+      };
+      const base = cargoTargetDirForKey("same-validation-input", baseEnv, { baseDir, cleanupIntervalMs: 0 });
+      const same = cargoTargetDirForKey("same-validation-input", { ...baseEnv }, { baseDir, cleanupIntervalMs: 0 });
+      const rustflags = cargoTargetDirForKey(
+        "same-validation-input",
+        { ...baseEnv, RUSTFLAGS: "-Aclippy::all" },
+        { baseDir, cleanupIntervalMs: 0 }
+      );
+      const encoded = cargoTargetDirForKey(
+        "same-validation-input",
+        { ...baseEnv, CARGO_ENCODED_RUSTFLAGS: "-Ctarget-cpu=native" },
+        { baseDir, cleanupIntervalMs: 0 }
+      );
+      const rustdoc = cargoTargetDirForKey(
+        "same-validation-input",
+        { ...baseEnv, RUSTDOCFLAGS: "-Arustdoc::broken_intra_doc_links" },
+        { baseDir, cleanupIntervalMs: 0 }
+      );
+
+      assert.equal(base, same);
+      assert.notEqual(base, rustflags);
+      assert.notEqual(base, encoded);
+      assert.notEqual(base, rustdoc);
+    } finally {
       rmSync(temp, { recursive: true, force: true });
     }
   });

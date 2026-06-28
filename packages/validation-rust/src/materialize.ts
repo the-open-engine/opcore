@@ -3,10 +3,12 @@ import { cpSync, existsSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { mkdir, unlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, relative, resolve, sep } from "node:path";
+import { cargoTargetCacheKeyForContext } from "./cargo-target-cache.js";
 import { runTool } from "./process.js";
 import { uniqueSorted } from "./source-files.js";
 
 export interface MaterializedRustWorkspace {
+  cargoTargetCacheKey: string;
   tempRoot: string;
   root: string;
   cleanup: () => void;
@@ -42,6 +44,7 @@ export async function materializeRustWorkspace(
     }
     await materializeFileViewFiles(root, context, repoRoot !== undefined && existsSync(repoRoot));
     return {
+      cargoTargetCacheKey: cargoTargetCacheKeyForContext(context),
       tempRoot,
       root,
       cleanup: () => rmSync(tempRoot, { recursive: true, force: true })

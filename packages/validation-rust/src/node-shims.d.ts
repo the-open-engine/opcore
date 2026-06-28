@@ -21,6 +21,12 @@ declare module "node:child_process" {
   ): SpawnSyncReturns<string>;
 }
 
+declare module "node:crypto" {
+  export function createHash(algorithm: string): {
+    update(input: string | Uint8Array, encoding?: BufferEncoding): { digest(encoding: "hex"): string };
+  };
+}
+
 declare module "node:fs" {
   export function cpSync(
     source: string,
@@ -35,9 +41,11 @@ declare module "node:fs" {
   export function existsSync(path: string): boolean;
   export function mkdirSync(path: string, options?: { recursive?: boolean }): void;
   export function mkdtempSync(prefix: string): string;
+  export function readdirSync(path: string): string[];
+  export function readFileSync(path: string, encoding: BufferEncoding): string;
   export function realpathSync(path: string): string;
   export function rmSync(path: string, options?: { recursive?: boolean; force?: boolean }): void;
-  export function statSync(path: string): { isDirectory(): boolean; isFile(): boolean };
+  export function statSync(path: string): { isDirectory(): boolean; isFile(): boolean; size: number; mtimeMs: number };
   export function unlinkSync(path: string): void;
   export function writeFileSync(path: string, data: string): void;
 }

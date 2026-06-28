@@ -47,9 +47,15 @@ export type CargoPackageScopeResolution =
       diagnostics: readonly ValidationDiagnostic[];
     };
 
+export interface CargoMetadataOptions {
+  cargoTargetCacheKey?: string;
+  env?: Record<string, string | undefined>;
+  timeoutMs?: number;
+}
+
 export function loadCargoMetadata(
   root: string,
-  options: { env?: Record<string, string | undefined>; timeoutMs?: number } = {}
+  options: CargoMetadataOptions = {}
 ): CargoMetadataResult {
   if (!existsSync(join(root, "Cargo.toml"))) {
     return {
@@ -61,6 +67,7 @@ export function loadCargoMetadata(
   }
   const result = runTool("cargo", ["metadata", "--no-deps", "--format-version=1"], {
     cwd: root,
+    cargoTargetCacheKey: options.cargoTargetCacheKey,
     env: options.env,
     timeoutMs: options.timeoutMs,
     allowedExitCodes: [0]

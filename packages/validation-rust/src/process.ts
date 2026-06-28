@@ -1,4 +1,6 @@
 import { spawnSync } from "node:child_process";
+import { basename } from "node:path";
+import { cargoTargetDirForKey } from "./cargo-target-cache.js";
 
 export interface RustValidationProcessOptions {
   cwd?: string;
@@ -6,6 +8,7 @@ export interface RustValidationProcessOptions {
   timeoutMs?: number;
   allowedExitCodes?: readonly number[];
   input?: string;
+  cargoTargetCacheKey?: string;
 }
 
 export interface RustValidationProcessResult {
@@ -25,9 +28,10 @@ export function runTool(
   options: RustValidationProcessOptions = {}
 ): RustValidationProcessResult {
   const allowedExitCodes = options.allowedExitCodes ?? [0];
+  const env = processEnvForTool(command, options);
   const result = spawnSync(command, args, {
     cwd: options.cwd,
-    env: options.env ?? process.env,
+    env,
     encoding: "utf8",
     input: options.input,
     maxBuffer: 64 * 1024 * 1024,
@@ -58,6 +62,22 @@ export function runTool(
     failureMessage,
     timedOut
   };
+}
+
+function processEnvForTool(
+  command: string,
+  options: RustValidationProcessOptions
+): Record<string, string | undefined> {
+  const env = options.env ?? process.env;
+  if (!isCargoCommand(command) || options.cargoTargetCacheKey === undefined) return env;
+  return {
+    ...env,
+    CARGO_TARGET_DIR: cargoTargetDirForKey(options.cargoTargetCacheKey, env)
+  };
+}
+
+function isCargoCommand(command: string): boolean {
+  return basename(command) === "cargo";
 }
 
 export function toolInvocation(command: string, args: readonly string[]): string {

@@ -47,7 +47,7 @@ Evidence anchors:
 | `rust.clippy` | Runs `cargo clippy` with Opcore-owned lint set. | current external gate stays until #21 runtime/cache decision |
 | `rust.rustdoc` | Runs `cargo doc --no-deps --all-features --message-format=json`; rustdoc diagnostics are blocking policy evidence. | unsupported when rustdoc is missing; retain old gate |
 | `rust.import-graph` | Reports unresolved `mod`, unresolved `crate`/`self`/`super` use paths, orphan source files, and module cycles from fileView after-state content. | cargo-depgraph enrichment remains degraded when unavailable |
-| `rust.dead-code` | Runs `cargo check` with `dead_code` denied and adds native orphan-source dead-code evidence. | core Cargo absence makes adapter unavailable; old gates stay active |
+| `rust.dead-code` | Reuses structured `cargo check --message-format=json` dead-code diagnostics from `rust.cargo-check` and adds native orphan-source dead-code evidence, without a second `-Ddead_code` compile. | core Cargo absence makes adapter unavailable; old gates stay active |
 | `rust.graph-signals` | Reports graph-backed untested public Rust surface, dead public exports, module orphans, and module cycles through `ValidationGraphProviderClient`. | requires available graph facts; does not replace cargo/rustdoc/clippy/Rox guardrails |
 | `rust.unused-deps` | Runs cargo-udeps with workspace or package scoping and parses unused dependency names into deterministic diagnostics. | unsupported when cargo-udeps is missing; retain old gate |
 | `rust.function-metrics` | Runs rust-code-analysis-cli JSON object/array output and enforces 80 lines, complexity 10, params 4. | unsupported when tool is missing; retain old gate |
