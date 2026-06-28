@@ -2,7 +2,7 @@ import { existsSync, readFileSync, realpathSync, readdirSync, statSync } from "n
 import { dirname, extname, isAbsolute, join, relative, resolve } from "node:path";
 import type { EditRefusal, RepoRelativeChange } from "@the-open-engine/opcore-contracts";
 import { decodeTextContent } from "./content-policy.js";
-import { Node, Project, SyntaxKind, type SourceFile, type Symbol as MorphSymbol } from "ts-morph";
+import { Node, Project, SyntaxKind, ts, type SourceFile, type Symbol as MorphSymbol } from "ts-morph";
 import { calculateEditChecksum } from "./hash.js";
 import { normalizeEditRepoRelativePath } from "./path-policy.js";
 import type { MoveSymbolEditRequest, RenameSymbolEditRequest, SignatureParameterChange, SignatureSymbolEditRequest, SymbolEditTarget } from "./symbol-requests.js";
@@ -22,39 +22,64 @@ export interface AffectedChecksum {
   checksumAfter?: string;
 }
 
+export type SymbolEditLanguageServiceProjectScope = "import_closure" | "whole_repo";
+
+export interface SymbolEditLanguageServiceOptions {
+  project?: Project;
+  projectScope?: SymbolEditLanguageServiceProjectScope;
+  projectTsconfigPath?: string;
+  snapshotProject?: (project: Project) => unknown;
+  revertProject?: (project: Project, snapshot: unknown) => void;
+}
+
+const symbolEditProjectScopes = new WeakMap<Project, SymbolEditLanguageServiceProjectScope>();
+
 const sourceFileExtensions = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"]);
+const extensionlessImportCandidates = [".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".d.ts"] as const;
 const excludedDirectories = new Set(["node_modules", "dist", "build", ".git", ".lattice"]);
 
 export function isSupportedSymbolSourcePath(path: string): boolean {
   return sourceFileExtensions.has(extname(path).toLowerCase());
 }
 
-export function materializeRenameSymbolEdit(repoRoot: string, request: RenameSymbolEditRequest): SymbolMaterializationResult {
+export function materializeRenameSymbolEdit(
+  repoRoot: string,
+  request: RenameSymbolEditRequest,
+  options: SymbolEditLanguageServiceOptions = {}
+): SymbolMaterializationResult {
   const supported = requireSupportedSource(request.target.path);
   if (!supported.ok) return supported;
   const changeSets: RepoRelativeChange[][] = [];
-  const contexts = createProjectContextsResult(repoRoot, request.target.path);
+  const contexts = createProjectContextsResult(repoRoot, request.target.path, options);
   if (!contexts.ok) return contexts;
   for (const context of contexts.value) {
-    const sourceFile = sourceFileForTarget(context.project, repoRoot, request.target.path);
-    if (!sourceFile.ok) return sourceFile;
-    const target = findIdentifierTarget(sourceFile.value, request.target);
-    if (!target.ok) return target;
-    const snapshots = snapshotProjectFiles(repoRoot, context.project);
-    if (!snapshots.ok) return snapshots;
-    try {
-      renameTarget(target.value, request.newName);
-    } catch (error) {
-      return refused("unsafe_edit", `Rename failed for ${request.target.name}: ${errorMessage(error)}`, request.target.path);
-    }
-    const changes = collectModifiedProjectChanges(repoRoot, context.project, snapshots.value);
-    if (!changes.ok) return changes;
-    changeSets.push(changes.value);
+    const result = withProjectSnapshot(context, (): { ok: true; changes: readonly RepoRelativeChange[] } | { ok: false; refusal: EditRefusal } => {
+      const sourceFile = sourceFileForTarget(context.project, repoRoot, request.target.path);
+      if (!sourceFile.ok) return sourceFile;
+      const target = findIdentifierTarget(sourceFile.value, request.target);
+      if (!target.ok) return target;
+      const snapshots = snapshotProjectFiles(repoRoot, context.project);
+      if (!snapshots.ok) return snapshots;
+      try {
+        renameTarget(target.value, request.newName);
+      } catch (error) {
+        return refused("unsafe_edit", `Rename failed for ${request.target.name}: ${errorMessage(error)}`, request.target.path);
+      }
+      const changes = collectModifiedProjectChanges(repoRoot, context.project, snapshots.value);
+      if (!changes.ok) return changes;
+      return { ok: true, changes: changes.value };
+    });
+    if (!result.ok) return result;
+    changeSets.push([...result.changes]);
   }
   return mergedChangesResult(changeSets);
 }
 
-export function materializeMoveSymbolEdit(repoRoot: string, request: MoveSymbolEditRequest): SymbolMaterializationResult {
+export function materializeMoveSymbolEdit(
+  repoRoot: string,
+  request: MoveSymbolEditRequest,
+  options: SymbolEditLanguageServiceOptions = {}
+): SymbolMaterializationResult {
   const fromAbs = resolve(repoRoot, request.fromPath);
   const toAbs = resolve(repoRoot, request.toPath);
   if (!isInside(repoRoot, fromAbs) || !isInside(repoRoot, toAbs)) {
@@ -66,67 +91,35 @@ export function materializeMoveSymbolEdit(repoRoot: string, request: MoveSymbolE
   if (statSync(fromAbs).isDirectory() && isInside(fromAbs, toAbs)) {
     return refused("conflict", `Move target must not be inside move source: ${request.toPath}`, request.toPath);
   }
-  const project = createProjectResult(repoRoot, request.fromPath);
-  if (!project.ok) return project;
-  const movePlan = buildMovePlan(project.value, fromAbs, toAbs);
+  const context = createProjectResult(repoRoot, request.fromPath, options);
+  if (!context.ok) return context;
+  return withProjectSnapshot(context.value, () => materializeMoveSymbolEditInProject(repoRoot, context.value, fromAbs, toAbs));
+}
+
+function materializeMoveSymbolEditInProject(repoRoot: string, context: ProjectContext, fromAbs: string, toAbs: string): SymbolMaterializationResult {
+  const movePlan = buildMovePlan(context.project, fromAbs, toAbs);
   if (!movePlan.ok) return movePlan;
   const targetConflict = firstTargetConflict(movePlan.value);
   if (targetConflict) return targetConflict;
 
-  const snapshots = snapshotProjectFiles(repoRoot, project.value);
+  const snapshots = snapshotProjectFiles(repoRoot, context.project);
   if (!snapshots.ok) return snapshots;
-  const changedImporters = rewriteImportSpecifiersForMoves(project.value, movePlan.value.sourceMoves);
-  const changes: RepoRelativeChange[] = [];
-  const afterStateEntries: [string, string | null][] = [];
-  const sourceMovePaths = new Set(movePlan.value.sourceMoves.map((move) => move.fromPath));
-  const changedImporterPaths = new Set(changedImporters);
+  const changedImporters = rewriteImportSpecifiersForMoves(context.project, movePlan.value.sourceMoves);
+  const importerChanges = collectImporterMoveChanges(repoRoot, context.project, snapshots.value, changedImporters, movePlan.value.sourceMoves);
+  if (!importerChanges.ok) return importerChanges;
+  const sourceChanges = collectSourceMoveChanges(repoRoot, snapshots.value, movePlan.value.sourceMoves);
+  if (!sourceChanges.ok) return sourceChanges;
+  const extraChanges = collectExtraMoveChanges(repoRoot, movePlan.value.extraMoves);
+  if (!extraChanges.ok) return extraChanges;
 
-  for (const importerPath of [...changedImporterPaths].sort()) {
-    if (sourceMovePaths.has(importerPath)) continue;
-    const sourceFile = project.value.getSourceFile(importerPath);
-    const before = snapshots.value.get(importerPath);
-    if (!sourceFile || before === undefined || before === null) continue;
-    const after = sourceFile.getFullText();
-    if (after !== before) {
-      const path = toRepoPath(repoRoot, importerPath);
-      if (!path.ok) return path;
-      changes.push(replaceChange(path.value, before, after));
-    }
-  }
-
-  for (const move of movePlan.value.sourceMoves.sort(compareSourceMoves)) {
-    const fromPath = toRepoPath(repoRoot, move.fromPath);
-    if (!fromPath.ok) return fromPath;
-    const toPath = toRepoPath(repoRoot, move.toPath);
-    if (!toPath.ok) return toPath;
-    const before = snapshots.value.get(move.fromPath);
-    if (before === undefined || before === null) return refused("unsafe_edit", `Move source could not be read: ${fromPath.value}`, fromPath.value);
-    changes.push(deleteChange(fromPath.value, before));
-    changes.push(createChange(toPath.value, move.sourceFile.getFullText()));
-  }
-
-  for (const move of movePlan.value.extraMoves.sort(compareFileMoves)) {
-    const fromPath = toRepoPath(repoRoot, move.fromPath);
-    if (!fromPath.ok) return fromPath;
-    const toPath = toRepoPath(repoRoot, move.toPath);
-    if (!toPath.ok) return toPath;
-    const source = validateExistingPathInsideRepoSync(repoRoot, move.fromPath, fromPath.value, "Move source", "file");
-    if (!source.ok) return source;
-    const decoded = decodeTextContent(readFileSync(move.fromPath), fromPath.value, "non-source move source");
-    if (!decoded.ok) return decoded;
-    changes.push({
-      kind: "rename",
-      path: fromPath.value,
-      toPath: toPath.value,
-      checksumBefore: decoded.value.checksum
-    });
-    afterStateEntries.push([fromPath.value, null], [toPath.value, decoded.value.content]);
-  }
-
-  return successFromChanges(changes, afterStateFromEntries(afterStateEntries));
+  return successFromChanges([...importerChanges.value, ...sourceChanges.value, ...extraChanges.value.changes], afterStateFromEntries(extraChanges.value.afterStateEntries));
 }
 
-export function materializeSignatureSymbolEdit(repoRoot: string, request: SignatureSymbolEditRequest): SymbolMaterializationResult {
+export function materializeSignatureSymbolEdit(
+  repoRoot: string,
+  request: SignatureSymbolEditRequest,
+  options: SymbolEditLanguageServiceOptions = {}
+): SymbolMaterializationResult {
   const supported = requireSupportedSource(request.target.path);
   if (!supported.ok) return supported;
   for (const change of request.changes) {
@@ -136,79 +129,137 @@ export function materializeSignatureSymbolEdit(repoRoot: string, request: Signat
   }
 
   const changeSets: RepoRelativeChange[][] = [];
-  const contexts = createProjectContextsResult(repoRoot, request.target.path);
+  const contexts = createProjectContextsResult(repoRoot, request.target.path, options);
   if (!contexts.ok) return contexts;
   for (const context of contexts.value) {
-    const sourceFile = sourceFileForTarget(context.project, repoRoot, request.target.path);
-    if (!sourceFile.ok) return sourceFile;
-    const target = findFunctionTarget(sourceFile.value, request.target);
-    if (!target.ok) return target;
-    const snapshots = snapshotProjectFiles(repoRoot, context.project);
-    if (!snapshots.ok) return snapshots;
-    const removalSafety = refuseUnsafeParameterRemovals(target.value, request.changes, request.target.path);
-    if (!removalSafety.ok) return removalSafety;
-    const callSites = collectCallSites(context.project, target.value);
-    const originalParameterNames = target.value.getParameters().map((parameter: { getName: () => string }) => parameter.getName());
+    const result = withProjectSnapshot(context, (): { ok: true; changes: readonly RepoRelativeChange[] } | { ok: false; refusal: EditRefusal } => {
+      const sourceFile = sourceFileForTarget(context.project, repoRoot, request.target.path);
+      if (!sourceFile.ok) return sourceFile;
+      const target = findFunctionTarget(sourceFile.value, request.target);
+      if (!target.ok) return target;
+      const snapshots = snapshotProjectFiles(repoRoot, context.project);
+      if (!snapshots.ok) return snapshots;
+      const removalSafety = refuseUnsafeParameterRemovals(target.value, request.changes, request.target.path);
+      if (!removalSafety.ok) return removalSafety;
+      const callSites = collectCallSites(context.project, target.value);
+      const originalParameterNames = target.value.getParameters().map((parameter: { getName: () => string }) => parameter.getName());
 
-    try {
-      applyCallSiteSignatureChanges(callSites, originalParameterNames, request.changes);
-      applyDeclarationSignatureChanges(target.value, request.changes);
-    } catch (error) {
-      return refused("unsafe_edit", `Signature change failed for ${request.target.name}: ${errorMessage(error)}`, request.target.path);
-    }
-    const changes = collectModifiedProjectChanges(repoRoot, context.project, snapshots.value);
-    if (!changes.ok) return changes;
-    changeSets.push(changes.value);
+      try {
+        applyCallSiteSignatureChanges(callSites, originalParameterNames, request.changes);
+        applyDeclarationSignatureChanges(target.value, request.changes);
+      } catch (error) {
+        return refused("unsafe_edit", `Signature change failed for ${request.target.name}: ${errorMessage(error)}`, request.target.path);
+      }
+      const changes = collectModifiedProjectChanges(repoRoot, context.project, snapshots.value);
+      if (!changes.ok) return changes;
+      return { ok: true, changes: changes.value };
+    });
+    if (!result.ok) return result;
+    changeSets.push([...result.changes]);
   }
   return mergedChangesResult(changeSets);
 }
 
-function createProject(repoRoot: string, preferredRepoPath?: string): Project {
+function createProject(repoRoot: string, preferredRepoPath: string | undefined, options: SymbolEditLanguageServiceOptions): ProjectContext {
+  const projectScope = options.projectScope ?? "whole_repo";
+  if (options.project !== undefined && canUseInjectedProject(options.project, projectScope)) {
+    return {
+      project: options.project,
+      ...(options.projectTsconfigPath ? { tsconfigPath: options.projectTsconfigPath } : {}),
+      ...(options.snapshotProject ? { snapshotProject: options.snapshotProject } : {}),
+      ...(options.revertProject ? { revertProject: options.revertProject } : {})
+    };
+  }
   const rawTsconfigPath = join(repoRoot, "tsconfig.json");
   const preferredAbsolutePath = preferredRepoPath === undefined ? undefined : resolve(repoRoot, preferredRepoPath);
-  const tsconfigPath = resolveTsconfigPath(repoRoot, rawTsconfigPath, preferredAbsolutePath);
-  return createProjectForTsconfig(repoRoot, tsconfigPath);
+  const tsconfigPath = resolveSymbolEditTsconfigPath(repoRoot, options.projectTsconfigPath) ?? resolveTsconfigPath(repoRoot, rawTsconfigPath, preferredAbsolutePath);
+  return {
+    project: createProjectForTsconfig(repoRoot, tsconfigPath, preferredRepoPath, projectScope),
+    ...(tsconfigPath ? { tsconfigPath } : {})
+  };
 }
 
-type ProjectContext = { project: Project; tsconfigPath?: string };
+type ProjectContext = {
+  project: Project;
+  tsconfigPath?: string;
+  snapshotProject?: (project: Project) => unknown;
+  revertProject?: (project: Project, snapshot: unknown) => void;
+};
 
-function createProjectResult(repoRoot: string, preferredRepoPath?: string): { ok: true; value: Project } | { ok: false; refusal: EditRefusal } {
+function createProjectResult(
+  repoRoot: string,
+  preferredRepoPath: string | undefined,
+  options: SymbolEditLanguageServiceOptions
+): { ok: true; value: ProjectContext } | { ok: false; refusal: EditRefusal } {
   try {
-    return { ok: true, value: createProject(repoRoot, preferredRepoPath) };
+    return { ok: true, value: createProject(repoRoot, preferredRepoPath, options) };
   } catch (error) {
     return projectConfigurationRefusal(error, preferredRepoPath);
   }
 }
 
-function createProjectContextsResult(repoRoot: string, preferredRepoPath?: string): { ok: true; value: ProjectContext[] } | { ok: false; refusal: EditRefusal } {
+function createProjectContextsResult(
+  repoRoot: string,
+  preferredRepoPath: string | undefined,
+  options: SymbolEditLanguageServiceOptions
+): { ok: true; value: ProjectContext[] } | { ok: false; refusal: EditRefusal } {
   try {
-    return { ok: true, value: createProjectContexts(repoRoot, preferredRepoPath) };
+    return { ok: true, value: createProjectContexts(repoRoot, preferredRepoPath, options) };
   } catch (error) {
     return projectConfigurationRefusal(error, preferredRepoPath);
   }
 }
 
-function createProjectContexts(repoRoot: string, preferredRepoPath?: string): ProjectContext[] {
+function createProjectContexts(repoRoot: string, preferredRepoPath: string | undefined, options: SymbolEditLanguageServiceOptions): ProjectContext[] {
+  if (options.project !== undefined) return [createProject(repoRoot, preferredRepoPath, options)];
   const rawTsconfigPath = join(repoRoot, "tsconfig.json");
   const preferredAbsolutePath = preferredRepoPath === undefined ? undefined : resolve(repoRoot, preferredRepoPath);
-  const preferredTsconfigPath = resolveTsconfigPath(repoRoot, rawTsconfigPath, preferredAbsolutePath);
+  const preferredTsconfigPath = resolveSymbolEditTsconfigPath(repoRoot, options.projectTsconfigPath) ?? resolveTsconfigPath(repoRoot, rawTsconfigPath, preferredAbsolutePath);
+  const projectScope = options.projectScope ?? "whole_repo";
   const orderedPaths: string[] = [];
   if (preferredTsconfigPath !== undefined) orderedPaths.push(resolve(preferredTsconfigPath));
   for (const tsconfigPath of collectProjectTsconfigPaths(repoRoot)) {
     if (!orderedPaths.includes(tsconfigPath)) orderedPaths.push(tsconfigPath);
   }
-  if (orderedPaths.length === 0) return [{ project: createProjectForTsconfig(repoRoot, undefined) }];
+  if (orderedPaths.length === 0) return [{ project: createProjectForTsconfig(repoRoot, undefined, preferredRepoPath, projectScope) }];
   return orderedPaths.map((tsconfigPath) => ({
-    project: createProjectForTsconfig(repoRoot, tsconfigPath),
+    project: createProjectForTsconfig(repoRoot, tsconfigPath, preferredRepoPath, projectScope),
     tsconfigPath
   }));
+}
+
+function canUseInjectedProject(project: Project, requiredScope: SymbolEditLanguageServiceProjectScope): boolean {
+  return requiredScope !== "whole_repo" || symbolEditProjectScopes.get(project) === "whole_repo";
 }
 
 function projectConfigurationRefusal(error: unknown, path?: string): { ok: false; refusal: EditRefusal } {
   return refused("unsafe_edit", `TypeScript project configuration cannot be loaded for symbol edit: ${errorMessage(error)}`, path);
 }
 
-function createProjectForTsconfig(repoRoot: string, tsconfigPath: string | undefined): Project {
+export function createSymbolEditLanguageServiceProject(
+  repoRoot: string,
+  preferredRepoPath?: string,
+  options: SymbolEditLanguageServiceOptions = {}
+): Project {
+  return createProject(repoRoot, preferredRepoPath, options).project;
+}
+
+function withProjectSnapshot<T>(context: ProjectContext, run: () => T): T {
+  if (context.snapshotProject === undefined || context.revertProject === undefined) return run();
+  const snapshot = context.snapshotProject(context.project);
+  try {
+    return run();
+  } finally {
+    context.revertProject(context.project, snapshot);
+  }
+}
+
+function createProjectForTsconfig(
+  repoRoot: string,
+  tsconfigPath: string | undefined,
+  preferredRepoPath: string | undefined,
+  scope: SymbolEditLanguageServiceProjectScope
+): Project {
   const project = new Project({
     tsConfigFilePath: tsconfigPath,
     skipAddingFilesFromTsConfig: true,
@@ -218,9 +269,13 @@ function createProjectForTsconfig(repoRoot: string, tsconfigPath: string | undef
       checkJs: false
     }
   });
-  for (const filePath of listSourceFiles(repoRoot)) {
+  const sourceFiles = scope === "whole_repo" || preferredRepoPath === undefined
+    ? listSourceFiles(repoRoot)
+    : importClosureSourceFiles(repoRoot, tsconfigPath, [preferredRepoPath]);
+  for (const filePath of sourceFiles) {
     if (!project.getSourceFile(filePath)) project.addSourceFileAtPath(filePath);
   }
+  symbolEditProjectScopes.set(project, scope);
   return project;
 }
 
@@ -293,14 +348,16 @@ type TsconfigJson = {
   references?: readonly { path?: string }[];
   files?: readonly string[];
   include?: readonly string[];
+  compilerOptions?: {
+    baseUrl?: unknown;
+    paths?: unknown;
+  };
 };
 
 function parseTsconfig(tsconfigPath: string): TsconfigJson {
-  const stripped = readFileSync(tsconfigPath, "utf8")
-    .replace(/\/\/.*$/gm, "")
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .replace(/,\s*([}\]])/g, "$1");
-  return JSON.parse(stripped) as TsconfigJson;
+  const parsed = ts.parseConfigFileTextToJson(tsconfigPath, readFileSync(tsconfigPath, "utf8"));
+  if (parsed.error !== undefined) throw new Error(ts.flattenDiagnosticMessageText(parsed.error.messageText, "\n"));
+  return parsed.config as TsconfigJson;
 }
 
 function referencedTsconfigPaths(repoRoot: string, tsconfigPath: string, config: TsconfigJson): string[] {
@@ -313,6 +370,144 @@ function referencedTsconfigPaths(repoRoot: string, tsconfigPath: string, config:
     if (isSafeExistingFileInsideRepo(repoRoot, candidate)) candidates.push(candidate);
   }
   return candidates;
+}
+
+interface ImportResolutionOptions {
+  baseUrl: string;
+  hasBaseUrl: boolean;
+  paths: Readonly<Record<string, readonly string[]>>;
+}
+
+function importClosureSourceFiles(
+  repoRoot: string,
+  tsconfigPath: string | undefined,
+  rootRepoPaths: readonly string[]
+): string[] {
+  const importOptions = importResolutionOptions(repoRoot, tsconfigPath);
+  const pending = uniqueSorted(
+    rootRepoPaths
+      .map((path) => resolve(repoRoot, path))
+      .filter((path) => isSupportedSymbolSourcePath(path) && isSafeExistingFileInsideRepo(repoRoot, path))
+  );
+  const visited = new Set<string>();
+  const sourceFiles: string[] = [];
+
+  for (let index = 0; index < pending.length; index += 1) {
+    const filePath = pending[index];
+    if (visited.has(filePath)) continue;
+    visited.add(filePath);
+    sourceFiles.push(filePath);
+    for (const specifier of moduleImportSpecifiers(readFileSync(filePath, "utf8"))) {
+      const resolvedImport = resolveImportSpecifier(repoRoot, filePath, specifier, importOptions);
+      if (resolvedImport !== undefined && !visited.has(resolvedImport) && !pending.includes(resolvedImport)) {
+        pending.push(resolvedImport);
+      }
+    }
+  }
+
+  return sourceFiles.sort();
+}
+
+function moduleImportSpecifiers(text: string): readonly string[] {
+  const specifiers = new Set<string>();
+  for (const match of text.matchAll(/\b(?:import|export)\s+(?:type\s+)?(?:[^"'`;]*?\s+from\s+)?["']([^"']+)["']/gu)) {
+    if (match[1]) specifiers.add(match[1]);
+  }
+  for (const match of text.matchAll(/<reference\s+path=["']([^"']+)["']/gu)) {
+    if (match[1]) specifiers.add(match[1]);
+  }
+  for (const match of text.matchAll(/\b(?:import|require)\(\s*["']([^"']+)["']\s*\)/gu)) {
+    if (match[1]) specifiers.add(match[1]);
+  }
+  return [...specifiers].filter(isRepoResolvableSpecifier).sort();
+}
+
+function resolveImportSpecifier(
+  repoRoot: string,
+  fromPath: string,
+  specifier: string,
+  options: ImportResolutionOptions
+): string | undefined {
+  if (isRelativeSpecifier(specifier)) return resolveModulePathFromBase(repoRoot, resolve(dirname(fromPath), specifier));
+  for (const [pattern, targets] of sortedPathMappings(options.paths)) {
+    const wildcard = matchPathPattern(pattern, specifier);
+    if (wildcard === undefined) continue;
+    for (const target of targets) {
+      const resolved = resolveModulePathFromBase(repoRoot, resolve(options.baseUrl, applyPathMappingTarget(target, wildcard)));
+      if (resolved !== undefined) return resolved;
+    }
+  }
+  return options.hasBaseUrl ? resolveModulePathFromBase(repoRoot, resolve(options.baseUrl, specifier)) : undefined;
+}
+
+function resolveModulePathFromBase(repoRoot: string, basePath: string): string | undefined {
+  for (const candidate of modulePathCandidates(basePath)) {
+    if (isSupportedSymbolSourcePath(candidate) && isSafeExistingFileInsideRepo(repoRoot, candidate)) return resolve(candidate);
+  }
+  return undefined;
+}
+
+function modulePathCandidates(basePath: string): readonly string[] {
+  const extension = sourceExtension(basePath);
+  if (extension === ".js" || extension === ".jsx") {
+    const candidates = extension === ".jsx"
+      ? [replaceImportExtension(basePath, ".tsx"), replaceImportExtension(basePath, ".ts")]
+      : [replaceImportExtension(basePath, ".ts"), replaceImportExtension(basePath, ".tsx")];
+    return unique([...candidates, replaceImportExtension(basePath, ".d.ts"), basePath, replaceImportExtension(basePath, extension === ".js" ? ".jsx" : ".js")]);
+  }
+  if (extension !== undefined) return [basePath];
+  return unique([
+    ...extensionlessImportCandidates.map((candidateExtension) => `${basePath}${candidateExtension}`),
+    ...extensionlessImportCandidates.map((candidateExtension) => join(basePath, `index${candidateExtension}`))
+  ]);
+}
+
+function importResolutionOptions(repoRoot: string, tsconfigPath: string | undefined): ImportResolutionOptions {
+  const configDirectory = tsconfigPath === undefined ? repoRoot : dirname(tsconfigPath);
+  const config = tsconfigPath === undefined ? undefined : parseTsconfig(tsconfigPath);
+  const compilerOptions = config?.compilerOptions;
+  const baseUrl = typeof compilerOptions?.baseUrl === "string" && compilerOptions.baseUrl.length > 0
+    ? resolve(configDirectory, compilerOptions.baseUrl)
+    : configDirectory;
+  return {
+    baseUrl,
+    hasBaseUrl: typeof compilerOptions?.baseUrl === "string" && compilerOptions.baseUrl.length > 0,
+    paths: normalizePathMappings(compilerOptions?.paths)
+  };
+}
+
+function normalizePathMappings(paths: unknown): Readonly<Record<string, readonly string[]>> {
+  if (paths === null || typeof paths !== "object" || Array.isArray(paths)) return {};
+  const normalized: Record<string, readonly string[]> = {};
+  for (const [pattern, targets] of Object.entries(paths)) {
+    if (Array.isArray(targets)) normalized[pattern] = targets.filter((target): target is string => typeof target === "string");
+  }
+  return normalized;
+}
+
+function sortedPathMappings(paths: Readonly<Record<string, readonly string[]>>): readonly [string, readonly string[]][] {
+  return Object.entries(paths)
+    .filter((entry): entry is [string, readonly string[]] => entry[1].length > 0)
+    .sort((left, right) => pathPatternRank(right[0]) - pathPatternRank(left[0]));
+}
+
+function pathPatternRank(pattern: string): number {
+  const starIndex = pattern.indexOf("*");
+  if (starIndex === -1) return pattern.length * 2 + 1;
+  return pattern.length - 1;
+}
+
+function matchPathPattern(pattern: string, specifier: string): string | undefined {
+  const starIndex = pattern.indexOf("*");
+  if (starIndex === -1) return pattern === specifier ? "" : undefined;
+  const prefix = pattern.slice(0, starIndex);
+  const suffix = pattern.slice(starIndex + 1);
+  if (!specifier.startsWith(prefix) || !specifier.endsWith(suffix)) return undefined;
+  return specifier.slice(prefix.length, specifier.length - suffix.length);
+}
+
+function applyPathMappingTarget(target: string, wildcard: string): string {
+  return target.includes("*") ? target.replaceAll("*", wildcard) : target;
 }
 
 function listSourceFiles(repoRoot: string): string[] {
@@ -331,6 +526,12 @@ function listSourceFiles(repoRoot: string): string[] {
       }
     }
   }
+}
+
+function resolveSymbolEditTsconfigPath(repoRoot: string, tsconfigPath: string | undefined): string | undefined {
+  if (tsconfigPath === undefined) return undefined;
+  const absolutePath = resolve(repoRoot, tsconfigPath);
+  return isSafeExistingFileInsideRepo(repoRoot, absolutePath) ? absolutePath : undefined;
 }
 
 function sourceFileForTarget(project: Project, repoRoot: string, repoPath: string): { ok: true; value: SourceFile } | { ok: false; refusal: EditRefusal } {
@@ -467,6 +668,8 @@ function mergedChangesResult(changeSets: readonly RepoRelativeChange[][]): Symbo
 type SourceFileMove = { fromPath: string; sourceFile: SourceFile; toPath: string };
 type FileSystemMove = { fromPath: string; toPath: string };
 type MovePlan = { sourceMoves: SourceFileMove[]; extraMoves: FileSystemMove[] };
+type MoveChangeResult = { ok: true; value: RepoRelativeChange[] } | { ok: false; refusal: EditRefusal };
+type ExtraMoveChangeResult = { ok: true; value: { changes: RepoRelativeChange[]; afterStateEntries: [string, string | null][] } } | { ok: false; refusal: EditRefusal };
 
 function buildMovePlan(project: Project, fromPath: string, toPath: string): { ok: true; value: MovePlan } | { ok: false; refusal: EditRefusal } {
   const sourceFilesByPath = new Map(project.getSourceFiles().map((sourceFile) => [resolve(sourceFile.getFilePath()), sourceFile] as const));
@@ -496,6 +699,62 @@ function firstTargetConflict(plan: MovePlan): { ok: false; refusal: EditRefusal 
     }
   }
   return undefined;
+}
+
+function collectImporterMoveChanges(
+  repoRoot: string,
+  project: Project,
+  snapshots: Map<string, string | null>,
+  changedImporters: ReadonlySet<string>,
+  sourceMoves: readonly SourceFileMove[]
+): MoveChangeResult {
+  const changes: RepoRelativeChange[] = [];
+  const sourceMovePaths = new Set(sourceMoves.map((move) => move.fromPath));
+  for (const importerPath of [...changedImporters].sort()) {
+    if (sourceMovePaths.has(importerPath)) continue;
+    const sourceFile = project.getSourceFile(importerPath);
+    const before = snapshots.get(importerPath);
+    if (!sourceFile || before === undefined || before === null) continue;
+    const after = sourceFile.getFullText();
+    if (after === before) continue;
+    const path = toRepoPath(repoRoot, importerPath);
+    if (!path.ok) return path;
+    changes.push(replaceChange(path.value, before, after));
+  }
+  return { ok: true, value: changes };
+}
+
+function collectSourceMoveChanges(repoRoot: string, snapshots: Map<string, string | null>, sourceMoves: readonly SourceFileMove[]): MoveChangeResult {
+  const changes: RepoRelativeChange[] = [];
+  for (const move of [...sourceMoves].sort(compareSourceMoves)) {
+    const fromPath = toRepoPath(repoRoot, move.fromPath);
+    if (!fromPath.ok) return fromPath;
+    const toPath = toRepoPath(repoRoot, move.toPath);
+    if (!toPath.ok) return toPath;
+    const before = snapshots.get(move.fromPath);
+    if (before === undefined || before === null) return refused("unsafe_edit", `Move source could not be read: ${fromPath.value}`, fromPath.value);
+    changes.push(deleteChange(fromPath.value, before));
+    changes.push(createChange(toPath.value, move.sourceFile.getFullText()));
+  }
+  return { ok: true, value: changes };
+}
+
+function collectExtraMoveChanges(repoRoot: string, extraMoves: readonly FileSystemMove[]): ExtraMoveChangeResult {
+  const changes: RepoRelativeChange[] = [];
+  const afterStateEntries: [string, string | null][] = [];
+  for (const move of [...extraMoves].sort(compareFileMoves)) {
+    const fromPath = toRepoPath(repoRoot, move.fromPath);
+    if (!fromPath.ok) return fromPath;
+    const toPath = toRepoPath(repoRoot, move.toPath);
+    if (!toPath.ok) return toPath;
+    const source = validateExistingPathInsideRepoSync(repoRoot, move.fromPath, fromPath.value, "Move source", "file");
+    if (!source.ok) return source;
+    const decoded = decodeTextContent(readFileSync(move.fromPath), fromPath.value, "non-source move source");
+    if (!decoded.ok) return decoded;
+    changes.push({ kind: "rename", path: fromPath.value, toPath: toPath.value, checksumBefore: decoded.value.checksum });
+    afterStateEntries.push([fromPath.value, null], [toPath.value, decoded.value.content]);
+  }
+  return { ok: true, value: { changes, afterStateEntries } };
 }
 
 function listFilesRecursively(directoryPath: string): string[] {
@@ -778,6 +1037,33 @@ function requireSupportedSource(path: string): { ok: true } | { ok: false; refus
 
 function normalizeModulePath(path: string): string {
   return path.replaceAll("\\", "/");
+}
+
+function isRepoResolvableSpecifier(specifier: string): boolean {
+  return specifier.length > 0 && !specifier.startsWith("/") && !specifier.includes("://");
+}
+
+function isRelativeSpecifier(specifier: string): boolean {
+  return specifier.startsWith("./") || specifier.startsWith("../");
+}
+
+function sourceExtension(path: string): string | undefined {
+  if (path.endsWith(".d.ts")) return ".d.ts";
+  const match = /\.[^./]+$/u.exec(path);
+  return match?.[0];
+}
+
+function replaceImportExtension(path: string, extension: string): string {
+  if (path.endsWith(".d.ts")) return `${path.slice(0, -".d.ts".length)}${extension}`;
+  return path.replace(/\.[^./]+$/u, extension);
+}
+
+function uniqueSorted(values: readonly string[]): string[] {
+  return [...new Set(values)].sort();
+}
+
+function unique(values: readonly string[]): readonly string[] {
+  return [...new Set(values)];
 }
 
 function withExtension(filePath: string, extension: string): string {

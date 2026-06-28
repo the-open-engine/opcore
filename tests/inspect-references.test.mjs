@@ -1,10 +1,14 @@
 import { it } from "node:test";
 import assert from "node:assert/strict";
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { routeCommand } from "../packages/opcore/dist/advanced/index.js";
+import {
+  createInspectLanguageServiceProject,
+  resolveInspectReferences
+} from "../packages/opcore/dist/advanced/inspect-language-service.js";
 
 const repoRoot = fileURLToPath(new URL("..", import.meta.url));
 const sourceFixtureRoot = resolve(repoRoot, "packages/fixtures/inspect-symbol-parity");
@@ -166,6 +170,36 @@ it("degrades references through the language service in a generated TS repo with
   });
 });
 
+it("falls back to whole-repo references for injected scoped language-service projects", async () => {
+  const temp = realpathSync(mkdtempSync(join(tmpdir(), "opcore-inspect-injected-scope-")));
+  try {
+    mkdirSync(join(temp, "src"), { recursive: true });
+    writeFileSync(join(temp, "tsconfig.json"), JSON.stringify({ include: ["src/**/*"] }, null, 2));
+    writeFileSync(join(temp, "src/a.ts"), "export function greet(name: string) {\n  return name;\n}\n");
+    writeFileSync(join(temp, "src/b.ts"), "import { greet } from \"./a\";\nexport const message = greet(\"Ada\");\n");
+
+    const scopedProject = createInspectLanguageServiceProject(temp, "src/a.ts", { projectScope: "import_closure" });
+    assert.deepEqual(projectRepoPaths(temp, scopedProject), ["src/a.ts"]);
+
+    const result = resolveInspectReferences(
+      temp,
+      {
+        path: "src/a.ts",
+        symbolName: "greet",
+        line: 1,
+        allowGraphless: true,
+        graphNodeIds: []
+      },
+      { project: scopedProject }
+    );
+
+    assert.equal(result.ok, true);
+    assert.deepEqual([...new Set(result.references.map((reference) => reference.file))].sort(), ["src/a.ts", "src/b.ts"]);
+  } finally {
+    rmSync(temp, { recursive: true, force: true });
+  }
+});
+
 async function assertReferenceTarget(fixtureRoot, target) {
   const result = await inspectReferences(fixtureRoot, target.path, target.symbolName, ["--line", String(target.line)]);
   assert.equal(result.status, "ok", `${target.path} ${target.symbolName}`);
@@ -193,6 +227,14 @@ function assertReferenceEntry(reference, symbolName) {
 
 function referenceLines(result, file) {
   return [...new Set(result.inspectResult.references.filter((reference) => reference.file === file).map((reference) => reference.line))].sort((left, right) => left - right);
+}
+
+function projectRepoPaths(repoRoot, project) {
+  return project.getSourceFiles()
+    .map((sourceFile) => resolve(sourceFile.getFilePath()))
+    .filter((filePath) => filePath.startsWith(resolve(repoRoot)))
+    .map((filePath) => filePath.slice(resolve(repoRoot).length + 1).replaceAll("\\", "/"))
+    .sort();
 }
 
 async function assertUnavailableGraphFallback(fixtureRoot) {

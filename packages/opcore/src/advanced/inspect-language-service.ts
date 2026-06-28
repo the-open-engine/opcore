@@ -1,5 +1,5 @@
-import { existsSync, realpathSync, readdirSync, statSync } from "node:fs";
-import { extname, join, relative, resolve } from "node:path";
+import { existsSync, readFileSync, realpathSync, readdirSync, statSync } from "node:fs";
+import { dirname, extname, join, relative, resolve } from "node:path";
 import type {
   GraphFactEdge,
   GraphNodeKind,
@@ -19,6 +19,7 @@ import {
   Node,
   Project,
   SyntaxKind,
+  ts,
   type ClassDeclaration,
   type InterfaceDeclaration,
   type ParameterDeclaration,
@@ -100,6 +101,18 @@ export type InspectImplementationResolution =
       candidates?: readonly InspectSymbolTarget[];
     };
 
+export type InspectLanguageServiceProjectScope = "import_closure" | "whole_repo";
+
+export interface InspectLanguageServiceOptions {
+  project?: Project;
+  projectScope?: InspectLanguageServiceProjectScope;
+  projectTsconfigPath?: string;
+  snapshotProject?: (project: Project) => unknown;
+  revertProject?: (project: Project, snapshot: unknown) => void;
+}
+
+const inspectProjectScopes = new WeakMap<Project, InspectLanguageServiceProjectScope>();
+
 const sourceFileExtensions = new Set([".ts", ".tsx", ".js", ".jsx"]);
 const implementationSourceFileExtensions = new Set([".ts", ".tsx"]);
 const excludedDirectories = new Set([
@@ -143,7 +156,11 @@ export function isSupportedInspectImplementationSourcePath(path: string): boolea
   return implementationSourceFileExtensions.has(extname(path).toLowerCase());
 }
 
-export function resolveInspectSignatures(repoRoot: string, request: InspectSignatureRequest): InspectSignatureResolution {
+export function resolveInspectSignatures(
+  repoRoot: string,
+  request: InspectSignatureRequest,
+  options: InspectLanguageServiceOptions = {}
+): InspectSignatureResolution {
   const normalizedRepoRoot = canonicalRepoRoot(repoRoot);
   const baseTarget = targetFromRequest(request);
   if (!isSupportedInspectSourcePath(request.path)) {
@@ -165,45 +182,9 @@ export function resolveInspectSignatures(repoRoot: string, request: InspectSigna
   }
 
   try {
-    for (const context of createProjectContexts(normalizedRepoRoot, request.path)) {
-      const sourceFile = context.project.getSourceFile(absoluteTargetPath) ?? context.project.addSourceFileAtPath(absoluteTargetPath);
-      const target = findSignatureTarget(normalizedRepoRoot, sourceFile, request);
-      if (!target.ok) return target;
-      const declaration = symbolDeclaration(target.node.getSymbol()) ?? target.node;
-      const graphBinding = bindSignatureDeclarationToGraph(normalizedRepoRoot, declaration, request);
-      if (!graphBinding.ok) {
-        return {
-          ok: false,
-          category: "target_not_found",
-          message: `Symbol "${request.symbolName}" in ${request.path}${request.line ? ` at line ${request.line}` : ""} is not backed by graph facts`,
-          target: baseTarget,
-          candidates: target.candidates
-        };
-      }
-      const boundRequest: InspectSignatureRequest = {
-        ...request,
-        graphNodeIds: [graphBinding.candidate.id],
-        graphKind: graphBinding.candidate.kind,
-        graphSymbolName: graphBinding.candidate.name
-      };
-      const signatures = collectSignatureEntries(normalizedRepoRoot, declaration, boundRequest);
-      if (signatures.length === 0) {
-        return {
-          ok: false,
-          category: "target_not_found",
-          message: `No inspect signature declarations found for "${request.symbolName}" in ${request.path}`,
-          target: baseTarget,
-          candidates: target.candidates
-        };
-      }
-      return {
-        ok: true,
-        target: {
-          ...baseTarget,
-          nodeId: graphBinding.candidate.id
-        },
-        signatures
-      };
+    for (const context of createProjectContexts(normalizedRepoRoot, request.path, options)) {
+      const resolution = withProjectSnapshot(context, () => resolveInspectSignatureInProject(normalizedRepoRoot, context, absoluteTargetPath, request, baseTarget));
+      return resolution;
     }
     return {
       ok: false,
@@ -221,7 +202,67 @@ export function resolveInspectSignatures(repoRoot: string, request: InspectSigna
   }
 }
 
-export function resolveInspectReferences(repoRoot: string, request: InspectReferenceRequest): InspectReferenceResolution {
+function resolveInspectSignatureInProject(
+  repoRoot: string,
+  context: ProjectContext,
+  absoluteTargetPath: string,
+  request: InspectSignatureRequest,
+  baseTarget: InspectReferenceTarget
+): InspectSignatureResolution {
+  const sourceFile = context.project.getSourceFile(absoluteTargetPath) ?? context.project.addSourceFileAtPath(absoluteTargetPath);
+  const target = findSignatureTarget(repoRoot, sourceFile, request);
+  if (!target.ok) return target;
+  const declaration = symbolDeclaration(target.node.getSymbol()) ?? target.node;
+  const graphBinding = bindSignatureDeclarationToGraph(repoRoot, declaration, request);
+  if (!graphBinding.ok) return missingGraphSignatureResolution(request, baseTarget, target.candidates);
+  const boundRequest: InspectSignatureRequest = {
+    ...request,
+    graphNodeIds: [graphBinding.candidate.id],
+    graphKind: graphBinding.candidate.kind,
+    graphSymbolName: graphBinding.candidate.name
+  };
+  const signatures = collectSignatureEntries(repoRoot, declaration, boundRequest);
+  if (signatures.length === 0) return missingSignatureDeclarationResolution(request, baseTarget, target.candidates);
+  return {
+    ok: true,
+    target: { ...baseTarget, nodeId: graphBinding.candidate.id },
+    signatures
+  };
+}
+
+function missingGraphSignatureResolution(
+  request: InspectSignatureRequest,
+  baseTarget: InspectReferenceTarget,
+  candidates: readonly InspectReferenceTarget[]
+): InspectSignatureResolution {
+  return {
+    ok: false,
+    category: "target_not_found",
+    message: `Symbol "${request.symbolName}" in ${request.path}${request.line ? ` at line ${request.line}` : ""} is not backed by graph facts`,
+    target: baseTarget,
+    candidates
+  };
+}
+
+function missingSignatureDeclarationResolution(
+  request: InspectSignatureRequest,
+  baseTarget: InspectReferenceTarget,
+  candidates: readonly InspectReferenceTarget[]
+): InspectSignatureResolution {
+  return {
+    ok: false,
+    category: "target_not_found",
+    message: `No inspect signature declarations found for "${request.symbolName}" in ${request.path}`,
+    target: baseTarget,
+    candidates
+  };
+}
+
+export function resolveInspectReferences(
+  repoRoot: string,
+  request: InspectReferenceRequest,
+  options: InspectLanguageServiceOptions = {}
+): InspectReferenceResolution {
   const normalizedRepoRoot = canonicalRepoRoot(repoRoot);
   const baseTarget = targetFromRequest(request);
   if (!isSupportedInspectSourcePath(request.path)) {
@@ -243,35 +284,38 @@ export function resolveInspectReferences(repoRoot: string, request: InspectRefer
   }
 
   try {
-    for (const context of createProjectContexts(normalizedRepoRoot, request.path)) {
-      const sourceFile = context.project.getSourceFile(absoluteTargetPath) ?? context.project.addSourceFileAtPath(absoluteTargetPath);
-      const target = findReferenceTarget(normalizedRepoRoot, sourceFile, request);
-      if (!target.ok) return target;
-      const graphBinding = bindReferenceTargetToGraph(normalizedRepoRoot, target.node, request);
-      if (!graphBinding.ok) {
-        return {
-          ok: false,
-          category: "target_not_found",
-          message: `Symbol "${request.symbolName}" in ${request.path}${request.line ? ` at line ${request.line}` : ""} is not backed by graph facts`,
-          target: baseTarget,
-          candidates: target.candidates
+    for (const context of createProjectContexts(normalizedRepoRoot, request.path, { ...options, projectScope: "whole_repo" })) {
+      const resolution = withProjectSnapshot(context, () => {
+        const sourceFile = context.project.getSourceFile(absoluteTargetPath) ?? context.project.addSourceFileAtPath(absoluteTargetPath);
+        const target = findReferenceTarget(normalizedRepoRoot, sourceFile, request);
+        if (!target.ok) return target;
+        const graphBinding = bindReferenceTargetToGraph(normalizedRepoRoot, target.node, request);
+        if (!graphBinding.ok) {
+          return {
+            ok: false,
+            category: "target_not_found",
+            message: `Symbol "${request.symbolName}" in ${request.path}${request.line ? ` at line ${request.line}` : ""} is not backed by graph facts`,
+            target: baseTarget,
+            candidates: target.candidates
+          } satisfies InspectReferenceResolution;
+        }
+        const boundRequest: InspectReferenceRequest = {
+          ...request,
+          graphNodeIds: [graphBinding.candidate.id],
+          graphKind: graphBinding.candidate.kind,
+          graphSymbolName: graphBinding.candidate.name
         };
-      }
-      const boundRequest: InspectReferenceRequest = {
-        ...request,
-        graphNodeIds: [graphBinding.candidate.id],
-        graphKind: graphBinding.candidate.kind,
-        graphSymbolName: graphBinding.candidate.name
-      };
-      const references = collectReferenceEntries(normalizedRepoRoot, target.node, boundRequest);
-      return {
-        ok: true,
-        target: {
-          ...baseTarget,
-          nodeId: graphBinding.candidate.id
-        },
-        references: applyLimit(references, request.limit)
-      };
+        const references = collectReferenceEntries(normalizedRepoRoot, target.node, boundRequest);
+        return {
+          ok: true,
+          target: {
+            ...baseTarget,
+            nodeId: graphBinding.candidate.id
+          },
+          references: applyLimit(references, request.limit)
+        } satisfies InspectReferenceResolution;
+      });
+      return resolution;
     }
     return {
       ok: false,
@@ -289,46 +333,54 @@ export function resolveInspectReferences(repoRoot: string, request: InspectRefer
   }
 }
 
-export function resolveInspectImplementations(repoRoot: string, request: InspectImplementationRequest): InspectImplementationResolution {
+export function resolveInspectImplementations(
+  repoRoot: string,
+  request: InspectImplementationRequest,
+  options: InspectLanguageServiceOptions = {}
+): InspectImplementationResolution {
   const normalizedRepoRoot = canonicalRepoRoot(repoRoot);
   const preflight = preflightImplementationTarget(normalizedRepoRoot, request);
   if (!preflight.ok) return preflight;
 
   try {
-    for (const context of createProjectContexts(normalizedRepoRoot, preflight.path)) {
-      const targetResolution = resolveImplementationTargetInProject(context.project, normalizedRepoRoot, request, preflight.candidate);
-      if (!targetResolution.ok) return targetResolution;
-      const targetCandidate = targetResolution.candidate;
-      const languageServiceNodes = implementationLocationNodesByGraphId(context.project, normalizedRepoRoot, targetResolution.node);
-      if (request.allowGraphless) {
+    const projectScope: InspectLanguageServiceProjectScope = request.allowGraphless ? "whole_repo" : (options.projectScope ?? "import_closure");
+    for (const context of createProjectContexts(normalizedRepoRoot, preflight.path, { ...options, projectScope })) {
+      const resolution = withProjectSnapshot(context, () => {
+        const targetResolution = resolveImplementationTargetInProject(context.project, normalizedRepoRoot, request, preflight.candidate);
+        if (!targetResolution.ok) return targetResolution;
+        const targetCandidate = targetResolution.candidate;
+        const languageServiceNodes = implementationLocationNodesByGraphId(context.project, normalizedRepoRoot, targetResolution.node);
+        if (request.allowGraphless) {
+          return {
+            ok: true,
+            target: targetResolution.target,
+            implementations: collectGraphlessImplementationEntries({
+              project: context.project,
+              repoRoot: normalizedRepoRoot,
+              targetCandidate,
+              targetSummary: targetResolution.targetSummary,
+              limit: request.limit
+            })
+          } satisfies InspectImplementationResolution;
+        }
+        const relationships = collectImplementationRelationships(targetCandidate, request.graphCandidates, request.graphEdges);
+        const entries: InspectImplementationEntry[] = [];
+        for (const relationship of relationships) {
+          const candidate = request.graphCandidates.find((entry) => entry.id === relationship.candidateId);
+          if (!candidate || !candidate.path || !candidate.name) continue;
+          if (!isSupportedInspectImplementationSourcePath(candidate.path)) continue;
+          const implementationNode =
+            languageServiceNodes.get(candidate.id) ?? declarationNameNodeForGraphCandidate(context.project, normalizedRepoRoot, candidate);
+          if (!implementationNode) continue;
+          entries.push(implementationEntry(normalizedRepoRoot, implementationNode, candidate, targetResolution.targetSummary, relationship));
+        }
         return {
           ok: true,
           target: targetResolution.target,
-          implementations: collectGraphlessImplementationEntries({
-            project: context.project,
-            repoRoot: normalizedRepoRoot,
-            targetCandidate,
-            targetSummary: targetResolution.targetSummary,
-            limit: request.limit
-          })
-        };
-      }
-      const relationships = collectImplementationRelationships(targetCandidate, request.graphCandidates, request.graphEdges);
-      const entries: InspectImplementationEntry[] = [];
-      for (const relationship of relationships) {
-        const candidate = request.graphCandidates.find((entry) => entry.id === relationship.candidateId);
-        if (!candidate || !candidate.path || !candidate.name) continue;
-        if (!isSupportedInspectImplementationSourcePath(candidate.path)) continue;
-        const implementationNode =
-          languageServiceNodes.get(candidate.id) ?? declarationNameNodeForGraphCandidate(context.project, normalizedRepoRoot, candidate);
-        if (!implementationNode) continue;
-        entries.push(implementationEntry(normalizedRepoRoot, implementationNode, candidate, targetResolution.targetSummary, relationship));
-      }
-      return {
-        ok: true,
-        target: targetResolution.target,
-        implementations: applyImplementationLimit(entries.sort(compareImplementationEntries), request.limit)
-      };
+          implementations: applyImplementationLimit(entries.sort(compareImplementationEntries), request.limit)
+        } satisfies InspectImplementationResolution;
+      });
+      return resolution;
     }
     return {
       ok: false,
@@ -1225,19 +1277,63 @@ function applyLimit(entries: readonly InspectReferenceEntry[], limit: number | u
   return limit === undefined ? entries : entries.slice(0, limit);
 }
 
-type ProjectContext = { project: Project; tsconfigPath?: string };
+type ProjectContext = {
+  project: Project;
+  tsconfigPath?: string;
+  snapshotProject?: (project: Project) => unknown;
+  revertProject?: (project: Project, snapshot: unknown) => void;
+};
 
-function createProjectContexts(repoRoot: string, preferredRepoPath: string): ProjectContext[] {
-  const preferredTsconfigPath = tsconfigForInspectRoot(repoRoot);
+export function createInspectLanguageServiceProject(
+  repoRoot: string,
+  preferredRepoPath: string,
+  options: InspectLanguageServiceOptions = {}
+): Project {
+  const preferredTsconfigPath = resolveInspectTsconfigPath(repoRoot, options.projectTsconfigPath) ?? tsconfigForInspectRoot(repoRoot);
+  return createProjectForTsconfig(repoRoot, preferredTsconfigPath, preferredRepoPath, options.projectScope ?? "import_closure");
+}
+
+function createProjectContexts(repoRoot: string, preferredRepoPath: string, options: InspectLanguageServiceOptions = {}): ProjectContext[] {
+  const projectScope = options.projectScope ?? "import_closure";
+  if (options.project !== undefined && canUseInjectedProject(options.project, projectScope)) {
+    return [
+      {
+        project: options.project,
+        ...(options.projectTsconfigPath ? { tsconfigPath: options.projectTsconfigPath } : {}),
+        ...(options.snapshotProject ? { snapshotProject: options.snapshotProject } : {}),
+        ...(options.revertProject ? { revertProject: options.revertProject } : {})
+      }
+    ];
+  }
+  const preferredTsconfigPath = resolveInspectTsconfigPath(repoRoot, options.projectTsconfigPath) ?? tsconfigForInspectRoot(repoRoot);
   return [
     {
-      project: createProjectForTsconfig(repoRoot, preferredTsconfigPath),
+      project: createProjectForTsconfig(repoRoot, preferredTsconfigPath, preferredRepoPath, projectScope),
       ...(preferredTsconfigPath ? { tsconfigPath: preferredTsconfigPath } : {})
     }
   ];
 }
 
-function createProjectForTsconfig(repoRoot: string, tsconfigPath: string | undefined): Project {
+function canUseInjectedProject(project: Project, requiredScope: InspectLanguageServiceProjectScope): boolean {
+  return requiredScope !== "whole_repo" || inspectProjectScopes.get(project) === "whole_repo";
+}
+
+function withProjectSnapshot<T>(context: ProjectContext, run: () => T): T {
+  if (context.snapshotProject === undefined || context.revertProject === undefined) return run();
+  const snapshot = context.snapshotProject(context.project);
+  try {
+    return run();
+  } finally {
+    context.revertProject(context.project, snapshot);
+  }
+}
+
+function createProjectForTsconfig(
+  repoRoot: string,
+  tsconfigPath: string | undefined,
+  preferredRepoPath: string,
+  scope: InspectLanguageServiceProjectScope
+): Project {
   const projectOptions = {
     tsConfigFilePath: tsconfigPath,
     skipAddingFilesFromTsConfig: true,
@@ -1248,16 +1344,182 @@ function createProjectForTsconfig(repoRoot: string, tsconfigPath: string | undef
     }
   };
   const project = new Project(projectOptions);
-  for (const filePath of listSourceFiles(repoRoot)) {
+  const sourceFiles = scope === "whole_repo"
+    ? listSourceFiles(repoRoot)
+    : importClosureSourceFiles(repoRoot, tsconfigPath, [preferredRepoPath]);
+  for (const filePath of sourceFiles) {
     if (project.getSourceFile(filePath)) continue;
     project.addSourceFileAtPath(filePath);
   }
+  inspectProjectScopes.set(project, scope);
   return project;
+}
+
+interface ImportResolutionOptions {
+  baseUrl: string;
+  hasBaseUrl: boolean;
+  paths: Readonly<Record<string, readonly string[]>>;
+}
+
+type TsconfigJson = {
+  compilerOptions?: {
+    baseUrl?: unknown;
+    paths?: unknown;
+  };
+};
+
+const extensionlessCandidates = [".ts", ".tsx", ".js", ".jsx", ".d.ts"] as const;
+
+function importClosureSourceFiles(
+  repoRoot: string,
+  tsconfigPath: string | undefined,
+  rootRepoPaths: readonly string[]
+): string[] {
+  const importOptions = importResolutionOptions(repoRoot, tsconfigPath);
+  const pending = uniqueSorted(
+    rootRepoPaths
+      .map((path) => resolve(repoRoot, path))
+      .filter((path) => isSupportedInspectSourcePath(path) && isSafeExistingFileInsideRepo(repoRoot, path))
+  );
+  const visited = new Set<string>();
+  const sourceFiles: string[] = [];
+
+  for (let index = 0; index < pending.length; index += 1) {
+    const filePath = pending[index];
+    if (visited.has(filePath)) continue;
+    visited.add(filePath);
+    sourceFiles.push(filePath);
+    for (const specifier of moduleImportSpecifiers(readFileSync(filePath, "utf8"))) {
+      const resolvedImport = resolveImportSpecifier(repoRoot, filePath, specifier, importOptions);
+      if (resolvedImport !== undefined && !visited.has(resolvedImport) && !pending.includes(resolvedImport)) {
+        pending.push(resolvedImport);
+      }
+    }
+  }
+
+  return sourceFiles.sort();
+}
+
+function moduleImportSpecifiers(text: string): readonly string[] {
+  const specifiers = new Set<string>();
+  for (const match of text.matchAll(/\b(?:import|export)\s+(?:type\s+)?(?:[^"'`;]*?\s+from\s+)?["']([^"']+)["']/gu)) {
+    if (match[1]) specifiers.add(match[1]);
+  }
+  for (const match of text.matchAll(/<reference\s+path=["']([^"']+)["']/gu)) {
+    if (match[1]) specifiers.add(match[1]);
+  }
+  for (const match of text.matchAll(/\b(?:import|require)\(\s*["']([^"']+)["']\s*\)/gu)) {
+    if (match[1]) specifiers.add(match[1]);
+  }
+  return [...specifiers].filter(isRepoResolvableSpecifier).sort();
+}
+
+function resolveImportSpecifier(
+  repoRoot: string,
+  fromPath: string,
+  specifier: string,
+  options: ImportResolutionOptions
+): string | undefined {
+  if (isRelativeSpecifier(specifier)) return resolveModulePathFromBase(repoRoot, resolve(dirname(fromPath), specifier));
+  for (const [pattern, targets] of sortedPathMappings(options.paths)) {
+    const wildcard = matchPathPattern(pattern, specifier);
+    if (wildcard === undefined) continue;
+    for (const target of targets) {
+      const resolved = resolveModulePathFromBase(repoRoot, resolve(options.baseUrl, applyPathMappingTarget(target, wildcard)));
+      if (resolved !== undefined) return resolved;
+    }
+  }
+  return options.hasBaseUrl ? resolveModulePathFromBase(repoRoot, resolve(options.baseUrl, specifier)) : undefined;
+}
+
+function resolveModulePathFromBase(repoRoot: string, basePath: string): string | undefined {
+  for (const candidate of modulePathCandidates(basePath)) {
+    if (isSupportedInspectSourcePath(candidate) && isSafeExistingFileInsideRepo(repoRoot, candidate)) return resolve(candidate);
+  }
+  return undefined;
+}
+
+function modulePathCandidates(basePath: string): readonly string[] {
+  const extension = sourceExtension(basePath);
+  if (extension === ".js" || extension === ".jsx") {
+    const candidates = extension === ".jsx"
+      ? [replaceExtension(basePath, ".tsx"), replaceExtension(basePath, ".ts")]
+      : [replaceExtension(basePath, ".ts"), replaceExtension(basePath, ".tsx")];
+    return unique([...candidates, replaceExtension(basePath, ".d.ts"), basePath, replaceExtension(basePath, extension === ".js" ? ".jsx" : ".js")]);
+  }
+  if (extension !== undefined) return [basePath];
+  return unique([
+    ...extensionlessCandidates.map((candidateExtension) => `${basePath}${candidateExtension}`),
+    ...extensionlessCandidates.map((candidateExtension) => join(basePath, `index${candidateExtension}`))
+  ]);
+}
+
+function importResolutionOptions(repoRoot: string, tsconfigPath: string | undefined): ImportResolutionOptions {
+  const configDirectory = tsconfigPath === undefined ? repoRoot : dirname(tsconfigPath);
+  const config = tsconfigPath === undefined ? undefined : parseTsconfigForImports(tsconfigPath);
+  const compilerOptions = config?.compilerOptions;
+  const baseUrl = typeof compilerOptions?.baseUrl === "string" && compilerOptions.baseUrl.length > 0
+    ? resolve(configDirectory, compilerOptions.baseUrl)
+    : configDirectory;
+  return {
+    baseUrl,
+    hasBaseUrl: typeof compilerOptions?.baseUrl === "string" && compilerOptions.baseUrl.length > 0,
+    paths: normalizePathMappings(compilerOptions?.paths)
+  };
+}
+
+function parseTsconfigForImports(tsconfigPath: string): TsconfigJson | undefined {
+  try {
+    const parsed = ts.parseConfigFileTextToJson(tsconfigPath, readFileSync(tsconfigPath, "utf8"));
+    return parsed.error === undefined ? parsed.config as TsconfigJson : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function normalizePathMappings(paths: unknown): Readonly<Record<string, readonly string[]>> {
+  if (paths === null || typeof paths !== "object" || Array.isArray(paths)) return {};
+  const normalized: Record<string, readonly string[]> = {};
+  for (const [pattern, targets] of Object.entries(paths)) {
+    if (Array.isArray(targets)) normalized[pattern] = targets.filter((target): target is string => typeof target === "string");
+  }
+  return normalized;
+}
+
+function sortedPathMappings(paths: Readonly<Record<string, readonly string[]>>): readonly [string, readonly string[]][] {
+  return Object.entries(paths)
+    .filter((entry): entry is [string, readonly string[]] => entry[1].length > 0)
+    .sort((left, right) => pathPatternRank(right[0]) - pathPatternRank(left[0]));
+}
+
+function pathPatternRank(pattern: string): number {
+  const starIndex = pattern.indexOf("*");
+  if (starIndex === -1) return pattern.length * 2 + 1;
+  return pattern.length - 1;
+}
+
+function matchPathPattern(pattern: string, specifier: string): string | undefined {
+  const starIndex = pattern.indexOf("*");
+  if (starIndex === -1) return pattern === specifier ? "" : undefined;
+  const prefix = pattern.slice(0, starIndex);
+  const suffix = pattern.slice(starIndex + 1);
+  if (!specifier.startsWith(prefix) || !specifier.endsWith(suffix)) return undefined;
+  return specifier.slice(prefix.length, specifier.length - suffix.length);
+}
+
+function applyPathMappingTarget(target: string, wildcard: string): string {
+  return target.includes("*") ? target.replaceAll("*", wildcard) : target;
 }
 
 function tsconfigForInspectRoot(repoRoot: string): string | undefined {
   const tsconfigPath = join(repoRoot, "tsconfig.json");
   return isSafeExistingFileInsideRepo(repoRoot, tsconfigPath) ? resolve(tsconfigPath) : undefined;
+}
+
+function resolveInspectTsconfigPath(repoRoot: string, tsconfigPath: string | undefined): string | undefined {
+  if (tsconfigPath === undefined) return undefined;
+  const absolutePath = resolve(repoRoot, tsconfigPath);
+  return isSafeExistingFileInsideRepo(repoRoot, absolutePath) ? absolutePath : undefined;
 }
 
 function listSourceFiles(repoRoot: string): string[] {
@@ -1458,6 +1720,33 @@ function isInside(root: string, target: string): boolean {
 
 function normalizeModulePath(path: string): string {
   return path.replaceAll("\\", "/");
+}
+
+function isRepoResolvableSpecifier(specifier: string): boolean {
+  return specifier.length > 0 && !specifier.startsWith("/") && !specifier.includes("://");
+}
+
+function isRelativeSpecifier(specifier: string): boolean {
+  return specifier.startsWith("./") || specifier.startsWith("../");
+}
+
+function sourceExtension(path: string): string | undefined {
+  if (path.endsWith(".d.ts")) return ".d.ts";
+  const match = /\.[^./]+$/u.exec(path);
+  return match?.[0];
+}
+
+function replaceExtension(path: string, extension: string): string {
+  if (path.endsWith(".d.ts")) return `${path.slice(0, -".d.ts".length)}${extension}`;
+  return path.replace(/\.[^./]+$/u, extension);
+}
+
+function uniqueSorted(values: readonly string[]): string[] {
+  return [...new Set(values)].sort();
+}
+
+function unique(values: readonly string[]): readonly string[] {
+  return [...new Set(values)];
 }
 
 function errorMessage(error: unknown): string {
