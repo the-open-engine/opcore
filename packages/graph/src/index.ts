@@ -40,6 +40,7 @@ export {
 } from "./native-targets.js";
 export { invokeGraphCoreSidecar } from "./sidecar.js";
 export { graphServeRouterResult, isServeTransportArgv, runGraphServeCli } from "./serve.js";
+export type { GraphServeFrameTimingEvent, GraphServeTelemetry } from "./serve.js";
 
 export const graphProviderName = "opcore-graph";
 export const graphProviderSchemaVersion = 1;

@@ -256,6 +256,222 @@
     },
     {
       "schemaVersion": 1,
+      "canonicalCommand": ["opcore", "graph", "serve"],
+      "scope": "cold",
+      "repoShapeBucket": "small",
+      "budgetMs": 5000
+    },
+    {
+      "schemaVersion": 1,
+      "canonicalCommand": ["opcore", "graph", "serve"],
+      "scope": "warm",
+      "repoShapeBucket": "small",
+      "budgetMs": 3000
+    },
+    {
+      "schemaVersion": 1,
+      "canonicalCommand": ["opcore", "graph", "serve"],
+      "scope": "cold",
+      "repoShapeBucket": "medium",
+      "budgetMs": 15000
+    },
+    {
+      "schemaVersion": 1,
+      "canonicalCommand": ["opcore", "graph", "serve"],
+      "scope": "warm",
+      "repoShapeBucket": "medium",
+      "budgetMs": 10000
+    },
+    {
+      "schemaVersion": 1,
+      "canonicalCommand": ["opcore", "graph", "serve", "ping"],
+      "scope": "cold",
+      "repoShapeBucket": "small",
+      "budgetMs": 250,
+      "phaseBudgets": [{ "phase": "serve_ping", "budgetMs": 250 }]
+    },
+    {
+      "schemaVersion": 1,
+      "canonicalCommand": ["opcore", "graph", "serve", "ping"],
+      "scope": "warm",
+      "repoShapeBucket": "small",
+      "budgetMs": 150,
+      "phaseBudgets": [{ "phase": "serve_ping", "budgetMs": 150 }]
+    },
+    {
+      "schemaVersion": 1,
+      "canonicalCommand": ["opcore", "graph", "serve", "status"],
+      "scope": "cold",
+      "repoShapeBucket": "small",
+      "budgetMs": 350,
+      "phaseBudgets": [{ "phase": "serve_status", "budgetMs": 350 }]
+    },
+    {
+      "schemaVersion": 1,
+      "canonicalCommand": ["opcore", "graph", "serve", "status"],
+      "scope": "warm",
+      "repoShapeBucket": "small",
+      "budgetMs": 250,
+      "phaseBudgets": [{ "phase": "serve_status", "budgetMs": 250 }]
+    },
+    {
+      "schemaVersion": 1,
+      "canonicalCommand": ["opcore", "graph", "serve", "query"],
+      "scope": "cold",
+      "repoShapeBucket": "small",
+      "budgetMs": 900,
+      "phaseBudgets": [{ "phase": "serve_query", "budgetMs": 900 }]
+    },
+    {
+      "schemaVersion": 1,
+      "canonicalCommand": ["opcore", "graph", "serve", "query"],
+      "scope": "warm",
+      "repoShapeBucket": "small",
+      "budgetMs": 600,
+      "phaseBudgets": [{ "phase": "serve_query", "budgetMs": 600 }]
+    },
+    {
+      "schemaVersion": 1,
+      "canonicalCommand": ["opcore", "graph", "serve", "search"],
+      "scope": "cold",
+      "repoShapeBucket": "small",
+      "budgetMs": 1000,
+      "phaseBudgets": [{ "phase": "serve_search", "budgetMs": 1000 }]
+    },
+    {
+      "schemaVersion": 1,
+      "canonicalCommand": ["opcore", "graph", "serve", "search"],
+      "scope": "warm",
+      "repoShapeBucket": "small",
+      "budgetMs": 700,
+      "phaseBudgets": [{ "phase": "serve_search", "budgetMs": 700 }]
+    },
+    {
+      "schemaVersion": 1,
+      "canonicalCommand": ["opcore", "graph", "serve", "shutdown"],
+      "scope": "cold",
+      "repoShapeBucket": "small",
+      "budgetMs": 250,
+      "phaseBudgets": [{ "phase": "serve_shutdown", "budgetMs": 250 }]
+    },
+    {
+      "schemaVersion": 1,
+      "canonicalCommand": ["opcore", "graph", "serve", "shutdown"],
+      "scope": "warm",
+      "repoShapeBucket": "small",
+      "budgetMs": 150,
+      "phaseBudgets": [{ "phase": "serve_shutdown", "budgetMs": 150 }]
+    },
+    {
+      "schemaVersion": 1,
+      "canonicalCommand": ["opcore", "graph", "serve", "ping"],
+      "scope": "cold",
+      "repoShapeBucket": "medium",
+      "budgetMs": 500,
+      "phaseBudgets": [{ "phase": "serve_ping", "budgetMs": 500 }]
+    },
+    {
+      "schemaVersion": 1,
+      "canonicalCommand": ["opcore", "graph", "serve", "ping"],
+      "scope": "warm",
+      "repoShapeBucket": "medium",
+      "budgetMs": 300,
+      "phaseBudgets": [{ "phase": "serve_ping", "budgetMs": 300 }]
+    },
+    {
+      "schemaVersion": 1,
+      "canonicalCommand": ["opcore", "graph", "serve", "status"],
+      "scope": "cold",
+      "repoShapeBucket": "medium",
+      "budgetMs": 700,
+      "phaseBudgets": [{ "phase": "serve_status", "budgetMs": 700 }]
+    },
+    {
+      "schemaVersion": 1,
+      "canonicalCommand": ["opcore", "graph", "serve", "status"],
+      "scope": "warm",
+      "repoShapeBucket": "medium",
+      "budgetMs": 500,
+      "phaseBudgets": [{ "phase": "serve_status", "budgetMs": 500 }]
+    },
+    {
+      "schemaVersion": 1,
+      "canonicalCommand": ["opcore", "graph", "serve", "query"],
+      "scope": "cold",
+      "repoShapeBucket": "medium",
+      "budgetMs": 2000,
+      "phaseBudgets": [{ "phase": "serve_query", "budgetMs": 2000 }]
+    },
+    {
+      "schemaVersion": 1,
+      "canonicalCommand": ["opcore", "graph", "serve", "query"],
+      "scope": "warm",
+      "repoShapeBucket": "medium",
+      "budgetMs": 1200,
+      "phaseBudgets": [{ "phase": "serve_query", "budgetMs": 1200 }]
+    },
+    {
+      "schemaVersion": 1,
+      "canonicalCommand": ["opcore", "graph", "serve", "search"],
+      "scope": "cold",
+      "repoShapeBucket": "medium",
+      "budgetMs": 2200,
+      "phaseBudgets": [{ "phase": "serve_search", "budgetMs": 2200 }]
+    },
+    {
+      "schemaVersion": 1,
+      "canonicalCommand": ["opcore", "graph", "serve", "search"],
+      "scope": "warm",
+      "repoShapeBucket": "medium",
+      "budgetMs": 1400,
+      "phaseBudgets": [{ "phase": "serve_search", "budgetMs": 1400 }]
+    },
+    {
+      "schemaVersion": 1,
+      "canonicalCommand": ["opcore", "graph", "serve", "shutdown"],
+      "scope": "cold",
+      "repoShapeBucket": "medium",
+      "budgetMs": 500,
+      "phaseBudgets": [{ "phase": "serve_shutdown", "budgetMs": 500 }]
+    },
+    {
+      "schemaVersion": 1,
+      "canonicalCommand": ["opcore", "graph", "serve", "shutdown"],
+      "scope": "warm",
+      "repoShapeBucket": "medium",
+      "budgetMs": 300,
+      "phaseBudgets": [{ "phase": "serve_shutdown", "budgetMs": 300 }]
+    },
+    {
+      "schemaVersion": 1,
+      "canonicalCommand": ["opcore", "inspect"],
+      "scope": "cold",
+      "repoShapeBucket": "small",
+      "budgetMs": 3000
+    },
+    {
+      "schemaVersion": 1,
+      "canonicalCommand": ["opcore", "inspect"],
+      "scope": "warm",
+      "repoShapeBucket": "small",
+      "budgetMs": 1800
+    },
+    {
+      "schemaVersion": 1,
+      "canonicalCommand": ["opcore", "inspect"],
+      "scope": "cold",
+      "repoShapeBucket": "medium",
+      "budgetMs": 8000
+    },
+    {
+      "schemaVersion": 1,
+      "canonicalCommand": ["opcore", "inspect"],
+      "scope": "warm",
+      "repoShapeBucket": "medium",
+      "budgetMs": 5000
+    },
+    {
+      "schemaVersion": 1,
       "canonicalCommand": ["opcore-asp-provider", "check", "evaluate"],
       "scope": "cold",
       "repoShapeBucket": "small",

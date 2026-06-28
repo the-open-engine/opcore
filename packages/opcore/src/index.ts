@@ -2,6 +2,7 @@
 import { realpathSync } from "node:fs";
 import { isServeTransportArgv, runGraphServeCli } from "@the-open-engine/opcore-graph";
 import { runOpcoreCli } from "./router.js";
+import { createGraphServeTelemetry } from "./serve-telemetry.js";
 
 declare const process: {
   argv: string[];
@@ -40,7 +41,8 @@ async function runDirectOpcoreCli(): Promise<number> {
   if (argv[0] === "graph" && isServeTransportArgv(argv.slice(1))) {
     return runGraphServeCli({
       argv: argv.slice(1),
-      bin: "opcore"
+      bin: "opcore",
+      telemetry: createGraphServeTelemetry()
     });
   }
   return runOpcoreCli({

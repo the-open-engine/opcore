@@ -2,7 +2,7 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { spawn, spawnSync } from "node:child_process";
 import { EventEmitter } from "node:events";
-import { cpSync, mkdtempSync, rmSync } from "node:fs";
+import { cpSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -31,6 +31,32 @@ describe("graph serve stdio transport", () => {
       assert.deepEqual(
         repeated[3].search.results.map((entry) => entry.nodeId),
         canonical[3].search.results.map((entry) => entry.nodeId)
+      );
+    });
+  });
+
+  it("writes one latency telemetry record per forwarded JSONL frame", async () => {
+    await withBuiltFixture(async (fixtureRoot) => {
+      const requests = jsonlRequests(fixtureRoot);
+      const responses = await serve(latticeBin, ["graph", "serve", "--repo", fixtureRoot], requests);
+      assertJsonlResponses(responses);
+
+      const records = readLatencyRecords(fixtureRoot);
+      assert.equal(records.length, requests.length);
+      assert.deepEqual(records.map((record) => record.canonicalCommand), [
+        ["opcore", "graph", "serve", "ping"],
+        ["opcore", "graph", "serve", "status"],
+        ["opcore", "graph", "serve", "query"],
+        ["opcore", "graph", "serve", "search"],
+        ["opcore", "graph", "serve", "shutdown"]
+      ]);
+      assert.deepEqual(records.map((record) => record.timing.processState), ["cold", "warm", "warm", "warm", "warm"]);
+      assert.equal(records.every((record) => record.bin === "opcore" && record.owner === "graph"), true);
+      assert.equal(records.every((record) => record.repo.totalFiles > 0), true);
+      assert.equal(records.every((record) => record.timing.durationMs >= 0), true);
+      assert.deepEqual(
+        records.map((record) => record.timing.phases[0]?.phase),
+        ["serve_ping", "serve_status", "serve_query", "serve_search", "serve_shutdown"]
       );
     });
   });
@@ -340,6 +366,11 @@ function run(script, args) {
     );
   }
   return JSON.parse(result.stdout);
+}
+
+function readLatencyRecords(repoRoot) {
+  const text = readFileSync(join(repoRoot, ".opcore/telemetry.jsonl"), "utf8").trim();
+  return text.length === 0 ? [] : text.split(/\r?\n/).map((line) => JSON.parse(line));
 }
 
 function skipGeneratedStore(source) {
