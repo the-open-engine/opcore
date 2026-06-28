@@ -22,6 +22,7 @@ describe("opcore edit validation integration", () => {
       assert.equal(routed.editResult.validation.status, "passed");
       assert.equal(readFileSync(join(repo, "src/a.ts"), "utf8"), "new\n");
       assert.equal(runner.requests.length, 1);
+      assert.equal(runner.requests[0].reportMode, "introduced");
       assert.deepEqual(runner.requests[0].scope, { kind: "files", files: ["src/a.ts"] });
       assert.deepEqual(runner.requests[0].overlays, [
         {

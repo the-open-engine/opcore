@@ -1,4 +1,4 @@
-import type { GraphProviderMode, ValidationRequest, ValidationScope } from "@the-open-engine/opcore-contracts";
+import type { GraphProviderMode, ValidationReportMode, ValidationRequest, ValidationScope } from "@the-open-engine/opcore-contracts";
 import { validateRepoRelativePath } from "@the-open-engine/opcore-contracts";
 
 export type ValidationCommandKind = "check" | "validate";
@@ -13,6 +13,7 @@ export interface ParsedValidationCommandOptions {
   graphMode: GraphProviderMode;
   graphModeOverride?: GraphProviderMode;
   checks?: readonly string[];
+  reportMode?: ValidationReportMode;
   scope?: ValidationScope;
   requestFile?: string;
   timeoutMs?: number;
@@ -38,6 +39,8 @@ interface CommonValidationCommandOptions {
   graphModeFlag: boolean;
   checks?: readonly string[];
   checkFilterFlag: boolean;
+  reportMode?: ValidationReportMode;
+  reportModeFlag: boolean;
   requestFile?: string;
   requestFileFlag: boolean;
   timeoutMs?: number;
@@ -134,7 +137,7 @@ export function parseCheckCommandOptions(args: readonly string[]): ParsedValidat
   if (scope.kind === "files" && scope.files.length === 0) {
     throw new ValidationCommandOptionsError("opcore check files requires at least one file");
   }
-  return {
+  const parsed: ParsedValidationCommandOptions = {
     route: (route ?? scope.kind) as CheckCommandRoute,
     repoRoot: state.repoRoot,
     graphMode: state.graphMode,
@@ -142,6 +145,9 @@ export function parseCheckCommandOptions(args: readonly string[]): ParsedValidat
     checks: state.checks,
     scope
   };
+  if (state.reportMode !== undefined) parsed.reportMode = state.reportMode;
+  else if (parsed.route === "changed") parsed.reportMode = "introduced";
+  return parsed;
 }
 
 export function parseValidateCommandOptions(args: readonly string[]): ParsedValidationCommandOptions {
@@ -182,13 +188,14 @@ export function parseValidateCommandOptions(args: readonly string[]): ParsedVali
       route,
       graphMode: state.graphMode,
       requestFile: state.requestFile,
+      reportMode: state.reportMode ?? "introduced",
       timeoutMs: state.timeoutMs ?? DEFAULT_PRE_WRITE_TIMEOUT_MS
     };
   }
   rejectDisallowedOptions(`opcore validate ${route}`, scopeFlagNames(state));
   rejectDisallowedOptions(`opcore validate ${route}`, timeoutFlagNames(state));
   if (state.requestFile === undefined) throw new ValidationCommandOptionsError("opcore validate requires --request-file");
-  return {
+  const parsed: ParsedValidationCommandOptions = {
     route,
     repoRoot: state.repoRoot,
     graphMode: state.graphMode,
@@ -196,6 +203,8 @@ export function parseValidateCommandOptions(args: readonly string[]): ParsedVali
     checks: state.checks,
     requestFile: state.requestFile
   };
+  if (state.reportMode !== undefined) parsed.reportMode = state.reportMode;
+  return parsed;
 }
 
 function parseCommonOptions(args: readonly string[]): {
@@ -218,6 +227,8 @@ function parseCommonOptions(args: readonly string[]): {
   graphModeFlag: boolean;
   checks?: readonly string[];
   checkFilterFlag: boolean;
+  reportMode?: ValidationReportMode;
+  reportModeFlag: boolean;
   requestFile?: string;
   requestFileFlag: boolean;
   timeoutMs?: number;
@@ -243,6 +254,8 @@ function parseCommonOptions(args: readonly string[]): {
     graphModeFlag: false,
     checks: [] as string[],
     checkFilterFlag: false,
+    reportMode: undefined as ValidationReportMode | undefined,
+    reportModeFlag: false,
     requestFile: undefined as string | undefined,
     requestFileFlag: false,
     timeoutMs: undefined as number | undefined,
@@ -311,6 +324,17 @@ function parseCommonOptions(args: readonly string[]): {
       state.checkFilterFlag = true;
       state.checks.push(...splitPaths(inlineValue(arg, "--checks")));
     }
+    else if (arg === "--introduced") {
+      state.reportModeFlag = true;
+      state.reportMode = "introduced";
+    }
+    else if (arg === "--report-mode") {
+      state.reportModeFlag = true;
+      state.reportMode = reportModeValue(requiredValue(args, ++index, "--report-mode"));
+    } else if (arg.startsWith("--report-mode=")) {
+      state.reportModeFlag = true;
+      state.reportMode = reportModeValue(inlineValue(arg, "--report-mode"));
+    }
     else if (arg === "--request-file") {
       state.requestFileFlag = true;
       state.requestFile = requiredValue(args, ++index, "--request-file");
@@ -340,6 +364,7 @@ function rejectManifestExecutionOptions(command: string, state: CommonValidation
     ...requestFileFlagNames(state),
     ...checkFilterFlagNames(state),
     ...graphModeFlagNames(state),
+    ...reportModeFlagNames(state),
     ...timeoutFlagNames(state)
   ]);
 }
@@ -377,6 +402,10 @@ function checkFilterFlagNames(state: CommonValidationCommandOptions): string[] {
 
 function graphModeFlagNames(state: CommonValidationCommandOptions): string[] {
   return state.graphModeFlag ? ["--graph-mode"] : [];
+}
+
+function reportModeFlagNames(state: CommonValidationCommandOptions): string[] {
+  return state.reportModeFlag ? ["--report-mode"] : [];
 }
 
 function timeoutFlagNames(state: CommonValidationCommandOptions): string[] {
@@ -450,6 +479,11 @@ function positiveIntegerValue(value: string, flag: string): number {
 function graphMode(value: string): GraphProviderMode {
   if (value === "optional" || value === "required") return value;
   throw new ValidationCommandOptionsError(`unsupported validation graph mode: ${value}`);
+}
+
+function reportModeValue(value: string): ValidationReportMode {
+  if (value === "all" || value === "introduced") return value;
+  throw new ValidationCommandOptionsError("--report-mode must be all or introduced");
 }
 
 function splitPaths(value: string): string[] {

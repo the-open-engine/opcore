@@ -30,7 +30,7 @@ describe("latency budget gate", () => {
     assert.equal(report.checkedRecordCount, 7);
     assert.equal(report.skippedCount, 0);
     assert.equal(report.results.some((entry) => entry.observed.phase === "total"), true);
-    assertPassEvidence(report, "opcore check changed --base HEAD --checks typescript.syntax", "validation", true);
+    assertPassEvidence(report, "opcore check changed --report-mode introduced --base HEAD --checks typescript.syntax", "validation", true);
     assertPassEvidence(report, "opcore graph serve", "total");
     assertPassEvidence(report, "opcore graph serve query", "serve_query");
     assertPassEvidence(report, "opcore graph serve search", "serve_search");
@@ -43,7 +43,8 @@ describe("latency budget gate", () => {
     const report = JSON.parse(result.stdout);
     const over = report.over.find(
       (entry) =>
-        entry.evidence.canonicalCommand.join(" ") === "opcore check changed --base HEAD --checks typescript.syntax" &&
+        entry.evidence.canonicalCommand.join(" ") ===
+          "opcore check changed --report-mode introduced --base HEAD --checks typescript.syntax" &&
         entry.evidence.phase === "validation" &&
         entry.evidence.repoShapeBucket === "small"
     );

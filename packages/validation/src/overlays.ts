@@ -69,6 +69,7 @@ export interface CreateValidationFileViewArgs {
   request: ValidationRequest;
   scope: ResolvedValidationScope;
   workspace: ValidationWorkspace;
+  defaultReadState?: ValidationFileReadState;
 }
 
 export interface ValidationFileView {
@@ -125,11 +126,13 @@ export async function createValidationFileView(args: CreateValidationFileViewArg
   const overlays = normalizeValidationOverlayEntries(request.overlays);
   const overlayByPath = new Map(overlays.map((overlay) => [overlay.path, overlay]));
   const scopeFiles = uniqueSorted(args.scope.files.map(normalizeValidationFileViewPath));
+  const defaultReadState = args.defaultReadState ?? "after";
 
   const readBefore = (path: string): Promise<ValidationFileReadResult> =>
     readWorkspacePath(args.workspace, args.scope, normalizeValidationFileViewPath(path), "before");
   const readAfter = async (path: string): Promise<ValidationFileReadResult> => {
     const normalizedPath = normalizeValidationFileViewPath(path);
+    if (defaultReadState === "before") return readWorkspacePath(args.workspace, args.scope, normalizedPath, "before");
     const overlay = overlayByPath.get(normalizedPath);
     if (overlay?.action === "write") return overlayWriteResult(overlay);
     if (overlay?.action === "delete") return overlayDeleteResult(overlay);
@@ -148,10 +151,13 @@ export async function createValidationFileView(args: CreateValidationFileViewArg
   return {
     overlays,
     scopeFiles,
-    readFile: (path, options = {}) => (options.state === "before" ? readBefore(path) : readAfter(path)),
+    readFile: (path, options = {}) =>
+      options.state === "before" || (options.state === undefined && defaultReadState === "before") ? readBefore(path) : readAfter(path),
     readBefore,
     readAfter,
-    exists: async (path, options = {}) => (await (options.state === "before" ? readBefore(path) : readAfter(path))).status === "found",
+    exists: async (path, options = {}) =>
+      (await (options.state === "before" || (options.state === undefined && defaultReadState === "before") ? readBefore(path) : readAfter(path)))
+        .status === "found",
     hasOverlay: (path) => overlayByPath.has(normalizeValidationFileViewPath(path)),
     overlayFor: (path) => overlayByPath.get(normalizeValidationFileViewPath(path))
   };
@@ -185,7 +191,7 @@ async function readWorkspacePath(
   path: string,
   state: ValidationFileReadState
 ): Promise<ValidationFileReadResult> {
-  const result = await workspace.readFile(path, { scope });
+  const result = await workspace.readFile(path, { scope, state });
   const normalized = normalizeWorkspaceReadFileResult(path, result);
   if (normalized.status === "missing") {
     return {

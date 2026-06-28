@@ -294,7 +294,17 @@ describe("opcore public facade", () => {
         runOpcore(["check", "--changed", "--checks", "typescript.syntax", "--json"], fixtureRoot, 0).stdout
       );
 
-      assert.deepEqual(result.canonicalCommand, ["opcore", "check", "changed", "--base", "HEAD", "--checks", "typescript.syntax"]);
+      assert.deepEqual(result.canonicalCommand, [
+        "opcore",
+        "check",
+        "changed",
+        "--report-mode",
+        "introduced",
+        "--base",
+        "HEAD",
+        "--checks",
+        "typescript.syntax"
+      ]);
       assert.equal(result.owner, "validation");
       assert.equal(result.validationResult.ok, true);
       assert.equal(result.validationResult.status, "passed");
@@ -316,7 +326,17 @@ describe("opcore public facade", () => {
         runOpcore(["check", "--changed", "--base", "HEAD", "--checks", "typescript.syntax", "--json"], fixtureRoot, 0).stdout
       );
 
-      assert.deepEqual(result.canonicalCommand, ["opcore", "check", "changed", "--base", "HEAD", "--checks", "typescript.syntax"]);
+      assert.deepEqual(result.canonicalCommand, [
+        "opcore",
+        "check",
+        "changed",
+        "--report-mode",
+        "introduced",
+        "--base",
+        "HEAD",
+        "--checks",
+        "typescript.syntax"
+      ]);
       assert.equal(result.owner, "validation");
       assert.equal(result.validationResult.ok, true);
       assert.equal(result.validationResult.status, "passed");
@@ -382,7 +402,8 @@ describe("opcore public facade", () => {
       const measure = await routeOpcoreCommand(["measure", "--repo", temp, "--json"]);
       const finding = measure.opcoreMeasure.latency.findings.find(
         (entry) =>
-          entry.canonicalCommand.join(" ") === "opcore check changed --base HEAD --checks typescript.syntax" &&
+          entry.canonicalCommand.join(" ") ===
+            "opcore check changed --report-mode introduced --base HEAD --checks typescript.syntax" &&
           entry.repoShapeBucket === "small" &&
           entry.processState === "warm" &&
           entry.dominantPhase.phase === "validation"
@@ -397,7 +418,7 @@ describe("opcore public facade", () => {
       const human = await routeOpcoreCommand(["measure", "--repo", temp]);
       assert.equal(human.status, "ok");
       assert.match(human.message, /Latency:/);
-      assert.match(human.message, /opcore check changed --base HEAD --checks typescript\.syntax/);
+      assert.match(human.message, /opcore check changed --report-mode introduced --base HEAD --checks typescript\.syntax/);
       assert.match(human.message, /over=100ms/);
       assert.match(human.message, /previous=\+150ms/);
       assert.match(human.message, /baseline=\+200ms/);
@@ -1576,7 +1597,7 @@ function measureLatencyRecord(recordedAt, totalMs, validationMs) {
     schemaVersion: 1,
     recordedAt,
     bin: "opcore",
-    canonicalCommand: ["opcore", "check", "changed", "--base", "HEAD", "--checks", "typescript.syntax"],
+    canonicalCommand: ["opcore", "check", "changed", "--report-mode", "introduced", "--base", "HEAD", "--checks", "typescript.syntax"],
     owner: "validation",
     status: "ok",
     exitCode: 0,

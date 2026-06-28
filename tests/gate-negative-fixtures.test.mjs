@@ -714,7 +714,11 @@ function cutoverCommandExpectations() {
   return [
     ["opcore-scan", ["opcore", "scan"], "runtime"],
     ["opcore-status", ["opcore", "status"], "runtime"],
-    ["opcore-check-changed", ["opcore", "check", "changed", "--base", "HEAD", "--checks", "typescript.syntax"], "validation"],
+    [
+      "opcore-check-changed",
+      ["opcore", "check", "changed", "--report-mode", "introduced", "--base", "HEAD", "--checks", "typescript.syntax"],
+      "validation"
+    ],
     ["opcore-measure", ["opcore", "measure"], "runtime"],
     ["opcore-try", ["opcore", "try"], "runtime"],
     ["status", ["opcore", "status"], "runtime"],
@@ -835,7 +839,17 @@ function cutoverPythonCommandExpectations() {
     ["opcore-python-status", ["opcore", "status"], "runtime", ["python-coverage", "python-validation"]],
     [
       "opcore-python-check-changed",
-      ["opcore", "check", "changed", "--base", "HEAD", "--checks", "python.syntax,python.source-hygiene"],
+      [
+        "opcore",
+        "check",
+        "changed",
+        "--report-mode",
+        "introduced",
+        "--base",
+        "HEAD",
+        "--checks",
+        "python.syntax,python.source-hygiene"
+      ],
       "validation",
       ["python-syntax", "python-source-hygiene"]
     ],

@@ -233,7 +233,17 @@ function pythonCutoverCommand(id) {
   return {
     "opcore-python-scan": ["opcore", "scan"],
     "opcore-python-status": ["opcore", "status"],
-    "opcore-python-check-changed": ["opcore", "check", "changed", "--base", "HEAD", "--checks", "python.syntax,python.source-hygiene"],
+    "opcore-python-check-changed": [
+      "opcore",
+      "check",
+      "changed",
+      "--report-mode",
+      "introduced",
+      "--base",
+      "HEAD",
+      "--checks",
+      "python.syntax,python.source-hygiene"
+    ],
     "opcore-python-measure": ["opcore", "measure"],
     "graph-python-build": ["opcore", "graph", "build"],
     "graph-python-status": ["opcore", "graph", "status"],

@@ -40,7 +40,7 @@
     },
     {
       "schemaVersion": 1,
-      "canonicalCommand": ["opcore", "check", "changed", "--base", "HEAD", "--checks", "typescript.syntax"],
+      "canonicalCommand": ["opcore", "check", "changed", "--report-mode", "introduced", "--base", "HEAD", "--checks", "typescript.syntax"],
       "scope": "cold",
       "repoShapeBucket": "small",
       "budgetMs": 1800,
@@ -51,7 +51,7 @@
     },
     {
       "schemaVersion": 1,
-      "canonicalCommand": ["opcore", "check", "changed", "--base", "HEAD", "--checks", "typescript.syntax"],
+      "canonicalCommand": ["opcore", "check", "changed", "--report-mode", "introduced", "--base", "HEAD", "--checks", "typescript.syntax"],
       "scope": "warm",
       "repoShapeBucket": "small",
       "budgetMs": 1200,
@@ -62,7 +62,7 @@
     },
     {
       "schemaVersion": 1,
-      "canonicalCommand": ["opcore", "check", "changed", "--base", "HEAD", "--checks", "typescript.syntax"],
+      "canonicalCommand": ["opcore", "check", "changed", "--report-mode", "introduced", "--base", "HEAD", "--checks", "typescript.syntax"],
       "scope": "cold",
       "repoShapeBucket": "medium",
       "budgetMs": 6000,
@@ -73,7 +73,7 @@
     },
     {
       "schemaVersion": 1,
-      "canonicalCommand": ["opcore", "check", "changed", "--base", "HEAD", "--checks", "typescript.syntax"],
+      "canonicalCommand": ["opcore", "check", "changed", "--report-mode", "introduced", "--base", "HEAD", "--checks", "typescript.syntax"],
       "scope": "warm",
       "repoShapeBucket": "medium",
       "budgetMs": 4000,

@@ -149,6 +149,9 @@ export const validationFailureCategories = [
 ] as const;
 export type ValidationFailureCategory = (typeof validationFailureCategories)[number];
 
+export const validationReportModes = ["all", "introduced"] as const;
+export type ValidationReportMode = (typeof validationReportModes)[number];
+
 export const validationCheckRunStatuses = [
   "passed",
   "policy_failure",
@@ -992,6 +995,7 @@ export interface ValidationRequest {
   graph: ValidationGraphConfig;
   overlays: readonly HypotheticalOverlay[];
   checks?: readonly string[];
+  reportMode?: ValidationReportMode;
 }
 
 export interface ValidationDiagnostic {
@@ -1577,7 +1581,7 @@ const releaseCutoverCommandExpectations = {
   "opcore-scan": { canonicalCommand: ["opcore", "scan"], owner: "runtime", status: "ok", exitCode: 0, bin: "opcore" },
   "opcore-status": { canonicalCommand: ["opcore", "status"], owner: "runtime", status: "ok", exitCode: 0, bin: "opcore" },
   "opcore-check-changed": {
-    canonicalCommand: ["opcore", "check", "changed", "--base", "HEAD", "--checks", "typescript.syntax"],
+    canonicalCommand: ["opcore", "check", "changed", "--report-mode", "introduced", "--base", "HEAD", "--checks", "typescript.syntax"],
     owner: "validation",
     status: "ok",
     exitCode: 0,
@@ -1801,7 +1805,17 @@ const releaseCutoverPythonCommandExpectations = {
   "opcore-python-scan": { canonicalCommand: ["opcore", "scan"], owner: "runtime", status: "ok", exitCode: 0, bin: "opcore" },
   "opcore-python-status": { canonicalCommand: ["opcore", "status"], owner: "runtime", status: "ok", exitCode: 0, bin: "opcore" },
   "opcore-python-check-changed": {
-    canonicalCommand: ["opcore", "check", "changed", "--base", "HEAD", "--checks", "python.syntax,python.source-hygiene"],
+    canonicalCommand: [
+      "opcore",
+      "check",
+      "changed",
+      "--report-mode",
+      "introduced",
+      "--base",
+      "HEAD",
+      "--checks",
+      "python.syntax,python.source-hygiene"
+    ],
     owner: "validation",
     status: "ok",
     exitCode: 0,
@@ -5773,6 +5787,9 @@ export function validateValidationRequestPayload(request: ValidationRequest): Va
   validateValidationGraphConfig(request.graph);
   validateHypotheticalOverlays(request.overlays);
   if (request.checks !== undefined) validateValidationChecks(request.checks, "Validation request checks");
+  if (request.reportMode !== undefined && !includesString(validationReportModes, request.reportMode)) {
+    throw new Error(`Unknown validation request reportMode: ${String(request.reportMode)}`);
+  }
   return request;
 }
 

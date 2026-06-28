@@ -39,10 +39,30 @@ describe("validation contract helpers", () => {
       }
     );
     assert.equal(normalized.graph.provider, defaultValidationGraphProvider);
+    assert.equal(normalized.reportMode, "all");
     assert.deepEqual(normalized.scope.files, ["src/index.ts"]);
     assert.equal(normalized.overlays[0].path, "src/index.ts");
     assert.deepEqual(normalized.checks, ["types", "lint"]);
     assert.equal(validateValidationRequestContract(normalized), normalized);
+  });
+
+  it("preserves explicit introduced report mode during normalization", () => {
+    const normalized = normalizeValidationRequest({
+      repo: {
+        repoId: "opcore"
+      },
+      scope: {
+        kind: "files",
+        files: ["src/index.ts"]
+      },
+      graph: {
+        mode: "optional"
+      },
+      overlays: [],
+      reportMode: "introduced"
+    });
+
+    assert.equal(normalized.reportMode, "introduced");
   });
 
   it("rejects malformed request contracts", () => {

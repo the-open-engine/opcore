@@ -3,6 +3,7 @@ import type {
   GraphProviderStatus,
   HypotheticalOverlay,
   RepoIdentity,
+  ValidationReportMode,
   ValidationRequest,
   ValidationScope
 } from "@the-open-engine/opcore-contracts";
@@ -13,6 +14,7 @@ export const defaultValidationGraphProvider = "opcore-graph" as const;
 export interface NormalizeValidationRequestOptions {
   provider?: string;
   checks?: readonly string[];
+  reportMode?: ValidationReportMode;
 }
 
 export function missingGraphStatus(
@@ -63,7 +65,8 @@ export function normalizeValidationRequest(
       ...request.graph,
       provider: request.graph.provider ?? options.provider ?? defaultValidationGraphProvider
     },
-    overlays: request.overlays.map(normalizeHypotheticalOverlay)
+    overlays: request.overlays.map(normalizeHypotheticalOverlay),
+    reportMode: request.reportMode ?? options.reportMode ?? "all"
   };
   if (checks !== undefined) normalized.checks = normalizeChecks(checks);
   return validateValidationRequestPayload(normalized);

@@ -24,6 +24,7 @@ describe("edit validation request contract boundary", () => {
     assert.deepEqual(request.repo, { repoId: "current-worktree" });
     assert.deepEqual(request.scope, { kind: "files", files: ["src/index.ts"] });
     assert.deepEqual(request.graph, { mode: "required", provider: "opcore-graph" });
+    assert.equal(request.reportMode, "introduced");
     assert.deepEqual(
       request.overlays.map((overlay) => overlay.path),
       ["src/index.ts", "src/remove.ts"]
@@ -119,6 +120,7 @@ describe("edit validation request contract boundary", () => {
     assert.equal(request.requestId, "edit-validation-1");
     assert.deepEqual(request.repo, { repoId: "current-worktree" });
     assert.deepEqual(request.graph, { mode: "optional", provider: "custom-graph" });
+    assert.equal(request.reportMode, "introduced");
     assert.deepEqual(request.checks, ["typescript.syntax", "typescript.types"]);
     assert.deepEqual(request.scope.files, [
       "src/create.ts",
@@ -204,6 +206,7 @@ describe("edit validation request contract boundary", () => {
 
     assert.deepEqual(request.repo, { repoRoot: "/repo" });
     assert.deepEqual(request.scope, { kind: "repo" });
+    assert.equal(request.reportMode, "introduced");
     assert.deepEqual(request.overlays, [
       {
         path: "src/replace.ts",

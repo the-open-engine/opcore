@@ -747,6 +747,15 @@ describe("Opcore shared contracts", () => {
     );
   });
 
+  it("validates validation reportMode values", () => {
+    assert.equal(validateValidationRequestPayload(validValidationRequest({ reportMode: "all" })).reportMode, "all");
+    assert.equal(validateValidationRequestPayload(validValidationRequest({ reportMode: "introduced" })).reportMode, "introduced");
+    assert.throws(
+      () => validateValidationRequestPayload(validValidationRequest({ reportMode: "new-only" })),
+      /reportMode/
+    );
+  });
+
   it("validates validation result statuses, failures, and refusals", () => {
     assert.equal(validateValidationResultPayload(validValidationResult({ status: "passed" })).ok, true);
     assert.throws(
@@ -4669,7 +4678,11 @@ function validReleaseCutoverReceipt() {
   const commandReceipts = [
     ["opcore-scan", ["opcore", "scan"], "runtime"],
     ["opcore-status", ["opcore", "status"], "runtime"],
-    ["opcore-check-changed", ["opcore", "check", "changed", "--base", "HEAD", "--checks", "typescript.syntax"], "validation"],
+    [
+      "opcore-check-changed",
+      ["opcore", "check", "changed", "--report-mode", "introduced", "--base", "HEAD", "--checks", "typescript.syntax"],
+      "validation"
+    ],
     ["opcore-measure", ["opcore", "measure"], "runtime"],
     ["opcore-try", ["opcore", "try"], "runtime"],
     ["status", ["opcore", "status"], "runtime"],
@@ -4789,7 +4802,21 @@ function validReleaseCutoverReceipt() {
   const pythonCommandReceipts = [
     ["opcore-python-scan", ["opcore", "scan"], "runtime"],
     ["opcore-python-status", ["opcore", "status"], "runtime"],
-    ["opcore-python-check-changed", ["opcore", "check", "changed", "--base", "HEAD", "--checks", "python.syntax,python.source-hygiene"], "validation"],
+    [
+      "opcore-python-check-changed",
+      [
+        "opcore",
+        "check",
+        "changed",
+        "--report-mode",
+        "introduced",
+        "--base",
+        "HEAD",
+        "--checks",
+        "python.syntax,python.source-hygiene"
+      ],
+      "validation"
+    ],
     ["opcore-python-measure", ["opcore", "measure"], "runtime"],
     ["graph-python-build", ["opcore", "graph", "build"], "graph"],
     ["graph-python-status", ["opcore", "graph", "status"], "graph"],
