@@ -35,12 +35,16 @@ export function createUnusedDepsCheck(options: { env?: Record<string, string | u
       }
       const materialized = await materializeRustWorkspace(context, { env: options.env });
       try {
-        const metadata = loadCargoMetadata(materialized.root, options);
+        const metadata = loadCargoMetadata(materialized.root, {
+          ...options,
+          cargoTargetCacheKey: materialized.cargoTargetCacheKey
+        });
         if (!metadata.ok) return metadataFailureResult(metadata);
         const packageScope = resolveCargoPackageScope(metadata.metadata, context.scope);
         if (!packageScope.ok) return metadataFailureResult(packageScope);
         const result = runTool("cargo", unusedDepsArgs(packageScope.member, options), {
           cwd: materialized.root,
+          cargoTargetCacheKey: materialized.cargoTargetCacheKey,
           env: options.env,
           timeoutMs: options.timeoutMs,
           allowedExitCodes: [0, 1, 101]
