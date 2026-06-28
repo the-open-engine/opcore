@@ -184,6 +184,74 @@ describe("validation runner", () => {
     assert.equal(warning.ok, true);
   });
 
+  it("stops running checks after the first policy failure when fail-fast is enabled", async () => {
+    const observed = [];
+    const result = await createValidationRunner({
+      workspace: testWorkspace(),
+      failFast: true,
+      checks: [
+        check("types", {
+          run: () => {
+            observed.push("types");
+            return {
+              diagnostics: [
+                {
+                  category: "types",
+                  severity: "error",
+                  message: "type mismatch",
+                  path: "src/index.ts"
+                }
+              ]
+            };
+          }
+        }),
+        check("lint", {
+          run: () => {
+            observed.push("lint");
+            return { diagnostics: [] };
+          }
+        })
+      ]
+    }).runValidation(request({ checks: ["types", "lint"] }));
+
+    assert.equal(result.status, "policy_failure");
+    assert.deepEqual(observed, ["types"]);
+    assert.deepEqual(
+      result.manifest.runs.map((run) => run.checkId),
+      ["types"]
+    );
+  });
+
+  it("streams each completed check result in order", async () => {
+    const events = [];
+    const result = await createValidationRunner({
+      workspace: testWorkspace(),
+      onCheckComplete: (event) => events.push(event),
+      checks: [
+        check("types", {
+          diagnostics: [
+            {
+              category: "types",
+              severity: "warning",
+              message: "warning only",
+              path: "src/index.ts"
+            }
+          ]
+        }),
+        check("lint")
+      ]
+    }).runValidation(request({ checks: ["types", "lint"] }));
+
+    assert.equal(result.status, "passed");
+    assert.deepEqual(
+      events.map((event) => [event.kind, event.checkId, event.status, event.diagnostics.length]),
+      [
+        ["validation.check", "types", "passed", 1],
+        ["validation.check", "lint", "passed", 0]
+      ]
+    );
+  });
+
   it("reports only diagnostics introduced by overlays in introduced report mode", async () => {
     const result = await runner([
       check("types", {
@@ -229,6 +297,50 @@ describe("validation runner", () => {
       ["TS_INTRODUCED"]
     );
     assert.equal(result.manifest.runs[0].diagnosticCount, 1);
+  });
+
+  it("fail-fast in introduced report mode stops only after an introduced policy failure", async () => {
+    const observed = [];
+    const events = [];
+    const result = await createValidationRunner({
+      workspace: testWorkspace(),
+      failFast: true,
+      onCheckComplete: (event) => events.push(event),
+      checks: [
+        introducedAwareCheck("existing", observed),
+        introducedAwareCheck("introduced", observed),
+        introducedAwareCheck("after-failure", observed)
+      ]
+    }).runValidation(
+      request({
+        checks: ["existing", "introduced", "after-failure"],
+        reportMode: "introduced",
+        overlays: [
+          {
+            path: "src/index.ts",
+            action: "write",
+            content: "export const value = 'introduced';"
+          }
+        ]
+      })
+    );
+
+    assert.equal(result.status, "policy_failure");
+    assert.deepEqual(observed, ["existing:before", "existing:after", "introduced:before", "introduced:after"]);
+    assert.deepEqual(
+      result.manifest.runs.map((run) => [run.checkId, run.status, run.diagnosticCount]),
+      [
+        ["existing", "passed", 0],
+        ["introduced", "policy_failure", 1]
+      ]
+    );
+    assert.deepEqual(
+      events.map((event) => [event.checkId, event.status, event.diagnostics.map((diagnostic) => diagnostic.code)]),
+      [
+        ["existing", "passed", []],
+        ["introduced", "policy_failure", ["INTRODUCED"]]
+      ]
+    );
   });
 
   it("strips overlay metadata from the introduced report-mode before pass", async () => {
@@ -653,6 +765,35 @@ function check(id, overrides = {}) {
     }),
     ...overrides
   };
+}
+
+function introducedAwareCheck(id, observed) {
+  return check(id, {
+    run: async (context) => {
+      const hasOverlay = context.fileView.hasOverlay("src/index.ts");
+      observed.push(`${id}:${hasOverlay ? "after" : "before"}`);
+      const after = await context.fileView.readAfter("src/index.ts");
+      const diagnostics = [
+        {
+          category: "types",
+          severity: "error",
+          message: `${id} existing mismatch`,
+          path: "src/index.ts",
+          code: "EXISTING"
+        }
+      ];
+      if (id === "introduced" && after.status === "found" && after.content.includes("introduced")) {
+        diagnostics.push({
+          category: "types",
+          severity: "error",
+          message: "introduced mismatch",
+          path: "src/index.ts",
+          code: "INTRODUCED"
+        });
+      }
+      return { diagnostics };
+    }
+  });
 }
 
 function graphClient(overrides = {}) {

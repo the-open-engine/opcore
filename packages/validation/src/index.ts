@@ -152,6 +152,8 @@ export {
 export {
   createValidationRunner,
   type CreateValidationRunnerOptions,
+  type ValidationCheckCompleteEvent,
+  type ValidationCheckCompleteHandler,
   type ValidationClock,
   type ValidationRunner
 } from "./runner.js";

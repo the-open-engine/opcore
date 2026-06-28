@@ -13,10 +13,15 @@ import {
 import { routeOpcoreInit, type OpcoreInitRuntime } from "./init.js";
 import { routeOpcoreScan } from "./scan.js";
 import { parseOpcoreRepoArgs, resolveRepo, routeOpcoreStatus } from "./status.js";
+import {
+  commandRouterResultForStreamFinalOutput,
+  shouldWriteValidationStreamFinalJson
+} from "./stream-output.js";
 import { createCommandLatencyRecord, timeCommand } from "./timing.js";
 import { routeOpcoreTry } from "./try.js";
 import { routeCommand as routeAdvancedOpcoreCommand } from "./advanced/router.js";
 import { commandRouterResultForJsonOutput } from "./json-output.js";
+import type { OpcoreCheckRuntime } from "./check.js";
 
 declare const process: {
   stdin: {
@@ -33,6 +38,8 @@ declare const process: {
 };
 
 type Writer = (text: string) => void;
+
+interface OpcoreCommandRuntime extends OpcoreInitRuntime, OpcoreCheckRuntime {}
 
 export interface RunOpcoreCliOptions {
   argv: readonly string[];
@@ -51,7 +58,7 @@ const advancedCommandGroups = new Set(["graph", "inspect", "edit", "validate", "
 export async function routeOpcoreCommand(
   argv: readonly string[],
   bin = "opcore",
-  runtime: OpcoreInitRuntime = {}
+  runtime: OpcoreCommandRuntime = {}
 ): Promise<CommandRouterResult> {
   const parsed = parseCommandArgv(argv);
   const normalizedBin = normalizeCommandBin(bin);
@@ -78,9 +85,17 @@ export async function routeOpcoreCommand(
 export async function runOpcoreCli(options: RunOpcoreCliOptions): Promise<number> {
   const stdout = options.stdout ?? ((text: string) => process.stdout.write(text));
   const stderr = options.stderr ?? ((text: string) => process.stderr.write(text));
-  const routed = await routeOpcoreCommand(options.argv, options.bin ?? "opcore", createOpcoreInitRuntime(options, stderr));
-  const output = routed.json ? JSON.stringify(commandRouterResultForJsonOutput(routed)) : routed.message;
-  const write = routed.json || routed.status === "ok" ? stdout : stderr;
+  const routed = await routeOpcoreCommand(options.argv, options.bin ?? "opcore", {
+    ...createOpcoreInitRuntime(options, stderr),
+    streamWriter: stdout
+  });
+  const streamFinalJson = shouldWriteValidationStreamFinalJson(routed, options.argv);
+  const output = routed.json
+    ? JSON.stringify(commandRouterResultForJsonOutput(routed))
+    : streamFinalJson
+      ? JSON.stringify(commandRouterResultForStreamFinalOutput(routed))
+      : routed.message;
+  const write = routed.json || streamFinalJson || routed.status === "ok" ? stdout : stderr;
   write(`${output}\n`);
   return routed.exitCode;
 }
@@ -98,18 +113,18 @@ function createOpcoreInitRuntime(options: RunOpcoreCliOptions, stderr: Writer): 
 async function routeOpcoreParsed(
   argv: readonly string[],
   parsed: ParsedCommandArgv,
-  runtime: OpcoreInitRuntime
+  runtime: OpcoreCommandRuntime
 ): Promise<CommandRouterResult> {
   const [head, ...rest] = parsed.args;
   if (head === undefined) return routeOpcoreScan(argv, rest, parsed.json);
   if (helpArgs.has(head)) return routeHelp(argv, parsed.json);
   if (head.startsWith("--")) return routeOpcoreScan(argv, parsed.args, parsed.json);
   if (head === "status") return routeOpcoreStatus(argv, parsed);
-  if (head === "check") return routeOpcoreCheck(argv, parsed);
+  if (head === "check") return routeOpcoreCheck(argv, parsed, runtime);
   if (head === "init") return routeOpcoreInit(argv, parsed, runtime);
   if (head === "measure") return routeMeasure(argv, parsed);
   if (head === "try") return routeOpcoreTry(argv, parsed);
-  if (advancedCommandGroups.has(head)) return routeAdvancedOpcoreCommand(argv, "opcore");
+  if (advancedCommandGroups.has(head)) return routeAdvancedOpcoreCommand(argv, "opcore", { streamWriter: runtime.streamWriter });
   return createCommandRouterResult({
     bin: "opcore",
     argv,

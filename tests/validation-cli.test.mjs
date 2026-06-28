@@ -10,6 +10,7 @@ import { routeOpcoreCommand } from "../packages/opcore/dist/index.js";
 import { fakeCargoScript, writeFakeRustToolchain } from "./helpers/validation-rust-fixtures.mjs";
 
 const repoRoot = fileURLToPath(new URL("..", import.meta.url));
+const opcoreBin = fileURLToPath(new URL("../packages/opcore/dist/index.js", import.meta.url));
 const latticeBin = fileURLToPath(new URL("../packages/opcore/dist/advanced/index.js", import.meta.url));
 const typeScriptCheckIds = [
   "typescript.syntax",
@@ -96,6 +97,39 @@ describe("validation CLI", () => {
     assert.equal(changed.validationResult.manifest.checks[0], "typescript.syntax");
     assert.equal(tree.validationResult.manifest.checks[0], "typescript.syntax");
     assert.equal(all.validationResult.manifest.checks[0], "typescript.syntax");
+  });
+
+  it("keeps validation stream stdout parseable when --json is omitted", () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-validation-stream-"));
+    try {
+      mkdirSync(join(temp, "src"));
+      writeFileSync(join(temp, "src/index.ts"), "export const value = 1;\n");
+
+      for (const streamFlag of ["--stream", "--ndjson"]) {
+        const result = runRaw([
+          "check",
+          "files",
+          "--files",
+          "src/index.ts",
+          "--repo",
+          temp,
+          "--check",
+          "typescript.syntax",
+          streamFlag
+        ]);
+        assert.equal(result.stderr, "");
+        assert.equal(result.stdout.split(/\r?\n/).includes("opcore validation complete."), false);
+        const records = parseNdjson(result.stdout);
+        assert.equal(records.length >= 2, true, result.stdout);
+        assert.equal(records[0].kind, "validation.check");
+        const finalRecord = records.at(-1);
+        assert.equal(finalRecord.owner, "validation");
+        assert.deepEqual(finalRecord.canonicalCommand.slice(0, 3), ["opcore", "check", "files"]);
+        assert.equal(finalRecord.validationResult.status, "passed");
+      }
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
   });
 
   it("checks committed tree content instead of dirty worktree content", () => {
@@ -391,6 +425,31 @@ function run(args, expectedExitCodes = [0], options = {}) {
   assert.equal(parsed.exitCode, result.status);
   assertCommandTiming(parsed);
   return parsed;
+}
+
+function runRaw(args, expectedExitCodes = [0], options = {}) {
+  const result = spawnSync(process.execPath, [opcoreBin, ...args], {
+    cwd: repoRoot,
+    env: options.env ?? process.env,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"]
+  });
+  if (!expectedExitCodes.includes(result.status)) {
+    throw new Error(
+      [
+        `Command failed: opcore ${args.join(" ")}`,
+        `status: ${result.status}`,
+        `stdout:\n${result.stdout}`,
+        `stderr:\n${result.stderr}`
+      ].join("\n")
+    );
+  }
+  return result;
+}
+
+function parseNdjson(stdout) {
+  const lines = stdout.trim().split(/\r?\n/).filter(Boolean);
+  return lines.map((line) => JSON.parse(line));
 }
 
 function assertCommandTiming(result) {

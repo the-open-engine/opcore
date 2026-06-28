@@ -1,4 +1,5 @@
 import type {
+  CommandAdapter,
   GraphProviderMode,
   ValidationRequest,
   ValidationResult,
@@ -32,8 +33,27 @@ export const defaultValidationChecks = [
   ...createPythonValidationChecks()
 ];
 
-export const checkCommandAdapter = createCheckCommandAdapter(defaultValidationAdapterOptions());
-export const validateCommandAdapter = createValidateCommandAdapter(defaultValidationAdapterOptions());
+export const checkCommandAdapter = createCliCheckCommandAdapter();
+export const validateCommandAdapter = createCliValidateCommandAdapter();
+
+export function createCliCheckCommandAdapter(
+  options: Pick<ValidationCommandAdapterOptions, "streamWriter"> = {}
+): CommandAdapter {
+  return createCheckCommandAdapter({
+    ...defaultValidationAdapterOptions(),
+    ...options
+  });
+}
+
+export function createCliValidateCommandAdapter(
+  options: Pick<ValidationCommandAdapterOptions, "streamWriter"> = {}
+): CommandAdapter {
+  return createValidateCommandAdapter({
+    ...defaultValidationAdapterOptions(),
+    ...options
+  });
+}
+
 export const editValidationRunner = {
   runValidation(request: ValidationRequest): Promise<ValidationResult> {
     return createValidationRunner({

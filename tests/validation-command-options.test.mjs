@@ -95,6 +95,41 @@ describe("validation command timeout options", () => {
 });
 
 describe("check command options", () => {
+  it("parses fail-fast and streaming flags for execution routes", () => {
+    assert.deepEqual(parseCheckCommandOptions(["files", "--files", "src/index.ts", "--fail-fast", "--stream"]), {
+      route: "files",
+      repoRoot: undefined,
+      graphMode: "optional",
+      graphModeOverride: undefined,
+      checks: undefined,
+      failFast: true,
+      stream: true,
+      scope: {
+        kind: "files",
+        files: ["src/index.ts"]
+      }
+    });
+    assert.deepEqual(parseCheckCommandOptions(["changed", "--base", "HEAD", "--ndjson"]), {
+      route: "changed",
+      repoRoot: undefined,
+      graphMode: "optional",
+      graphModeOverride: undefined,
+      checks: undefined,
+      reportMode: "introduced",
+      stream: true,
+      scope: {
+        kind: "changed",
+        baseRef: "HEAD"
+      }
+    });
+  });
+
+  it("rejects fail-fast and streaming flags on manifest routes", () => {
+    assert.throws(() => parseCheckCommandOptions(["manifest", "--fail-fast"]), /manifest.*--fail-fast/);
+    assert.throws(() => parseCheckCommandOptions(["manifest", "--stream"]), /manifest.*--stream/);
+    assert.throws(() => parseValidateCommandOptions(["manifest", "--ndjson"]), /manifest.*--stream\/--ndjson/);
+  });
+
   it("rejects timeout flags", () => {
     assert.throws(() => parseCheckCommandOptions(["files", "--files", "src/index.ts", "--timeout-ms", "1"]), /--timeout-ms/);
   });

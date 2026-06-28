@@ -14,10 +14,16 @@ import { commandRouterManifest } from "./manifest.js";
 import { timeCommand } from "../timing.js";
 import {
   checkCommandAdapter,
+  createCliCheckCommandAdapter,
   createDefaultValidationStatusPayload,
+  createCliValidateCommandAdapter,
   validateCommandAdapter
 } from "./validation-composition.js";
 import { commandRouterResultForJsonOutput } from "../json-output.js";
+import {
+  commandRouterResultForStreamFinalOutput,
+  shouldWriteValidationStreamFinalJson
+} from "../stream-output.js";
 
 declare const process: {
   stdout: {
@@ -38,6 +44,10 @@ export interface RunCliOptions {
   stderr?: Writer;
 }
 
+interface AdvancedCliRuntime {
+  streamWriter?: Writer;
+}
+
 const helpArgs = new Set(["--help", "-h", "help"]);
 const runtimeCommands = new Set<RuntimeCommand>(["status", "doctor"]);
 
@@ -45,7 +55,11 @@ type RuntimeCommand = "status" | "doctor";
 
 validateCommandRouterManifest(commandRouterManifest);
 
-export async function routeCommand(argv: readonly string[], bin: string): Promise<CommandRouterResult> {
+export async function routeCommand(
+  argv: readonly string[],
+  bin: string,
+  runtime: AdvancedCliRuntime = {}
+): Promise<CommandRouterResult> {
   const parsed = parseCommandArgv(argv);
   const normalizedBin = normalizeCommandBin(bin);
   return timeCommand(async () => {
@@ -60,16 +74,18 @@ export async function routeCommand(argv: readonly string[], bin: string): Promis
         message: `Unsupported command entrypoint: ${normalizedBin}`
       });
     }
-    return routeLattice(argv, parsed);
+    return routeLattice(argv, parsed, runtime);
   });
 }
 
 export async function runCli(options: RunCliOptions): Promise<number> {
   const stdout = options.stdout ?? ((text: string) => process.stdout.write(text));
   const stderr = options.stderr ?? ((text: string) => process.stderr.write(text));
-  const routed = await routeCommand(options.argv, options.bin);
-  if (routed.json) {
-    stdout(`${JSON.stringify(commandRouterResultForJsonOutput(routed))}\n`);
+  const routed = await routeCommand(options.argv, options.bin, { streamWriter: stdout });
+  const streamFinalJson = shouldWriteValidationStreamFinalJson(routed, options.argv);
+  if (routed.json || streamFinalJson) {
+    const output = routed.json ? commandRouterResultForJsonOutput(routed) : commandRouterResultForStreamFinalOutput(routed);
+    stdout(`${JSON.stringify(output)}\n`);
   } else if (routed.status === "ok") {
     stdout(`${routed.message}\n`);
   } else {
@@ -78,7 +94,11 @@ export async function runCli(options: RunCliOptions): Promise<number> {
   return routed.exitCode;
 }
 
-async function routeLattice(argv: readonly string[], parsed: ParsedCommandArgv): Promise<CommandRouterResult> {
+async function routeLattice(
+  argv: readonly string[],
+  parsed: ParsedCommandArgv,
+  runtime: AdvancedCliRuntime
+): Promise<CommandRouterResult> {
   const [head, ...rest] = parsed.args;
   if (!head || helpArgs.has(head)) {
     return routeHelp("opcore", argv, parsed.json);
@@ -86,7 +106,7 @@ async function routeLattice(argv: readonly string[], parsed: ParsedCommandArgv):
   if (isRuntimeCommand(head)) {
     return routeRuntimeCommand(argv, parsed, head, rest);
   }
-  const adapter = adapterForGroup(head);
+  const adapter = adapterForGroup(head, runtime);
   if (adapter) {
     return routeCommandAdapter({
       bin: "opcore",
@@ -150,12 +170,20 @@ function isRuntimeCommand(command: string): command is RuntimeCommand {
   return runtimeCommands.has(command as RuntimeCommand);
 }
 
-function adapterForGroup(groupName: string): CommandAdapter | undefined {
+function adapterForGroup(groupName: string, runtime: AdvancedCliRuntime): CommandAdapter | undefined {
   if (groupName === "graph") return graphCommandAdapter;
   if (groupName === "inspect") return inspectCommandAdapter;
   if (groupName === "edit") return editCommandAdapter;
-  if (groupName === "check") return checkCommandAdapter;
-  if (groupName === "validate") return validateCommandAdapter;
+  if (groupName === "check") {
+    return runtime.streamWriter === undefined
+      ? checkCommandAdapter
+      : createCliCheckCommandAdapter({ streamWriter: runtime.streamWriter });
+  }
+  if (groupName === "validate") {
+    return runtime.streamWriter === undefined
+      ? validateCommandAdapter
+      : createCliValidateCommandAdapter({ streamWriter: runtime.streamWriter });
+  }
   return undefined;
 }
 

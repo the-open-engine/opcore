@@ -1,4 +1,5 @@
 import type {
+  CommandAdapter,
   GraphProviderMode,
   ValidationRequest,
   ValidationResult,
@@ -40,7 +41,16 @@ export const opcorePublicValidationRuntimePolicy: ValidationRuntimePolicy = {
   persistentCaches: "disabled"
 };
 
-export const checkCommandAdapter = createCheckCommandAdapter(defaultValidationAdapterOptions());
+export const checkCommandAdapter = createOpcoreCheckCommandAdapter();
+
+export function createOpcoreCheckCommandAdapter(
+  options: Pick<ValidationCommandAdapterOptions, "streamWriter"> = {}
+): CommandAdapter {
+  return createCheckCommandAdapter({
+    ...defaultValidationAdapterOptions(),
+    ...options
+  });
+}
 
 export const opcoreValidationRunner = {
   runValidation(request: ValidationRequest): Promise<ValidationResult> {
