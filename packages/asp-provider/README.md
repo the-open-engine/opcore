@@ -100,8 +100,8 @@ It exposes no apply, decision, authority, assurance, transaction, or gate fields
 
 Assessments report coverage honestly rather than implying clean exhaustive results:
 
-- TypeScript/JavaScript checks (syntax, type, import-graph, dead-code, relevant-tests)
-  are the deep surface.
+- TypeScript/JavaScript checks (syntax, type, import-graph, dead-code,
+  function-metrics, relevant-tests) are the deep surface.
 - Rust checks (source-hygiene, fmt, cargo-check, clippy, rustdoc, import-graph,
   dead-code, unused-deps, file-length, function-metrics) are useful when the
   toolchain is present.

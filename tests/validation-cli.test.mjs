@@ -16,6 +16,7 @@ const typeScriptCheckIds = [
   "typescript.types",
   "typescript.import-graph",
   "typescript.dead-code",
+  "typescript.function-metrics",
   "typescript.relevant-tests"
 ];
 const rustCheckIds = [

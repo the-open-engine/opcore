@@ -14,6 +14,31 @@ const removedLegacyMappingsField = `legacy${"Mappings"}`;
 
 const repoRoot = fileURLToPath(new URL("..", import.meta.url));
 const sourceFixtureRoot = resolve(repoRoot, "packages/fixtures/source-extraction/wave1");
+const requiredDefaultCheckIds = [
+  "typescript.syntax",
+  "typescript.types",
+  "typescript.import-graph",
+  "typescript.dead-code",
+  "typescript.function-metrics",
+  "typescript.relevant-tests",
+  "rust.source-hygiene",
+  "rust.fmt",
+  "rust.cargo-check",
+  "rust.clippy",
+  "rust.rustdoc",
+  "rust.import-graph",
+  "rust.dead-code",
+  "rust.graph-signals",
+  "rust.unused-deps",
+  "rust.file-length",
+  "rust.function-metrics",
+  "python.syntax",
+  "python.source-hygiene",
+  "python.types",
+  "python.import-graph",
+  "python.dead-code",
+  "python.relevant-tests"
+];
 
 describe("Opcore command router", () => {
   it("declares the canonical Opcore command bin with command groups", () => {
@@ -242,20 +267,8 @@ describe("Opcore command router", () => {
     assert.equal(validate.owner, "validation");
     assert.equal(validate.status, "ok");
     assert.equal(validate.exitCode, 0);
-    assert.equal(validate.validationResult.manifest.entries.length, 22);
+    assertDefaultCheckIds(validate.validationResult.manifest.entries.map((entry) => entry.checkId));
     assertCommandTiming(validate);
-    assert.equal(
-      validate.validationResult.manifest.entries.some((entry) => entry.checkId === "rust.cargo-check"),
-      true
-    );
-    assert.equal(
-      validate.validationResult.manifest.entries.some((entry) => entry.checkId === "rust.file-length"),
-      true
-    );
-    assert.equal(
-      validate.validationResult.manifest.entries.some((entry) => entry.checkId === "python.syntax"),
-      true
-    );
   });
 
   it("routes graph-backed inspect commands through top-level inspect ownership", async () => {
@@ -380,10 +393,7 @@ describe("Opcore command router", () => {
     assert.match(graphHelp, /Commands: build, update, watch, status, query, serve, impact, review-context, detect-changes, search/);
     assert.match(graphHelp, /opcore graph <build\|update\|watch\|status\|query\|serve\|impact\|review-context\|detect-changes\|search> --repo \. \[--json]/);
     const status = await routeCommand(["status", "--json"], "opcore");
-    assert.equal(status.validationStatus.adapterRegistry.checkIds.length, 22);
-    assert.equal(status.validationStatus.adapterRegistry.checkIds.includes("rust.cargo-check"), true);
-    assert.equal(status.validationStatus.adapterRegistry.checkIds.includes("rust.file-length"), true);
-    assert.equal(status.validationStatus.adapterRegistry.checkIds.includes("python.syntax"), true);
+    assertDefaultCheckIds(status.validationStatus.adapterRegistry.checkIds);
     assert.match((await routeCommand(["status"], "opcore")).message, /Run `opcore graph build`|Graph is available/);
     assert.match((await routeCommand(["graph", "status"], "opcore")).message, /Run `opcore graph build`|graph-core sidecar available/);
   });
@@ -439,6 +449,14 @@ function assertCommandTiming(result) {
   assert.equal(result.timing.durationMs >= 0, true);
   assert.equal(Array.isArray(result.timing.phases), true);
   assert.equal(["cold", "warm"].includes(result.timing.processState), true);
+}
+
+function assertDefaultCheckIds(checkIds) {
+  assert.equal(new Set(checkIds).size, checkIds.length);
+  assert.equal(checkIds.length >= requiredDefaultCheckIds.length, true);
+  for (const checkId of requiredDefaultCheckIds) {
+    assert.equal(checkIds.includes(checkId), true, `missing validation check ${checkId}`);
+  }
 }
 
 function patchFor(path, before, after) {
