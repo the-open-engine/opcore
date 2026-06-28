@@ -1193,6 +1193,27 @@ describe("Opcore shared contracts", () => {
     );
     assert.equal(
       validateInspectRouteResult({
+        ...validInspectRouteResult(),
+        status: "degraded",
+        providerStatus: providerFailureStatus("stale", "required", "stale_snapshot"),
+        failure: {
+          category: "graph_unavailable",
+          message: "graph stale; language service fallback used"
+        }
+      }).references[0].symbol.name,
+      "GreetingModel"
+    );
+    assert.throws(
+      () =>
+        validateInspectRouteResult({
+          ...validInspectRouteResult(),
+          status: "degraded",
+          providerStatus: providerFailureStatus("stale", "required", "stale_snapshot")
+        }),
+      /requires failure/
+    );
+    assert.equal(
+      validateInspectRouteResult({
         route: "references",
         status: "error",
         target: {

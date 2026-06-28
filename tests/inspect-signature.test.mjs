@@ -1,6 +1,6 @@
 import { it } from "node:test";
 import assert from "node:assert/strict";
-import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -83,15 +83,26 @@ it("uses graph node id to disambiguate same-name signature targets", async () =>
 
 it("returns typed failures for unavailable graph, stale graph, ambiguity, missing symbols, unsupported languages, malformed targets, and unbacked declarations", async () => {
   await withFixtureCopy(async (fixtureRoot) => {
-    await assertUnavailableGraphFailure(fixtureRoot);
+    await assertUnsupportedLanguageFailure(fixtureRoot);
+    await assertUnavailableGraphFallback(fixtureRoot);
     await buildGraph(fixtureRoot);
     await assertAmbiguousFailure(fixtureRoot);
     await assertMissingSymbolFailure(fixtureRoot);
-    await assertUnsupportedLanguageFailure(fixtureRoot);
     await assertMalformedTargetFailure(fixtureRoot);
     await assertUnbackedDeclarationFailure(fixtureRoot);
     await assertUnknownNodeFailure(fixtureRoot);
-    await assertStaleGraphFailure(fixtureRoot);
+    await assertStaleGraphFallback(fixtureRoot);
+  });
+});
+
+it("degrades signatures through the language service in a generated TS repo without graph setup", async () => {
+  await withGeneratedSignatureFixture(async (fixtureRoot) => {
+    const result = await inspectSignature(fixtureRoot, "src/service.ts", "Service", ["--line", "1"]);
+    assertDegradedSignatureResult(result);
+    assert.deepEqual(result.inspectResult.signatures.map((entry) => entry.signature), [
+      "export interface Service",
+      "run(value: string): string"
+    ]);
   });
 });
 
@@ -157,8 +168,10 @@ function assertSignatureEntry(signature, graphNodeId) {
   assert.equal(signature.evidence.graphNodeIds.includes(graphNodeId), true);
 }
 
-async function assertUnavailableGraphFailure(fixtureRoot) {
-  assertInspectFailure(await inspectSignature(fixtureRoot, "src/models.ts", "GreetingModel", ["--line", "1"]), "graph_unavailable");
+async function assertUnavailableGraphFallback(fixtureRoot) {
+  const result = await inspectSignature(fixtureRoot, "src/models.ts", "GreetingModel", ["--line", "1"]);
+  assertDegradedSignatureResult(result);
+  assert.equal(result.inspectResult.target.nodeId, "class:src/models.ts#GreetingModel");
 }
 
 async function assertAmbiguousFailure(fixtureRoot) {
@@ -189,12 +202,23 @@ async function assertUnknownNodeFailure(fixtureRoot) {
   assertInspectFailure(result, "target_not_found");
 }
 
-async function assertStaleGraphFailure(fixtureRoot) {
+async function assertStaleGraphFallback(fixtureRoot) {
   const modelsPath = join(fixtureRoot, "src/models.ts");
   writeFileSync(modelsPath, `${readFileSync(modelsPath, "utf8")}\nexport const staleSignatureMarker = true;\n`);
   const stale = await inspectSignature(fixtureRoot, "src/models.ts", "GreetingModel", ["--line", "1"]);
-  assertInspectFailure(stale, "graph_unavailable");
+  assertDegradedSignatureResult(stale);
   assert.equal(stale.providerStatus.state, "stale");
+}
+
+function assertDegradedSignatureResult(result) {
+  assert.equal(result.owner, "inspect");
+  assert.equal(result.status, "ok");
+  assert.equal(result.exitCode, 0);
+  assert.notEqual(result.providerStatus.state, "available");
+  assert.equal(result.inspectResult.status, "degraded");
+  assert.equal(result.inspectResult.failure.category, "graph_unavailable");
+  assert.equal(result.inspectResult.signatures.length > 0, true);
+  for (const signature of result.inspectResult.signatures) assertSignatureEntry(signature, result.inspectResult.target.nodeId);
 }
 
 async function inspectSignature(fixtureRoot, path, symbolName, extra = []) {
@@ -230,6 +254,31 @@ async function withFixtureCopy(runFixture) {
   try {
     cpSync(sourceFixtureRoot, fixtureRoot, { recursive: true, filter: skipGeneratedStore });
     await runFixture(fixtureRoot);
+  } finally {
+    rmSync(temp, { recursive: true, force: true });
+  }
+}
+
+async function withGeneratedSignatureFixture(runFixture) {
+  const temp = mkdtempSync(join(tmpdir(), "lattice-inspect-sig-generic-"));
+  try {
+    mkdirSync(join(temp, "src"), { recursive: true });
+    writeFileSync(
+      join(temp, "src/service.ts"),
+      [
+        "export interface Service {",
+        "  run(value: string): string;",
+        "}",
+        "",
+        "export class Worker implements Service {",
+        "  run(value: string): string {",
+        "    return value;",
+        "  }",
+        "}",
+        ""
+      ].join("\n")
+    );
+    await runFixture(temp);
   } finally {
     rmSync(temp, { recursive: true, force: true });
   }

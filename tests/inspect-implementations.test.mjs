@@ -1,7 +1,7 @@
 import { it } from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { cpSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -49,15 +49,39 @@ it("uses column to disambiguate same-line implementation targets", async () => {
 
 it("returns typed failures for graph, target, malformed, stale, and unsupported-language cases", async () => {
   await withFixtureCopy(async (fixtureRoot) => {
-    await assertUnavailableGraphFailure(fixtureRoot);
     writeFileSync(join(fixtureRoot, "README.md"), "# Fixture\n");
+    await assertUnsupportedLanguageFailure(fixtureRoot);
+    await assertUnavailableGraphFallback(fixtureRoot);
     await buildGraph(fixtureRoot);
     await assertAmbiguousFailure(fixtureRoot);
     await assertMissingSymbolFailure(fixtureRoot);
     await assertMalformedTargetFailure(fixtureRoot);
     await assertUnsupportedLanguageFailure(fixtureRoot);
-    await assertStaleGraphFailure(fixtureRoot);
+    await assertStaleGraphFallback(fixtureRoot);
   });
+});
+
+it("degrades implementations through the language service in a generated TS repo without graph setup", async () => {
+  await withGeneratedImplementationFixture(async (fixtureRoot) => {
+    const result = await inspectImplementations(fixtureRoot, ["src/service.ts", "Service", "--line", "1"]);
+    assertDegradedImplementationResult(result);
+    assertImplementation(result, "src/worker.ts", "Worker", "implements", "Service");
+  });
+});
+
+it("preserves graph-unavailable failure for Rust implementations without graph facts", async () => {
+  const temp = mkdtempSync(join(tmpdir(), "lattice-inspect-rust-impls-no-graph-"));
+  try {
+    mkdirSync(join(temp, "src"), { recursive: true });
+    writeFileSync(join(temp, "src/lib.rs"), "pub trait Service {}\n");
+
+    const result = await inspectImplementations(temp, ["src/lib.rs", "Service", "--line", "1"]);
+
+    assertInspectFailure(result, "graph_unavailable");
+    assert.equal(result.providerStatus.state, "stale");
+  } finally {
+    rmSync(temp, { recursive: true, force: true });
+  }
 });
 
 it("keeps implementation inspection read-only", async () => {
@@ -128,8 +152,10 @@ function assertImplementationEntry(entry) {
   assert.equal(entry.evidence.graphNodeIds.length >= 2, true);
 }
 
-async function assertUnavailableGraphFailure(fixtureRoot) {
-  assertInspectFailure(await inspectImplementations(fixtureRoot, ["src/models.ts", "Renderable", "--line", "9"]), "graph_unavailable");
+async function assertUnavailableGraphFallback(fixtureRoot) {
+  const result = await inspectImplementations(fixtureRoot, ["src/models.ts", "Renderable", "--line", "9"]);
+  assertDegradedImplementationResult(result);
+  assertImplementation(result, "src/models.ts", "GreetingModel", "implements", "Renderable");
 }
 
 async function assertAmbiguousFailure(fixtureRoot) {
@@ -152,12 +178,23 @@ async function assertUnsupportedLanguageFailure(fixtureRoot) {
   assertInspectFailure(await inspectImplementations(fixtureRoot, ["src/jsx-widget.jsx", "JsxWidget", "--line", "1"]), "unsupported_language");
 }
 
-async function assertStaleGraphFailure(fixtureRoot) {
+async function assertStaleGraphFallback(fixtureRoot) {
   const modelsPath = join(fixtureRoot, "src/models.ts");
   writeFileSync(modelsPath, `${readFileSync(modelsPath, "utf8")}\nexport const staleMarker = true;\n`);
   const stale = await inspectImplementations(fixtureRoot, ["src/models.ts", "Renderable", "--line", "9"]);
-  assertInspectFailure(stale, "graph_unavailable");
+  assertDegradedImplementationResult(stale);
   assert.equal(stale.providerStatus.state, "stale");
+}
+
+function assertDegradedImplementationResult(result) {
+  assert.equal(result.owner, "inspect");
+  assert.equal(result.status, "ok");
+  assert.equal(result.exitCode, 0);
+  assert.notEqual(result.providerStatus.state, "available");
+  assert.equal(result.inspectResult.status, "degraded");
+  assert.equal(result.inspectResult.failure.category, "graph_unavailable");
+  assert.equal(result.inspectResult.implementations.length > 0, true);
+  for (const implementation of result.inspectResult.implementations) assertImplementationEntry(implementation);
 }
 
 async function inspectImplementations(fixtureRoot, args) {
@@ -184,6 +221,38 @@ async function withFixtureCopy(runFixture) {
   try {
     cpSync(sourceFixtureRoot, fixtureRoot, { recursive: true, filter: skipGeneratedStore });
     await runFixture(fixtureRoot);
+  } finally {
+    rmSync(temp, { recursive: true, force: true });
+  }
+}
+
+async function withGeneratedImplementationFixture(runFixture) {
+  const temp = mkdtempSync(join(tmpdir(), "lattice-inspect-impls-generic-"));
+  try {
+    mkdirSync(join(temp, "src"), { recursive: true });
+    writeFileSync(
+      join(temp, "src/service.ts"),
+      [
+        "export interface Service {",
+        "  run(value: string): string;",
+        "}",
+        ""
+      ].join("\n")
+    );
+    writeFileSync(
+      join(temp, "src/worker.ts"),
+      [
+        "import type { Service } from \"./service\";",
+        "",
+        "export class Worker implements Service {",
+        "  run(value: string): string {",
+        "    return value;",
+        "  }",
+        "}",
+        ""
+      ].join("\n")
+    );
+    await runFixture(temp);
   } finally {
     rmSync(temp, { recursive: true, force: true });
   }

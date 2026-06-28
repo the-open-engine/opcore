@@ -641,25 +641,28 @@ export interface InspectRouteFailure {
 
 export interface InspectReferenceResult {
   route: "references";
-  status: "ok";
+  status: "ok" | "degraded";
   target: InspectSymbolTarget;
   providerStatus: GraphProviderStatus;
+  failure?: InspectRouteFailure;
   references: readonly InspectReferenceEntry[];
 }
 
 export interface InspectSignatureResult {
   route: "signature";
-  status: "ok";
+  status: "ok" | "degraded";
   target: InspectSymbolTarget;
   providerStatus: GraphProviderStatus;
+  failure?: InspectRouteFailure;
   signatures: readonly InspectSignatureEntry[];
 }
 
 export interface InspectImplementationResult {
   route: "implementations";
-  status: "ok";
+  status: "ok" | "degraded";
   target: InspectSymbolTarget;
   providerStatus: GraphProviderStatus;
+  failure?: InspectRouteFailure;
   implementations: readonly InspectImplementationEntry[];
 }
 
@@ -5512,14 +5515,33 @@ export function validateInspectRouteResult(result: InspectRouteResult): InspectR
     }
     validateInspectRoutePayload(result, route);
     if (Object.hasOwn(result, "failure")) throw new Error(`Successful inspect ${route} result must not include failure`);
+  } else if (result.status === "degraded" && inspectResultHasPayload(result, route)) {
+    const target = result.target;
+    if (target === undefined) throw new Error(`Degraded inspect ${route} result requires target`);
+    validateInspectSymbolTarget(target, `Inspect ${route} target`);
+    if (result.providerStatus === undefined) throw new Error(`Degraded inspect ${route} result requires providerStatus`);
+    validateInspectRoutePayload(result, route);
+    const failure = result.failure;
+    if (failure === undefined) throw new Error(`Degraded inspect ${route} result requires failure`);
+    validateInspectRouteFailure(failure);
   } else {
     if (result.target !== undefined) validateInspectSymbolTarget(result.target, `Inspect ${route} target`);
-    validateInspectRouteFailure(result.failure);
+    const failure = result.failure;
+    if (failure === undefined) throw new Error(`Failed inspect ${route} result requires failure`);
+    validateInspectRouteFailure(failure);
     for (const field of ["references", "signatures", "implementations"] as const) {
       if (Object.hasOwn(result, field)) throw new Error(`Failed inspect ${route} result must not include ${field}`);
     }
   }
   return result;
+}
+
+function inspectResultHasPayload(result: InspectRouteResult, route: InspectRouteResult["route"]): boolean {
+  return (
+    (route === "references" && Object.hasOwn(result, "references")) ||
+    (route === "signature" && Object.hasOwn(result, "signatures")) ||
+    (route === "implementations" && Object.hasOwn(result, "implementations"))
+  );
 }
 
 export function validateGraphDaemonRequest(request: GraphDaemonRequest): GraphDaemonRequest {
