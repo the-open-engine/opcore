@@ -3,6 +3,7 @@ import { realpathSync } from "node:fs";
 import { commandRouterManifest } from "./manifest.js";
 import { runCli } from "./router.js";
 import { isServeTransportArgv, runGraphServeCli } from "@the-open-engine/opcore-graph";
+import { createGraphServeTelemetry } from "../serve-telemetry.js";
 
 declare const process: {
   argv: string[];
@@ -21,7 +22,8 @@ async function runLatticeDirectCli(): Promise<void> {
   if (bin === "opcore" && argv[0] === "graph" && isServeTransportArgv(argv.slice(1))) {
     process.exitCode = await runGraphServeCli({
       argv: argv.slice(1),
-      bin: "opcore"
+      bin: "opcore",
+      telemetry: createGraphServeTelemetry()
     });
     return;
   }

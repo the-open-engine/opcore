@@ -1,6 +1,9 @@
 import type {
   CommandAdapterRequest,
+  CommandRouteStatus,
   CommandRouterResult,
+  CommandTiming,
+  CommandTimingProcessState,
   GraphDaemonOperation,
   GraphDaemonRequest,
   GraphDaemonResponse,
@@ -40,8 +43,10 @@ interface GraphServeTransportRuntime {
   child: GraphCoreChild;
   pending: PendingFrame[];
   stdout: Writer;
+  telemetry?: GraphServeTelemetry;
   resolveExit: (exitCode: number) => void;
   state: {
+    firstTimedFrame: boolean;
     inputEnded: boolean;
     resolved: boolean;
     shutdownForwarded: boolean;
@@ -71,8 +76,24 @@ export interface GraphServeCliOptions {
   stdin?: Readable;
   stdout?: Writer;
   stderr?: Writer;
+  telemetry?: GraphServeTelemetry;
   resolveArtifact?: () => GraphServeArtifactResolution;
   spawnGraphCore?: SpawnFactory;
+}
+
+export interface GraphServeFrameTimingEvent {
+  repo: RepoIdentity;
+  request: GraphDaemonRequest;
+  response: GraphDaemonResponse;
+  canonicalCommand: readonly string[];
+  owner: "graph";
+  status: CommandRouteStatus;
+  exitCode: number;
+  timing: CommandTiming;
+}
+
+export interface GraphServeTelemetry {
+  recordFrameTiming(event: GraphServeFrameTimingEvent): void;
 }
 
 declare const process: {
@@ -84,6 +105,8 @@ declare const process: {
 };
 
 const serveHelpArgs = new Set(["--help", "-h", "help"]);
+const pipelineServeOperations = new Set<GraphDaemonOperation>(["build", "update", "watch"]);
+const statusLikeServeOperations = new Set<GraphDaemonOperation>(["ping", "health", "status", "shutdown"]);
 const graphServeCapabilities = {
   operations: ["ping", "status", "query", "search", "shutdown"],
   jsonlProtocol: "opcore.graph.daemon",
@@ -159,6 +182,7 @@ export async function runGraphServeCli(options: GraphServeCliOptions): Promise<n
     repo: serveOptions.repo,
     stdin,
     stdout,
+    telemetry: options.telemetry,
     spawnGraphCore: options.spawnGraphCore ?? spawn
   });
 }
@@ -168,6 +192,7 @@ function runGraphServeTransport(options: {
   repo: RepoIdentity;
   stdin: Readable;
   stdout: Writer;
+  telemetry?: GraphServeTelemetry;
   spawnGraphCore: SpawnFactory;
 }): Promise<number> {
   return new Promise((resolveExit) => {
@@ -183,6 +208,7 @@ function createTransportRuntime(
     artifact: GraphServeResolvedArtifact;
     repo: RepoIdentity;
     stdout: Writer;
+    telemetry?: GraphServeTelemetry;
     spawnGraphCore: SpawnFactory;
   },
   resolveExit: (exitCode: number) => void
@@ -195,8 +221,10 @@ function createTransportRuntime(
     }),
     pending: [],
     stdout: options.stdout,
+    telemetry: options.telemetry,
     resolveExit,
     state: {
+      firstTimedFrame: true,
       inputEnded: false,
       resolved: false,
       shutdownForwarded: false,
@@ -242,7 +270,7 @@ function attachStdinForwarding(runtime: GraphServeTransportRuntime, stdin: Reada
 function forwardChildResponse(runtime: GraphServeTransportRuntime, line: string): void {
   const frame = runtime.pending.shift();
   const response = decodeChildResponse(frame?.requestId ?? "graph-serve-response", line, runtime.artifact);
-  writeFrame(runtime.stdout, frame, response);
+  writeFrame(runtime, frame, response);
 }
 
 function forwardStdinFrame(runtime: GraphServeTransportRuntime, line: string): void {
@@ -252,7 +280,7 @@ function forwardStdinFrame(runtime: GraphServeTransportRuntime, line: string): v
     writeRawFrame(runtime.stdout, frame.directResponse);
     return;
   }
-  runtime.pending.push(frame.pending);
+  runtime.pending.push(timedPendingFrame(runtime, frame.pending, frame.request));
   runtime.child.stdin.write(`${JSON.stringify(frame.request)}\n`);
   if (frame.request.operation === "shutdown") runtime.state.shutdownForwarded = true;
 }
@@ -284,10 +312,29 @@ function failOutstandingPending(runtime: GraphServeTransportRuntime): void {
 function failNextPending(runtime: GraphServeTransportRuntime, status: GraphProviderStatus): void {
   const frame = runtime.pending.shift();
   const response = failureResponse(frame?.requestId ?? "graph-serve-child", status);
-  writeFrame(runtime.stdout, frame, response);
+  writeFrame(runtime, frame, response);
 }
 
-type PendingFrame =
+type PendingFrameBase = {
+  request: GraphDaemonRequest;
+  startedAt: number;
+  processState: CommandTimingProcessState;
+};
+
+type PendingFrame = PendingFrameBase &
+  (
+    | {
+        kind: "daemon";
+        requestId: string;
+      }
+    | {
+        kind: "mcp";
+        requestId: string;
+        id: JsonValue | undefined;
+      }
+  );
+
+type PendingFrameEnvelope =
   | {
       kind: "daemon";
       requestId: string;
@@ -300,7 +347,7 @@ type PendingFrame =
 
 type ParsedServeFrame =
   | {
-      pending: PendingFrame;
+      pending: PendingFrameEnvelope;
       request: GraphDaemonRequest;
     }
   | {
@@ -478,16 +525,17 @@ function decodeChildResponse(requestId: string, line: string, artifact: GraphSer
   }
 }
 
-function writeFrame(stdout: Writer, frame: PendingFrame | undefined, response: GraphDaemonResponse): void {
+function writeFrame(runtime: GraphServeTransportRuntime, frame: PendingFrame | undefined, response: GraphDaemonResponse): void {
+  recordFrameTiming(runtime, frame, response);
   if (frame?.kind === "mcp") {
-    writeRawFrame(stdout, {
+    writeRawFrame(runtime.stdout, {
       jsonrpc: "2.0",
       id: frame.id,
       result: response
     });
     return;
   }
-  writeDaemonFrame(stdout, response);
+  writeDaemonFrame(runtime.stdout, response);
 }
 
 function writeDaemonFrame(stdout: Writer, response: GraphDaemonResponse): void {
@@ -496,6 +544,94 @@ function writeDaemonFrame(stdout: Writer, response: GraphDaemonResponse): void {
 
 function writeRawFrame(stdout: Writer, value: unknown): void {
   stdout.write(`${JSON.stringify(value)}\n`);
+}
+
+function timedPendingFrame(
+  runtime: GraphServeTransportRuntime,
+  pending: PendingFrameEnvelope,
+  request: GraphDaemonRequest
+): PendingFrame {
+  const processState: CommandTimingProcessState = runtime.state.firstTimedFrame ? "cold" : "warm";
+  runtime.state.firstTimedFrame = false;
+  return {
+    ...pending,
+    request,
+    startedAt: Date.now(),
+    processState
+  };
+}
+
+function recordFrameTiming(
+  runtime: GraphServeTransportRuntime,
+  frame: PendingFrame | undefined,
+  response: GraphDaemonResponse
+): void {
+  if (!frame || !runtime.telemetry) return;
+  const durationMs = elapsedMs(frame.startedAt);
+  const status = serveFrameCommandStatus(frame.request, response);
+  try {
+    runtime.telemetry.recordFrameTiming({
+      repo: frame.request.repo,
+      request: frame.request,
+      response,
+      canonicalCommand: ["opcore", "graph", "serve", serveFrameOperation(frame.request)],
+      owner: "graph",
+      status,
+      exitCode: status === "ok" ? 0 : 1,
+      timing: {
+        durationMs,
+        processState: frame.processState,
+        phases: [
+          {
+            phase: `serve_${serveFrameOperation(frame.request).replaceAll("-", "_")}`,
+            durationMs
+          }
+        ]
+      }
+    });
+  } catch {
+    // Serve telemetry is trend evidence only; transport responses must not depend on artifact writes.
+  }
+}
+
+function serveFrameOperation(request: GraphDaemonRequest): string {
+  if (request.search) return "search";
+  if (request.namedQuery) return "named-query";
+  if (request.impact) return "impact";
+  if (request.reviewContext) return "review-context";
+  if (request.changes) return "detect-changes";
+  return request.operation;
+}
+
+function serveFrameCommandStatus(request: GraphDaemonRequest, response: GraphDaemonResponse): CommandRouteStatus {
+  const state = responseStatusForRequest(request, response).state;
+  if (pipelineServeOperations.has(request.operation)) return okWhenStateIs(state, ["available", "warming"]);
+  if (statusLikeServeOperations.has(request.operation)) return okWhenStateIs(state, ["available", "warming", "stale"]);
+  return okWhenStateIs(state, ["available"]);
+}
+
+function responseStatusForRequest(request: GraphDaemonRequest, response: GraphDaemonResponse): GraphProviderStatus {
+  const candidateStatuses: Array<[unknown, GraphProviderStatus | undefined]> = [
+    [request.search, response.search?.status],
+    [request.namedQuery, response.namedQuery?.status],
+    [request.impact, response.impact?.status],
+    [request.reviewContext, response.reviewContext?.status],
+    [request.changes, response.changes?.status],
+    [request.query, response.result?.status]
+  ];
+  for (const [requested, status] of candidateStatuses) {
+    if (requested && status) return status;
+  }
+  if (response.pipeline) return response.pipeline.status;
+  return response.status;
+}
+
+function okWhenStateIs(state: GraphProviderStatus["state"], okStates: readonly GraphProviderStatus["state"][]): CommandRouteStatus {
+  return okStates.includes(state) ? "ok" : "error";
+}
+
+function elapsedMs(startedAt: number): number {
+  return Math.max(0, Date.now() - startedAt);
 }
 
 function failureResponse(requestId: string, status: GraphProviderStatus): GraphDaemonResponse {

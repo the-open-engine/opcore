@@ -27,19 +27,14 @@ describe("latency budget gate", () => {
     assert.equal(report.schemaVersion, 1);
     assert.equal(report.status, "pass");
     assert.equal(report.overCount, 0);
-    assert.equal(report.checkedRecordCount, 3);
+    assert.equal(report.checkedRecordCount, 7);
+    assert.equal(report.skippedCount, 0);
     assert.equal(report.results.some((entry) => entry.observed.phase === "total"), true);
-    assert.equal(
-      report.results.some(
-        (entry) =>
-          entry.status === "pass" &&
-          entry.evidence.canonicalCommand.join(" ") === "opcore check changed --base HEAD --checks typescript.syntax" &&
-          entry.evidence.phase === "validation" &&
-          entry.evidence.repoShapeBucket === "small" &&
-          entry.evidence.overByMs === 0
-      ),
-      true
-    );
+    assertPassEvidence(report, "opcore check changed --base HEAD --checks typescript.syntax", "validation", true);
+    assertPassEvidence(report, "opcore graph serve", "total");
+    assertPassEvidence(report, "opcore graph serve query", "serve_query");
+    assertPassEvidence(report, "opcore graph serve search", "serve_search");
+    assertPassEvidence(report, "opcore inspect", "total");
     assert.equal(JSON.stringify(report).includes("score"), false);
   });
 
@@ -84,4 +79,18 @@ function runGate(args, expectedStatus) {
     `stderr:\n${result.stderr}`
   ].join("\n"));
   return result;
+}
+
+function assertPassEvidence(report, command, phase, requireZeroOverBy = false) {
+  assert.equal(
+    report.results.some(
+      (entry) =>
+        entry.status === "pass" &&
+        entry.evidence.canonicalCommand.join(" ") === command &&
+        entry.evidence.phase === phase &&
+        entry.evidence.repoShapeBucket === "small" &&
+        (!requireZeroOverBy || entry.evidence.overByMs === 0)
+    ),
+    true
+  );
 }
