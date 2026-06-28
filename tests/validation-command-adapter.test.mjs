@@ -23,7 +23,7 @@ describe("validation command adapters", () => {
     assert.equal(filesResult.message, "opcore validation complete.");
     assert.equal((await adapter(request(["files", "--files", "src/index.ts"]))).validationResult.status, "passed");
     assert.equal((await adapter(request(["staged"]))).validationResult.status, "passed");
-    assert.equal((await adapter(request(["changed", "--base", "HEAD"]))).validationResult.status, "passed");
+    assert.equal((await adapter(request(["changed", "--base", "HEAD", "--report-mode", "all"]))).validationResult.status, "passed");
     assert.equal((await adapter(request(["tree", "--tree", "HEAD", "--changed-from", "origin/main"]))).validationResult.status, "passed");
     assert.equal((await adapter(request(["all"]))).validationResult.status, "passed");
     assert.deepEqual(observed.map((entry) => entry.kind), ["files", "files", "staged", "changed", "tree", "all"]);
@@ -261,6 +261,39 @@ describe("validation command adapters", () => {
     }
   });
 
+  it("defaults pre-write validation to introduced diagnostics", async () => {
+    const temp = mkdtempSync(join(tmpdir(), "lattice-validation-pre-write-introduced-"));
+    try {
+      mkdirSync(join(temp, "src"));
+      const filePath = join(temp, "src/index.ts");
+      const requestPath = join(temp, "request.json");
+      writeFileSync(filePath, "export const value = 'disk';");
+      writeFileSync(
+        requestPath,
+        JSON.stringify({
+          repo: { repoRoot: temp },
+          scope: { kind: "files", files: ["src/index.ts"] },
+          graph: { mode: "optional", provider: "opcore-graph" },
+          overlays: [{ path: "src/index.ts", action: "write", content: "export const value = 'introduced';" }]
+        })
+      );
+
+      const result = await createValidateCommandAdapter({
+        checks: [contentSensitivePolicyCheck()],
+        workspaceFactory: (repoRoot) => createNodeValidationWorkspace({ repoRoot })
+      })(request(["pre-write", "--request-file", requestPath], "validate"));
+
+      assert.equal(result.validationResult.status, "policy_failure");
+      assert.deepEqual(
+        result.validationResult.diagnostics.map((diagnostic) => diagnostic.code),
+        ["INTRODUCED"]
+      );
+      assert.equal(readFileSync(filePath, "utf8"), "export const value = 'disk';");
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
   it("returns pre-write failure receipts for policy failures", async () => {
     const temp = mkdtempSync(join(tmpdir(), "lattice-validation-pre-write-policy-"));
     try {
@@ -272,7 +305,7 @@ describe("validation command adapters", () => {
       const result = await createValidateCommandAdapter({
         checks: [policyCheck()],
         workspaceFactory: (repoRoot) => createNodeValidationWorkspace({ repoRoot })
-      })(request(["pre-write", "--request-file", requestPath], "validate"));
+      })(request(["pre-write", "--request-file", requestPath, "--report-mode", "all"], "validate"));
 
       assert.equal(result.status, "error");
       assert.equal(result.validationResult.status, "policy_failure");
@@ -435,6 +468,75 @@ describe("validation command adapters", () => {
 
       assert.equal(Boolean(result.unavailable), false);
       assert.equal(byPath.get("src/untracked.ts").status, "added");
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("compares changed-scope introduced report mode against the git base tree", async () => {
+    const temp = mkdtempSync(join(tmpdir(), "lattice-validation-changed-introduced-"));
+    try {
+      mkdirSync(join(temp, "src"));
+      const filePath = join(temp, "src/index.ts");
+      writeFileSync(filePath, "export const value = 'disk';\n");
+      const baseCommit = initializeGitSnapshot(temp, ["src/index.ts"]);
+      writeFileSync(filePath, "export const value = 'introduced';\n");
+
+      const result = await createCheckCommandAdapter({
+        checks: [contentSensitivePolicyCheck(["changed"])],
+        workspaceFactory: (repoRoot) => createNodeValidationWorkspace({ repoRoot })
+      })(request(["changed", "--base", baseCommit, "--repo", temp, "--report-mode", "introduced"]));
+
+      assert.equal(result.validationResult.status, "policy_failure");
+      assert.deepEqual(
+        result.validationResult.diagnostics.map((diagnostic) => diagnostic.code),
+        ["INTRODUCED"]
+      );
+      assert.equal(readFileSync(filePath, "utf8"), "export const value = 'introduced';\n");
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("defaults changed-scope validation to introduced report mode", async () => {
+    const temp = mkdtempSync(join(tmpdir(), "lattice-validation-changed-default-introduced-"));
+    try {
+      mkdirSync(join(temp, "src"));
+      const filePath = join(temp, "src/index.ts");
+      writeFileSync(filePath, "export const value = 'base';\n");
+      const baseCommit = initializeGitSnapshot(temp, ["src/index.ts"]);
+      writeFileSync(filePath, "export const value = 'base';\n");
+
+      const result = await createCheckCommandAdapter({
+        checks: [contentSensitivePolicyCheck(["changed"])],
+        workspaceFactory: (repoRoot) => createNodeValidationWorkspace({ repoRoot })
+      })(request(["changed", "--base", baseCommit, "--repo", temp]));
+
+      assert.equal(result.validationResult.status, "passed", JSON.stringify(result.validationResult, null, 2));
+      assert.deepEqual(result.validationResult.diagnostics, []);
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("compares unborn HEAD introduced mode against the empty tree", async () => {
+    const temp = mkdtempSync(join(tmpdir(), "lattice-validation-unborn-introduced-"));
+    try {
+      mkdirSync(join(temp, "src"));
+      git(temp, ["init", "-q"]);
+      git(temp, ["symbolic-ref", "HEAD", "refs/heads/main"]);
+      writeFileSync(join(temp, "src/index.ts"), "export const value = 'introduced';\n");
+
+      const result = await createCheckCommandAdapter({
+        checks: [contentSensitivePolicyCheck(["changed"])],
+        workspaceFactory: (repoRoot) => createNodeValidationWorkspace({ repoRoot })
+      })(request(["changed", "--base", "HEAD", "--repo", temp]));
+
+      assert.equal(result.validationResult.status, "policy_failure", JSON.stringify(result.validationResult, null, 2));
+      assert.deepEqual(
+        result.validationResult.diagnostics.map((diagnostic) => diagnostic.code),
+        ["EXISTING", "INTRODUCED"]
+      );
     } finally {
       rmSync(temp, { recursive: true, force: true });
     }
@@ -627,6 +729,39 @@ function policyCheck() {
         }
       ]
     })
+  };
+}
+
+function contentSensitivePolicyCheck(supportedScopes = ["files"]) {
+  return {
+    id: "validation.content-policy",
+    owner: "validation",
+    adapter: "test",
+    defaultSeverity: "error",
+    supportedScopes,
+    run: async (context) => {
+      const after = await context.fileView.readAfter("src/index.ts");
+      const diagnostics = [];
+      if (after.status === "found") {
+        diagnostics.push({
+          category: "policy",
+          severity: "error",
+          message: "existing policy failure",
+          path: "src/index.ts",
+          code: "EXISTING"
+        });
+      }
+      if (after.status === "found" && after.content.includes("introduced")) {
+        diagnostics.push({
+          category: "policy",
+          severity: "error",
+          message: "introduced policy failure",
+          path: "src/index.ts",
+          code: "INTRODUCED"
+        });
+      }
+      return { diagnostics };
+    }
   };
 }
 

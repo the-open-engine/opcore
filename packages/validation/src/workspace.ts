@@ -2,6 +2,7 @@ import type {
   ValidationWorkspace,
   ValidationWorkspaceFile,
   ValidationWorkspaceFileSet,
+  ValidationWorkspaceReadContext,
   ValidationWorkspaceReadFileResult
 } from "./scope.js";
 import { validateRepoRelativePath } from "@the-open-engine/opcore-contracts";
@@ -20,24 +21,7 @@ export function createNodeValidationWorkspace(options: CreateNodeValidationWorks
   const repoRoot = resolve(options.repoRoot);
   const skippedPathSegments = new Set(options.skippedPathSegments ?? []);
   return {
-    readFile: async (path, context) => {
-      if (context?.scope.kind === "tree" && context.scope.treeRef !== undefined) {
-        return readTreeFile(repoRoot, context.scope.treeRef, path);
-      }
-      if (context?.scope.kind === "staged") {
-        return readStagedFile(repoRoot, path);
-      }
-      const absolutePath = resolveRepoPath(repoRoot, path);
-      try {
-        return {
-          status: "found",
-          content: await readFile(absolutePath, "utf8")
-        };
-      } catch (error) {
-        if (isMissingFileError(error)) return { status: "missing" };
-        throw error;
-      }
-    },
+    readFile: (path, context) => readWorkspaceFile(repoRoot, path, context),
     listChangedFiles: (baseRef) => filterFileSet(listChangedFiles(repoRoot, baseRef), skippedPathSegments),
     listTreeFiles: (treeRef, changedFrom) => filterFileSet(listTreeFiles(repoRoot, treeRef, changedFrom), skippedPathSegments),
     listStagedFiles: () =>
@@ -55,6 +39,44 @@ export function createNodeValidationWorkspace(options: CreateNodeValidationWorks
       };
     }
   };
+}
+
+async function readWorkspaceFile(
+  repoRoot: string,
+  path: string,
+  context?: ValidationWorkspaceReadContext
+): Promise<ValidationWorkspaceReadFileResult> {
+  const beforeRef = beforeStateTreeRef(repoRoot, context);
+  if (beforeRef !== undefined) return readTreeFile(repoRoot, beforeRef, path);
+  if (context?.scope.kind === "tree" && context.scope.treeRef !== undefined) {
+    return readTreeFile(repoRoot, context.scope.treeRef, path);
+  }
+  if (context?.scope.kind === "staged") return readStagedFile(repoRoot, path);
+  return readDiskFile(repoRoot, path);
+}
+
+function beforeStateTreeRef(repoRoot: string, context?: ValidationWorkspaceReadContext): string | undefined {
+  if (context?.state !== "before") return undefined;
+  if (context.scope.kind === "changed" && context.scope.baseRef !== undefined) {
+    const base = resolveChangedBase(repoRoot, context.scope.baseRef);
+    if (!base.ok) throw new Error(`${base.message}: ${base.cause}`);
+    return base.diffBase;
+  }
+  if (context.scope.kind === "tree" && context.scope.changedFrom !== undefined) return context.scope.changedFrom;
+  return undefined;
+}
+
+async function readDiskFile(repoRoot: string, path: string): Promise<ValidationWorkspaceReadFileResult> {
+  const absolutePath = resolveRepoPath(repoRoot, path);
+  try {
+    return {
+      status: "found",
+      content: await readFile(absolutePath, "utf8")
+    };
+  } catch (error) {
+    if (isMissingFileError(error)) return { status: "missing" };
+    throw error;
+  }
 }
 
 function filterFileSet(fileSet: ValidationWorkspaceFileSet, skippedPathSegments: ReadonlySet<string>): ValidationWorkspaceFileSet {

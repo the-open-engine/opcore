@@ -1883,6 +1883,12 @@
           "type": "string",
           "minLength": 1
         },
+        "reportMode": {
+          "enum": [
+            "all",
+            "introduced"
+          ]
+        },
         "repo": {
           "$ref": "#/$defs/RepoIdentity"
         },
@@ -19781,8 +19787,8 @@
             "properties": {
               "command": {
                 "type": "array",
-                "minItems": 7,
-                "maxItems": 7,
+                "minItems": 9,
+                "maxItems": 9,
                 "prefixItems": [
                   {
                     "const": "opcore"
@@ -19792,6 +19798,12 @@
                   },
                   {
                     "const": "changed"
+                  },
+                  {
+                    "const": "--report-mode"
+                  },
+                  {
+                    "const": "introduced"
                   },
                   {
                     "const": "--base"
@@ -19810,8 +19822,8 @@
               },
               "canonicalCommand": {
                 "type": "array",
-                "minItems": 7,
-                "maxItems": 7,
+                "minItems": 9,
+                "maxItems": 9,
                 "prefixItems": [
                   {
                     "const": "opcore"
@@ -19821,6 +19833,12 @@
                   },
                   {
                     "const": "changed"
+                  },
+                  {
+                    "const": "--report-mode"
+                  },
+                  {
+                    "const": "introduced"
                   },
                   {
                     "const": "--base"

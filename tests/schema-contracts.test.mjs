@@ -528,6 +528,9 @@ describe("Opcore JSON schema wire constraints", () => {
       ),
       false
     );
+    assert.equal(isValidDefinition("ValidationRequest", validationRequestWith({ reportMode: "all" })), true);
+    assert.equal(isValidDefinition("ValidationRequest", validationRequestWith({ reportMode: "introduced" })), true);
+    assert.equal(isValidDefinition("ValidationRequest", validationRequestWith({ reportMode: "new-only" })), false);
     assert.equal(isValidDefinition("ValidationRequest", validationRequestWith({ checks: ["  "] })), false);
     assert.equal(
       isValidDefinition(
@@ -4123,7 +4126,11 @@ function validReleaseCutoverReceipt() {
   const commandReceipts = [
     ["opcore-scan", ["opcore", "scan"], "runtime"],
     ["opcore-status", ["opcore", "status"], "runtime"],
-    ["opcore-check-changed", ["opcore", "check", "changed", "--base", "HEAD", "--checks", "typescript.syntax"], "validation"],
+    [
+      "opcore-check-changed",
+      ["opcore", "check", "changed", "--report-mode", "introduced", "--base", "HEAD", "--checks", "typescript.syntax"],
+      "validation"
+    ],
     ["opcore-measure", ["opcore", "measure"], "runtime"],
     ["opcore-try", ["opcore", "try"], "runtime"],
     ["status", ["opcore", "status"], "runtime"],
@@ -4243,7 +4250,21 @@ function validReleaseCutoverReceipt() {
   const pythonCommandReceipts = [
     ["opcore-python-scan", ["opcore", "scan"], "runtime"],
     ["opcore-python-status", ["opcore", "status"], "runtime"],
-    ["opcore-python-check-changed", ["opcore", "check", "changed", "--base", "HEAD", "--checks", "python.syntax,python.source-hygiene"], "validation"],
+    [
+      "opcore-python-check-changed",
+      [
+        "opcore",
+        "check",
+        "changed",
+        "--report-mode",
+        "introduced",
+        "--base",
+        "HEAD",
+        "--checks",
+        "python.syntax,python.source-hygiene"
+      ],
+      "validation"
+    ],
     ["opcore-python-measure", ["opcore", "measure"], "runtime"],
     ["graph-python-build", ["opcore", "graph", "build"], "graph"],
     ["graph-python-status", ["opcore", "graph", "status"], "graph"],

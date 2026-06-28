@@ -258,7 +258,8 @@ function seededValidationRequest(repo: RepoIdentity, status: ValidationRequest["
       provider: "opcore-graph",
       status
     },
-    overlays: []
+    overlays: [],
+    reportMode: "introduced"
   };
 }
 

@@ -320,7 +320,17 @@ describe("installed package bins", () => {
             fixture,
             telemetryPath
           });
-          assert.deepEqual(check.canonicalCommand, ["opcore", "check", "changed", "--base", "HEAD", "--repo", fixture.repoRoot]);
+          assert.deepEqual(check.canonicalCommand, [
+            "opcore",
+            "check",
+            "changed",
+            "--report-mode",
+            "introduced",
+            "--base",
+            "HEAD",
+            "--repo",
+            fixture.repoRoot
+          ]);
           assert.equal(Object.hasOwn(check, "validationResult"), true);
           assert.equal(check.validationResult.status, "passed");
           assertSourceSnapshot(fixture.repoRoot, beforeCheck);

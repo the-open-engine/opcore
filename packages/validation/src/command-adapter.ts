@@ -60,7 +60,8 @@ export function createCheckCommandAdapter(options: ValidationCommandAdapterOptio
             provider: defaultValidationGraphProvider
           },
           overlays: [],
-          checks: parsed.checks
+          checks: parsed.checks,
+          reportMode: parsed.reportMode
         },
         {
           provider: defaultValidationGraphProvider
@@ -106,7 +107,7 @@ async function preWriteValidationCommandResult(
   try {
     const payload = await readRequestPayload(parsed.requestFile);
     const validatedPayload = validateValidationRequestPayload(payload);
-    validationRequest = normalizeValidationRequest(validatedPayload, {
+    validationRequest = normalizeValidationRequest(applyValidateCommandOverrides(validatedPayload, parsed), {
       provider: defaultValidationGraphProvider
     });
     result = await runRequestWithTimeout(validationRequest, parsed, options, timeoutMs);
@@ -354,6 +355,12 @@ function applyValidateCommandOverrides(
     next = {
       ...next,
       checks: parsed.checks
+    };
+  }
+  if (parsed.reportMode !== undefined) {
+    next = {
+      ...next,
+      reportMode: parsed.reportMode
     };
   }
   return next;

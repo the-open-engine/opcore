@@ -184,6 +184,122 @@ describe("validation runner", () => {
     assert.equal(warning.ok, true);
   });
 
+  it("reports only diagnostics introduced by overlays in introduced report mode", async () => {
+    const result = await runner([
+      check("types", {
+        run: async (context) => {
+          const after = await context.fileView.readAfter("src/index.ts");
+          const diagnostics = [
+            {
+              category: "types",
+              severity: "error",
+              message: "existing mismatch",
+              path: "src/index.ts",
+              code: "TS_EXISTING"
+            }
+          ];
+          if (after.status === "found" && after.content.includes("introduced")) {
+            diagnostics.push({
+              category: "types",
+              severity: "error",
+              message: "introduced mismatch",
+              path: "src/index.ts",
+              code: "TS_INTRODUCED"
+            });
+          }
+          return { diagnostics };
+        }
+      })
+    ]).runValidation(
+      request({
+        reportMode: "introduced",
+        overlays: [
+          {
+            path: "src/index.ts",
+            action: "write",
+            content: "export const value = 'introduced';"
+          }
+        ]
+      })
+    );
+
+    assert.equal(result.status, "policy_failure");
+    assert.deepEqual(
+      result.diagnostics.map((diagnostic) => diagnostic.code),
+      ["TS_INTRODUCED"]
+    );
+    assert.equal(result.manifest.runs[0].diagnosticCount, 1);
+  });
+
+  it("strips overlay metadata from the introduced report-mode before pass", async () => {
+    const observed = [];
+    const result = await runner([
+      check("types", {
+        run: async (context) => {
+          const after = await context.fileView.readAfter("src/index.ts");
+          const hasOverlay = context.fileView.hasOverlay("src/index.ts");
+          observed.push({ hasOverlay, overlayCount: context.request.overlays.length });
+          return {
+            diagnostics:
+              after.status === "found" && hasOverlay
+                ? [
+                    {
+                      category: "types",
+                      severity: "error",
+                      message: "introduced overlay-aware mismatch",
+                      path: "src/index.ts",
+                      code: "TS_OVERLAY"
+                    }
+                  ]
+                : []
+          };
+        }
+      })
+    ]).runValidation(
+      request({
+        reportMode: "introduced",
+        overlays: [
+          {
+            path: "src/index.ts",
+            action: "write",
+            content: "export const value = 'introduced';"
+          }
+        ]
+      })
+    );
+
+    assert.deepEqual(observed, [
+      { hasOverlay: false, overlayCount: 0 },
+      { hasOverlay: true, overlayCount: 1 }
+    ]);
+    assert.equal(result.status, "policy_failure");
+    assert.deepEqual(
+      result.diagnostics.map((diagnostic) => diagnostic.code),
+      ["TS_OVERLAY"]
+    );
+  });
+
+  it("passes when introduced report mode has only pre-existing diagnostics", async () => {
+    const result = await runner([
+      check("types", {
+        diagnostics: [
+          {
+            category: "types",
+            severity: "error",
+            message: "existing mismatch",
+            path: "src/index.ts",
+            code: "TS_EXISTING"
+          }
+        ]
+      })
+    ]).runValidation(request({ reportMode: "introduced" }));
+
+    assert.equal(result.status, "passed");
+    assert.deepEqual(result.diagnostics, []);
+    assert.equal(result.manifest.runs[0].status, "passed");
+    assert.equal(result.manifest.runs[0].diagnosticCount, 0);
+  });
+
   it("orders manifest metadata deterministically with injected timestamps and durations", async () => {
     const clock = sequenceClock([0, 10, 17, 20, 31, 40], "2026-06-05T00:00:00.000Z");
     const result = await createValidationRunner({

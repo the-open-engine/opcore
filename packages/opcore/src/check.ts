@@ -65,7 +65,7 @@ function normalizeCheckArgs(args: readonly string[]): string[] {
   const changedFlagIndex = args.indexOf("--changed");
   if (changedFlagIndex >= 0) {
     const rest = removeAt(args, changedFlagIndex);
-    return ["changed", ...(hasBase(rest) ? rest : ["--base", "HEAD", ...rest])];
+    return withChangedDefaults(["changed", ...(hasBase(rest) ? rest : ["--base", "HEAD", ...rest])]);
   }
   const stagedFlagIndex = args.indexOf("--staged");
   if (stagedFlagIndex >= 0) {
@@ -76,10 +76,18 @@ function normalizeCheckArgs(args: readonly string[]): string[] {
   if (firstPositional === "changed" && !hasBase(normalized)) {
     normalized = insertAfterFirst(normalized, "changed", ["--base", "HEAD"]);
   }
+  if (firstPositional === "changed") {
+    normalized = withChangedDefaults(normalized);
+  }
   if (firstPositional !== undefined && !checkRoutes.has(firstPositional)) {
     normalized.unshift("files");
   }
   return normalized;
+}
+
+function withChangedDefaults(args: readonly string[]): string[] {
+  if (hasReportMode(args)) return [...args];
+  return insertAfterFirst(args, "changed", ["--report-mode", "introduced"]);
 }
 
 function removeAt(args: readonly string[], index: number): string[] {
@@ -120,6 +128,7 @@ function optionConsumesNextValue(arg: string): boolean {
     "--graph-mode",
     "--check",
     "--checks",
+    "--report-mode",
     "--request-file",
     "--timeout-ms"
   ].includes(arg);
@@ -127,6 +136,10 @@ function optionConsumesNextValue(arg: string): boolean {
 
 function hasBase(args: readonly string[]): boolean {
   return args.some((arg) => arg === "--base" || arg.startsWith("--base="));
+}
+
+function hasReportMode(args: readonly string[]): boolean {
+  return args.some((arg) => arg === "--report-mode" || arg.startsWith("--report-mode=") || arg === "--introduced");
 }
 
 function opcoreCheckHelpMessage(): string {

@@ -75,6 +75,7 @@ type RunnerRuntimeOptions = Required<Pick<CreateValidationRunnerOptions, "worksp
 interface CheckExecution {
   runs: ValidationCheckRunSummary[];
   diagnostics: ValidationDiagnostic[];
+  diagnosticsByCheck: Map<string, ValidationDiagnostic[]>;
   skippedChecks: ValidationSkippedCheck[];
   failureResult?: ValidationResult;
 }
@@ -88,6 +89,19 @@ interface ExecuteChecksArgs {
   totalStartedAt: number;
   clock: ValidationClock;
   runtime: ValidationRuntimePolicy;
+}
+
+interface PreparedValidationArgs {
+  request: ValidationRequest;
+  scope: ResolvedValidationScope;
+  graph: ValidationGraphQuerySession;
+  selectedChecks: readonly ValidationCheckDefinition[];
+  totalStartedAt: number;
+  options: RunnerRuntimeOptions;
+}
+
+interface ExecuteValidationRequestArgs extends PreparedValidationArgs {
+  defaultReadState?: "before";
 }
 
 interface SingleCheckOutcome {
@@ -144,25 +158,77 @@ async function runPreparedValidation(
     }
     const unsupportedResult = unsupportedScopeResult(selectedChecks, scope.kind, totalStartedAt, options.clock);
     if (unsupportedResult !== undefined) return unsupportedResult;
-    const fileView = await createValidationFileView({ request, scope, workspace: options.workspace });
     const graph = await resolveGraphSession(request, selectedChecks, options);
     const graphFailure = requiredGraphFailureResult(request, graph.status, selectedChecks, totalStartedAt, options.clock);
     if (graphFailure !== undefined) return graphFailure;
-    const execution = await executeSelectedChecks({
+    if (request.reportMode === "introduced") {
+      return await runIntroducedValidation({
+        request,
+        scope,
+        graph,
+        selectedChecks,
+        totalStartedAt,
+        options
+      });
+    }
+    return await runCurrentValidation({
       request,
       scope,
       graph,
-      fileView,
       selectedChecks,
       totalStartedAt,
-      clock: options.clock,
-      runtime: options.runtime
+      options
     });
-    if (execution.failureResult !== undefined) return execution.failureResult;
-    return finalValidationResult(selectedChecks, execution, graph.status, totalStartedAt, options.clock);
   } catch (error) {
     return mapValidationRunError(error, options.clock, totalStartedAt, selectedChecks);
   }
+}
+
+async function runCurrentValidation(args: PreparedValidationArgs): Promise<ValidationResult> {
+  const execution = await executeValidationRequest(args);
+  if (execution.failureResult !== undefined) return execution.failureResult;
+  return finalValidationResult(args.selectedChecks, execution, args.graph.status, args.totalStartedAt, args.options.clock);
+}
+
+async function runIntroducedValidation(args: PreparedValidationArgs): Promise<ValidationResult> {
+  const beforeRequest: ValidationRequest = {
+    ...args.request,
+    overlays: []
+  };
+  const beforeExecution = await executeValidationRequest({
+    ...args,
+    request: beforeRequest,
+    defaultReadState: "before"
+  });
+  if (beforeExecution.failureResult !== undefined) return beforeExecution.failureResult;
+  const execution = await executeValidationRequest(args);
+  if (execution.failureResult !== undefined) return execution.failureResult;
+  return finalValidationResult(
+    args.selectedChecks,
+    introducedExecution(beforeExecution, execution),
+    args.graph.status,
+    args.totalStartedAt,
+    args.options.clock
+  );
+}
+
+async function executeValidationRequest(args: ExecuteValidationRequestArgs): Promise<CheckExecution> {
+  const fileView = await createValidationFileView({
+    request: args.request,
+    scope: args.scope,
+    workspace: args.options.workspace,
+    ...(args.defaultReadState === undefined ? {} : { defaultReadState: args.defaultReadState })
+  });
+  return executeSelectedChecks({
+    request: args.request,
+    scope: args.scope,
+    graph: args.graph,
+    fileView,
+    selectedChecks: args.selectedChecks,
+    totalStartedAt: args.totalStartedAt,
+    clock: args.options.clock,
+    runtime: args.options.runtime
+  });
 }
 
 function unsupportedScopeResult(
@@ -209,6 +275,7 @@ async function executeSelectedChecks(args: ExecuteChecksArgs): Promise<CheckExec
   const execution: CheckExecution = {
     runs: [],
     diagnostics: [],
+    diagnosticsByCheck: new Map(),
     skippedChecks: []
   };
   for (const check of args.selectedChecks) {
@@ -237,6 +304,7 @@ async function executeSelectedChecks(args: ExecuteChecksArgs): Promise<CheckExec
       continue;
     }
     if (outcome.run !== undefined) execution.runs.push(outcome.run);
+    execution.diagnosticsByCheck.set(check.id, [...outcome.diagnostics]);
     execution.diagnostics.push(...outcome.diagnostics);
     if (outcome.failureStatus !== undefined && outcome.failureMessage !== undefined) {
       execution.failureResult = checkRunFailureResult(check, args, execution, outcome.failureStatus, outcome.failureMessage);
@@ -244,6 +312,50 @@ async function executeSelectedChecks(args: ExecuteChecksArgs): Promise<CheckExec
     }
   }
   return execution;
+}
+
+function introducedExecution(before: CheckExecution, after: CheckExecution): CheckExecution {
+  const diagnosticsByCheck = new Map<string, ValidationDiagnostic[]>();
+  const diagnostics: ValidationDiagnostic[] = [];
+  for (const [checkId, afterDiagnostics] of after.diagnosticsByCheck) {
+    const beforeFingerprints = new Set((before.diagnosticsByCheck.get(checkId) ?? []).map(diagnosticFingerprint));
+    const introduced = afterDiagnostics.filter((diagnostic) => !beforeFingerprints.has(diagnosticFingerprint(diagnostic)));
+    diagnosticsByCheck.set(checkId, introduced);
+    diagnostics.push(...introduced);
+  }
+  return {
+    runs: after.runs.map((run) => introducedRun(run, diagnosticsByCheck.get(run.checkId) ?? [])),
+    diagnostics,
+    diagnosticsByCheck,
+    skippedChecks: after.skippedChecks,
+    failureResult: after.failureResult
+  };
+}
+
+function introducedRun(run: ValidationCheckRunSummary, diagnostics: readonly ValidationDiagnostic[]): ValidationCheckRunSummary {
+  const status =
+    run.status === "policy_failure"
+      ? diagnostics.some((diagnostic) => diagnostic.severity === "error")
+        ? "policy_failure"
+        : "passed"
+      : run.status;
+  const next: ValidationCheckRunSummary = {
+    ...run,
+    status,
+    diagnosticCount: diagnostics.length
+  };
+  if (status === "passed") delete next.failureMessage;
+  return next;
+}
+
+function diagnosticFingerprint(diagnostic: ValidationDiagnostic): string {
+  return JSON.stringify({
+    category: diagnostic.category,
+    path: diagnostic.path ?? "",
+    severity: diagnostic.severity,
+    code: diagnostic.code ?? "",
+    message: diagnostic.message
+  });
 }
 
 async function preloadCheckGraphRequirements(

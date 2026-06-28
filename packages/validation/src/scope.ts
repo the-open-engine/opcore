@@ -34,6 +34,7 @@ export type ValidationWorkspaceReadFileResult =
 
 export interface ValidationWorkspaceReadContext {
   scope: ResolvedValidationScope;
+  state?: "before" | "after";
 }
 
 export interface ValidationWorkspace {

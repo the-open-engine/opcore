@@ -28,7 +28,8 @@ export function createValidationRequest(
       mode: "required",
       provider: "opcore-graph"
     },
-    overlays: overlays.map((overlay) => normalizeOverlay(overlay))
+    overlays: overlays.map((overlay) => normalizeOverlay(overlay)),
+    reportMode: "introduced"
   };
   return validateValidationRequestPayload(request);
 }
@@ -86,7 +87,8 @@ export function createValidationRequestFromChanges(
       mode: "required",
       provider: "opcore-graph"
     },
-    overlays: normalizedOverlays
+    overlays: normalizedOverlays,
+    reportMode: seedRequest?.reportMode ?? "introduced"
   };
   if (seedRequest?.requestId !== undefined) request.requestId = seedRequest.requestId;
   if (seedRequest?.checks !== undefined) request.checks = seedRequest.checks;

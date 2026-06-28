@@ -13,18 +13,27 @@ describe("validation command options", () => {
       route: "pre-write",
       graphMode: "optional",
       requestFile: "request.json",
+      reportMode: "introduced",
       timeoutMs: DEFAULT_PRE_WRITE_TIMEOUT_MS
     });
     assert.deepEqual(parseValidateCommandOptions(["pre-write", "--request-file=request.json", "--timeout-ms=5000"]), {
       route: "pre-write",
       graphMode: "optional",
       requestFile: "request.json",
+      reportMode: "introduced",
       timeoutMs: 5000
     });
     assert.equal(
       parseValidateCommandOptions(["pre-write", "--request-file", "request.json", "--timeout-ms", "7"]).timeoutMs,
       7
     );
+    assert.deepEqual(parseValidateCommandOptions(["pre-write", "--request-file", "request.json", "--report-mode", "all"]), {
+      route: "pre-write",
+      graphMode: "optional",
+      requestFile: "request.json",
+      reportMode: "all",
+      timeoutMs: DEFAULT_PRE_WRITE_TIMEOUT_MS
+    });
   });
 
   it("rejects pre-write without a request file or with stdin", () => {
@@ -45,6 +54,17 @@ describe("validation command options", () => {
     }
   });
 
+  it("rejects invalid report mode values", () => {
+    assert.throws(
+      () => parseValidateCommandOptions(["pre-write", "--request-file", "request.json", "--report-mode", "new-only"]),
+      /--report-mode/
+    );
+    assert.throws(
+      () => parseValidateCommandOptions(["request", "--request-file", "request.json", "--report-mode="]),
+      /--report-mode/
+    );
+  });
+
   it("rejects scope, repo, check, and graph flags on pre-write", () => {
     for (const flags of [
       ["--repo", "."],
@@ -63,11 +83,36 @@ describe("validation command options", () => {
     }
   });
 
-  it("rejects timeout flags outside pre-write", () => {
+});
+
+describe("validation command timeout options", () => {
+  it("rejects validate timeout flags outside pre-write", () => {
     assert.throws(
       () => parseValidateCommandOptions(["request", "--request-file", "request.json", "--timeout-ms", "1"]),
       /cannot be combined with --timeout-ms/
     );
+  });
+});
+
+describe("check command options", () => {
+  it("rejects timeout flags", () => {
     assert.throws(() => parseCheckCommandOptions(["files", "--files", "src/index.ts", "--timeout-ms", "1"]), /--timeout-ms/);
+  });
+
+  it("parses check report mode for changed scope", () => {
+    assert.equal(parseCheckCommandOptions(["changed", "--base", "HEAD"]).reportMode, "introduced");
+    assert.equal(parseCheckCommandOptions(["changed", "--base", "HEAD", "--introduced"]).reportMode, "introduced");
+    assert.deepEqual(parseCheckCommandOptions(["changed", "--base", "HEAD", "--report-mode", "introduced"]), {
+      route: "changed",
+      repoRoot: undefined,
+      graphMode: "optional",
+      graphModeOverride: undefined,
+      checks: undefined,
+      reportMode: "introduced",
+      scope: {
+        kind: "changed",
+        baseRef: "HEAD"
+      }
+    });
   });
 });
