@@ -27,6 +27,7 @@ const packageNames = [
   "@the-open-engine/opcore-edit",
   "@the-open-engine/opcore-validation",
   "@the-open-engine/opcore-validation-clone",
+  "@the-open-engine/opcore-validation-docs",
   "@the-open-engine/opcore-validation-python",
   "@the-open-engine/opcore-validation-rust",
   "@the-open-engine/opcore-validation-typescript",
@@ -113,6 +114,7 @@ describe("installed package bins", () => {
         [
           "typescript.syntax",
           "typescript.types",
+          "typescript.lint",
           "typescript.import-graph",
           "typescript.dead-code",
           "typescript.function-metrics",
@@ -134,7 +136,17 @@ describe("installed package bins", () => {
           "python.types",
           "python.import-graph",
           "python.dead-code",
-          "python.relevant-tests"
+          "python.relevant-tests",
+          "docs.existence",
+          "docs.staleness",
+          "docs.freshness",
+          "docs.length",
+          "docs.dry",
+          "docs.content-quality",
+          "docs.code-blocks",
+          "docs.rules-why",
+          "docs.hub-coverage",
+          "clone.duplication"
         ]
       );
       assert.equal(assertSmoke(project, ["validate", "manifest", "--json"], 0).validationResult.status, "passed");
@@ -213,9 +225,11 @@ describe("installed package bins", () => {
         "@the-open-engine/opcore-edit",
         "@the-open-engine/opcore-validation",
         "@the-open-engine/opcore-validation-clone",
+        "@the-open-engine/opcore-validation-docs",
         "@the-open-engine/opcore-validation-python",
         "@the-open-engine/opcore-validation-rust",
         "@the-open-engine/opcore-validation-typescript",
+        "@the-open-engine/opcore-asp-provider",
         "@the-open-engine/opcore"
       ].map((packageName) => packWorkspace(packageName, temp));
       const project = join(temp, "project");
@@ -248,9 +262,11 @@ describe("installed package bins", () => {
         "@the-open-engine/opcore-edit",
         "@the-open-engine/opcore-validation",
         "@the-open-engine/opcore-validation-clone",
+        "@the-open-engine/opcore-validation-docs",
         "@the-open-engine/opcore-validation-python",
         "@the-open-engine/opcore-validation-rust",
         "@the-open-engine/opcore-validation-typescript",
+        "@the-open-engine/opcore-asp-provider",
         "@the-open-engine/opcore"
       ].map((packageName) => packWorkspace(packageName, temp));
       const project = join(temp, "project");

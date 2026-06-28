@@ -84,10 +84,12 @@ fn status_has_clone_source_change(output: &[u8]) -> bool {
 }
 
 fn parse_status_entry(entry: &[u8]) -> Option<([u8; 2], &[u8])> {
-    if entry.len() < 4 || entry[2] != b' ' {
-        return None;
+    match entry {
+        [index_status, worktree_status, b' ', path @ ..] if !path.is_empty() => {
+            Some(([*index_status, *worktree_status], path))
+        }
+        _ => None,
     }
-    Some(([entry[0], entry[1]], &entry[3..]))
 }
 
 fn status_mentions_rename_or_copy(status: [u8; 2]) -> bool {
