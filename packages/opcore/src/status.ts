@@ -38,6 +38,7 @@ type SourcePolicyState = "supported" | "extraction_pending" | "retained" | "unsu
 
 interface SourcePolicy {
   language: string;
+  unsupportedStack?: string;
   graphSupported: boolean;
   validationSupported: boolean;
   retained: boolean;
@@ -56,8 +57,8 @@ function extractionPendingPolicy(language: string): SourcePolicy {
   return { language, graphSupported: false, validationSupported: false, retained: false, state: "extraction_pending" };
 }
 
-function unsupportedPolicy(language: string): SourcePolicy {
-  return { language, graphSupported: false, validationSupported: false, retained: false, state: "unsupported" };
+function unsupportedPolicy(language: string, unsupportedStack = language): SourcePolicy {
+  return { language, unsupportedStack, graphSupported: false, validationSupported: false, retained: false, state: "unsupported" };
 }
 
 // Keep this status policy in lockstep with crates/graph-core/src/extraction/language.rs.
@@ -74,8 +75,8 @@ const sourcePolicies = new Map<string, SourcePolicy>([
   ["Cargo.lock", retainedPolicy("Rust")],
   [".py", supportedPolicy("Python", true, true)],
   [".pyi", supportedPolicy("Python", true, true)],
-  [".mjs", unsupportedPolicy("JavaScript")],
-  [".cjs", unsupportedPolicy("JavaScript")],
+  [".mjs", unsupportedPolicy("JavaScript", "ESM JavaScript")],
+  [".cjs", unsupportedPolicy("JavaScript", "CommonJS JavaScript")],
   [".vue", unsupportedPolicy("Vue")],
   [".svelte", unsupportedPolicy("Svelte")],
   [".go", unsupportedPolicy("Go")],
@@ -468,7 +469,7 @@ function computeCoverage(files: readonly string[]): OpcoreRepoStatePayload["cove
     }
     if (retained) retainedFiles += 1;
     if (policy && !graphSupported && !validationSupported && !retained) {
-      const current = unsupportedCounts.get(kind) ?? { language: policy.language, count: 0, examples: [] };
+      const current = unsupportedCounts.get(kind) ?? { language: policy.unsupportedStack ?? policy.language, count: 0, examples: [] };
       current.count += 1;
       if (current.examples.length < 3) current.examples.push(file);
       unsupportedCounts.set(kind, current);

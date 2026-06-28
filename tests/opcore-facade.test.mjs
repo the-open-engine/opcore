@@ -114,6 +114,43 @@ describe("opcore public facade", () => {
     });
   });
 
+  it("labels unsupported JavaScript module formats distinctly from supported JavaScript", () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-js-module-status-"));
+    try {
+      writeFixtureFile(temp, "src/app.js", "export const value = 1;\n");
+      writeFixtureFile(temp, "scripts/bootstrap.cjs", "module.exports = { value: 1 };\n");
+      writeFixtureFile(temp, "scripts/config.mjs", "export const config = {};\n");
+
+      const result = parseJson(runOpcore(["status", "--repo", temp, "--json"], temp, 0).stdout);
+      const coverage = result.repoState.coverage;
+
+      assert.deepEqual(coverage.languages, [
+        { language: "JavaScript", files: 3, graphSupported: true, validationSupported: true }
+      ]);
+      assert.equal(coverage.graph.supportedFiles, 1);
+      assert.equal(coverage.validation.supportedFiles, 1);
+      assert.equal(coverage.unsupported.totalFiles, 2);
+      assert.deepEqual(
+        coverage.unsupported.stacks.map((stack) => ({
+          extension: stack.extension,
+          language: stack.language,
+          count: stack.count
+        })),
+        [
+          { extension: ".cjs", language: "CommonJS JavaScript", count: 1 },
+          { extension: ".mjs", language: "ESM JavaScript", count: 1 }
+        ]
+      );
+      assert.equal(coverage.unsupported.stacks.some((stack) => stack.language === "JavaScript"), false);
+
+      const human = runOpcore(["status", "--repo", temp], temp, 0);
+      assert.match(human.stdout, /unsupported=CommonJS JavaScript 1, ESM JavaScript 1/);
+      assert.doesNotMatch(human.stdout, /unsupported=JavaScript 1, JavaScript 1/);
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
   it("hides ASP state from non-enrolled human status", () => {
     const temp = mkdtempSync(join(tmpdir(), "opcore-status-no-asp-"));
     try {
