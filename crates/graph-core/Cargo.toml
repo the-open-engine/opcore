@@ -15,6 +15,7 @@ name = "opcore-graph-core"
 path = "src/main.rs"
 
 [dependencies]
+fs2 = "0.4.3"
 globset = "0.4.18"
 oxc_allocator = "0.133.0"
 oxc_ast = "0.133.0"

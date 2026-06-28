@@ -5,7 +5,7 @@ use crate::protocol::{
 };
 use crate::{GRAPH_PROVIDER_NAME, GRAPH_SCHEMA_VERSION};
 use std::path::Path;
-use std::process::Command;
+use std::process::{Command, Stdio};
 
 pub(super) fn lifecycle_status(repo_root: &str) -> Option<GraphProviderStatus> {
     let daemon_dir = std::path::Path::new(repo_root)
@@ -138,7 +138,7 @@ fn stale_active_lifecycle_status(
     None
 }
 
-fn read_daemon_pid(pid_path: &Path) -> Result<u32, String> {
+pub(crate) fn read_daemon_pid(pid_path: &Path) -> Result<u32, String> {
     let content = std::fs::read_to_string(pid_path).map_err(|error| {
         format!(
             "graph watch daemon pid file {} is unreadable: {error}",
@@ -153,7 +153,7 @@ fn read_daemon_pid(pid_path: &Path) -> Result<u32, String> {
     })
 }
 
-fn process_is_alive(pid: u32) -> bool {
+pub(crate) fn process_is_alive(pid: u32) -> bool {
     if pid == 0 {
         return false;
     }
@@ -165,6 +165,8 @@ fn process_is_alive_platform(pid: u32) -> bool {
     Command::new("kill")
         .arg("-0")
         .arg(pid.to_string())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
         .status()
         .map(|status| status.success())
         .unwrap_or(false)
