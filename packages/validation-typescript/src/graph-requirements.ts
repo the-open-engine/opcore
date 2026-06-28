@@ -2,6 +2,8 @@ import type { ValidationCheckContext, ValidationGraphQueryRequirement } from "@t
 import type { GraphEdgeKind } from "@the-open-engine/opcore-contracts";
 import { materializeTypeScriptSources, toFileNodeId } from "./source-files.js";
 
+const deadCodeEdgeKinds = ["CALLS", "CONTAINS", "IMPORTS_FROM", "INHERITS", "IMPLEMENTS"] as const satisfies readonly GraphEdgeKind[];
+
 export async function importGraphRequirements(
   context: ValidationCheckContext
 ): Promise<readonly ValidationGraphQueryRequirement[]> {
@@ -17,7 +19,7 @@ export async function deadCodeGraphRequirements(
       operation: "factQuery",
       selector: {
         kind: "edges",
-        edgeKinds: ["CALLS"]
+        edgeKinds: deadCodeEdgeKinds
       }
     },
     {
