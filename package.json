@@ -10,6 +10,7 @@
     "packages/graph",
     "packages/edit",
     "packages/validation",
+    "packages/validation-clone",
     "packages/validation-python",
     "packages/validation-rust",
     "packages/validation-typescript",

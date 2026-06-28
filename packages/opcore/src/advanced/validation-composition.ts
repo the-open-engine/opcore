@@ -14,6 +14,7 @@ import {
   type ValidationCommandAdapterOptions,
   type ValidationGraphProviderClient
 } from "@the-open-engine/opcore-validation";
+import { createCloneValidationChecks } from "@the-open-engine/opcore-validation-clone";
 import { createPythonValidationAdapterStatus, createPythonValidationChecks } from "@the-open-engine/opcore-validation-python";
 import { createRustValidationAdapterStatus, createRustValidationChecks } from "@the-open-engine/opcore-validation-rust";
 import { createTypeScriptValidationChecks } from "@the-open-engine/opcore-validation-typescript";
@@ -25,12 +26,14 @@ import {
   cliGraphReviewContext,
   cliGraphStatus
 } from "./graph-provider-client.js";
+import { invokeCloneAnalysis } from "../clone-invoker.js";
 import { commonSkippedPathSegments } from "../source-policy.js";
 
 export const defaultValidationChecks = [
   ...createTypeScriptValidationChecks(),
   ...createRustValidationChecks(),
-  ...createPythonValidationChecks()
+  ...createPythonValidationChecks(),
+  ...createCloneValidationChecks({ invoke: invokeCloneAnalysis })
 ];
 
 export const checkCommandAdapter = createCliCheckCommandAdapter();

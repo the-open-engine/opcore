@@ -1920,6 +1920,234 @@
         }
       ]
     },
+    "CloneReportMode": {
+      "enum": [
+        "all",
+        "introduced"
+      ]
+    },
+    "HypotheticalOverlay": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path",
+            "action",
+            "content"
+          ],
+          "properties": {
+            "path": {
+              "$ref": "#/$defs/RepoRelativePath"
+            },
+            "action": {
+              "const": "write"
+            },
+            "content": {
+              "type": "string"
+            },
+            "checksumBefore": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path",
+            "action"
+          ],
+          "properties": {
+            "path": {
+              "$ref": "#/$defs/RepoRelativePath"
+            },
+            "action": {
+              "const": "delete"
+            },
+            "checksumBefore": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      ]
+    },
+    "CloneAnalysisRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "protocol",
+        "schemaVersion",
+        "repo",
+        "reportMode",
+        "overlays"
+      ],
+      "properties": {
+        "protocol": {
+          "const": "opcore.clone.v1"
+        },
+        "requestId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "repo": {
+          "$ref": "#/$defs/RepoIdentity"
+        },
+        "reportMode": {
+          "$ref": "#/$defs/CloneReportMode"
+        },
+        "paths": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RepoRelativePath"
+          }
+        },
+        "overlays": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/HypotheticalOverlay"
+          }
+        },
+        "minLines": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "minTokens": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "CloneFinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "cloneClassId",
+        "contentHash",
+        "path",
+        "peerPath",
+        "paths",
+        "lineCount",
+        "tokenCount",
+        "introduced"
+      ],
+      "properties": {
+        "cloneClassId": {
+          "type": "string",
+          "pattern": "^clone-[a-f0-9]{16}$"
+        },
+        "contentHash": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "path": {
+          "$ref": "#/$defs/RepoRelativePath"
+        },
+        "peerPath": {
+          "$ref": "#/$defs/RepoRelativePath"
+        },
+        "paths": {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "$ref": "#/$defs/RepoRelativePath"
+          }
+        },
+        "lineCount": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "tokenCount": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "introduced": {
+          "type": "boolean"
+        }
+      }
+    },
+    "CloneAnalysisSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "analyzedFiles",
+        "cloneClassCount",
+        "findingCount",
+        "overlayCount"
+      ],
+      "properties": {
+        "analyzedFiles": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "cloneClassCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "findingCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "overlayCount": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "CloneAnalysisResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "protocol",
+        "schemaVersion",
+        "repo",
+        "reportMode",
+        "status",
+        "persisted",
+        "findings",
+        "summary"
+      ],
+      "properties": {
+        "protocol": {
+          "const": "opcore.clone.v1"
+        },
+        "requestId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "repo": {
+          "$ref": "#/$defs/RepoIdentity"
+        },
+        "reportMode": {
+          "$ref": "#/$defs/CloneReportMode"
+        },
+        "status": {
+          "const": "passed"
+        },
+        "persisted": {
+          "type": "boolean"
+        },
+        "dbPath": {
+          "$ref": "#/$defs/RepoRelativePath"
+        },
+        "findings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CloneFinding"
+          }
+        },
+        "summary": {
+          "$ref": "#/$defs/CloneAnalysisSummary"
+        }
+      }
+    },
     "ValidationRequest": {
       "type": "object",
       "additionalProperties": false,
@@ -11869,6 +12097,7 @@
         "@the-open-engine/opcore-graph-core-linux-x64",
         "@the-open-engine/opcore-edit",
         "@the-open-engine/opcore-validation",
+        "@the-open-engine/opcore-validation-clone",
         "@the-open-engine/opcore-validation-python",
         "@the-open-engine/opcore-validation-rust",
         "@the-open-engine/opcore-validation-typescript",
@@ -13009,6 +13238,13 @@
             },
             {
               "contains": {
+                "const": "@the-open-engine/opcore-validation-clone"
+              },
+              "minContains": 1,
+              "maxContains": 1
+            },
+            {
+              "contains": {
                 "const": "@the-open-engine/opcore-validation-python"
               },
               "minContains": 1,
@@ -13240,6 +13476,21 @@
                 "properties": {
                   "packageName": {
                     "const": "@the-open-engine/opcore-validation"
+                  }
+                }
+              },
+              "minContains": 1,
+              "maxContains": 1
+            },
+            {
+              "contains": {
+                "type": "object",
+                "required": [
+                  "packageName"
+                ],
+                "properties": {
+                  "packageName": {
+                    "const": "@the-open-engine/opcore-validation-clone"
                   }
                 }
               },
@@ -16903,6 +17154,13 @@
             },
             {
               "contains": {
+                "const": "@the-open-engine/opcore-validation-clone"
+              },
+              "minContains": 1,
+              "maxContains": 1
+            },
+            {
+              "contains": {
                 "const": "@the-open-engine/opcore-validation-python"
               },
               "minContains": 1,
@@ -17030,6 +17288,21 @@
                 "properties": {
                   "packageName": {
                     "const": "@the-open-engine/opcore-validation"
+                  }
+                }
+              },
+              "minContains": 1,
+              "maxContains": 1
+            },
+            {
+              "contains": {
+                "type": "object",
+                "required": [
+                  "packageName"
+                ],
+                "properties": {
+                  "packageName": {
+                    "const": "@the-open-engine/opcore-validation-clone"
                   }
                 }
               },
@@ -17795,6 +18068,13 @@
             },
             {
               "contains": {
+                "const": "@the-open-engine/opcore-validation-clone"
+              },
+              "minContains": 1,
+              "maxContains": 1
+            },
+            {
+              "contains": {
                 "const": "@the-open-engine/opcore-validation-python"
               },
               "minContains": 1,
@@ -17922,6 +18202,21 @@
                 "properties": {
                   "packageName": {
                     "const": "@the-open-engine/opcore-validation"
+                  }
+                }
+              },
+              "minContains": 1,
+              "maxContains": 1
+            },
+            {
+              "contains": {
+                "type": "object",
+                "required": [
+                  "packageName"
+                ],
+                "properties": {
+                  "packageName": {
+                    "const": "@the-open-engine/opcore-validation-clone"
                   }
                 }
               },

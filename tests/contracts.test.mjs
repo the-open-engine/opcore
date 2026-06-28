@@ -4476,6 +4476,7 @@ function validReleaseReceipt() {
     ]),
     ["@the-open-engine/opcore-edit", "packages/edit"],
     ["@the-open-engine/opcore-validation", "packages/validation"],
+    ["@the-open-engine/opcore-validation-clone", "packages/validation-clone"],
     ["@the-open-engine/opcore-validation-python", "packages/validation-python"],
     ["@the-open-engine/opcore-validation-rust", "packages/validation-rust"],
     ["@the-open-engine/opcore-validation-typescript", "packages/validation-typescript"],

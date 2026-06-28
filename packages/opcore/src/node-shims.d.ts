@@ -13,7 +13,9 @@ declare module "node:child_process" {
       cwd?: string;
       env?: Record<string, string | undefined>;
       encoding?: "utf8";
-      stdio?: readonly ("ignore" | "pipe")[];
+      input?: string;
+      stdio?: readonly ("ignore" | "pipe" | number)[];
+      timeout?: number;
     }
   ): SpawnSyncReturns;
 }
@@ -34,10 +36,12 @@ declare module "node:fs" {
 
   export function appendFileSync(path: string, data: string): void;
   export function chmodSync(path: string, mode: number): void;
+  export function closeSync(fd: number): void;
   export function existsSync(path: string): boolean;
   export function lstatSync(path: string): Stats;
   export function mkdirSync(path: string, options?: { recursive?: boolean }): void;
   export function mkdtempSync(prefix: string): string;
+  export function openSync(path: string, flags: string): number;
   export function readFileSync(path: string, encoding: "utf8"): string;
   export function realpathSync(path: string): string;
   export function readdirSync(path: string): string[];

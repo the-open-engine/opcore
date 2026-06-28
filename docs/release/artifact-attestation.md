@@ -12,16 +12,16 @@ Graph input evidence: docs/release/graph-release-receipt.json
 
 | Platform | Binary | Binary SHA-256 | Checksum File |
 |----------|--------|----------------|---------------|
-| darwin-arm64 | opcore-graph-core | 429c3aa6046a1fda3001ee797cca6db2583c65eb977221f7f97a7043de04ef77 | opcore-graph-core.sha256 |
-| darwin-x64 | opcore-graph-core | 6652d43eec8f39e7c1b930b92e032eb268d1e4263454a89614e0d8299fc3b4e7 | opcore-graph-core.sha256 |
-| linux-x64 | opcore-graph-core | 4654c6ba6383886e759fe3c805ec8c0df3b31d2e1db9d5c18626de6b2cfe758a | opcore-graph-core.sha256 |
+| darwin-arm64 | opcore-graph-core | 01e834a5d0104ca9626b6ac78da1977bea87a62608abfdfba4bd3ea0ccea7508 | opcore-graph-core.sha256 |
+| darwin-x64 | opcore-graph-core | 1b72afa74d48b087c967cb01b39630ed3fa58b5a2895037a778eb5612ef73059 | opcore-graph-core.sha256 |
+| linux-x64 | opcore-graph-core | 70cb6d213d74594f337a67522c879b77767872dc4601063686f1abe70886127b | opcore-graph-core.sha256 |
 
 No package publishing happens in this gate.
 
 ## Cutover Gate
 
 Issue #30 receipt: docs/release/cutover-receipt.json
-Cutover receipt SHA-256: 681a649fe7d18a58d67b1e910746a175f94209c9633623f6ba812644103d164f
+Cutover receipt SHA-256: bc46c1ebd4ee5b55a29ccee3614f5d8b5d6add60f3dc928543bd9e0869829000
 Installed command receipts: 28
 Rust command receipts: 7
 Python command receipts: 8

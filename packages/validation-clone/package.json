@@ -1,0 +1,44 @@
+{
+  "name": "@the-open-engine/opcore-validation-clone",
+  "version": "0.1.0-alpha.0",
+  "description": "Internal Opcore clone-detection validation adapter for duplicate-code policy checks.",
+  "type": "module",
+  "license": "MIT",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "keywords": [
+    "code-intelligence",
+    "coding-agents",
+    "clone-detection",
+    "validation",
+    "developer-tools"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@the-open-engine/opcore-contracts": "0.1.0-alpha.0",
+    "@the-open-engine/opcore-validation": "0.1.0-alpha.0"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/the-open-engine/opcore.git",
+    "directory": "packages/validation-clone"
+  },
+  "scripts": {
+    "build": "tsc -b"
+  }
+}

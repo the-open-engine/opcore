@@ -42,7 +42,8 @@ const pythonCheckIds = [
   "python.dead-code",
   "python.relevant-tests"
 ];
-const defaultCheckIds = [...typeScriptCheckIds, ...rustCheckIds, ...pythonCheckIds];
+const cloneCheckIds = ["clone.duplication"];
+const defaultCheckIds = [...typeScriptCheckIds, ...rustCheckIds, ...pythonCheckIds, ...cloneCheckIds];
 
 describe("validation CLI", () => {
   it("keeps opcore status separate from validation execution results", async () => {

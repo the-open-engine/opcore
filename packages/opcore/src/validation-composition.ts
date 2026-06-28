@@ -14,6 +14,7 @@ import {
   type ValidationGraphProviderClient,
   type ValidationRuntimePolicy
 } from "@the-open-engine/opcore-validation";
+import { createCloneValidationChecks } from "@the-open-engine/opcore-validation-clone";
 import { createPythonValidationAdapterStatus, createPythonValidationChecks } from "@the-open-engine/opcore-validation-python";
 import { createRustValidationAdapterStatus, createRustValidationChecks } from "@the-open-engine/opcore-validation-rust";
 import { createTypeScriptValidationChecks } from "@the-open-engine/opcore-validation-typescript";
@@ -25,6 +26,7 @@ import {
   opcoreGraphReviewContext,
   opcoreGraphStatus
 } from "./graph-provider-client.js";
+import { invokeCloneAnalysis } from "./clone-invoker.js";
 import { commonSkippedPathSegments } from "./source-policy.js";
 
 declare const process: {
@@ -34,7 +36,8 @@ declare const process: {
 export const defaultValidationChecks = [
   ...createTypeScriptValidationChecks(),
   ...createRustValidationChecks(),
-  ...createPythonValidationChecks()
+  ...createPythonValidationChecks(),
+  ...createCloneValidationChecks({ invoke: invokeCloneAnalysis })
 ];
 
 export const opcorePublicValidationRuntimePolicy: ValidationRuntimePolicy = {

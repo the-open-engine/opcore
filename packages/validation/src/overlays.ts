@@ -1,7 +1,13 @@
 import { createHash } from "node:crypto";
 import type { HypotheticalOverlay, ValidationRequest } from "@the-open-engine/opcore-contracts";
 import { validateRepoRelativePath, validateValidationRequestPayload } from "@the-open-engine/opcore-contracts";
-import type { ResolvedValidationScope, ValidationWorkspace, ValidationWorkspaceReadFileResult } from "./scope.js";
+import type {
+  ResolvedValidationScope,
+  ValidationWorkspace,
+  ValidationWorkspaceFile,
+  ValidationWorkspaceFileSet,
+  ValidationWorkspaceReadFileResult
+} from "./scope.js";
 
 export type ValidationFileReadState = "before" | "after";
 export type ValidationFileReadStatus = "found" | "missing" | "deleted";
@@ -75,6 +81,7 @@ export interface CreateValidationFileViewArgs {
 export interface ValidationFileView {
   readonly overlays: readonly ValidationOverlayEntry[];
   readonly scopeFiles: readonly string[];
+  readonly visibleFiles: readonly string[];
   readFile: (path: string, options?: ValidationFileReadOptions) => Promise<ValidationFileReadResult>;
   readBefore: (path: string) => Promise<ValidationFileReadResult>;
   readAfter: (path: string) => Promise<ValidationFileReadResult>;
@@ -127,6 +134,7 @@ export async function createValidationFileView(args: CreateValidationFileViewArg
   const overlayByPath = new Map(overlays.map((overlay) => [overlay.path, overlay]));
   const scopeFiles = uniqueSorted(args.scope.files.map(normalizeValidationFileViewPath));
   const defaultReadState = args.defaultReadState ?? "after";
+  const visibleFiles = await resolveVisibleFiles(args.workspace, args.scope, defaultReadState, scopeFiles, overlays);
 
   const readBefore = (path: string): Promise<ValidationFileReadResult> =>
     readWorkspacePath(args.workspace, args.scope, normalizeValidationFileViewPath(path), "before");
@@ -151,6 +159,7 @@ export async function createValidationFileView(args: CreateValidationFileViewArg
   return {
     overlays,
     scopeFiles,
+    visibleFiles,
     readFile: (path, options = {}) =>
       options.state === "before" || (options.state === undefined && defaultReadState === "before") ? readBefore(path) : readAfter(path),
     readBefore,
@@ -277,6 +286,28 @@ function validateWorkspaceReader(workspace: ValidationWorkspace): void {
   if (!workspace || typeof workspace.readFile !== "function") {
     throw new Error("Validation workspace readFile is required");
   }
+}
+
+async function resolveVisibleFiles(
+  workspace: ValidationWorkspace,
+  scope: ResolvedValidationScope,
+  state: ValidationFileReadState,
+  scopeFiles: readonly string[],
+  overlays: readonly ValidationOverlayEntry[]
+): Promise<readonly string[]> {
+  const overlayFiles = overlays.map((overlay) => overlay.path);
+  if (workspace.listFiles === undefined) return uniqueSorted([...scopeFiles, ...overlayFiles]);
+  const fileSet = await workspace.listFiles({ scope, state });
+  if (fileSet.unavailable) return uniqueSorted([...scopeFiles, ...overlayFiles]);
+  return uniqueSorted([...fileSetPaths(fileSet), ...scopeFiles, ...overlayFiles]);
+}
+
+function fileSetPaths(fileSet: ValidationWorkspaceFileSet): readonly string[] {
+  return fileSet.files.map((file) => normalizeValidationFileViewPath(workspaceFilePath(file)));
+}
+
+function workspaceFilePath(file: string | ValidationWorkspaceFile): string {
+  return typeof file === "string" ? file : file.toPath ?? file.path;
 }
 
 function uniqueSorted(paths: readonly string[]): readonly string[] {

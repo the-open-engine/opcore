@@ -8,6 +8,7 @@ const implementationPackages = new Set([
   "@the-open-engine/opcore-graph",
   "@the-open-engine/opcore-edit",
   "@the-open-engine/opcore-validation",
+  "@the-open-engine/opcore-validation-clone",
   "@the-open-engine/opcore-validation-python",
   "@the-open-engine/opcore-validation-rust",
   "@the-open-engine/opcore-validation-typescript"
@@ -18,6 +19,7 @@ const packageNamesByDir = new Map([
   ["graph", "@the-open-engine/opcore-graph"],
   ["edit", "@the-open-engine/opcore-edit"],
   ["validation", "@the-open-engine/opcore-validation"],
+  ["validation-clone", "@the-open-engine/opcore-validation-clone"],
   ["validation-python", "@the-open-engine/opcore-validation-python"],
   ["validation-rust", "@the-open-engine/opcore-validation-rust"],
   ["validation-typescript", "@the-open-engine/opcore-validation-typescript"],
@@ -59,6 +61,7 @@ describe("package import boundaries", () => {
               "@the-open-engine/opcore-graph",
               "@the-open-engine/opcore-edit",
               "@the-open-engine/opcore-validation",
+              "@the-open-engine/opcore-validation-clone",
               "@the-open-engine/opcore-validation-python",
               "@the-open-engine/opcore-validation-rust",
               "@the-open-engine/opcore-validation-typescript",
@@ -103,6 +106,13 @@ describe("package import boundaries", () => {
             `${file} imports ${source}`
           );
         }
+        if (packageDir === "validation-clone") {
+          assert.equal(
+            ["@the-open-engine/opcore-contracts", "@the-open-engine/opcore-validation"].includes(source),
+            true,
+            `${file} imports ${source}`
+          );
+        }
         if (packageDir === "validation-rust") {
           assert.equal(
             ["@the-open-engine/opcore-contracts", "@the-open-engine/opcore-validation"].includes(source),
@@ -115,7 +125,7 @@ describe("package import boundaries", () => {
   });
 
   it("keeps adapter packages free of aggregate CLI dependencies", () => {
-    for (const packageDir of ["graph", "edit", "validation", "validation-python", "validation-rust", "asp-provider"]) {
+    for (const packageDir of ["graph", "edit", "validation", "validation-clone", "validation-python", "validation-rust", "asp-provider"]) {
       const manifest = JSON.parse(readFileSync(`packages/${packageDir}/package.json`, "utf8"));
       assert.equal(manifest.dependencies?.["@the-open-engine/opcore"], undefined, packageDir);
       const tsconfig = JSON.parse(readFileSync(`packages/${packageDir}/tsconfig.json`, "utf8"));

@@ -1,4 +1,5 @@
 pub mod artifact;
+pub mod clone;
 pub mod daemon;
 pub mod extraction;
 pub mod pipeline;
