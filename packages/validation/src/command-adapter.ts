@@ -26,6 +26,7 @@ import { createValidationRunner, type CreateValidationRunnerOptions, type Valida
 import { createNodeValidationWorkspace } from "./workspace.js";
 import type { ValidationGraphProviderClient } from "./graph-client.js";
 import type { ValidationWorkspace } from "./scope.js";
+import type { ValidationRuntimePolicy } from "./registry.js";
 import { readFile } from "node:fs/promises";
 
 declare const process: {
@@ -40,6 +41,7 @@ export interface ValidationCommandAdapterOptions {
   graphProviderClient?: ValidationGraphProviderClient;
   clock?: ValidationClock;
   defaultRepoRoot?: string;
+  runtime?: ValidationRuntimePolicy;
 }
 
 export function createCheckCommandAdapter(options: ValidationCommandAdapterOptions = {}): CommandAdapter {
@@ -131,7 +133,8 @@ async function runRequest(
     workspace: workspaceForRequest(request, parsed, options),
     registry: registryForOptions(options),
     graphProviderClient: options.graphProviderClient,
-    clock: options.clock
+    clock: options.clock,
+    runtime: options.runtime
   };
   return createValidationRunner(runnerOptions).runValidation(request);
 }

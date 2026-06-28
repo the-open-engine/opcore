@@ -28,7 +28,8 @@ import {
   ValidationCheckRegistryError,
   type ValidationCheckDefinition,
   type ValidationCheckRegistry,
-  type ValidationCheckResult
+  type ValidationCheckResult,
+  type ValidationRuntimePolicy
 } from "./registry.js";
 import { defaultValidationGraphProvider, missingGraphStatus, normalizeValidationRequest } from "./request.js";
 import {
@@ -50,6 +51,7 @@ export interface CreateValidationRunnerOptions {
   graphProviderClient?: ValidationGraphProviderClient;
   graphSessionFactory?: ValidationGraphSessionFactory;
   clock?: ValidationClock;
+  runtime?: ValidationRuntimePolicy;
 }
 
 export interface ValidationRunner {
@@ -61,8 +63,14 @@ const systemClock: ValidationClock = {
   isoNow: () => new Date().toISOString()
 };
 
+const defaultRuntimePolicy: ValidationRuntimePolicy = {
+  persistentCaches: "enabled"
+};
+
 type RunnerRuntimeOptions = Required<Pick<CreateValidationRunnerOptions, "workspace" | "registry" | "clock">> &
-  Pick<CreateValidationRunnerOptions, "graphProviderClient" | "graphSessionFactory">;
+  Pick<CreateValidationRunnerOptions, "graphProviderClient" | "graphSessionFactory"> & {
+    runtime: ValidationRuntimePolicy;
+  };
 
 interface CheckExecution {
   runs: ValidationCheckRunSummary[];
@@ -79,6 +87,7 @@ interface ExecuteChecksArgs {
   selectedChecks: readonly ValidationCheckDefinition[];
   totalStartedAt: number;
   clock: ValidationClock;
+  runtime: ValidationRuntimePolicy;
 }
 
 interface SingleCheckOutcome {
@@ -92,11 +101,13 @@ interface SingleCheckOutcome {
 export function createValidationRunner(options: CreateValidationRunnerOptions): ValidationRunner {
   const registry = options.registry ?? createValidationCheckRegistry(options.checks ?? []);
   const clock = options.clock ?? systemClock;
+  const runtime = options.runtime ?? defaultRuntimePolicy;
   return {
     runValidation: (request) => runValidation(request, {
       ...options,
       registry,
-      clock
+      clock,
+      runtime
     })
   };
 }
@@ -144,7 +155,8 @@ async function runPreparedValidation(
       fileView,
       selectedChecks,
       totalStartedAt,
-      clock: options.clock
+      clock: options.clock,
+      runtime: options.runtime
     });
     if (execution.failureResult !== undefined) return execution.failureResult;
     return finalValidationResult(selectedChecks, execution, graph.status, totalStartedAt, options.clock);
@@ -320,7 +332,8 @@ function checkContext(args: ExecuteChecksArgs) {
     scope: args.scope,
     graphStatus: args.graph.status,
     graph: args.graph,
-    fileView: args.fileView
+    fileView: args.fileView,
+    runtime: args.runtime
   };
 }
 

@@ -20,6 +20,13 @@ export interface ValidationCheckContext {
   graphStatus: GraphProviderStatus;
   graph: ValidationGraphQuerySession;
   fileView: ValidationFileView;
+  runtime: ValidationRuntimePolicy;
+}
+
+export type ValidationPersistentCacheMode = "enabled" | "disabled";
+
+export interface ValidationRuntimePolicy {
+  persistentCaches: ValidationPersistentCacheMode;
 }
 
 export interface ValidationCheckResult {
