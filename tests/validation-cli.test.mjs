@@ -55,7 +55,8 @@ const docsCheckIds = [
   "docs.hub-coverage"
 ];
 const cloneCheckIds = ["clone.duplication"];
-const executableDefaultCheckIds = [...typeScriptCheckIds, ...rustCheckIds, ...pythonCheckIds];
+const typeScriptExecutableDefaultCheckIds = typeScriptCheckIds.filter((checkId) => checkId !== "typescript.lint");
+const executableDefaultCheckIds = [...typeScriptExecutableDefaultCheckIds, ...rustCheckIds, ...pythonCheckIds, ...cloneCheckIds];
 const defaultCheckIds = [...typeScriptCheckIds, ...rustCheckIds, ...pythonCheckIds, ...docsCheckIds, ...cloneCheckIds];
 
 describe("validation CLI", () => {
@@ -91,7 +92,7 @@ describe("validation CLI", () => {
       const result = run(args, [0, 1]);
       assert.equal(result.owner, "validation");
       assert.equal(result.exitCode === 0 || result.exitCode === 1, true);
-      assert.equal(result.validationResult.manifest.checks.length, executableDefaultCheckIds.length);
+      assert.deepEqual(result.validationResult.manifest.checks, executableDefaultCheckIds);
       assert.equal(Object.hasOwn(result.validationResult.manifest, "entries"), false);
       assert.equal(Object.hasOwn(result.validationResult.manifest, "runs"), false);
       assert.equal(Object.hasOwn(result.validationResult.manifest, "skippedChecks"), false);
