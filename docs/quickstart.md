@@ -1,12 +1,20 @@
 # Quickstart
 
+## From This Checkout
+
+Package publication is maintainer-controlled during alpha staging. Until
+maintainers publish the alpha packages, run Opcore from a source checkout:
+
 ```bash
-npx @the-open-engine/opcore@0.1.0-alpha.0 init
+npm ci
+npm run build
+node packages/opcore/dist/index.js init --repo /path/to/repo
 ```
 
 What this shows:
 
-- `npx @the-open-engine/opcore@0.1.0-alpha.0 init` starts the interactive onboarding wizard without a prior install.
+- The built source command starts the interactive onboarding wizard without
+  relying on npm registry publication.
 - The wizard runs a read-only scan first, prints Coverage before Findings, reports concrete counts and locations, and asks before writing.
 - Scan/status/check/measure are read-only for source files.
 - Approved init writes only additive `.opcore/config`, one delimited guidance block in an existing agent file or new `AGENTS.md`, a managed `.opcore/` line in `.gitignore` for Git repos, and `.opcore/init-undo.json`.
@@ -14,9 +22,15 @@ What this shows:
 
 Alpha support is `darwin-arm64`, `darwin-x64`, and `linux-x64` with Node >=22. Unsupported platforms return typed degraded status instead of crashing. Windows is out of scope for `0.1.0-alpha.0`. Language coverage is deep for TypeScript/JavaScript, useful for Rust, and experimental degraded-honest for Python. Other non-TS/JS/Rust/Python files are counted in coverage; day-one checks skip them.
 
-## Repeat Use
+## Package Publication
 
-Install globally when you expect to run Opcore repeatedly:
+After package publication, the one-command first-run path is:
+
+```bash
+npx @the-open-engine/opcore@0.1.0-alpha.0 init
+```
+
+After package publication, install globally when you expect to run Opcore repeatedly:
 
 ```bash
 npm install -g @the-open-engine/opcore@0.1.0-alpha.0
@@ -103,5 +117,10 @@ Private ASP hosts may launch the provider process behind host-owned decisions an
 ```bash
 opcore-asp-provider --stdio
 ```
+
+The aggregate `@the-open-engine/opcore` package exposes only `opcore`;
+`opcore-asp-provider` comes from the separate
+`@the-open-engine/opcore-asp-provider` package. From a built source checkout,
+use `node packages/asp-provider/dist/index.js --stdio`.
 
 Do not treat provider output as a gate decision. The provider returns ASP Assessments; the ASP host returns allow, deny, or indeterminate decisions plus receipts.

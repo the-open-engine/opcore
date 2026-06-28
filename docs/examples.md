@@ -3,7 +3,7 @@
 ## First Run
 
 ```bash
-npx @the-open-engine/opcore@0.1.0-alpha.0 init
+node packages/opcore/dist/index.js init --repo /path/to/repo
 ```
 
 Expected shape:

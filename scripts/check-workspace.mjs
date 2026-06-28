@@ -188,6 +188,8 @@ for (const [name, content] of [
 }
 for (const token of [
   "Opcore",
+  "Package publication is maintainer-controlled during alpha staging",
+  "node packages/opcore/dist/index.js init --repo /path/to/repo",
   "npm install -g @the-open-engine/opcore@0.1.0-alpha.0",
   "opcore try",
   "opcore --repo .",
@@ -203,6 +205,9 @@ for (const [name, content] of [
   ["packages/opcore/README.md", opcorePackageReadme]
 ]) {
   for (const token of [
+    "Package publication is maintainer-controlled during alpha staging",
+    "node packages/opcore/dist/index.js init --repo /path/to/repo",
+    "After package publication",
     "npx @the-open-engine/opcore@0.1.0-alpha.0 init",
     "npm install -g @the-open-engine/opcore@0.1.0-alpha.0",
     "npm prefix -g",
@@ -213,7 +218,9 @@ for (const [name, content] of [
     "Unsupported platforms return typed degraded status",
     "Windows is out of scope for `0.1.0-alpha.0`",
     "freshly `git init` repo with no commits",
-    "opcore check --changed --json"
+    "opcore check --changed --json",
+    "@the-open-engine/opcore",
+    "package exposes only"
   ]) {
     requireIncludes(name, content, token);
   }

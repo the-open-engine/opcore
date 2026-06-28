@@ -58,6 +58,9 @@ for (const token of ["npm\", [\"token\", \"list\", \"--json\"]", "bypass_2fa", "
 const readme = readFileSync("README.md", "utf8");
 for (const token of [
   "Local code scans, honest coverage, setup guidance, and changed-file validation for coding agents.",
+  "Package publication is maintainer-controlled during alpha staging",
+  "node packages/opcore/dist/index.js init --repo /path/to/repo",
+  "After package publication",
   "npm install -g @the-open-engine/opcore@0.1.0-alpha.0",
   "opcore try",
   "opcore --repo .",

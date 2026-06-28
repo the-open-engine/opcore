@@ -25,13 +25,16 @@ and honest coverage; the ASP host owns the allow/deny/transaction outcome.
 
 ## Install
 
+Package publication is maintainer-controlled during alpha staging. After
+publication, install the provider package directly:
+
 ```sh
 npm install @the-open-engine/opcore-asp-provider
 ```
 
 This installs the `opcore-asp-provider` bin alongside its Opcore validation
 dependencies. The package is launched by an ASP host/manager, not run directly by an
-end user. A provisional install manifest is published at
+end user. A provisional install manifest is included at
 `@the-open-engine/opcore-asp-provider/manifests/opcore-asp-provider.provisional.json`
 (see [Provisional manifest](#provisional-manifest)).
 
@@ -39,6 +42,12 @@ end user. A provisional install manifest is published at
 
 ```sh
 opcore-asp-provider --stdio
+```
+
+From a built source checkout, launch the same provider entrypoint with:
+
+```sh
+node packages/asp-provider/dist/index.js --stdio
 ```
 
 The process speaks newline-delimited JSON-RPC 2.0 over stdin/stdout. Without
