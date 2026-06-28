@@ -39,6 +39,27 @@ describe("graph query CLI routes", () => {
       assert.equal(query.graphQuery.queryKind, "tests_for");
       assert.ok(query.graphQuery.nodes.some((node) => node.path === "src/__tests__/greeting.test.ts"));
 
+      const inheritors = run(latticeBin, [
+        "graph",
+        "query",
+        "inheritors_of",
+        "class:src/models.ts#GreetingModel",
+        "--repo",
+        fixtureRoot,
+        "--json"
+      ]);
+      assert.equal(inheritors.status, "ok");
+      assert.equal(inheritors.graphQuery.queryKind, "inheritors_of");
+      assert.ok(inheritors.providerStatus.handshake.queryKinds.includes("inheritors_of"));
+      assert.deepEqual(
+        inheritors.graphQuery.nodes.map((node) => node.id),
+        [
+          "class:src/models.ts#FriendlyGreetingModel",
+          "class:src/models.ts#GreetingModel",
+          "class:src/models.ts#InternalGreetingModel"
+        ]
+      );
+
       const review = run(latticeBin, ["graph", "review-context", "--repo", fixtureRoot, "--files", "src/models.ts", "--json"]);
       assert.deepEqual(review.graphReviewContext.changedFiles, ["src/models.ts"]);
       assert.ok(review.graphReviewContext.impactedFiles.includes("src/components/GreetingCard.tsx"));

@@ -140,6 +140,14 @@ fn status_handshake_reports_capabilities() -> TestResult {
     ] {
         assert!(node_kinds.iter().any(|value| value == kind), "{kind}");
     }
+    let query_kinds = value
+        .pointer("/status/handshake/queryKinds")
+        .and_then(Value::as_array)
+        .ok_or_else(|| std::io::Error::other("missing handshake queryKinds"))?;
+    assert!(
+        query_kinds.iter().any(|value| value == "inheritors_of"),
+        "inheritors_of"
+    );
     assert_json_eq(
         &value,
         "/status/handshake/artifact/artifactName",

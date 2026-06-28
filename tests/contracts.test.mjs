@@ -311,6 +311,7 @@ describe("Opcore shared contracts", () => {
       "importers_of",
       "imports_of",
       "tests_for",
+      "inheritors_of",
       "children_of",
       "file_summary"
     ]);
@@ -3604,6 +3605,7 @@ function validHandshake() {
       "importers_of",
       "imports_of",
       "tests_for",
+      "inheritors_of",
       "children_of",
       "file_summary",
       "review_context",

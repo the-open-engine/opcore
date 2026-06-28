@@ -134,6 +134,14 @@ fn status_response_round_trips_with_handshake() -> TestResult {
     for kind in ["IMPLEMENTS", "DEPENDS_ON", "INHERITS"] {
         assert!(edge_kinds.iter().any(|value| value == kind), "{kind}");
     }
+    let query_kinds = value
+        .pointer("/status/handshake/queryKinds")
+        .and_then(|value| value.as_array())
+        .ok_or_else(|| std::io::Error::other("missing handshake queryKinds"))?;
+    assert!(
+        query_kinds.iter().any(|value| value == "inheritors_of"),
+        "inheritors_of"
+    );
     let decoded: GraphDaemonResponse = serde_json::from_value(value)?;
     assert_eq!(decoded, response);
     Ok(())

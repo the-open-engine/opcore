@@ -145,6 +145,10 @@ pub(crate) fn named_query_with_index(
             ),
         ),
         GraphNamedQueryKind::TestsFor => index.tests_for(&target_ids, max_depth, limit),
+        GraphNamedQueryKind::InheritorsOf => index.traverse(
+            &target_ids,
+            TraversalSpec::new(&["INHERITS"], Direction::Incoming, max_depth, limit),
+        ),
         GraphNamedQueryKind::ChildrenOf => index.traverse(
             &target_ids,
             TraversalSpec::new(&["CONTAINS"], Direction::Outgoing, max_depth, limit),

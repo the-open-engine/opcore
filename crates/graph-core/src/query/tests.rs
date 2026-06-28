@@ -132,6 +132,54 @@ fn named_query_reports_empty_missing_targets() {
 }
 
 #[test]
+fn named_query_returns_incoming_inherits_edges_for_inheritors() {
+    let snapshot = inheritance_snapshot();
+    let output = named_query(
+        &snapshot,
+        &GraphNamedQueryRequest {
+            request_id: None,
+            repo: repo(),
+            schema_version: 1,
+            mode: GraphProviderMode::Required,
+            query_kind: GraphNamedQueryKind::InheritorsOf,
+            target: "class:src/models.ts#BaseModel".to_string(),
+            max_depth: Some(2),
+            limit: Some(100),
+        },
+    );
+
+    let node_ids = output
+        .nodes
+        .iter()
+        .map(|node| node.id.as_str())
+        .collect::<Vec<_>>();
+    let edge_ids = output
+        .edges
+        .iter()
+        .map(|edge| edge.id.as_deref().unwrap_or_default())
+        .collect::<Vec<_>>();
+
+    assert_eq!(
+        node_ids,
+        vec![
+            "class:src/models.ts#BaseModel",
+            "class:src/models.ts#DirectModel",
+            "class:src/models.ts#IndirectModel",
+        ]
+    );
+    assert_eq!(
+        edge_ids,
+        vec![
+            "INHERITS:class:src/models.ts#DirectModel->class:src/models.ts#BaseModel",
+            "INHERITS:class:src/models.ts#IndirectModel->class:src/models.ts#DirectModel",
+        ]
+    );
+    assert_eq!(output.traversal.total, 3);
+    assert!(!output.traversal.truncated);
+    assert!(!output.traversal.empty);
+}
+
+#[test]
 fn named_query_handles_import_cycles_with_deterministic_order() {
     let snapshot = cycle_snapshot();
     let output = named_query(
@@ -461,6 +509,61 @@ fn fixture_snapshot() -> StoreQueryOutput {
                 "TESTED_BY",
                 "function:src/models.ts#formatGreeting",
                 "test:src/__tests__/greeting.test.ts#renders greeting cards",
+            ),
+        ],
+        diagnostics: Vec::new(),
+    }
+}
+
+fn inheritance_snapshot() -> StoreQueryOutput {
+    StoreQueryOutput {
+        metadata: GraphSnapshotMetadata {
+            schema_version: 1,
+            provider: "opcore-graph".to_string(),
+            repo: repo(),
+            generated_at: "2026-06-04T00:00:00.000Z".to_string(),
+            freshness: GraphFreshness {
+                generated_at: "2026-06-04T00:00:00.000Z".to_string(),
+                age_ms: 0,
+                max_age_ms: None,
+                stale: false,
+                reason: None,
+            },
+            node_kinds: vec!["Class".to_string()],
+            edge_kinds: vec!["INHERITS".to_string()],
+        },
+        nodes: vec![
+            node(
+                "class:src/models.ts#BaseModel",
+                "Class",
+                Some("src/models.ts"),
+            ),
+            node(
+                "class:src/models.ts#DirectModel",
+                "Class",
+                Some("src/models.ts"),
+            ),
+            node(
+                "class:src/models.ts#IndirectModel",
+                "Class",
+                Some("src/models.ts"),
+            ),
+            node(
+                "class:src/other.ts#UnrelatedModel",
+                "Class",
+                Some("src/other.ts"),
+            ),
+        ],
+        edges: vec![
+            edge(
+                "INHERITS",
+                "class:src/models.ts#DirectModel",
+                "class:src/models.ts#BaseModel",
+            ),
+            edge(
+                "INHERITS",
+                "class:src/models.ts#IndirectModel",
+                "class:src/models.ts#DirectModel",
             ),
         ],
         diagnostics: Vec::new(),
