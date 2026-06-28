@@ -1132,6 +1132,18 @@ export interface ValidationResult {
   manifest?: ValidationResultManifest;
 }
 
+export interface RequiredContextDocPolicy {
+  filenames: readonly string[];
+  requiredPaths: readonly string[];
+  minimumContentLength: number;
+}
+
+export const requiredContextDocPolicy = {
+  filenames: ["AGENTS.md", "CLAUDE.md"],
+  requiredPaths: ["."],
+  minimumContentLength: 120
+} as const satisfies RequiredContextDocPolicy;
+
 export interface PreWriteValidationOverlaySummary {
   count: number;
   writeCount: number;
@@ -5922,6 +5934,20 @@ export function validateValidationResultPayload(result: ValidationResult): Valid
   return result;
 }
 
+export function validateRequiredContextDocPolicy(policy: RequiredContextDocPolicy): RequiredContextDocPolicy {
+  if (!policy || typeof policy !== "object") {
+    throw new Error("Required context doc policy is required");
+  }
+  validateStringArray(policy.filenames, "Required context doc policy filenames", { allowEmpty: false });
+  for (const filename of policy.filenames) validateContextDocFilename(filename);
+  validateStringArray(policy.requiredPaths, "Required context doc policy requiredPaths", { allowEmpty: false });
+  for (const path of policy.requiredPaths) validateContextDocRequiredPath(path);
+  if (!Number.isInteger(policy.minimumContentLength) || policy.minimumContentLength < 1) {
+    throw new Error("Required context doc policy minimumContentLength must be a positive integer");
+  }
+  return policy;
+}
+
 export function validatePreWriteValidationReceipt(receipt: PreWriteValidationReceipt): PreWriteValidationReceipt {
   if (!receipt || typeof receipt !== "object") {
     throw new Error("Pre-write validation receipt is required");
@@ -6390,6 +6416,19 @@ function validateValidationFailure(failure: ValidationFailure): ValidationFailur
   }
   if (failure.cause !== undefined) validateNonEmptyString(failure.cause, "Validation failure cause");
   return failure;
+}
+
+function validateContextDocFilename(filename: string): string {
+  validateRepoRelativePath(filename);
+  if (filename.includes("/")) {
+    throw new Error(`Required context doc policy filename must be a basename: ${filename}`);
+  }
+  return filename;
+}
+
+function validateContextDocRequiredPath(path: string): string {
+  if (path === ".") return path;
+  return validateRepoRelativePath(path);
 }
 
 export function validateEditPlanPayload(plan: EditPlan): EditPlan {

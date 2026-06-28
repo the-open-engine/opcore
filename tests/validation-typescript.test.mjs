@@ -11,6 +11,7 @@ import {
   TYPE_SCRIPT_FUNCTION_METRICS_CHECK_ID,
   TYPE_SCRIPT_FILE_LENGTH_CHECK_ID,
   TYPE_SCRIPT_IMPORT_GRAPH_CHECK_ID,
+  TYPE_SCRIPT_LINT_CHECK_ID,
   TYPE_SCRIPT_RELEVANT_TESTS_CHECK_ID,
   TYPE_SCRIPT_SYNTAX_CHECK_ID,
   TYPE_SCRIPT_TYPES_CHECK_ID,
@@ -29,6 +30,7 @@ describe("validation-typescript adapter", () => {
       [
         TYPE_SCRIPT_SYNTAX_CHECK_ID,
         TYPE_SCRIPT_TYPES_CHECK_ID,
+        TYPE_SCRIPT_LINT_CHECK_ID,
         TYPE_SCRIPT_IMPORT_GRAPH_CHECK_ID,
         TYPE_SCRIPT_DEAD_CODE_CHECK_ID,
         TYPE_SCRIPT_FUNCTION_METRICS_CHECK_ID,
@@ -37,9 +39,157 @@ describe("validation-typescript adapter", () => {
       ]
     );
     assert.equal(registry.byId.get(TYPE_SCRIPT_SYNTAX_CHECK_ID)?.requiresGraph, false);
+    assert.equal(registry.byId.get(TYPE_SCRIPT_LINT_CHECK_ID)?.requiresGraph, false);
     assert.equal(registry.byId.get(TYPE_SCRIPT_IMPORT_GRAPH_CHECK_ID)?.requiresGraph, false);
     assert.equal(registry.byId.get(TYPE_SCRIPT_FUNCTION_METRICS_CHECK_ID)?.requiresGraph, false);
     assert.equal(registry.byId.get(TYPE_SCRIPT_FILE_LENGTH_CHECK_ID)?.requiresGraph, false);
+  });
+
+  it("reports syntactic TypeScript lint diagnostics for dangerous patterns", async () => {
+    const result = await runner({
+      files: {
+        "package.json": JSON.stringify({
+          optionalDependencies: {
+            "optional-feature": "1.0.0"
+          }
+        }),
+        "src/index.ts": `
+          import optionalFeature from "optional-feature";
+          import { exec, spawn } from "node:child_process";
+          import axios from "axios";
+
+          promise.catch(() => {});
+          const apiKey = process.env.API_KEY || "default-key";
+          exec(\`git clone \${url}\`);
+          spawn(command, args, { shell: true });
+          app.listen(3000);
+          await fetch(url);
+          await axios.get(url);
+          await Promise.all(items.map(async (item) => processItem(item)));
+          const casted = payload as unknown as DangerousType;
+          const mod = await import("./plugins/" + pluginName);
+          throw new Error("Failed");
+          void optionalFeature;
+          void apiKey;
+          void casted;
+          void mod;
+        `
+      }
+    }).runValidation(
+      request({
+        checks: [TYPE_SCRIPT_LINT_CHECK_ID]
+      })
+    );
+
+    assert.equal(result.status, "policy_failure", JSON.stringify(result.diagnostics, null, 2));
+    assert.deepEqual(
+      new Set(result.diagnostics.map((diagnostic) => diagnostic.code)),
+      new Set([
+        "TS_LINT_NO_EMPTY_CATCH",
+        "TS_LINT_NO_DANGEROUS_SPAWN",
+        "TS_LINT_NO_DANGEROUS_FALLBACKS",
+        "TS_LINT_NO_HARDCODED_PORTS",
+        "TS_LINT_NO_RAW_NETWORK_WITHOUT_TIMEOUT",
+        "TS_LINT_NO_UNBOUNDED_PROMISE_ALL_MAP",
+        "TS_LINT_NO_UNSAFE_TYPE_ASSERTION",
+        "TS_LINT_NO_DYNAMIC_IMPORT_CONCAT",
+        "TS_LINT_REQUIRE_ERROR_CONTEXT",
+        "TS_LINT_NO_STATIC_OPTIONAL_IMPORT"
+      ])
+    );
+    assert.equal(result.diagnostics.every((diagnostic) => diagnostic.category === "lint"), true);
+    assert.equal(result.diagnostics.every((diagnostic) => diagnostic.path === "src/index.ts"), true);
+  });
+
+  it("limits dangerous spawn lint to child process execution calls", async () => {
+    const result = await runner({
+      files: {
+        "src/index.ts": `
+          import { exec as childExec, execSync, spawn as childSpawn } from "node:child_process";
+          import * as child_process from "node:child_process";
+          import * as childProcess from "child_process";
+
+          const rx = /ready/;
+          const db = { exec: (_sql: string) => 1 };
+          const matcher = { exec: (_value: string) => true };
+          rx.exec(input);
+          db.exec("select 1");
+          matcher.exec(input);
+          child_process.exec("git status");
+          childProcess.spawn(command, args, { shell: true });
+          childExec("git status");
+          childSpawn("git", ["status"], { shell: true });
+          execSync("git status");
+        `,
+        "src/required-child-process.ts": `
+          const cp = require("child_process");
+          const { exec: requiredExec, spawn, spawn: requiredSpawn } = require("node:child_process");
+          cp.exec("git status");
+          spawn("git", ["status"], { shell: true });
+          requiredExec("git status");
+          requiredSpawn("git", ["status"], { shell: true });
+          require("child_process").exec("git status");
+        `,
+        "src/local-child-process.ts": `
+          const childProcess = {
+            exec: (_command: string) => undefined,
+            spawn: (_command: string, _args: readonly string[], _options: { shell: boolean }) => undefined
+          };
+          const child_process = {
+            exec: (_command: string) => undefined,
+            spawn: (_command: string, _args: readonly string[], _options: { shell: boolean }) => undefined
+          };
+          childProcess.exec("select 1");
+          childProcess.spawn("tool", [], { shell: true });
+          child_process.exec("select 1");
+          child_process.spawn("tool", [], { shell: true });
+        `
+      }
+    }).runValidation(
+      request({
+        checks: [TYPE_SCRIPT_LINT_CHECK_ID],
+        scope: {
+          kind: "files",
+          files: ["src/index.ts", "src/required-child-process.ts", "src/local-child-process.ts"]
+        }
+      })
+    );
+
+    const dangerousSpawnDiagnostics = result.diagnostics.filter(
+      (diagnostic) => diagnostic.code === "TS_LINT_NO_DANGEROUS_SPAWN"
+    );
+    assert.equal(result.status, "policy_failure", JSON.stringify(result.diagnostics, null, 2));
+    assert.equal(dangerousSpawnDiagnostics.length, 10, JSON.stringify(result.diagnostics, null, 2));
+    assert.equal(result.diagnostics.length, 10, JSON.stringify(result.diagnostics, null, 2));
+  });
+
+  it("filters TypeScript lint diagnostics through introduced report mode", async () => {
+    const result = await runner({
+      files: {
+        "src/index.ts": `
+          promise.catch(() => {});
+          await fetch(url, { signal });
+        `
+      }
+    }).runValidation(
+      request({
+        checks: [TYPE_SCRIPT_LINT_CHECK_ID],
+        reportMode: "introduced",
+        overlays: [
+          {
+            path: "src/index.ts",
+            action: "write",
+            content: `
+              promise.catch(() => {});
+              await fetch(url);
+            `
+          }
+        ]
+      })
+    );
+
+    assert.equal(result.status, "policy_failure", JSON.stringify(result.diagnostics, null, 2));
+    assert.deepEqual(result.diagnostics.map((diagnostic) => diagnostic.code), ["TS_LINT_NO_RAW_NETWORK_WITHOUT_TIMEOUT"]);
   });
 
   it("reports syntax diagnostics from overlay after-state content", async () => {
