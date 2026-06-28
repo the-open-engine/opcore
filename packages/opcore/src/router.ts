@@ -27,6 +27,7 @@ declare const process: {
     write(text: string): void;
   };
   stderr: {
+    isTTY?: boolean;
     write(text: string): void;
   };
 };
@@ -40,6 +41,7 @@ export interface RunOpcoreCliOptions {
   stderr?: Writer;
   stdinIsTTY?: boolean;
   stdoutIsTTY?: boolean;
+  stderrIsTTY?: boolean;
   readLine?: (prompt: string) => Promise<string>;
 }
 
@@ -76,15 +78,21 @@ export async function routeOpcoreCommand(
 export async function runOpcoreCli(options: RunOpcoreCliOptions): Promise<number> {
   const stdout = options.stdout ?? ((text: string) => process.stdout.write(text));
   const stderr = options.stderr ?? ((text: string) => process.stderr.write(text));
-  const routed = await routeOpcoreCommand(options.argv, options.bin ?? "opcore", {
-    stdinIsTTY: options.stdinIsTTY ?? process.stdin.isTTY === true,
-    stdoutIsTTY: options.stdoutIsTTY ?? process.stdout.isTTY === true,
-    readLine: options.readLine ?? createReadLine()
-  });
+  const routed = await routeOpcoreCommand(options.argv, options.bin ?? "opcore", createOpcoreInitRuntime(options, stderr));
   const output = routed.json ? JSON.stringify(commandRouterResultForJsonOutput(routed)) : routed.message;
   const write = routed.json || routed.status === "ok" ? stdout : stderr;
   write(`${output}\n`);
   return routed.exitCode;
+}
+
+function createOpcoreInitRuntime(options: RunOpcoreCliOptions, stderr: Writer): OpcoreInitRuntime {
+  return {
+    stdinIsTTY: options.stdinIsTTY ?? process.stdin.isTTY === true,
+    stdoutIsTTY: options.stdoutIsTTY ?? process.stdout.isTTY === true,
+    stderrIsTTY: options.stderrIsTTY ?? process.stderr.isTTY === true,
+    writeStderr: stderr,
+    readLine: options.readLine ?? createReadLine()
+  };
 }
 
 async function routeOpcoreParsed(
