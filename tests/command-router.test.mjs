@@ -6,6 +6,7 @@ import { cpSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } fro
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { routeOpcoreCommand } from "../packages/opcore/dist/index.js";
 import { commandRouterManifest, routeCommand, runCli } from "../packages/opcore/dist/advanced/index.js";
 
 const removedLegacyCommandField = `legacy${"Command"}`;
@@ -373,6 +374,11 @@ describe("Opcore command router", () => {
     assert.match(help, /Groups: graph, inspect, edit, check, validate, status, doctor/);
     assert.doesNotMatch(help, /\bstart\b/);
     assert.doesNotMatch(help, /\bstop\b/);
+    const publicHelp = (await routeOpcoreCommand(["--help"])).message;
+    assert.match(publicHelp, /opcore graph <build\|update\|watch\|status\|query\|serve\|impact\|review-context\|detect-changes\|search> --repo \. \[--json]/);
+    const graphHelp = (await routeCommand(["graph", "--help"], "opcore")).message;
+    assert.match(graphHelp, /Commands: build, update, watch, status, query, serve, impact, review-context, detect-changes, search/);
+    assert.match(graphHelp, /opcore graph <build\|update\|watch\|status\|query\|serve\|impact\|review-context\|detect-changes\|search> --repo \. \[--json]/);
     const status = await routeCommand(["status", "--json"], "opcore");
     assert.equal(status.validationStatus.adapterRegistry.checkIds.length, 22);
     assert.equal(status.validationStatus.adapterRegistry.checkIds.includes("rust.cargo-check"), true);

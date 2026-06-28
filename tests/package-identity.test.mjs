@@ -56,6 +56,21 @@ describe("Opcore public package identity", () => {
     }
   });
 
+  it("documents the ASP provider as a separate package from the Opcore CLI", () => {
+    const opcoreManifest = readJson("packages/opcore/package.json");
+    const providerManifest = readJson("packages/asp-provider/package.json");
+    assert.deepEqual(opcoreManifest.bin, { opcore: "dist/index.js" });
+    assert.deepEqual(providerManifest.bin, { "opcore-asp-provider": "dist/index.js" });
+
+    for (const path of ["README.md", "docs/quickstart.md", "packages/opcore/README.md"]) {
+      const content = readFileSync(path, "utf8");
+      assert.match(content, /opcore-asp-provider --stdio/, path);
+      assert.match(content, /@the-open-engine\/opcore-asp-provider/, path);
+      assert.match(content, /@the-open-engine\/opcore/, path);
+      assert.match(content, /(?:provides|exposes) only (?:the )?`opcore` bin/, path);
+    }
+  });
+
   it("keeps old public package identities out of release-facing package files", () => {
     const checkedFiles = [
       "package.json",

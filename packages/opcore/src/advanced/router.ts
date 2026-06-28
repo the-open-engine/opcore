@@ -181,7 +181,7 @@ function helpMessage(groupName?: string): string {
       "  opcore <group> <command> [options]",
       "",
       "Groups:",
-      "  graph      build/search/query repository graph context",
+      "  graph      build, update, watch, query, search, and serve repository graph context",
       "  inspect    read symbols, definitions, references, signatures, implementations, and search results",
       "  edit       create and apply validation-gated edit plans",
       "  check      run syntax, type, graph-aware, and manifest checks",
@@ -234,7 +234,7 @@ function graphStatusAdvice(validationStatus: ValidationStatusPayload): string {
 }
 
 function groupSyntax(groupName: string): string {
-  if (groupName === "graph") return "opcore graph <build|status|search|impact|query> --repo . [--json]";
+  if (groupName === "graph") return commandGroupSyntax("graph");
   if (groupName === "inspect") return "opcore inspect <symbols|definition|references|signature|implementations|search> <target> --repo . [--json]";
   if (groupName === "edit") return "opcore edit <exact|patch|tree|rename|move|signature> --repo . [--json]";
   if (groupName === "check") return "opcore check <files|changed|staged|tree|all|manifest> --repo . [--json]";
@@ -242,6 +242,12 @@ function groupSyntax(groupName: string): string {
   if (groupName === "status") return "opcore status [--json]";
   if (groupName === "doctor") return "opcore doctor [--json]";
   return `opcore ${groupName} <command> [options]`;
+}
+
+function commandGroupSyntax(groupName: string): string {
+  const group = commandGroupByName(groupName);
+  if (!group) throw new Error(`Opcore ${groupName} command group is missing from command router manifest`);
+  return `${group.canonicalCommand.join(" ")} <${group.commands.join("|")}> --repo . [--json]`;
 }
 
 function groupExample(groupName: string): string {

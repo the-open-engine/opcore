@@ -1,5 +1,5 @@
 import type { CommandRouterResult, ParsedCommandArgv } from "@the-open-engine/opcore-contracts";
-import { createCommandRouterResult, normalizeCommandBin, parseCommandArgv } from "@the-open-engine/opcore-contracts";
+import { commandGroupByName, createCommandRouterResult, normalizeCommandBin, parseCommandArgv } from "@the-open-engine/opcore-contracts";
 import { routeOpcoreCheck } from "./check.js";
 import {
   createOpcoreMeasureDelta,
@@ -218,7 +218,7 @@ function opcoreHelpMessage(): string {
     "  opcore init --undo --approve [--repo <path>] [--json]",
     "  opcore measure [--repo <path>] [--json]",
     "  opcore try [--json]",
-    "  opcore graph <build|status|search|impact|query> --repo . [--json]",
+    `  ${graphCommandSyntax()}`,
     "  opcore inspect <symbols|definition|references|signature|implementations|search> <target> --repo . [--json]",
     "  opcore edit <exact|patch|tree|rename|move|signature> --repo . [--json]",
     "  opcore validate <request|hypothetical|pre-write|manifest> --request-file <file> --json",
@@ -231,6 +231,12 @@ function opcoreHelpMessage(): string {
     "",
     "Exit codes: 0 passed, 1 findings or errors, 64 unsupported."
   ].join("\n");
+}
+
+function graphCommandSyntax(): string {
+  const graphGroup = commandGroupByName("graph");
+  if (!graphGroup) throw new Error("Opcore graph command group is missing from command router manifest");
+  return `${graphGroup.canonicalCommand.join(" ")} <${graphGroup.commands.join("|")}> --repo . [--json]`;
 }
 
 function shouldWriteLatencyTelemetry(result: CommandRouterResult): result is CommandRouterResult & { repoState: NonNullable<CommandRouterResult["repoState"]> } {
