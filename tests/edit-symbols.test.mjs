@@ -95,10 +95,14 @@ describe("opcore edit symbol operations", () => {
       writeFileSync(join(repo, "src/a.ts"), "import { helper } from \"./helper\";\nexport function greet(name: string) {\n  return helper(name);\n}\n");
       writeFileSync(join(repo, "src/helper.ts"), "export function helper(value: string) {\n  return value;\n}\n");
       writeFileSync(join(repo, "src/b.ts"), "import { greet } from \"./a\";\nexport const message = greet(\"Ada\");\n");
-      writeFileSync(join(repo, "src/unrelated.ts"), "export const unrelated = true;\n");
+      writeFileSync(join(repo, "src/c.ts"), "import { message } from \"./b\";\nexport const relayed = message;\n");
+      writeFileSync(join(repo, "src/unrelated.ts"), "import { helper } from \"./helper\";\nexport const unrelated = helper(\"ignored\");\n");
+
+      const defaultProject = createSymbolEditLanguageServiceProject(repo, "src/a.ts");
+      assert.deepEqual(projectRepoPaths(repo, defaultProject), ["src/a.ts", "src/b.ts", "src/c.ts", "src/helper.ts"]);
 
       const scopedProject = createSymbolEditLanguageServiceProject(repo, "src/a.ts", { projectScope: "import_closure" });
-      assert.deepEqual(projectRepoPaths(repo, scopedProject), ["src/a.ts", "src/helper.ts"]);
+      assert.deepEqual(projectRepoPaths(repo, scopedProject), ["src/a.ts", "src/b.ts", "src/c.ts", "src/helper.ts"]);
       const scopedInjectedResult = materializeRenameSymbolEdit(
         repo,
         { target: { path: "src/a.ts", name: "greet" }, newName: "salute" },
