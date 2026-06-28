@@ -18867,6 +18867,64 @@
     "InspectReferenceResult": {
       "type": "object",
       "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "status"
+            ],
+            "properties": {
+              "status": {
+                "const": "ok"
+              }
+            }
+          },
+          "then": {
+            "not": {
+              "required": [
+                "failure"
+              ]
+            },
+            "properties": {
+              "providerStatus": {
+                "allOf": [
+                  {
+                    "$ref": "#/$defs/GraphProviderStatus"
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "state"
+                    ],
+                    "properties": {
+                      "state": {
+                        "const": "available"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "status"
+            ],
+            "properties": {
+              "status": {
+                "const": "degraded"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "failure"
+            ]
+          }
+        }
+      ],
       "required": [
         "route",
         "status",
@@ -18879,28 +18937,19 @@
           "const": "references"
         },
         "status": {
-          "const": "ok"
+          "enum": [
+            "ok",
+            "degraded"
+          ]
         },
         "target": {
           "$ref": "#/$defs/InspectSymbolTarget"
         },
         "providerStatus": {
-          "allOf": [
-            {
-              "$ref": "#/$defs/GraphProviderStatus"
-            },
-            {
-              "type": "object",
-              "required": [
-                "state"
-              ],
-              "properties": {
-                "state": {
-                  "const": "available"
-                }
-              }
-            }
-          ]
+          "$ref": "#/$defs/GraphProviderStatus"
+        },
+        "failure": {
+          "$ref": "#/$defs/InspectRouteFailure"
         },
         "references": {
           "type": "array",
@@ -18913,6 +18962,64 @@
     "InspectSignatureResult": {
       "type": "object",
       "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "status"
+            ],
+            "properties": {
+              "status": {
+                "const": "ok"
+              }
+            }
+          },
+          "then": {
+            "not": {
+              "required": [
+                "failure"
+              ]
+            },
+            "properties": {
+              "providerStatus": {
+                "allOf": [
+                  {
+                    "$ref": "#/$defs/GraphProviderStatus"
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "state"
+                    ],
+                    "properties": {
+                      "state": {
+                        "const": "available"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "status"
+            ],
+            "properties": {
+              "status": {
+                "const": "degraded"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "failure"
+            ]
+          }
+        }
+      ],
       "required": [
         "route",
         "status",
@@ -18925,28 +19032,19 @@
           "const": "signature"
         },
         "status": {
-          "const": "ok"
+          "enum": [
+            "ok",
+            "degraded"
+          ]
         },
         "target": {
           "$ref": "#/$defs/InspectSymbolTarget"
         },
         "providerStatus": {
-          "allOf": [
-            {
-              "$ref": "#/$defs/GraphProviderStatus"
-            },
-            {
-              "type": "object",
-              "required": [
-                "state"
-              ],
-              "properties": {
-                "state": {
-                  "const": "available"
-                }
-              }
-            }
-          ]
+          "$ref": "#/$defs/GraphProviderStatus"
+        },
+        "failure": {
+          "$ref": "#/$defs/InspectRouteFailure"
         },
         "signatures": {
           "type": "array",
@@ -18959,6 +19057,64 @@
     "InspectImplementationResult": {
       "type": "object",
       "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "status"
+            ],
+            "properties": {
+              "status": {
+                "const": "ok"
+              }
+            }
+          },
+          "then": {
+            "not": {
+              "required": [
+                "failure"
+              ]
+            },
+            "properties": {
+              "providerStatus": {
+                "allOf": [
+                  {
+                    "$ref": "#/$defs/GraphProviderStatus"
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "state"
+                    ],
+                    "properties": {
+                      "state": {
+                        "const": "available"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "status"
+            ],
+            "properties": {
+              "status": {
+                "const": "degraded"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "failure"
+            ]
+          }
+        }
+      ],
       "required": [
         "route",
         "status",
@@ -18971,28 +19127,19 @@
           "const": "implementations"
         },
         "status": {
-          "const": "ok"
+          "enum": [
+            "ok",
+            "degraded"
+          ]
         },
         "target": {
           "$ref": "#/$defs/InspectSymbolTarget"
         },
         "providerStatus": {
-          "allOf": [
-            {
-              "$ref": "#/$defs/GraphProviderStatus"
-            },
-            {
-              "type": "object",
-              "required": [
-                "state"
-              ],
-              "properties": {
-                "state": {
-                  "const": "available"
-                }
-              }
-            }
-          ]
+          "$ref": "#/$defs/GraphProviderStatus"
+        },
+        "failure": {
+          "$ref": "#/$defs/InspectRouteFailure"
         },
         "implementations": {
           "type": "array",

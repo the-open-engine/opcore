@@ -148,13 +148,21 @@ it("returns Rust graph-backed references and degrades unsupported Rust signature
 
 it("returns typed failures for unavailable graph, stale graph, ambiguity, missing symbols, unsupported languages, and malformed targets", async () => {
   await withFixtureCopy(async (fixtureRoot) => {
-    await assertUnavailableGraphFailure(fixtureRoot);
+    await assertUnsupportedLanguageFailure(fixtureRoot);
+    await assertUnavailableGraphFallback(fixtureRoot);
     await buildGraph(fixtureRoot);
     await assertAmbiguousFailure(fixtureRoot);
     await assertMissingSymbolFailure(fixtureRoot);
-    await assertUnsupportedLanguageFailure(fixtureRoot);
     await assertMalformedTargetFailure(fixtureRoot);
-    await assertStaleGraphFailure(fixtureRoot);
+    await assertStaleGraphFallback(fixtureRoot);
+  });
+});
+
+it("degrades references through the language service in a generated TS repo without graph setup", async () => {
+  await withGeneratedReferenceFixture(async (fixtureRoot) => {
+    const result = await inspectReferences(fixtureRoot, "src/source.ts", "greet", ["--line", "1"]);
+    assertDegradedReferenceResult(result);
+    assert.deepEqual(referenceLines(result, "src/source.ts"), [1, 5]);
   });
 });
 
@@ -187,8 +195,10 @@ function referenceLines(result, file) {
   return [...new Set(result.inspectResult.references.filter((reference) => reference.file === file).map((reference) => reference.line))].sort((left, right) => left - right);
 }
 
-async function assertUnavailableGraphFailure(fixtureRoot) {
-  assertInspectFailure(await inspectReferences(fixtureRoot, "src/models.ts", "GreetingModel", ["--line", "1"]), "graph_unavailable");
+async function assertUnavailableGraphFallback(fixtureRoot) {
+  const result = await inspectReferences(fixtureRoot, "src/models.ts", "GreetingModel", ["--line", "1"]);
+  assertDegradedReferenceResult(result);
+  assert.equal(result.inspectResult.target.nodeId, "class:src/models.ts#GreetingModel");
 }
 
 async function assertAmbiguousFailure(fixtureRoot) {
@@ -210,12 +220,23 @@ async function assertMalformedTargetFailure(fixtureRoot) {
   assertInspectFailure(await inspectReferences(fixtureRoot, "src/models.ts", "GreetingModel", ["--line", "zero"]), "malformed_target");
 }
 
-async function assertStaleGraphFailure(fixtureRoot) {
+async function assertStaleGraphFallback(fixtureRoot) {
   const modelsPath = join(fixtureRoot, "src/models.ts");
   writeFileSync(modelsPath, `${readFileSync(modelsPath, "utf8")}\nexport const staleMarker = true;\n`);
   const stale = await inspectReferences(fixtureRoot, "src/models.ts", "GreetingModel", ["--line", "1"]);
-  assertInspectFailure(stale, "graph_unavailable");
+  assertDegradedReferenceResult(stale);
   assert.equal(stale.providerStatus.state, "stale");
+}
+
+function assertDegradedReferenceResult(result) {
+  assert.equal(result.owner, "inspect");
+  assert.equal(result.status, "ok");
+  assert.equal(result.exitCode, 0);
+  assert.notEqual(result.providerStatus.state, "available");
+  assert.equal(result.inspectResult.status, "degraded");
+  assert.equal(result.inspectResult.failure.category, "graph_unavailable");
+  assert.equal(result.inspectResult.references.length > 0, true);
+  for (const reference of result.inspectResult.references) assertReferenceEntry(reference, result.inspectResult.target.symbolName);
 }
 
 async function inspectReferences(fixtureRoot, path, symbolName, extra = []) {
@@ -251,6 +272,27 @@ async function withFixtureCopy(runFixture) {
   try {
     cpSync(sourceFixtureRoot, fixtureRoot, { recursive: true, filter: skipGeneratedStore });
     await runFixture(fixtureRoot);
+  } finally {
+    rmSync(temp, { recursive: true, force: true });
+  }
+}
+
+async function withGeneratedReferenceFixture(runFixture) {
+  const temp = mkdtempSync(join(tmpdir(), "lattice-inspect-refs-generic-"));
+  try {
+    mkdirSync(join(temp, "src"), { recursive: true });
+    writeFileSync(
+      join(temp, "src/source.ts"),
+      [
+        "export function greet(name: string): string {",
+        "  return `Hello ${name}`;",
+        "}",
+        "",
+        "export const message = greet(\"Ada\");",
+        ""
+      ].join("\n")
+    );
+    await runFixture(temp);
   } finally {
     rmSync(temp, { recursive: true, force: true });
   }

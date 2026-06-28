@@ -15,13 +15,24 @@ import type {
   InspectSymbolSummary,
   InspectSymbolTarget
 } from "@the-open-engine/opcore-contracts";
-import { Node, Project, SyntaxKind, type ParameterDeclaration, type SourceFile, type Symbol as MorphSymbol, type TypeParameterDeclaration } from "ts-morph";
+import {
+  Node,
+  Project,
+  SyntaxKind,
+  type ClassDeclaration,
+  type InterfaceDeclaration,
+  type ParameterDeclaration,
+  type SourceFile,
+  type Symbol as MorphSymbol,
+  type TypeParameterDeclaration
+} from "ts-morph";
 
 export interface InspectReferenceRequest {
   path: string;
   symbolName: string;
   line?: number;
   column?: number;
+  allowGraphless?: boolean;
   graphTargetOnly?: boolean;
   graphNodeIds: readonly string[];
   graphCandidates?: readonly InspectGraphCandidate[];
@@ -32,6 +43,7 @@ export interface InspectReferenceRequest {
 
 export interface InspectImplementationRequest {
   target: InspectSymbolTarget;
+  allowGraphless?: boolean;
   graphCandidates: readonly InspectGraphCandidate[];
   graphEdges: readonly GraphFactEdge[];
   limit?: number;
@@ -287,8 +299,21 @@ export function resolveInspectImplementations(repoRoot: string, request: Inspect
       const targetResolution = resolveImplementationTargetInProject(context.project, normalizedRepoRoot, request, preflight.candidate);
       if (!targetResolution.ok) return targetResolution;
       const targetCandidate = targetResolution.candidate;
-      const relationships = collectImplementationRelationships(targetCandidate, request.graphCandidates, request.graphEdges);
       const languageServiceNodes = implementationLocationNodesByGraphId(context.project, normalizedRepoRoot, targetResolution.node);
+      if (request.allowGraphless) {
+        return {
+          ok: true,
+          target: targetResolution.target,
+          implementations: collectGraphlessImplementationEntries({
+            project: context.project,
+            repoRoot: normalizedRepoRoot,
+            targetCandidate,
+            targetSummary: targetResolution.targetSummary,
+            limit: request.limit
+          })
+        };
+      }
+      const relationships = collectImplementationRelationships(targetCandidate, request.graphCandidates, request.graphEdges);
       const entries: InspectImplementationEntry[] = [];
       for (const relationship of relationships) {
         const candidate = request.graphCandidates.find((entry) => entry.id === relationship.candidateId);
@@ -431,6 +456,7 @@ function resolveImplementationTargetInProject(
     symbolName,
     ...(request.target.line !== undefined ? { line: request.target.line } : {}),
     ...(request.target.column !== undefined ? { column: request.target.column } : {}),
+    ...(request.allowGraphless ? { allowGraphless: true } : {}),
     graphNodeIds: request.graphCandidates.map((candidate) => candidate.id),
     graphCandidates: request.graphCandidates,
     limit: request.limit
@@ -511,6 +537,148 @@ function collectImplementationRelationships(
     }
   }
   return [...relationships.values()].sort((left, right) => left.candidateId.localeCompare(right.candidateId));
+}
+
+interface GraphlessImplementationContext {
+  project: Project;
+  repoRoot: string;
+  targetCandidate: InspectGraphCandidate;
+  targetSummary: InspectSymbolSummary;
+  limit: number | undefined;
+}
+
+interface GraphlessHeritageContext {
+  project: Project;
+  repoRoot: string;
+  targetId: string;
+}
+
+function collectGraphlessImplementationEntries(context: GraphlessImplementationContext): readonly InspectImplementationEntry[] {
+  const entries = new Map<string, InspectImplementationEntry>();
+  for (const declaration of graphlessImplementationDeclarations(context)) {
+    const entry = graphlessImplementationEntry(context, declaration);
+    if (entry) {
+      entries.set(`${entry.symbol.id}:${entry.kind}`, entry);
+    }
+  }
+  return applyImplementationLimit([...entries.values()].sort(compareImplementationEntries), context.limit);
+}
+
+function graphlessImplementationDeclarations(context: GraphlessImplementationContext): readonly Node[] {
+  return context.project.getSourceFiles().flatMap((sourceFile) => {
+    const absolutePath = resolve(sourceFile.getFilePath());
+    const repoPath = normalizeModulePath(relative(context.repoRoot, absolutePath));
+    if (!isSupportedInspectImplementationSourcePath(repoPath) || !isSafeExistingFileInsideRepo(context.repoRoot, absolutePath)) return [];
+    return sourceFile.getDescendants().filter((node) => Node.isClassDeclaration(node) || Node.isInterfaceDeclaration(node));
+  });
+}
+
+function graphlessImplementationEntry(context: GraphlessImplementationContext, declaration: Node): InspectImplementationEntry | undefined {
+  const candidate = inferGraphCandidate(context.repoRoot, declaration);
+  if (!candidate || !candidate.path || !candidate.name || candidate.id === context.targetCandidate.id) return undefined;
+  if (!isSupportedInspectImplementationSourcePath(candidate.path)) return undefined;
+  const kind = graphlessImplementationKind(context, declaration);
+  if (!kind) return undefined;
+  return implementationEntry(context.repoRoot, declaration, candidate, context.targetSummary, {
+    candidateId: candidate.id,
+    kind,
+    graphNodeIds: [candidate.id, context.targetCandidate.id]
+  });
+}
+
+function graphlessImplementationKind(
+  context: GraphlessImplementationContext,
+  implementationNode: Node,
+): InspectImplementationKind | undefined {
+  const declaration = implementationOwningDeclaration(implementationNode);
+  const heritageContext = {
+    project: context.project,
+    repoRoot: context.repoRoot,
+    targetId: context.targetCandidate.id
+  };
+  if (Node.isClassDeclaration(declaration)) {
+    if (context.targetCandidate.kind === "Class" && classExtendsTarget(heritageContext, declaration, new Set())) {
+      return "extends";
+    }
+    if (context.targetCandidate.kind === "Type") {
+      if (classDirectlyImplementsTarget(context.project, context.repoRoot, declaration, context.targetCandidate.id)) return "implements";
+      if (classImplementsTarget(heritageContext, declaration, new Set())) return "inherited_implements";
+    }
+  }
+  if (context.targetCandidate.kind === "Type" && Node.isInterfaceDeclaration(declaration)) {
+    if (interfaceExtendsTarget(heritageContext, declaration, new Set())) return "interface_extends";
+  }
+  return undefined;
+}
+
+function implementationOwningDeclaration(node: Node): Node {
+  const nameNode = implementationNameNode(node);
+  const parent = nameNode.getParent();
+  if (parent && (Node.isClassDeclaration(parent) || Node.isInterfaceDeclaration(parent))) return parent;
+  return nameNode;
+}
+
+function classDirectlyImplementsTarget(project: Project, repoRoot: string, declaration: ClassDeclaration, targetId: string): boolean {
+  return declaration.getImplements().some((implementedType) => inferGraphNodeIds(repoRoot, implementedType).includes(targetId));
+}
+
+function classImplementsTarget(context: GraphlessHeritageContext, declaration: Node, visited: Set<string>): boolean {
+  if (!Node.isClassDeclaration(declaration)) return false;
+  if (!markVisited(context.repoRoot, declaration, visited)) return false;
+  if (classImplementsInterfaceTarget(context, declaration, visited)) return true;
+  return inheritedClassImplementsTarget(context, declaration, visited);
+}
+
+function classImplementsInterfaceTarget(context: GraphlessHeritageContext, declaration: ClassDeclaration, visited: Set<string>): boolean {
+  return declaration.getImplements().some((implementedType) =>
+    inferGraphNodeIds(context.repoRoot, implementedType).some((implementedId) => {
+      if (implementedId === context.targetId) return true;
+      const implementedDeclaration = declarationForGraphId(context.project, context.repoRoot, implementedId);
+      return Node.isInterfaceDeclaration(implementedDeclaration) && interfaceExtendsTarget(context, implementedDeclaration, visited);
+    })
+  );
+}
+
+function inheritedClassImplementsTarget(context: GraphlessHeritageContext, declaration: ClassDeclaration, visited: Set<string>): boolean {
+  const baseType = declaration.getExtends();
+  if (!baseType) return false;
+  return inferGraphNodeIds(context.repoRoot, baseType).some((baseId) => {
+    const baseDeclaration = declarationForGraphId(context.project, context.repoRoot, baseId);
+    return Node.isClassDeclaration(baseDeclaration) && classImplementsTarget(context, baseDeclaration, visited);
+  });
+}
+
+function classExtendsTarget(context: GraphlessHeritageContext, declaration: Node, visited: Set<string>): boolean {
+  if (!Node.isClassDeclaration(declaration)) return false;
+  if (!markVisited(context.repoRoot, declaration, visited)) return false;
+  const baseType = declaration.getExtends();
+  if (!baseType) return false;
+  const baseIds = inferGraphNodeIds(context.repoRoot, baseType);
+  if (baseIds.includes(context.targetId)) return true;
+  return baseIds.some((baseId) => {
+    const baseDeclaration = declarationForGraphId(context.project, context.repoRoot, baseId);
+    return Node.isClassDeclaration(baseDeclaration) && classExtendsTarget(context, baseDeclaration, visited);
+  });
+}
+
+function interfaceExtendsTarget(context: GraphlessHeritageContext, declaration: InterfaceDeclaration, visited: Set<string>): boolean {
+  if (!markVisited(context.repoRoot, declaration, visited)) return false;
+  return declaration.getExtends().some((extendedType) =>
+    inferGraphNodeIds(context.repoRoot, extendedType).some((extendedId) => {
+      if (extendedId === context.targetId) return true;
+      const extendedDeclaration = declarationForGraphId(context.project, context.repoRoot, extendedId);
+      return Node.isInterfaceDeclaration(extendedDeclaration) && interfaceExtendsTarget(context, extendedDeclaration, visited);
+    })
+  );
+}
+
+function markVisited(repoRoot: string, declaration: Node, visited: Set<string>): boolean {
+  const candidate = inferGraphCandidate(repoRoot, declaration);
+  if (candidate) {
+    if (visited.has(candidate.id)) return false;
+    visited.add(candidate.id);
+  }
+  return true;
 }
 
 function setImplementationRelationship(
@@ -1152,6 +1320,10 @@ function bindSignatureDeclarationToGraph(
     const candidate = candidateById.get(id);
     if (candidate) return { ok: true, candidate };
   }
+  if (request.allowGraphless) {
+    const inferredCandidate = inferGraphCandidate(repoRoot, node);
+    if (inferredCandidate) return { ok: true, candidate: inferredCandidate };
+  }
   return { ok: false, inferredNodeIds };
 }
 
@@ -1164,22 +1336,28 @@ function graphCandidatesFromRequest(request: InspectReferenceRequest): readonly 
 }
 
 function inferGraphNodeIds(repoRoot: string, node: Node): readonly string[] {
-  const declaration = symbolDeclaration(node.getSymbol()) ?? node;
-  const fact = graphDeclarationFact(repoRoot, declaration);
-  return fact ? [fact.id] : [];
+  const candidate = inferGraphCandidate(repoRoot, node);
+  return candidate ? [candidate.id] : [];
+}
+
+function inferGraphCandidate(repoRoot: string, node: Node): InspectGraphCandidate | undefined {
+  const declaration = symbolDeclaration(node.getSymbol()) ?? symbolDeclaration(node.getType().getSymbol()) ?? node;
+  return graphDeclarationFact(repoRoot, declaration);
 }
 
 function graphDeclarationFact(
   repoRoot: string,
   declaration: Node
-): { id: string; kind: GraphNodeKind } | undefined {
+): InspectGraphCandidate | undefined {
   const graphShape = graphDeclarationShape(declaration);
   if (!graphShape) return undefined;
   const path = graphDeclarationPath(repoRoot, declaration);
   if (!path) return undefined;
   return {
     id: `${graphShape.prefix}:${path}#${graphShape.name}`,
-    kind: graphShape.kind
+    kind: graphShape.kind,
+    path,
+    name: graphShape.name
   };
 }
 
@@ -1230,6 +1408,24 @@ function targetFromRequest(request: InspectReferenceRequest): InspectReferenceTa
 
 function inspectSymbolId(request: InspectReferenceRequest): string {
   return `symbol:${request.path}#${request.symbolName}`;
+}
+
+function declarationForGraphId(project: Project, repoRoot: string, graphId: string): Node | undefined {
+  const path = graphPathFromNodeId(graphId);
+  if (!path) return undefined;
+  const absolutePath = resolve(repoRoot, path);
+  if (!isSafeExistingFileInsideRepo(repoRoot, absolutePath)) return undefined;
+  const sourceFile = project.getSourceFile(absolutePath) ?? project.addSourceFileAtPath(absolutePath);
+  for (const declaration of sourceFile.getDescendants()) {
+    if (graphDeclarationFact(repoRoot, declaration)?.id === graphId) return declaration;
+  }
+  return undefined;
+}
+
+function graphPathFromNodeId(nodeId: string): string | undefined {
+  const afterKind = nodeId.split(":").slice(1).join(":");
+  const path = afterKind.split("#")[0];
+  return path || undefined;
 }
 
 function compareReferenceEntries(left: InspectReferenceEntry, right: InspectReferenceEntry): number {

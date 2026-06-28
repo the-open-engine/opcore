@@ -997,6 +997,58 @@ describe("Opcore JSON schema wire constraints", () => {
       }),
       true
     );
+    assert.equal(
+      isValidDefinition("InspectRouteResult", {
+        ...validInspectRouteResult(),
+        status: "degraded",
+        providerStatus: {
+          ...failureStatus,
+          state: "stale",
+          mode: "required",
+          failure: {
+            category: "stale_snapshot",
+            message: "graph stale"
+          },
+          repo: {
+            repoId: "opcore"
+          },
+          freshness: {
+            generatedAt: "2026-06-04T00:00:00.000Z",
+            ageMs: 1000,
+            stale: true
+          }
+        },
+        failure: {
+          category: "graph_unavailable",
+          message: "graph stale; language service fallback used"
+        }
+      }),
+      true
+    );
+    assert.equal(
+      isValidDefinition("InspectRouteResult", {
+        ...validInspectRouteResult(),
+        status: "degraded",
+        providerStatus: {
+          ...failureStatus,
+          state: "stale",
+          mode: "required",
+          failure: {
+            category: "stale_snapshot",
+            message: "graph stale"
+          },
+          repo: {
+            repoId: "opcore"
+          },
+          freshness: {
+            generatedAt: "2026-06-04T00:00:00.000Z",
+            ageMs: 1000,
+            stale: true
+          }
+        }
+      }),
+      false
+    );
     assert.equal(isValidDefinition("InspectRouteResult", validInspectSignatureResult()), true);
     assert.equal(isValidDefinition("InspectRouteResult", validInspectImplementationResult()), true);
     assert.equal(

@@ -186,28 +186,31 @@ function inspectFileSymbolReferencesResult(
   target: InspectSymbolTarget
 ): CommandRouterResult {
   const graphQuery = graphProviderQuery(options.repo, { kind: "symbols" });
-  if (graphQuery.status.state !== "available") {
-    return inspectFailureResult(
-      request,
-      "references",
-      "graph_unavailable",
-      graphQuery.status.message ?? `Graph provider is ${graphQuery.status.state}`,
-      graphQuery.status,
-      target,
-      graphQuery
-    );
-  }
   if (!target.path || !target.symbolName) {
     return inspectFailureResult(request, "references", "malformed_target", "opcore inspect references requires <file> <symbol>");
   }
   if (isRustInspectSourcePath(target.path)) {
+    if (graphQuery.status.state !== "available") {
+      return inspectFailureResult(
+        request,
+        "references",
+        "graph_unavailable",
+        graphUnavailableMessage(graphQuery.status),
+        graphQuery.status,
+        target,
+        graphQuery
+      );
+    }
     return inspectRustFileSymbolReferencesResult(request, options, target, graphQuery);
   }
   if (!isSupportedInspectSourcePath(target.path)) {
     return inspectFailureResult(request, "references", "unsupported_language", `Unsupported inspect references target language: ${target.path}`, graphQuery.status, target, graphQuery);
   }
+  if (graphQuery.status.state !== "available") {
+    return inspectGraphlessReferencesResult({ request, options, target, graphQuery, degradationMessage: graphUnavailableMessage(graphQuery.status) });
+  }
   if (!("nodes" in graphQuery)) {
-    return inspectFailureResult(request, "references", "graph_unavailable", "Graph provider returned no symbol nodes", graphQuery.status, target, graphQuery);
+    return inspectGraphlessReferencesResult({ request, options, target, graphQuery, degradationMessage: "Graph provider returned no symbol nodes" });
   }
   const resolution = resolveInspectReferences(options.repoRoot, {
     path: target.path,
@@ -324,21 +327,21 @@ function inspectFileSymbolSignatureResult(
   target: InspectSymbolTarget
 ): CommandRouterResult {
   const graphQuery = graphProviderQuery(options.repo, { kind: "symbols" });
-  if (graphQuery.status.state !== "available") {
-    return inspectFailureResult(
-      request,
-      "signature",
-      "graph_unavailable",
-      graphQuery.status.message ?? `Graph provider is ${graphQuery.status.state}`,
-      graphQuery.status,
-      target,
-      graphQuery
-    );
-  }
   if (!target.path || !target.symbolName) {
     return inspectFailureResult(request, "signature", "malformed_target", "opcore inspect signature requires <file> <symbol>");
   }
   if (isRustInspectSourcePath(target.path)) {
+    if (graphQuery.status.state !== "available") {
+      return inspectFailureResult(
+        request,
+        "signature",
+        "graph_unavailable",
+        graphUnavailableMessage(graphQuery.status),
+        graphQuery.status,
+        target,
+        graphQuery
+      );
+    }
     return inspectUnsupportedRouteResult(
       request,
       "signature",
@@ -351,8 +354,11 @@ function inspectFileSymbolSignatureResult(
   if (!isSupportedInspectSourcePath(target.path)) {
     return inspectFailureResult(request, "signature", "unsupported_language", `Unsupported inspect signature target language: ${target.path}`, graphQuery.status, target, graphQuery);
   }
+  if (graphQuery.status.state !== "available") {
+    return inspectGraphlessSignatureResult({ request, options, target, graphQuery, degradationMessage: graphUnavailableMessage(graphQuery.status) });
+  }
   if (!("nodes" in graphQuery)) {
-    return inspectFailureResult(request, "signature", "graph_unavailable", "Graph provider returned no symbol nodes", graphQuery.status, target, graphQuery);
+    return inspectGraphlessSignatureResult({ request, options, target, graphQuery, degradationMessage: "Graph provider returned no symbol nodes" });
   }
   const resolution = resolveInspectSignatures(options.repoRoot, {
     path: target.path,
@@ -392,18 +398,51 @@ function inspectImplementationsResult(request: CommandAdapterRequest, options: I
   const target = parseInspectSymbolTarget(options, "implementations");
   if (!target.ok) return inspectFailureResult(request, "implementations", "malformed_target", target.message);
   const graphQuery = graphProviderQuery(options.repo, { kind: "symbols" });
+  if (target.target.kind === "file_symbol" && (!target.target.path || !target.target.symbolName)) {
+    return inspectFailureResult(request, "implementations", "malformed_target", "opcore inspect implementations requires <file> <symbol>");
+  }
+  if (target.target.kind === "file_symbol" && target.target.path && isRustInspectSourcePath(target.target.path)) {
+    if (graphQuery.status.state !== "available") {
+      return inspectFailureResult(
+        request,
+        "implementations",
+        "graph_unavailable",
+        graphUnavailableMessage(graphQuery.status),
+        graphQuery.status,
+        target.target,
+        graphQuery
+      );
+    }
+  }
+  if (target.target.kind === "file_symbol" && target.target.path && !isSupportedInspectImplementationSourcePath(target.target.path)) {
+    return inspectFailureResult(
+      request,
+      "implementations",
+      "unsupported_language",
+      `Unsupported inspect implementations target language: ${target.target.path}`,
+      graphQuery.status,
+      target.target,
+      graphQuery
+    );
+  }
   if (graphQuery.status.state !== "available") {
+    if (target.target.kind === "file_symbol") {
+      return inspectGraphlessImplementationsResult({ request, options, target: target.target, graphQuery, degradationMessage: graphUnavailableMessage(graphQuery.status) });
+    }
     return inspectFailureResult(
       request,
       "implementations",
       "graph_unavailable",
-      graphQuery.status.message ?? `Graph provider is ${graphQuery.status.state}`,
+      graphUnavailableMessage(graphQuery.status),
       graphQuery.status,
       target.target,
       graphQuery
     );
   }
   if (!("nodes" in graphQuery) || !("edges" in graphQuery)) {
+    if (target.target.kind === "file_symbol") {
+      return inspectGraphlessImplementationsResult({ request, options, target: target.target, graphQuery, degradationMessage: "Graph provider returned no symbol facts" });
+    }
     return inspectFailureResult(request, "implementations", "graph_unavailable", "Graph provider returned no symbol facts", graphQuery.status, target.target, graphQuery);
   }
   const implementationNodeTarget =
@@ -429,6 +468,15 @@ function inspectImplementationsResult(request: CommandAdapterRequest, options: I
     );
   }
   if (!graphQuery.metadata.edgeKinds.includes("IMPLEMENTS") || !graphQuery.metadata.edgeKinds.includes("INHERITS")) {
+    if (target.target.kind === "file_symbol") {
+      return inspectGraphlessImplementationsResult({
+        request,
+        options,
+        target: target.target,
+        graphQuery,
+        degradationMessage: "Graph provider does not advertise IMPLEMENTS and INHERITS facts required for inspect implementations"
+      });
+    }
     return inspectFailureResult(
       request,
       "implementations",
@@ -518,6 +566,127 @@ function inspectQueryResult(
   });
 }
 
+interface GraphlessInspectArgs {
+  request: CommandAdapterRequest;
+  options: InspectOptions;
+  target: InspectSymbolTarget;
+  graphQuery: GraphFactQueryResult;
+  degradationMessage: string;
+}
+
+function inspectGraphlessReferencesResult(args: GraphlessInspectArgs): CommandRouterResult {
+  const resolution = resolveInspectReferences(args.options.repoRoot, {
+    path: args.target.path ?? "",
+    symbolName: args.target.symbolName ?? "",
+    line: args.options.line,
+    column: args.options.column,
+    limit: args.options.limit,
+    allowGraphless: true,
+    graphNodeIds: [],
+    graphCandidates: []
+  });
+  if (!resolution.ok) {
+    return inspectFailureResult(args.request, "references", resolution.category, resolution.message, args.graphQuery.status, resolution.target ?? args.target, args.graphQuery, {
+      candidates: resolution.candidates
+    });
+  }
+  return createCommandRouterResult({
+    bin: args.request.bin,
+    argv: args.request.argv,
+    canonicalCommand: args.request.canonicalCommand,
+    owner: "inspect",
+    status: "ok",
+    json: args.request.json,
+    message: "opcore inspect references: language service returned degraded read-only references without fresh graph facts.",
+    providerStatus: args.graphQuery.status,
+    graphQuery: args.graphQuery,
+    inspectResult: {
+      route: "references",
+      status: "degraded",
+      target: resolution.target,
+      providerStatus: args.graphQuery.status,
+      failure: graphUnavailableFailure(args.degradationMessage),
+      references: resolution.references
+    }
+  });
+}
+
+function inspectGraphlessSignatureResult(args: GraphlessInspectArgs): CommandRouterResult {
+  const resolution = resolveInspectSignatures(args.options.repoRoot, {
+    path: args.target.path ?? "",
+    symbolName: args.target.symbolName ?? "",
+    line: args.options.line,
+    column: args.options.column,
+    limit: args.options.limit,
+    allowGraphless: true,
+    graphNodeIds: [],
+    graphCandidates: []
+  });
+  if (!resolution.ok) {
+    return inspectFailureResult(args.request, "signature", resolution.category, resolution.message, args.graphQuery.status, resolution.target ?? args.target, args.graphQuery, {
+      candidates: resolution.candidates
+    });
+  }
+  return createCommandRouterResult({
+    bin: args.request.bin,
+    argv: args.request.argv,
+    canonicalCommand: args.request.canonicalCommand,
+    owner: "inspect",
+    status: "ok",
+    json: args.request.json,
+    message: "opcore inspect signature: language service returned degraded read-only signatures without fresh graph facts.",
+    providerStatus: args.graphQuery.status,
+    graphQuery: args.graphQuery,
+    inspectResult: {
+      route: "signature",
+      status: "degraded",
+      target: resolution.target,
+      providerStatus: args.graphQuery.status,
+      failure: graphUnavailableFailure(args.degradationMessage),
+      signatures: resolution.signatures
+    }
+  });
+}
+
+function inspectGraphlessImplementationsResult(args: GraphlessInspectArgs): CommandRouterResult {
+  const resolution = resolveInspectImplementations(args.options.repoRoot, {
+    target: args.target,
+    allowGraphless: true,
+    graphCandidates: [],
+    graphEdges: [],
+    limit: args.options.limit
+  });
+  if (!resolution.ok) {
+    return inspectFailureResult(args.request, "implementations", resolution.category, resolution.message, args.graphQuery.status, resolution.target ?? args.target, args.graphQuery, {
+      candidates: resolution.candidates
+    });
+  }
+  const result = createCommandRouterResult({
+    bin: args.request.bin,
+    argv: args.request.argv,
+    canonicalCommand: args.request.canonicalCommand,
+    owner: "inspect",
+    status: "ok",
+    json: args.request.json,
+    message: "opcore inspect implementations: language service returned degraded read-only implementation evidence without fresh graph facts.",
+    providerStatus: args.graphQuery.status,
+    graphQuery: args.graphQuery,
+    inspectResult: {
+      route: "implementations",
+      status: "degraded",
+      target: resolution.target,
+      providerStatus: args.graphQuery.status,
+      failure: graphUnavailableFailure(args.degradationMessage),
+      implementations: resolution.implementations
+    }
+  });
+  delete result.editPlan;
+  delete result.editResult;
+  delete result.validationResult;
+  delete result.receipt;
+  return result;
+}
+
 function inspectFailureResult(
   request: CommandAdapterRequest,
   route: InspectRouteResult["route"],
@@ -551,6 +720,17 @@ function inspectFailureResult(
       failure
     }
   });
+}
+
+function graphUnavailableMessage(providerStatus: GraphProviderStatus): string {
+  return providerStatus.message ?? `Graph provider is ${providerStatus.state}`;
+}
+
+function graphUnavailableFailure(message: string): InspectRouteFailure {
+  return {
+    category: "graph_unavailable",
+    message
+  };
 }
 
 function inspectUnsupportedRouteResult(
