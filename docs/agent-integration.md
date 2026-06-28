@@ -45,7 +45,8 @@ opcore --repo . --json
 opcore measure --repo . --json
 ```
 
-The scan writes metric artifacts. Measure reads those artifacts and returns named signal counts and deltas without re-running validation.
+A successful scan writes metric artifacts. Measure reads those artifacts and
+returns named signal counts and deltas without re-running validation.
 
 ## Private Provider Mode
 

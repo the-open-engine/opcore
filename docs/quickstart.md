@@ -49,8 +49,9 @@ Restart the shell or add that export to the shell startup file used by the envir
 
 ## After Setup Reference
 
-Scan reads the repo and writes only `.opcore/report.json`,
-`.opcore/history.jsonl`, and bounded `.opcore/telemetry.jsonl`.
+Scan reads the repo. When it completes successfully, it writes only
+`.opcore/report.json`, `.opcore/history.jsonl`, and bounded
+`.opcore/telemetry.jsonl`.
 
 Run this inside the repository you want to inspect:
 
@@ -96,7 +97,13 @@ opcore init --approve
 opcore init --repo . --approve
 ```
 
-`opcore init` runs the read-only scan first, prints coverage before findings, shows the additive setup plan, and prompts on a TTY. `opcore init --json` previews without writing. Approved init writes only the approved setup artifacts listed above. Non-Git repos skip `.gitignore`; undo removes only the managed line. The `.opcore/` ignore covers `.opcore/telemetry.jsonl`. JSON output includes scan, language settings, interaction, and timing fields.
+`opcore init` runs the read-only scan first. When the scan completes, it prints
+coverage before findings, shows the additive setup plan, and prompts on a TTY.
+`opcore init --json` previews without writing. Approved init writes only the
+approved setup artifacts listed above. Non-Git repos skip `.gitignore`; undo
+removes only the managed line. The `.opcore/` ignore covers
+`.opcore/telemetry.jsonl`. JSON output includes scan, language settings,
+interaction, and timing fields.
 
 ## Coverage Honesty
 
@@ -118,7 +125,7 @@ Private ASP hosts may launch the provider process behind host-owned decisions an
 opcore-asp-provider --stdio
 ```
 
-The aggregate `@the-open-engine/opcore` package exposes only `opcore`;
+The aggregate `@the-open-engine/opcore` package exposes only the `opcore` bin;
 `opcore-asp-provider` comes from the separate
 `@the-open-engine/opcore-asp-provider` package. From a built source checkout,
 use `node packages/asp-provider/dist/index.js --stdio`.

@@ -21,12 +21,12 @@ npm run build
 node packages/opcore/dist/index.js init --repo /path/to/repo
 ```
 
-`opcore init` detects supported stacks, runs a read-only first scan, prints
-Coverage before Findings, reports concrete counts and locations, proposes repo
-setup, and asks before writing anything.
+`opcore init` detects supported stacks and runs a read-only first scan. When the
+scan completes, it prints Coverage before Findings, reports concrete counts and
+locations, proposes repo setup, and asks before writing anything.
 
-Scan/status/check/measure are read-only for source files. The scan loop writes
-only `.opcore/report.json`, `.opcore/history.jsonl`, and bounded
+Scan/status/check/measure are read-only for source files. A successful scan loop
+writes only `.opcore/report.json`, `.opcore/history.jsonl`, and bounded
 `.opcore/telemetry.jsonl`. Approved init writes only additive `.opcore/config`,
 one delimited guidance block in an existing agent file or new `AGENTS.md`, a
 managed `.opcore/` `.gitignore` line for Git repos, and
@@ -51,11 +51,11 @@ opcore init
 Run bare `opcore` after install for the read-only scan loop. A scoped scan is
 available as `opcore --repo .`.
 
-`opcore init` is scan-first and ask-before-write on a TTY: it prints coverage
-before findings, shows the additive setup plan, then writes only after an
-explicit yes. `opcore init --json` previews without writing; `opcore init
---approve --json` applies additive setup without prompting and returns scan,
-language settings, interaction, and timing fields.
+`opcore init` is scan-first and ask-before-write on a TTY: after the read-only
+scan completes, it prints coverage before findings, shows the additive setup
+plan, then writes only after an explicit yes. `opcore init --json` previews
+without writing; `opcore init --approve --json` applies additive setup without
+prompting and returns scan, language settings, interaction, and timing fields.
 
 If `opcore` is not found after a global install, check npm's global prefix and
 put its `bin` directory on `PATH`:
@@ -128,9 +128,9 @@ rating or claim every-project Python coverage.
 
 Opcore is a local CLI facade over scan, init, check, and measure flows. The
 accepted runtime model is hybrid: Rust graph core plus TypeScript contracts and
-CLI adapters. Scan/status/check/measure are read-only for source files. The scan
-loop writes only `.opcore/report.json`, `.opcore/history.jsonl`, and bounded
-`.opcore/telemetry.jsonl`. Approved init writes only additive `.opcore/config`,
+CLI adapters. Scan/status/check/measure are read-only for source files. A
+successful scan loop writes only `.opcore/report.json`, `.opcore/history.jsonl`,
+and bounded `.opcore/telemetry.jsonl`. Approved init writes only additive `.opcore/config`,
 one delimited guidance block in an existing agent file or new `AGENTS.md`, a
 managed `.opcore/` `.gitignore` line for Git repos, and
 `.opcore/init-undo.json`.

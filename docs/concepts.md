@@ -12,7 +12,7 @@ Findings are named signals such as `typescript.type_errors`, `rust.source_hygien
 
 ## Artifacts
 
-Allowed scan artifacts:
+Successful scans may write only these artifacts:
 
 ```text
 .opcore/report.json
@@ -22,8 +22,9 @@ Allowed scan artifacts:
 
 Telemetry is bounded command latency evidence capped at 500 records or 1 MiB.
 Scan/status/check/measure are read-only for source files. `opcore measure`
-reads the report and history artifacts and reports baseline/previous deltas. It
-does not run checks, build graph data, install packages, or edit source.
+reads existing report and history artifacts and reports baseline/previous
+deltas. It does not run checks, build graph data, install packages, or edit
+source.
 
 ## Init
 

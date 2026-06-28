@@ -3399,8 +3399,13 @@ function commandHelpMessage(groupName?: string): string {
   return [
     `${group.canonicalCommand.join(" ")} - ${group.summary}`,
     `Commands: ${group.commands.join(", ")}`,
+    ...(groupName === "graph" ? [`Syntax: ${contractHelpSyntax(group)}`] : []),
     `Example: ${contractHelpExample(groupName)}`
   ].join("\n");
+}
+
+function contractHelpSyntax(group: CommandGroupContract): string {
+  return `${group.canonicalCommand.join(" ")} <${group.commands.join("|")}> --repo . [--json]`;
 }
 
 function contractHelpExample(groupName: string): string {
