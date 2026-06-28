@@ -13,6 +13,7 @@ const forbiddenKeys = new Set(["decision", "verdict", "pass", "authority", "assu
 const allCheckIds = [
   "typescript.syntax",
   "typescript.types",
+  "typescript.lint",
   "typescript.import-graph",
   "typescript.dead-code",
   "typescript.function-metrics",
@@ -34,7 +35,16 @@ const allCheckIds = [
   "python.types",
   "python.import-graph",
   "python.dead-code",
-  "python.relevant-tests"
+  "python.relevant-tests",
+  "docs.existence",
+  "docs.staleness",
+  "docs.freshness",
+  "docs.length",
+  "docs.dry",
+  "docs.content-quality",
+  "docs.code-blocks",
+  "docs.rules-why",
+  "docs.hub-coverage"
 ];
 
 describe("Opcore ASP provider", () => {

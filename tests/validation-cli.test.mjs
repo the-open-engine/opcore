@@ -15,6 +15,7 @@ const latticeBin = fileURLToPath(new URL("../packages/opcore/dist/advanced/index
 const typeScriptCheckIds = [
   "typescript.syntax",
   "typescript.types",
+  "typescript.lint",
   "typescript.import-graph",
   "typescript.dead-code",
   "typescript.function-metrics",
@@ -42,8 +43,20 @@ const pythonCheckIds = [
   "python.dead-code",
   "python.relevant-tests"
 ];
+const docsCheckIds = [
+  "docs.existence",
+  "docs.staleness",
+  "docs.freshness",
+  "docs.length",
+  "docs.dry",
+  "docs.content-quality",
+  "docs.code-blocks",
+  "docs.rules-why",
+  "docs.hub-coverage"
+];
 const cloneCheckIds = ["clone.duplication"];
-const defaultCheckIds = [...typeScriptCheckIds, ...rustCheckIds, ...pythonCheckIds, ...cloneCheckIds];
+const executableDefaultCheckIds = [...typeScriptCheckIds, ...rustCheckIds, ...pythonCheckIds];
+const defaultCheckIds = [...typeScriptCheckIds, ...rustCheckIds, ...pythonCheckIds, ...docsCheckIds, ...cloneCheckIds];
 
 describe("validation CLI", () => {
   it("keeps opcore status separate from validation execution results", async () => {
@@ -78,7 +91,7 @@ describe("validation CLI", () => {
       const result = run(args, [0, 1]);
       assert.equal(result.owner, "validation");
       assert.equal(result.exitCode === 0 || result.exitCode === 1, true);
-      assert.equal(result.validationResult.manifest.checks.length, defaultCheckIds.length);
+      assert.equal(result.validationResult.manifest.checks.length, executableDefaultCheckIds.length);
       assert.equal(Object.hasOwn(result.validationResult.manifest, "entries"), false);
       assert.equal(Object.hasOwn(result.validationResult.manifest, "runs"), false);
       assert.equal(Object.hasOwn(result.validationResult.manifest, "skippedChecks"), false);
@@ -211,6 +224,7 @@ describe("validation CLI", () => {
       assert.equal(result.validationResult.manifest.checks.includes("rust.file-length"), true);
       assert.equal(result.validationResult.manifest.checks.includes("python.syntax"), true);
       assert.equal(result.validationResult.manifest.checks.includes("python.import-graph"), true);
+      assert.equal(result.validationResult.manifest.checks.includes("docs.existence"), true);
     }
   });
 
