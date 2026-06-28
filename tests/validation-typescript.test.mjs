@@ -33,7 +33,7 @@ describe("validation-typescript adapter", () => {
       ]
     );
     assert.equal(registry.byId.get(TYPE_SCRIPT_SYNTAX_CHECK_ID)?.requiresGraph, false);
-    assert.equal(registry.byId.get(TYPE_SCRIPT_IMPORT_GRAPH_CHECK_ID)?.requiresGraph, true);
+    assert.equal(registry.byId.get(TYPE_SCRIPT_IMPORT_GRAPH_CHECK_ID)?.requiresGraph, false);
   });
 
   it("reports syntax diagnostics from overlay after-state content", async () => {
@@ -634,12 +634,54 @@ describe("validation-typescript adapter", () => {
     assert.equal(result.status, "passed");
     assert.deepEqual(
       result.manifest.runs.map((run) => run.checkId),
-      [TYPE_SCRIPT_SYNTAX_CHECK_ID, TYPE_SCRIPT_TYPES_CHECK_ID]
+      [TYPE_SCRIPT_SYNTAX_CHECK_ID, TYPE_SCRIPT_TYPES_CHECK_ID, TYPE_SCRIPT_IMPORT_GRAPH_CHECK_ID]
     );
     assert.deepEqual(
       result.manifest.skippedChecks.map((skip) => skip.checkId),
-      [TYPE_SCRIPT_IMPORT_GRAPH_CHECK_ID, TYPE_SCRIPT_DEAD_CODE_CHECK_ID, TYPE_SCRIPT_RELEVANT_TESTS_CHECK_ID]
+      [TYPE_SCRIPT_DEAD_CODE_CHECK_ID, TYPE_SCRIPT_RELEVANT_TESTS_CHECK_ID]
     );
+  });
+
+  it("reports one canonical TypeScript relative import cycle without a graph provider", async () => {
+    const result = await runner({
+      files: {
+        "src/a.ts": "import { b } from './b';\nexport const a = b;\n",
+        "src/b.ts": "import { a } from './a';\nexport const b = a;\n",
+        "src/index.ts": "import { a } from './a';\nexport const value = a;\n"
+      }
+    }).runValidation(
+      request({
+        checks: [TYPE_SCRIPT_IMPORT_GRAPH_CHECK_ID]
+      })
+    );
+
+    assert.equal(result.status, "passed", JSON.stringify(result.diagnostics, null, 2));
+    assert.deepEqual(result.diagnostics, [
+      {
+        category: "graph",
+        severity: "warning",
+        path: "src/a.ts",
+        code: "TS_IMPORT_GRAPH_CYCLE",
+        message: "TypeScript import cycle detected: src/a.ts -> src/b.ts -> src/a.ts"
+      }
+    ]);
+  });
+
+  it("does not report TypeScript import cycles for an acyclic relative import graph", async () => {
+    const result = await runner({
+      files: {
+        "src/a.ts": "import { b } from './b';\nexport const a = b;\n",
+        "src/b.ts": "export const b = 1;\n",
+        "src/index.ts": "import { a } from './a';\nexport const value = a;\n"
+      }
+    }).runValidation(
+      request({
+        checks: [TYPE_SCRIPT_IMPORT_GRAPH_CHECK_ID]
+      })
+    );
+
+    assert.equal(result.status, "passed", JSON.stringify(result.diagnostics, null, 2));
+    assert.deepEqual(result.diagnostics, []);
   });
 
   it("fails closed for required graph provider failure states", async () => {
@@ -1431,7 +1473,7 @@ describe("validation-typescript adapter", () => {
       })
     }).runValidation(
       request({
-        checks: [TYPE_SCRIPT_IMPORT_GRAPH_CHECK_ID],
+        checks: [TYPE_SCRIPT_DEAD_CODE_CHECK_ID],
         graph: {
           mode: "required",
           provider: "opcore-graph"
@@ -1443,7 +1485,37 @@ describe("validation-typescript adapter", () => {
     assert.equal(result.failure.category, "provider_failure");
   });
 
-  it("batches graph requirements without per-file provider calls", async () => {
+  it("maps required TypeScript import-graph query failures to runner provider_failure", async () => {
+    const result = await runner({
+      files: {
+        "src/a.ts": "import { b } from './b';\nexport const a = b;\n",
+        "src/b.ts": "export const b = 1;\n"
+      },
+      graphProviderClient: graphClient({
+        status: (validationRequest) => availableStatus(validationRequest.graph.mode, validationRequest.repo),
+        factQuery: () => ({
+          status: graphFailure("error", "query_failed", "required")
+        })
+      })
+    }).runValidation(
+      request({
+        checks: [TYPE_SCRIPT_IMPORT_GRAPH_CHECK_ID],
+        scope: {
+          kind: "files",
+          files: ["src/a.ts", "src/b.ts"]
+        },
+        graph: {
+          mode: "required",
+          provider: "opcore-graph"
+        }
+      })
+    );
+
+    assert.equal(result.status, "provider_failure");
+    assert.equal(result.failure.category, "provider_failure");
+  });
+
+  it("queries retained TypeScript import graph edges once without per-file provider calls", async () => {
     const factQueries = [];
     const files = Object.fromEntries(
       Array.from({ length: 100 }, (_, index) => [
@@ -1469,12 +1541,11 @@ describe("validation-typescript adapter", () => {
     );
 
     assert.equal(result.status, "passed");
-    assert.equal(factQueries.length, 2);
+    assert.equal(factQueries.length, 1);
     assert.deepEqual(factQueries[0].selector, {
       kind: "edges",
       edgeKinds: ["IMPORTS_FROM"]
     });
-    assert.equal(factQueries[1].selector.ids.length, 100);
   });
 });
 
