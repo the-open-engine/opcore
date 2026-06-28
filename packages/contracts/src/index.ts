@@ -1578,6 +1578,7 @@ export const releaseReceiptPackageNames = [
   "@the-open-engine/opcore-edit",
   "@the-open-engine/opcore-validation",
   "@the-open-engine/opcore-validation-clone",
+  "@the-open-engine/opcore-validation-docs",
   "@the-open-engine/opcore-validation-python",
   "@the-open-engine/opcore-validation-rust",
   "@the-open-engine/opcore-validation-typescript",

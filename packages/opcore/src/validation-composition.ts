@@ -15,6 +15,7 @@ import {
   type ValidationRuntimePolicy
 } from "@the-open-engine/opcore-validation";
 import { createCloneValidationChecks } from "@the-open-engine/opcore-validation-clone";
+import { createDocsValidationChecks } from "@the-open-engine/opcore-validation-docs";
 import { createPythonValidationAdapterStatus, createPythonValidationChecks } from "@the-open-engine/opcore-validation-python";
 import { createRustValidationAdapterStatus, createRustValidationChecks } from "@the-open-engine/opcore-validation-rust";
 import { createTypeScriptValidationChecks } from "@the-open-engine/opcore-validation-typescript";
@@ -37,6 +38,7 @@ export const defaultValidationChecks = [
   ...createTypeScriptValidationChecks(),
   ...createRustValidationChecks(),
   ...createPythonValidationChecks(),
+  ...createDocsValidationChecks(),
   ...createCloneValidationChecks({ invoke: invokeCloneAnalysis })
 ];
 

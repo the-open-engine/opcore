@@ -304,6 +304,37 @@
       "dist/source-files.d.ts.map"
     ]
   },
+  "@the-open-engine/opcore-validation-docs": {
+    "directory": "packages/validation-docs",
+    "expectedFiles": [
+      "package.json",
+      "README.md",
+      "dist/check-constants.js",
+      "dist/check-ids.js",
+      "dist/checks.js",
+      "dist/diagnostics.js",
+      "dist/freshness.js",
+      "dist/history.js",
+      "dist/index.js",
+      "dist/snapshot.js",
+      "dist/check-constants.d.ts",
+      "dist/check-constants.d.ts.map",
+      "dist/check-ids.d.ts",
+      "dist/check-ids.d.ts.map",
+      "dist/checks.d.ts",
+      "dist/checks.d.ts.map",
+      "dist/diagnostics.d.ts",
+      "dist/diagnostics.d.ts.map",
+      "dist/freshness.d.ts",
+      "dist/freshness.d.ts.map",
+      "dist/history.d.ts",
+      "dist/history.d.ts.map",
+      "dist/index.d.ts",
+      "dist/index.d.ts.map",
+      "dist/snapshot.d.ts",
+      "dist/snapshot.d.ts.map"
+    ]
+  },
   "@the-open-engine/opcore-validation-python": {
     "directory": "packages/validation-python",
     "expectedFiles": [

@@ -11,6 +11,7 @@
     "packages/edit",
     "packages/validation",
     "packages/validation-clone",
+    "packages/validation-docs",
     "packages/validation-python",
     "packages/validation-rust",
     "packages/validation-typescript",

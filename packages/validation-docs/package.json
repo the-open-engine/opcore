@@ -1,0 +1,44 @@
+{
+  "name": "@the-open-engine/opcore-validation-docs",
+  "version": "0.1.0-alpha.0",
+  "description": "Internal Opcore documentation and context-health validation adapter.",
+  "type": "module",
+  "license": "MIT",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "keywords": [
+    "code-intelligence",
+    "coding-agents",
+    "documentation",
+    "validation",
+    "developer-tools"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@the-open-engine/opcore-contracts": "0.1.0-alpha.0",
+    "@the-open-engine/opcore-validation": "0.1.0-alpha.0"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/the-open-engine/opcore.git",
+    "directory": "packages/validation-docs"
+  },
+  "scripts": {
+    "build": "tsc -b"
+  }
+}

@@ -38,6 +38,7 @@
     "@the-open-engine/opcore-graph": "0.1.0-alpha.0",
     "@the-open-engine/opcore-validation": "0.1.0-alpha.0",
     "@the-open-engine/opcore-validation-clone": "0.1.0-alpha.0",
+    "@the-open-engine/opcore-validation-docs": "0.1.0-alpha.0",
     "@the-open-engine/opcore-validation-python": "0.1.0-alpha.0",
     "@the-open-engine/opcore-validation-rust": "0.1.0-alpha.0",
     "@the-open-engine/opcore-validation-typescript": "0.1.0-alpha.0",
