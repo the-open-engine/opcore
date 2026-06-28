@@ -147,9 +147,9 @@ export class AspWarmMethods {
             target: resolution.target,
             failure: {
               category: resolution.category,
-              message: resolution.message
-            },
-            ...(resolution.candidates ? { candidates: resolution.candidates } : {})
+              message: resolution.message,
+              ...(resolution.candidates ? { candidates: resolution.candidates } : {})
+            }
           },
       timing: commandTiming(startedAt, processState, "inspect_references")
     };

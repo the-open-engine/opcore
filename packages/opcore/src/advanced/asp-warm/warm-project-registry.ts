@@ -1,8 +1,12 @@
-import { existsSync, readFileSync, realpathSync } from "node:fs";
+import { existsSync, readFileSync, realpathSync, readdirSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 import type { Project, SourceFile } from "ts-morph";
 import type { CommandTimingProcessState } from "@the-open-engine/opcore-contracts";
-import { createInspectLanguageServiceProject, type InspectLanguageServiceProjectScope } from "../inspect-language-service.js";
+import {
+  createInspectLanguageServiceProject,
+  isSupportedInspectSourcePath,
+  type InspectLanguageServiceProjectScope
+} from "../inspect-language-service.js";
 
 export type WarmProjectScope = InspectLanguageServiceProjectScope;
 
@@ -55,6 +59,7 @@ interface WarmProjectSlot {
   epoch: string;
   scope: WarmProjectScope;
   preferredPath: string;
+  sourceFileFingerprint: string;
 }
 
 export function createWarmProjectRegistry(options: WarmProjectRegistryOptions): WarmProjectRegistry {
@@ -77,7 +82,8 @@ class DefaultWarmProjectRegistry implements WarmProjectRegistry {
       epoch,
       poisoned: this.poisoned,
       preferredPath: request.preferredPath,
-      scope
+      scope,
+      sourceFileFingerprint: currentSourceFileFingerprint(this.repoRoot, scope)
     });
     const processState: CommandTimingProcessState = needsRebuild ? "cold" : "warm";
     if (needsRebuild) {
@@ -99,11 +105,13 @@ class DefaultWarmProjectRegistry implements WarmProjectRegistry {
   }
 
   private createSlot(preferredPath: string, scope: WarmProjectScope, epoch: string): WarmProjectSlot {
+    const project = createInspectLanguageServiceProject(this.repoRoot, preferredPath, { projectScope: scope });
     return {
-      project: createInspectLanguageServiceProject(this.repoRoot, preferredPath, { projectScope: scope }),
+      project,
       epoch,
       scope,
-      preferredPath
+      preferredPath,
+      sourceFileFingerprint: currentSourceFileFingerprint(this.repoRoot, scope)
     };
   }
 
@@ -167,10 +175,11 @@ class DefaultWarmProjectRegistry implements WarmProjectRegistry {
 
 function shouldRebuildProject(
   slot: WarmProjectSlot | undefined,
-  request: { epoch: string; poisoned: boolean; preferredPath: string; scope: WarmProjectScope }
+  request: { epoch: string; poisoned: boolean; preferredPath: string; scope: WarmProjectScope; sourceFileFingerprint: string }
 ): boolean {
   if (request.poisoned || slot === undefined) return true;
   if (slot.epoch !== request.epoch || slot.scope !== request.scope) return true;
+  if (slot.sourceFileFingerprint !== request.sourceFileFingerprint) return true;
   return request.scope !== "whole_repo" && slot.preferredPath !== request.preferredPath;
 }
 
@@ -190,6 +199,46 @@ function refreshSourceFile(sourceFile: SourceFile): void {
   const refresh = (sourceFile as SourceFile & { refreshFromFileSystemSync?: () => unknown }).refreshFromFileSystemSync;
   if (typeof refresh === "function") refresh.call(sourceFile);
 }
+
+function currentSourceFileFingerprint(repoRoot: string, scope: WarmProjectScope): string {
+  if (scope !== "whole_repo") return "scoped";
+  return listWarmSourceFiles(repoRoot).join("\n");
+}
+
+function listWarmSourceFiles(repoRoot: string): string[] {
+  const files: string[] = [];
+  visit(repoRoot);
+  return files.sort();
+
+  function visit(directory: string): void {
+    for (const entry of readdirSync(directory, { withFileTypes: true }).sort((left, right) => left.name.localeCompare(right.name))) {
+      const path = join(directory, entry.name);
+      if (entry.isDirectory()) {
+        if (!excludedDirectories.has(entry.name)) visit(path);
+      } else if (entry.isFile() && isSupportedInspectSourcePath(path) && isInside(repoRoot, path)) {
+        files.push(resolve(path));
+      }
+    }
+  }
+}
+
+const excludedDirectories = new Set([
+  ".ace",
+  ".agents",
+  ".claude",
+  ".codex",
+  ".gemini",
+  ".git",
+  ".lattice",
+  ".opencode",
+  ".pnpm",
+  ".robustness-engine-cache",
+  ".rox-cache",
+  "dist",
+  "node_modules",
+  "target",
+  "vendor"
+]);
 
 function currentGitEpoch(repoRoot: string): string {
   const gitDir = resolveGitDir(repoRoot);

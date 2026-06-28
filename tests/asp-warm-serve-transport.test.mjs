@@ -13,6 +13,8 @@ const opcoreBin = join(repoRoot, "packages/opcore/dist/advanced/index.js");
 describe("ASP warm serve stdio transport", () => {
   it("keeps asp serve hidden from public help", assertAspServeHiddenFromPublicHelp);
   it("answers initialize, inspect, edit preview, check, and shutdown without mutating the worktree", { timeout: 60000 }, assertWarmRoundTrip);
+  it("includes files created after warmup in rename preview", { timeout: 60000 }, assertRenamePreviewSeesLateFiles);
+  it("nests inspect candidates inside failure payloads", { timeout: 60000 }, assertInspectCandidatesStayInsideFailure);
 });
 
 function assertAspServeHiddenFromPublicHelp() {
@@ -36,6 +38,43 @@ async function assertWarmRoundTrip() {
     const edit = await assertWarmEditPreview(peer, fixture.repo);
     await assertWarmCheck(peer, host, edit, fixture.repo);
     await assertWarmShutdown(peer);
+  } finally {
+    peer.close();
+    rmSync(fixture.repo, { recursive: true, force: true });
+  }
+}
+
+async function assertRenamePreviewSeesLateFiles() {
+  const fixture = createFixtureRepo();
+  const host = createFixtureHost();
+  const peer = spawnWarmServer(fixture.repo, host);
+  try {
+    await initializeWarmPeer(peer, fixture.repo, host);
+    await assertWarmInspect(peer);
+    writeFileSync(join(fixture.repo, "src/late.ts"), "import { greet } from \"./api\";\nexport const late = greet(\"Grace\");\n");
+    const edit = await requestWarmRename(peer, "salute");
+    assert.ok(edit.editResult.changes.some((change) => change.path === "src/late.ts" && /salute/.test(change.content)));
+  } finally {
+    peer.close();
+    rmSync(fixture.repo, { recursive: true, force: true });
+  }
+}
+
+async function assertInspectCandidatesStayInsideFailure() {
+  const fixture = createFixtureRepo();
+  writeFileSync(join(fixture.repo, "src/ambiguous.ts"), "export function sameName() {}\n{\n  const sameName = 1;\n  console.log(sameName);\n}\n");
+  const host = createFixtureHost();
+  const peer = spawnWarmServer(fixture.repo, host);
+  try {
+    await initializeWarmPeer(peer, fixture.repo, host);
+    const response = await peer.request("inspect/references", {
+      path: "src/ambiguous.ts",
+      symbolName: "sameName"
+    });
+    assert.equal(response.inspectResult.status, "error");
+    assert.equal(response.inspectResult.failure.category, "target_ambiguous");
+    assert.equal(Object.hasOwn(response.inspectResult, "candidates"), false);
+    assert.ok(response.inspectResult.failure.candidates.length > 0);
   } finally {
     peer.close();
     rmSync(fixture.repo, { recursive: true, force: true });
@@ -76,16 +115,20 @@ async function assertWarmInspect(peer) {
 
 async function assertWarmEditPreview(peer, repo) {
   const beforeApi = readFileSync(join(repo, "src/api.ts"), "utf8");
-  const edit = await peer.request("edit/rename", {
-    target: { path: "src/api.ts", name: "greet", line: 1 },
-    newName: "salute"
-  });
+  const edit = await requestWarmRename(peer, "salute");
   assert.equal(edit.editResult.status, "preview");
   assert.equal(edit.timing.processState, "warm");
   assert.ok(edit.editResult.changes.some((change) => change.path === "src/api.ts" && /salute/.test(change.content)));
   assert.ok(edit.editResult.changes.some((change) => change.path === "src/use.ts" && /salute/.test(change.content)));
   assert.equal(readFileSync(join(repo, "src/api.ts"), "utf8"), beforeApi);
   return edit;
+}
+
+function requestWarmRename(peer, newName) {
+  return peer.request("edit/rename", {
+    target: { path: "src/api.ts", name: "greet", line: 1 },
+    newName
+  });
 }
 
 async function assertWarmCheck(peer, host, edit, repo) {
