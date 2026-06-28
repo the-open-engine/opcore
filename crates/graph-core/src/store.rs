@@ -16,6 +16,7 @@ use time::format_description::well_known::Rfc3339;
 use time::OffsetDateTime;
 
 mod metadata;
+mod read;
 mod schema;
 mod types;
 mod write;
@@ -33,6 +34,7 @@ use metadata::{
     scoped_source_hashes, source_hash_discovery_failed, stale_freshness, stale_metadata_freshness,
     stale_metadata_freshness_with_age,
 };
+use read::{read_edge_row, read_node_row};
 use schema::{configure_sqlite, migrate_or_validate, validate_schema};
 #[cfg(test)]
 use schema::{require_index, require_table, STORE_INDEX_NAMES};
@@ -266,26 +268,20 @@ impl GraphStore {
         self.validate_schema()?;
         let watch_paths =
             normalize_watch_paths(watch_paths).map_err(StoreError::InvalidSnapshot)?;
-        let metadata = self.read_metadata()?;
+        let metadata = self
+            .read_metadata()?
+            .map(|metadata| self.normalize_status_metadata(metadata))
+            .transpose()?;
         let Some(metadata) = metadata else {
             return Ok(missing_metadata_freshness(max_age_ms));
         };
 
         let stored_hashes = scoped_source_hashes(self.read_file_hashes()?, &watch_paths);
-        let age_ms = max_age_ms
-            .map(|_| freshness_age_ms(&metadata.generated_at))
-            .unwrap_or(0);
+        let age_ms = freshness_age_ms(&metadata.generated_at);
         if let Some(reason) = missing_watch_root_reason(&self.paths.repo_root, &watch_paths) {
-            return Ok(FreshnessState::Stale {
-                metadata: Some(metadata.clone()),
-                freshness: stale_freshness(
-                    metadata.generated_at.clone(),
-                    age_ms,
-                    max_age_ms,
-                    reason.clone(),
-                ),
-                reason,
-            });
+            return Ok(stale_snapshot_freshness(
+                &metadata, age_ms, max_age_ms, reason,
+            ));
         }
 
         let current_hashes = current_source_hashes(&self.paths.repo_root, &watch_paths);
@@ -298,27 +294,14 @@ impl GraphStore {
         }
 
         if let Some(reason) = hash_mismatch_reason(&stored_hashes, &current_hashes.file_hashes) {
-            return Ok(FreshnessState::Stale {
-                metadata: Some(metadata.clone()),
-                freshness: stale_freshness(
-                    metadata.generated_at.clone(),
-                    age_ms,
-                    max_age_ms,
-                    reason.clone(),
-                ),
-                reason,
-            });
+            return Ok(stale_snapshot_freshness(
+                &metadata, age_ms, max_age_ms, reason,
+            ));
         }
-        if let Some(max_age_ms) = max_age_ms {
-            if age_ms > max_age_ms {
-                let reason = format!("snapshot age {age_ms}ms exceeds maxAgeMs {max_age_ms}");
-                return Ok(stale_metadata_freshness_with_age(
-                    metadata,
-                    age_ms,
-                    Some(max_age_ms),
-                    reason,
-                ));
-            }
+        if let Some(reason) = max_age_stale_reason(age_ms, max_age_ms) {
+            return Ok(stale_metadata_freshness_with_age(
+                metadata, age_ms, max_age_ms, reason,
+            ));
         }
 
         let generated_at = metadata.generated_at.clone();
@@ -332,6 +315,22 @@ impl GraphStore {
                 reason: None,
             },
         })
+    }
+
+    fn normalize_status_metadata(
+        &self,
+        mut metadata: GraphSnapshotMetadata,
+    ) -> StoreResult<GraphSnapshotMetadata> {
+        if metadata.generated_at != EXTRACTION_GENERATED_AT {
+            return Ok(metadata);
+        }
+        let Some(summary) = self.last_pipeline_summary()? else {
+            return Ok(metadata);
+        };
+        metadata.generated_at = summary.completed_at.clone();
+        metadata.freshness.generated_at = summary.completed_at;
+        metadata.freshness.age_ms = freshness_age_ms(&metadata.generated_at);
+        Ok(metadata)
     }
 
     pub fn query(&self, selector: &GraphFactQuerySelector) -> StoreResult<StoreQueryOutput> {
@@ -442,43 +441,27 @@ impl GraphStore {
     }
 }
 
-fn read_node_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<GraphFactNode> {
-    if let Some(extra) = row.get::<_, Option<String>>(4)? {
-        return parse_canonical_row(&extra, 4);
+fn stale_snapshot_freshness(
+    metadata: &GraphSnapshotMetadata,
+    age_ms: u64,
+    max_age_ms: Option<u64>,
+    reason: String,
+) -> FreshnessState {
+    FreshnessState::Stale {
+        metadata: Some(metadata.clone()),
+        freshness: stale_freshness(
+            metadata.generated_at.clone(),
+            age_ms,
+            max_age_ms,
+            reason.clone(),
+        ),
+        reason,
     }
-    Ok(GraphFactNode {
-        id: row.get(0)?,
-        kind: row.get(1)?,
-        path: row.get(2)?,
-        name: row.get(3)?,
-        attributes: None,
-    })
 }
 
-fn read_edge_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<GraphFactEdge> {
-    if let Some(extra) = row.get::<_, Option<String>>(4)? {
-        return parse_canonical_row(&extra, 4);
-    }
-    Ok(GraphFactEdge {
-        id: row.get(0)?,
-        kind: row.get(1)?,
-        from: row.get(2)?,
-        to: row.get(3)?,
-        attributes: None,
-    })
-}
-
-fn parse_canonical_row<T: serde::de::DeserializeOwned>(
-    extra: &str,
-    column: usize,
-) -> rusqlite::Result<T> {
-    serde_json::from_str(extra).map_err(|error| {
-        rusqlite::Error::FromSqlConversionFailure(
-            column,
-            rusqlite::types::Type::Text,
-            Box::new(error),
-        )
-    })
+fn max_age_stale_reason(age_ms: u64, max_age_ms: Option<u64>) -> Option<String> {
+    let max_age_ms = max_age_ms?;
+    (age_ms > max_age_ms).then(|| format!("snapshot age {age_ms}ms exceeds maxAgeMs {max_age_ms}"))
 }
 
 fn now_rfc3339() -> String {

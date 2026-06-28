@@ -21,13 +21,16 @@ const repoRoot = fileURLToPath(new URL("..", import.meta.url));
 const latticeBin = join(repoRoot, "packages/opcore/dist/advanced/index.js");
 const sourceFixtureRoot = resolve(repoRoot, "packages/fixtures/source-extraction/wave1");
 const robustnessFixtureRoot = resolve(repoRoot, "packages/fixtures/graph-robustness/watch-roots");
+const fixedExtractionGeneratedAt = "2026-06-04T00:00:00.000Z";
 
 describe("graph pipeline CLI", () => {
   it("builds, updates, reports status, and uses canonical Opcore routing", () => {
     withFixtureCopy((fixtureRoot) => {
+      const beforeBuild = Date.now();
       const build = run(latticeBin, ["graph", "build", "--repo", fixtureRoot, "--json"]);
       const repeatBuild = run(latticeBin, ["graph", "build", "--repo", fixtureRoot, "--json"]);
       assert.equal(build.providerStatus.state, "available");
+      assertFreshGeneratedAt(build.providerStatus.freshness.generatedAt, beforeBuild);
       assert.deepEqual(build.providerStatus.handshake.nodeKinds, [
         "repo",
         "package",
@@ -57,8 +60,10 @@ describe("graph pipeline CLI", () => {
 
       writeFileSync(join(fixtureRoot, "src/math.js"), "export function add(left, right) { return left + right + 3; }\n");
       unlinkSync(join(fixtureRoot, "src/legacy-widget.jsx"));
+      const beforeUpdate = Date.now();
       const update = run(latticeBin, ["graph", "update", "--repo", fixtureRoot, "--base", "HEAD", "--json"]);
       const repeatUpdate = run(latticeBin, ["graph", "update", "--repo", fixtureRoot, "--base", "HEAD", "--json"]);
+      assertFreshGeneratedAt(update.providerStatus.freshness.generatedAt, beforeUpdate);
       assert.deepEqual(update.graphPipeline.summary.changedFiles, ["src/math.js"]);
       assert.deepEqual(update.graphPipeline.summary.deletedFiles, ["src/legacy-widget.jsx"]);
       assert.equal(update.graphPipeline.summary.fullRebuildRequired, false);
@@ -68,6 +73,10 @@ describe("graph pipeline CLI", () => {
       const repeatStatus = run(latticeBin, ["graph", "status", "--repo", fixtureRoot, "--json"]);
       assert.equal(status.providerStatus.state, "available");
       assert.equal(repeatStatus.providerStatus.state, "available");
+      assert.equal(status.providerStatus.freshness.generatedAt, repeatUpdate.providerStatus.freshness.generatedAt);
+      assert.notEqual(status.providerStatus.freshness.generatedAt, fixedExtractionGeneratedAt);
+      assert.equal(status.providerStatus.freshness.stale, false);
+      assert.equal(status.providerStatus.freshness.ageMs >= 0, true);
     });
   });
 
@@ -641,7 +650,10 @@ describe("graph pipeline CLI", () => {
       const repeated = run(latticeBin, ["graph", "status", "--repo", temp, "--paths", "empty", "--json"]);
       assert.equal(staleMissing.providerStatus.state, "stale");
       assert.match(staleMissing.providerStatus.freshness.reason, /watch root empty is missing/);
-      assert.deepEqual(repeated.providerStatus.freshness, staleMissing.providerStatus.freshness);
+      assert.equal(repeated.providerStatus.freshness.generatedAt, staleMissing.providerStatus.freshness.generatedAt);
+      assert.equal(repeated.providerStatus.freshness.reason, staleMissing.providerStatus.freshness.reason);
+      assert.equal(repeated.providerStatus.freshness.stale, true);
+      assert.equal(repeated.providerStatus.freshness.ageMs >= staleMissing.providerStatus.freshness.ageMs, true);
       assert.equal(existsSync(join(temp, "empty")), false);
     } finally {
       rmSync(temp, { recursive: true, force: true });
@@ -911,6 +923,14 @@ function assertRustStoreRows(repoRoot, options) {
   } finally {
     db.close();
   }
+}
+
+function assertFreshGeneratedAt(generatedAt, minEpochMs) {
+  assert.notEqual(generatedAt, fixedExtractionGeneratedAt);
+  const parsed = Date.parse(generatedAt);
+  assert.equal(Number.isFinite(parsed), true, generatedAt);
+  assert.equal(parsed >= minEpochMs - 5000, true, generatedAt);
+  assert.equal(parsed <= Date.now() + 5000, true, generatedAt);
 }
 
 function sleep(ms) {

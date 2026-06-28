@@ -1,10 +1,12 @@
 use super::*;
 use crate::extraction::{extract_sources, ExtractionOptions};
-use crate::protocol::{GraphFactQueryKind, GraphFactQuerySelector};
+use crate::protocol::{GraphFactQueryKind, GraphFactQuerySelector, GraphPipelineSummary};
 use crate::GRAPH_SCHEMA_VERSION;
 use std::fs;
 use std::path::PathBuf;
 use tempfile::TempDir;
+
+mod rust_fact_columns;
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
@@ -38,266 +40,6 @@ fn store_configures_wal_and_checkpoint_budget() -> TestResult {
 
     assert_eq!(journal_mode, "wal");
     assert_eq!(wal_autocheckpoint, WAL_AUTOCHECKPOINT_PAGES);
-    Ok(())
-}
-
-#[test]
-fn store_round_trips_rust_fact_columns() -> TestResult {
-    let repo = temp_repo()?;
-    let store = GraphStore::open(StorePaths::for_repo_root(repo.path()))?;
-    let rust_file = store.paths().repo_root.join("src/lib.rs");
-    let rust_file_path = display_path(&rust_file);
-
-    assert_eq!(store_user_version(&store.connection)?, 1);
-    insert_rust_file_hash(&store.connection, &rust_file_path)?;
-    insert_rust_node(&store.connection, rust_struct_node(&rust_file_path))?;
-    insert_rust_node(&store.connection, rust_test_node(&rust_file_path))?;
-    insert_rust_edges(&store.connection, &rust_file_path)?;
-    insert_rust_fts_row(&store.connection)?;
-    assert_rust_file_hash_language(&store.connection)?;
-    assert_rust_node_columns(&store.connection)?;
-    assert_rust_test_flag(&store.connection)?;
-    assert_rust_edge_kinds(&store.connection)?;
-    assert_rust_fts_hit(&store.connection)?;
-    Ok(())
-}
-
-const RUST_FILE_RELATIVE_PATH: &str = "src/lib.rs";
-const RUST_FILE_HASH: &str = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
-
-struct RustNodeFixture<'a> {
-    id: &'a str,
-    kind: &'a str,
-    name: &'a str,
-    qualified_name: &'a str,
-    file_path: &'a str,
-    line_start: u32,
-    line_end: u32,
-    parent_name: &'a str,
-    params: &'a str,
-    return_type: &'a str,
-    modifiers: &'a str,
-    is_test: u32,
-    is_exported: u32,
-    signature: &'a str,
-    attributes_json: &'a str,
-    canonical_json: &'a str,
-}
-
-fn insert_rust_file_hash(connection: &Connection, absolute_path: &str) -> TestResult {
-    connection.execute(
-        "insert into file_hashes(relative_path, absolute_path, language, sha256, updated_at) values (?1, ?2, ?3, ?4, ?5)",
-        params![
-            RUST_FILE_RELATIVE_PATH,
-            absolute_path,
-            "rust",
-            RUST_FILE_HASH,
-            EXTRACTION_GENERATED_AT
-        ],
-    )?;
-    Ok(())
-}
-
-fn rust_struct_node(file_path: &str) -> RustNodeFixture<'_> {
-    RustNodeFixture {
-        id: "struct:src/lib.rs#Widget",
-        kind: "Struct",
-        name: "Widget",
-        qualified_name: "crate::Widget",
-        file_path,
-        line_start: 3,
-        line_end: 7,
-        parent_name: "crate",
-        params: "name: String",
-        return_type: "Self",
-        modifiers: "pub,derive(Debug)",
-        is_test: 0,
-        is_exported: 1,
-        signature: "pub struct Widget { name: String }",
-        attributes_json: r#"{"exported":true}"#,
-        canonical_json: r#"{"id":"struct:src/lib.rs#Widget","kind":"Struct"}"#,
-    }
-}
-
-fn rust_test_node(file_path: &str) -> RustNodeFixture<'_> {
-    RustNodeFixture {
-        id: "test:src/lib.rs#widget_smoke",
-        kind: "Test",
-        name: "widget_smoke",
-        qualified_name: "crate::tests::widget_smoke",
-        file_path,
-        line_start: 12,
-        line_end: 15,
-        parent_name: "crate::tests",
-        params: "",
-        return_type: "",
-        modifiers: "#[test]",
-        is_test: 1,
-        is_exported: 0,
-        signature: "#[test] fn widget_smoke()",
-        attributes_json: r#"{"test":true}"#,
-        canonical_json: r#"{"id":"test:src/lib.rs#widget_smoke","kind":"Test"}"#,
-    }
-}
-
-fn insert_rust_node(connection: &Connection, node: RustNodeFixture<'_>) -> TestResult {
-    connection.execute(
-        "insert into nodes(id, kind, name, qualified_name, file_path, line_start, line_end, language, parent_name, params, return_type, modifiers, is_test, is_exported, file_hash, extra, updated_at, signature, attributes_json, canonical_json) values (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20)",
-        params![
-            node.id,
-            node.kind,
-            node.name,
-            node.qualified_name,
-            node.file_path,
-            node.line_start,
-            node.line_end,
-            "rust",
-            node.parent_name,
-            node.params,
-            node.return_type,
-            node.modifiers,
-            node.is_test,
-            node.is_exported,
-            RUST_FILE_HASH,
-            "",
-            EXTRACTION_GENERATED_AT,
-            node.signature,
-            node.attributes_json,
-            node.canonical_json
-        ],
-    )?;
-    Ok(())
-}
-
-fn insert_rust_edges(connection: &Connection, rust_file_path: &str) -> TestResult {
-    for (id, kind) in [
-        ("edge:CONTAINS:src/lib.rs#Widget", "CONTAINS"),
-        ("edge:IMPORTS_FROM:src/lib.rs#serde", "IMPORTS_FROM"),
-        ("edge:CALLS:src/lib.rs#Widget::new", "CALLS"),
-        ("edge:IMPLEMENTS:src/lib.rs#Widget.Display", "IMPLEMENTS"),
-        ("edge:DEPENDS_ON:Cargo.toml#serde", "DEPENDS_ON"),
-        ("edge:INHERITS:src/lib.rs#WidgetTrait.Debug", "INHERITS"),
-    ] {
-        connection.execute(
-            "insert into edges(id, kind, source_qualified, target_qualified, file_path, line, extra, updated_at, from_id, to_id, canonical_json) values (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)",
-            params![
-                id,
-                kind,
-                "crate::Widget",
-                "crate::Target",
-                rust_file_path,
-                4,
-                "",
-                EXTRACTION_GENERATED_AT,
-                "struct:src/lib.rs#Widget",
-                "test:src/lib.rs#widget_smoke",
-                format!(r#"{{"id":"{id}","kind":"{kind}"}}"#)
-            ],
-        )?;
-    }
-    Ok(())
-}
-
-fn insert_rust_fts_row(connection: &Connection) -> TestResult {
-    connection.execute(
-        "insert into nodes_fts(node_id, kind, path, name, qualified_name, file_path, signature) values (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-        params![
-            "struct:src/lib.rs#Widget",
-            "Struct",
-            RUST_FILE_RELATIVE_PATH,
-            "Widget",
-            "crate::Widget",
-            RUST_FILE_RELATIVE_PATH,
-            "pub struct Widget"
-        ],
-    )?;
-    Ok(())
-}
-
-fn assert_rust_file_hash_language(connection: &Connection) -> TestResult {
-    let rust_file_language: String = connection.query_row(
-        "select language from file_hashes where relative_path = ?1",
-        params![RUST_FILE_RELATIVE_PATH],
-        |row| row.get(0),
-    )?;
-    assert_eq!(rust_file_language, "rust");
-    Ok(())
-}
-
-fn assert_rust_node_columns(connection: &Connection) -> TestResult {
-    let rust_struct: (String, u32, u32, String, String, String, String, String, String) = connection.query_row(
-        "select language, is_exported, is_test, signature, qualified_name, parent_name, params, return_type, modifiers from nodes where id = ?1",
-        params!["struct:src/lib.rs#Widget"],
-        |row| {
-            Ok((
-                row.get(0)?,
-                row.get(1)?,
-                row.get(2)?,
-                row.get(3)?,
-                row.get(4)?,
-                row.get(5)?,
-                row.get(6)?,
-                row.get(7)?,
-                row.get(8)?,
-            ))
-        },
-    )?;
-    assert_eq!(
-        rust_struct,
-        (
-            "rust".to_string(),
-            1,
-            0,
-            "pub struct Widget { name: String }".to_string(),
-            "crate::Widget".to_string(),
-            "crate".to_string(),
-            "name: String".to_string(),
-            "Self".to_string(),
-            "pub,derive(Debug)".to_string()
-        )
-    );
-    Ok(())
-}
-
-fn assert_rust_test_flag(connection: &Connection) -> TestResult {
-    let rust_test_flag: u32 = connection.query_row(
-        "select is_test from nodes where id = ?1",
-        params!["test:src/lib.rs#widget_smoke"],
-        |row| row.get(0),
-    )?;
-    assert_eq!(rust_test_flag, 1);
-    Ok(())
-}
-
-fn assert_rust_edge_kinds(connection: &Connection) -> TestResult {
-    let edge_kinds = grouped_counts(
-        connection,
-        "select kind, count(*) from edges group by kind order by kind",
-    )?
-    .into_iter()
-    .map(|(kind, _count)| kind)
-    .collect::<Vec<_>>();
-    assert_eq!(
-        edge_kinds,
-        vec![
-            "CALLS",
-            "CONTAINS",
-            "DEPENDS_ON",
-            "IMPLEMENTS",
-            "IMPORTS_FROM",
-            "INHERITS"
-        ]
-    );
-    Ok(())
-}
-
-fn assert_rust_fts_hit(connection: &Connection) -> TestResult {
-    let fts_count: u32 = connection.query_row(
-        "select count(*) from nodes_fts where nodes_fts match ?1",
-        params!["Widget"],
-        |row| row.get(0),
-    )?;
-    assert_eq!(fts_count, 1);
     Ok(())
 }
 
@@ -424,6 +166,72 @@ fn freshness_becomes_stale_after_file_hash_change() -> TestResult {
 }
 
 #[test]
+fn available_status_reports_snapshot_age_without_max_age_policy() -> TestResult {
+    let repo = temp_repo_with_source("export function a() { return 1; }")?;
+    let mut old_snapshot = snapshot(repo.path());
+    old_snapshot.metadata.generated_at = EXTRACTION_GENERATED_AT.to_string();
+    old_snapshot.metadata.freshness.generated_at = EXTRACTION_GENERATED_AT.to_string();
+    old_snapshot.metadata.freshness.age_ms = 0;
+
+    let mut store = GraphStore::open(StorePaths::for_repo_root(repo.path()))?;
+    store.refresh_full_snapshot(old_snapshot)?;
+
+    match store.status(None)? {
+        GraphProviderStatus::Available { freshness, .. } => {
+            assert!(
+                freshness.age_ms > 0,
+                "available snapshots must report real age"
+            );
+            assert_eq!(freshness.generated_at, EXTRACTION_GENERATED_AT);
+            assert!(!freshness.stale);
+        }
+        other => return Err(std::io::Error::other(format!("unexpected status: {other:?}")).into()),
+    }
+    Ok(())
+}
+
+#[test]
+fn status_uses_pipeline_completion_for_legacy_fixed_metadata() -> TestResult {
+    let repo = temp_repo_with_source("export function a() { return 1; }")?;
+    let mut legacy_snapshot = snapshot(repo.path());
+    legacy_snapshot.metadata.generated_at = EXTRACTION_GENERATED_AT.to_string();
+    legacy_snapshot.metadata.freshness.generated_at = EXTRACTION_GENERATED_AT.to_string();
+
+    let mut store = GraphStore::open(StorePaths::for_repo_root(repo.path()))?;
+    store.refresh_full_snapshot(legacy_snapshot)?;
+    let completed_at = now_rfc3339();
+    store.record_pipeline_summary(&GraphPipelineSummary {
+        operation: "build".to_string(),
+        repo: repo_identity(repo.path()),
+        store_path: Some(display_path(&store.paths().db_path)),
+        started_at: completed_at.clone(),
+        completed_at: completed_at.clone(),
+        duration_ms: 1,
+        discovered_files: 1,
+        parsed_files: 1,
+        changed_files: vec!["src/a.ts".to_string()],
+        deleted_files: Vec::new(),
+        unchanged_files: 0,
+        full_rebuild_required: true,
+        diagnostics_count: 0,
+        phase_timings: Vec::new(),
+        base_ref: None,
+        watch_paths: Vec::new(),
+        wal_checkpoint: None,
+    })?;
+
+    match store.status(None)? {
+        GraphProviderStatus::Available { freshness, .. } => {
+            assert_eq!(freshness.generated_at, completed_at);
+            assert_ne!(freshness.generated_at, EXTRACTION_GENERATED_AT);
+            assert!(!freshness.stale);
+        }
+        other => return Err(std::io::Error::other(format!("unexpected status: {other:?}")).into()),
+    }
+    Ok(())
+}
+
+#[test]
 fn relative_repo_root_stores_absolute_paths() -> TestResult {
     let repo = relative_temp_repo_with_source("export function a() { return 1; }")?;
     let relative_root = PathBuf::from(
@@ -530,18 +338,20 @@ fn assert_direct_metadata(connection: &Connection) -> TestResult {
     let freshness = connection
         .prepare("select key, value from metadata where key in ('schema_version', 'last_updated', 'last_build_type') order by key")?
         .query_map([], |row| Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?)))
-        .and_then(Iterator::collect::<Result<Vec<_>, _>>)?;
+        .and_then(Iterator::collect::<Result<std::collections::BTreeMap<_, _>, _>>)?;
     assert_eq!(
-        freshness,
-        vec![
-            ("last_build_type".to_string(), "full".to_string()),
-            (
-                "last_updated".to_string(),
-                EXTRACTION_GENERATED_AT.to_string()
-            ),
-            ("schema_version".to_string(), "6".to_string()),
-        ]
+        freshness.get("last_build_type").map(String::as_str),
+        Some("full")
     );
+    assert_eq!(
+        freshness.get("schema_version").map(String::as_str),
+        Some("6")
+    );
+    let last_updated = freshness
+        .get("last_updated")
+        .ok_or_else(|| std::io::Error::other("missing last_updated"))?;
+    assert_ne!(last_updated, EXTRACTION_GENERATED_AT);
+    OffsetDateTime::parse(last_updated, &Rfc3339)?;
     Ok(())
 }
 

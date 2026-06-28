@@ -187,14 +187,10 @@ pub(super) fn source_hash_discovery_failed(diagnostics: &[GraphExtractionDiagnos
 }
 
 pub(super) fn missing_metadata_freshness(max_age_ms: Option<u64>) -> FreshnessState {
+    let generated_at = now_rfc3339();
     FreshnessState::Stale {
         metadata: None,
-        freshness: stale_freshness(
-            EXTRACTION_GENERATED_AT.to_string(),
-            0,
-            max_age_ms,
-            "missing snapshot metadata",
-        ),
+        freshness: stale_freshness(generated_at, 0, max_age_ms, "missing snapshot metadata"),
         reason: "graph store snapshot is missing".to_string(),
     }
 }
@@ -306,4 +302,10 @@ pub(super) fn freshness_age_ms(generated_at: &str) -> u64 {
     };
     let age = OffsetDateTime::now_utc() - generated;
     u64::try_from(age.whole_milliseconds().max(0)).unwrap_or(u64::MAX)
+}
+
+fn now_rfc3339() -> String {
+    OffsetDateTime::now_utc()
+        .format(&Rfc3339)
+        .unwrap_or_else(|_| EXTRACTION_GENERATED_AT.to_string())
 }
