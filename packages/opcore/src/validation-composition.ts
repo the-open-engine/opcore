@@ -10,7 +10,8 @@ import {
   createValidationRunner,
   createValidationStatusPayload,
   type ValidationCommandAdapterOptions,
-  type ValidationGraphProviderClient
+  type ValidationGraphProviderClient,
+  type ValidationRuntimePolicy
 } from "@the-open-engine/opcore-validation";
 import { createPythonValidationAdapterStatus, createPythonValidationChecks } from "@the-open-engine/opcore-validation-python";
 import { createRustValidationAdapterStatus, createRustValidationChecks } from "@the-open-engine/opcore-validation-rust";
@@ -35,6 +36,10 @@ export const defaultValidationChecks = [
   ...createPythonValidationChecks()
 ];
 
+export const opcorePublicValidationRuntimePolicy: ValidationRuntimePolicy = {
+  persistentCaches: "disabled"
+};
+
 export const checkCommandAdapter = createCheckCommandAdapter(defaultValidationAdapterOptions());
 
 export const opcoreValidationRunner = {
@@ -45,7 +50,8 @@ export const opcoreValidationRunner = {
         skippedPathSegments: commonSkippedPathSegments
       }),
       checks: defaultValidationChecks,
-      graphProviderClient: createOpcoreValidationGraphProviderClient()
+      graphProviderClient: createOpcoreValidationGraphProviderClient(),
+      runtime: opcorePublicValidationRuntimePolicy
     }).runValidation(request);
   }
 };
@@ -67,6 +73,7 @@ function defaultValidationAdapterOptions(): ValidationCommandAdapterOptions {
   return {
     checks: defaultValidationChecks,
     graphProviderClient: createOpcoreValidationGraphProviderClient(),
+    runtime: opcorePublicValidationRuntimePolicy,
     workspaceFactory: (repoRoot) =>
       createNodeValidationWorkspace({
         repoRoot,

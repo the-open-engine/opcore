@@ -115,7 +115,9 @@ export {
   type ValidationCheckContext,
   type ValidationCheckDefinition,
   type ValidationCheckRegistry,
-  type ValidationCheckResult
+  type ValidationCheckResult,
+  type ValidationPersistentCacheMode,
+  type ValidationRuntimePolicy
 } from "./registry.js";
 export {
   ValidationOverlayConflictError,

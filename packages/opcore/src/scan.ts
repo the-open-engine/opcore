@@ -12,7 +12,11 @@ import { readdir, readFile } from "node:fs/promises";
 import { join, relative, resolve, sep } from "node:path";
 import { createOpcoreMetricReport, writeOpcoreMetricArtifacts } from "./reporting.js";
 import { commonSkippedPathSegments, createRepoState, parseOpcoreRepoArgs, type RepoResolution, resolveRepo } from "./status.js";
-import { createOpcoreValidationGraphProviderClient, defaultValidationChecks } from "./validation-composition.js";
+import {
+  createOpcoreValidationGraphProviderClient,
+  defaultValidationChecks,
+  opcorePublicValidationRuntimePolicy
+} from "./validation-composition.js";
 
 const skippedPathSegments = new Set<string>(commonSkippedPathSegments);
 
@@ -82,7 +86,8 @@ export async function createOpcoreScanAnalysis(resolution: RepoResolution): Prom
   const validationResult = await createValidationRunner({
     workspace: createScanWorkspace(resolution),
     checks: defaultValidationChecks,
-    graphProviderClient: createOpcoreValidationGraphProviderClient()
+    graphProviderClient: createOpcoreValidationGraphProviderClient(),
+    runtime: opcorePublicValidationRuntimePolicy
   }).runValidation(validationRequest);
   const metricReport = createOpcoreMetricReport({
     repoState,

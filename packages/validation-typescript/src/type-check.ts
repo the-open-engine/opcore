@@ -3,7 +3,12 @@ import type { ValidationDiagnostic } from "@the-open-engine/opcore-contracts";
 import ts from "typescript";
 import { TYPE_SCRIPT_TYPES_CHECK_ID } from "./check-ids.js";
 import { typeScriptCheckAdapter, typeScriptCheckOwner, supportedTypeScriptValidationScopes } from "./check-constants.js";
-import { createOverlayAwareTypeScriptProgramIterator, repoSourceFiles, toRepoRelativeCompilerPath } from "./compiler-host.js";
+import {
+  createOverlayAwareTypeScriptProgramIterator,
+  emitTypeScriptProgramBuildInfo,
+  repoSourceFiles,
+  toRepoRelativeCompilerPath
+} from "./compiler-host.js";
 import { mapTypeScriptDiagnostics } from "./diagnostics.js";
 
 export interface CollectTypeScriptSemanticDiagnosticsArgs {
@@ -27,22 +32,24 @@ export function createTypeCheck(): ValidationCheckDefinition {
     run: async (context) => {
       const diagnostics: ValidationDiagnostic[] = [];
       for await (const bundle of createOverlayAwareTypeScriptProgramIterator(context)) {
+        const diagnosticsProvider = bundle.builderProgram ?? bundle.program;
         diagnostics.push(
           ...mapTypeScriptDiagnostics(
             "types",
             [
               ...bundle.configDiagnostics,
-              ...bundle.program.getOptionsDiagnostics(),
-              ...bundle.program.getGlobalDiagnostics()
+              ...diagnosticsProvider.getOptionsDiagnostics(),
+              ...diagnosticsProvider.getGlobalDiagnostics()
             ],
             bundle.repoRoot
           ),
           ...collectTypeScriptSemanticDiagnostics({
             repoRoot: bundle.repoRoot,
             sourceFiles: repoSourceFiles(bundle),
-            getSemanticDiagnostics: (sourceFile) => bundle.program.getSemanticDiagnostics(sourceFile)
+            getSemanticDiagnostics: (sourceFile) => diagnosticsProvider.getSemanticDiagnostics(sourceFile)
           })
         );
+        emitTypeScriptProgramBuildInfo(bundle);
       }
       return { diagnostics };
     }

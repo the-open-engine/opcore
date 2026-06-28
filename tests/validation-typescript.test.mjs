@@ -188,6 +188,211 @@ describe("validation-typescript adapter", () => {
     assert.equal(result.status, "passed", JSON.stringify(result.diagnostics, null, 2));
   });
 
+  it("shares one TypeScript program per project across syntax and type checks in one validation request", async () => {
+    const libraryReads = new Map();
+    const originalReadFile = ts.sys.readFile;
+    ts.sys.readFile = (path, encoding) => {
+      const normalized = path.replaceAll("\\", "/");
+      if (normalized.endsWith("/node_modules/typescript/lib/lib.es2022.full.d.ts")) {
+        libraryReads.set(normalized, (libraryReads.get(normalized) ?? 0) + 1);
+      }
+      return originalReadFile(path, encoding);
+    };
+
+    try {
+      const result = await runner({
+        files: {
+          "apps/web/tsconfig.json": JSON.stringify({
+            compilerOptions: {
+              baseUrl: ".",
+              paths: {
+                "@/*": ["src/*"]
+              }
+            }
+          }),
+          "apps/web/src/index.ts": "import { value } from '@/dep';\nexport const label: string = value;\n",
+          "apps/web/src/dep.ts": "export const value = 'web';\n",
+          "packages/api/tsconfig.json": JSON.stringify({
+            compilerOptions: {
+              baseUrl: ".",
+              paths: {
+                "#/*": ["source/*"]
+              }
+            }
+          }),
+          "packages/api/source/index.ts": "import { count } from '#/dep';\nexport const total: number = count;\n",
+          "packages/api/source/dep.ts": "export const count = 1;\n"
+        }
+      }).runValidation(
+        request({
+          checks: [TYPE_SCRIPT_SYNTAX_CHECK_ID, TYPE_SCRIPT_TYPES_CHECK_ID],
+          scope: {
+            kind: "all"
+          }
+        })
+      );
+
+      const defaultLibReadCount = [...libraryReads.values()].reduce((sum, count) => sum + count, 0);
+      assert.equal(result.status, "passed", JSON.stringify(result.diagnostics, null, 2));
+      assert.equal(defaultLibReadCount, 2);
+    } finally {
+      ts.sys.readFile = originalReadFile;
+    }
+  });
+
+  it("persists and reads TypeScript build info for repeated on-disk validations", async () => {
+    const repo = mkdtempSync(join(tmpdir(), "opcore-validation-ts-build-info-"));
+    try {
+      mkdirSync(join(repo, "src"), { recursive: true });
+      writeFileSync(
+        join(repo, "tsconfig.json"),
+        JSON.stringify({
+          compilerOptions: {
+            module: "NodeNext",
+            moduleResolution: "NodeNext",
+            strict: true,
+            target: "ES2022"
+          },
+          include: ["src/**/*.ts"]
+        })
+      );
+      writeFileSync(join(repo, "src/dep.ts"), "export const value = 'disk';\n");
+      writeFileSync(join(repo, "src/index.ts"), "import { value } from './dep';\nexport const label: string = value;\n");
+
+      const validation = createValidationRunner({
+        workspace: createNodeValidationWorkspace({ repoRoot: repo }),
+        checks: createTypeScriptValidationChecks()
+      });
+      const validationRequest = request({
+        repo: { repoRoot: repo },
+        checks: [TYPE_SCRIPT_SYNTAX_CHECK_ID, TYPE_SCRIPT_TYPES_CHECK_ID],
+        scope: {
+          kind: "files",
+          files: ["src/index.ts"]
+        }
+      });
+
+      const first = await validation.runValidation(validationRequest);
+      assert.equal(first.status, "passed", JSON.stringify(first.diagnostics, null, 2));
+      assert.equal(listTypeScriptBuildInfoFiles(repo).length, 1);
+
+      let buildInfoReads = 0;
+      const originalReadFile = ts.sys.readFile;
+      ts.sys.readFile = (path, encoding) => {
+        const normalized = path.replaceAll("\\", "/");
+        if (normalized.includes("/.opcore/typescript-build-info/") && normalized.endsWith(".tsbuildinfo")) {
+          buildInfoReads += 1;
+        }
+        return originalReadFile(path, encoding);
+      };
+      try {
+        const second = await validation.runValidation(validationRequest);
+        assert.equal(second.status, "passed", JSON.stringify(second.diagnostics, null, 2));
+      } finally {
+        ts.sys.readFile = originalReadFile;
+      }
+
+      assert.ok(buildInfoReads > 0);
+      assert.equal(listTypeScriptBuildInfoFiles(repo).length, 1);
+    } finally {
+      rmSync(repo, { recursive: true, force: true });
+    }
+  });
+
+  it("honors runtime policy when persistent TypeScript build info is disabled", async () => {
+    const repo = mkdtempSync(join(tmpdir(), "opcore-validation-ts-build-info-disabled-"));
+    try {
+      mkdirSync(join(repo, "src"), { recursive: true });
+      writeFileSync(
+        join(repo, "tsconfig.json"),
+        JSON.stringify({
+          compilerOptions: {
+            module: "NodeNext",
+            moduleResolution: "NodeNext",
+            strict: true,
+            target: "ES2022"
+          },
+          include: ["src/**/*.ts"]
+        })
+      );
+      writeFileSync(join(repo, "src/index.ts"), "export const value: string = 'disk';\n");
+
+      const validation = createValidationRunner({
+        workspace: createNodeValidationWorkspace({ repoRoot: repo }),
+        checks: createTypeScriptValidationChecks(),
+        runtime: {
+          persistentCaches: "disabled"
+        }
+      });
+
+      const result = await validation.runValidation(
+        request({
+          repo: { repoRoot: repo },
+          checks: [TYPE_SCRIPT_SYNTAX_CHECK_ID, TYPE_SCRIPT_TYPES_CHECK_ID],
+          scope: {
+            kind: "files",
+            files: ["src/index.ts"]
+          }
+        })
+      );
+
+      assert.equal(result.status, "passed", JSON.stringify(result.diagnostics, null, 2));
+      assert.deepEqual(listTypeScriptBuildInfoFiles(repo), []);
+    } finally {
+      rmSync(repo, { recursive: true, force: true });
+    }
+  });
+
+  it("keeps overlay TypeScript programs in memory without writing build info", async () => {
+    const repo = mkdtempSync(join(tmpdir(), "opcore-validation-ts-overlay-"));
+    try {
+      mkdirSync(join(repo, "src"), { recursive: true });
+      writeFileSync(
+        join(repo, "tsconfig.json"),
+        JSON.stringify({
+          compilerOptions: {
+            module: "NodeNext",
+            moduleResolution: "NodeNext",
+            strict: true,
+            target: "ES2022"
+          },
+          include: ["src/**/*.ts"]
+        })
+      );
+      const sourcePath = join(repo, "src/index.ts");
+      const source = "export const value: string = 'disk';\n";
+      writeFileSync(sourcePath, source);
+
+      const result = await createValidationRunner({
+        workspace: createNodeValidationWorkspace({ repoRoot: repo }),
+        checks: createTypeScriptValidationChecks()
+      }).runValidation(
+        request({
+          repo: { repoRoot: repo },
+          checks: [TYPE_SCRIPT_SYNTAX_CHECK_ID, TYPE_SCRIPT_TYPES_CHECK_ID],
+          scope: {
+            kind: "files",
+            files: ["src/index.ts"]
+          },
+          overlays: [
+            {
+              path: "src/index.ts",
+              action: "write",
+              content: "export const value: string = 1;\n"
+            }
+          ]
+        })
+      );
+
+      assert.equal(result.status, "policy_failure");
+      assert.equal(result.diagnostics.find((diagnostic) => diagnostic.category === "types")?.code, "2322");
+      assert.equal(readFileSync(sourcePath, "utf8"), source);
+      assert.deepEqual(listTypeScriptBuildInfoFiles(repo), []);
+    } finally {
+      rmSync(repo, { recursive: true, force: true });
+    }
+  });
+
   it("loads project ambient declarations for scoped TypeScript type checks", async () => {
     const temp = mkdtempSync(join(tmpdir(), "opcore-validation-ts-ambient-"));
     try {
@@ -1339,6 +1544,14 @@ function listRepoFiles(root) {
     if (entry.isDirectory()) return listRepoFiles(relative(process.cwd(), absolutePath));
     return relative(process.cwd(), absolutePath).replaceAll("\\", "/");
   });
+}
+
+function listTypeScriptBuildInfoFiles(repo) {
+  const directory = join(repo, ".opcore/typescript-build-info");
+  if (!existsSync(directory)) return [];
+  return readdirSync(directory)
+    .filter((entry) => entry.endsWith(".tsbuildinfo"))
+    .sort();
 }
 
 function graphClient(overrides = {}) {

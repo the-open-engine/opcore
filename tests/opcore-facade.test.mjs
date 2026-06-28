@@ -303,6 +303,7 @@ describe("opcore public facade", () => {
       assert.equal(Object.hasOwn(result.validationResult.manifest, "runs"), false);
       assert.equal(Object.hasOwn(result.validationResult.manifest, "skippedChecks"), false);
       assert.equal(result.timing.phases.some((phase) => phase.phase === "validation_typescript_syntax"), true);
+      assert.equal(existsSync(join(fixtureRoot, ".opcore")), false);
     });
   });
 
