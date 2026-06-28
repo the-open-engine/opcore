@@ -28,6 +28,8 @@ use validation::validate_request;
 
 const GRAPH_DAEMON_PROTOCOL: &str = "opcore.graph.daemon";
 
+pub(crate) use lifecycle::{process_is_alive, read_daemon_pid};
+
 #[derive(Debug, Clone)]
 struct ResponseParts {
     status: GraphProviderStatus,

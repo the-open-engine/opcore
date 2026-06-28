@@ -1,13 +1,12 @@
 use crate::extraction::normalize_watch_paths;
-use crate::pipeline::{display_path, now_rfc3339, update_snapshot, GraphPipelineOptions};
+use crate::pipeline::{display_path, update_snapshot, GraphPipelineOptions};
 use crate::protocol::{
     available_status_with_wal_checkpoint, query_failed_status, warming_status,
     AvailableStatusInput, GraphDaemonResponse, GraphFreshness, GraphPipelineResult,
     GraphProviderStatus, GraphWatchLifecycle, GraphWatchLifecycleState, RepoIdentity,
 };
 use crate::GRAPH_SCHEMA_VERSION;
-use std::fs::{self, OpenOptions};
-use std::io::Write;
+use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -15,11 +14,15 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 mod args;
+mod session;
 use args::parse_watch_args;
+use session::{write_lifecycle_state, WatchSession};
 
 const GRAPH_DAEMON_PROTOCOL: &str = "opcore.graph.daemon";
 pub const DEFAULT_WATCH_IDLE_TIMEOUT_MS: u64 = 1_800_000;
 pub const WATCH_IDLE_TIMEOUT_ENV: &str = "LATTICE_GRAPH_WATCH_IDLE_TIMEOUT_MS";
+
+type KindCounts = BTreeMap<String, u32>;
 
 #[derive(Debug, Clone)]
 pub struct WatchCliOptions {
@@ -126,21 +129,7 @@ fn watch_response_from_pipeline(
     mut pipeline: GraphPipelineResult,
 ) -> Result<GraphDaemonResponse, String> {
     if !watch_pipeline_available(&pipeline.status) {
-        let message = watch_pipeline_status_message(&pipeline.status);
-        let stale = matches!(pipeline.status, GraphProviderStatus::Stale { .. });
-        let state = if stale {
-            GraphWatchLifecycleState::Available
-        } else {
-            GraphWatchLifecycleState::Error
-        };
-        let lifecycle = write_lifecycle_state(session, state, Some(message.clone()))?;
-        if stale {
-            session.log(&format!("stale: {message}"))?;
-        } else {
-            session.log(&format!("unavailable: {message}"))?;
-        }
-        pipeline.lifecycle = Some(lifecycle.clone());
-        return Ok(watch_response_for_pipeline(pipeline, lifecycle));
+        return unavailable_watch_response_from_pipeline(session, pipeline);
     }
 
     let lifecycle = write_lifecycle_state(
@@ -149,14 +138,7 @@ fn watch_response_from_pipeline(
         Some("graph watch daemon available".to_string()),
     )?;
     session.log("available")?;
-    let (nodes_by_kind, edges_by_kind) = match &pipeline.status {
-        GraphProviderStatus::Available {
-            nodes_by_kind,
-            edges_by_kind,
-            ..
-        } => (Some(nodes_by_kind.clone()), Some(edges_by_kind.clone())),
-        _ => (None, None),
-    };
+    let (nodes_by_kind, edges_by_kind) = available_status_counts(&pipeline.status);
     pipeline.lifecycle = Some(lifecycle.clone());
     pipeline.status = available_status_with_wal_checkpoint(AvailableStatusInput {
         repo: session.repo.clone(),
@@ -170,6 +152,47 @@ fn watch_response_from_pipeline(
         wal_checkpoint: pipeline.summary.wal_checkpoint.clone(),
     });
     Ok(watch_response_for_pipeline(pipeline, lifecycle))
+}
+
+fn unavailable_watch_response_from_pipeline(
+    session: &WatchSession,
+    mut pipeline: GraphPipelineResult,
+) -> Result<GraphDaemonResponse, String> {
+    let message = watch_pipeline_status_message(&pipeline.status);
+    let stale = matches!(pipeline.status, GraphProviderStatus::Stale { .. });
+    let state = if stale {
+        GraphWatchLifecycleState::Available
+    } else {
+        GraphWatchLifecycleState::Error
+    };
+    let lifecycle = write_lifecycle_state(session, state, Some(message.clone()))?;
+    log_unavailable_watch_pipeline(session, stale, &message)?;
+    pipeline.lifecycle = Some(lifecycle.clone());
+    Ok(watch_response_for_pipeline(pipeline, lifecycle))
+}
+
+fn log_unavailable_watch_pipeline(
+    session: &WatchSession,
+    stale: bool,
+    message: &str,
+) -> Result<(), String> {
+    if stale {
+        return session.log(&format!("stale: {message}"));
+    }
+    session.log(&format!("unavailable: {message}"))
+}
+
+fn available_status_counts(
+    status: &GraphProviderStatus,
+) -> (Option<KindCounts>, Option<KindCounts>) {
+    match status {
+        GraphProviderStatus::Available {
+            nodes_by_kind,
+            edges_by_kind,
+            ..
+        } => (Some(nodes_by_kind.clone()), Some(edges_by_kind.clone())),
+        _ => (None, None),
+    }
 }
 
 fn watch_pipeline_available(status: &GraphProviderStatus) -> bool {
@@ -369,114 +392,6 @@ fn run_watch_update(
     pipeline_options.watch_paths = options.watch_paths.clone();
     pipeline_options.max_wal_bytes = options.max_wal_bytes;
     update_snapshot(pipeline_options).map_err(|error| error.to_string())
-}
-
-#[derive(Debug, Clone)]
-struct WatchPaths {
-    daemon_dir: PathBuf,
-    pid_path: PathBuf,
-    state_path: PathBuf,
-    log_path: PathBuf,
-}
-
-impl WatchPaths {
-    fn new(repo_root: &Path) -> Self {
-        let daemon_dir = repo_root.join(".lattice").join("graph").join("daemon");
-        Self {
-            pid_path: daemon_dir.join("pid"),
-            state_path: daemon_dir.join("state.json"),
-            log_path: daemon_dir.join("daemon.log"),
-            daemon_dir,
-        }
-    }
-}
-
-struct WatchSession {
-    paths: WatchPaths,
-    started_at: String,
-    repo: RepoIdentity,
-    poll_interval_ms: u64,
-    idle_timeout_ms: u64,
-    watch_paths: Vec<String>,
-}
-
-impl WatchSession {
-    fn start(repo_root: &Path, options: &WatchCliOptions) -> Result<Self, String> {
-        let paths = WatchPaths::new(repo_root);
-        fs::create_dir_all(&paths.daemon_dir)
-            .map_err(|error| format!("failed to create daemon dir: {error}"))?;
-        fs::write(&paths.pid_path, std::process::id().to_string())
-            .map_err(|error| format!("failed to write pid file: {error}"))?;
-        Ok(Self {
-            paths,
-            started_at: now_rfc3339(),
-            repo: repo_identity(repo_root),
-            poll_interval_ms: options.poll_interval_ms,
-            idle_timeout_ms: options.idle_timeout_ms,
-            watch_paths: options.watch_paths.clone(),
-        })
-    }
-
-    fn lifecycle(
-        &self,
-        state: GraphWatchLifecycleState,
-        message: Option<String>,
-    ) -> GraphWatchLifecycle {
-        GraphWatchLifecycle {
-            state,
-            pid: Some(std::process::id()),
-            started_at: self.started_at.clone(),
-            updated_at: now_rfc3339(),
-            pid_path: display_path(&self.paths.pid_path),
-            state_path: display_path(&self.paths.state_path),
-            log_path: display_path(&self.paths.log_path),
-            poll_interval_ms: self.poll_interval_ms,
-            idle_timeout_ms: self.idle_timeout_ms,
-            watch_paths: self.watch_paths.clone(),
-            message,
-        }
-    }
-
-    fn write_lifecycle(&self, lifecycle: &GraphWatchLifecycle) -> Result<(), String> {
-        fs::write(
-            &self.paths.state_path,
-            format!(
-                "{}\n",
-                serde_json::to_string_pretty(lifecycle)
-                    .map_err(|error| format!("failed to encode lifecycle: {error}"))?
-            ),
-        )
-        .map_err(|error| format!("failed to write lifecycle: {error}"))
-    }
-
-    fn log(&self, message: &str) -> Result<(), String> {
-        let mut file = OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open(&self.paths.log_path)
-            .map_err(|error| format!("failed to open daemon log: {error}"))?;
-        writeln!(file, "{} {message}", now_rfc3339())
-            .map_err(|error| format!("failed to write daemon log: {error}"))
-    }
-}
-
-fn write_lifecycle_state(
-    session: &WatchSession,
-    state: GraphWatchLifecycleState,
-    message: Option<String>,
-) -> Result<GraphWatchLifecycle, String> {
-    let lifecycle = session.lifecycle(state, message);
-    session.write_lifecycle(&lifecycle)?;
-    Ok(lifecycle)
-}
-
-fn repo_identity(repo_root: &Path) -> RepoIdentity {
-    RepoIdentity {
-        repo_id: None,
-        repo_root: Some(display_path(repo_root)),
-        remote_url: None,
-        commit_sha: None,
-    }
 }
 
 pub fn boundary_name() -> &'static str {
