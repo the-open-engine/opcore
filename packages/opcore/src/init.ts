@@ -26,8 +26,8 @@ import {
   writeFileSync
 } from "node:fs";
 import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
-import { createOpcoreScanAnalysis } from "./scan.js";
-import { commonSkippedPathSegments, resolveRepo } from "./status.js";
+import { createOpcoreScanAnalysis, type OpcoreScanAnalysis } from "./scan.js";
+import { commonSkippedPathSegments, resolveRepo, type RepoResolution } from "./status.js";
 
 declare const process: {
   cwd(): string;
@@ -51,6 +51,7 @@ const hookPath = ".opcore/hooks/pre-commit-opcore-check.sh";
 const failClosedHookActivationCommand = "cp .opcore/hooks/pre-commit-opcore-check.sh .git/hooks/pre-commit";
 const gitignorePath = ".gitignore";
 const opcoreIgnoreLine = ".opcore/";
+const defaultInitProgressIntervalMs = 5000;
 const allowedUndoPaths = new Set<string>([configPath, undoPath, hookPath, gitignorePath, ...AGENT_FILE_CANDIDATES]);
 const rustActiveValidationKinds = new Set([".rs", ".inc", "Cargo.toml"]);
 const pythonProjectFileNames = new Set(["pyproject.toml", "Pipfile", "poetry.lock", "uv.lock"]);
@@ -78,6 +79,10 @@ interface ParsedInitArgs {
 export interface OpcoreInitRuntime {
   stdinIsTTY?: boolean;
   stdoutIsTTY?: boolean;
+  stderrIsTTY?: boolean;
+  writeStderr?: (text: string) => void;
+  scanAnalysis?: (resolution: RepoResolution) => Promise<OpcoreScanAnalysis>;
+  initProgressIntervalMs?: number;
   readLine?: (prompt: string) => Promise<string>;
 }
 
@@ -168,8 +173,18 @@ export async function routeOpcoreInit(
       applyMs: 0
     };
     const scanStartedAt = nowMs();
-    const analysis = await createOpcoreScanAnalysis(resolution.resolution);
-    timing.scanMs = elapsedMs(scanStartedAt);
+    const progress = startInitScanProgress(parsed.json, runtime);
+    const scanAnalysis = runtime.scanAnalysis ?? createOpcoreScanAnalysis;
+    let analysis: OpcoreScanAnalysis;
+    try {
+      analysis = await scanAnalysis(resolution.resolution);
+      timing.scanMs = elapsedMs(scanStartedAt);
+      progress?.complete(timing.scanMs);
+    } catch (error) {
+      timing.scanMs = elapsedMs(scanStartedAt);
+      progress?.fail(timing.scanMs);
+      throw error;
+    }
     const context: InitContext = {
       scan: createInitScanSummary(analysis.repoState, analysis.validationResult),
       settings: createInitSettings(analysis.repoState, resolution.resolution.root),
@@ -569,6 +584,50 @@ function isInteractiveRuntime(runtime: OpcoreInitRuntime): boolean {
 function isExplicitYes(answer: string): boolean {
   const normalized = answer.trim().toLowerCase();
   return normalized === "y" || normalized === "yes";
+}
+
+function startInitScanProgress(json: boolean, runtime: OpcoreInitRuntime): { complete(scanMs: number): void; fail(scanMs: number): void } | undefined {
+  if (json || runtime.stderrIsTTY !== true || typeof runtime.writeStderr !== "function") return undefined;
+  const startedAt = nowMs();
+  const intervalMs = normalizeProgressIntervalMs(runtime.initProgressIntervalMs);
+  let finished = false;
+  const write = (text: string) => writeProgress(runtime.writeStderr, text);
+  const writeProgressLine = (text: string) => write(`\r\x1b[2K${text}`);
+  write("Opcore init: scanning repository before setup...");
+  const timer = setInterval(() => {
+    if (finished) return;
+    const elapsedSeconds = Math.max(1, Math.floor(elapsedMs(startedAt) / 1000));
+    writeProgressLine(`Opcore init: still scanning repository before setup (${elapsedSeconds}s elapsed)...`);
+  }, intervalMs) as ReturnType<typeof setInterval> & { unref?: () => void };
+  timer.unref?.();
+  return {
+    complete: (scanMs: number) => {
+      if (finished) return;
+      finished = true;
+      clearInterval(timer);
+      writeProgressLine(`Opcore init: scan complete in ${scanMs}ms.\n`);
+    },
+    fail: (scanMs: number) => {
+      if (finished) return;
+      finished = true;
+      clearInterval(timer);
+      writeProgressLine(`Opcore init: scan failed after ${scanMs}ms.\n`);
+    }
+  };
+}
+
+function normalizeProgressIntervalMs(value: number | undefined): number {
+  return typeof value === "number" && Number.isFinite(value) && value > 0
+    ? Math.max(1, Math.floor(value))
+    : defaultInitProgressIntervalMs;
+}
+
+function writeProgress(writeStderr: ((text: string) => void) | undefined, text: string): void {
+  try {
+    writeStderr?.(text);
+  } catch {
+    // Progress output must never change init scan/apply semantics.
+  }
 }
 
 function nowMs(): number {

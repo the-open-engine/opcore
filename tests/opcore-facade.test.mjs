@@ -1,10 +1,10 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, relative, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import {
   createOpcoreMetricReport,
   routeOpcoreCommand,
@@ -513,6 +513,126 @@ describe("opcore public facade", () => {
       assert.equal(result.stdout.indexOf("Coverage:") < result.stdout.indexOf("Findings:"), true);
       assert.equal(result.stdout.indexOf("Findings:") < result.stdout.indexOf("Setup:"), true);
       assert.match(result.stdout, /Approval: required/);
+      assert.equal(existsSync(join(temp, ".opcore")), false);
+      assert.equal(existsSync(join(temp, "AGENTS.md")), false);
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("writes generic human init scan progress to stderr without mixing final stdout", async () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-init-progress-"));
+    try {
+      writeFixtureFile(temp, "src/index.ts", "export const value = 1;\n");
+      const before = collectRepoPaths(temp);
+      const result = await runOpcoreCliInProcess(["init", "--repo", temp], temp, {
+        stdinIsTTY: false,
+        stdoutIsTTY: true,
+        stderrIsTTY: true
+      });
+
+      assert.equal(result.exitCode, 0);
+      assert.match(result.stderr, /Opcore init: scanning repository before setup/);
+      assert.match(result.stderr, /Opcore init: scan complete in \d+ms\./);
+      assert.doesNotMatch(result.stderr, new RegExp(escapeRegExp(temp)));
+      assert.doesNotMatch(result.stderr, /\blattice\b|\bcrg\b|\bcix\b|\brox\b|Covibes/i);
+      assert.equal(firstNonEmptyLine(result.stdout), "Coverage:");
+      assert.equal(result.stdout.indexOf("Coverage:") < result.stdout.indexOf("Findings:"), true);
+      assert.equal(result.stdout.indexOf("Findings:") < result.stdout.indexOf("Setup:"), true);
+      assert.equal(existsSync(join(temp, ".opcore")), false);
+      assert.equal(existsSync(join(temp, "AGENTS.md")), false);
+      assert.deepEqual(collectRepoPaths(temp), before);
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("emits a generic init scan heartbeat while scan analysis is still pending", async () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-init-heartbeat-"));
+    try {
+      let releaseScan;
+      const scanRelease = new Promise((resolveScan) => {
+        releaseScan = resolveScan;
+      });
+      let stderr = "";
+      const pending = routeOpcoreCommand(["init", "--repo", temp], "opcore", {
+        stdinIsTTY: false,
+        stdoutIsTTY: true,
+        stderrIsTTY: true,
+        initProgressIntervalMs: 1,
+        writeStderr: (text) => {
+          stderr += text;
+        },
+        scanAnalysis: async (resolution) => {
+          await scanRelease;
+          return fakeScanAnalysis(resolution.root);
+        }
+      });
+
+      await waitUntil(() => /still scanning repository before setup/.test(stderr));
+      assert.match(stderr, /Opcore init: scanning repository before setup/);
+      assert.match(stderr, /Opcore init: still scanning repository before setup/);
+      assert.doesNotMatch(stderr, new RegExp(escapeRegExp(temp)));
+      releaseScan();
+
+      const result = await pending;
+      assert.equal(result.status, "ok");
+      assert.equal(result.message.indexOf("Coverage:") < result.message.indexOf("Findings:"), true);
+      assert.match(stderr, /\r\u001b\[2KOpcore init: still scanning repository before setup/);
+      assert.match(stderr, /Opcore init: scan complete in \d+ms\.\n$/);
+      assert.equal(existsSync(join(temp, ".opcore")), false);
+      assert.equal(existsSync(join(temp, "AGENTS.md")), false);
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("does not keep init alive with only the scan progress heartbeat", async () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-init-progress-unref-"));
+    try {
+      const script = [
+        `import { routeOpcoreCommand } from ${JSON.stringify(pathToFileURL(opcoreBin).href)};`,
+        "routeOpcoreCommand(['init', '--repo', process.cwd()], 'opcore', {",
+        "  stdinIsTTY: false,",
+        "  stdoutIsTTY: true,",
+        "  stderrIsTTY: true,",
+        "  initProgressIntervalMs: 1,",
+        "  writeStderr: () => {},",
+        "  scanAnalysis: () => {",
+        "    process.stdout.write('scan-analysis-started\\n');",
+        "    return new Promise(() => {});",
+        "  }",
+        "});"
+      ].join("\n");
+
+      const result = await runPendingInitChildUntilIdle(script, temp);
+
+      assert.equal(result.sawScanStart, true, result.details);
+      assert.equal(result.startupTimedOut, false, result.details);
+      assert.equal(result.livenessTimedOut, false, result.details);
+      assert.equal(result.signal, null, result.details);
+      assert.equal(result.status, 0);
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("keeps init JSON stdout parseable and progress stderr silent", async () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-init-progress-json-"));
+    try {
+      writeFixtureFile(temp, "src/index.ts", "export const value = 1;\n");
+      const result = await runOpcoreCliInProcess(["init", "--repo", temp, "--json"], temp, {
+        stdinIsTTY: false,
+        stdoutIsTTY: true,
+        stderrIsTTY: true
+      });
+      const parsed = parseJson(result.stdout);
+
+      assert.equal(result.exitCode, 0);
+      assert.equal(result.stderr, "");
+      assert.deepEqual(parsed.canonicalCommand, ["opcore", "init"]);
+      assert.equal(parsed.opcoreInit.mode, "plan");
+      assert.equal(parsed.opcoreInit.approved, false);
       assert.equal(existsSync(join(temp, ".opcore")), false);
       assert.equal(existsSync(join(temp, "AGENTS.md")), false);
     } finally {
@@ -1188,8 +1308,9 @@ async function runOpcoreCliInProcess(args, cwd, options) {
       stderr: (text) => {
         stderr += text;
       },
-      stdinIsTTY: true,
-      stdoutIsTTY: true,
+      stdinIsTTY: options.stdinIsTTY ?? true,
+      stdoutIsTTY: options.stdoutIsTTY ?? true,
+      stderrIsTTY: options.stderrIsTTY ?? false,
       readLine: async (prompt) => {
         stdout += prompt;
         return options.answer;
@@ -1218,6 +1339,71 @@ function run(command, args, cwd, expectedStatus, env = process.env) {
   return result;
 }
 
+function runPendingInitChildUntilIdle(script, cwd) {
+  return new Promise((resolveChild, rejectChild) => {
+    const child = spawn(process.execPath, ["--input-type=module", "-e", script], {
+      cwd,
+      stdio: ["ignore", "pipe", "pipe"]
+    });
+    let stdout = "";
+    let stderr = "";
+    let sawScanStart = false;
+    let startupTimedOut = false;
+    let livenessTimedOut = false;
+    let livenessTimer;
+    const startupTimer = setTimeout(() => {
+      startupTimedOut = true;
+      child.kill("SIGTERM");
+    }, 10_000);
+
+    const details = () => [
+      `status: ${child.exitCode}`,
+      `sawScanStart: ${sawScanStart}`,
+      `startupTimedOut: ${startupTimedOut}`,
+      `livenessTimedOut: ${livenessTimedOut}`,
+      `stdout:\n${stdout}`,
+      `stderr:\n${stderr}`
+    ].join("\n");
+
+    const armLivenessTimer = () => {
+      if (livenessTimer) return;
+      clearTimeout(startupTimer);
+      livenessTimer = setTimeout(() => {
+        livenessTimedOut = true;
+        child.kill("SIGTERM");
+      }, 2_000);
+    };
+
+    child.stdout.setEncoding("utf8");
+    child.stderr.setEncoding("utf8");
+    child.stdout.on("data", (chunk) => {
+      stdout += chunk;
+      if (!sawScanStart && stdout.includes("scan-analysis-started\n")) {
+        sawScanStart = true;
+        armLivenessTimer();
+      }
+    });
+    child.stderr.on("data", (chunk) => {
+      stderr += chunk;
+    });
+    child.on("error", rejectChild);
+    child.on("close", (status, signal) => {
+      clearTimeout(startupTimer);
+      clearTimeout(livenessTimer);
+      resolveChild({
+        status,
+        signal,
+        sawScanStart,
+        startupTimedOut,
+        livenessTimedOut,
+        stdout,
+        stderr,
+        details: details()
+      });
+    });
+  });
+}
+
 function writeFixtureFile(root, path, content) {
   const absolute = join(root, path);
   mkdirSync(dirname(absolute), { recursive: true });
@@ -1234,6 +1420,15 @@ function firstNonEmptyLine(text) {
 
 function escapeRegExp(text) {
   return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+async function waitUntil(predicate, timeoutMs = 500) {
+  const startedAt = Date.now();
+  while (Date.now() - startedAt < timeoutMs) {
+    if (predicate()) return;
+    await new Promise((resolveWait) => setTimeout(resolveWait, 5));
+  }
+  assert.equal(predicate(), true);
 }
 
 function collectRepoPaths(root) {
@@ -1353,6 +1548,25 @@ function metricRepoState(repoRoot) {
     warnings: [],
     blockers: [],
     nextActions: [`opcore graph build --repo ${root} --json`]
+  };
+}
+
+function fakeScanAnalysis(repoRoot) {
+  const repoState = metricRepoState(repoRoot);
+  return {
+    repoState,
+    validationResult: {
+      ok: true,
+      status: "passed",
+      diagnostics: [],
+      manifest: {
+        schemaVersion: 1,
+        checks: [],
+        generatedAt: "2026-06-28T00:00:00.000Z"
+      }
+    },
+    metricReport: metricReport(repoRoot, "2026-06-28T00:00:00.000Z", 0),
+    message: "Coverage:\nFindings:"
   };
 }
 
