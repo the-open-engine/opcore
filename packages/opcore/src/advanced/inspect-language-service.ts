@@ -107,6 +107,7 @@ export interface InspectLanguageServiceOptions {
   project?: Project;
   projectScope?: InspectLanguageServiceProjectScope;
   projectTsconfigPath?: string;
+  includeDependents?: boolean;
   snapshotProject?: (project: Project) => unknown;
   revertProject?: (project: Project, snapshot: unknown) => void;
 }
@@ -284,7 +285,13 @@ export function resolveInspectReferences(
   }
 
   try {
-    for (const context of createProjectContexts(normalizedRepoRoot, request.path, { ...options, projectScope: "whole_repo" })) {
+    const projectScope = options.projectScope ?? "import_closure";
+    const includeDependents = projectScope === "whole_repo" ? options.includeDependents === true : true;
+    for (const context of createProjectContexts(normalizedRepoRoot, request.path, {
+      ...options,
+      includeDependents,
+      projectScope
+    })) {
       const resolution = withProjectSnapshot(context, () => {
         const sourceFile = context.project.getSourceFile(absoluteTargetPath) ?? context.project.addSourceFileAtPath(absoluteTargetPath);
         const target = findReferenceTarget(normalizedRepoRoot, sourceFile, request);
@@ -1290,12 +1297,21 @@ export function createInspectLanguageServiceProject(
   options: InspectLanguageServiceOptions = {}
 ): Project {
   const preferredTsconfigPath = resolveInspectTsconfigPath(repoRoot, options.projectTsconfigPath) ?? tsconfigForInspectRoot(repoRoot);
-  return createProjectForTsconfig(repoRoot, preferredTsconfigPath, preferredRepoPath, options.projectScope ?? "import_closure");
+  return createProjectForTsconfig(repoRoot, preferredTsconfigPath, preferredRepoPath, {
+    includeDependents: options.includeDependents === true,
+    scope: options.projectScope ?? "import_closure"
+  });
 }
 
 function createProjectContexts(repoRoot: string, preferredRepoPath: string, options: InspectLanguageServiceOptions = {}): ProjectContext[] {
   const projectScope = options.projectScope ?? "import_closure";
+  const preferredTsconfigPath = resolveInspectTsconfigPath(repoRoot, options.projectTsconfigPath) ?? tsconfigForInspectRoot(repoRoot);
   if (options.project !== undefined && canUseInjectedProject(options.project, projectScope)) {
+    if (projectScope === "import_closure") {
+      addScopedSourceFilesToProject(repoRoot, preferredTsconfigPath, options.project, [preferredRepoPath], {
+        includeDependents: options.includeDependents === true
+      });
+    }
     return [
       {
         project: options.project,
@@ -1305,10 +1321,12 @@ function createProjectContexts(repoRoot: string, preferredRepoPath: string, opti
       }
     ];
   }
-  const preferredTsconfigPath = resolveInspectTsconfigPath(repoRoot, options.projectTsconfigPath) ?? tsconfigForInspectRoot(repoRoot);
   return [
     {
-      project: createProjectForTsconfig(repoRoot, preferredTsconfigPath, preferredRepoPath, projectScope),
+      project: createProjectForTsconfig(repoRoot, preferredTsconfigPath, preferredRepoPath, {
+        includeDependents: options.includeDependents === true,
+        scope: projectScope
+      }),
       ...(preferredTsconfigPath ? { tsconfigPath: preferredTsconfigPath } : {})
     }
   ];
@@ -1332,7 +1350,10 @@ function createProjectForTsconfig(
   repoRoot: string,
   tsconfigPath: string | undefined,
   preferredRepoPath: string,
-  scope: InspectLanguageServiceProjectScope
+  options: {
+    includeDependents: boolean;
+    scope: InspectLanguageServiceProjectScope;
+  }
 ): Project {
   const projectOptions = {
     tsConfigFilePath: tsconfigPath,
@@ -1344,15 +1365,27 @@ function createProjectForTsconfig(
     }
   };
   const project = new Project(projectOptions);
-  const sourceFiles = scope === "whole_repo"
+  const sourceFiles = options.scope === "whole_repo"
     ? listSourceFiles(repoRoot)
-    : importClosureSourceFiles(repoRoot, tsconfigPath, [preferredRepoPath]);
+    : scopedSourceFiles(repoRoot, tsconfigPath, [preferredRepoPath], { includeDependents: options.includeDependents });
   for (const filePath of sourceFiles) {
     if (project.getSourceFile(filePath)) continue;
     project.addSourceFileAtPath(filePath);
   }
-  inspectProjectScopes.set(project, scope);
+  inspectProjectScopes.set(project, options.scope);
   return project;
+}
+
+function addScopedSourceFilesToProject(
+  repoRoot: string,
+  tsconfigPath: string | undefined,
+  project: Project,
+  rootRepoPaths: readonly string[],
+  options: { includeDependents: boolean }
+): void {
+  for (const filePath of scopedSourceFiles(repoRoot, tsconfigPath, rootRepoPaths, options)) {
+    if (project.getSourceFile(filePath) === undefined) project.addSourceFileAtPath(filePath);
+  }
 }
 
 interface ImportResolutionOptions {
@@ -1370,34 +1403,70 @@ type TsconfigJson = {
 
 const extensionlessCandidates = [".ts", ".tsx", ".js", ".jsx", ".d.ts"] as const;
 
-function importClosureSourceFiles(
+function scopedSourceFiles(
   repoRoot: string,
   tsconfigPath: string | undefined,
-  rootRepoPaths: readonly string[]
+  rootRepoPaths: readonly string[],
+  options: { includeDependents: boolean }
 ): string[] {
   const importOptions = importResolutionOptions(repoRoot, tsconfigPath);
-  const pending = uniqueSorted(
-    rootRepoPaths
-      .map((path) => resolve(repoRoot, path))
-      .filter((path) => isSupportedInspectSourcePath(path) && isSafeExistingFileInsideRepo(repoRoot, path))
-  );
-  const visited = new Set<string>();
-  const sourceFiles: string[] = [];
+  const importTargetsByFile = new Map<string, readonly string[]>();
+  const allSourceFiles = options.includeDependents ? listSourceFiles(repoRoot) : [];
+  const roots = rootSourceFiles(repoRoot, rootRepoPaths);
+  const reverseTargets = new Set(roots);
+  const selected = new Set<string>();
+  addForwardClosure(roots, selected);
 
-  for (let index = 0; index < pending.length; index += 1) {
-    const filePath = pending[index];
-    if (visited.has(filePath)) continue;
-    visited.add(filePath);
-    sourceFiles.push(filePath);
-    for (const specifier of moduleImportSpecifiers(readFileSync(filePath, "utf8"))) {
-      const resolvedImport = resolveImportSpecifier(repoRoot, filePath, specifier, importOptions);
-      if (resolvedImport !== undefined && !visited.has(resolvedImport) && !pending.includes(resolvedImport)) {
-        pending.push(resolvedImport);
+  if (options.includeDependents) {
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const filePath of allSourceFiles) {
+        if (selected.has(filePath)) continue;
+        const importsReverseTarget = importTargets(filePath).some((importedPath) => reverseTargets.has(importedPath));
+        if (!importsReverseTarget) continue;
+        const beforeSize = selected.size;
+        addForwardClosure([filePath], selected);
+        reverseTargets.add(filePath);
+        if (selected.size !== beforeSize) changed = true;
       }
     }
   }
 
-  return sourceFiles.sort();
+  return [...selected].sort();
+
+  function addForwardClosure(rootFiles: readonly string[], selectedFiles: Set<string>): void {
+    const pending = [...rootFiles].sort();
+    for (let index = 0; index < pending.length; index += 1) {
+      const filePath = pending[index];
+      if (selectedFiles.has(filePath)) continue;
+      selectedFiles.add(filePath);
+      for (const importedPath of importTargets(filePath)) {
+        if (!selectedFiles.has(importedPath) && !pending.includes(importedPath)) pending.push(importedPath);
+      }
+    }
+  }
+
+  function importTargets(filePath: string): readonly string[] {
+    const cached = importTargetsByFile.get(filePath);
+    if (cached !== undefined) return cached;
+    const resolvedTargets = moduleImportSpecifiers(readFileSync(filePath, "utf8"))
+      .flatMap((specifier) => {
+        const resolvedImport = resolveImportSpecifier(repoRoot, filePath, specifier, importOptions);
+        return resolvedImport === undefined ? [] : [resolvedImport];
+      })
+      .sort();
+    importTargetsByFile.set(filePath, resolvedTargets);
+    return resolvedTargets;
+  }
+}
+
+function rootSourceFiles(repoRoot: string, rootRepoPaths: readonly string[]): string[] {
+  return uniqueSorted(
+    rootRepoPaths
+      .map((path) => resolve(repoRoot, path))
+      .filter((path) => isSupportedInspectSourcePath(path) && isSafeExistingFileInsideRepo(repoRoot, path))
+  );
 }
 
 function moduleImportSpecifiers(text: string): readonly string[] {

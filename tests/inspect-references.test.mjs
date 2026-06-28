@@ -170,7 +170,7 @@ it("degrades references through the language service in a generated TS repo with
   });
 });
 
-it("falls back to whole-repo references for injected scoped language-service projects", async () => {
+it("expands injected scoped language-service projects for reverse references", async () => {
   const temp = realpathSync(mkdtempSync(join(tmpdir(), "opcore-inspect-injected-scope-")));
   try {
     mkdirSync(join(temp, "src"), { recursive: true });
@@ -195,6 +195,29 @@ it("falls back to whole-repo references for injected scoped language-service pro
 
     assert.equal(result.ok, true);
     assert.deepEqual([...new Set(result.references.map((reference) => reference.file))].sort(), ["src/a.ts", "src/b.ts"]);
+  } finally {
+    rmSync(temp, { recursive: true, force: true });
+  }
+});
+
+it("builds targeted reference projects from the import closure plus reverse importers", async () => {
+  const temp = realpathSync(mkdtempSync(join(tmpdir(), "opcore-inspect-reference-scope-")));
+  try {
+    mkdirSync(join(temp, "src"), { recursive: true });
+    writeFileSync(join(temp, "tsconfig.json"), JSON.stringify({ include: ["src/**/*"] }, null, 2));
+    writeFileSync(join(temp, "src/a.ts"), "import { helper } from \"./helper\";\nexport function greet(name: string) {\n  return helper(name);\n}\n");
+    writeFileSync(join(temp, "src/helper.ts"), "export function helper(value: string) {\n  return value;\n}\n");
+    writeFileSync(join(temp, "src/b.ts"), "import { greet } from \"./a\";\nexport const message = greet(\"Ada\");\n");
+    writeFileSync(join(temp, "src/c.ts"), "import { message } from \"./b\";\nexport const relayed = message;\n");
+    writeFileSync(join(temp, "src/unrelated.ts"), "import { helper } from \"./helper\";\nexport const unrelated = helper(\"ignored\");\n");
+
+    const referenceProject = createInspectLanguageServiceProject(temp, "src/a.ts", { includeDependents: true });
+    assert.deepEqual(projectRepoPaths(temp, referenceProject), [
+      "src/a.ts",
+      "src/b.ts",
+      "src/c.ts",
+      "src/helper.ts"
+    ]);
   } finally {
     rmSync(temp, { recursive: true, force: true });
   }

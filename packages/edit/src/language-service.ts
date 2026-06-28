@@ -161,8 +161,14 @@ export function materializeSignatureSymbolEdit(
 }
 
 function createProject(repoRoot: string, preferredRepoPath: string | undefined, options: SymbolEditLanguageServiceOptions): ProjectContext {
-  const projectScope = options.projectScope ?? "whole_repo";
+  const rawTsconfigPath = join(repoRoot, "tsconfig.json");
+  const preferredAbsolutePath = preferredRepoPath === undefined ? undefined : resolve(repoRoot, preferredRepoPath);
+  const tsconfigPath = resolveSymbolEditTsconfigPath(repoRoot, options.projectTsconfigPath) ?? resolveTsconfigPath(repoRoot, rawTsconfigPath, preferredAbsolutePath);
+  const projectScope = options.projectScope ?? "import_closure";
   if (options.project !== undefined && canUseInjectedProject(options.project, projectScope)) {
+    if (projectScope === "import_closure" && preferredRepoPath !== undefined) {
+      addScopedSourceFilesToProject(repoRoot, tsconfigPath, options.project, [preferredRepoPath]);
+    }
     return {
       project: options.project,
       ...(options.projectTsconfigPath ? { tsconfigPath: options.projectTsconfigPath } : {}),
@@ -170,9 +176,6 @@ function createProject(repoRoot: string, preferredRepoPath: string | undefined, 
       ...(options.revertProject ? { revertProject: options.revertProject } : {})
     };
   }
-  const rawTsconfigPath = join(repoRoot, "tsconfig.json");
-  const preferredAbsolutePath = preferredRepoPath === undefined ? undefined : resolve(repoRoot, preferredRepoPath);
-  const tsconfigPath = resolveSymbolEditTsconfigPath(repoRoot, options.projectTsconfigPath) ?? resolveTsconfigPath(repoRoot, rawTsconfigPath, preferredAbsolutePath);
   return {
     project: createProjectForTsconfig(repoRoot, tsconfigPath, preferredRepoPath, projectScope),
     ...(tsconfigPath ? { tsconfigPath } : {})
@@ -215,7 +218,7 @@ function createProjectContexts(repoRoot: string, preferredRepoPath: string | und
   const rawTsconfigPath = join(repoRoot, "tsconfig.json");
   const preferredAbsolutePath = preferredRepoPath === undefined ? undefined : resolve(repoRoot, preferredRepoPath);
   const preferredTsconfigPath = resolveSymbolEditTsconfigPath(repoRoot, options.projectTsconfigPath) ?? resolveTsconfigPath(repoRoot, rawTsconfigPath, preferredAbsolutePath);
-  const projectScope = options.projectScope ?? "whole_repo";
+  const projectScope = options.projectScope ?? "import_closure";
   const orderedPaths: string[] = [];
   if (preferredTsconfigPath !== undefined) orderedPaths.push(resolve(preferredTsconfigPath));
   for (const tsconfigPath of collectProjectTsconfigPaths(repoRoot)) {
@@ -271,12 +274,23 @@ function createProjectForTsconfig(
   });
   const sourceFiles = scope === "whole_repo" || preferredRepoPath === undefined
     ? listSourceFiles(repoRoot)
-    : importClosureSourceFiles(repoRoot, tsconfigPath, [preferredRepoPath]);
+    : scopedSourceFiles(repoRoot, tsconfigPath, [preferredRepoPath], { includeDependents: true });
   for (const filePath of sourceFiles) {
     if (!project.getSourceFile(filePath)) project.addSourceFileAtPath(filePath);
   }
   symbolEditProjectScopes.set(project, scope);
   return project;
+}
+
+function addScopedSourceFilesToProject(
+  repoRoot: string,
+  tsconfigPath: string | undefined,
+  project: Project,
+  rootRepoPaths: readonly string[]
+): void {
+  for (const filePath of scopedSourceFiles(repoRoot, tsconfigPath, rootRepoPaths, { includeDependents: true })) {
+    if (project.getSourceFile(filePath) === undefined) project.addSourceFileAtPath(filePath);
+  }
 }
 
 function collectProjectTsconfigPaths(repoRoot: string): string[] {
@@ -378,34 +392,77 @@ interface ImportResolutionOptions {
   paths: Readonly<Record<string, readonly string[]>>;
 }
 
-function importClosureSourceFiles(
+function scopedSourceFiles(
   repoRoot: string,
   tsconfigPath: string | undefined,
-  rootRepoPaths: readonly string[]
+  rootRepoPaths: readonly string[],
+  options: { includeDependents: boolean }
 ): string[] {
   const importOptions = importResolutionOptions(repoRoot, tsconfigPath);
-  const pending = uniqueSorted(
-    rootRepoPaths
-      .map((path) => resolve(repoRoot, path))
-      .filter((path) => isSupportedSymbolSourcePath(path) && isSafeExistingFileInsideRepo(repoRoot, path))
-  );
-  const visited = new Set<string>();
-  const sourceFiles: string[] = [];
+  const importTargetsByFile = new Map<string, readonly string[]>();
+  const allSourceFiles = options.includeDependents ? listSourceFiles(repoRoot) : [];
+  const roots = rootSourceFiles(repoRoot, rootRepoPaths);
+  const reverseTargets = new Set(roots);
+  const selected = new Set<string>();
+  addForwardClosure(roots, selected);
 
-  for (let index = 0; index < pending.length; index += 1) {
-    const filePath = pending[index];
-    if (visited.has(filePath)) continue;
-    visited.add(filePath);
-    sourceFiles.push(filePath);
-    for (const specifier of moduleImportSpecifiers(readFileSync(filePath, "utf8"))) {
-      const resolvedImport = resolveImportSpecifier(repoRoot, filePath, specifier, importOptions);
-      if (resolvedImport !== undefined && !visited.has(resolvedImport) && !pending.includes(resolvedImport)) {
-        pending.push(resolvedImport);
+  if (options.includeDependents) {
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const filePath of allSourceFiles) {
+        if (selected.has(filePath)) continue;
+        const importsReverseTarget = importTargets(filePath).some((importedPath) => reverseTargets.has(importedPath));
+        if (!importsReverseTarget) continue;
+        const beforeSize = selected.size;
+        addForwardClosure([filePath], selected);
+        reverseTargets.add(filePath);
+        if (selected.size !== beforeSize) changed = true;
       }
     }
   }
 
-  return sourceFiles.sort();
+  return [...selected].sort();
+
+  function addForwardClosure(rootFiles: readonly string[], selectedFiles: Set<string>): void {
+    const pending = [...rootFiles].sort();
+    for (let index = 0; index < pending.length; index += 1) {
+      const filePath = pending[index];
+      if (selectedFiles.has(filePath)) continue;
+      selectedFiles.add(filePath);
+      for (const importedPath of importTargets(filePath)) {
+        if (!selectedFiles.has(importedPath) && !pending.includes(importedPath)) pending.push(importedPath);
+      }
+    }
+  }
+
+  function importTargets(filePath: string): readonly string[] {
+    const cached = importTargetsByFile.get(filePath);
+    if (cached !== undefined) return cached;
+    const resolvedTargets = moduleImportSpecifiers(readFileSync(filePath, "utf8"))
+      .flatMap((specifier) => {
+        const resolvedImport = resolveImportSpecifier(repoRoot, filePath, specifier, importOptions);
+        return resolvedImport === undefined ? [] : [resolvedImport];
+      })
+      .sort();
+    importTargetsByFile.set(filePath, resolvedTargets);
+    return resolvedTargets;
+  }
+}
+
+function rootSourceFiles(repoRoot: string, rootRepoPaths: readonly string[]): string[] {
+  const files: string[] = [];
+  for (const rootRepoPath of rootRepoPaths) {
+    const absolutePath = resolve(repoRoot, rootRepoPath);
+    if (isSupportedSymbolSourcePath(absolutePath) && isSafeExistingFileInsideRepo(repoRoot, absolutePath)) {
+      files.push(resolve(absolutePath));
+      continue;
+    }
+    if (!isSafeExistingDirectoryInsideRepo(repoRoot, absolutePath)) continue;
+    const directoryRoot = resolve(absolutePath);
+    files.push(...listSourceFiles(repoRoot).filter((filePath) => isInside(directoryRoot, filePath)));
+  }
+  return uniqueSorted(files);
 }
 
 function moduleImportSpecifiers(text: string): readonly string[] {
@@ -999,6 +1056,15 @@ function isSafeExistingFileInsideRepo(repoRoot: string, absolutePath: string): b
   if (!isInside(repoRoot, absolutePath) || !existsSync(absolutePath)) return false;
   try {
     return isInside(repoRoot, realpathSync(absolutePath)) && statSync(absolutePath).isFile();
+  } catch {
+    return false;
+  }
+}
+
+function isSafeExistingDirectoryInsideRepo(repoRoot: string, absolutePath: string): boolean {
+  if (!isInside(repoRoot, absolutePath) || !existsSync(absolutePath)) return false;
+  try {
+    return isInside(repoRoot, realpathSync(absolutePath)) && statSync(absolutePath).isDirectory();
   } catch {
     return false;
   }

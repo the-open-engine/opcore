@@ -94,7 +94,12 @@ describe("package import boundaries", () => {
         }
         if (packageDir === "validation-typescript") {
           assert.equal(
-            ["@the-open-engine/opcore-contracts", "@the-open-engine/opcore-validation", "typescript"].includes(source),
+            [
+              "@the-open-engine/opcore-contracts",
+              "@the-open-engine/opcore-validation",
+              "@typescript-eslint/typescript-estree",
+              "typescript"
+            ].includes(source),
             true,
             `${file} imports ${source}`
           );
@@ -179,6 +184,7 @@ function sourceFiles(dir) {
   for (const entry of entries) {
     const path = join(dir, entry.name);
     if (entry.isDirectory()) {
+      if (entry.name === "dist") continue;
       files.push(...sourceFiles(path));
     } else if (entry.isFile() && path.endsWith(".ts")) {
       files.push(path);
