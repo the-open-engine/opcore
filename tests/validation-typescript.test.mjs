@@ -885,6 +885,230 @@ describe("validation-typescript adapter", () => {
     assert.deepEqual(result.diagnostics.map((diagnostic) => diagnostic.code), ["TS_DEAD_CODE_UNUSED_EXPORT"]);
   });
 
+  it("reports unreferenced source files and unused exported types from graph facts", async () => {
+    const nodes = [
+      {
+        id: "file:src/index.ts",
+        kind: "File",
+        path: "src/index.ts",
+        attributes: {
+          language: "typescript"
+        }
+      },
+      {
+        id: "file:src/used.ts",
+        kind: "File",
+        path: "src/used.ts",
+        attributes: {
+          language: "typescript"
+        }
+      },
+      {
+        id: "file:src/orphan.ts",
+        kind: "File",
+        path: "src/orphan.ts",
+        attributes: {
+          language: "typescript"
+        }
+      },
+      {
+        id: "type:src/orphan.ts#ReferencedShape",
+        kind: "Type",
+        path: "src/orphan.ts",
+        name: "ReferencedShape",
+        attributes: {
+          exported: true,
+          exportKind: "named",
+          exportName: "ReferencedShape"
+        }
+      },
+      {
+        id: "type:src/orphan.ts#LocalExtension",
+        kind: "Type",
+        path: "src/orphan.ts",
+        name: "LocalExtension",
+        attributes: {
+          exported: false
+        }
+      },
+      {
+        id: "type:src/orphan.ts#UnusedShape",
+        kind: "Type",
+        path: "src/orphan.ts",
+        name: "UnusedShape",
+        attributes: {
+          exported: true,
+          exportKind: "named",
+          exportName: "UnusedShape"
+        }
+      },
+      {
+        id: "variable:src/used.ts#used",
+        kind: "Variable",
+        path: "src/used.ts",
+        name: "used",
+        attributes: {
+          exported: false
+        }
+      }
+    ];
+    const edges = [
+      {
+        kind: "IMPORTS_FROM",
+        from: "file:src/index.ts",
+        to: "file:src/used.ts"
+      },
+      {
+        kind: "CONTAINS",
+        from: "file:src/used.ts",
+        to: "variable:src/used.ts#used"
+      },
+      {
+        kind: "CONTAINS",
+        from: "file:src/orphan.ts",
+        to: "type:src/orphan.ts#ReferencedShape"
+      },
+      {
+        kind: "CONTAINS",
+        from: "file:src/orphan.ts",
+        to: "type:src/orphan.ts#LocalExtension"
+      },
+      {
+        kind: "CONTAINS",
+        from: "file:src/orphan.ts",
+        to: "type:src/orphan.ts#UnusedShape"
+      },
+      {
+        kind: "INHERITS",
+        from: "type:src/orphan.ts#LocalExtension",
+        to: "type:src/orphan.ts#ReferencedShape"
+      }
+    ];
+
+    const result = await runner({
+      files: {
+        "src/index.ts": "import './used';\n",
+        "src/used.ts": "const used = 1;\nvoid used;\n",
+        "src/orphan.ts":
+          "export interface ReferencedShape { width: number; }\ninterface LocalExtension extends ReferencedShape { height: number; }\nexport interface UnusedShape { depth: number; }\n"
+      },
+      graphProviderClient: graphClient({
+        status: (validationRequest) => ({
+          ...availableStatus(validationRequest.graph.mode, validationRequest.repo),
+          handshake: graphHandshake()
+        }),
+        factQuery: (query) =>
+          availableFactResult(query, nodes, edges, {
+            edgeKinds: ["CALLS", "CONTAINS", "IMPORTS_FROM", "INHERITS", "IMPLEMENTS", "TESTED_BY"]
+          })
+      })
+    }).runValidation(
+      request({
+        checks: [TYPE_SCRIPT_DEAD_CODE_CHECK_ID],
+        scope: {
+          kind: "files",
+          files: ["src/index.ts", "src/used.ts", "src/orphan.ts"]
+        }
+      })
+    );
+
+    assert.equal(result.status, "passed");
+    assert.deepEqual(
+      result.diagnostics.map((diagnostic) => [diagnostic.code, diagnostic.path, diagnostic.message]),
+      [
+        ["TS_DEAD_CODE_UNUSED_EXPORT", "src/orphan.ts", "Exported type has no incoming graph reference evidence: UnusedShape"],
+        ["TS_DEAD_CODE_UNUSED_FILE", "src/orphan.ts", "Source file has no incoming IMPORTS_FROM graph evidence: src/orphan.ts"]
+      ]
+    );
+  });
+
+  it("reports unreferenced source files that import dependencies", async () => {
+    const nodes = [
+      {
+        id: "file:src/dead-entry.ts",
+        kind: "File",
+        path: "src/dead-entry.ts",
+        attributes: {
+          language: "typescript"
+        }
+      },
+      {
+        id: "file:src/helper.ts",
+        kind: "File",
+        path: "src/helper.ts",
+        attributes: {
+          language: "typescript"
+        }
+      },
+      {
+        id: "function:src/dead-entry.ts#runDead",
+        kind: "Function",
+        path: "src/dead-entry.ts",
+        name: "runDead",
+        attributes: {
+          exported: false
+        }
+      },
+      {
+        id: "function:src/helper.ts#helper",
+        kind: "Function",
+        path: "src/helper.ts",
+        name: "helper",
+        attributes: {
+          exported: false
+        }
+      }
+    ];
+    const edges = [
+      {
+        kind: "CONTAINS",
+        from: "file:src/dead-entry.ts",
+        to: "function:src/dead-entry.ts#runDead"
+      },
+      {
+        kind: "CONTAINS",
+        from: "file:src/helper.ts",
+        to: "function:src/helper.ts#helper"
+      },
+      {
+        kind: "IMPORTS_FROM",
+        from: "file:src/dead-entry.ts",
+        to: "file:src/helper.ts"
+      }
+    ];
+
+    const result = await runner({
+      files: {
+        "src/dead-entry.ts": "import { helper } from './helper';\nfunction runDead() { return helper(); }\nvoid runDead;\n",
+        "src/helper.ts": "export function helper() { return 1; }\n"
+      },
+      graphProviderClient: graphClient({
+        status: (validationRequest) => ({
+          ...availableStatus(validationRequest.graph.mode, validationRequest.repo),
+          handshake: graphHandshake()
+        }),
+        factQuery: (query) =>
+          availableFactResult(query, nodes, edges, {
+            edgeKinds: ["CALLS", "CONTAINS", "IMPORTS_FROM", "TESTED_BY"]
+          })
+      })
+    }).runValidation(
+      request({
+        checks: [TYPE_SCRIPT_DEAD_CODE_CHECK_ID],
+        scope: {
+          kind: "files",
+          files: ["src/dead-entry.ts", "src/helper.ts"]
+        }
+      })
+    );
+
+    assert.equal(result.status, "passed");
+    assert.deepEqual(
+      result.diagnostics.map((diagnostic) => [diagnostic.code, diagnostic.path, diagnostic.message]),
+      [["TS_DEAD_CODE_UNUSED_FILE", "src/dead-entry.ts", "Source file has no incoming IMPORTS_FROM graph evidence: src/dead-entry.ts"]]
+    );
+  });
+
   it("reports unsupported coverage, not unused exports, for real graph-provider type-only exports", () => {
     const repo = mkdtempSync(join(tmpdir(), "lattice-dead-code-real-provider-"));
     try {
@@ -943,8 +1167,13 @@ describe("validation-typescript adapter", () => {
       );
       assert.equal(check.status, 0, check.stderr || check.stdout);
       const payload = JSON.parse(check.stdout);
-      const diagnosticCodes = payload.validationResult.diagnostics.map((diagnostic) => diagnostic.code);
-      assert.deepEqual(diagnosticCodes, ["TS_DEAD_CODE_UNSUPPORTED"]);
+      assert.deepEqual(
+        payload.validationResult.diagnostics.map((diagnostic) => [diagnostic.code, diagnostic.path]),
+        [
+          ["TS_DEAD_CODE_UNSUPPORTED", undefined],
+          ["TS_DEAD_CODE_UNUSED_FILE", "src/index.ts"]
+        ]
+      );
       assert.equal(
         payload.validationResult.diagnostics.some(
           (diagnostic) => diagnostic.code === "TS_DEAD_CODE_UNUSED_EXPORT" && /Shape|Payload/.test(diagnostic.message)
@@ -1383,7 +1612,11 @@ describe("validation-typescript adapter", () => {
       const payload = JSON.parse(check.stdout);
       assert.deepEqual(
         payload.validationResult.diagnostics.map((diagnostic) => diagnostic.code),
-        []
+        ["TS_DEAD_CODE_UNUSED_FILE"]
+      );
+      assert.equal(
+        payload.validationResult.diagnostics.some((diagnostic) => diagnostic.code === "TS_DEAD_CODE_UNUSED_EXPORT"),
+        false
       );
     } finally {
       rmSync(repo, { recursive: true, force: true });
