@@ -20,6 +20,9 @@
       "path": "packages/validation-clone"
     },
     {
+      "path": "packages/validation-docs"
+    },
+    {
       "path": "packages/validation-python"
     },
     {

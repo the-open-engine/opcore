@@ -10,6 +10,7 @@ const expectedWorkspacePackages = new Map([
   ["packages/edit", "@the-open-engine/opcore-edit"],
   ["packages/validation", "@the-open-engine/opcore-validation"],
   ["packages/validation-clone", "@the-open-engine/opcore-validation-clone"],
+  ["packages/validation-docs", "@the-open-engine/opcore-validation-docs"],
   ["packages/validation-python", "@the-open-engine/opcore-validation-python"],
   ["packages/validation-rust", "@the-open-engine/opcore-validation-rust"],
   ["packages/validation-typescript", "@the-open-engine/opcore-validation-typescript"],
@@ -18,7 +19,7 @@ const expectedWorkspacePackages = new Map([
 ]);
 
 const forbiddenPackagePattern =
-  /@the-open-engine\/lattice-(contracts|cli|graph|edit|validation|validation-clone|validation-python|validation-rust|validation-typescript|fixtures)|github\.com\/the-open-engine\/advanced/g;
+  /@the-open-engine\/lattice-(contracts|cli|graph|edit|validation|validation-clone|validation-docs|validation-python|validation-rust|validation-typescript|fixtures)|github\.com\/the-open-engine\/advanced/g;
 
 describe("Opcore public package identity", () => {
   it("uses Opcore package names for workspace package manifests", () => {
