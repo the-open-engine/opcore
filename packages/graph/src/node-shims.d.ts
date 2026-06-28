@@ -66,7 +66,9 @@ declare module "node:fs" {
   export function openSync(path: string, flags: string): number;
   export function readFileSync(path: string): Uint8Array;
   export function readFileSync(path: string, encoding: "utf8"): string;
+  export function readSync(fd: number, buffer: Uint8Array, offset: number, length: number, position: number): number;
   export function rmSync(path: string, options?: { recursive?: boolean; force?: boolean }): void;
+  export function statSync(path: string): { size: number; isFile: () => boolean };
 }
 
 declare module "node:os" {

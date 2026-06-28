@@ -40,6 +40,40 @@ describe("graph sidecar transport", () => {
     }
   });
 
+  it("bounds large stderr from failed sidecars while preserving diagnostics", () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-graph-sidecar-large-stderr-"));
+    try {
+      const executablePath = join(temp, "opcore-graph-core");
+      const headMarker = "sidecar stderr head marker";
+      const tailMarker = "sidecar stderr tail marker";
+      writeSidecarStub(executablePath, [
+        `process.stderr.write(${JSON.stringify(headMarker)} + "\\n");`,
+        `process.stderr.write("x".repeat(1024 * 1024 + 128));`,
+        `process.stderr.write("\\n" + ${JSON.stringify(tailMarker)} + "\\n");`,
+        "process.exit(42);"
+      ]);
+
+      const result = invokeResolvedGraphCoreSidecar(testArtifact(temp, executablePath), {
+        protocol: "opcore.graph.daemon",
+        requestId: "large-stderr",
+        schemaVersion: 1,
+        operation: "status",
+        repo: {
+          repoRoot: temp
+        }
+      });
+
+      assert.equal(result.status.state, "daemon_unavailable");
+      assert.match(result.status.failure.message, /graph-core sidecar exited 42/);
+      assert.match(result.status.failure.message, new RegExp(headMarker));
+      assert.match(result.status.failure.message, new RegExp(tailMarker));
+      assert.match(result.status.failure.message, /\[stderr truncated: \d+ bytes omitted\]/);
+      assert.ok(result.status.failure.message.length < 140000, "failure message should not embed full sidecar stderr");
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
   it("allows pipeline sidecars to run longer than the legacy five second timeout", { timeout: 15000 }, () => {
     const temp = mkdtempSync(join(tmpdir(), "opcore-graph-sidecar-timeout-"));
     try {
