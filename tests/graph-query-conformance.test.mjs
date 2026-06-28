@@ -70,6 +70,27 @@ describe("GraphProvider query conformance", () => {
       );
       assert.ok(children.nodes.map((node) => node.id).includes("class:src/models.ts#GreetingModel"));
 
+      const inheritors = graphProviderNamedQuery(
+        { repoRoot: fixtureRoot },
+        { queryKind: "inheritors_of", target: "class:src/models.ts#GreetingModel", maxDepth: 2, limit: 100 }
+      );
+      assert.equal(inheritors.status.state, "available");
+      assert.deepEqual(
+        inheritors.nodes.map((node) => node.id),
+        [
+          "class:src/models.ts#FriendlyGreetingModel",
+          "class:src/models.ts#GreetingModel",
+          "class:src/models.ts#InternalGreetingModel"
+        ]
+      );
+      assert.deepEqual(
+        inheritors.edges.map((edge) => [edge.kind, edge.from, edge.to]),
+        [
+          ["INHERITS", "class:src/models.ts#FriendlyGreetingModel", "class:src/models.ts#GreetingModel"],
+          ["INHERITS", "class:src/models.ts#InternalGreetingModel", "class:src/models.ts#GreetingModel"]
+        ]
+      );
+
       const summary = graphProviderNamedQuery(
         { repoRoot: fixtureRoot },
         { queryKind: "file_summary", target: "src/models.ts", limit: 100 }

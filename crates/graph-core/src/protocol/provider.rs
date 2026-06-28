@@ -266,6 +266,7 @@ pub fn graph_capability_handshake() -> GraphProviderCapabilityHandshake {
             "importers_of".to_string(),
             "imports_of".to_string(),
             "tests_for".to_string(),
+            "inheritors_of".to_string(),
             "children_of".to_string(),
             "file_summary".to_string(),
             "review_context".to_string(),

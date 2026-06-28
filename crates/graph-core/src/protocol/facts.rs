@@ -105,6 +105,7 @@ pub enum GraphNamedQueryKind {
     ImportersOf,
     ImportsOf,
     TestsFor,
+    InheritorsOf,
     ChildrenOf,
     FileSummary,
 }
@@ -117,6 +118,7 @@ impl GraphNamedQueryKind {
             GraphNamedQueryKind::ImportersOf => "importers_of",
             GraphNamedQueryKind::ImportsOf => "imports_of",
             GraphNamedQueryKind::TestsFor => "tests_for",
+            GraphNamedQueryKind::InheritorsOf => "inheritors_of",
             GraphNamedQueryKind::ChildrenOf => "children_of",
             GraphNamedQueryKind::FileSummary => "file_summary",
         }
