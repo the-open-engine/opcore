@@ -52,7 +52,21 @@ export interface CreateValidationRunnerOptions {
   graphSessionFactory?: ValidationGraphSessionFactory;
   clock?: ValidationClock;
   runtime?: ValidationRuntimePolicy;
+  failFast?: boolean;
+  onCheckComplete?: ValidationCheckCompleteHandler;
 }
+
+export interface ValidationCheckCompleteEvent {
+  schemaVersion: 1;
+  kind: "validation.check";
+  checkId: string;
+  status: ValidationCheckRunStatus;
+  diagnostics: readonly ValidationDiagnostic[];
+  run?: ValidationCheckRunSummary;
+  skippedCheck?: ValidationSkippedCheck;
+}
+
+export type ValidationCheckCompleteHandler = (event: ValidationCheckCompleteEvent) => void | Promise<void>;
 
 export interface ValidationRunner {
   runValidation: (request: ValidationRequest) => Promise<ValidationResult>;
@@ -68,8 +82,9 @@ const defaultRuntimePolicy: ValidationRuntimePolicy = {
 };
 
 type RunnerRuntimeOptions = Required<Pick<CreateValidationRunnerOptions, "workspace" | "registry" | "clock">> &
-  Pick<CreateValidationRunnerOptions, "graphProviderClient" | "graphSessionFactory"> & {
+  Pick<CreateValidationRunnerOptions, "graphProviderClient" | "graphSessionFactory" | "onCheckComplete"> & {
     runtime: ValidationRuntimePolicy;
+    failFast: boolean;
   };
 
 interface CheckExecution {
@@ -89,6 +104,8 @@ interface ExecuteChecksArgs {
   totalStartedAt: number;
   clock: ValidationClock;
   runtime: ValidationRuntimePolicy;
+  failFast: boolean;
+  onCheckComplete?: ValidationCheckCompleteHandler;
 }
 
 interface PreparedValidationArgs {
@@ -116,12 +133,14 @@ export function createValidationRunner(options: CreateValidationRunnerOptions): 
   const registry = options.registry ?? createValidationCheckRegistry(options.checks ?? []);
   const clock = options.clock ?? systemClock;
   const runtime = options.runtime ?? defaultRuntimePolicy;
+  const failFast = options.failFast === true;
   return {
     runValidation: (request) => runValidation(request, {
       ...options,
       registry,
       clock,
-      runtime
+      runtime,
+      failFast
     })
   };
 }
@@ -191,6 +210,9 @@ async function runCurrentValidation(args: PreparedValidationArgs): Promise<Valid
 }
 
 async function runIntroducedValidation(args: PreparedValidationArgs): Promise<ValidationResult> {
+  if (args.options.failFast || args.options.onCheckComplete !== undefined) {
+    return runIntroducedValidationIncremental(args);
+  }
   const beforeRequest: ValidationRequest = {
     ...args.request,
     overlays: []
@@ -212,6 +234,91 @@ async function runIntroducedValidation(args: PreparedValidationArgs): Promise<Va
   );
 }
 
+async function runIntroducedValidationIncremental(args: PreparedValidationArgs): Promise<ValidationResult> {
+  const execution: CheckExecution = {
+    runs: [],
+    diagnostics: [],
+    diagnosticsByCheck: new Map(),
+    skippedChecks: []
+  };
+  const quietOptions = withoutCheckCompleteOptions(args.options);
+  for (const check of args.selectedChecks) {
+    const selectedChecks = [check];
+    const beforeExecution = await executeValidationRequest({
+      ...args,
+      request: {
+        ...args.request,
+        overlays: []
+      },
+      selectedChecks,
+      defaultReadState: "before",
+      options: quietOptions
+    });
+    if (beforeExecution.failureResult !== undefined) return beforeExecution.failureResult;
+    const afterExecution = await executeValidationRequest({
+      ...args,
+      selectedChecks,
+      options: quietOptions
+    });
+    if (afterExecution.failureResult !== undefined) return afterExecution.failureResult;
+    const introduced = introducedExecution(beforeExecution, afterExecution);
+    mergeCheckExecution(execution, introduced);
+    await emitIntroducedCheckComplete(args, check, introduced);
+    if (args.options.failFast && introduced.runs.some((run) => run.status === "policy_failure")) {
+      break;
+    }
+  }
+  return finalValidationResult(args.selectedChecks, execution, args.graph.status, args.totalStartedAt, args.options.clock);
+}
+
+function withoutCheckCompleteOptions(options: RunnerRuntimeOptions): RunnerRuntimeOptions {
+  const { onCheckComplete: _onCheckComplete, ...rest } = options;
+  return {
+    ...rest,
+    failFast: false
+  };
+}
+
+function mergeCheckExecution(target: CheckExecution, source: CheckExecution): void {
+  target.runs.push(...source.runs);
+  target.diagnostics.push(...source.diagnostics);
+  target.skippedChecks.push(...source.skippedChecks);
+  for (const [checkId, diagnostics] of source.diagnosticsByCheck) {
+    target.diagnosticsByCheck.set(checkId, diagnostics);
+  }
+}
+
+async function emitIntroducedCheckComplete(
+  args: PreparedValidationArgs,
+  check: ValidationCheckDefinition,
+  execution: CheckExecution
+): Promise<void> {
+  if (args.options.onCheckComplete === undefined) return;
+  const run = execution.runs.find((entry) => entry.checkId === check.id);
+  if (run !== undefined) {
+    await args.options.onCheckComplete({
+      schemaVersion: 1,
+      kind: "validation.check",
+      checkId: check.id,
+      status: run.status,
+      diagnostics: execution.diagnosticsByCheck.get(check.id) ?? [],
+      run
+    });
+    return;
+  }
+  const skippedCheck = execution.skippedChecks.find((entry) => entry.checkId === check.id);
+  if (skippedCheck !== undefined) {
+    await args.options.onCheckComplete({
+      schemaVersion: 1,
+      kind: "validation.check",
+      checkId: check.id,
+      status: "skipped",
+      diagnostics: [],
+      skippedCheck
+    });
+  }
+}
+
 async function executeValidationRequest(args: ExecuteValidationRequestArgs): Promise<CheckExecution> {
   const fileView = await createValidationFileView({
     request: args.request,
@@ -227,7 +334,9 @@ async function executeValidationRequest(args: ExecuteValidationRequestArgs): Pro
     selectedChecks: args.selectedChecks,
     totalStartedAt: args.totalStartedAt,
     clock: args.options.clock,
-    runtime: args.options.runtime
+    runtime: args.options.runtime,
+    failFast: args.options.failFast,
+    onCheckComplete: args.options.onCheckComplete
   });
 }
 
@@ -282,15 +391,32 @@ async function executeSelectedChecks(args: ExecuteChecksArgs): Promise<CheckExec
     const skippedCheck = skippedGraphCheck(check, args.graph.status);
     if (skippedCheck !== undefined) {
       execution.skippedChecks.push(skippedCheck);
+      await emitCheckComplete(args, {
+        schemaVersion: 1,
+        kind: "validation.check",
+        checkId: check.id,
+        status: "skipped",
+        diagnostics: [],
+        skippedCheck
+      });
       continue;
     }
     const preloadFailure = await preloadCheckGraphRequirements(check, args, execution);
     if (preloadFailure !== undefined) {
       if ("status" in preloadFailure) {
         execution.failureResult = preloadFailure;
+        await emitCheckComplete(args, failureCheckCompleteEvent(check, preloadFailure, execution.diagnostics));
         return execution;
       }
       execution.skippedChecks.push(preloadFailure);
+      await emitCheckComplete(args, {
+        schemaVersion: 1,
+        kind: "validation.check",
+        checkId: check.id,
+        status: "skipped",
+        diagnostics: [],
+        skippedCheck: preloadFailure
+      });
       continue;
     }
     const outcome = await runSingleCheck(check, args);
@@ -298,20 +424,65 @@ async function executeSelectedChecks(args: ExecuteChecksArgs): Promise<CheckExec
       if (args.request.graph.mode === "required") {
         if (outcome.run !== undefined) execution.runs.push(outcome.run);
         execution.failureResult = checkProviderFailureResult(check, args, execution, outcome.providerError);
+        await emitCheckComplete(args, outcomeCheckCompleteEvent(check, outcome));
         return execution;
       }
-      execution.skippedChecks.push(skippedGraphProviderError(check, outcome.providerError));
+      const skippedCheck = skippedGraphProviderError(check, outcome.providerError);
+      execution.skippedChecks.push(skippedCheck);
+      await emitCheckComplete(args, {
+        schemaVersion: 1,
+        kind: "validation.check",
+        checkId: check.id,
+        status: "skipped",
+        diagnostics: [],
+        skippedCheck
+      });
       continue;
     }
     if (outcome.run !== undefined) execution.runs.push(outcome.run);
     execution.diagnosticsByCheck.set(check.id, [...outcome.diagnostics]);
     execution.diagnostics.push(...outcome.diagnostics);
+    await emitCheckComplete(args, outcomeCheckCompleteEvent(check, outcome));
     if (outcome.failureStatus !== undefined && outcome.failureMessage !== undefined) {
       execution.failureResult = checkRunFailureResult(check, args, execution, outcome.failureStatus, outcome.failureMessage);
       return execution;
     }
+    if (args.failFast && outcome.run?.status === "policy_failure") {
+      return execution;
+    }
   }
   return execution;
+}
+
+function outcomeCheckCompleteEvent(check: ValidationCheckDefinition, outcome: SingleCheckOutcome): ValidationCheckCompleteEvent {
+  return {
+    schemaVersion: 1,
+    kind: "validation.check",
+    checkId: check.id,
+    status: outcome.run?.status ?? "passed",
+    diagnostics: outcome.diagnostics,
+    ...(outcome.run === undefined ? {} : { run: outcome.run })
+  };
+}
+
+function failureCheckCompleteEvent(
+  check: ValidationCheckDefinition,
+  result: ValidationResult,
+  diagnostics: readonly ValidationDiagnostic[]
+): ValidationCheckCompleteEvent {
+  const status = result.status === "invalid_payload" || result.status === "refused" ? "infrastructure_failure" : result.status;
+  return {
+    schemaVersion: 1,
+    kind: "validation.check",
+    checkId: check.id,
+    status,
+    diagnostics
+  };
+}
+
+async function emitCheckComplete(args: ExecuteChecksArgs, event: ValidationCheckCompleteEvent): Promise<void> {
+  if (args.onCheckComplete === undefined) return;
+  await args.onCheckComplete(event);
 }
 
 function introducedExecution(before: CheckExecution, after: CheckExecution): CheckExecution {

@@ -14,6 +14,8 @@ export interface ParsedValidationCommandOptions {
   graphModeOverride?: GraphProviderMode;
   checks?: readonly string[];
   reportMode?: ValidationReportMode;
+  failFast?: boolean;
+  stream?: boolean;
   scope?: ValidationScope;
   requestFile?: string;
   timeoutMs?: number;
@@ -41,6 +43,10 @@ interface CommonValidationCommandOptions {
   checkFilterFlag: boolean;
   reportMode?: ValidationReportMode;
   reportModeFlag: boolean;
+  failFast: boolean;
+  failFastFlag: boolean;
+  stream: boolean;
+  streamFlag: boolean;
   requestFile?: string;
   requestFileFlag: boolean;
   timeoutMs?: number;
@@ -147,6 +153,8 @@ export function parseCheckCommandOptions(args: readonly string[]): ParsedValidat
   };
   if (state.reportMode !== undefined) parsed.reportMode = state.reportMode;
   else if (parsed.route === "changed") parsed.reportMode = "introduced";
+  if (state.failFast) parsed.failFast = true;
+  if (state.stream) parsed.stream = true;
   return parsed;
 }
 
@@ -184,13 +192,16 @@ export function parseValidateCommandOptions(args: readonly string[]): ParsedVali
     ]);
     if (state.requestFile === undefined) throw new ValidationCommandOptionsError("opcore validate pre-write requires --request-file");
     if (state.requestFile === "-") throw new ValidationCommandOptionsError("stdin request payloads are not supported");
-    return {
+    const parsed: ParsedValidationCommandOptions = {
       route,
       graphMode: state.graphMode,
       requestFile: state.requestFile,
       reportMode: state.reportMode ?? "introduced",
       timeoutMs: state.timeoutMs ?? DEFAULT_PRE_WRITE_TIMEOUT_MS
     };
+    if (state.failFast) parsed.failFast = true;
+    if (state.stream) parsed.stream = true;
+    return parsed;
   }
   rejectDisallowedOptions(`opcore validate ${route}`, scopeFlagNames(state));
   rejectDisallowedOptions(`opcore validate ${route}`, timeoutFlagNames(state));
@@ -204,6 +215,8 @@ export function parseValidateCommandOptions(args: readonly string[]): ParsedVali
     requestFile: state.requestFile
   };
   if (state.reportMode !== undefined) parsed.reportMode = state.reportMode;
+  if (state.failFast) parsed.failFast = true;
+  if (state.stream) parsed.stream = true;
   return parsed;
 }
 
@@ -229,6 +242,10 @@ function parseCommonOptions(args: readonly string[]): {
   checkFilterFlag: boolean;
   reportMode?: ValidationReportMode;
   reportModeFlag: boolean;
+  failFast: boolean;
+  failFastFlag: boolean;
+  stream: boolean;
+  streamFlag: boolean;
   requestFile?: string;
   requestFileFlag: boolean;
   timeoutMs?: number;
@@ -256,6 +273,10 @@ function parseCommonOptions(args: readonly string[]): {
     checkFilterFlag: false,
     reportMode: undefined as ValidationReportMode | undefined,
     reportModeFlag: false,
+    failFast: false,
+    failFastFlag: false,
+    stream: false,
+    streamFlag: false,
     requestFile: undefined as string | undefined,
     requestFileFlag: false,
     timeoutMs: undefined as number | undefined,
@@ -335,6 +356,20 @@ function parseCommonOptions(args: readonly string[]): {
       state.reportModeFlag = true;
       state.reportMode = reportModeValue(inlineValue(arg, "--report-mode"));
     }
+    else if (arg === "--fail-fast") {
+      state.failFast = true;
+      state.failFastFlag = true;
+    }
+    else if (arg === "--stream" || arg === "--ndjson") {
+      state.stream = true;
+      state.streamFlag = true;
+    }
+    else if (arg.startsWith("--stream=")) {
+      const value = inlineValue(arg, "--stream");
+      if (value !== "ndjson") throw new ValidationCommandOptionsError("--stream must be ndjson when a value is provided");
+      state.stream = true;
+      state.streamFlag = true;
+    }
     else if (arg === "--request-file") {
       state.requestFileFlag = true;
       state.requestFile = requiredValue(args, ++index, "--request-file");
@@ -365,6 +400,8 @@ function rejectManifestExecutionOptions(command: string, state: CommonValidation
     ...checkFilterFlagNames(state),
     ...graphModeFlagNames(state),
     ...reportModeFlagNames(state),
+    ...failFastFlagNames(state),
+    ...streamFlagNames(state),
     ...timeoutFlagNames(state)
   ]);
 }
@@ -406,6 +443,14 @@ function graphModeFlagNames(state: CommonValidationCommandOptions): string[] {
 
 function reportModeFlagNames(state: CommonValidationCommandOptions): string[] {
   return state.reportModeFlag ? ["--report-mode"] : [];
+}
+
+function failFastFlagNames(state: CommonValidationCommandOptions): string[] {
+  return state.failFastFlag ? ["--fail-fast"] : [];
+}
+
+function streamFlagNames(state: CommonValidationCommandOptions): string[] {
+  return state.streamFlag ? ["--stream/--ndjson"] : [];
 }
 
 function timeoutFlagNames(state: CommonValidationCommandOptions): string[] {

@@ -1,6 +1,10 @@
 import type { CommandGroupContract, CommandRouterResult, ParsedCommandArgv } from "@the-open-engine/opcore-contracts";
 import { createCommandRouterResult } from "@the-open-engine/opcore-contracts";
-import { checkCommandAdapter } from "./validation-composition.js";
+import { checkCommandAdapter, createOpcoreCheckCommandAdapter } from "./validation-composition.js";
+
+export interface OpcoreCheckRuntime {
+  streamWriter?: (line: string) => void;
+}
 
 const checkGroup: CommandGroupContract = {
   name: "check",
@@ -12,7 +16,11 @@ const checkGroup: CommandGroupContract = {
 
 const checkRoutes = new Set(checkGroup.commands);
 
-export async function routeOpcoreCheck(argv: readonly string[], parsed: ParsedCommandArgv): Promise<CommandRouterResult> {
+export async function routeOpcoreCheck(
+  argv: readonly string[],
+  parsed: ParsedCommandArgv,
+  runtime: OpcoreCheckRuntime = {}
+): Promise<CommandRouterResult> {
   const rawArgs = parsed.args.slice(1);
   if (rawArgs.some((arg) => arg === "--help" || arg === "-h" || arg === "help") || rawArgs.length === 0) {
     return createCommandRouterResult({
@@ -39,7 +47,13 @@ export async function routeOpcoreCheck(argv: readonly string[], parsed: ParsedCo
       message: `Unsupported opcore check route: ${firstRoute}`
     });
   }
-  const result = await checkCommandAdapter({
+  const adapter =
+    runtime.streamWriter === undefined
+      ? checkCommandAdapter
+      : createOpcoreCheckCommandAdapter({
+          streamWriter: runtime.streamWriter
+        });
+  const result = await adapter({
     schemaVersion: 1,
     bin: "opcore",
     argv,

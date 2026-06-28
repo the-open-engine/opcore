@@ -341,6 +341,30 @@ describe("validation command adapters", () => {
     }
   });
 
+  it("suppresses pre-write stream records that complete after timeout", async () => {
+    const temp = mkdtempSync(join(tmpdir(), "lattice-validation-pre-write-stream-timeout-"));
+    try {
+      mkdirSync(join(temp, "src"));
+      const requestPath = join(temp, "request.json");
+      writeFileSync(join(temp, "src/index.ts"), "export const value = 1;");
+      writeFileSync(requestPath, JSON.stringify(validRequest(temp, { checks: ["validation.late"] })));
+      const lines = [];
+
+      const result = await createValidateCommandAdapter({
+        checks: [delayedCheck("validation.late", 10)],
+        workspaceFactory: (repoRoot) => createNodeValidationWorkspace({ repoRoot }),
+        streamWriter: (line) => lines.push(line)
+      })(request(["pre-write", "--request-file", requestPath, "--timeout-ms", "1", "--stream", "--report-mode", "all"], "validate"));
+
+      assert.equal(result.status, "error");
+      assert.equal(result.validationResult.status, "infrastructure_failure");
+      await sleep(75);
+      assert.deepEqual(lines, []);
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
   it("returns pre-write invalid-payload receipts for malformed and invalid request files", async () => {
     const temp = mkdtempSync(join(tmpdir(), "lattice-validation-pre-write-invalid-"));
     try {
@@ -405,6 +429,43 @@ describe("validation command adapters", () => {
     assert.deepEqual(optional.validationResult.manifest.skippedChecks.map((skip) => skip.checkId), ["validation.graph"]);
     assert.equal(required.validationResult.status, "provider_failure");
     assert.equal(required.validationResult.graphStatus.state, "required_missing");
+  });
+
+  it("streams per-check NDJSON records and fail-fast stops later checks", async () => {
+    const observed = [];
+    const lines = [];
+    const result = await createCheckCommandAdapter({
+      checks: [observedPolicyCheck("validation.policy", observed), observedPolicyCheck("validation.later", observed)],
+      workspace: workspace(),
+      streamWriter: (line) => lines.push(line)
+    })(request(["--files", "src/index.ts", "--stream", "--fail-fast"]));
+
+    assert.equal(result.validationResult.status, "policy_failure");
+    assert.deepEqual(observed, ["validation.policy"]);
+    const records = lines.map((line) => JSON.parse(line));
+    assert.equal(typeof records[0].run.durationMs, "number");
+    delete records[0].run.durationMs;
+    assert.deepEqual(records, [
+      {
+        schemaVersion: 1,
+        kind: "validation.check",
+        checkId: "validation.policy",
+        status: "policy_failure",
+        diagnostics: [
+          {
+            category: "policy",
+            severity: "error",
+            message: "validation.policy policy failure",
+            path: "src/index.ts"
+          }
+        ],
+        run: {
+          checkId: "validation.policy",
+          status: "policy_failure",
+          diagnosticCount: 1
+        }
+      }
+    ]);
   });
 
   it("discovers changed deleted renamed and untracked files through the Node workspace", () => {
@@ -732,6 +793,29 @@ function policyCheck() {
   };
 }
 
+function observedPolicyCheck(id, observed) {
+  return {
+    id,
+    owner: "validation",
+    adapter: "test",
+    defaultSeverity: "error",
+    supportedScopes: ["files", "changed", "staged", "tree", "all", "repo", "package"],
+    run: () => {
+      observed.push(id);
+      return {
+        diagnostics: [
+          {
+            category: "policy",
+            severity: "error",
+            message: `${id} policy failure`,
+            path: "src/index.ts"
+          }
+        ]
+      };
+    }
+  };
+}
+
 function contentSensitivePolicyCheck(supportedScopes = ["files"]) {
   return {
     id: "validation.content-policy",
@@ -774,6 +858,24 @@ function neverCheck() {
     supportedScopes: ["files"],
     run: async () => new Promise(() => {})
   };
+}
+
+function delayedCheck(id, delayMs) {
+  return {
+    id,
+    owner: "validation",
+    adapter: "test",
+    defaultSeverity: "error",
+    supportedScopes: ["files"],
+    run: async () => {
+      await sleep(delayMs);
+      return { diagnostics: [] };
+    }
+  };
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function staleGraphStatus(repoRoot) {

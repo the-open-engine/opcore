@@ -22,7 +22,11 @@ import {
 } from "./command-options.js";
 import { createValidationCheckManifest, createValidationCheckRegistry, type ValidationCheckDefinition, type ValidationCheckRegistry } from "./registry.js";
 import { defaultValidationGraphProvider, normalizeValidationRequest } from "./request.js";
-import { createValidationRunner, type CreateValidationRunnerOptions, type ValidationClock } from "./runner.js";
+import {
+  createValidationRunner,
+  type CreateValidationRunnerOptions,
+  type ValidationClock
+} from "./runner.js";
 import { createNodeValidationWorkspace } from "./workspace.js";
 import type { ValidationGraphProviderClient } from "./graph-client.js";
 import type { ValidationWorkspace } from "./scope.js";
@@ -42,6 +46,7 @@ export interface ValidationCommandAdapterOptions {
   clock?: ValidationClock;
   defaultRepoRoot?: string;
   runtime?: ValidationRuntimePolicy;
+  streamWriter?: (line: string) => void;
 }
 
 export function createCheckCommandAdapter(options: ValidationCommandAdapterOptions = {}): CommandAdapter {
@@ -137,6 +142,12 @@ async function runRequest(
     clock: options.clock,
     runtime: options.runtime
   };
+  if (parsed.failFast === true) runnerOptions.failFast = true;
+  if (parsed.stream === true && options.streamWriter !== undefined) {
+    runnerOptions.onCheckComplete = (event) => {
+      options.streamWriter?.(`${JSON.stringify(event)}\n`);
+    };
+  }
   return createValidationRunner(runnerOptions).runValidation(request);
 }
 
@@ -147,14 +158,33 @@ async function runRequestWithTimeout(
   timeoutMs: number
 ): Promise<ValidationResult> {
   let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
+  let acceptingStreamWrites = true;
+  const runOptions = streamGuardedOptions(options, () => acceptingStreamWrites);
   try {
     const timeout = new Promise<ValidationResult>((resolve) => {
-      timeoutHandle = setTimeout(() => resolve(timeoutResult(request, options, timeoutMs)), timeoutMs);
+      timeoutHandle = setTimeout(() => {
+        acceptingStreamWrites = false;
+        resolve(timeoutResult(request, options, timeoutMs));
+      }, timeoutMs);
     });
-    return await Promise.race([runRequest(request, parsed, options), timeout]);
+    return await Promise.race([runRequest(request, parsed, runOptions), timeout]);
   } finally {
+    acceptingStreamWrites = false;
     if (timeoutHandle !== undefined) clearTimeout(timeoutHandle);
   }
+}
+
+function streamGuardedOptions(
+  options: ValidationCommandAdapterOptions,
+  acceptingWrites: () => boolean
+): ValidationCommandAdapterOptions {
+  if (options.streamWriter === undefined) return options;
+  return {
+    ...options,
+    streamWriter: (line) => {
+      if (acceptingWrites()) options.streamWriter?.(line);
+    }
+  };
 }
 
 function timeoutResult(request: ValidationRequest, options: ValidationCommandAdapterOptions, timeoutMs: number): ValidationResult {
