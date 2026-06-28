@@ -9,6 +9,7 @@ import { createNodeValidationWorkspace, createValidationCheckRegistry, createVal
 import {
   TYPE_SCRIPT_DEAD_CODE_CHECK_ID,
   TYPE_SCRIPT_FUNCTION_METRICS_CHECK_ID,
+  TYPE_SCRIPT_FILE_LENGTH_CHECK_ID,
   TYPE_SCRIPT_IMPORT_GRAPH_CHECK_ID,
   TYPE_SCRIPT_RELEVANT_TESTS_CHECK_ID,
   TYPE_SCRIPT_SYNTAX_CHECK_ID,
@@ -31,12 +32,14 @@ describe("validation-typescript adapter", () => {
         TYPE_SCRIPT_IMPORT_GRAPH_CHECK_ID,
         TYPE_SCRIPT_DEAD_CODE_CHECK_ID,
         TYPE_SCRIPT_FUNCTION_METRICS_CHECK_ID,
-        TYPE_SCRIPT_RELEVANT_TESTS_CHECK_ID
+        TYPE_SCRIPT_RELEVANT_TESTS_CHECK_ID,
+        TYPE_SCRIPT_FILE_LENGTH_CHECK_ID
       ]
     );
     assert.equal(registry.byId.get(TYPE_SCRIPT_SYNTAX_CHECK_ID)?.requiresGraph, false);
     assert.equal(registry.byId.get(TYPE_SCRIPT_IMPORT_GRAPH_CHECK_ID)?.requiresGraph, false);
     assert.equal(registry.byId.get(TYPE_SCRIPT_FUNCTION_METRICS_CHECK_ID)?.requiresGraph, false);
+    assert.equal(registry.byId.get(TYPE_SCRIPT_FILE_LENGTH_CHECK_ID)?.requiresGraph, false);
   });
 
   it("reports syntax diagnostics from overlay after-state content", async () => {
@@ -86,6 +89,126 @@ describe("validation-typescript adapter", () => {
     assert.equal(result.diagnostics[0].category, "types");
     assert.equal(result.diagnostics[0].path, "src/index.ts");
     assert.equal(result.diagnostics[0].code, "2322");
+  });
+
+  it("reports file-length diagnostics from overlay after-state content", async () => {
+    const result = await runner({
+      files: {
+        "src/index.ts": "export const value = 1;\n"
+      }
+    }).runValidation(
+      request({
+        checks: [TYPE_SCRIPT_FILE_LENGTH_CHECK_ID],
+        overlays: [
+          {
+            path: "src/index.ts",
+            action: "write",
+            content: numberedTypeScriptLines(301)
+          }
+        ]
+      })
+    );
+
+    assert.equal(result.status, "policy_failure");
+    assert.deepEqual(result.diagnostics, [
+      {
+        category: "policy",
+        severity: "error",
+        path: "src/index.ts",
+        code: "TS_FILE_LINES",
+        message: "TypeScript file has 301 lines; max is 300."
+      }
+    ]);
+    assert.equal(Object.hasOwn(result.diagnostics[0], "line"), false);
+    assert.equal(Object.hasOwn(result.diagnostics[0], "column"), false);
+  });
+
+  it("suppresses pre-existing file-length diagnostics in introduced report mode", async () => {
+    const result = await runner({
+      files: {
+        "src/index.ts": numberedTypeScriptLines(301)
+      }
+    }).runValidation(
+      request({
+        checks: [TYPE_SCRIPT_FILE_LENGTH_CHECK_ID],
+        reportMode: "introduced",
+        overlays: [
+          {
+            path: "src/index.ts",
+            action: "write",
+            content: numberedTypeScriptLines(302)
+          }
+        ]
+      })
+    );
+
+    assert.equal(result.status, "passed", JSON.stringify(result.diagnostics, null, 2));
+    assert.deepEqual(result.diagnostics, []);
+    assert.equal(result.manifest.runs[0].status, "passed");
+    assert.equal(result.manifest.runs[0].diagnosticCount, 0);
+  });
+
+  it("reports file-length diagnostics newly crossing the threshold in introduced report mode", async () => {
+    const result = await runner({
+      files: {
+        "src/index.ts": numberedTypeScriptLines(300)
+      }
+    }).runValidation(
+      request({
+        checks: [TYPE_SCRIPT_FILE_LENGTH_CHECK_ID],
+        reportMode: "introduced",
+        overlays: [
+          {
+            path: "src/index.ts",
+            action: "write",
+            content: numberedTypeScriptLines(301)
+          }
+        ]
+      })
+    );
+
+    assert.equal(result.status, "policy_failure");
+    assert.deepEqual(
+      result.diagnostics.map((diagnostic) => [diagnostic.path, diagnostic.code, diagnostic.message]),
+      [["src/index.ts", "TS_FILE_LINES", "TypeScript file has 301 lines; max is 300."]]
+    );
+    assert.equal(result.manifest.runs[0].diagnosticCount, 1);
+  });
+
+  it("uses configured TypeScript file-length thresholds and deterministic diagnostic ordering", async () => {
+    const validation = createValidationRunner({
+      workspace: workspace({
+        files: {
+          "src/z.ts": numberedTypeScriptLines(4),
+          "src/a.ts": numberedTypeScriptLines(3),
+          "src/ok.ts": numberedTypeScriptLines(2)
+        }
+      }),
+      checks: createTypeScriptValidationChecks({
+        fileLength: {
+          maxFileLines: 2
+        }
+      })
+    });
+
+    const result = await validation.runValidation(
+      request({
+        checks: [TYPE_SCRIPT_FILE_LENGTH_CHECK_ID],
+        scope: {
+          kind: "files",
+          files: ["src/z.ts", "src/a.ts", "src/ok.ts"]
+        }
+      })
+    );
+
+    assert.equal(result.status, "policy_failure");
+    assert.deepEqual(
+      result.diagnostics.map((diagnostic) => [diagnostic.path, diagnostic.code, diagnostic.message]),
+      [
+        ["src/a.ts", "TS_FILE_LINES", "TypeScript file has 3 lines; max is 2."],
+        ["src/z.ts", "TS_FILE_LINES", "TypeScript file has 4 lines; max is 2."]
+      ]
+    );
   });
 
   it("resolves imported repo files through fileView instead of stale disk content", async () => {
@@ -739,7 +862,8 @@ describe("validation-typescript adapter", () => {
         TYPE_SCRIPT_SYNTAX_CHECK_ID,
         TYPE_SCRIPT_TYPES_CHECK_ID,
         TYPE_SCRIPT_IMPORT_GRAPH_CHECK_ID,
-        TYPE_SCRIPT_FUNCTION_METRICS_CHECK_ID
+        TYPE_SCRIPT_FUNCTION_METRICS_CHECK_ID,
+        TYPE_SCRIPT_FILE_LENGTH_CHECK_ID
       ]
     );
     assert.deepEqual(
@@ -1954,6 +2078,10 @@ function listRepoFiles(root) {
     if (entry.isDirectory()) return listRepoFiles(relative(process.cwd(), absolutePath));
     return relative(process.cwd(), absolutePath).replaceAll("\\", "/");
   });
+}
+
+function numberedTypeScriptLines(count) {
+  return Array.from({ length: count }, (_entry, index) => `export const value${index} = ${index};`).join("\n") + "\n";
 }
 
 function listTypeScriptBuildInfoFiles(repo) {

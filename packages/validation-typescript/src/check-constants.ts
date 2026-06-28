@@ -9,3 +9,7 @@ export const defaultTypeScriptFunctionMetricThresholds = {
   maxComplexity: 10,
   maxParams: 4
 } as const;
+
+export const defaultTypeScriptFileLengthThresholds = {
+  maxFileLines: 300
+} as const;

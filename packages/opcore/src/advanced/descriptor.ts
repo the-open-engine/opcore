@@ -14,6 +14,7 @@ import {
 import {
   TYPE_SCRIPT_DEAD_CODE_CHECK_ID,
   TYPE_SCRIPT_FUNCTION_METRICS_CHECK_ID,
+  TYPE_SCRIPT_FILE_LENGTH_CHECK_ID,
   TYPE_SCRIPT_IMPORT_GRAPH_CHECK_ID,
   TYPE_SCRIPT_RELEVANT_TESTS_CHECK_ID,
   TYPE_SCRIPT_SYNTAX_CHECK_ID,
@@ -142,6 +143,7 @@ export function createOpcoreManagedToolDescriptor(options: OpcoreManagedToolDesc
           TYPE_SCRIPT_DEAD_CODE_CHECK_ID,
           TYPE_SCRIPT_FUNCTION_METRICS_CHECK_ID,
           TYPE_SCRIPT_RELEVANT_TESTS_CHECK_ID,
+          TYPE_SCRIPT_FILE_LENGTH_CHECK_ID,
           ...rustValidationCheckIds,
           ...pythonValidationCheckIds
         ]

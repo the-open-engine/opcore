@@ -462,6 +462,7 @@ function validationResult() {
         "typescript.types",
         "typescript.relevant-tests",
         "typescript.dead-code",
+        "typescript.file-length",
         "rust.source-hygiene",
         "rust.file-length",
         "rust.import-graph",

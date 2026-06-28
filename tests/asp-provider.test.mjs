@@ -17,6 +17,7 @@ const allCheckIds = [
   "typescript.dead-code",
   "typescript.function-metrics",
   "typescript.relevant-tests",
+  "typescript.file-length",
   "rust.source-hygiene",
   "rust.fmt",
   "rust.cargo-check",
