@@ -26,11 +26,13 @@ const rustOnlyFixtureRoot = resolve(repoRoot, "packages/fixtures/source-extracti
 const robustnessFixtureRoot = resolve(repoRoot, "packages/fixtures/graph-robustness/watch-roots");
 const expected = JSON.parse(readFileSync(resolve(sourceFixtureRoot, "wave1.expected.json"), "utf8"));
 const pythonExpected = JSON.parse(readFileSync(resolve(pythonFixtureRoot, "python.expected.json"), "utf8"));
+const fixedExtractionGeneratedAt = "2026-06-04T00:00:00.000Z";
 
 describe("GraphProvider SQLite store conformance", () => {
   it("refreshes Wave 1 facts into SQLite and serves #19 direct-reader queries", () => {
     withFixtureCopy((fixtureRoot) => {
       const canonicalFixtureRoot = realpathSync(fixtureRoot);
+      const beforeBuild = Date.now();
       const refresh = graphProviderBuild({ repoRoot: fixtureRoot }).status;
       assert.equal(refresh.state, "available");
       assert.ok(refresh.dbPath);
@@ -88,20 +90,17 @@ describe("GraphProvider SQLite store conformance", () => {
             { qualified_name: "class:src/models.ts#FriendlyGreetingModel", kind: "Class" }
           ]
         );
-        assert.deepEqual(
-          plainRows(
-            db
-              .prepare(
-                "select key, value from metadata where key in ('schema_version', 'last_updated', 'last_build_type') order by key"
-              )
-              .all()
-          ),
-          [
-            { key: "last_build_type", value: "build" },
-            { key: "last_updated", value: "2026-06-04T00:00:00.000Z" },
-            { key: "schema_version", value: "6" }
-          ]
+        const metadataRows = plainRows(
+          db
+            .prepare(
+              "select key, value from metadata where key in ('schema_version', 'last_updated', 'last_build_type') order by key"
+            )
+            .all()
         );
+        assert.deepEqual(metadataRows.map(({ key }) => key), ["last_build_type", "last_updated", "schema_version"]);
+        assert.equal(metadataRows[0].value, "build");
+        assertFreshMetadataTimestamp(metadataRows[1].value, beforeBuild);
+        assert.equal(metadataRows[2].value, "6");
       } finally {
         db.close();
       }
@@ -747,6 +746,14 @@ function createRuntimeIgnoredFiles(fixtureRoot) {
 function skipGeneratedStore(source) {
   const normalized = source.replaceAll("\\", "/");
   return !normalized.endsWith("/.lattice") && !normalized.includes("/.lattice/");
+}
+
+function assertFreshMetadataTimestamp(value, minEpochMs) {
+  assert.notEqual(value, fixedExtractionGeneratedAt);
+  const parsed = Date.parse(value);
+  assert.equal(Number.isFinite(parsed), true, value);
+  assert.equal(parsed >= minEpochMs - 5000, true, value);
+  assert.equal(parsed <= Date.now() + 5000, true, value);
 }
 
 function edgeTriples(edges) {

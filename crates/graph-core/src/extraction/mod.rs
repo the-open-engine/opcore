@@ -16,6 +16,8 @@ use crate::{GRAPH_PROVIDER_NAME, GRAPH_SCHEMA_VERSION};
 use diagnostics::has_error;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
+use time::format_description::well_known::Rfc3339;
+use time::OffsetDateTime;
 
 pub use diagnostics::{error, info, warning};
 pub use discovery::{
@@ -208,7 +210,7 @@ pub fn finalize_discovered_sources(
 ) -> ExtractionResult {
     let tsconfig = load_tsconfig_if_ready(&discovery.repo_root, &mut diagnostics);
     let (nodes, edges) = finalize_file_facts(&file_facts, tsconfig.as_ref(), &mut diagnostics);
-    let metadata = metadata(&discovery.repo_root_display, &nodes, &edges);
+    let metadata = metadata(&discovery.repo_root_display, &nodes, &edges, now_rfc3339());
     ExtractionResult {
         metadata,
         nodes,
@@ -239,6 +241,7 @@ fn metadata(
     repo_root: &str,
     nodes: &[GraphFactNode],
     edges: &[GraphFactEdge],
+    generated_at: String,
 ) -> GraphSnapshotMetadata {
     let mut node_kinds = nodes
         .iter()
@@ -264,9 +267,9 @@ fn metadata(
             remote_url: None,
             commit_sha: None,
         },
-        generated_at: EXTRACTION_GENERATED_AT.to_string(),
+        generated_at: generated_at.clone(),
         freshness: crate::protocol::GraphFreshness {
-            generated_at: EXTRACTION_GENERATED_AT.to_string(),
+            generated_at,
             age_ms: 0,
             max_age_ms: None,
             stale: false,
@@ -275,6 +278,12 @@ fn metadata(
         node_kinds,
         edge_kinds,
     }
+}
+
+fn now_rfc3339() -> String {
+    OffsetDateTime::now_utc()
+        .format(&Rfc3339)
+        .unwrap_or_else(|_| EXTRACTION_GENERATED_AT.to_string())
 }
 
 pub fn boundary_name() -> &'static str {

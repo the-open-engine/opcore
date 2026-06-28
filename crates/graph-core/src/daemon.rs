@@ -276,7 +276,7 @@ fn missing_store_status(repo_root: &Path) -> GraphProviderStatus {
     stale_status(
         repo_identity(repo_root),
         GraphFreshness {
-            generated_at: crate::extraction::EXTRACTION_GENERATED_AT.to_string(),
+            generated_at: crate::pipeline::now_rfc3339(),
             age_ms: 0,
             max_age_ms: None,
             stale: true,
