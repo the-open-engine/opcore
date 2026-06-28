@@ -74,6 +74,9 @@ describe("Opcore ASP provider", () => {
         assert.deepEqual(init.capabilityFamilies, ["check"]);
         assert.deepEqual(init.capabilities.check.rules, allCheckIds);
         assert.deepEqual(init.capabilities.check.comparisons, ["all"]);
+        assert.equal(Object.hasOwn(init.capabilities, "inspect"), false);
+        assert.equal(Object.hasOwn(init.capabilities, "edit"), false);
+        assert.equal(Object.hasOwn(init.capabilities, "session"), false);
         assert.deepEqual(init.requestedPermissions, { read: ["**/*"], write: false, network: false });
         assertNoForbiddenKeys(init);
 

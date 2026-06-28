@@ -1154,6 +1154,105 @@ describe("Opcore JSON schema wire constraints", () => {
       }),
       true
     );
+    assert.equal(isValidDefinition("AspWarmMethodName", "inspect/references"), true);
+    assert.equal(isValidDefinition("AspWarmMethodName", "asp/serve"), false);
+    assert.equal(
+      isValidDefinition("AspWarmInspectReferencesParams", {
+        path: "src/models.ts",
+        symbolName: "GreetingModel",
+        line: 1,
+        limit: 5
+      }),
+      true
+    );
+    assert.equal(
+      isValidDefinition("AspWarmInspectReferencesResponse", {
+        provider: {
+          id: "opcore",
+          capabilityFamily: "inspect"
+        },
+        inspectResult: {
+          route: "references",
+          status: "ok",
+          target: validInspectRouteResult().target,
+          references: validInspectRouteResult().references
+        },
+        timing: validCommandTiming()
+      }),
+      true
+    );
+    assert.equal(
+      isValidDefinition("AspWarmEditRenameParams", {
+        target: {
+          path: "src/models.ts",
+          name: "GreetingModel",
+          line: 1
+        },
+        newName: "FriendlyGreetingModel"
+      }),
+      true
+    );
+    assert.equal(
+      isValidDefinition("AspWarmEditRenameResponse", {
+        provider: {
+          id: "opcore",
+          capabilityFamily: "edit"
+        },
+        editResult: {
+          route: "rename",
+          status: "preview",
+          changes: [
+            {
+              kind: "replace",
+              path: "src/models.ts",
+              content: "export class FriendlyGreetingModel {}\n",
+              checksumBefore: "sha256:before",
+              checksumAfter: "sha256:after"
+            }
+          ],
+          affectedChecksums: [
+            {
+              path: "src/models.ts",
+              checksumBefore: "sha256:before",
+              checksumAfter: "sha256:after"
+            }
+          ]
+        },
+        timing: validCommandTiming()
+      }),
+      true
+    );
+    assert.equal(
+      isValidDefinition("AspWarmEditRenameResponse", {
+        provider: {
+          id: "opcore",
+          capabilityFamily: "edit"
+        },
+        editResult: {
+          route: "rename",
+          status: "refused",
+          refusal: {
+            category: "unsafe_edit",
+            message: "Symbol edit produced no changes"
+          }
+        },
+        timing: validCommandTiming()
+      }),
+      true
+    );
+    assert.equal(
+      isValidDefinition("AspWarmSessionShutdownResponse", {
+        provider: {
+          id: "opcore",
+          capabilityFamily: "session"
+        },
+        session: {
+          state: "shutdown"
+        },
+        timing: validCommandTiming()
+      }),
+      true
+    );
     assert.equal(isValidDefinition("ValidationStatusPayload", validValidationStatusPayload()), true);
     assert.equal(isValidDefinition("PreWriteValidationReceipt", preWriteValidationReceiptWith()), true);
     assert.equal(
