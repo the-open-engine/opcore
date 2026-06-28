@@ -114,6 +114,7 @@ describe("installed package bins", () => {
           "typescript.types",
           "typescript.import-graph",
           "typescript.dead-code",
+          "typescript.function-metrics",
           "typescript.relevant-tests",
           "rust.source-hygiene",
           "rust.fmt",

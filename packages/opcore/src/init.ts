@@ -394,6 +394,7 @@ function checksForLanguage(language: string, validation: OpcoreInitLanguageSetti
       "typescript.types",
       "typescript.import-graph",
       "typescript.dead-code",
+      "typescript.function-metrics",
       "typescript.relevant-tests"
     ];
   }

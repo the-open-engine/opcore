@@ -8,6 +8,7 @@ import ts from "typescript";
 import { createNodeValidationWorkspace, createValidationCheckRegistry, createValidationRunner } from "../packages/validation/dist/index.js";
 import {
   TYPE_SCRIPT_DEAD_CODE_CHECK_ID,
+  TYPE_SCRIPT_FUNCTION_METRICS_CHECK_ID,
   TYPE_SCRIPT_IMPORT_GRAPH_CHECK_ID,
   TYPE_SCRIPT_RELEVANT_TESTS_CHECK_ID,
   TYPE_SCRIPT_SYNTAX_CHECK_ID,
@@ -29,11 +30,13 @@ describe("validation-typescript adapter", () => {
         TYPE_SCRIPT_TYPES_CHECK_ID,
         TYPE_SCRIPT_IMPORT_GRAPH_CHECK_ID,
         TYPE_SCRIPT_DEAD_CODE_CHECK_ID,
+        TYPE_SCRIPT_FUNCTION_METRICS_CHECK_ID,
         TYPE_SCRIPT_RELEVANT_TESTS_CHECK_ID
       ]
     );
     assert.equal(registry.byId.get(TYPE_SCRIPT_SYNTAX_CHECK_ID)?.requiresGraph, false);
     assert.equal(registry.byId.get(TYPE_SCRIPT_IMPORT_GRAPH_CHECK_ID)?.requiresGraph, false);
+    assert.equal(registry.byId.get(TYPE_SCRIPT_FUNCTION_METRICS_CHECK_ID)?.requiresGraph, false);
   });
 
   it("reports syntax diagnostics from overlay after-state content", async () => {
@@ -493,6 +496,104 @@ describe("validation-typescript adapter", () => {
     assert.equal(explicitAll.diagnostics.some((diagnostic) => diagnostic.code === "2322"), true);
   });
 
+  it("reports TypeScript function metric threshold diagnostics from overlay after-state content", async () => {
+    const complexBranches = Array.from({ length: 11 }, (_, index) => `  if (first.length > ${index}) { return ${index}; }`);
+    const fillerLines = Array.from({ length: 69 }, (_, index) => `  const filler${index} = ${index};`);
+    const oversizedFunction = [
+      "export function oversized(first: string, second: string, third: string, fourth: string, fifth: string) {",
+      ...complexBranches,
+      ...fillerLines,
+      "  return second.length + third.length + fourth.length + fifth.length;",
+      "}"
+    ].join("\n");
+
+    const result = await runner({
+      files: {
+        "src/index.ts": "export function oversized() { return 1; }\n"
+      }
+    }).runValidation(
+      request({
+        checks: [TYPE_SCRIPT_FUNCTION_METRICS_CHECK_ID],
+        overlays: [
+          {
+            path: "src/index.ts",
+            action: "write",
+            content: `${oversizedFunction}\n`
+          }
+        ]
+      })
+    );
+
+    assert.equal(result.status, "passed", JSON.stringify(result.diagnostics, null, 2));
+    assert.deepEqual(
+      result.diagnostics.map((diagnostic) => ({
+        category: diagnostic.category,
+        severity: diagnostic.severity,
+        path: diagnostic.path,
+        code: diagnostic.code,
+        message: diagnostic.message
+      })),
+      [
+        {
+          category: "policy",
+          severity: "warning",
+          path: "src/index.ts",
+          code: "TS_FUNCTION_COMPLEXITY",
+          message: "TypeScript function oversized has cyclomatic complexity 12; max is 10."
+        },
+        {
+          category: "policy",
+          severity: "warning",
+          path: "src/index.ts",
+          code: "TS_FUNCTION_LINES",
+          message: "TypeScript function oversized has 83 lines; max is 80."
+        },
+        {
+          category: "policy",
+          severity: "warning",
+          path: "src/index.ts",
+          code: "TS_FUNCTION_PARAMS",
+          message: "TypeScript function oversized has 5 parameters; max is 4."
+        }
+      ]
+    );
+  });
+
+  it("does not count nested function branches toward the outer TypeScript function", async () => {
+    const nestedBranches = Array.from({ length: 11 }, (_, index) => `    if (value > ${index}) { return ${index}; }`);
+    const result = await runner({
+      files: {
+        "src/index.ts": [
+          "export function outer(value: number) {",
+          "  function inner() {",
+          ...nestedBranches,
+          "    return value;",
+          "  }",
+          "  return inner();",
+          "}"
+        ].join("\n")
+      }
+    }).runValidation(
+      request({
+        checks: [TYPE_SCRIPT_FUNCTION_METRICS_CHECK_ID]
+      })
+    );
+
+    assert.equal(result.status, "passed", JSON.stringify(result.diagnostics, null, 2));
+    assert.deepEqual(
+      result.diagnostics.map((diagnostic) => ({
+        code: diagnostic.code,
+        message: diagnostic.message
+      })),
+      [
+        {
+          code: "TS_FUNCTION_COMPLEXITY",
+          message: "TypeScript function inner has cyclomatic complexity 12; max is 10."
+        }
+      ]
+    );
+  });
+
   it("collects per-file semantic diagnostics without aborting when the TypeScript compiler fails on one file", async () => {
     const { collectTypeScriptSemanticDiagnostics } = await import("../packages/validation-typescript/dist/type-check.js");
     const repoRoot = "/repo";
@@ -634,7 +735,12 @@ describe("validation-typescript adapter", () => {
     assert.equal(result.status, "passed");
     assert.deepEqual(
       result.manifest.runs.map((run) => run.checkId),
-      [TYPE_SCRIPT_SYNTAX_CHECK_ID, TYPE_SCRIPT_TYPES_CHECK_ID, TYPE_SCRIPT_IMPORT_GRAPH_CHECK_ID]
+      [
+        TYPE_SCRIPT_SYNTAX_CHECK_ID,
+        TYPE_SCRIPT_TYPES_CHECK_ID,
+        TYPE_SCRIPT_IMPORT_GRAPH_CHECK_ID,
+        TYPE_SCRIPT_FUNCTION_METRICS_CHECK_ID
+      ]
     );
     assert.deepEqual(
       result.manifest.skippedChecks.map((skip) => skip.checkId),

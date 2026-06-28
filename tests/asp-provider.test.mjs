@@ -15,6 +15,7 @@ const allCheckIds = [
   "typescript.types",
   "typescript.import-graph",
   "typescript.dead-code",
+  "typescript.function-metrics",
   "typescript.relevant-tests",
   "rust.source-hygiene",
   "rust.fmt",
@@ -120,6 +121,61 @@ describe("Opcore ASP provider", () => {
           ]
         });
         assertNoForbiddenKeys(assessment);
+      } finally {
+        peer.close();
+      }
+    } finally {
+      rmSync(repo, { recursive: true, force: true });
+    }
+  });
+
+  it("maps TypeScript function metrics diagnostics to their validation check id", { timeout: 60000 }, async () => {
+    assert.equal(existsSync(providerBin), true, "run npm run build before asp-provider tests");
+    const repo = mkdtempSync(join(tmpdir(), "opcore-asp-provider-function-metrics-"));
+    try {
+      writeFileSync(join(repo, "tsconfig.json"), "{}\n");
+      mkdirSync(join(repo, "src"));
+      writeFileSync(join(repo, "src/metrics.ts"), "export const ok = 1;\n");
+
+      const host = createHostWorkspace({
+        "tsconfig.json": "{}\n",
+        "src/metrics.ts": "export const ok = 1;\n"
+      });
+      const peer = spawnProvider(host);
+      try {
+        await peer.request("initialize", {
+          protocolVersion: "asp/0.1",
+          host: { name: "fake-host", version: "0.1.0-test" },
+          hostCapabilities: { readBlob: true, listTree: true, putBlob: false },
+          workspace: { root: repo, baseline: host.baseline },
+          assuranceMode: "gated"
+        });
+        peer.notify("initialized", {
+          grantedPermissions: { read: ["**/*"], write: false, network: false },
+          baseline: host.baseline
+        });
+
+        const longFunction = [
+          "export function tooLong(a: number, b: number, c: number, d: number, e: number) {",
+          "  if (a > 0) {",
+          "    return a;",
+          "  }",
+          "  return b + c + d + e;",
+          "}"
+        ].join("\n");
+        const changeset = host.changeset([host.modify("src/metrics.ts", `${longFunction}\n`)]);
+        const assessment = await peer.request("check/evaluate", {
+          callSite: "interactive",
+          changeset,
+          comparison: "all",
+          checks: ["typescript.function-metrics"]
+        });
+
+        const functionMetricDiagnostic = assessment.diagnostics.find((diagnostic) =>
+          diagnostic.code.includes("/TS_FUNCTION_PARAMS")
+        );
+        assert.equal(functionMetricDiagnostic?.source, "opcore");
+        assert.equal(functionMetricDiagnostic?.code, "opcore/typescript.function-metrics/TS_FUNCTION_PARAMS");
       } finally {
         peer.close();
       }

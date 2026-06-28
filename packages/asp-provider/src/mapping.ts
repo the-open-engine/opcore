@@ -380,10 +380,22 @@ function checkIdForDiagnostic(diagnostic: ValidationDiagnostic): string {
   if (diagnostic.category === "test") return "typescript.relevant-tests";
   if (diagnostic.category === "graph") return "typescript.import-graph";
   if (diagnostic.category === "lint") return "rust.clippy";
-  if (diagnostic.category === "policy") return "rust.source-hygiene";
+  if (diagnostic.category === "policy") return policyCheckIdForDiagnostic(diagnostic);
   if (diagnostic.category === "provider") return "opcore.provider";
   if (diagnostic.category === "infrastructure") return "opcore.infrastructure";
   return `opcore.${diagnostic.category}`;
+}
+
+function policyCheckIdForDiagnostic(diagnostic: ValidationDiagnostic): string {
+  const code = diagnostic.code ?? "";
+  if (code.startsWith("TS_FUNCTION_")) return "typescript.function-metrics";
+  if (code.startsWith("TS_FILE_")) return "typescript.file-length";
+  if (code.startsWith("PY_SOURCE_")) return "python.source-hygiene";
+  if (code.startsWith("RUST_FILE_")) return "rust.file-length";
+  if (code.startsWith("RUST_FUNCTION_")) return "rust.function-metrics";
+  if (code.startsWith("RUST_SOURCE_")) return "rust.source-hygiene";
+  if (code.startsWith("RUST_UNUSED_")) return "rust.unused-deps";
+  return "rust.source-hygiene";
 }
 
 function sanitizeCode(code: string): string {

@@ -13,6 +13,7 @@ import {
 } from "@the-open-engine/opcore-contracts";
 import {
   TYPE_SCRIPT_DEAD_CODE_CHECK_ID,
+  TYPE_SCRIPT_FUNCTION_METRICS_CHECK_ID,
   TYPE_SCRIPT_IMPORT_GRAPH_CHECK_ID,
   TYPE_SCRIPT_RELEVANT_TESTS_CHECK_ID,
   TYPE_SCRIPT_SYNTAX_CHECK_ID,
@@ -139,6 +140,7 @@ export function createOpcoreManagedToolDescriptor(options: OpcoreManagedToolDesc
           TYPE_SCRIPT_TYPES_CHECK_ID,
           TYPE_SCRIPT_IMPORT_GRAPH_CHECK_ID,
           TYPE_SCRIPT_DEAD_CODE_CHECK_ID,
+          TYPE_SCRIPT_FUNCTION_METRICS_CHECK_ID,
           TYPE_SCRIPT_RELEVANT_TESTS_CHECK_ID,
           ...rustValidationCheckIds,
           ...pythonValidationCheckIds
