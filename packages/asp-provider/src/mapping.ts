@@ -1,6 +1,7 @@
 import type {
   CommandTiming,
   CommandTimingPhase,
+  GraphProviderStatus,
   GraphProviderMode,
   HypotheticalOverlay,
   ValidationDiagnostic,
@@ -39,6 +40,7 @@ import {
 const providerSource = OPCORE_PROVIDER_ID;
 const capabilityVersion = "check/0.1";
 const supportedComparison = "all";
+const partiallyGraphBackedChecks = new Set(["typescript.import-graph"]);
 let firstAssessmentTiming = true;
 
 export function initializeResult(params: InitializeParams): JsonObject {
@@ -273,7 +275,7 @@ function assessmentFromValidationResult(args: {
   readBlobIds: readonly string[];
   timing: CommandTiming;
 }): Assessment {
-  const resultDegradations = validationCoverageDegradations(args.validationResult);
+  const resultDegradations = validationCoverageDegradations(args.validationResult, args.selectedIds);
   const degraded = uniqueDegradations([...args.mappingDegradations, ...resultDegradations.degraded]);
   const unsupported = uniqueDegradations(resultDegradations.unsupported);
   const status = assessmentStatus(args.validationResult.status, degraded, unsupported);
@@ -388,7 +390,7 @@ function sanitizeCode(code: string): string {
   return code.replace(/[^A-Za-z0-9._-]+/g, "_").replace(/^_+|_+$/g, "") || "diagnostic";
 }
 
-function validationCoverageDegradations(result: ValidationResult): {
+function validationCoverageDegradations(result: ValidationResult, selectedIds: readonly string[]): {
   degraded: readonly ProviderCoverageDegradation[];
   unsupported: readonly ProviderCoverageDegradation[];
 } {
@@ -415,6 +417,17 @@ function validationCoverageDegradations(result: ValidationResult): {
     degraded.push(entry);
     if (reason === "unsupported") unsupported.push(entry);
   }
+  if (result.graphStatus !== undefined && result.graphStatus.state !== "available") {
+    for (const checkId of selectedIds) {
+      if (!partiallyGraphBackedChecks.has(checkId)) continue;
+      degraded.push({
+        source: providerSource,
+        reason: "unavailable",
+        requirement: checkId,
+        detail: graphStatusMessage(result.graphStatus)
+      });
+    }
+  }
   if (result.status !== "passed" && result.status !== "policy_failure") {
     const reason = result.status === "unsupported_request" ? "unsupported" : result.status === "skipped" ? "incomplete" : "error";
     const entry = {
@@ -427,6 +440,11 @@ function validationCoverageDegradations(result: ValidationResult): {
     if (reason === "unsupported") unsupported.push(entry);
   }
   return { degraded, unsupported };
+}
+
+function graphStatusMessage(status: GraphProviderStatus): string {
+  if ("failure" in status) return status.failure.message;
+  return status.message ?? `Graph provider is not available: ${status.state}`;
 }
 
 function comparisonDegradations(requested: string): readonly ProviderCoverageDegradation[] {
