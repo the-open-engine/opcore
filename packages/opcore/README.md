@@ -4,13 +4,18 @@ Deterministic local changed-file validation gate for coding agents.
 
 Opcore gives coding agents and maintainers a read-only-first repo check loop: scan the current repo, report coverage honestly, run changed-file validation, and track concrete local metric deltas. It is built for local feedback before review, not for remote publishing or opaque ratings.
 
-## First Run
+## First Run From This Checkout
+
+Package publication is maintainer-controlled during alpha staging. Until
+maintainers publish the alpha packages, run Opcore from a source checkout:
 
 ```bash
-npx @the-open-engine/opcore@0.1.0-alpha.0 init
+npm ci
+npm run build
+node packages/opcore/dist/index.js init --repo /path/to/repo
 ```
 
-The one-command path starts the interactive onboarding wizard without a prior install. It runs a read-only scan first, prints Coverage before Findings, reports concrete counts and locations, shows the additive setup plan, and asks before writing anything.
+The command starts the interactive onboarding wizard. It runs a read-only scan first, prints Coverage before Findings, reports concrete counts and locations, shows the additive setup plan, and asks before writing anything.
 
 Scan/status/check/measure are read-only for source files. The scan loop writes only `.opcore/report.json`, `.opcore/history.jsonl`, and bounded `.opcore/telemetry.jsonl`. Approved init writes only additive `.opcore/config`, one delimited guidance block in an existing agent file or new `AGENTS.md`, a managed `.opcore/` line in `.gitignore` for Git repos, and `.opcore/init-undo.json`. Undo recorded setup with `opcore init --undo`.
 
@@ -57,9 +62,15 @@ opcore try
 - `opcore measure` reads existing metric artifacts and reports named deltas, not a blended rating.
 - `opcore try` creates local sample repos and runs the demo loop without publishing anything.
 
-## Repeat Use
+## Package Publication
 
-Install globally when you expect to run Opcore repeatedly:
+After package publication, the one-command first-run path is:
+
+```bash
+npx @the-open-engine/opcore@0.1.0-alpha.0 init
+```
+
+After package publication, install globally when you expect to run Opcore repeatedly:
 
 ```bash
 npm install -g @the-open-engine/opcore@0.1.0-alpha.0
@@ -82,7 +93,12 @@ Alpha package artifacts target `darwin-arm64`, `darwin-x64`, and `linux-x64` wit
 
 ## Advanced ASP Provider Note
 
-**Providers assess; ASP hosts decide.** `opcore-asp-provider --stdio` can return Opcore validation assessments to an ASP host. Provider output is evidence for the host to evaluate, not authority to decide policy, enforce gates, or apply changes.
+**Providers assess; ASP hosts decide.** The aggregate `@the-open-engine/opcore`
+package exposes only the `opcore` bin. `opcore-asp-provider --stdio` is provided
+by the separate `@the-open-engine/opcore-asp-provider` package, or by
+`node packages/asp-provider/dist/index.js --stdio` from a built source checkout.
+Provider output is evidence for the host to evaluate, not authority to decide
+policy, enforce gates, or apply changes.
 
 ## Docs
 

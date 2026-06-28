@@ -10,12 +10,15 @@ agents. It starts with read-only repository scans, reports honest coverage
 before findings, and gives command-running agents a JSON gate for edits before
 they land.
 
-## First Run
+## First Run From This Checkout
 
-Run the onboarding wizard from an existing repository:
+Package publication is maintainer-controlled during alpha staging. Until
+maintainers publish the alpha packages, run Opcore from a source checkout:
 
 ```bash
-npx @the-open-engine/opcore@0.1.0-alpha.0 init
+npm ci
+npm run build
+node packages/opcore/dist/index.js init --repo /path/to/repo
 ```
 
 `opcore init` detects supported stacks, runs a read-only first scan, prints
@@ -32,7 +35,13 @@ managed `.opcore/` `.gitignore` line for Git repos, and
 Agents and hooks should use the JSON contract `opcore check --changed --json`;
 humans do not need to learn that gate before onboarding.
 
-Install globally for repeat use:
+After package publication, the one-command first-run path is:
+
+```bash
+npx @the-open-engine/opcore@0.1.0-alpha.0 init
+```
+
+After package publication, install globally for repeat use:
 
 ```bash
 npm install -g @the-open-engine/opcore@0.1.0-alpha.0
@@ -134,9 +143,12 @@ at @docs/architecture/runtime-cli-ard.md.
 
 ## ASP provider: providers assess, hosts decide
 
-`opcore-asp-provider --stdio` launches the ASP provider facade. The provider
-returns assessments and degraded coverage details; ASP hosts own workspace
-grants, policy, decisions, receipts, and apply behavior.
+The aggregate `@the-open-engine/opcore` package exposes only the `opcore` bin.
+`opcore-asp-provider --stdio` is provided by the separate
+`@the-open-engine/opcore-asp-provider` package, or by
+`node packages/asp-provider/dist/index.js --stdio` from a built source checkout.
+The provider returns assessments and degraded coverage details; ASP hosts own
+workspace grants, policy, decisions, receipts, and apply behavior.
 
 Provider output is assessment evidence, not a host decision.
 
