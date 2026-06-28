@@ -1,6 +1,7 @@
 import type { ValidationCheckDefinition } from "@the-open-engine/opcore-validation";
 import { createDeadCodeCheck } from "./dead-code-check.js";
-import { createFunctionMetricsCheck } from "./function-metrics-check.js";
+import { createFileLengthCheck, type TypeScriptFileLengthThresholds } from "./file-length-check.js";
+import { createFunctionMetricsCheck, type TypeScriptFunctionMetricThresholds } from "./function-metrics-check.js";
 import { createImportGraphCheck } from "./import-graph-check.js";
 import { createRelevantTestsCheck } from "./relevant-tests-check.js";
 import { createSyntaxCheck } from "./syntax-check.js";
@@ -8,22 +9,37 @@ import { createTypeCheck } from "./type-check.js";
 export {
   TYPE_SCRIPT_DEAD_CODE_CHECK_ID,
   TYPE_SCRIPT_FUNCTION_METRICS_CHECK_ID,
+  TYPE_SCRIPT_FILE_LENGTH_CHECK_ID,
   TYPE_SCRIPT_IMPORT_GRAPH_CHECK_ID,
   TYPE_SCRIPT_RELEVANT_TESTS_CHECK_ID,
   TYPE_SCRIPT_SYNTAX_CHECK_ID,
   TYPE_SCRIPT_TYPES_CHECK_ID,
   type TypeScriptValidationCheckId
 } from "./check-ids.js";
+export { createFileLengthCheck, type TypeScriptFileLengthThresholds } from "./file-length-check.js";
+export { createFunctionMetricsCheck, type TypeScriptFunctionMetricThresholds } from "./function-metrics-check.js";
 
 export const validationTypeScriptAdapterName = "typescript";
 
-export function createTypeScriptValidationChecks(): readonly ValidationCheckDefinition[] {
+export interface CreateTypeScriptValidationChecksOptions {
+  functionMetrics?: TypeScriptFunctionMetricThresholds;
+  fileLength?: TypeScriptFileLengthThresholds;
+}
+
+export function createTypeScriptValidationChecks(
+  options: CreateTypeScriptValidationChecksOptions = {}
+): readonly ValidationCheckDefinition[] {
   return [
     createSyntaxCheck(),
     createTypeCheck(),
     createImportGraphCheck(),
     createDeadCodeCheck(),
-    createFunctionMetricsCheck(),
-    createRelevantTestsCheck()
+    createFunctionMetricsCheck({
+      thresholds: options.functionMetrics
+    }),
+    createRelevantTestsCheck(),
+    createFileLengthCheck({
+      thresholds: options.fileLength
+    })
   ];
 }

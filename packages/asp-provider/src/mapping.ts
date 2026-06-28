@@ -379,6 +379,7 @@ function checkIdForDiagnostic(diagnostic: ValidationDiagnostic): string {
   if (diagnostic.category === "types") return "typescript.types";
   if (diagnostic.category === "test") return "typescript.relevant-tests";
   if (diagnostic.category === "graph") return "typescript.import-graph";
+  if (diagnostic.code === "TS_FILE_LINES") return "typescript.file-length";
   if (diagnostic.category === "lint") return "rust.clippy";
   if (diagnostic.category === "policy") return policyCheckIdForDiagnostic(diagnostic);
   if (diagnostic.category === "provider") return "opcore.provider";

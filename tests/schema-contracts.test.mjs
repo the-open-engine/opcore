@@ -3080,7 +3080,8 @@ function validManagedToolDescriptor(overrides = {}) {
           "typescript.import-graph",
           "typescript.dead-code",
           "typescript.function-metrics",
-          "typescript.relevant-tests"
+          "typescript.relevant-tests",
+          "typescript.file-length"
         ]
       }
     },

@@ -18,7 +18,8 @@ const typeScriptCheckIds = [
   "typescript.import-graph",
   "typescript.dead-code",
   "typescript.function-metrics",
-  "typescript.relevant-tests"
+  "typescript.relevant-tests",
+  "typescript.file-length"
 ];
 const rustCheckIds = [
   "rust.source-hygiene",
@@ -128,6 +129,34 @@ describe("validation CLI", () => {
         assert.deepEqual(finalRecord.canonicalCommand.slice(0, 3), ["opcore", "check", "files"]);
         assert.equal(finalRecord.validationResult.status, "passed");
       }
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("suppresses pre-existing oversized TypeScript files on public changed checks", async () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-validation-cli-file-length-"));
+    try {
+      mkdirSync(join(temp, "src"), { recursive: true });
+      writeFileSync(join(temp, "src/large.ts"), numberedTypeScriptLines(301));
+      initializeGitSnapshot(temp, ["src/large.ts"]);
+      writeFileSync(join(temp, "src/large.ts"), numberedTypeScriptLines(302));
+
+      const result = await routeOpcoreCommand([
+        "check",
+        "--changed",
+        "--repo",
+        temp,
+        "--check",
+        "typescript.file-length",
+        "--json"
+      ]);
+
+      assert.equal(result.status, "ok");
+      assert.equal(result.exitCode, 0);
+      assert.equal(result.validationResult.status, "passed", JSON.stringify(result.validationResult.diagnostics, null, 2));
+      assert.deepEqual(result.validationResult.diagnostics, []);
+      assert.deepEqual(result.validationResult.manifest.checks, ["typescript.file-length"]);
     } finally {
       rmSync(temp, { recursive: true, force: true });
     }
@@ -464,6 +493,10 @@ function chmodAll(paths) {
   for (const path of paths) {
     spawnSync("chmod", ["755", path]);
   }
+}
+
+function numberedTypeScriptLines(count) {
+  return Array.from({ length: count }, (_entry, index) => `export const value${index} = ${index};`).join("\n") + "\n";
 }
 
 function initializeGitSnapshot(repoRootPath, files) {

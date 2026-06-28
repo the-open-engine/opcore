@@ -525,8 +525,13 @@ function diagnosticFingerprint(diagnostic: ValidationDiagnostic): string {
     path: diagnostic.path ?? "",
     severity: diagnostic.severity,
     code: diagnostic.code ?? "",
-    message: diagnostic.message
+    message: stableDiagnosticMessage(diagnostic)
   });
+}
+
+function stableDiagnosticMessage(diagnostic: ValidationDiagnostic): string {
+  if (diagnostic.code === "TS_FILE_LINES") return "";
+  return diagnostic.message;
 }
 
 async function preloadCheckGraphRequirements(

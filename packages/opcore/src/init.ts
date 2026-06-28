@@ -395,7 +395,8 @@ function checksForLanguage(language: string, validation: OpcoreInitLanguageSetti
       "typescript.import-graph",
       "typescript.dead-code",
       "typescript.function-metrics",
-      "typescript.relevant-tests"
+      "typescript.relevant-tests",
+      "typescript.file-length"
     ];
   }
   if (language === "Rust") {
