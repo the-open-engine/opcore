@@ -57,6 +57,48 @@ describe("opcore public facade", () => {
     });
   });
 
+  it("runs scan validation against the Git-aware repo file set", () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-scan-git-aware-"));
+    try {
+      initGitFixture(temp);
+      writeFixtureFile(temp, ".gitignore", "ignored/\n");
+      writeFixtureFile(temp, "src/index.ts", "export const value = 1;\n");
+      writeFixtureFile(temp, "ignored/generated.ts", "export const broken = ;\n");
+
+      const result = parseJson(runOpcore(["--json"], temp, 0).stdout);
+
+      assert.equal(
+        result.validationResult.diagnostics.some((diagnostic) => diagnostic.path === "ignored/generated.ts"),
+        false,
+        JSON.stringify(result.validationResult.diagnostics, null, 2)
+      );
+      assert.equal(result.repoState.coverage.validation.supportedFiles, 1);
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("excludes generated provider roots from status coverage and scan validation", () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-provider-root-skip-"));
+    try {
+      writeFixtureFile(temp, "src/index.ts", "export const value = 1;\n");
+      for (const root of [".agents", ".claude", ".codex", ".gemini", ".opencode"]) {
+        writeFixtureFile(temp, `${root}/generated.ts`, "export const broken = ;\n");
+      }
+
+      const status = parseJson(runOpcore(["status", "--repo", temp, "--json"], temp, 0).stdout);
+      const scan = parseJson(runOpcore(["--repo", temp, "--json"], temp, 0).stdout);
+
+      assert.equal(status.repoState.coverage.validation.supportedFiles, 1);
+      assert.deepEqual(
+        scan.validationResult.diagnostics.filter((diagnostic) => diagnostic.path?.includes("/generated.ts")),
+        []
+      );
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
   it("returns repoState-only status JSON without writes", () => {
     withFixtureCopy((fixtureRoot) => {
       const before = collectRepoPaths(fixtureRoot);

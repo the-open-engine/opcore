@@ -39,7 +39,7 @@ export function createUnusedDepsCheck(options: { env?: Record<string, string | u
         if (!metadata.ok) return metadataFailureResult(metadata);
         const packageScope = resolveCargoPackageScope(metadata.metadata, context.scope);
         if (!packageScope.ok) return metadataFailureResult(packageScope);
-        const result = runTool("cargo", unusedDepsArgs(packageScope.member), {
+        const result = runTool("cargo", unusedDepsArgs(packageScope.member, options), {
           cwd: materialized.root,
           env: options.env,
           timeoutMs: options.timeoutMs,
@@ -69,9 +69,19 @@ export function createUnusedDepsCheck(options: { env?: Record<string, string | u
   };
 }
 
-function unusedDepsArgs(member: CargoMetadataPackage | undefined): readonly string[] {
-  if (member === undefined) return ["udeps", "--workspace", "--all-targets", "--all-features"];
-  return ["udeps", "-p", member.name, "--all-targets", "--all-features"];
+function unusedDepsArgs(member: CargoMetadataPackage | undefined, options: { env?: Record<string, string | undefined>; timeoutMs?: number }): readonly string[] {
+  const args = member === undefined
+    ? ["udeps", "--workspace", "--all-targets", "--all-features"]
+    : ["udeps", "-p", member.name, "--all-targets", "--all-features"];
+  return nightlyCargoUdepsAvailable(options) ? ["+nightly", ...args] : args;
+}
+
+function nightlyCargoUdepsAvailable(options: { env?: Record<string, string | undefined>; timeoutMs?: number }): boolean {
+  return runTool("cargo", ["+nightly", "udeps", "--version"], {
+    env: options.env,
+    timeoutMs: options.timeoutMs,
+    allowedExitCodes: [0]
+  }).ok;
 }
 
 function cargoUdepsToolchainFailure(result: ReturnType<typeof runTool>): ValidationCheckResult | undefined {

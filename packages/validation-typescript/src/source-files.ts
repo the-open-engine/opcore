@@ -18,6 +18,7 @@ export interface TypeScriptRelativeImport {
 
 export interface TypeScriptMaterializedSourceSet {
   rootPaths: readonly string[];
+  supportPaths: readonly string[];
   paths: readonly string[];
   files: readonly TypeScriptMaterializedSourceFile[];
   sourceFileByPath: ReadonlyMap<string, TypeScriptMaterializedSourceFile>;
@@ -26,6 +27,8 @@ export interface TypeScriptMaterializedSourceSet {
 
 export interface MaterializeTypeScriptSourceOptions {
   compilerOptions?: ts.CompilerOptions;
+  rootPaths?: readonly string[];
+  supportPaths?: readonly string[];
 }
 
 const sourceSetCache = new WeakMap<ValidationFileView, Map<string, Promise<TypeScriptMaterializedSourceSet>>>();
@@ -48,7 +51,10 @@ export async function materializeTypeScriptSources(
   context: ValidationCheckContext,
   options: MaterializeTypeScriptSourceOptions = {}
 ): Promise<TypeScriptMaterializedSourceSet> {
-  const cacheKey = sourceMaterializationCacheKey(options.compilerOptions);
+  if (options.rootPaths !== undefined) {
+    return materializeTypeScriptSourcesUncached(context, options.compilerOptions ?? {}, options.rootPaths, options.supportPaths);
+  }
+  const cacheKey = sourceMaterializationCacheKey(options);
   let cache = sourceSetCache.get(context.fileView);
   if (cache === undefined) {
     cache = new Map<string, Promise<TypeScriptMaterializedSourceSet>>();
@@ -56,21 +62,28 @@ export async function materializeTypeScriptSources(
   }
   const cached = cache.get(cacheKey);
   if (cached !== undefined) return cached;
-  const promise = materializeTypeScriptSourcesUncached(context, options.compilerOptions ?? {});
+  const promise = materializeTypeScriptSourcesUncached(context, options.compilerOptions ?? {}, options.rootPaths, options.supportPaths);
   cache.set(cacheKey, promise);
   return promise;
 }
 
 async function materializeTypeScriptSourcesUncached(
   context: ValidationCheckContext,
-  compilerOptions: ts.CompilerOptions
+  compilerOptions: ts.CompilerOptions,
+  requestedRootPaths?: readonly string[],
+  requestedSupportPaths: readonly string[] = []
 ): Promise<TypeScriptMaterializedSourceSet> {
-  const initialPaths = uniqueSorted(
-    [...context.fileView.scopeFiles, ...context.fileView.overlays.map((overlay) => overlay.path)]
+  const rootPaths = uniqueSorted(
+    (requestedRootPaths ?? [...context.fileView.scopeFiles, ...context.fileView.overlays.map((overlay) => overlay.path)])
       .map((path) => normalizeValidationFileViewPath(path))
       .filter(isTypeScriptSourcePath)
   );
-  const rootPaths: string[] = [];
+  const supportPaths = uniqueSorted(requestedSupportPaths.map((path) => normalizeValidationFileViewPath(path)));
+  const rootPathSet = new Set(rootPaths);
+  const supportPathSet = new Set(supportPaths);
+  const initialPaths = uniqueSorted([...rootPaths, ...supportPaths].filter(isTypeScriptSourcePath));
+  const materializedRootPaths: string[] = [];
+  const materializedSupportPaths: string[] = [];
   const pending = [...initialPaths];
   const visited = new Set<string>();
   const sourceFileByPath = new Map<string, TypeScriptMaterializedSourceFile>();
@@ -85,7 +98,8 @@ async function materializeTypeScriptSourcesUncached(
     if (result.status !== "found") continue;
     const sourceFile = { path, content: result.content };
     sourceFileByPath.set(path, sourceFile);
-    if (initialPaths.includes(path)) rootPaths.push(path);
+    if (rootPathSet.has(path)) materializedRootPaths.push(path);
+    if (supportPathSet.has(path)) materializedSupportPaths.push(path);
 
     for (const specifier of moduleImportSpecifiers(path, result.content)) {
       const resolvedPath = await resolveRepoImport(context, path, specifier, compilerOptions);
@@ -97,7 +111,8 @@ async function materializeTypeScriptSourcesUncached(
 
   const files = [...sourceFileByPath.values()].sort((left, right) => left.path.localeCompare(right.path));
   return {
-    rootPaths: uniqueSorted(rootPaths),
+    rootPaths: uniqueSorted(materializedRootPaths),
+    supportPaths: uniqueSorted(materializedSupportPaths),
     paths: files.map((file) => file.path),
     files,
     sourceFileByPath,
@@ -315,12 +330,14 @@ function joinRepoPaths(...paths: readonly string[]): string | undefined {
   return normalized.length === 0 ? "." : normalized.join("/");
 }
 
-function sourceMaterializationCacheKey(options: ts.CompilerOptions | undefined): string {
-  if (options === undefined) return "";
+function sourceMaterializationCacheKey(options: MaterializeTypeScriptSourceOptions): string {
+  const compilerOptions = options.compilerOptions ?? {};
   return JSON.stringify({
-    baseUrl: options.baseUrl,
-    configFilePath: options.configFilePath,
-    paths: options.paths
+    baseUrl: compilerOptions.baseUrl,
+    configFilePath: compilerOptions.configFilePath,
+    paths: compilerOptions.paths,
+    rootPaths: options.rootPaths === undefined ? undefined : uniqueSorted(options.rootPaths),
+    supportPaths: options.supportPaths === undefined ? undefined : uniqueSorted(options.supportPaths)
   });
 }
 

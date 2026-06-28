@@ -1,6 +1,7 @@
 import type { ValidationCheckDefinition } from "@the-open-engine/opcore-validation";
+import type { ValidationDiagnostic } from "@the-open-engine/opcore-contracts";
 import { TYPE_SCRIPT_SYNTAX_CHECK_ID } from "./check-ids.js";
-import { createOverlayAwareTypeScriptProgram, repoSourceFiles } from "./compiler-host.js";
+import { createOverlayAwareTypeScriptProgramIterator, repoSourceFiles } from "./compiler-host.js";
 import { typeScriptCheckAdapter, typeScriptCheckOwner, supportedTypeScriptValidationScopes } from "./check-constants.js";
 import { mapTypeScriptDiagnostics } from "./diagnostics.js";
 
@@ -12,11 +13,17 @@ export function createSyntaxCheck(): ValidationCheckDefinition {
     defaultSeverity: "error",
     supportedScopes: supportedTypeScriptValidationScopes,
     run: async (context) => {
-      const bundle = await createOverlayAwareTypeScriptProgram(context);
-      const diagnostics = repoSourceFiles(bundle).flatMap((sourceFile) => bundle.program.getSyntacticDiagnostics(sourceFile));
-      return {
-        diagnostics: mapTypeScriptDiagnostics("syntax", diagnostics, bundle.repoRoot)
-      };
+      const diagnostics: ValidationDiagnostic[] = [];
+      for await (const bundle of createOverlayAwareTypeScriptProgramIterator(context)) {
+        diagnostics.push(
+          ...mapTypeScriptDiagnostics(
+            "syntax",
+            repoSourceFiles(bundle).flatMap((sourceFile) => bundle.program.getSyntacticDiagnostics(sourceFile)),
+            bundle.repoRoot
+          )
+        );
+      }
+      return { diagnostics };
     }
   };
 }

@@ -9,27 +9,15 @@ import { createCommandRouterResult } from "@the-open-engine/opcore-contracts";
 import { spawnSync } from "node:child_process";
 import { existsSync, readdirSync, realpathSync, statSync } from "node:fs";
 import { basename, extname, join, resolve, sep } from "node:path";
+import { commonSkippedPathSegments } from "./source-policy.js";
 import { createDefaultValidationStatusPayload } from "./validation-composition.js";
+export { commonSkippedPathSegments } from "./source-policy.js";
 
 declare const process: {
   cwd(): string;
 };
 
 const helpArgs = new Set(["--help", "-h", "help"]);
-export const commonSkippedPathSegments = [
-  ".git",
-  "node_modules",
-  ".pnpm",
-  "vendor",
-  "dist",
-  "target",
-  ".ace",
-  ".asp",
-  ".lattice",
-  ".opcore",
-  ".rox-cache",
-  ".robustness-engine-cache"
-] as const;
 const skippedPathSegments = new Set<string>([
   ...commonSkippedPathSegments,
   ".venv",

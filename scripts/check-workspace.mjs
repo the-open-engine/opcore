@@ -84,12 +84,20 @@ for (const scriptName of [
   "rust:clippy",
   "rust:test",
   "rust:check",
+  "ace:check",
+  "ace:install",
+  "ace:status",
+  "ace:sync",
+  "ace:validate",
   "current-tools:validate-all",
   "current-tools:validate-rust-graph",
   "current-tools:validate-changed",
   "current-tools:graph-status"
 ]) {
   if (!root.scripts?.[scriptName]) fail(`Root package must expose ${scriptName} script`);
+}
+for (const scriptName of ["ace:check", "ace:install", "ace:status", "ace:sync", "ace:validate"]) {
+  requireIncludes(`package.json scripts.${scriptName}`, root.scripts[scriptName], "scripts/run-ace.sh");
 }
 if (!root.scripts["current-tools:validate-rust-graph"].includes("scripts/check-rust-graph-function-metrics.mjs")) {
   fail("current-tools:validate-rust-graph must run scoped Rust graph function metrics script");
@@ -297,6 +305,9 @@ if (!existsSync(".changeset")) fail("Missing .changeset directory");
 
 const gitignore = readFileSync(".gitignore", "utf8");
 for (const token of requiredGitignoreTokens) requireIncludes(".gitignore", gitignore, token);
+if (gitignore.includes("!.claude/skills/")) {
+  fail(".gitignore must not allowlist .claude/skills; ACE-generated provider skills are ignored runtime state");
+}
 
 for (const workflow of [".github/workflows/ci.yml", ".github/workflows/provenance.yml"]) {
   const content = readFileSync(workflow, "utf8");

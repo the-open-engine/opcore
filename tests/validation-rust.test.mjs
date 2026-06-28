@@ -779,6 +779,41 @@ const rustCheckIds = [
     assert.equal(result.status, "passed", JSON.stringify(result, null, 2));
   });
 
+  it("allows crate use paths that target glob re-exported module items", async () => {
+    const result = await runner({
+      files: rustCrate({
+        "crates/app/src/lib.rs": "pub mod protocol;\nmod daemon;\n",
+        "crates/app/src/protocol.rs": ["mod provider;", "pub use provider::*;", ""].join("\n"),
+        "crates/app/src/protocol/provider.rs": "pub fn available_status() {}\npub struct GraphProviderStatus;\n",
+        "crates/app/src/daemon.rs": [
+          "use crate::protocol::{available_status, GraphProviderStatus};",
+          "pub fn daemon() {",
+          "  let _ = GraphProviderStatus;",
+          "  available_status();",
+          "}",
+          ""
+        ].join("\n")
+      })
+    }).runValidation(
+      request({
+        checks: [RUST_IMPORT_GRAPH_CHECK_ID],
+        scope: {
+          kind: "files",
+          files: [
+            "Cargo.toml",
+            "crates/app/Cargo.toml",
+            "crates/app/src/lib.rs",
+            "crates/app/src/protocol.rs",
+            "crates/app/src/protocol/provider.rs",
+            "crates/app/src/daemon.rs"
+          ]
+        }
+      })
+    );
+
+    assert.equal(result.status, "passed", JSON.stringify(result, null, 2));
+  });
+
   it("reports unresolved deep Rust use paths under existing modules", async () => {
     const result = await runner({
       files: rustCrate({
@@ -1018,6 +1053,34 @@ const rustCheckIds = [
       result.diagnostics.map((diagnostic) => [diagnostic.code, diagnostic.message]),
       [["RUST_IMPORT_UNRESOLVED_USE", "Rust use path cannot be resolved: super::LOCAL"]]
     );
+  });
+
+  it("resolves super use paths that target parent imported bindings", async () => {
+    const result = await runner({
+      files: rustCrate({
+        "crates/app/src/lib.rs": "mod store;\npub mod search;\n",
+        "crates/app/src/search.rs": "pub fn create_search_schema() {}\n",
+        "crates/app/src/store.rs": "use crate::search;\nmod schema;\n",
+        "crates/app/src/store/schema.rs": "use super::search;\npub fn init() { search::create_search_schema(); }\n"
+      })
+    }).runValidation(
+      request({
+        checks: [RUST_IMPORT_GRAPH_CHECK_ID],
+        scope: {
+          kind: "files",
+          files: [
+            "Cargo.toml",
+            "crates/app/Cargo.toml",
+            "crates/app/src/lib.rs",
+            "crates/app/src/search.rs",
+            "crates/app/src/store.rs",
+            "crates/app/src/store/schema.rs"
+          ]
+        }
+      })
+    );
+
+    assert.equal(result.status, "passed", JSON.stringify(result, null, 2));
   });
 
   it("resolves repeated super use paths against ancestor module namespaces", async () => {
@@ -1298,6 +1361,24 @@ const rustCheckIds = [
           "RUST_UNUSED_DEPENDENCY:Rust dependency is unused: serde_json."
         ]
       );
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("runs cargo-udeps through an available nightly toolchain", async () => {
+    const temp = mkdtempSync(join(tmpdir(), "lattice-validation-rust-udeps-nightly-run-"));
+    try {
+      const logPath = join(temp, "cargo.log");
+      const { env } = writeFakeRustToolchain(join(temp, "bin"), {
+        cargo: {
+          logPath
+        }
+      });
+      const result = await runner({ files: rustCrate(), env }).runValidation(request({ checks: [RUST_UNUSED_DEPS_CHECK_ID] }));
+
+      assert.equal(result.status, "passed", JSON.stringify(result, null, 2));
+      assert.match(readFileSync(logPath, "utf8"), /\+nightly udeps --workspace --all-targets --all-features/);
     } finally {
       rmSync(temp, { recursive: true, force: true });
     }

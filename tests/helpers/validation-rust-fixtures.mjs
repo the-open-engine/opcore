@@ -112,6 +112,9 @@ export function fakeCargoScript({
   return [
     "#!/bin/sh",
     logLine,
+    'if [ "$1" = "+nightly" ]; then',
+    "  shift",
+    "fi",
     'if [ "$1" = "--version" ]; then',
     "  printf '%s\\n' 'cargo 1.93.0'",
     "  exit 0",

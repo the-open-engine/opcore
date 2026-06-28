@@ -92,8 +92,13 @@ const sourceFileExtensions = new Set([".ts", ".tsx", ".js", ".jsx"]);
 const implementationSourceFileExtensions = new Set([".ts", ".tsx"]);
 const excludedDirectories = new Set([
   ".ace",
+  ".agents",
+  ".claude",
+  ".codex",
+  ".gemini",
   ".git",
   ".lattice",
+  ".opencode",
   ".pnpm",
   ".robustness-engine-cache",
   ".rox-cache",

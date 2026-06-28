@@ -7,7 +7,7 @@ import type {
   ValidationResult
 } from "@the-open-engine/opcore-contracts";
 import { createCommandRouterResult } from "@the-open-engine/opcore-contracts";
-import { createValidationRunner, type ValidationWorkspace } from "@the-open-engine/opcore-validation";
+import { createNodeValidationWorkspace, createValidationRunner, type ValidationWorkspace } from "@the-open-engine/opcore-validation";
 import { readdir, readFile } from "node:fs/promises";
 import { join, relative, resolve, sep } from "node:path";
 import { createOpcoreMetricReport, writeOpcoreMetricArtifacts } from "./reporting.js";
@@ -80,7 +80,7 @@ export async function createOpcoreScanAnalysis(resolution: RepoResolution): Prom
     overlays: []
   };
   const validationResult = await createValidationRunner({
-    workspace: createReadOnlyWorkspace(repoState.repo.root),
+    workspace: createScanWorkspace(resolution),
     checks: defaultValidationChecks,
     graphProviderClient: createOpcoreValidationGraphProviderClient()
   }).runValidation(validationRequest);
@@ -94,6 +94,16 @@ export async function createOpcoreScanAnalysis(resolution: RepoResolution): Prom
     validationResult,
     metricReport
   };
+}
+
+function createScanWorkspace(resolution: RepoResolution): ValidationWorkspace {
+  if (resolution.git) {
+    return createNodeValidationWorkspace({
+      repoRoot: resolution.root,
+      skippedPathSegments: commonSkippedPathSegments
+    });
+  }
+  return createReadOnlyWorkspace(resolution.root);
 }
 
 function createReadOnlyWorkspace(repoRoot: string): ValidationWorkspace {

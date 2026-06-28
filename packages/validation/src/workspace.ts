@@ -13,10 +13,12 @@ const EMPTY_TREE_SHA = "4b825dc642cb6eb9a060e54bf8d69288fbee4904";
 
 export interface CreateNodeValidationWorkspaceOptions {
   repoRoot: string;
+  skippedPathSegments?: readonly string[];
 }
 
 export function createNodeValidationWorkspace(options: CreateNodeValidationWorkspaceOptions): ValidationWorkspace {
   const repoRoot = resolve(options.repoRoot);
+  const skippedPathSegments = new Set(options.skippedPathSegments ?? []);
   return {
     readFile: async (path, context) => {
       if (context?.scope.kind === "tree" && context.scope.treeRef !== undefined) {
@@ -36,12 +38,13 @@ export function createNodeValidationWorkspace(options: CreateNodeValidationWorks
         throw error;
       }
     },
-    listChangedFiles: (baseRef) => listChangedFiles(repoRoot, baseRef),
-    listTreeFiles: (treeRef, changedFrom) => listTreeFiles(repoRoot, treeRef, changedFrom),
-    listStagedFiles: () => listDiffFiles(repoRoot, ["diff", "--cached", "--name-status", "-z", "--find-renames", "--"]),
-    listRepoFiles: () => listRepoFiles(repoRoot),
+    listChangedFiles: (baseRef) => filterFileSet(listChangedFiles(repoRoot, baseRef), skippedPathSegments),
+    listTreeFiles: (treeRef, changedFrom) => filterFileSet(listTreeFiles(repoRoot, treeRef, changedFrom), skippedPathSegments),
+    listStagedFiles: () =>
+      filterFileSet(listDiffFiles(repoRoot, ["diff", "--cached", "--name-status", "-z", "--find-renames", "--"]), skippedPathSegments),
+    listRepoFiles: () => filterFileSet(listRepoFiles(repoRoot), skippedPathSegments),
     listPackageFiles: async (_packageName, packageRoot) => {
-      const files = await listRepoFiles(repoRoot);
+      const files = filterFileSet(await listRepoFiles(repoRoot), skippedPathSegments);
       if (files.unavailable) return files;
       const prefix = `${validateRepoRelativePath(packageRoot)}/`;
       return {
@@ -52,6 +55,21 @@ export function createNodeValidationWorkspace(options: CreateNodeValidationWorks
       };
     }
   };
+}
+
+function filterFileSet(fileSet: ValidationWorkspaceFileSet, skippedPathSegments: ReadonlySet<string>): ValidationWorkspaceFileSet {
+  if (skippedPathSegments.size === 0 || fileSet.unavailable) return fileSet;
+  return {
+    ...fileSet,
+    files: fileSet.files.filter((file) => {
+      const path = typeof file === "string" ? file : file.path;
+      return !hasSkippedSegment(path, skippedPathSegments);
+    })
+  };
+}
+
+function hasSkippedSegment(path: string, skippedPathSegments: ReadonlySet<string>): boolean {
+  return path.split(/[\\/]+/).some((segment) => skippedPathSegments.has(segment));
 }
 
 function readStagedFile(repoRoot: string, path: string): ValidationWorkspaceReadFileResult {
