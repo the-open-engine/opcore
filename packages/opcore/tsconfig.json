@@ -21,6 +21,9 @@
       "path": "../validation"
     },
     {
+      "path": "../validation-clone"
+    },
+    {
       "path": "../validation-python"
     },
     {

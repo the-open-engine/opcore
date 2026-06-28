@@ -37,8 +37,14 @@ export interface ValidationWorkspaceReadContext {
   state?: "before" | "after";
 }
 
+export interface ValidationWorkspaceListFilesContext {
+  scope: ResolvedValidationScope;
+  state?: "before" | "after";
+}
+
 export interface ValidationWorkspace {
   readFile: (path: string, context?: ValidationWorkspaceReadContext) => ValidationWorkspaceReadFileResult | Promise<ValidationWorkspaceReadFileResult>;
+  listFiles?: (context: ValidationWorkspaceListFilesContext) => ValidationWorkspaceFileSet | Promise<ValidationWorkspaceFileSet>;
   listChangedFiles?: (baseRef: string) => ValidationWorkspaceFileSet | Promise<ValidationWorkspaceFileSet>;
   listTreeFiles?: (treeRef: string, changedFrom: string) => ValidationWorkspaceFileSet | Promise<ValidationWorkspaceFileSet>;
   listStagedFiles?: () => ValidationWorkspaceFileSet | Promise<ValidationWorkspaceFileSet>;

@@ -2,6 +2,7 @@ import type {
   ValidationWorkspace,
   ValidationWorkspaceFile,
   ValidationWorkspaceFileSet,
+  ValidationWorkspaceListFilesContext,
   ValidationWorkspaceReadContext,
   ValidationWorkspaceReadFileResult
 } from "./scope.js";
@@ -22,6 +23,7 @@ export function createNodeValidationWorkspace(options: CreateNodeValidationWorks
   const skippedPathSegments = new Set(options.skippedPathSegments ?? []);
   return {
     readFile: (path, context) => readWorkspaceFile(repoRoot, path, context),
+    listFiles: (context) => filterFileSet(listWorkspaceFiles(repoRoot, context), skippedPathSegments),
     listChangedFiles: (baseRef) => filterFileSet(listChangedFiles(repoRoot, baseRef), skippedPathSegments),
     listTreeFiles: (treeRef, changedFrom) => filterFileSet(listTreeFiles(repoRoot, treeRef, changedFrom), skippedPathSegments),
     listStagedFiles: () =>
@@ -30,11 +32,12 @@ export function createNodeValidationWorkspace(options: CreateNodeValidationWorks
     listPackageFiles: async (_packageName, packageRoot) => {
       const files = filterFileSet(await listRepoFiles(repoRoot), skippedPathSegments);
       if (files.unavailable) return files;
-      const prefix = `${validateRepoRelativePath(packageRoot)}/`;
+      const root = validateRepoRelativePath(packageRoot);
+      const prefix = `${root}/`;
       return {
         files: files.files.filter((file) => {
           const path = typeof file === "string" ? file : file.path;
-          return path === packageRoot || path.startsWith(prefix);
+          return path === root || path.startsWith(prefix);
         })
       };
     }
@@ -130,6 +133,29 @@ function listTreeFiles(repoRoot: string, treeRef: string, changedFrom: string): 
   return listDiffFiles(repoRoot, ["diff", "--name-status", "-z", "--find-renames", base.treeSha, tree.treeSha, "--"]);
 }
 
+function listWorkspaceFiles(repoRoot: string, context: ValidationWorkspaceListFilesContext): ValidationWorkspaceFileSet {
+  const state = context.state ?? "after";
+  const beforeRef = beforeStateTreeRef(repoRoot, { scope: context.scope, state });
+  if (beforeRef !== undefined) return mergeFileSets(listTreeSnapshotFiles(repoRoot, beforeRef), listRepoFiles(repoRoot));
+  if (state === "after" && context.scope.kind === "tree" && context.scope.treeRef !== undefined) {
+    return mergeFileSets(listTreeSnapshotFiles(repoRoot, context.scope.treeRef), listRepoFiles(repoRoot));
+  }
+  if (context.scope.kind === "package" && context.scope.packageRoot !== undefined) {
+    return filterPackageFileSet(listRepoFiles(repoRoot), context.scope.packageRoot);
+  }
+  return listRepoFiles(repoRoot);
+}
+
+function listTreeSnapshotFiles(repoRoot: string, treeRef: string): ValidationWorkspaceFileSet {
+  const tree = resolveTreeish(repoRoot, treeRef);
+  if (!tree.ok) return unavailable(tree);
+  const result = git(repoRoot, ["ls-tree", "-r", "-z", "--name-only", tree.treeSha, "--"]);
+  if (!result.ok) return unavailable(result);
+  return {
+    files: parseNulRecords(result.stdout).map(normalizeGitPath)
+  };
+}
+
 function listRepoFiles(repoRoot: string): ValidationWorkspaceFileSet {
   const result = git(repoRoot, ["ls-files", "-co", "--exclude-standard", "-z"]);
   if (!result.ok) return unavailable(result);
@@ -157,6 +183,33 @@ function listDiffFiles(repoRoot: string, args: readonly string[]): ValidationWor
   if (!result.ok) return unavailable(result);
   return {
     files: parseNameStatus(result.stdout)
+  };
+}
+
+function filterPackageFileSet(fileSet: ValidationWorkspaceFileSet, packageRoot: string): ValidationWorkspaceFileSet {
+  if (fileSet.unavailable) return fileSet;
+  const root = validateRepoRelativePath(packageRoot);
+  const prefix = `${root}/`;
+  return {
+    files: fileSet.files.filter((file) => {
+      const path = typeof file === "string" ? file : file.path;
+      return path === root || path.startsWith(prefix);
+    })
+  };
+}
+
+function mergeFileSets(...fileSets: readonly ValidationWorkspaceFileSet[]): ValidationWorkspaceFileSet {
+  const unavailableSet = fileSets.find((fileSet) => fileSet.unavailable);
+  if (unavailableSet !== undefined) return unavailableSet;
+  return {
+    files: [
+      ...new Map(
+        fileSets.flatMap((fileSet) => fileSet.files).map((file) => {
+          const path = typeof file === "string" ? normalizeGitPath(file) : normalizeGitPath(file.path);
+          return [path, typeof file === "string" ? path : { ...file, path }] as const;
+        })
+      ).values()
+    ]
   };
 }
 

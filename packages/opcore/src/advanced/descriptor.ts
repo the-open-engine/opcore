@@ -20,6 +20,7 @@ import {
   TYPE_SCRIPT_SYNTAX_CHECK_ID,
   TYPE_SCRIPT_TYPES_CHECK_ID
 } from "@the-open-engine/opcore-validation-typescript";
+import { cloneValidationCheckIds } from "@the-open-engine/opcore-validation-clone";
 import { pythonValidationCheckIds } from "@the-open-engine/opcore-validation-python";
 import { rustValidationCheckIds } from "@the-open-engine/opcore-validation-rust";
 
@@ -145,7 +146,8 @@ export function createOpcoreManagedToolDescriptor(options: OpcoreManagedToolDesc
           TYPE_SCRIPT_RELEVANT_TESTS_CHECK_ID,
           TYPE_SCRIPT_FILE_LENGTH_CHECK_ID,
           ...rustValidationCheckIds,
-          ...pythonValidationCheckIds
+          ...pythonValidationCheckIds,
+          ...cloneValidationCheckIds
         ]
       }
     },

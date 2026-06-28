@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "issue": "#29",
   "origin": "covibes-authored-release-proof",
-  "generatedAt": "2026-06-27T19:33:13.104Z",
-  "commitSha": "32d8745f557bc78cc12a054d1c0c99defbe3de0c",
+  "generatedAt": "2026-06-28T20:54:20.485Z",
+  "commitSha": "4dfb6f560072e48fa72dc514dab2f18e779df8a2",
   "privateRepo": true,
   "packageNames": [
     "@the-open-engine/opcore-contracts",
@@ -14,6 +14,7 @@
     "@the-open-engine/opcore-graph-core-linux-x64",
     "@the-open-engine/opcore-edit",
     "@the-open-engine/opcore-validation",
+    "@the-open-engine/opcore-validation-clone",
     "@the-open-engine/opcore-validation-python",
     "@the-open-engine/opcore-validation-rust",
     "@the-open-engine/opcore-validation-typescript",
@@ -52,9 +53,9 @@
       "tarball": {
         "filename": "the-open-engine-opcore-contracts-0.1.0-alpha.0.tgz",
         "path": ".lattice/release/packages/the-open-engine-opcore-contracts-0.1.0-alpha.0.tgz",
-        "sha256": "c784fdc3947b8051242c324e580597bc46704e8dd9b443e2f754c4b52da2119c",
-        "integrity": "sha512-3krhVIlDITBslZqXq4jrRc/Fc5QbjnrPnVrt9WClFPlIWu2vagLmHrx0V7zpxffnQgHlmOxP9l3sdez+d7ixpw==",
-        "shasum": "5a4c041c594708d20ee6259462d4e17f2015c22f"
+        "sha256": "ecdc22c596e13fb68cd843cf80579c6556d4704c890e059b0bee0c15c57a4f7c",
+        "integrity": "sha512-NyO8AUcn+j27ZcDnHJi3FASXbtTBYOxNv6NWjL74Xe7X9/f3t1/zqCIoInY+QvIbaPBgjXvOdElYDURk/HaBrQ==",
+        "shasum": "b8c8094a0cea1e9665ffadaf159c9f1c03f08220"
       },
       "files": [
         "README.md",
@@ -104,10 +105,12 @@
           "opcore": "dist/index.js"
         },
         "dependencies": {
+          "@the-open-engine/opcore-asp-provider": "0.1.0-alpha.0",
           "@the-open-engine/opcore-edit": "0.1.0-alpha.0",
           "@the-open-engine/opcore-contracts": "0.1.0-alpha.0",
           "@the-open-engine/opcore-graph": "0.1.0-alpha.0",
           "@the-open-engine/opcore-validation": "0.1.0-alpha.0",
+          "@the-open-engine/opcore-validation-clone": "0.1.0-alpha.0",
           "@the-open-engine/opcore-validation-python": "0.1.0-alpha.0",
           "@the-open-engine/opcore-validation-rust": "0.1.0-alpha.0",
           "@the-open-engine/opcore-validation-typescript": "0.1.0-alpha.0",
@@ -118,12 +121,30 @@
       "tarball": {
         "filename": "the-open-engine-opcore-0.1.0-alpha.0.tgz",
         "path": ".lattice/release/packages/the-open-engine-opcore-0.1.0-alpha.0.tgz",
-        "sha256": "42f6dc0bd2d9653911825fada8dc604f5cab37fca58f64e493ad7992ad8c153d",
-        "integrity": "sha512-MXx/25POTQsfonB/4fR/bRG6FCU0M9M9L4k7ZCKaskpLk6klg0i5vGbgdX3stglfwbWStIhBZoLREGFm+2xU2g==",
-        "shasum": "bbed578d5568b744fe2bd358985619ac3b7cf8fa"
+        "sha256": "41bdf5f505457c30cd888b55664bf50c3bfa79f10a9ca660601af4fcca3ddad9",
+        "integrity": "sha512-VrcueL3LU12XyKSISklSrQC79fn1N6sM5PD5EvCg+6qVk058qHhDIpK0hjd9LzRXWHJ2che0h3kvP34Fwqrs7A==",
+        "shasum": "ca80bf5bf0052e702c0d5e097384c6a2f4fdba90"
       },
       "files": [
         "README.md",
+        "dist/advanced/asp-warm/asp-serve-cli.d.ts",
+        "dist/advanced/asp-warm/asp-serve-cli.d.ts.map",
+        "dist/advanced/asp-warm/asp-serve-cli.js",
+        "dist/advanced/asp-warm/asp-warm-lifecycle.d.ts",
+        "dist/advanced/asp-warm/asp-warm-lifecycle.d.ts.map",
+        "dist/advanced/asp-warm/asp-warm-lifecycle.js",
+        "dist/advanced/asp-warm/asp-warm-methods.d.ts",
+        "dist/advanced/asp-warm/asp-warm-methods.d.ts.map",
+        "dist/advanced/asp-warm/asp-warm-methods.js",
+        "dist/advanced/asp-warm/asp-warm-server.d.ts",
+        "dist/advanced/asp-warm/asp-warm-server.d.ts.map",
+        "dist/advanced/asp-warm/asp-warm-server.js",
+        "dist/advanced/asp-warm/manifest.d.ts",
+        "dist/advanced/asp-warm/manifest.d.ts.map",
+        "dist/advanced/asp-warm/manifest.js",
+        "dist/advanced/asp-warm/warm-project-registry.d.ts",
+        "dist/advanced/asp-warm/warm-project-registry.d.ts.map",
+        "dist/advanced/asp-warm/warm-project-registry.js",
         "dist/advanced/descriptor.d.ts",
         "dist/advanced/descriptor.d.ts.map",
         "dist/advanced/descriptor.js",
@@ -154,6 +175,9 @@
         "dist/check.d.ts",
         "dist/check.d.ts.map",
         "dist/check.js",
+        "dist/clone-invoker.d.ts",
+        "dist/clone-invoker.d.ts.map",
+        "dist/clone-invoker.js",
         "dist/descriptors/opcore.managed-tool.json",
         "dist/graph-provider-client.d.ts",
         "dist/graph-provider-client.d.ts.map",
@@ -164,6 +188,9 @@
         "dist/init.d.ts",
         "dist/init.d.ts.map",
         "dist/init.js",
+        "dist/json-output.d.ts",
+        "dist/json-output.d.ts.map",
+        "dist/json-output.js",
         "dist/reporting.d.ts",
         "dist/reporting.d.ts.map",
         "dist/reporting.js",
@@ -173,9 +200,18 @@
         "dist/scan.d.ts",
         "dist/scan.d.ts.map",
         "dist/scan.js",
+        "dist/serve-telemetry.d.ts",
+        "dist/serve-telemetry.d.ts.map",
+        "dist/serve-telemetry.js",
+        "dist/source-policy.d.ts",
+        "dist/source-policy.d.ts.map",
+        "dist/source-policy.js",
         "dist/status.d.ts",
         "dist/status.d.ts.map",
         "dist/status.js",
+        "dist/stream-output.d.ts",
+        "dist/stream-output.d.ts.map",
+        "dist/stream-output.js",
         "dist/timing.d.ts",
         "dist/timing.d.ts.map",
         "dist/timing.js",
@@ -187,9 +223,27 @@
         "dist/validation-composition.js",
         "package.json"
       ],
-      "fileCount": 63,
+      "fileCount": 96,
       "expectedFiles": [
         "README.md",
+        "dist/advanced/asp-warm/asp-serve-cli.d.ts",
+        "dist/advanced/asp-warm/asp-serve-cli.d.ts.map",
+        "dist/advanced/asp-warm/asp-serve-cli.js",
+        "dist/advanced/asp-warm/asp-warm-lifecycle.d.ts",
+        "dist/advanced/asp-warm/asp-warm-lifecycle.d.ts.map",
+        "dist/advanced/asp-warm/asp-warm-lifecycle.js",
+        "dist/advanced/asp-warm/asp-warm-methods.d.ts",
+        "dist/advanced/asp-warm/asp-warm-methods.d.ts.map",
+        "dist/advanced/asp-warm/asp-warm-methods.js",
+        "dist/advanced/asp-warm/asp-warm-server.d.ts",
+        "dist/advanced/asp-warm/asp-warm-server.d.ts.map",
+        "dist/advanced/asp-warm/asp-warm-server.js",
+        "dist/advanced/asp-warm/manifest.d.ts",
+        "dist/advanced/asp-warm/manifest.d.ts.map",
+        "dist/advanced/asp-warm/manifest.js",
+        "dist/advanced/asp-warm/warm-project-registry.d.ts",
+        "dist/advanced/asp-warm/warm-project-registry.d.ts.map",
+        "dist/advanced/asp-warm/warm-project-registry.js",
         "dist/advanced/descriptor.d.ts",
         "dist/advanced/descriptor.d.ts.map",
         "dist/advanced/descriptor.js",
@@ -220,6 +274,9 @@
         "dist/check.d.ts",
         "dist/check.d.ts.map",
         "dist/check.js",
+        "dist/clone-invoker.d.ts",
+        "dist/clone-invoker.d.ts.map",
+        "dist/clone-invoker.js",
         "dist/descriptors/opcore.managed-tool.json",
         "dist/graph-provider-client.d.ts",
         "dist/graph-provider-client.d.ts.map",
@@ -230,6 +287,9 @@
         "dist/init.d.ts",
         "dist/init.d.ts.map",
         "dist/init.js",
+        "dist/json-output.d.ts",
+        "dist/json-output.d.ts.map",
+        "dist/json-output.js",
         "dist/reporting.d.ts",
         "dist/reporting.d.ts.map",
         "dist/reporting.js",
@@ -239,9 +299,18 @@
         "dist/scan.d.ts",
         "dist/scan.d.ts.map",
         "dist/scan.js",
+        "dist/serve-telemetry.d.ts",
+        "dist/serve-telemetry.d.ts.map",
+        "dist/serve-telemetry.js",
+        "dist/source-policy.d.ts",
+        "dist/source-policy.d.ts.map",
+        "dist/source-policy.js",
         "dist/status.d.ts",
         "dist/status.d.ts.map",
         "dist/status.js",
+        "dist/stream-output.d.ts",
+        "dist/stream-output.d.ts.map",
+        "dist/stream-output.js",
         "dist/timing.d.ts",
         "dist/timing.d.ts.map",
         "dist/timing.js",
@@ -253,7 +322,7 @@
         "dist/validation-composition.js",
         "package.json"
       ],
-      "expectedFileCount": 63,
+      "expectedFileCount": 96,
       "bins": {
         "opcore": "dist/index.js"
       },
@@ -303,9 +372,9 @@
       "tarball": {
         "filename": "the-open-engine-opcore-graph-0.1.0-alpha.0.tgz",
         "path": ".lattice/release/packages/the-open-engine-opcore-graph-0.1.0-alpha.0.tgz",
-        "sha256": "a8d02e39327a4e690c75bbc43daa8c5fa2437d55ae4e8b699a0699df2be1392f",
-        "integrity": "sha512-UTjM4IBa2Kpj8JWTxGlihedXFxy9J87b00TVdCP+SJbeOXOLlZEN1N8oKcotwK2nQZbS7PQOf9zahueoz7woEQ==",
-        "shasum": "edb8ddb38774b76cd08c1612f3b6194e3dd078d9"
+        "sha256": "ef50966e77426a4b25cb172be36da1a4334780b9cb58f634fd6842f6314edf3d",
+        "integrity": "sha512-J2X3tzdkp3W1Gdr0I5yRefzJKsB/rq5lRnNVX2pOX453ecHjWKGiXBicX5c2pBYdXe1aM45z1ImaVt+1wi4Qag==",
+        "shasum": "a122c2b5f21603fa765ee332a41065ba531694d2"
       },
       "files": [
         "README.md",
@@ -378,9 +447,9 @@
       "tarball": {
         "filename": "the-open-engine-opcore-graph-core-darwin-arm64-0.1.0-alpha.0.tgz",
         "path": ".lattice/release/packages/the-open-engine-opcore-graph-core-darwin-arm64-0.1.0-alpha.0.tgz",
-        "sha256": "2128503941ef4cf882c3e0a6663722180e7ca377ec7e16bf8f2207e10aecc328",
-        "integrity": "sha512-Lh11DV/A0zdL0Td5EDDV5jTgiWgph+IibGRNvnohmFmNz4WR9O19+eMo03Aw2Wi5X5OmEnxKxujYPBnC3STYnw==",
-        "shasum": "4b6337b5100df40846812f88fd944e631437f27b"
+        "sha256": "e69d04a64799dfb5c51187a0150d053ee52a022dadbce60a260f2fc07d652238",
+        "integrity": "sha512-WsSbxwhBJKpQ5hC8K5vI/M84J72h0jE/I8WnrJaM+ncASZi3qqJEMQOV53R0toilHrGzSX8nRNwIJLAyI/ocNQ==",
+        "shasum": "9d1a4fa96541bc0353448fd109fc893cfb245625"
       },
       "files": [
         "README.md",
@@ -433,15 +502,15 @@
             "targetPlatform": "darwin-arm64",
             "binaryPath": "opcore-graph-core",
             "checksumPath": "opcore-graph-core.sha256",
-            "checksumSha256": "429c3aa6046a1fda3001ee797cca6db2583c65eb977221f7f97a7043de04ef77",
+            "checksumSha256": "01e834a5d0104ca9626b6ac78da1977bea87a62608abfdfba4bd3ea0ccea7508",
             "buildProfile": "release"
           },
           "binaryPath": "opcore-graph-core",
           "checksumPath": "opcore-graph-core.sha256",
           "metadataPath": "metadata.json",
-          "binarySha256": "429c3aa6046a1fda3001ee797cca6db2583c65eb977221f7f97a7043de04ef77",
-          "checksumFileSha256": "40ff25452b0f3b2197c7280f2b104c7031975b33178dd291ab943a989e0151cc",
-          "metadataSha256": "6057c9ce5387bcad5f5ce34faf833e9ff052546681ede61163fbe860d9b21f38",
+          "binarySha256": "01e834a5d0104ca9626b6ac78da1977bea87a62608abfdfba4bd3ea0ccea7508",
+          "checksumFileSha256": "69c23daa332d20e32bd5c3a8f6223619b57c5f8dabb35894ef5e0ef973b2f470",
+          "metadataSha256": "66d136e128b86a3b3c85cb926145e9d59405eac01066450eba40c282103e0bc0",
           "descriptorArtifactId": "graph-core-binary-darwin-arm64",
           "descriptorChecksumId": "graph-core-binary-sha256-darwin-arm64"
         }
@@ -474,9 +543,9 @@
       "tarball": {
         "filename": "the-open-engine-opcore-graph-core-darwin-x64-0.1.0-alpha.0.tgz",
         "path": ".lattice/release/packages/the-open-engine-opcore-graph-core-darwin-x64-0.1.0-alpha.0.tgz",
-        "sha256": "22a5b1f23369b62def84e3b143d169c82bedca7b5f2e3632390a6d2cf0a5e9b7",
-        "integrity": "sha512-Qf0e7XOZMtiNLTSgAnTTIxAEkrp6FsS8sgDTGexeJb7/eOcHFux4kThECendQy0JwsXFGM7UJC2qcMOqyO1+rQ==",
-        "shasum": "24559a7bd0b6759e3c40351a092702b1f29051c5"
+        "sha256": "dcce542aca22af703b08641bb653b39d8540e391e91da36e8788d52d36e47de5",
+        "integrity": "sha512-HpO4fSDrDCTwg3rv7xlYjXe6czeNV/1LjwFwPfnMh9ZIxR9cDeaWtSLI6E64nXlv+TG57M/3j8/EBQzlyXtyow==",
+        "shasum": "1bd2d8984ea15237683ade82aef6aedb3b69ac4a"
       },
       "files": [
         "README.md",
@@ -529,15 +598,15 @@
             "targetPlatform": "darwin-x64",
             "binaryPath": "opcore-graph-core",
             "checksumPath": "opcore-graph-core.sha256",
-            "checksumSha256": "6652d43eec8f39e7c1b930b92e032eb268d1e4263454a89614e0d8299fc3b4e7",
+            "checksumSha256": "1b72afa74d48b087c967cb01b39630ed3fa58b5a2895037a778eb5612ef73059",
             "buildProfile": "release"
           },
           "binaryPath": "opcore-graph-core",
           "checksumPath": "opcore-graph-core.sha256",
           "metadataPath": "metadata.json",
-          "binarySha256": "6652d43eec8f39e7c1b930b92e032eb268d1e4263454a89614e0d8299fc3b4e7",
-          "checksumFileSha256": "6ff56465a5137949b0c3d2539d9d2915763b1e8c263e39c9924b92698a96afd7",
-          "metadataSha256": "835f5da8173b0387da296d5f508176d88c64770706ef1388472326655806cc52",
+          "binarySha256": "1b72afa74d48b087c967cb01b39630ed3fa58b5a2895037a778eb5612ef73059",
+          "checksumFileSha256": "78e1e2efd92e4c3f184b19263b8e8c161fda919c180638906808afdf3b2d312d",
+          "metadataSha256": "18acb1112fd3fb23dbef49a2e32e1bb18868523cbc328332c31f97bb460f5920",
           "descriptorArtifactId": "graph-core-binary-darwin-x64",
           "descriptorChecksumId": "graph-core-binary-sha256-darwin-x64"
         }
@@ -570,9 +639,9 @@
       "tarball": {
         "filename": "the-open-engine-opcore-graph-core-linux-x64-0.1.0-alpha.0.tgz",
         "path": ".lattice/release/packages/the-open-engine-opcore-graph-core-linux-x64-0.1.0-alpha.0.tgz",
-        "sha256": "a72a3954870f4cdca25272f75ada85a83758361cca9df28559008f67a5ceac78",
-        "integrity": "sha512-KoaiNQGQv4UDAaZiE5K4j63JnC+OkztN1EaW83rkfmO4p8s+HzE9OsRT2A48NrJZqBvOXhyRswB+whHYNLMqvA==",
-        "shasum": "8ca927f829e276d691d23e416657e16eda501859"
+        "sha256": "696ce89206a493c71d04afa8581eeb0440baf4d3908def0697be5ee433709a9d",
+        "integrity": "sha512-RuuvXkeQnarOINwkRmtBF94tN4KGJF24TKKtY1DOMDJqbyBupQIB1n9/UUmA+G4rrKu2voL/PCFkTF36Dm3dKA==",
+        "shasum": "4124c3e53e419704d9baf642e9d0b9c31e7330f2"
       },
       "files": [
         "README.md",
@@ -625,15 +694,15 @@
             "targetPlatform": "linux-x64",
             "binaryPath": "opcore-graph-core",
             "checksumPath": "opcore-graph-core.sha256",
-            "checksumSha256": "4654c6ba6383886e759fe3c805ec8c0df3b31d2e1db9d5c18626de6b2cfe758a",
+            "checksumSha256": "70cb6d213d74594f337a67522c879b77767872dc4601063686f1abe70886127b",
             "buildProfile": "release"
           },
           "binaryPath": "opcore-graph-core",
           "checksumPath": "opcore-graph-core.sha256",
           "metadataPath": "metadata.json",
-          "binarySha256": "4654c6ba6383886e759fe3c805ec8c0df3b31d2e1db9d5c18626de6b2cfe758a",
-          "checksumFileSha256": "f4f8b3b456fe52c1632aaf626f71322faa264e3c4b29f02521091fddb3be6c2f",
-          "metadataSha256": "bba2b54ac28f8c2f643f943ea32abfe7de70b0c282d452b9e30af52b93b0a6e1",
+          "binarySha256": "70cb6d213d74594f337a67522c879b77767872dc4601063686f1abe70886127b",
+          "checksumFileSha256": "c2910f2077d0e824fa838a3565114bab7c63910dcee51221e64d37c0aee20b19",
+          "metadataSha256": "ca9c9484cd90f766dfcd1559d1f3f8f28955731a812ddb686f1bc525afc2254e",
           "descriptorArtifactId": "graph-core-binary-linux-x64",
           "descriptorChecksumId": "graph-core-binary-sha256-linux-x64"
         }
@@ -663,9 +732,9 @@
       "tarball": {
         "filename": "the-open-engine-opcore-edit-0.1.0-alpha.0.tgz",
         "path": ".lattice/release/packages/the-open-engine-opcore-edit-0.1.0-alpha.0.tgz",
-        "sha256": "7900a3a25d06b5855201be1bb1157fbe3d9c5b95afe77e2501d8e4d9d6deafe0",
-        "integrity": "sha512-JJ2lwuhrbMLRp046iQxpn5WtaBcVQbE0Xs554851Jn1k3502mcr6qS6o2OsBJI5HjkA7eZu2wkZL0RfrbAMHMw==",
-        "shasum": "29a7f1f32169c3c7a48874902704998c1f90d23b"
+        "sha256": "669da31883822dea02ee957ffda4f8a4994c7499ff60f82dc3bf944bc2b152b9",
+        "integrity": "sha512-cRu/i940Y2rvHKC2fysbxs6clsgLeu/zLw+mbBXX1MWeRrOdT2KbPgIW+j/zEGI/INh+gOuTjRyr8b/gCBoF0Q==",
+        "shasum": "a322dd791aa855b930138232c5ba8d305244bce5"
       },
       "files": [
         "README.md",
@@ -842,9 +911,9 @@
       "tarball": {
         "filename": "the-open-engine-opcore-validation-0.1.0-alpha.0.tgz",
         "path": ".lattice/release/packages/the-open-engine-opcore-validation-0.1.0-alpha.0.tgz",
-        "sha256": "2bf785270a5365d714b396fd694fbc8b9ff2f1ce1bb10befd803812b20a1b988",
-        "integrity": "sha512-xTslg+LSYn36zdZdiUEAhOCMhJ01TJS3Fuh1o/41E3qp4t2VMSG2ocGZsVZrlqUrZhrM66Co+M2PMWy+rMFyJg==",
-        "shasum": "d35819b839e85b2efa3dd69ab6f5a2734384ddeb"
+        "sha256": "fa7b15fec5259bf83973e3179fc1155155997bb697f4fe6753208759da461885",
+        "integrity": "sha512-nJaAe4M2EzIsWlTbL1IVMRnDttWjd3r1uyEFwcGwUT3LuPpk9AH3GKpVsauDmZu6iSG6/fTx1mUH5WnpQBQ8Vw==",
+        "shasum": "f719e0cee5e8d06099bdcc1c64bd8b095b902d10"
       },
       "files": [
         "README.md",
@@ -928,6 +997,78 @@
         "package.json"
       ],
       "expectedFileCount": 38,
+      "bins": {},
+      "descriptorReferences": [],
+      "nativeArtifacts": []
+    },
+    {
+      "packageName": "@the-open-engine/opcore-validation-clone",
+      "packageRoot": "packages/validation-clone",
+      "version": "0.1.0-alpha.0",
+      "manifest": {
+        "name": "@the-open-engine/opcore-validation-clone",
+        "version": "0.1.0-alpha.0",
+        "license": "MIT",
+        "main": "dist/index.js",
+        "types": "dist/index.d.ts",
+        "files": [
+          "dist",
+          "README.md"
+        ],
+        "bins": {},
+        "dependencies": {
+          "@the-open-engine/opcore-contracts": "0.1.0-alpha.0",
+          "@the-open-engine/opcore-validation": "0.1.0-alpha.0"
+        },
+        "bundledDependencies": []
+      },
+      "tarball": {
+        "filename": "the-open-engine-opcore-validation-clone-0.1.0-alpha.0.tgz",
+        "path": ".lattice/release/packages/the-open-engine-opcore-validation-clone-0.1.0-alpha.0.tgz",
+        "sha256": "e0c06416a582e304e4d9b6a7980fd7da06a3eb543cc00561f0a75c9852d26144",
+        "integrity": "sha512-/p8/FUHITUWbyKnHb/IBxWK9O+k8hhuHqnpgXBtIPBPOtqw1PhvkjwN5bPky+q+YiZ/3jdP9E08gj0KH2Vmoxw==",
+        "shasum": "9d8f337d270c99c64d3eb08b71068e23ca574ead"
+      },
+      "files": [
+        "README.md",
+        "dist/check-constants.d.ts",
+        "dist/check-constants.d.ts.map",
+        "dist/check-constants.js",
+        "dist/check-ids.d.ts",
+        "dist/check-ids.d.ts.map",
+        "dist/check-ids.js",
+        "dist/clone-check.d.ts",
+        "dist/clone-check.d.ts.map",
+        "dist/clone-check.js",
+        "dist/index.d.ts",
+        "dist/index.d.ts.map",
+        "dist/index.js",
+        "dist/source-files.d.ts",
+        "dist/source-files.d.ts.map",
+        "dist/source-files.js",
+        "package.json"
+      ],
+      "fileCount": 17,
+      "expectedFiles": [
+        "README.md",
+        "dist/check-constants.d.ts",
+        "dist/check-constants.d.ts.map",
+        "dist/check-constants.js",
+        "dist/check-ids.d.ts",
+        "dist/check-ids.d.ts.map",
+        "dist/check-ids.js",
+        "dist/clone-check.d.ts",
+        "dist/clone-check.d.ts.map",
+        "dist/clone-check.js",
+        "dist/index.d.ts",
+        "dist/index.d.ts.map",
+        "dist/index.js",
+        "dist/source-files.d.ts",
+        "dist/source-files.d.ts.map",
+        "dist/source-files.js",
+        "package.json"
+      ],
+      "expectedFileCount": 17,
       "bins": {},
       "descriptorReferences": [],
       "nativeArtifacts": []
@@ -1082,9 +1223,9 @@
       "tarball": {
         "filename": "the-open-engine-opcore-validation-rust-0.1.0-alpha.0.tgz",
         "path": ".lattice/release/packages/the-open-engine-opcore-validation-rust-0.1.0-alpha.0.tgz",
-        "sha256": "18429fa20e181d1daefd327053802bea2a88471f84b6b53401d75c96893367d7",
-        "integrity": "sha512-xgFHpfBpwdtSaIWRXv4Wg1+KLcCKZfy9jzuT3hjZFgZ1zSavTQPTVWFoPv5y7S7UttFUKRCKhxlFh739od28nw==",
-        "shasum": "fe2fdeb1c2ca7f770f3307145a685f2adb123d57"
+        "sha256": "ed810e30f0b75db15c1e6923d583f24e3e30c4f18a17f3de6e24ce7d7799547f",
+        "integrity": "sha512-xuTbnNUCv93knKynF8eXMWpGd4xxhlkqqVX28FJeXlU1MO9jHfFBtNdxSpnwDSrYujdluLZHqfSavVjrq8u66Q==",
+        "shasum": "5ef510212a33519e6c4f5fcd28038ba03e988611"
       },
       "files": [
         "README.md",
@@ -1094,6 +1235,9 @@
         "dist/cargo-metadata.d.ts",
         "dist/cargo-metadata.d.ts.map",
         "dist/cargo-metadata.js",
+        "dist/cargo-target-cache.d.ts",
+        "dist/cargo-target-cache.d.ts.map",
+        "dist/cargo-target-cache.js",
         "dist/check-constants.d.ts",
         "dist/check-constants.d.ts.map",
         "dist/check-constants.js",
@@ -1144,7 +1288,7 @@
         "dist/unused-deps-check.js",
         "package.json"
       ],
-      "fileCount": 56,
+      "fileCount": 59,
       "expectedFiles": [
         "README.md",
         "dist/cargo-check.d.ts",
@@ -1153,6 +1297,9 @@
         "dist/cargo-metadata.d.ts",
         "dist/cargo-metadata.d.ts.map",
         "dist/cargo-metadata.js",
+        "dist/cargo-target-cache.d.ts",
+        "dist/cargo-target-cache.d.ts.map",
+        "dist/cargo-target-cache.js",
         "dist/check-constants.d.ts",
         "dist/check-constants.d.ts.map",
         "dist/check-constants.js",
@@ -1203,7 +1350,7 @@
         "dist/unused-deps-check.js",
         "package.json"
       ],
-      "expectedFileCount": 56,
+      "expectedFileCount": 59,
       "bins": {},
       "descriptorReferences": [],
       "nativeArtifacts": []
@@ -1226,6 +1373,7 @@
         "dependencies": {
           "@the-open-engine/opcore-contracts": "0.1.0-alpha.0",
           "@the-open-engine/opcore-validation": "0.1.0-alpha.0",
+          "@typescript-eslint/typescript-estree": "^8.62.0",
           "typescript": "^5.9.3"
         },
         "bundledDependencies": []
@@ -1233,9 +1381,9 @@
       "tarball": {
         "filename": "the-open-engine-opcore-validation-typescript-0.1.0-alpha.0.tgz",
         "path": ".lattice/release/packages/the-open-engine-opcore-validation-typescript-0.1.0-alpha.0.tgz",
-        "sha256": "67fc29226b6509fd28290f6c86c75fdf6ba229c1599121baa3b5a01cb664a1af",
-        "integrity": "sha512-2eAGFx8qovgeYw4fuG+bbifv8Fh7MnEzWLGfqmnVgiTq2kLvI3J3ag4xu80Ml4i3vkmbEjqsMfqUE7PfQC2qhA==",
-        "shasum": "c2d2fd0c6c56151dddfe161bb3e336fac31cf564"
+        "sha256": "7a042dc8def2ef4b0f45ae04d3c93200da447b529abd8bce51ca8052d2487a90",
+        "integrity": "sha512-bxgofrLmBxNSftEy06RRDSBlnNYEMADokfG/X77ltCg8Vl/c30hRi3+OhWhAR2Qy38mgCILpFNvN65Iwrf7a7g==",
+        "shasum": "38f0b357de9ec68b80d9e9b2fe04b6b4ac6c4644"
       },
       "files": [
         "README.md",
@@ -1257,6 +1405,12 @@
         "dist/diagnostics.d.ts",
         "dist/diagnostics.d.ts.map",
         "dist/diagnostics.js",
+        "dist/file-length-check.d.ts",
+        "dist/file-length-check.d.ts.map",
+        "dist/file-length-check.js",
+        "dist/function-metrics-check.d.ts",
+        "dist/function-metrics-check.d.ts.map",
+        "dist/function-metrics-check.js",
         "dist/graph-requirements.d.ts",
         "dist/graph-requirements.d.ts.map",
         "dist/graph-requirements.js",
@@ -1266,6 +1420,15 @@
         "dist/index.d.ts",
         "dist/index.d.ts.map",
         "dist/index.js",
+        "dist/lint-check.d.ts",
+        "dist/lint-check.d.ts.map",
+        "dist/lint-check.js",
+        "dist/lint-helpers.d.ts",
+        "dist/lint-helpers.d.ts.map",
+        "dist/lint-helpers.js",
+        "dist/lint-rules.d.ts",
+        "dist/lint-rules.d.ts.map",
+        "dist/lint-rules.js",
         "dist/relevant-tests-check.d.ts",
         "dist/relevant-tests-check.d.ts.map",
         "dist/relevant-tests-check.js",
@@ -1280,7 +1443,7 @@
         "dist/type-check.js",
         "package.json"
       ],
-      "fileCount": 41,
+      "fileCount": 56,
       "expectedFiles": [
         "README.md",
         "dist/check-constants.d.ts",
@@ -1301,6 +1464,12 @@
         "dist/diagnostics.d.ts",
         "dist/diagnostics.d.ts.map",
         "dist/diagnostics.js",
+        "dist/file-length-check.d.ts",
+        "dist/file-length-check.d.ts.map",
+        "dist/file-length-check.js",
+        "dist/function-metrics-check.d.ts",
+        "dist/function-metrics-check.d.ts.map",
+        "dist/function-metrics-check.js",
         "dist/graph-requirements.d.ts",
         "dist/graph-requirements.d.ts.map",
         "dist/graph-requirements.js",
@@ -1310,6 +1479,15 @@
         "dist/index.d.ts",
         "dist/index.d.ts.map",
         "dist/index.js",
+        "dist/lint-check.d.ts",
+        "dist/lint-check.d.ts.map",
+        "dist/lint-check.js",
+        "dist/lint-helpers.d.ts",
+        "dist/lint-helpers.d.ts.map",
+        "dist/lint-helpers.js",
+        "dist/lint-rules.d.ts",
+        "dist/lint-rules.d.ts.map",
+        "dist/lint-rules.js",
         "dist/relevant-tests-check.d.ts",
         "dist/relevant-tests-check.d.ts.map",
         "dist/relevant-tests-check.js",
@@ -1324,7 +1502,7 @@
         "dist/type-check.js",
         "package.json"
       ],
-      "expectedFileCount": 41,
+      "expectedFileCount": 56,
       "bins": {},
       "descriptorReferences": [],
       "nativeArtifacts": []
@@ -1359,9 +1537,9 @@
       "tarball": {
         "filename": "the-open-engine-opcore-asp-provider-0.1.0-alpha.0.tgz",
         "path": ".lattice/release/packages/the-open-engine-opcore-asp-provider-0.1.0-alpha.0.tgz",
-        "sha256": "ca09b53ec81c6f3a58c9d753918cbd85b65e6c9dd7124f55dc00f46cd7b4a7b4",
-        "integrity": "sha512-23xtNVsmiZdo0qZTLl2HRW1F6ERwJAFcHJAzCVe4vqnhc1IVRkE4+ByYjbRcjGAySWsjLkGq9D2K4geKtEKBRg==",
-        "shasum": "5ee7e7fcddac2623e09f74f0f7cae5eff889adc8"
+        "sha256": "87013f30770349f1db125bc3379c81fc57dd6f445696a29bfeeb2839ac834403",
+        "integrity": "sha512-9uRpNf1idVPhm7Q48zp8vFJxeR4pBYky5OiTgygp2gwh3ABi3cNqIUajtrbZwaFj2BzZUlUuFkC33Ln62CdpTQ==",
+        "shasum": "61acef3cabbc7dc1a58c44dddbe64191aef3c1c8"
       },
       "files": [
         "README.md",
@@ -1462,9 +1640,9 @@
       "tarball": {
         "filename": "the-open-engine-opcore-fixtures-0.1.0-alpha.0.tgz",
         "path": ".lattice/release/packages/the-open-engine-opcore-fixtures-0.1.0-alpha.0.tgz",
-        "sha256": "9af1b8cf9d9715db778ff5046c18d63103aa1fbba0e55c3ac660dee56abf5f82",
-        "integrity": "sha512-sZVQRmrUq5CV79rHjjCmPJ9xYGyHOlOuj4OAuJ2tF+hLsR4UTaefAaQRAHn22ZUlyz6yhHvC4H2s+UPJVg1Y/g==",
-        "shasum": "999186ea7f8d5fe3eb92935386f3c0be8565af95"
+        "sha256": "9de4646a25c454568bf8bd98efe15cc02d7b6765e5d643a6baeaf38f98f68e30",
+        "integrity": "sha512-ZpWAloAjXM7EZxWTZr3NSMp+2lb+rLorK0F5tYt9OJtvPj/bKF5DKzpUnaxPXs9HnG4/eXPuxZ9F+kM8aulpGQ==",
+        "shasum": "b1227cc685daac53841bd0055de78672ac56aef9"
       },
       "files": [
         "README.md",
@@ -1622,7 +1800,7 @@
   "descriptor": {
     "path": "packages/opcore/dist/descriptors/opcore.managed-tool.json",
     "packageName": "@the-open-engine/opcore",
-    "checksumSha256": "5cb0293b5163df233dac491ca74f7720a0846b92d71012f9e0e08204d1f41755",
+    "checksumSha256": "c83c895539e47ae95873f133bf660feda8c30cc9eae12a6d59a76cdd924eab84",
     "descriptor": {
       "schemaVersion": 1,
       "descriptorKind": "aggregate_opcore",
@@ -1839,6 +2017,7 @@
             "importers_of",
             "imports_of",
             "tests_for",
+            "inheritors_of",
             "children_of",
             "file_summary",
             "review_context",
@@ -1960,7 +2139,9 @@
             "typescript.types",
             "typescript.import-graph",
             "typescript.dead-code",
+            "typescript.function-metrics",
             "typescript.relevant-tests",
+            "typescript.file-length",
             "rust.source-hygiene",
             "rust.fmt",
             "rust.cargo-check",
@@ -1977,7 +2158,8 @@
             "python.types",
             "python.import-graph",
             "python.dead-code",
-            "python.relevant-tests"
+            "python.relevant-tests",
+            "clone.duplication"
           ]
         }
       },
@@ -2311,7 +2493,7 @@
         "artifactRef": "graph-core-binary-darwin-arm64",
         "required": true,
         "packageFile": true,
-        "value": "429c3aa6046a1fda3001ee797cca6db2583c65eb977221f7f97a7043de04ef77"
+        "value": "01e834a5d0104ca9626b6ac78da1977bea87a62608abfdfba4bd3ea0ccea7508"
       },
       {
         "id": "graph-core-binary-sha256-darwin-x64",
@@ -2321,7 +2503,7 @@
         "artifactRef": "graph-core-binary-darwin-x64",
         "required": true,
         "packageFile": true,
-        "value": "6652d43eec8f39e7c1b930b92e032eb268d1e4263454a89614e0d8299fc3b4e7"
+        "value": "1b72afa74d48b087c967cb01b39630ed3fa58b5a2895037a778eb5612ef73059"
       },
       {
         "id": "graph-core-binary-sha256-linux-x64",
@@ -2331,7 +2513,7 @@
         "artifactRef": "graph-core-binary-linux-x64",
         "required": true,
         "packageFile": true,
-        "value": "4654c6ba6383886e759fe3c805ec8c0df3b31d2e1db9d5c18626de6b2cfe758a"
+        "value": "70cb6d213d74594f337a67522c879b77767872dc4601063686f1abe70886127b"
       }
     ]
   },
@@ -2345,15 +2527,15 @@
         "targetPlatform": "darwin-arm64",
         "binaryPath": "opcore-graph-core",
         "checksumPath": "opcore-graph-core.sha256",
-        "checksumSha256": "429c3aa6046a1fda3001ee797cca6db2583c65eb977221f7f97a7043de04ef77",
+        "checksumSha256": "01e834a5d0104ca9626b6ac78da1977bea87a62608abfdfba4bd3ea0ccea7508",
         "buildProfile": "release"
       },
       "binaryPath": "opcore-graph-core",
       "checksumPath": "opcore-graph-core.sha256",
       "metadataPath": "metadata.json",
-      "binarySha256": "429c3aa6046a1fda3001ee797cca6db2583c65eb977221f7f97a7043de04ef77",
-      "checksumFileSha256": "40ff25452b0f3b2197c7280f2b104c7031975b33178dd291ab943a989e0151cc",
-      "metadataSha256": "6057c9ce5387bcad5f5ce34faf833e9ff052546681ede61163fbe860d9b21f38",
+      "binarySha256": "01e834a5d0104ca9626b6ac78da1977bea87a62608abfdfba4bd3ea0ccea7508",
+      "checksumFileSha256": "69c23daa332d20e32bd5c3a8f6223619b57c5f8dabb35894ef5e0ef973b2f470",
+      "metadataSha256": "66d136e128b86a3b3c85cb926145e9d59405eac01066450eba40c282103e0bc0",
       "descriptorArtifactId": "graph-core-binary-darwin-arm64",
       "descriptorChecksumId": "graph-core-binary-sha256-darwin-arm64"
     },
@@ -2366,15 +2548,15 @@
         "targetPlatform": "darwin-x64",
         "binaryPath": "opcore-graph-core",
         "checksumPath": "opcore-graph-core.sha256",
-        "checksumSha256": "6652d43eec8f39e7c1b930b92e032eb268d1e4263454a89614e0d8299fc3b4e7",
+        "checksumSha256": "1b72afa74d48b087c967cb01b39630ed3fa58b5a2895037a778eb5612ef73059",
         "buildProfile": "release"
       },
       "binaryPath": "opcore-graph-core",
       "checksumPath": "opcore-graph-core.sha256",
       "metadataPath": "metadata.json",
-      "binarySha256": "6652d43eec8f39e7c1b930b92e032eb268d1e4263454a89614e0d8299fc3b4e7",
-      "checksumFileSha256": "6ff56465a5137949b0c3d2539d9d2915763b1e8c263e39c9924b92698a96afd7",
-      "metadataSha256": "835f5da8173b0387da296d5f508176d88c64770706ef1388472326655806cc52",
+      "binarySha256": "1b72afa74d48b087c967cb01b39630ed3fa58b5a2895037a778eb5612ef73059",
+      "checksumFileSha256": "78e1e2efd92e4c3f184b19263b8e8c161fda919c180638906808afdf3b2d312d",
+      "metadataSha256": "18acb1112fd3fb23dbef49a2e32e1bb18868523cbc328332c31f97bb460f5920",
       "descriptorArtifactId": "graph-core-binary-darwin-x64",
       "descriptorChecksumId": "graph-core-binary-sha256-darwin-x64"
     },
@@ -2387,25 +2569,25 @@
         "targetPlatform": "linux-x64",
         "binaryPath": "opcore-graph-core",
         "checksumPath": "opcore-graph-core.sha256",
-        "checksumSha256": "4654c6ba6383886e759fe3c805ec8c0df3b31d2e1db9d5c18626de6b2cfe758a",
+        "checksumSha256": "70cb6d213d74594f337a67522c879b77767872dc4601063686f1abe70886127b",
         "buildProfile": "release"
       },
       "binaryPath": "opcore-graph-core",
       "checksumPath": "opcore-graph-core.sha256",
       "metadataPath": "metadata.json",
-      "binarySha256": "4654c6ba6383886e759fe3c805ec8c0df3b31d2e1db9d5c18626de6b2cfe758a",
-      "checksumFileSha256": "f4f8b3b456fe52c1632aaf626f71322faa264e3c4b29f02521091fddb3be6c2f",
-      "metadataSha256": "bba2b54ac28f8c2f643f943ea32abfe7de70b0c282d452b9e30af52b93b0a6e1",
+      "binarySha256": "70cb6d213d74594f337a67522c879b77767872dc4601063686f1abe70886127b",
+      "checksumFileSha256": "c2910f2077d0e824fa838a3565114bab7c63910dcee51221e64d37c0aee20b19",
+      "metadataSha256": "ca9c9484cd90f766dfcd1559d1f3f8f28955731a812ddb686f1bc525afc2254e",
       "descriptorArtifactId": "graph-core-binary-linux-x64",
       "descriptorChecksumId": "graph-core-binary-sha256-linux-x64"
     }
   ],
   "license": {
     "reportPath": "docs/release/license-report.md",
-    "reportSha256": "b401a91903b674d8feca00af7fcdf3e5f919e03622521c54f8cc742dcafd7ca6",
+    "reportSha256": "be6f578d8d47e4afb3b9116709dd7c778fee3eff47f0d09eafacae225197ce03",
     "productionDependencyCount": 118,
     "bundledDependencyCount": 0,
-    "workspacePackageCount": 13,
+    "workspacePackageCount": 14,
     "unresolvedLicenseCount": 0,
     "packages": [
       {
@@ -3238,17 +3420,17 @@
   },
   "provenance": {
     "reportPath": "docs/release/provenance-receipts.md",
-    "reportSha256": "51e7b93ff4e04311db3591db8ca1bb613636ddaac1b4f0e6ca7f7a79486df68a",
-    "scannedFileCount": 467,
-    "historyCommitCount": 137,
+    "reportSha256": "0d54de5ce395f15375af18e8790ccf8badcaa7316e3afb7a756f41646d18be44",
+    "scannedFileCount": 494,
+    "historyCommitCount": 207,
     "findingCount": 0,
     "findings": []
   },
   "secretHistory": {
     "allowlistPath": "docs/release/secret-scan-allowlist.json",
     "allowlistSha256": "7060c267c912e3156b87c646e3bc970eac1ac8bdd964cf0a794b83e6f1250614",
-    "currentTreeScannedFileCount": 466,
-    "gitHistoryScannedCommitCount": 137,
+    "currentTreeScannedFileCount": 493,
+    "gitHistoryScannedCommitCount": 207,
     "findingCount": 0,
     "findings": []
   },
@@ -3275,7 +3457,7 @@
       "status": "passed",
       "exitCode": 0,
       "path": "docs/release/license-report.md",
-      "checksumSha256": "b401a91903b674d8feca00af7fcdf3e5f919e03622521c54f8cc742dcafd7ca6",
+      "checksumSha256": "be6f578d8d47e4afb3b9116709dd7c778fee3eff47f0d09eafacae225197ce03",
       "summary": "118 production dependencies, 0 unresolved"
     },
     {
@@ -3288,8 +3470,8 @@
       "status": "passed",
       "exitCode": 0,
       "path": "docs/release/provenance-receipts.md",
-      "checksumSha256": "51e7b93ff4e04311db3591db8ca1bb613636ddaac1b4f0e6ca7f7a79486df68a",
-      "summary": "467 files, 137 commits scanned"
+      "checksumSha256": "0d54de5ce395f15375af18e8790ccf8badcaa7316e3afb7a756f41646d18be44",
+      "summary": "494 files, 207 commits scanned"
     },
     {
       "id": "release-hygiene",
@@ -3300,7 +3482,7 @@
       "status": "passed",
       "exitCode": 0,
       "path": "docs/release/artifact-attestation.md",
-      "checksumSha256": "65a36dafb2f996c0900720e66f726b579776d61329e6b3bbba5a4563d481bda1",
+      "checksumSha256": "432f560fc17b0fee9fd3cd18f4516b25bafc6455bf348f81d183942b823574b7",
       "summary": "release hygiene check passed"
     },
     {
@@ -3327,7 +3509,7 @@
       "exitCode": 0,
       "path": "docs/release/secret-scan-allowlist.json",
       "checksumSha256": "7060c267c912e3156b87c646e3bc970eac1ac8bdd964cf0a794b83e6f1250614",
-      "summary": "466 files, 137 commits scanned"
+      "summary": "493 files, 207 commits scanned"
     }
   ],
   "graphReleaseReceipt": {

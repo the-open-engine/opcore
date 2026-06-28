@@ -19,6 +19,7 @@ Opcore's internal Opcore implementation line uses a hybrid runtime:
 - TypeScript validation owns check policy, validation manifests, hypothetical validation, failure policy, and human/JSON reporting.
 - TypeScript validation-rust owns Rust-specific Cargo, rustfmt, clippy, rustdoc, import/dead-code, unused dependency, and function-metric check adapters.
 - TypeScript validation-typescript owns TypeScript-specific rules and compiler-backed adapters.
+- TypeScript validation-clone owns duplicate-code validation adapter wiring over the injected graph-core clone subcommand, without a graph-provider requirement or SAST/security claim.
 - TypeScript asp-provider owns the standalone ASP Core `check/evaluate` provider-process facade and provisional install manifest.
 - TypeScript npm facade, ACE descriptors, and ASP provider install manifest own install metadata, runtime discovery inputs, wrapper generation, and release integration.
 
@@ -69,12 +70,13 @@ There is no public `opcore asp` router group in this release. ASP Core check int
 | Area | Boundary |
 |---|---|
 | `packages/contracts` | Public wire contracts, schemas, command payloads, adapter request/result envelopes, validation shapes, graph query contracts, and generated TypeScript types. |
-| `crates/graph-core` | Planned Rust graph core for source extraction, parser integration, SQLite/WAL persistence, freshness metadata, watch daemon state, and hot query execution. |
+| `crates/graph-core` | Planned Rust graph core for source extraction, parser integration, SQLite/WAL persistence, freshness metadata, watch daemon state, hot query execution, and clone index analysis through the existing native binary. |
 | `packages/graph` | npm facade/package track for graph commands, public graph command adapter, native graph-core loading, and graph JSON output. It must not duplicate graph-core internals or depend on the aggregate CLI. |
 | `packages/edit` | Edit planner, public edit command adapter, patch/tree edits, symbol-aware orchestration, graph-backed discovery integration, and whole-plan validation. It consumes contracts and graph queries, not graph internals or the aggregate CLI. |
 | `packages/validation` | Mechanical checks, public check/validate command adapters, validation manifests, failure policy, hypothetical validation, graph-aware rule orchestration, and `check`/`validate` reporting. It consumes contracts and adapters, not edit internals or the aggregate CLI. |
 | `packages/validation-rust` | Rust validation adapter rules, temporary workspace materialization from validation file views, and Cargo/native-tool-backed checks exposed to validation through contracts. It does not own host decisions or current external guardrail replacement policy. |
 | `packages/validation-typescript` | TypeScript adapter rules, compiler-backed checks, and TypeScript graph-aware validations exposed to validation through contracts. |
+| `packages/validation-clone` | Duplicate-code validation adapter rules over `ValidationCheckContext.fileView`, with an injected native clone invoker supplied by CLI composition. It does not own graph-provider status, daemon lifecycle, host decisions, SAST/security policy, or scoring. |
 | `packages/asp-provider` | Standalone ASP Core check provider facade, stdio JSON-RPC lifecycle, ASP changeset-to-validation-overlay mapping, provider-owned diagnostics/coverage, read-set freshness binding, and provisional manifest metadata. It does not own host decisions, authority, gates, apply behavior, ACE launch, or current-tool execution. |
 | `packages/fixtures` | Golden repos, graph snapshots, reference evidence, canonical command conformance cases, and release/cutover fixtures. |
 | Release descriptors and manifests | npm package metadata, ACE descriptor metadata, ASP provider install metadata, native platform package declarations, provenance, and checksums. |
@@ -103,6 +105,8 @@ Release artifacts must include:
 
 Graph pipeline command failures use router status `error` with exit code 1 and the typed GraphProvider failure status; the TypeScript facade must not fabricate pipeline summaries when graph-core returns no pipeline. `status` and `health` are read-only over existing store/lifecycle artifacts and must report missing stores without creating `.lattice/graph/graph.db`.
 
+#151 adds `opcore-graph-core clone` as a subcommand of the existing native binary, not as a daemon or new native package. It accepts `CloneAnalysisRequest` over stdin and emits `CloneAnalysisResult` using `opcore.clone.v1`. Committed analysis may refresh `.lattice/clone/clone.db`; hypothetical overlays must be analyzed ephemerally and must not write the clone database.
+
 ## Migration Impact
 
 New implementation issues must reference this ARD before changing language boundaries, CLI routing, package ownership, or release descriptors. Downstream issues #1, #2, #3, #5, #6, #7, #8, and parent covibes/covibes#2287 must treat this document as the runtime/CLI decision source.
@@ -116,6 +120,12 @@ Before replacing current external tool behavior, add golden/reference fixtures a
 Rust checks read candidate files through `ValidationCheckContext.fileView`. Checks that need Cargo or native tools materialize a temporary workspace from after-state content, apply write/delete overlays there, and clean up without mutating the real worktree. `.rs`, `.inc`, and `Cargo.toml` are adapter-owned inputs. Cargo.lock-only changes remain retained compatibility until a later decision expands Rust adapter ownership.
 
 `opcore status --json` and `opcore doctor --json` expose Rust adapter status, toolchain availability, degraded checks, retained compatibility notes, `currentUsage` metadata for Opcore/Orchestra/CoVibes/gateway consumers, and temporary workspace requirements so #21 can decide daemon/cache/check UX without rediscovering Rust coverage. Missing `cargo`, `rustfmt`, or `clippy` makes the Rust foundation unavailable; missing `rustdoc` is reported as degraded retained compatibility instead of disabling the core `rust.fmt`, `rust.cargo-check`, and `rust.clippy` foundation.
+
+## Clone Validation Adapter
+
+#151 adds `@the-open-engine/opcore-validation-clone` as the duplicate-code validation adapter package. The stable check id is `clone.duplication`; it requiresGraph:false, reads candidate after-state through `ValidationCheckContext.fileView.readAfter`, and emits line-free duplicate-code diagnostics with stable clone-class identity. The adapter receives its native invocation function from Opcore validation composition, so it does not import graph-core loaders, raw SQLite, graph internals, or the aggregate CLI.
+
+Clone findings are policy diagnostics for duplicate code only. They must not use SAST/security wording, all-stack coverage wording, a blended score, or old-tool replacement wording.
 
 ## ASP Provider Facade
 

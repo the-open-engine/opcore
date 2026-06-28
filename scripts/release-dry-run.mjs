@@ -19,6 +19,7 @@ const implementationPackages = [
   "@the-open-engine/opcore-graph",
   "@the-open-engine/opcore-edit",
   "@the-open-engine/opcore-validation",
+  "@the-open-engine/opcore-validation-clone",
   "@the-open-engine/opcore-validation-python",
   "@the-open-engine/opcore-validation-rust",
   "@the-open-engine/opcore-validation-typescript",
@@ -28,6 +29,7 @@ const publicPackages = [
   ...graphCoreNativePackageNames,
   ...implementationPackages
 ];
+const cloneProtocolMarker = Buffer.from("opcore.clone.v1", "utf8");
 const target = currentGraphCoreNativeTarget();
 const requireAllNativePackages = process.env.LATTICE_REQUIRE_ALL_NATIVE_PACKAGES === "1";
 
@@ -42,6 +44,7 @@ const installPackages = [
   graphCoreNativePackageNames.find((packageName) => packageName.endsWith(target)),
   "@the-open-engine/opcore-edit",
   "@the-open-engine/opcore-validation",
+  "@the-open-engine/opcore-validation-clone",
   "@the-open-engine/opcore-validation-python",
   "@the-open-engine/opcore-validation-rust",
   "@the-open-engine/opcore-validation-typescript",
@@ -152,6 +155,9 @@ function assertCompleteNativeArtifacts() {
     const checksumFile = readFileSync(checksum, "utf8").trim().split(/\s+/)[0];
     if (parsedMetadata.checksumSha256 !== actualChecksum || checksumFile !== actualChecksum) {
       throw new Error(`${nativePackage.packageName} checksum mismatch for ${nativeTarget}`);
+    }
+    if (!readFileSync(binary).includes(cloneProtocolMarker)) {
+      throw new Error(`${nativePackage.packageName} binary must include clone protocol opcore.clone.v1`);
     }
   }
 }

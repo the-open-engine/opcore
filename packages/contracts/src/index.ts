@@ -1,4 +1,5 @@
 export const GRAPH_SCHEMA_VERSION = 1 as const;
+export const CLONE_PROTOCOL = "opcore.clone.v1" as const;
 
 export const graphProviderModes = ["optional", "required"] as const;
 export type GraphProviderMode = (typeof graphProviderModes)[number];
@@ -1057,6 +1058,52 @@ export type HypotheticalOverlay =
       checksumBefore?: string;
     };
 
+export const cloneReportModes = ["all", "introduced"] as const;
+export type CloneReportMode = (typeof cloneReportModes)[number];
+
+export interface CloneAnalysisRequest {
+  protocol: typeof CLONE_PROTOCOL;
+  requestId?: string;
+  schemaVersion: 1;
+  repo: RepoIdentity;
+  reportMode: CloneReportMode;
+  paths?: readonly string[];
+  overlays: readonly HypotheticalOverlay[];
+  minLines?: number;
+  minTokens?: number;
+}
+
+export interface CloneFinding {
+  cloneClassId: string;
+  contentHash: string;
+  path: string;
+  peerPath: string;
+  paths: readonly string[];
+  lineCount: number;
+  tokenCount: number;
+  introduced: boolean;
+}
+
+export interface CloneAnalysisSummary {
+  analyzedFiles: number;
+  cloneClassCount: number;
+  findingCount: number;
+  overlayCount: number;
+}
+
+export interface CloneAnalysisResult {
+  protocol: typeof CLONE_PROTOCOL;
+  requestId?: string;
+  schemaVersion: 1;
+  repo: RepoIdentity;
+  reportMode: CloneReportMode;
+  status: "passed";
+  persisted: boolean;
+  dbPath?: string;
+  findings: readonly CloneFinding[];
+  summary: CloneAnalysisSummary;
+}
+
 export interface ValidationFailure {
   category: ValidationFailureCategory;
   message: string;
@@ -1530,6 +1577,7 @@ export const releaseReceiptPackageNames = [
   "@the-open-engine/opcore-graph-core-linux-x64",
   "@the-open-engine/opcore-edit",
   "@the-open-engine/opcore-validation",
+  "@the-open-engine/opcore-validation-clone",
   "@the-open-engine/opcore-validation-python",
   "@the-open-engine/opcore-validation-rust",
   "@the-open-engine/opcore-validation-typescript",
@@ -5870,6 +5918,119 @@ export function validateGraphServeTransportStatus(status: GraphServeTransportSta
   }
   if (status.message !== undefined) validateNonEmptyString(status.message, "Graph serve transport status message");
   return status;
+}
+
+export function validateCloneAnalysisRequest(request: CloneAnalysisRequest): CloneAnalysisRequest {
+  if (!request || typeof request !== "object") {
+    throw new Error("Clone analysis request is required");
+  }
+  if (request.protocol !== CLONE_PROTOCOL) {
+    throw new Error(`Clone analysis request protocol must be ${CLONE_PROTOCOL}`);
+  }
+  if (request.requestId !== undefined) validateNonEmptyString(request.requestId, "Clone analysis request requestId");
+  if (request.schemaVersion !== 1) {
+    throw new Error("Clone analysis request schemaVersion must be 1");
+  }
+  validateRepoIdentity(request.repo);
+  validateCloneReportMode(request.reportMode, "Clone analysis request reportMode");
+  if (request.paths !== undefined) validateRepoRelativePaths(request.paths, "Clone analysis request paths");
+  validateHypotheticalOverlays(request.overlays);
+  if (request.minLines !== undefined) validatePositiveInteger(request.minLines, "Clone analysis request minLines");
+  if (request.minTokens !== undefined) validatePositiveInteger(request.minTokens, "Clone analysis request minTokens");
+  return request;
+}
+
+export function validateCloneAnalysisResult(result: CloneAnalysisResult): CloneAnalysisResult {
+  if (!result || typeof result !== "object") {
+    throw new Error("Clone analysis result is required");
+  }
+  if (result.protocol !== CLONE_PROTOCOL) {
+    throw new Error(`Clone analysis result protocol must be ${CLONE_PROTOCOL}`);
+  }
+  if (result.requestId !== undefined) validateNonEmptyString(result.requestId, "Clone analysis result requestId");
+  if (result.schemaVersion !== 1) {
+    throw new Error("Clone analysis result schemaVersion must be 1");
+  }
+  validateRepoIdentity(result.repo);
+  validateCloneReportMode(result.reportMode, "Clone analysis result reportMode");
+  if (result.status !== "passed") {
+    throw new Error("Clone analysis result status must be passed");
+  }
+  if (typeof result.persisted !== "boolean") {
+    throw new Error("Clone analysis result persisted must be boolean");
+  }
+  if (result.dbPath !== undefined) validateRepoRelativePath(result.dbPath);
+  if (!Array.isArray(result.findings)) {
+    throw new Error("Clone analysis result findings must be an array");
+  }
+  for (const finding of result.findings) validateCloneFinding(finding);
+  validateCloneAnalysisSummary(result.summary, result.findings.length);
+  return result;
+}
+
+function validateCloneReportMode(mode: unknown, label: string): CloneReportMode {
+  if (!includesString(cloneReportModes, mode)) {
+    throw new Error(`Unknown ${label}: ${String(mode)}`);
+  }
+  return mode;
+}
+
+function validateCloneFinding(finding: CloneFinding): CloneFinding {
+  if (!finding || typeof finding !== "object") {
+    throw new Error("Clone finding is required");
+  }
+  for (const forbidden of ["line", "column", "startLine", "endLine", "startColumn", "endColumn"]) {
+    if (Object.hasOwn(finding, forbidden)) {
+      throw new Error("Clone finding identity must stay line-free");
+    }
+  }
+  validateCloneClassId(finding.cloneClassId, "Clone finding cloneClassId");
+  validateSha256Hex(finding.contentHash, "Clone finding contentHash");
+  const path = validateRepoRelativePath(finding.path);
+  const peerPath = validateRepoRelativePath(finding.peerPath);
+  if (path === peerPath) {
+    throw new Error("Clone finding path and peerPath must be distinct");
+  }
+  validateRepoRelativePaths(finding.paths, "Clone finding paths");
+  if (!finding.paths.includes(path) || !finding.paths.includes(peerPath)) {
+    throw new Error("Clone finding paths must include path and peerPath");
+  }
+  validatePositiveInteger(finding.lineCount, "Clone finding lineCount");
+  validatePositiveInteger(finding.tokenCount, "Clone finding tokenCount");
+  if (typeof finding.introduced !== "boolean") {
+    throw new Error("Clone finding introduced must be boolean");
+  }
+  return finding;
+}
+
+function validateCloneAnalysisSummary(summary: CloneAnalysisSummary, findingsLength: number): CloneAnalysisSummary {
+  if (!summary || typeof summary !== "object") {
+    throw new Error("Clone analysis summary is required");
+  }
+  validateNonNegativeInteger(summary.analyzedFiles, "Clone analysis summary analyzedFiles");
+  validateNonNegativeInteger(summary.cloneClassCount, "Clone analysis summary cloneClassCount");
+  validateNonNegativeInteger(summary.findingCount, "Clone analysis summary findingCount");
+  validateNonNegativeInteger(summary.overlayCount, "Clone analysis summary overlayCount");
+  if (summary.findingCount !== findingsLength) {
+    throw new Error("Clone analysis summary findingCount must equal findings length");
+  }
+  return summary;
+}
+
+function validateCloneClassId(value: unknown, label: string): string {
+  const id = validateNonEmptyString(value, label);
+  if (!/^clone-[a-f0-9]{16}$/u.test(id)) {
+    throw new Error(`${label} must be a stable clone id`);
+  }
+  return id;
+}
+
+function validateSha256Hex(value: unknown, label: string): string {
+  const sha = validateNonEmptyString(value, label);
+  if (!/^[a-f0-9]{64}$/u.test(sha)) {
+    throw new Error(`${label} must be a SHA-256 hex digest`);
+  }
+  return sha;
 }
 
 export function validateValidationRequestPayload(request: ValidationRequest): ValidationRequest {

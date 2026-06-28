@@ -16,6 +16,7 @@
       "package.json",
       "README.md",
       "dist/check.js",
+      "dist/clone-invoker.js",
       "dist/graph-provider-client.js",
       "dist/init.js",
       "dist/index.js",
@@ -60,6 +61,8 @@
       "dist/advanced/asp-warm/warm-project-registry.d.ts.map",
       "dist/check.d.ts",
       "dist/check.d.ts.map",
+      "dist/clone-invoker.d.ts",
+      "dist/clone-invoker.d.ts.map",
       "dist/graph-provider-client.d.ts",
       "dist/graph-provider-client.d.ts.map",
       "dist/init.d.ts",
@@ -277,6 +280,28 @@
       "dist/status-payload.d.ts.map",
       "dist/workspace.d.ts",
       "dist/workspace.d.ts.map"
+    ]
+  },
+  "@the-open-engine/opcore-validation-clone": {
+    "directory": "packages/validation-clone",
+    "expectedFiles": [
+      "package.json",
+      "README.md",
+      "dist/check-constants.js",
+      "dist/check-ids.js",
+      "dist/clone-check.js",
+      "dist/index.js",
+      "dist/source-files.js",
+      "dist/check-constants.d.ts",
+      "dist/check-constants.d.ts.map",
+      "dist/check-ids.d.ts",
+      "dist/check-ids.d.ts.map",
+      "dist/clone-check.d.ts",
+      "dist/clone-check.d.ts.map",
+      "dist/index.d.ts",
+      "dist/index.d.ts.map",
+      "dist/source-files.d.ts",
+      "dist/source-files.d.ts.map"
     ]
   },
   "@the-open-engine/opcore-validation-python": {

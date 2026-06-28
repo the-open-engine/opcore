@@ -118,6 +118,7 @@ test("claim scrub covers every public package README", () => {
     "graph",
     "edit",
     "validation",
+    "validation-clone",
     "validation-python",
     "validation-rust",
     "validation-typescript",

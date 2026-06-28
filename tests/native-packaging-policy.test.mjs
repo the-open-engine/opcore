@@ -1,6 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { chmodSync, readFileSync, statSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { chmodSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 
 const nativeTargets = {
@@ -80,6 +81,45 @@ describe("native graph-core packaging policy", () => {
       assert.doesNotMatch(`${result.stdout}\n${result.stderr}`, /graph build fails|EACCES|spawnSync/);
     } finally {
       chmodSync(binary, originalMode);
+    }
+  });
+
+  it("fails aggregate release dry-run when a downloaded native artifact lacks clone protocol support", () => {
+    const currentTarget = `${process.platform}-${process.arch}`;
+    const target = Object.keys(nativeTargets).find((candidate) => candidate !== currentTarget);
+    assert.ok(target, "test requires at least one non-current supported native target");
+
+    const packageDir = nativePackageDir(target);
+    const binary = `${packageDir}/opcore-graph-core`;
+    const checksum = `${packageDir}/opcore-graph-core.sha256`;
+    const metadataPath = `${packageDir}/metadata.json`;
+    const originalBinary = readFileSync(binary);
+    const originalChecksum = readFileSync(checksum, "utf8");
+    const originalMetadata = readFileSync(metadataPath, "utf8");
+    const originalMode = statSync(binary).mode & 0o777;
+    try {
+      const staleBinary = Buffer.from("#!/usr/bin/env sh\nexit 0\n");
+      const staleChecksum = createHash("sha256").update(staleBinary).digest("hex");
+      writeFileSync(binary, staleBinary);
+      chmodSync(binary, 0o755);
+      writeFileSync(checksum, `${staleChecksum}  opcore-graph-core\n`);
+      const metadata = readJson(metadataPath);
+      metadata.checksumSha256 = staleChecksum;
+      writeFileSync(metadataPath, `${JSON.stringify(metadata, null, 2)}\n`);
+
+      const result = spawnSync(process.execPath, ["scripts/release-dry-run.mjs"], {
+        env: { ...process.env, LATTICE_REQUIRE_ALL_NATIVE_PACKAGES: "1" },
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "pipe"]
+      });
+      assert.notEqual(result.status, 0);
+      assert.match(`${result.stdout}\n${result.stderr}`, /must include clone protocol opcore\.clone\.v1/);
+      assert.doesNotMatch(`${result.stdout}\n${result.stderr}`, /checksum mismatch/);
+    } finally {
+      writeFileSync(binary, originalBinary);
+      chmodSync(binary, originalMode);
+      writeFileSync(checksum, originalChecksum);
+      writeFileSync(metadataPath, originalMetadata);
     }
   });
 });

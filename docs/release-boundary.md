@@ -26,6 +26,7 @@ identity to Opcore:
 - validation: `@the-open-engine/opcore-validation`;
 - TypeScript validation: `@the-open-engine/opcore-validation-typescript`;
 - Rust validation: `@the-open-engine/opcore-validation-rust`;
+- clone validation: `@the-open-engine/opcore-validation-clone`;
 - edit: `@the-open-engine/opcore-edit`;
 - CLI/product: `@the-open-engine/opcore` with the `opcore` bin;
 - ASP provider: `@the-open-engine/opcore-asp-provider`;
