@@ -256,7 +256,7 @@ describe("graph pipeline CLI", () => {
   it("fails non-once watch startup when initial extraction fails", () => {
     const temp = mkdtempSync(join(tmpdir(), "lattice-watch-startup-fail-"));
     try {
-      writeFileSync(join(temp, "bad.ts"), "export const broken = ;\n");
+      writeFileSync(join(temp, "bad.rs"), "pub fn broken( {\n");
 
       const watch = run(latticeBin, ["graph", "watch", "--repo", temp, "--poll-interval-ms", "50", "--json"], 1);
       assert.equal(watch.status, "error");

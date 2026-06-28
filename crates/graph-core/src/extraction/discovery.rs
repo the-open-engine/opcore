@@ -68,6 +68,7 @@ struct SourceDiscovery<'a> {
     sources: Vec<DiscoveredSource>,
     diagnostics: Vec<GraphExtractionDiagnostic>,
     depth_reported: bool,
+    files_reported: bool,
 }
 
 impl<'a> SourceDiscovery<'a> {
@@ -89,6 +90,7 @@ impl<'a> SourceDiscovery<'a> {
             sources: Vec::new(),
             diagnostics: Vec::new(),
             depth_reported: false,
+            files_reported: false,
         })
     }
 
@@ -163,15 +165,18 @@ impl<'a> SourceDiscovery<'a> {
 
     fn push_source(&mut self, entry: &DirEntry, relative_path: String, language: SourceLanguage) {
         if self.sources.len() >= self.options.max_files {
-            self.diagnostics.push(error(
-                GraphExtractionDiagnosticCategory::MaxFilesExceeded,
-                format!(
-                    "source discovery exceeded maxFiles {}",
-                    self.options.max_files
-                ),
-                Some(relative_path),
-                Some(language.as_str().to_string()),
-            ));
+            if !self.files_reported {
+                self.diagnostics.push(error(
+                    GraphExtractionDiagnosticCategory::MaxFilesExceeded,
+                    format!(
+                        "source discovery exceeded maxFiles {}",
+                        self.options.max_files
+                    ),
+                    Some(relative_path),
+                    Some(language.as_str().to_string()),
+                ));
+                self.files_reported = true;
+            }
             return;
         }
         match std::fs::read(entry.path()) {

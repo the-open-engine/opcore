@@ -24,7 +24,7 @@ declare module "node:child_process" {
       cwd?: string;
       encoding?: string;
       input?: string;
-      stdio?: readonly string[];
+      stdio?: readonly (string | number)[];
       timeout?: number;
     }
   ): SpawnSyncReturns;
@@ -60,9 +60,17 @@ declare module "node:crypto" {
 }
 
 declare module "node:fs" {
+  export function closeSync(fd: number): void;
   export function existsSync(path: string): boolean;
+  export function mkdtempSync(prefix: string): string;
+  export function openSync(path: string, flags: string): number;
   export function readFileSync(path: string): Uint8Array;
   export function readFileSync(path: string, encoding: "utf8"): string;
+  export function rmSync(path: string, options?: { recursive?: boolean; force?: boolean }): void;
+}
+
+declare module "node:os" {
+  export function tmpdir(): string;
 }
 
 declare module "node:module" {

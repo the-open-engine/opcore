@@ -9,10 +9,15 @@ import type {
 } from "@the-open-engine/opcore-contracts";
 import { validateGraphDaemonResponse, validateGraphWatchLifecycle } from "@the-open-engine/opcore-contracts";
 import { spawn, spawnSync, type SpawnSyncReturns } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { closeSync, existsSync, mkdtempSync, openSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import type { ResolvedGraphCoreArtifact } from "./artifact.js";
 import { providerFailureStatus, resolveGraphCoreArtifact, schemaMismatchStatus } from "./artifact.js";
+
+const GRAPH_CORE_PIPELINE_TIMEOUT_MS = 120_000;
+const GRAPH_CORE_QUERY_TIMEOUT_MS = 30_000;
+const GRAPH_CORE_WATCH_ONCE_TIMEOUT_MS = 120_000;
 
 declare const process: {
   kill(pid: number, signal?: 0): boolean;
@@ -21,13 +26,20 @@ declare const process: {
 export function invokeGraphCoreSidecar(request: GraphDaemonRequest): GraphDaemonResponse {
   const resolution = resolveGraphCoreArtifact();
   if (!resolution.ok) return failureResponse(request, resolution.status);
-  if (request.operation === "watch") return invokeGraphCoreWatch(resolution.artifact, request);
-  const result = spawnGraphCoreSidecar(resolution.artifact.executablePath, request);
+  return invokeResolvedGraphCoreSidecar(resolution.artifact, request);
+}
+
+export function invokeResolvedGraphCoreSidecar(
+  artifact: ResolvedGraphCoreArtifact,
+  request: GraphDaemonRequest
+): GraphDaemonResponse {
+  if (request.operation === "watch") return invokeGraphCoreWatch(artifact, request);
+  const result = spawnGraphCoreSidecar(artifact.executablePath, request);
   const status = processFailureStatus(result);
   if (status) return failureResponse(request, status);
   const line = firstStdoutLine(result.stdout);
   if (!line) return failureResponse(request, noStdoutStatus());
-  return decodeSidecarResponse(request, line, resolution.artifact);
+  return decodeSidecarResponse(request, line, artifact);
 }
 
 function invokeGraphCoreWatch(
@@ -48,10 +60,8 @@ function invokeGraphCoreWatch(
 
   const args = watchArgs(request, repoRoot);
   if (request.once) {
-    const result = spawnSync(resolution.artifact.executablePath, args, {
-      encoding: "utf8",
-      timeout: 10000,
-      stdio: ["ignore", "pipe", "pipe"]
+    const result = spawnGraphCoreSidecarProcess(resolution.artifact.executablePath, args, {
+      timeoutMs: GRAPH_CORE_WATCH_ONCE_TIMEOUT_MS
     });
     const status = processFailureStatus(result);
     if (status) return failureResponse(request, status);
@@ -114,12 +124,51 @@ function invokeGraphCoreWatch(
 }
 
 function spawnGraphCoreSidecar(executablePath: string, request: GraphDaemonRequest): SpawnSyncReturns {
-  return spawnSync(executablePath, [], {
+  return spawnGraphCoreSidecarProcess(executablePath, [], {
     input: `${JSON.stringify(request)}\n`,
-    encoding: "utf8",
-    timeout: 5000,
-    stdio: ["pipe", "pipe", "pipe"]
+    timeoutMs: sidecarRequestTimeoutMs(request)
   });
+}
+
+function sidecarRequestTimeoutMs(request: GraphDaemonRequest): number {
+  if (request.operation === "build" || request.operation === "update") return GRAPH_CORE_PIPELINE_TIMEOUT_MS;
+  return GRAPH_CORE_QUERY_TIMEOUT_MS;
+}
+
+function spawnGraphCoreSidecarProcess(
+  executablePath: string,
+  args: readonly string[],
+  options: { input?: string; timeoutMs: number }
+): SpawnSyncReturns {
+  const tempDir = mkdtempSync(join(tmpdir(), "opcore-graph-sidecar-"));
+  const stdoutPath = join(tempDir, "stdout.jsonl");
+  const stderrPath = join(tempDir, "stderr.log");
+  let stdoutFd: number | undefined;
+  let stderrFd: number | undefined;
+  try {
+    stdoutFd = openSync(stdoutPath, "w+");
+    stderrFd = openSync(stderrPath, "w+");
+    const stdin = options.input === undefined ? "ignore" : "pipe";
+    const result = spawnSync(executablePath, args, {
+      input: options.input,
+      encoding: "utf8",
+      timeout: options.timeoutMs,
+      stdio: [stdin, stdoutFd, stderrFd]
+    });
+    closeSync(stdoutFd);
+    stdoutFd = undefined;
+    closeSync(stderrFd);
+    stderrFd = undefined;
+    return {
+      ...result,
+      stdout: readFileSync(stdoutPath, "utf8"),
+      stderr: readFileSync(stderrPath, "utf8")
+    };
+  } finally {
+    if (stdoutFd !== undefined) closeSync(stdoutFd);
+    if (stderrFd !== undefined) closeSync(stderrFd);
+    rmSync(tempDir, { recursive: true, force: true });
+  }
 }
 
 function watchArgs(request: GraphDaemonRequest, repoRoot: string): string[] {

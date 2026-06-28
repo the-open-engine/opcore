@@ -53,17 +53,20 @@ fn parse_oxc<'a>(
         Err(diagnostic) => return ParsedSource::from(diagnostic),
     };
     let parsed = Parser::new(allocator, source_text, source_type).parse();
-    if parser_failed(&parsed) {
-        return diagnostic_result(
-            source,
+    let diagnostics = if !parsed.panicked && parsed.errors.is_empty() {
+        Vec::new()
+    } else {
+        vec![warning(
             GraphExtractionDiagnosticCategory::ParseError,
             parser_error_message(&parsed, source_text),
-        );
-    }
+            Some(source.relative_path.clone()),
+            Some(source.language.as_str().to_string()),
+        )]
+    };
 
     ParsedSource {
         program: Some(ParsedProgram::Oxc(parsed.program)),
-        diagnostics: Vec::new(),
+        diagnostics,
     }
 }
 
@@ -147,10 +150,6 @@ fn source_type_for_source(
             Some(source.language.as_str().to_string()),
         )
     })
-}
-
-fn parser_failed(parsed: &ParserReturn<'_>) -> bool {
-    parsed.panicked || !parsed.errors.is_empty()
 }
 
 fn parser_error_message(parsed: &ParserReturn<'_>, source_text: &str) -> String {

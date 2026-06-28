@@ -216,13 +216,13 @@ function functionMetricLines(item: FunctionMetricNode): number {
 
 function functionMetricComplexity(item: FunctionMetricNode): number {
   return numeric(
-    item.metrics?.cyclomatic?.sum,
-    numeric(item.metrics?.cyclomatic?.max, numeric(item.metrics?.cyclomatic?.total, numeric(item.cyclomatic_complexity, numeric(item.complexity, 1))))
+    item.metrics?.cyclomatic?.max,
+    numeric(item.metrics?.cyclomatic?.sum, numeric(item.metrics?.cyclomatic?.total, numeric(item.cyclomatic_complexity, numeric(item.complexity, 1))))
   );
 }
 
 function functionMetricParams(item: FunctionMetricNode): number {
-  return numeric(item.metrics?.nargs?.total, numeric(item.metrics?.nargs?.functions_max, numeric(item.metrics?.nargs?.max, paramCount(item))));
+  return numeric(item.metrics?.nargs?.functions_max, numeric(item.metrics?.nargs?.max, numeric(item.metrics?.nargs?.total, paramCount(item))));
 }
 
 function parseFunctionMetricJson(stdout: string): unknown {
@@ -243,8 +243,8 @@ function unitPath(
   return undefined;
 }
 
-function isFunctionMetricNode(item: { kind?: unknown; metrics?: unknown; name?: unknown; start_line?: unknown; end_line?: unknown }): boolean {
-  return item.kind === "function" || (typeof item.name === "string" && item.metrics !== undefined && item.start_line !== undefined && item.end_line !== undefined);
+function isFunctionMetricNode(item: { kind?: unknown }): boolean {
+  return item.kind === "function";
 }
 
 function numeric(value: unknown, fallback: number): number {
