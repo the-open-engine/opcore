@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "issue": "#29",
   "origin": "covibes-authored-release-proof",
-  "generatedAt": "2026-06-28T20:54:20.485Z",
-  "commitSha": "4dfb6f560072e48fa72dc514dab2f18e779df8a2",
+  "generatedAt": "2026-06-28T21:59:30.270Z",
+  "commitSha": "f22159de025711d63de3e6a5c7f1fc3d5f2efa9c",
   "privateRepo": true,
   "packageNames": [
     "@the-open-engine/opcore-contracts",
@@ -15,6 +15,7 @@
     "@the-open-engine/opcore-edit",
     "@the-open-engine/opcore-validation",
     "@the-open-engine/opcore-validation-clone",
+    "@the-open-engine/opcore-validation-docs",
     "@the-open-engine/opcore-validation-python",
     "@the-open-engine/opcore-validation-rust",
     "@the-open-engine/opcore-validation-typescript",
@@ -53,9 +54,9 @@
       "tarball": {
         "filename": "the-open-engine-opcore-contracts-0.1.0-alpha.0.tgz",
         "path": ".lattice/release/packages/the-open-engine-opcore-contracts-0.1.0-alpha.0.tgz",
-        "sha256": "ecdc22c596e13fb68cd843cf80579c6556d4704c890e059b0bee0c15c57a4f7c",
-        "integrity": "sha512-NyO8AUcn+j27ZcDnHJi3FASXbtTBYOxNv6NWjL74Xe7X9/f3t1/zqCIoInY+QvIbaPBgjXvOdElYDURk/HaBrQ==",
-        "shasum": "b8c8094a0cea1e9665ffadaf159c9f1c03f08220"
+        "sha256": "2b860d741effc2e6cd42b80d36c5641434ed455c63891aca9a39bc718322fab5",
+        "integrity": "sha512-S2mnJJPF3ZRCvFgAFIW16p6P9toJ8twyjbpJ3OHWsA8RLsbiFXFrL8UNwf5gSEGzNZPYn0TZ9wc10WXLXQ7YWg==",
+        "shasum": "6efa64244e248d32dd28b82df08c8a6a695d4ec4"
       },
       "files": [
         "README.md",
@@ -111,6 +112,7 @@
           "@the-open-engine/opcore-graph": "0.1.0-alpha.0",
           "@the-open-engine/opcore-validation": "0.1.0-alpha.0",
           "@the-open-engine/opcore-validation-clone": "0.1.0-alpha.0",
+          "@the-open-engine/opcore-validation-docs": "0.1.0-alpha.0",
           "@the-open-engine/opcore-validation-python": "0.1.0-alpha.0",
           "@the-open-engine/opcore-validation-rust": "0.1.0-alpha.0",
           "@the-open-engine/opcore-validation-typescript": "0.1.0-alpha.0",
@@ -121,9 +123,9 @@
       "tarball": {
         "filename": "the-open-engine-opcore-0.1.0-alpha.0.tgz",
         "path": ".lattice/release/packages/the-open-engine-opcore-0.1.0-alpha.0.tgz",
-        "sha256": "41bdf5f505457c30cd888b55664bf50c3bfa79f10a9ca660601af4fcca3ddad9",
-        "integrity": "sha512-VrcueL3LU12XyKSISklSrQC79fn1N6sM5PD5EvCg+6qVk058qHhDIpK0hjd9LzRXWHJ2che0h3kvP34Fwqrs7A==",
-        "shasum": "ca80bf5bf0052e702c0d5e097384c6a2f4fdba90"
+        "sha256": "509e6b0101ed4fb1d52eec12e5939bfc90f04e0437df6f7938a1b9215e1a6099",
+        "integrity": "sha512-5CMY9UIn5bK942k7EIfSbgC1G5cVu8WXf1PiL8F+5zK8pVh+2E5yZPe42EkqCh3vNgV0siimqPoPn0sTno2kIg==",
+        "shasum": "65602067dcdf7273a0940d1426fd7dea9bcf3855"
       },
       "files": [
         "README.md",
@@ -732,9 +734,9 @@
       "tarball": {
         "filename": "the-open-engine-opcore-edit-0.1.0-alpha.0.tgz",
         "path": ".lattice/release/packages/the-open-engine-opcore-edit-0.1.0-alpha.0.tgz",
-        "sha256": "669da31883822dea02ee957ffda4f8a4994c7499ff60f82dc3bf944bc2b152b9",
-        "integrity": "sha512-cRu/i940Y2rvHKC2fysbxs6clsgLeu/zLw+mbBXX1MWeRrOdT2KbPgIW+j/zEGI/INh+gOuTjRyr8b/gCBoF0Q==",
-        "shasum": "a322dd791aa855b930138232c5ba8d305244bce5"
+        "sha256": "ba7341935cc034d0a38b381e7a7f6b4c5273d1cf8f38548fb1b1b8d68b10a143",
+        "integrity": "sha512-FpbdOi99BzQBFnfIefgAGHCKceu1H5C7UHN9uN+kl1AJYK/e8P71KBEvsPnu5cYPaU0jLBFdMwKwhn1rnI80UA==",
+        "shasum": "f21bd9f298aeb04bfe37d13688b3e6e7d39d7f1d"
       },
       "files": [
         "README.md",
@@ -1069,6 +1071,96 @@
         "package.json"
       ],
       "expectedFileCount": 17,
+      "bins": {},
+      "descriptorReferences": [],
+      "nativeArtifacts": []
+    },
+    {
+      "packageName": "@the-open-engine/opcore-validation-docs",
+      "packageRoot": "packages/validation-docs",
+      "version": "0.1.0-alpha.0",
+      "manifest": {
+        "name": "@the-open-engine/opcore-validation-docs",
+        "version": "0.1.0-alpha.0",
+        "license": "MIT",
+        "main": "dist/index.js",
+        "types": "dist/index.d.ts",
+        "files": [
+          "dist",
+          "README.md"
+        ],
+        "bins": {},
+        "dependencies": {
+          "@the-open-engine/opcore-contracts": "0.1.0-alpha.0",
+          "@the-open-engine/opcore-validation": "0.1.0-alpha.0"
+        },
+        "bundledDependencies": []
+      },
+      "tarball": {
+        "filename": "the-open-engine-opcore-validation-docs-0.1.0-alpha.0.tgz",
+        "path": ".lattice/release/packages/the-open-engine-opcore-validation-docs-0.1.0-alpha.0.tgz",
+        "sha256": "63fd39f5802100e44459ff01f289c355faede6254fab53f400540702adab65d3",
+        "integrity": "sha512-L9RuS6QVebMWBjtPRUQ3YIm9yM8bPuD0a3T3+pZ2DuvrtRjn1V0yaKyewOg5SuuWIe/+Mt7EB4uHiIbGWIEObA==",
+        "shasum": "ba8302a1ba7cd12797f48143e381c983e880be75"
+      },
+      "files": [
+        "README.md",
+        "dist/check-constants.d.ts",
+        "dist/check-constants.d.ts.map",
+        "dist/check-constants.js",
+        "dist/check-ids.d.ts",
+        "dist/check-ids.d.ts.map",
+        "dist/check-ids.js",
+        "dist/checks.d.ts",
+        "dist/checks.d.ts.map",
+        "dist/checks.js",
+        "dist/diagnostics.d.ts",
+        "dist/diagnostics.d.ts.map",
+        "dist/diagnostics.js",
+        "dist/freshness.d.ts",
+        "dist/freshness.d.ts.map",
+        "dist/freshness.js",
+        "dist/history.d.ts",
+        "dist/history.d.ts.map",
+        "dist/history.js",
+        "dist/index.d.ts",
+        "dist/index.d.ts.map",
+        "dist/index.js",
+        "dist/snapshot.d.ts",
+        "dist/snapshot.d.ts.map",
+        "dist/snapshot.js",
+        "package.json"
+      ],
+      "fileCount": 26,
+      "expectedFiles": [
+        "README.md",
+        "dist/check-constants.d.ts",
+        "dist/check-constants.d.ts.map",
+        "dist/check-constants.js",
+        "dist/check-ids.d.ts",
+        "dist/check-ids.d.ts.map",
+        "dist/check-ids.js",
+        "dist/checks.d.ts",
+        "dist/checks.d.ts.map",
+        "dist/checks.js",
+        "dist/diagnostics.d.ts",
+        "dist/diagnostics.d.ts.map",
+        "dist/diagnostics.js",
+        "dist/freshness.d.ts",
+        "dist/freshness.d.ts.map",
+        "dist/freshness.js",
+        "dist/history.d.ts",
+        "dist/history.d.ts.map",
+        "dist/history.js",
+        "dist/index.d.ts",
+        "dist/index.d.ts.map",
+        "dist/index.js",
+        "dist/snapshot.d.ts",
+        "dist/snapshot.d.ts.map",
+        "dist/snapshot.js",
+        "package.json"
+      ],
+      "expectedFileCount": 26,
       "bins": {},
       "descriptorReferences": [],
       "nativeArtifacts": []
@@ -1528,6 +1620,7 @@
           "@the-open-engine/opcore-contracts": "0.1.0-alpha.0",
           "@the-open-engine/opcore-graph": "0.1.0-alpha.0",
           "@the-open-engine/opcore-validation": "0.1.0-alpha.0",
+          "@the-open-engine/opcore-validation-docs": "0.1.0-alpha.0",
           "@the-open-engine/opcore-validation-python": "0.1.0-alpha.0",
           "@the-open-engine/opcore-validation-rust": "0.1.0-alpha.0",
           "@the-open-engine/opcore-validation-typescript": "0.1.0-alpha.0"
@@ -1537,9 +1630,9 @@
       "tarball": {
         "filename": "the-open-engine-opcore-asp-provider-0.1.0-alpha.0.tgz",
         "path": ".lattice/release/packages/the-open-engine-opcore-asp-provider-0.1.0-alpha.0.tgz",
-        "sha256": "87013f30770349f1db125bc3379c81fc57dd6f445696a29bfeeb2839ac834403",
-        "integrity": "sha512-9uRpNf1idVPhm7Q48zp8vFJxeR4pBYky5OiTgygp2gwh3ABi3cNqIUajtrbZwaFj2BzZUlUuFkC33Ln62CdpTQ==",
-        "shasum": "61acef3cabbc7dc1a58c44dddbe64191aef3c1c8"
+        "sha256": "91cf08e820f6ee16dd2487c4e700bf0dd2d189578cec5f59fdd9c4526cc012ac",
+        "integrity": "sha512-CFhMaYiDl55cGa/47lgf8ATBcPSe5mgkI287q5vLxat3YOSRFgGGRAzv9w65oKup8UdF66E24iloauoLY4JV8w==",
+        "shasum": "9f887108973abb88c09c29eaada25faa1ecc1efa"
       },
       "files": [
         "README.md",
@@ -1800,7 +1893,7 @@
   "descriptor": {
     "path": "packages/opcore/dist/descriptors/opcore.managed-tool.json",
     "packageName": "@the-open-engine/opcore",
-    "checksumSha256": "c83c895539e47ae95873f133bf660feda8c30cc9eae12a6d59a76cdd924eab84",
+    "checksumSha256": "43b7b390a622c24d1c8b2b4ec7772fc9634dc07dc69f6f5942aef3ae6cbf1b32",
     "descriptor": {
       "schemaVersion": 1,
       "descriptorKind": "aggregate_opcore",
@@ -2159,6 +2252,15 @@
             "python.import-graph",
             "python.dead-code",
             "python.relevant-tests",
+            "docs.existence",
+            "docs.staleness",
+            "docs.freshness",
+            "docs.length",
+            "docs.dry",
+            "docs.content-quality",
+            "docs.code-blocks",
+            "docs.rules-why",
+            "docs.hub-coverage",
             "clone.duplication"
           ]
         }
@@ -2584,10 +2686,10 @@
   ],
   "license": {
     "reportPath": "docs/release/license-report.md",
-    "reportSha256": "be6f578d8d47e4afb3b9116709dd7c778fee3eff47f0d09eafacae225197ce03",
+    "reportSha256": "16bf67acce4c0ae91a9575250e3b71a614d2a91f342ce8aeda5fcb6dbe4eae49",
     "productionDependencyCount": 118,
     "bundledDependencyCount": 0,
-    "workspacePackageCount": 14,
+    "workspacePackageCount": 15,
     "unresolvedLicenseCount": 0,
     "packages": [
       {
@@ -3420,17 +3522,17 @@
   },
   "provenance": {
     "reportPath": "docs/release/provenance-receipts.md",
-    "reportSha256": "0d54de5ce395f15375af18e8790ccf8badcaa7316e3afb7a756f41646d18be44",
-    "scannedFileCount": 494,
-    "historyCommitCount": 207,
+    "reportSha256": "2608c0ac9b1a2b42ae390ba180818acd7e5af4cc06a3ef61084cd839c4fcd1c9",
+    "scannedFileCount": 508,
+    "historyCommitCount": 210,
     "findingCount": 0,
     "findings": []
   },
   "secretHistory": {
     "allowlistPath": "docs/release/secret-scan-allowlist.json",
     "allowlistSha256": "7060c267c912e3156b87c646e3bc970eac1ac8bdd964cf0a794b83e6f1250614",
-    "currentTreeScannedFileCount": 493,
-    "gitHistoryScannedCommitCount": 207,
+    "currentTreeScannedFileCount": 507,
+    "gitHistoryScannedCommitCount": 210,
     "findingCount": 0,
     "findings": []
   },
@@ -3457,7 +3559,7 @@
       "status": "passed",
       "exitCode": 0,
       "path": "docs/release/license-report.md",
-      "checksumSha256": "be6f578d8d47e4afb3b9116709dd7c778fee3eff47f0d09eafacae225197ce03",
+      "checksumSha256": "16bf67acce4c0ae91a9575250e3b71a614d2a91f342ce8aeda5fcb6dbe4eae49",
       "summary": "118 production dependencies, 0 unresolved"
     },
     {
@@ -3470,8 +3572,8 @@
       "status": "passed",
       "exitCode": 0,
       "path": "docs/release/provenance-receipts.md",
-      "checksumSha256": "0d54de5ce395f15375af18e8790ccf8badcaa7316e3afb7a756f41646d18be44",
-      "summary": "494 files, 207 commits scanned"
+      "checksumSha256": "2608c0ac9b1a2b42ae390ba180818acd7e5af4cc06a3ef61084cd839c4fcd1c9",
+      "summary": "508 files, 210 commits scanned"
     },
     {
       "id": "release-hygiene",
@@ -3482,7 +3584,7 @@
       "status": "passed",
       "exitCode": 0,
       "path": "docs/release/artifact-attestation.md",
-      "checksumSha256": "432f560fc17b0fee9fd3cd18f4516b25bafc6455bf348f81d183942b823574b7",
+      "checksumSha256": "48f61e7a6bea6afb7735d0256e1501b283162f4537b125ebd59d2a52f6b882eb",
       "summary": "release hygiene check passed"
     },
     {
@@ -3509,7 +3611,7 @@
       "exitCode": 0,
       "path": "docs/release/secret-scan-allowlist.json",
       "checksumSha256": "7060c267c912e3156b87c646e3bc970eac1ac8bdd964cf0a794b83e6f1250614",
-      "summary": "493 files, 207 commits scanned"
+      "summary": "507 files, 210 commits scanned"
     }
   ],
   "graphReleaseReceipt": {

@@ -31,9 +31,6 @@ export async function runDocsFreshnessCheck(
 }
 
 function docsFreshnessPrecheck(snapshot: DocsSnapshot): ValidationCheckResult | undefined {
-  if (snapshot.hasOverlays) {
-    return skippedDocsResult("Documentation Git-history checks require committed state and skip when overlays are present.");
-  }
   if (snapshot.docs.length === 0) return skippedDocsResult("No documentation files were selected.");
   return undefined;
 }
@@ -49,6 +46,9 @@ function docsFreshnessHistoryDiagnostics(
   context: ValidationCheckContext,
   snapshot: DocsSnapshot
 ): FreshnessHistoryOutcome {
+  if (snapshot.hasOverlays) {
+    return freshnessSkippedOutcome("Documentation Git-history checks require committed state and skip when overlays are present.");
+  }
   const history = docsFreshnessHistoryRoot(context);
   if (history.status === "skipped") return history;
   const sourcePaths = snapshot.scopeFiles.filter((path) => !isDocsPath(path, snapshot.policy));

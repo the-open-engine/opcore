@@ -201,6 +201,55 @@ const expectedDocsCheckIds = [
     assert.match(result.diagnostics[0].message, /src\/missing\.ts/);
   });
 
+  it("reports stale file references introduced by overlay context docs", async () => {
+    const result = await runner({
+      files: {
+        "AGENTS.md": validGuidance("overlay stale reference"),
+        "src/app.ts": "export const value = 1;\n"
+      },
+      checks: createDocsValidationChecks({
+        history: { now: "2024-04-15T00:00:00Z", maxStaleDays: 3650 }
+      })
+    }).runValidation(
+      request({
+        checks: [DOCS_FRESHNESS_CHECK_ID],
+        scope: { kind: "files", files: ["AGENTS.md"] },
+        overlays: [
+          {
+            path: "AGENTS.md",
+            action: "write",
+            content: `${validGuidance("overlay stale reference")}\nSee \`src/missing.ts\` for the new entrypoint.\n`
+          }
+        ]
+      })
+    );
+
+    assert.equal(result.status, "policy_failure");
+    assert.deepEqual(result.diagnostics.map((diagnostic) => diagnostic.code), ["DOCS_STALE_REFERENCE"]);
+    assert.match(result.diagnostics[0].message, /src\/missing\.ts/);
+  });
+
+  it("does not report stale file references repaired by overlays", async () => {
+    const result = await runner({
+      files: {
+        "AGENTS.md": `${validGuidance("overlay repaired reference")}\nSee \`src/missing.ts\` for the entrypoint.\n`
+      },
+      checks: createDocsValidationChecks({
+        history: { now: "2024-04-15T00:00:00Z", maxStaleDays: 3650 }
+      })
+    }).runValidation(
+      request({
+        checks: [DOCS_FRESHNESS_CHECK_ID],
+        scope: { kind: "files", files: ["AGENTS.md", "src/missing.ts"] },
+        overlays: [{ path: "src/missing.ts", action: "write", content: "export const repaired = true;\n" }]
+      })
+    );
+
+    assert.equal(result.status, "skipped");
+    assert.deepEqual(result.diagnostics, []);
+    assert.match(result.manifest.runs[0].failureMessage, /overlays are present/);
+  });
+
   it("degrades committed-state freshness and staleness checks when overlays are present", async () => {
     const result = await runner({
       files: {
