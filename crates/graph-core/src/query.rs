@@ -18,7 +18,8 @@ mod tests;
 use changes::detect_changed_paths;
 use common::sorted_repo_paths;
 use impact::{change_impact_files, ImpactTraversal};
-use index::{Direction, GraphIndex, TraversalSpec};
+pub(crate) use index::GraphIndex;
+use index::{Direction, TraversalSpec};
 
 const DEFAULT_MAX_DEPTH: u32 = 3;
 const DEFAULT_LIMIT: u32 = 250;
@@ -82,6 +83,12 @@ pub struct GraphReviewContextOutput {
     pub diagnostics: Vec<crate::protocol::GraphExtractionDiagnostic>,
 }
 
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct GraphReviewContextHashes<'a> {
+    pub stored: &'a [SourceFileHash],
+    pub current: &'a [SourceFileHash],
+}
+
 pub fn select_graph_facts(
     all_nodes: &[GraphFactNode],
     all_edges: &[GraphFactEdge],
@@ -95,6 +102,18 @@ pub fn named_query(
     request: &GraphNamedQueryRequest,
 ) -> GraphNamedQueryOutput {
     let index = GraphIndex::new(&snapshot.nodes, &snapshot.edges);
+    named_query_with_index(snapshot, &index, request)
+}
+
+pub(crate) fn graph_index(snapshot: &StoreQueryOutput) -> GraphIndex {
+    GraphIndex::new(&snapshot.nodes, &snapshot.edges)
+}
+
+pub(crate) fn named_query_with_index(
+    snapshot: &StoreQueryOutput,
+    index: &GraphIndex,
+    request: &GraphNamedQueryRequest,
+) -> GraphNamedQueryOutput {
     let max_depth = request.max_depth.unwrap_or(DEFAULT_MAX_DEPTH);
     let limit = request.limit.unwrap_or(DEFAULT_LIMIT);
     let target_ids = index.resolve_query_targets(request.query_kind, &request.target);
@@ -145,10 +164,18 @@ pub fn named_query(
 
 pub fn impact(snapshot: &StoreQueryOutput, request: &GraphImpactRequest) -> GraphImpactOutput {
     let index = GraphIndex::new(&snapshot.nodes, &snapshot.edges);
+    impact_with_index(snapshot, &index, request)
+}
+
+pub(crate) fn impact_with_index(
+    snapshot: &StoreQueryOutput,
+    index: &GraphIndex,
+    request: &GraphImpactRequest,
+) -> GraphImpactOutput {
     let max_depth = request.max_depth.unwrap_or(DEFAULT_MAX_DEPTH);
     let limit = request.limit.unwrap_or(DEFAULT_LIMIT);
     let changed_files = sorted_repo_paths(request.files.clone());
-    ImpactTraversal::new(changed_files, max_depth, limit).run(snapshot, &index)
+    ImpactTraversal::new(changed_files, max_depth, limit).run(snapshot, index)
 }
 
 pub fn detect_changes(
@@ -174,6 +201,24 @@ pub fn review_context(
     current_hashes: &[SourceFileHash],
     request: &GraphReviewContextRequest,
 ) -> GraphReviewContextOutput {
+    let index = GraphIndex::new(&snapshot.nodes, &snapshot.edges);
+    review_context_with_index(
+        snapshot,
+        GraphReviewContextHashes {
+            stored: stored_hashes,
+            current: current_hashes,
+        },
+        request,
+        &index,
+    )
+}
+
+pub(crate) fn review_context_with_index(
+    snapshot: &StoreQueryOutput,
+    hashes: GraphReviewContextHashes<'_>,
+    request: &GraphReviewContextRequest,
+    index: &GraphIndex,
+) -> GraphReviewContextOutput {
     let changes_request = GraphDetectChangesRequest {
         request_id: request.request_id.clone(),
         repo: request.repo.clone(),
@@ -182,7 +227,7 @@ pub fn review_context(
         files: request.files.clone(),
         base_ref: request.base_ref.clone(),
     };
-    let changes = detect_changes(snapshot, stored_hashes, current_hashes, &changes_request);
+    let changes = detect_changes(snapshot, hashes.stored, hashes.current, &changes_request);
     let impact_files = change_impact_files(
         &changes.changed_files,
         &changes.deleted_files,
@@ -198,7 +243,7 @@ pub fn review_context(
         max_depth: request.max_depth,
         limit: request.limit,
     };
-    let impact = impact(snapshot, &impact_request);
+    let impact = impact_with_index(snapshot, index, &impact_request);
     GraphReviewContextOutput {
         metadata: snapshot.metadata.clone(),
         changed_files: changes.changed_files,

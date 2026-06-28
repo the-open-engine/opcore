@@ -379,6 +379,10 @@ impl GraphStore {
         })
     }
 
+    pub(crate) fn snapshot_generated_at(&self) -> StoreResult<Option<String>> {
+        Ok(self.read_metadata()?.map(|metadata| metadata.generated_at))
+    }
+
     fn read_metadata(&self) -> StoreResult<Option<GraphSnapshotMetadata>> {
         read_optional_json(
             &self.connection,

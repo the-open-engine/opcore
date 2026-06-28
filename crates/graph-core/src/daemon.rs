@@ -8,22 +8,24 @@ use crate::protocol::{
     GraphImpactResult, GraphNamedQueryResult, GraphPipelineResult, GraphProviderStatus,
     GraphReviewContextResult, GraphSearchResult, RepoIdentity,
 };
-use crate::store::{GraphStore, StoreError, StorePaths, StoreQueryOutput};
+use crate::store::{StoreError, StorePaths};
 use crate::watch::{run_watch, WatchCliOptions, DEFAULT_WATCH_IDLE_TIMEOUT_MS};
 use crate::GRAPH_SCHEMA_VERSION;
 use std::io::{self, BufRead, Write};
 use std::path::{Path, PathBuf};
+use std::time::SystemTime;
 
 mod lifecycle;
 mod query;
 mod response;
+mod session;
 #[cfg(test)]
 mod tests;
 mod validation;
 
-use lifecycle::lifecycle_status;
 use query::query_result;
 use response::{empty_parts, failure_response, query_failure_parts, status_only};
+use session::SessionCache;
 use validation::validate_request;
 
 const GRAPH_DAEMON_PROTOCOL: &str = "opcore.graph.daemon";
@@ -42,22 +44,17 @@ struct ResponseParts {
     pipeline: Option<GraphPipelineResult>,
 }
 
-struct QueryResources {
-    status: GraphProviderStatus,
-    store: GraphStore,
-    snapshot: StoreQueryOutput,
-}
-
 pub fn run_stdio() -> Result<(), String> {
     let stdin = io::stdin();
     let mut stdout = io::stdout();
+    let mut session_cache = SessionCache::default();
     for line in stdin.lock().lines() {
         let line = line.map_err(|error| format!("failed to read request: {error}"))?;
         let Some(request) = parse_request_line(line)? else {
             continue;
         };
         let should_shutdown = request.operation == GraphDaemonOperation::Shutdown;
-        let response = handle_request(request);
+        let response = handle_request_with_cache(&mut session_cache, request);
         write_response_line(&mut stdout, &response)?;
         if should_shutdown {
             break;
@@ -90,22 +87,33 @@ fn write_response_line(
 }
 
 pub fn handle_request(request: GraphDaemonRequest) -> GraphDaemonResponse {
+    let mut session_cache = SessionCache::default();
+    handle_request_with_cache(&mut session_cache, request)
+}
+
+fn handle_request_with_cache(
+    session_cache: &mut SessionCache,
+    request: GraphDaemonRequest,
+) -> GraphDaemonResponse {
     if let Err(error) = validate_request(&request) {
         return failure_response(&request, error.status());
     }
-    handle_valid_request(request)
+    handle_valid_request(session_cache, request)
 }
 
-fn handle_valid_request(request: GraphDaemonRequest) -> GraphDaemonResponse {
+fn handle_valid_request(
+    session_cache: &mut SessionCache,
+    request: GraphDaemonRequest,
+) -> GraphDaemonResponse {
     let now = "2026-06-04T00:00:00.000Z".to_string();
     let parts = match request.operation {
         GraphDaemonOperation::Build => pipeline_result(&request),
         GraphDaemonOperation::Update => pipeline_result(&request),
         GraphDaemonOperation::Watch => return watch_response(request),
-        GraphDaemonOperation::Status => status_result(&request, now),
-        GraphDaemonOperation::Query => query_result(&request),
+        GraphDaemonOperation::Status => status_result(session_cache, &request, now),
+        GraphDaemonOperation::Query => query_result(session_cache, &request),
         GraphDaemonOperation::Ping => status_only(available_status(request.repo.clone(), now)),
-        GraphDaemonOperation::Health => health_result(&request),
+        GraphDaemonOperation::Health => health_result(session_cache, &request),
         GraphDaemonOperation::Shutdown => status_only(available_status(request.repo.clone(), now)),
     };
 
@@ -162,12 +170,16 @@ fn watch_response(request: GraphDaemonRequest) -> GraphDaemonResponse {
     }
 }
 
-fn status_result(request: &GraphDaemonRequest, generated_at: String) -> ResponseParts {
+fn status_result(
+    session_cache: &mut SessionCache,
+    request: &GraphDaemonRequest,
+    generated_at: String,
+) -> ResponseParts {
     let Some(repo_root) = request.repo.repo_root.clone() else {
         return status_only(available_status(request.repo.clone(), generated_at));
     };
     let watch_paths = request_watch_paths(request);
-    match status_store_for_repo(&repo_root, &watch_paths) {
+    match session_cache.status_for_repo(&repo_root, &watch_paths) {
         Ok(status) => status_only(status),
         Err(error) => status_only(store_error_status(error)),
     }
@@ -212,8 +224,8 @@ fn missing_query_result(request: &GraphDaemonRequest) -> ResponseParts {
     query_failure_parts(request, status)
 }
 
-fn health_result(request: &GraphDaemonRequest) -> ResponseParts {
-    status_result(request, crate::pipeline::now_rfc3339())
+fn health_result(session_cache: &mut SessionCache, request: &GraphDaemonRequest) -> ResponseParts {
+    status_result(session_cache, request, crate::pipeline::now_rfc3339())
 }
 
 fn query_repo_root(request: &GraphDaemonRequest) -> Option<String> {
@@ -235,25 +247,6 @@ fn query_repo_candidates(request: &GraphDaemonRequest) -> [Option<&RepoIdentity>
     ]
 }
 
-fn open_store_readonly(repo_root: &str) -> Result<GraphStore, StoreError> {
-    GraphStore::open_readonly(StorePaths::for_repo_root(repo_root))
-}
-
-fn status_store_for_repo(
-    repo_root: &str,
-    watch_paths: &[String],
-) -> Result<GraphProviderStatus, StoreError> {
-    if let Some(status) = lifecycle_status(repo_root) {
-        return Ok(status);
-    }
-    let paths = readonly_store_paths(repo_root)?;
-    if !paths.db_path.is_file() {
-        return Ok(missing_store_status(&paths.repo_root));
-    }
-    let store = GraphStore::open_readonly(paths)?;
-    store.status_for_watch_paths(None, watch_paths)
-}
-
 fn request_watch_paths(request: &GraphDaemonRequest) -> Vec<String> {
     if request.watch_paths.is_empty() {
         request.paths.clone()
@@ -271,6 +264,10 @@ fn readonly_store_paths(repo_root: &str) -> Result<StorePaths, StoreError> {
         )));
     }
     Ok(StorePaths::for_repo_root(repo_root.canonicalize()?))
+}
+
+fn db_modified(paths: &StorePaths) -> Result<SystemTime, StoreError> {
+    Ok(std::fs::metadata(&paths.db_path)?.modified()?)
 }
 
 fn missing_store_status(repo_root: &Path) -> GraphProviderStatus {
