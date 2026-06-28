@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, readFileSync } from "node:fs";
+import { accessSync, constants, existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 const expectedWorkspacePackages = new Map([
@@ -44,6 +44,16 @@ describe("Opcore public package identity", () => {
     );
     const oldCliPackage = ["packages", "cli"].join("/");
     assert.equal(existsSync(oldCliPackage), false, `${oldCliPackage} must not remain a package`);
+  });
+
+  it("marks packaged bin entrypoints executable after build", () => {
+    const binTargets = [
+      "packages/opcore/dist/index.js",
+      "packages/asp-provider/dist/index.js"
+    ];
+    for (const binTarget of binTargets) {
+      accessSync(binTarget, constants.X_OK);
+    }
   });
 
   it("keeps old public package identities out of release-facing package files", () => {

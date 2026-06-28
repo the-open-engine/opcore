@@ -1,4 +1,4 @@
-import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { descriptorArtifactPath, opcoreManagedToolDescriptor } from "../packages/opcore/dist/advanced/descriptor.js";
@@ -29,3 +29,4 @@ for (const entry of readdirSync(outputDir, { withFileTypes: true })) {
 }
 rmSync(resolve(repoRoot, "packages", "opcore", "dist", "lattice"), { recursive: true, force: true });
 writeFileSync(outputPath, `${JSON.stringify(descriptor, null, 2)}\n`);
+chmodSync(resolve(repoRoot, "packages", "opcore", "dist", "index.js"), 0o755);
