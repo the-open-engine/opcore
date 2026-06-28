@@ -4704,6 +4704,347 @@
         }
       ]
     },
+    "AspWarmMethodName": {
+      "enum": [
+        "inspect/references",
+        "edit/rename",
+        "check/evaluate",
+        "session/shutdown"
+      ]
+    },
+    "AspWarmProviderSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "capabilityFamily"
+      ],
+      "properties": {
+        "id": {
+          "const": "opcore"
+        },
+        "capabilityFamily": {
+          "enum": [
+            "inspect",
+            "edit",
+            "session"
+          ]
+        }
+      }
+    },
+    "AspWarmInspectReferencesParams": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "symbolName"
+      ],
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/RepoRelativePath"
+        },
+        "symbolName": {
+          "type": "string",
+          "minLength": 1
+        },
+        "line": {
+          "type": "number",
+          "minimum": 1
+        },
+        "column": {
+          "type": "number",
+          "minimum": 1
+        },
+        "limit": {
+          "type": "number",
+          "minimum": 1
+        }
+      }
+    },
+    "AspWarmInspectReferencesOkResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "route",
+        "status",
+        "target",
+        "references"
+      ],
+      "properties": {
+        "route": {
+          "const": "references"
+        },
+        "status": {
+          "const": "ok"
+        },
+        "target": {
+          "$ref": "#/$defs/InspectReferenceTarget"
+        },
+        "references": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/InspectReferenceEntry"
+          }
+        }
+      }
+    },
+    "AspWarmInspectReferencesErrorResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "route",
+        "status",
+        "failure"
+      ],
+      "properties": {
+        "route": {
+          "const": "references"
+        },
+        "status": {
+          "const": "error"
+        },
+        "target": {
+          "$ref": "#/$defs/InspectReferenceTarget"
+        },
+        "failure": {
+          "$ref": "#/$defs/InspectRouteFailure"
+        }
+      }
+    },
+    "AspWarmInspectReferencesResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "provider",
+        "inspectResult",
+        "timing"
+      ],
+      "properties": {
+        "provider": {
+          "$ref": "#/$defs/AspWarmProviderSummary"
+        },
+        "inspectResult": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/AspWarmInspectReferencesOkResult"
+            },
+            {
+              "$ref": "#/$defs/AspWarmInspectReferencesErrorResult"
+            }
+          ]
+        },
+        "timing": {
+          "$ref": "#/$defs/CommandTiming"
+        }
+      }
+    },
+    "EditRefusalCategory": {
+      "enum": [
+        "absolute_path",
+        "parent_directory",
+        "ambiguous_repo_identity",
+        "validation_failed",
+        "provider_required_missing",
+        "schema_mismatch",
+        "unsafe_edit",
+        "conflict",
+        "unsupported_change"
+      ]
+    },
+    "EditRefusal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "category",
+        "message"
+      ],
+      "properties": {
+        "category": {
+          "$ref": "#/$defs/EditRefusalCategory"
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1
+        },
+        "path": {
+          "$ref": "#/$defs/RepoRelativePath"
+        }
+      }
+    },
+    "SymbolEditTarget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "name"
+      ],
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/RepoRelativePath"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "line": {
+          "type": "number",
+          "minimum": 1
+        },
+        "column": {
+          "type": "number",
+          "minimum": 1
+        },
+        "nodeId": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "AspWarmEditRenameParams": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "target",
+        "newName"
+      ],
+      "properties": {
+        "target": {
+          "$ref": "#/$defs/SymbolEditTarget"
+        },
+        "newName": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "AspWarmAffectedChecksum": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "checksumBefore": {
+          "type": "string",
+          "minLength": 1
+        },
+        "checksumAfter": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "AspWarmEditRenamePreviewResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "route",
+        "status",
+        "changes",
+        "affectedChecksums"
+      ],
+      "properties": {
+        "route": {
+          "const": "rename"
+        },
+        "status": {
+          "const": "preview"
+        },
+        "changes": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/RepoRelativeChange"
+          }
+        },
+        "affectedChecksums": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/AspWarmAffectedChecksum"
+          }
+        }
+      }
+    },
+    "AspWarmEditRenameRefusedResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "route",
+        "status",
+        "refusal"
+      ],
+      "properties": {
+        "route": {
+          "const": "rename"
+        },
+        "status": {
+          "const": "refused"
+        },
+        "refusal": {
+          "$ref": "#/$defs/EditRefusal"
+        }
+      }
+    },
+    "AspWarmEditRenameResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "provider",
+        "editResult",
+        "timing"
+      ],
+      "properties": {
+        "provider": {
+          "$ref": "#/$defs/AspWarmProviderSummary"
+        },
+        "editResult": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/AspWarmEditRenamePreviewResult"
+            },
+            {
+              "$ref": "#/$defs/AspWarmEditRenameRefusedResult"
+            }
+          ]
+        },
+        "timing": {
+          "$ref": "#/$defs/CommandTiming"
+        }
+      }
+    },
+    "AspWarmSessionShutdownResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "provider",
+        "session",
+        "timing"
+      ],
+      "properties": {
+        "provider": {
+          "$ref": "#/$defs/AspWarmProviderSummary"
+        },
+        "session": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state"
+          ],
+          "properties": {
+            "state": {
+              "const": "shutdown"
+            }
+          }
+        },
+        "timing": {
+          "$ref": "#/$defs/CommandTiming"
+        }
+      }
+    },
     "CommandOwner": {
       "enum": [
         "graph",

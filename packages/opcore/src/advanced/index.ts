@@ -4,6 +4,7 @@ import { commandRouterManifest } from "./manifest.js";
 import { runCli } from "./router.js";
 import { isServeTransportArgv, runGraphServeCli } from "@the-open-engine/opcore-graph";
 import { createGraphServeTelemetry } from "../serve-telemetry.js";
+import { isAspServeTransportArgv, runAspWarmServeCli } from "./asp-warm/asp-serve-cli.js";
 
 declare const process: {
   argv: string[];
@@ -24,6 +25,13 @@ async function runLatticeDirectCli(): Promise<void> {
       argv: argv.slice(1),
       bin: "opcore",
       telemetry: createGraphServeTelemetry()
+    });
+    return;
+  }
+  if (bin === "opcore" && argv[0] === "asp" && isAspServeTransportArgv(argv.slice(1))) {
+    process.exitCode = await runAspWarmServeCli({
+      argv: argv.slice(1),
+      bin: "opcore"
     });
     return;
   }

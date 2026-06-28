@@ -28,6 +28,9 @@
     },
     {
       "path": "../validation-typescript"
+    },
+    {
+      "path": "../asp-provider"
     }
   ]
 }

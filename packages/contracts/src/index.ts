@@ -684,6 +684,88 @@ export type InspectRouteResult =
   | InspectImplementationResult
   | InspectRouteErrorResult;
 
+export const aspWarmMethodNames = ["inspect/references", "edit/rename", "check/evaluate", "session/shutdown"] as const;
+export type AspWarmMethodName = (typeof aspWarmMethodNames)[number];
+
+export interface AspWarmProviderSummary {
+  id: "opcore";
+  capabilityFamily: "inspect" | "edit" | "session";
+}
+
+export interface AspWarmInspectReferencesParams {
+  path: string;
+  symbolName: string;
+  line?: number;
+  column?: number;
+  limit?: number;
+}
+
+export interface AspWarmInspectReferencesOkResult {
+  route: "references";
+  status: "ok";
+  target: InspectReferenceTarget;
+  references: readonly InspectReferenceEntry[];
+}
+
+export interface AspWarmInspectReferencesErrorResult {
+  route: "references";
+  status: "error";
+  target?: InspectReferenceTarget;
+  failure: InspectRouteFailure;
+}
+
+export interface AspWarmInspectReferencesResponse {
+  provider: AspWarmProviderSummary;
+  inspectResult: AspWarmInspectReferencesOkResult | AspWarmInspectReferencesErrorResult;
+  timing: CommandTiming;
+}
+
+export interface SymbolEditTarget {
+  path: string;
+  name: string;
+  line?: number;
+  column?: number;
+  nodeId?: string;
+}
+
+export interface AspWarmEditRenameParams {
+  target: SymbolEditTarget;
+  newName: string;
+}
+
+export interface AspWarmAffectedChecksum {
+  path: string;
+  checksumBefore?: string;
+  checksumAfter?: string;
+}
+
+export interface AspWarmEditRenamePreviewResult {
+  route: "rename";
+  status: "preview";
+  changes: readonly RepoRelativeChange[];
+  affectedChecksums: readonly AspWarmAffectedChecksum[];
+}
+
+export interface AspWarmEditRenameRefusedResult {
+  route: "rename";
+  status: "refused";
+  refusal: EditRefusal;
+}
+
+export interface AspWarmEditRenameResponse {
+  provider: AspWarmProviderSummary;
+  editResult: AspWarmEditRenamePreviewResult | AspWarmEditRenameRefusedResult;
+  timing: CommandTiming;
+}
+
+export interface AspWarmSessionShutdownResponse {
+  provider: AspWarmProviderSummary;
+  session: {
+    state: "shutdown";
+  };
+  timing: CommandTiming;
+}
+
 export interface GraphSearchRequest {
   requestId?: string;
   repo: RepoIdentity;

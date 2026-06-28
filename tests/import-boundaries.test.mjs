@@ -62,6 +62,7 @@ describe("package import boundaries", () => {
               "@the-open-engine/opcore-validation-python",
               "@the-open-engine/opcore-validation-rust",
               "@the-open-engine/opcore-validation-typescript",
+              "@the-open-engine/opcore-asp-provider",
               "ts-morph"
             ].includes(source),
             true,

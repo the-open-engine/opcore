@@ -12,7 +12,25 @@ import {
 } from "./json-rpc.js";
 export { createOpcoreAspProviderManifest, createOpcoreAspServerManifest } from "./manifest.js";
 export { evaluateChangeset, initializeResult } from "./mapping.js";
-export { JsonRpcPeer } from "./json-rpc.js";
+export {
+  JsonRpcPeer,
+  methodNotFoundError,
+  providerNotInitializedError,
+  throwRpc,
+  unsupportedVersionError
+} from "./json-rpc.js";
+export {
+  ASP_PROTOCOL_VERSION,
+  OPCORE_PROVIDER_ID,
+  OPCORE_PROVIDER_PACKAGE,
+  OPCORE_PROVIDER_VERSION
+} from "./protocol.js";
+export type {
+  InitializedParams,
+  InitializeParams,
+  JsonObject,
+  JsonRpcRequest
+} from "./protocol.js";
 
 export function runAspProviderStdio(): JsonRpcPeer {
   let acceptedInitialize = false;

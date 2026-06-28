@@ -62,7 +62,7 @@ Canonical `opcore graph`, `opcore edit`, `opcore check`, and `opcore validate` c
 
 Top-level runtime lifecycle helpers are not public command groups. If shared lifecycle commands are adopted later, they need a new architecture decision and release acceptance criteria; graph daemon lifecycle remains graph-owned under `opcore graph`.
 
-There is no public `opcore asp` router group in this release. ASP Core check integration is launched as the package-owned `opcore-asp-provider --stdio` provider process from `@the-open-engine/opcore-asp-provider`; it is not an ACE descriptor route and it must not execute current-tool wrappers or old `rox`, `crg`, or `cix` binaries.
+There is no public `opcore asp` router group in this release. ASP Core check integration is launched as the package-owned `opcore-asp-provider --stdio` provider process from `@the-open-engine/opcore-asp-provider`; it is not an ACE descriptor route and it must not execute current-tool wrappers or old `rox`, `crg`, or `cix` binaries. Issue #153 adds a hidden host-launched warm stdio route under the Opcore advanced entrypoint for inspect/edit/check sessions; it stays out of public help and manifests, keeps bounded singleton/idle state under `.lattice/asp/`, delegates check/evaluate to the cold provider mapping, never auto-spawns, and never mutates source files.
 
 ## Ownership Boundaries
 

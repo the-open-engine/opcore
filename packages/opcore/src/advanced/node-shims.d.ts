@@ -51,3 +51,16 @@ declare module "node:path" {
   export function resolve(...parts: string[]): string;
   export const sep: string;
 }
+
+declare module "node:stream" {
+  export class Readable {
+    setEncoding(encoding: string): void;
+    on(event: "data", listener: (chunk: string | Uint8Array) => void): this;
+    on(event: "close", listener: () => void): this;
+    on(event: "error", listener: (error: Error) => void): this;
+  }
+
+  export class Writable {
+    write(chunk: string): unknown;
+  }
+}
