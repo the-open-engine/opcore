@@ -14,6 +14,7 @@ describe("ASP warm serve stdio transport", () => {
   it("keeps asp serve hidden from public help", assertAspServeHiddenFromPublicHelp);
   it("answers initialize, inspect, edit preview, check, and shutdown without mutating the worktree", { timeout: 60000 }, assertWarmRoundTrip);
   it("includes files created after warmup in rename preview", { timeout: 60000 }, assertRenamePreviewSeesLateFiles);
+  it("includes JS module reverse importers in warm rename preview", { timeout: 60000 }, assertRenamePreviewSeesJsModuleImporters);
   it("nests inspect candidates inside failure payloads", { timeout: 60000 }, assertInspectCandidatesStayInsideFailure);
 });
 
@@ -54,6 +55,36 @@ async function assertRenamePreviewSeesLateFiles() {
     writeFileSync(join(fixture.repo, "src/late.ts"), "import { greet } from \"./api\";\nexport const late = greet(\"Grace\");\n");
     const edit = await requestWarmRename(peer, "salute");
     assert.ok(edit.editResult.changes.some((change) => change.path === "src/late.ts" && /salute/.test(change.content)));
+  } finally {
+    peer.close();
+    rmSync(fixture.repo, { recursive: true, force: true });
+  }
+}
+
+async function assertRenamePreviewSeesJsModuleImporters() {
+  const fixture = createFixtureRepo();
+  writeFileSync(join(fixture.repo, "src/api.mjs"), "export function hello(name) {\n  return `hello ${name}`;\n}\n");
+  writeFileSync(join(fixture.repo, "src/use.mjs"), "import { hello } from \"./api.mjs\";\nexport const message = hello(\"Grace\");\n");
+  writeFileSync(join(fixture.repo, "src/api.cjs"), "exports.welcome = function welcome(name) {\n  return `hello ${name}`;\n};\n");
+  writeFileSync(join(fixture.repo, "src/use.cjs"), "const { welcome } = require(\"./api.cjs\");\nexports.message = welcome(\"Grace\");\n");
+  const beforeMjs = readFileSync(join(fixture.repo, "src/use.mjs"), "utf8");
+  const beforeCjs = readFileSync(join(fixture.repo, "src/use.cjs"), "utf8");
+  const host = createFixtureHost();
+  const peer = spawnWarmServer(fixture.repo, host);
+  try {
+    await initializeWarmPeer(peer, fixture.repo, host);
+    await assertWarmInspect(peer);
+    const mjsEdit = await requestWarmRenameTarget(peer, { path: "src/api.mjs", name: "hello", line: 1 }, "salute");
+    assert.equal(mjsEdit.editResult.status, "preview");
+    assert.equal(mjsEdit.timing.processState, "warm");
+    assert.ok(mjsEdit.editResult.changes.some((change) => change.path === "src/use.mjs" && /salute\("Grace"\)/.test(change.content)));
+    assert.equal(readFileSync(join(fixture.repo, "src/use.mjs"), "utf8"), beforeMjs);
+
+    const cjsEdit = await requestWarmRenameTarget(peer, { path: "src/api.cjs", name: "welcome", line: 1, column: 9 }, "saluteCjs");
+    assert.equal(cjsEdit.editResult.status, "preview");
+    assert.equal(cjsEdit.timing.processState, "warm");
+    assert.ok(cjsEdit.editResult.changes.some((change) => change.path === "src/use.cjs" && /saluteCjs\("Grace"\)/.test(change.content)));
+    assert.equal(readFileSync(join(fixture.repo, "src/use.cjs"), "utf8"), beforeCjs);
   } finally {
     peer.close();
     rmSync(fixture.repo, { recursive: true, force: true });
@@ -125,10 +156,11 @@ async function assertWarmEditPreview(peer, repo) {
 }
 
 function requestWarmRename(peer, newName) {
-  return peer.request("edit/rename", {
-    target: { path: "src/api.ts", name: "greet", line: 1 },
-    newName
-  });
+  return requestWarmRenameTarget(peer, { path: "src/api.ts", name: "greet", line: 1 }, newName);
+}
+
+function requestWarmRenameTarget(peer, target, newName) {
+  return peer.request("edit/rename", { target, newName });
 }
 
 async function assertWarmCheck(peer, host, edit, repo) {

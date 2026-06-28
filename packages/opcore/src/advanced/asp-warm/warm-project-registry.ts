@@ -2,9 +2,9 @@ import { existsSync, readFileSync, realpathSync, readdirSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 import type { Project, SourceFile } from "ts-morph";
 import type { CommandTimingProcessState } from "@the-open-engine/opcore-contracts";
+import { isSupportedSymbolSourcePath } from "@the-open-engine/opcore-edit";
 import {
   createInspectLanguageServiceProject,
-  isSupportedInspectSourcePath,
   type InspectLanguageServiceProjectScope
 } from "../inspect-language-service.js";
 
@@ -106,6 +106,7 @@ class DefaultWarmProjectRegistry implements WarmProjectRegistry {
 
   private createSlot(preferredPath: string, scope: WarmProjectScope, epoch: string): WarmProjectSlot {
     const project = createInspectLanguageServiceProject(this.repoRoot, preferredPath, { projectScope: scope });
+    addWarmEditSourceFiles(project, this.repoRoot, scope);
     return {
       project,
       epoch,
@@ -205,6 +206,13 @@ function currentSourceFileFingerprint(repoRoot: string, scope: WarmProjectScope)
   return listWarmSourceFiles(repoRoot).join("\n");
 }
 
+function addWarmEditSourceFiles(project: Project, repoRoot: string, scope: WarmProjectScope): void {
+  if (scope !== "whole_repo") return;
+  for (const filePath of listWarmSourceFiles(repoRoot)) {
+    if (project.getSourceFile(filePath) === undefined) project.addSourceFileAtPath(filePath);
+  }
+}
+
 function listWarmSourceFiles(repoRoot: string): string[] {
   const files: string[] = [];
   visit(repoRoot);
@@ -215,7 +223,7 @@ function listWarmSourceFiles(repoRoot: string): string[] {
       const path = join(directory, entry.name);
       if (entry.isDirectory()) {
         if (!excludedDirectories.has(entry.name)) visit(path);
-      } else if (entry.isFile() && isSupportedInspectSourcePath(path) && isInside(repoRoot, path)) {
+      } else if (entry.isFile() && isSupportedSymbolSourcePath(path) && isInside(repoRoot, path)) {
         files.push(resolve(path));
       }
     }

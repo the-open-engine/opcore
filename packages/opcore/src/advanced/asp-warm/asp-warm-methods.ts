@@ -19,7 +19,7 @@ import {
   throwRpc,
   unsupportedVersionError
 } from "@the-open-engine/opcore-asp-provider";
-import { resolveInspectReferences } from "../inspect-language-service.js";
+import { isSupportedInspectSourcePath, resolveInspectReferences } from "../inspect-language-service.js";
 import type { AspWarmLifecycle } from "./asp-warm-lifecycle.js";
 import type { WarmProjectCheckout, WarmProjectRegistry } from "./warm-project-registry.js";
 
@@ -119,7 +119,6 @@ export class AspWarmMethods {
         symbolName: request.symbolName,
         ...(request.line !== undefined ? { line: request.line } : {}),
         ...(request.column !== undefined ? { column: request.column } : {}),
-        ...(request.limit !== undefined ? { limit: request.limit } : {}),
         allowGraphless: true,
         graphNodeIds: [],
         graphCandidates: []
@@ -132,6 +131,7 @@ export class AspWarmMethods {
     });
     const processState = checkout?.processState ?? "warm";
     this.lifecycle.touch("inspect/references");
+    const inspectReferences = resolution.ok ? inspectScopedReferences(resolution.references, request.limit) : [];
     return {
       provider: provider("inspect"),
       inspectResult: resolution.ok
@@ -139,7 +139,7 @@ export class AspWarmMethods {
             route: "references",
             status: "ok",
             target: resolution.target,
-            references: resolution.references
+            references: inspectReferences
           }
         : {
             route: "references",
@@ -284,6 +284,11 @@ function provider(capabilityFamily: string): Record<string, unknown> {
     id: "opcore",
     capabilityFamily
   };
+}
+
+function inspectScopedReferences<T extends { file: string }>(references: readonly T[], limit: number | undefined): readonly T[] {
+  const scoped = references.filter((reference) => isSupportedInspectSourcePath(reference.file));
+  return limit === undefined ? scoped : scoped.slice(0, limit);
 }
 
 function requiredRecord(value: unknown, label: string): Record<string, unknown> {
