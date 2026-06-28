@@ -36,6 +36,7 @@ import {
   releaseCutoverRustCommandIds,
   releaseReceiptPackageNames,
   releaseReceiptReportIds,
+  requiredContextDocPolicy,
   rustOldRoxComparisonSurfaceIds,
   graphDaemonOperations,
   graphExtractionDiagnosticCategories,
@@ -94,6 +95,7 @@ import {
   validateEditPlanPayload,
   validateRepoIdentity,
   validateRepoRelativePath,
+  validateRequiredContextDocPolicy,
   validateValidationRequestPayload,
   validatePreWriteValidationReceipt,
   validateValidationResultPayload,
@@ -210,6 +212,11 @@ describe("Opcore shared contracts", () => {
       "no_files",
       "provider_failure"
     ]);
+    assert.deepEqual(validateRequiredContextDocPolicy(requiredContextDocPolicy), {
+      filenames: ["AGENTS.md", "CLAUDE.md"],
+      requiredPaths: ["."],
+      minimumContentLength: 120
+    });
     assert.deepEqual(inspectFailureCategories, [
       "graph_unavailable",
       "target_ambiguous",

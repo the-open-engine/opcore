@@ -497,6 +497,41 @@ describe("Opcore JSON schema wire constraints", () => {
     );
   });
 
+  it("validates the shared require-context-doc policy contract", () => {
+    assert.equal(
+      isValidDefinition("RequiredContextDocPolicy", {
+        filenames: ["AGENTS.md", "CLAUDE.md"],
+        requiredPaths: ["."],
+        minimumContentLength: 120
+      }),
+      true
+    );
+    assert.equal(
+      isValidDefinition("RequiredContextDocPolicy", {
+        filenames: ["AGENTS.md"],
+        requiredPaths: ["../outside"],
+        minimumContentLength: 120
+      }),
+      false
+    );
+    assert.equal(
+      isValidDefinition("RequiredContextDocPolicy", {
+        filenames: [],
+        requiredPaths: ["."],
+        minimumContentLength: 120
+      }),
+      false
+    );
+    assert.equal(
+      isValidDefinition("RequiredContextDocPolicy", {
+        filenames: ["AGENTS.md"],
+        requiredPaths: ["."],
+        minimumContentLength: 0
+      }),
+      false
+    );
+  });
+
   it("enforces ValidationRequest overlay write/delete shape and graph status mode", () => {
     assert.equal(
       isValidDefinition(

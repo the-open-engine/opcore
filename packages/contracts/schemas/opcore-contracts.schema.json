@@ -72,6 +72,56 @@
         ]
       }
     },
+    "ContextDocFilename": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/RepoRelativePath"
+        },
+        {
+          "type": "string",
+          "pattern": "^[^\\\\/]+$"
+        }
+      ]
+    },
+    "RequiredContextDocPath": {
+      "anyOf": [
+        {
+          "const": "."
+        },
+        {
+          "$ref": "#/$defs/RepoRelativePath"
+        }
+      ]
+    },
+    "RequiredContextDocPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "filenames",
+        "requiredPaths",
+        "minimumContentLength"
+      ],
+      "properties": {
+        "filenames": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/ContextDocFilename"
+          }
+        },
+        "requiredPaths": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/RequiredContextDocPath"
+          }
+        },
+        "minimumContentLength": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
     "ValidationCheckId": {
       "type": "string",
       "minLength": 1,
