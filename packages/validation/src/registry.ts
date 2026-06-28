@@ -34,6 +34,7 @@ export interface ValidationCheckDefinition {
   adapter: string;
   defaultSeverity: ValidationDiagnostic["severity"];
   supportedScopes: readonly ValidationScopeKind[];
+  defaultScopes?: readonly ValidationScopeKind[];
   requiresGraph?: boolean;
   graphRequirements?: (
     context: ValidationCheckContext
@@ -89,6 +90,13 @@ export function selectValidationChecks(
   return selected;
 }
 
+export function selectDefaultValidationChecksForScope(
+  registry: ValidationCheckRegistry,
+  scopeKind: ValidationScopeKind
+): readonly ValidationCheckDefinition[] {
+  return registry.checks.filter((check) => (check.defaultScopes ?? check.supportedScopes).includes(scopeKind));
+}
+
 export function createValidationCheckManifest(
   registryOrChecks: ValidationCheckRegistry | readonly ValidationCheckDefinition[]
 ): readonly ValidationCheckManifestEntry[] {
@@ -139,6 +147,19 @@ function validateValidationCheckDefinition(definition: ValidationCheckDefinition
   for (const scope of definition.supportedScopes) {
     if (!validationScopeKinds.includes(scope)) {
       throw new ValidationCheckRegistryError(`Unknown validation check supported scope: ${String(scope)}`);
+    }
+  }
+  if (definition.defaultScopes !== undefined) {
+    if (!Array.isArray(definition.defaultScopes)) {
+      throw new ValidationCheckRegistryError("Validation check defaultScopes must be an array when provided");
+    }
+    for (const scope of definition.defaultScopes) {
+      if (!validationScopeKinds.includes(scope)) {
+        throw new ValidationCheckRegistryError(`Unknown validation check default scope: ${String(scope)}`);
+      }
+      if (!definition.supportedScopes.includes(scope)) {
+        throw new ValidationCheckRegistryError(`Validation check default scope must also be supported: ${String(scope)}`);
+      }
     }
   }
   if (definition.requiresGraph !== undefined && typeof definition.requiresGraph !== "boolean") {

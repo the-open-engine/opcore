@@ -67,6 +67,7 @@ Opcore is the code-intelligence and robustness monorepo for graph context, edit 
 ## Current Tooling
 
 - Run `npm run setup:tools` after cloning or entering a fresh worktree. It writes `.ace/runtime/bin/{rox,crg,cix}` wrappers that exec the current external ACE-managed tools from `LATTICE_CURRENT_TOOLS_DIR`, sibling Covibes repos, or `PATH`.
+- Run `npm run ace:install` when ACE provider state or bundled generic skills are missing. It writes ignored generated provider/runtime files under `.claude/`, `.agents/`, `.codex/`, `.gemini/`, `.opencode/`, and `.ace/`; do not hand-edit or commit those trees. Use `npm run ace:sync` after changing `CLAUDE.md`, `AGENTS.md`, or `ace.json`, and `npm run ace:validate` to verify generated ACE state. Repo-specific guidance belongs in this file, not in checked-in provider skills.
 - The generated `rox` wrapper also prepends the current ACE-managed `rust-code-analysis-cli` native tool when one is discoverable - WHY: all-mode Rust function metrics must match scoped Rust Rox findings.
 - NEVER point `.ace/runtime/bin/{rox,crg,cix}` at `packages/graph`, `packages/edit`, or `packages/validation` before the release/cutover issues say those packages are production-ready - WHY: agents must validate Opcore work with the stable current tools, not with the toolchain being rewritten.
 - Source `scripts/dev-env.sh` when interactive shells should prefer the generated wrappers. It fails non-zero and leaves PATH/env untouched when `.ace/runtime/bin/{rox,crg,cix}` is incomplete - WHY: ACE, MCP, Zeroshot, and humans should resolve the same current tool surface.
@@ -79,7 +80,7 @@ Opcore is the code-intelligence and robustness monorepo for graph context, edit 
 - #126 ships graph-core through optional Opcore native packages `@the-open-engine/opcore-graph-core-darwin-arm64`, `@the-open-engine/opcore-graph-core-darwin-x64`, and `@the-open-engine/opcore-graph-core-linux-x64`; `packages/graph` resolves only matching package metadata and never probes `packages/graph/dist/native`, sibling checkouts, `.ace/runtime`, or PATH.
 - Release dry-run CI runs on PRs and main pushes; native jobs upload tarred native package directories so `opcore-graph-core` execute bits survive artifact transfer; aggregate CI must not install a Rust toolchain, must set `LATTICE_REQUIRE_ALL_NATIVE_PACKAGES=1` after extracting all three native artifacts, and `scripts/release-dry-run.mjs` then validates package-local executable binaries/checksums without rebuilding graph-core - WHY: aggregate proof must consume runnable per-target artifacts produced by native jobs, not a local Linux rebuild or non-executable download.
 - #19 keeps `LATTICE_GRAPH_WATCH_PATHS` as the only watch env default and ignores `CRG_WATCH_PATHS` - WHY: Opcore watch roots must not inherit old-tool scoping accidentally.
-- #19 graph discovery excludes generated/private/dependency roots even without repo ignore files: `.git`, `node_modules`, `.pnpm`, `vendor`, `dist`, `target`, `.ace`, `.lattice`, `.rox-cache`, and `.robustness-engine-cache` - WHY: cache/vendor changes must not create graph facts, freshness changes, or FTS rows.
+- #19 graph discovery excludes generated/private/dependency roots even without repo ignore files: `.git`, `node_modules`, `.pnpm`, `vendor`, `dist`, `target`, `.ace`, `.agents`, `.claude`, `.codex`, `.gemini`, `.lattice`, `.opencode`, `.rox-cache`, and `.robustness-engine-cache` - WHY: cache/vendor/provider mirror changes must not create graph facts, freshness changes, validation input, or FTS rows.
 - #17/#19/#21 source/coverage policy is reconciled across graph-core, validation, and Opcore status/metrics: graph-extractable TypeScript, JavaScript, Python `.py`/`.pyi`, and Rust `.rs`; validation-supported TS/JS variants, Python source/stubs, Rust source/includes, and `Cargo.toml`; retained `Cargo.lock`; unsupported/degraded stacks and missing Python tools are counted honestly.
 - #16 Python generated/private/dependency roots are excluded from discovery and status census: `.venv`, `venv`, `env`, `__pycache__`, `.eggs`, `build`, `.tox`, `.mypy_cache`, `.pytest_cache`, `.ruff_cache`, `site-packages`, `*.egg-info`, and `*.dist-info` - WHY: dependency/cache artifacts must not create graph freshness or coverage evidence.
 - #17 Python export metadata is best-effort: `__all__` wins when present, otherwise the leading-underscore convention marks module-level public names; file `exports[]` entries must include policy and supportedSymbol - WHY: Python has no enforced export boundary.
@@ -186,6 +187,10 @@ Opcore is the code-intelligence and robustness monorepo for graph context, edit 
 ## Commands
 
 - `npm run setup` - install npm dependencies and generate current-tool wrappers.
+- `npm run ace:install` - generate ignored ACE provider state, bundled generic skills, hooks, mirrors, runtime contract, and pre-commit enforcement from `ace.json`.
+- `npm run ace:sync` - sync canonical context docs and generated mirrors after ACE-owned inputs change.
+- `npm run ace:check` - fail when ACE-generated mirrors drift from canonical sources.
+- `npm run ace:validate` - validate `ace.json`, generated provider artifacts, runtime contract state, and ACE install state.
 - `npm run setup:tools` - regenerate `.ace/runtime/bin/{rox,crg,cix}` from current external tools.
 - `source scripts/dev-env.sh` - prepend generated current-tool wrappers to an interactive shell.
 - `npm run ci` - portable GitHub/npm gate.

@@ -87,10 +87,7 @@ function trackedFiles() {
     .filter((path) => path.length > 0 && existsSync(path));
 }
 
-// Hand-authored agent skills under .claude/skills/ are source of truth, not generated
-// runtime state, so they are the one allowed carve-out from the forbidden agent roots.
 function isForbiddenGeneratedRoot(path) {
-  if (path.startsWith(".claude/skills/")) return false;
   return forbiddenGeneratedRoots.some((root) => path.startsWith(root));
 }
 

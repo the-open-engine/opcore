@@ -24,6 +24,7 @@ import {
   cliGraphReviewContext,
   cliGraphStatus
 } from "./graph-provider-client.js";
+import { commonSkippedPathSegments } from "../source-policy.js";
 
 export const defaultValidationChecks = [
   ...createTypeScriptValidationChecks(),
@@ -36,7 +37,10 @@ export const validateCommandAdapter = createValidateCommandAdapter(defaultValida
 export const editValidationRunner = {
   runValidation(request: ValidationRequest): Promise<ValidationResult> {
     return createValidationRunner({
-      workspace: createNodeValidationWorkspace({ repoRoot: request.repo.repoRoot ?? process.cwd() }),
+      workspace: createNodeValidationWorkspace({
+        repoRoot: request.repo.repoRoot ?? process.cwd(),
+        skippedPathSegments: commonSkippedPathSegments
+      }),
       checks: defaultValidationChecks,
       graphProviderClient: createCliValidationGraphProviderClient()
     }).runValidation(request);
@@ -63,7 +67,12 @@ export function createDefaultValidationStatusPayload(options: {
 function defaultValidationAdapterOptions(): ValidationCommandAdapterOptions {
   return {
     checks: defaultValidationChecks,
-    graphProviderClient: createCliValidationGraphProviderClient()
+    graphProviderClient: createCliValidationGraphProviderClient(),
+    workspaceFactory: (repoRoot) =>
+      createNodeValidationWorkspace({
+        repoRoot,
+        skippedPathSegments: commonSkippedPathSegments
+      })
   };
 }
 

@@ -23,6 +23,7 @@ import { createValidationFileView, ValidationOverlayConflictError, type Validati
 import {
   createValidationCheckManifest,
   createValidationCheckRegistry,
+  selectDefaultValidationChecksForScope,
   selectValidationChecks,
   ValidationCheckRegistryError,
   type ValidationCheckDefinition,
@@ -121,8 +122,15 @@ async function runPreparedValidation(
 ): Promise<ValidationResult> {
   let selectedChecks: readonly ValidationCheckDefinition[] | undefined;
   try {
-    selectedChecks = selectValidationChecks(options.registry, request.checks);
     const scope = await resolveValidationScope(request, options.workspace);
+    selectedChecks =
+      request.checks === undefined
+        ? selectDefaultValidationChecksForScope(options.registry, scope.kind)
+        : selectValidationChecks(options.registry, request.checks);
+    if (request.checks === undefined && selectedChecks.length === 0 && options.registry.checks.length > 0) {
+      const defaultUnsupportedResult = unsupportedScopeResult(options.registry.checks, scope.kind, totalStartedAt, options.clock);
+      if (defaultUnsupportedResult !== undefined) return defaultUnsupportedResult;
+    }
     const unsupportedResult = unsupportedScopeResult(selectedChecks, scope.kind, totalStartedAt, options.clock);
     if (unsupportedResult !== undefined) return unsupportedResult;
     const fileView = await createValidationFileView({ request, scope, workspace: options.workspace });

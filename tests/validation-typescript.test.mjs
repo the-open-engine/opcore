@@ -4,7 +4,8 @@ import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
-import { createValidationCheckRegistry, createValidationRunner } from "../packages/validation/dist/index.js";
+import ts from "typescript";
+import { createNodeValidationWorkspace, createValidationCheckRegistry, createValidationRunner } from "../packages/validation/dist/index.js";
 import {
   TYPE_SCRIPT_DEAD_CODE_CHECK_ID,
   TYPE_SCRIPT_IMPORT_GRAPH_CHECK_ID,
@@ -149,6 +150,191 @@ describe("validation-typescript adapter", () => {
     );
 
     assert.equal(result.status, "passed", JSON.stringify(result.diagnostics, null, 2));
+  });
+
+  it("uses nearest nested tsconfig options for full-repo TypeScript validation", async () => {
+    const result = await runner({
+      files: {
+        "apps/web/tsconfig.json": JSON.stringify({
+          compilerOptions: {
+            baseUrl: ".",
+            paths: {
+              "@/*": ["src/*"]
+            }
+          }
+        }),
+        "apps/web/src/index.ts": "import { value } from '@/dep';\nconst label: string = value;\nexport { label };\n",
+        "apps/web/src/dep.ts": "export const value = 'web';\n",
+        "packages/api/tsconfig.json": JSON.stringify({
+          compilerOptions: {
+            baseUrl: ".",
+            paths: {
+              "#/*": ["source/*"]
+            }
+          }
+        }),
+        "packages/api/source/index.ts": "import { count } from '#/dep';\nconst total: number = count;\nexport { total };\n",
+        "packages/api/source/dep.ts": "export const count = 1;\n"
+      }
+    }).runValidation(
+      request({
+        checks: [TYPE_SCRIPT_TYPES_CHECK_ID],
+        scope: {
+          kind: "all"
+        }
+      })
+    );
+
+    assert.equal(result.status, "passed", JSON.stringify(result.diagnostics, null, 2));
+  });
+
+  it("loads project ambient declarations for scoped TypeScript type checks", async () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-validation-ts-ambient-"));
+    try {
+      mkdirSync(join(temp, "packages/app/src"), { recursive: true });
+      writeFileSync(
+        join(temp, "packages/app/tsconfig.json"),
+        JSON.stringify({
+          compilerOptions: {
+            module: "NodeNext",
+            moduleResolution: "NodeNext",
+            strict: true,
+            target: "ES2022"
+          },
+          include: ["src/**/*.ts"]
+        })
+      );
+      writeFileSync(
+        join(temp, "packages/app/src/node-shims.d.ts"),
+        'declare module "node:fs" { export function readFileSync(path: string, encoding: "utf8"): string; }\n'
+      );
+      writeFileSync(
+        join(temp, "packages/app/src/index.ts"),
+        'import { readFileSync } from "node:fs";\nexport const content: string = readFileSync("file.txt", "utf8");\n'
+      );
+
+      const result = await createValidationRunner({
+        workspace: createNodeValidationWorkspace({ repoRoot: temp }),
+        checks: createTypeScriptValidationChecks()
+      }).runValidation(
+        request({
+          repo: { repoRoot: temp },
+          checks: [TYPE_SCRIPT_TYPES_CHECK_ID],
+          scope: {
+            kind: "files",
+            files: ["packages/app/src/index.ts"]
+          }
+        })
+      );
+
+      assert.equal(result.status, "passed", JSON.stringify(result.diagnostics, null, 2));
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("honors project compiler options instead of forcing strict JavaScript checking", async () => {
+    const result = await runner({
+      files: {
+        "tsconfig.json": JSON.stringify({
+          compilerOptions: {
+            allowJs: true,
+            checkJs: false,
+            strict: false
+          },
+          include: ["src/**/*"]
+        }),
+        "src/index.js": "/** @type {number} */\nexport const count = 'wrong';\n",
+        "src/typed.ts": "export const label: string = null;\n"
+      }
+    }).runValidation(
+      request({
+        checks: [TYPE_SCRIPT_TYPES_CHECK_ID],
+        scope: {
+          kind: "all"
+        }
+      })
+    );
+
+    assert.equal(result.status, "passed", JSON.stringify(result.diagnostics, null, 2));
+  });
+
+  it("keeps semantic diagnostics explicit for full-repo default validation", async () => {
+    const validation = runner({
+      files: {
+        "src/index.ts": "export const count: number = 'wrong';\n"
+      }
+    });
+    const defaultAll = await validation.runValidation(
+      request({
+        checks: undefined,
+        scope: {
+          kind: "all"
+        }
+      })
+    );
+    const explicitAll = await validation.runValidation(
+      request({
+        checks: [TYPE_SCRIPT_TYPES_CHECK_ID],
+        scope: {
+          kind: "all"
+        }
+      })
+    );
+
+    assert.equal(defaultAll.manifest.checks.includes(TYPE_SCRIPT_TYPES_CHECK_ID), false);
+    assert.equal(defaultAll.diagnostics.some((diagnostic) => diagnostic.code === "2322"), false);
+    assert.equal(explicitAll.status, "policy_failure");
+    assert.equal(explicitAll.diagnostics.some((diagnostic) => diagnostic.code === "2322"), true);
+  });
+
+  it("collects per-file semantic diagnostics without aborting when the TypeScript compiler fails on one file", async () => {
+    const { collectTypeScriptSemanticDiagnostics } = await import("../packages/validation-typescript/dist/type-check.js");
+    const repoRoot = "/repo";
+    const crashedSource = ts.createSourceFile(
+      `${repoRoot}/src/compiler-crash.ts`,
+      "export const crashed: string = 'still checked';\n",
+      ts.ScriptTarget.ES2022,
+      true
+    );
+    const typeErrorSource = ts.createSourceFile(
+      `${repoRoot}/src/type-error.ts`,
+      "export const count: number = 'wrong';\n",
+      ts.ScriptTarget.ES2022,
+      true
+    );
+
+    const diagnostics = collectTypeScriptSemanticDiagnostics({
+      repoRoot,
+      sourceFiles: [crashedSource, typeErrorSource],
+      getSemanticDiagnostics: (sourceFile) => {
+        if (sourceFile.fileName.endsWith("/src/compiler-crash.ts")) {
+          throw new RangeError("synthetic compiler stack overflow");
+        }
+        return [
+          {
+            category: ts.DiagnosticCategory.Error,
+            code: 2322,
+            file: typeErrorSource,
+            start: 0,
+            length: 1,
+            messageText: "Type 'string' is not assignable to type 'number'."
+          }
+        ];
+      }
+    });
+
+    assert.equal(diagnostics.some((diagnostic) => diagnostic.code === "2322"), true);
+    assert.deepEqual(
+      diagnostics.find((diagnostic) => diagnostic.code === "TS_SEMANTIC_DIAGNOSTICS_FAILED"),
+      {
+        category: "types",
+        severity: "error",
+        path: "src/compiler-crash.ts",
+        code: "TS_SEMANTIC_DIAGNOSTICS_FAILED",
+        message: "TypeScript semantic diagnostics failed for src/compiler-crash.ts: synthetic compiler stack overflow"
+      }
+    );
   });
 
   it("resolves JSON module imports through fileView", async () => {

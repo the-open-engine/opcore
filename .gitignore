@@ -4,8 +4,7 @@ dist/
 target/
 .ace/
 .agents/
-.claude/*
-!.claude/skills/
+.claude/
 .codex/
 .gemini/
 .opencode/

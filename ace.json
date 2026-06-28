@@ -24,12 +24,6 @@
   },
   "contextDocs": {
     "source": "CLAUDE.md",
-    "ownershipPaths": [
-      "packages",
-      "scripts",
-      "tests",
-      ".github"
-    ],
     "excludedPaths": [
       "dist",
       "node_modules",

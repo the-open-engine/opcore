@@ -1,6 +1,6 @@
 import type { ValidationCheckContext } from "@the-open-engine/opcore-validation";
 import ts from "typescript";
-import { resolveTypeScriptCompilerOptions } from "./compiler-options.js";
+import { resolveTypeScriptCompilerProjects } from "./compiler-options.js";
 import { materializeTypeScriptSources, type TypeScriptMaterializedSourceSet } from "./source-files.js";
 
 export interface OverlayAwareTypeScriptProgram {
@@ -21,27 +21,50 @@ const virtualRepoRoot = "/__lattice_repo__";
 export async function createOverlayAwareTypeScriptProgram(
   context: ValidationCheckContext
 ): Promise<OverlayAwareTypeScriptProgram> {
-  const compilerOptions = await resolveTypeScriptCompilerOptions(context);
+  for await (const program of createOverlayAwareTypeScriptProgramIterator(context)) {
+    return program;
+  }
+  return emptyOverlayAwareTypeScriptProgram(context);
+}
+
+export async function createOverlayAwareTypeScriptPrograms(
+  context: ValidationCheckContext
+): Promise<readonly OverlayAwareTypeScriptProgram[]> {
+  const programs: OverlayAwareTypeScriptProgram[] = [];
+  for await (const program of createOverlayAwareTypeScriptProgramIterator(context)) {
+    programs.push(program);
+  }
+  return programs;
+}
+
+export async function* createOverlayAwareTypeScriptProgramIterator(
+  context: ValidationCheckContext
+): AsyncGenerator<OverlayAwareTypeScriptProgram> {
+  const compilerProjects = await resolveTypeScriptCompilerProjects(context);
   const repoRoot = compilerRepoRoot(context);
-  const sourceSet = await materializeTypeScriptSources(context, {
-    compilerOptions: compilerOptions.options
-  });
-  const host = createOverlayAwareCompilerHost({
-    options: compilerOptions.options,
-    repoRoot,
-    sourceSet
-  });
-  const rootNames = sourceSet.files.map((file) => toCompilerFileName(file.path, repoRoot));
-  return {
-    program: ts.createProgram({
-      rootNames,
+  for (const compilerOptions of compilerProjects) {
+    const sourceSet = await materializeTypeScriptSources(context, {
+      compilerOptions: compilerOptions.options,
+      rootPaths: compilerOptions.rootPaths,
+      supportPaths: compilerOptions.supportPaths
+    });
+    const host = createOverlayAwareCompilerHost({
       options: compilerOptions.options,
-      host
-    }),
-    repoRoot,
-    sourceSet,
-    configDiagnostics: compilerOptions.diagnostics
-  };
+      repoRoot,
+      sourceSet
+    });
+    const rootNames = sourceSet.files.map((file) => toCompilerFileName(file.path, repoRoot));
+    yield {
+      program: ts.createProgram({
+        rootNames,
+        options: compilerOptions.options,
+        host
+      }),
+      repoRoot,
+      sourceSet,
+      configDiagnostics: compilerOptions.diagnostics
+    };
+  }
 }
 
 export function repoSourceFiles(bundle: OverlayAwareTypeScriptProgram): readonly ts.SourceFile[] {
@@ -181,4 +204,31 @@ function stripTrailingSlash(path: string): string {
 
 function scriptKindForCompilerFileName(fileName: string): ts.ScriptKind {
   return normalizePath(fileName).endsWith(".json") ? ts.ScriptKind.JSON : ts.ScriptKind.Unknown;
+}
+
+function emptyOverlayAwareTypeScriptProgram(context: ValidationCheckContext): OverlayAwareTypeScriptProgram {
+  const repoRoot = compilerRepoRoot(context);
+  const options: ts.CompilerOptions = {
+    noEmit: true,
+    skipLibCheck: true
+  };
+  const sourceSet: TypeScriptMaterializedSourceSet = {
+    rootPaths: [],
+    supportPaths: [],
+    paths: [],
+    files: [],
+    sourceFileByPath: new Map(),
+    relativeImports: []
+  };
+  const host = createOverlayAwareCompilerHost({ options, repoRoot, sourceSet });
+  return {
+    program: ts.createProgram({
+      rootNames: [],
+      options,
+      host
+    }),
+    repoRoot,
+    sourceSet,
+    configDiagnostics: []
+  };
 }

@@ -1,27 +1,38 @@
 import type { ValidationCheckContext } from "@the-open-engine/opcore-validation";
+import { normalizeValidationFileViewPath } from "@the-open-engine/opcore-validation";
 import ts from "typescript";
-import { readOptionalRepoFile } from "./source-files.js";
+import { isTypeScriptSourcePath, readOptionalRepoFile } from "./source-files.js";
 
 export interface ResolvedTypeScriptCompilerOptions {
   options: ts.CompilerOptions;
   diagnostics: readonly ts.Diagnostic[];
 }
 
-const optionsCache = new WeakMap<object, Promise<ResolvedTypeScriptCompilerOptions>>();
+export interface ResolvedTypeScriptCompilerProject extends ResolvedTypeScriptCompilerOptions {
+  rootPaths: readonly string[];
+  supportPaths: readonly string[];
+  configPath?: string;
+}
 
-const deterministicCompilerOptions = {
+const optionsCache = new WeakMap<object, Promise<ResolvedTypeScriptCompilerOptions>>();
+const projectsCache = new WeakMap<object, Promise<readonly ResolvedTypeScriptCompilerProject[]>>();
+
+const defaultCompilerOptions = {
   allowJs: true,
-  checkJs: true,
+  checkJs: false,
   esModuleInterop: true,
   forceConsistentCasingInFileNames: true,
   jsx: ts.JsxEmit.ReactJSX,
   module: ts.ModuleKind.NodeNext,
   moduleResolution: ts.ModuleResolutionKind.NodeNext,
-  noEmit: true,
   resolveJsonModule: true,
   skipLibCheck: true,
   strict: true,
   target: ts.ScriptTarget.ES2022
+} as const satisfies ts.CompilerOptions;
+
+const validationInvariantCompilerOptions = {
+  noEmit: true
 } as const satisfies ts.CompilerOptions;
 
 export async function resolveTypeScriptCompilerOptions(
@@ -31,6 +42,16 @@ export async function resolveTypeScriptCompilerOptions(
   if (cached !== undefined) return cached;
   const promise = resolveTypeScriptCompilerOptionsUncached(context);
   optionsCache.set(context.fileView, promise);
+  return promise;
+}
+
+export async function resolveTypeScriptCompilerProjects(
+  context: ValidationCheckContext
+): Promise<readonly ResolvedTypeScriptCompilerProject[]> {
+  const cached = projectsCache.get(context.fileView);
+  if (cached !== undefined) return cached;
+  const promise = resolveTypeScriptCompilerProjectsUncached(context);
+  projectsCache.set(context.fileView, promise);
   return promise;
 }
 
@@ -52,13 +73,45 @@ async function resolveTypeScriptCompilerOptionsUncached(
     configOptions.push(converted.options);
   }
   return {
-    options: {
-      ...deterministicCompilerOptions,
-      ...Object.assign({}, ...configOptions),
-      ...deterministicCompilerOptions
-    },
+    options: mergeCompilerOptions(...configOptions),
     diagnostics
   };
+}
+
+async function resolveTypeScriptCompilerProjectsUncached(
+  context: ValidationCheckContext
+): Promise<readonly ResolvedTypeScriptCompilerProject[]> {
+  const rootPaths = scopedTypeScriptPaths(context);
+  if (rootPaths.length === 0) {
+    return [
+      {
+        rootPaths: [],
+        supportPaths: [],
+        options: mergeCompilerOptions(),
+        diagnostics: []
+      }
+    ];
+  }
+
+  const parsedConfigs = await parseTypeScriptConfigs(context, candidateConfigPaths(context, rootPaths));
+  const grouped = new Map<string, { config?: ParsedTypeScriptConfig; rootPaths: string[] }>();
+  for (const rootPath of rootPaths) {
+    const config = selectConfigForPath(parsedConfigs, rootPath);
+    const key = config?.path ?? syntheticProjectKey(rootPath);
+    const group = grouped.get(key) ?? { config, rootPaths: [] };
+    group.rootPaths.push(rootPath);
+    grouped.set(key, group);
+  }
+
+  return [...grouped.values()]
+    .map((group): ResolvedTypeScriptCompilerProject => ({
+      rootPaths: uniqueSorted(group.rootPaths),
+      supportPaths: group.config === undefined ? [] : ambientDeclarationPaths(context, group.config),
+      ...(group.config?.path === undefined ? {} : { configPath: group.config.path }),
+      options: group.config?.options ?? mergeCompilerOptions(),
+      diagnostics: group.config?.diagnostics ?? []
+    }))
+    .sort((left, right) => (left.configPath ?? "").localeCompare(right.configPath ?? ""));
 }
 
 function configPaths(context: ValidationCheckContext): readonly string[] {
@@ -73,4 +126,237 @@ function configBasePath(path: string): string {
   const parts = path.split("/");
   parts.pop();
   return parts.length === 0 ? "." : parts.join("/");
+}
+
+interface ParsedTypeScriptConfig {
+  path: string;
+  basePath: string;
+  options: ts.CompilerOptions;
+  diagnostics: readonly ts.Diagnostic[];
+  files?: readonly string[];
+  include?: readonly string[];
+  exclude?: readonly string[];
+}
+
+async function parseTypeScriptConfigs(
+  context: ValidationCheckContext,
+  paths: readonly string[]
+): Promise<readonly ParsedTypeScriptConfig[]> {
+  const configs: ParsedTypeScriptConfig[] = [];
+  for (const path of paths) {
+    const content = await readOptionalRepoFile(context, path);
+    if (content === undefined) continue;
+    const diagnostics: ts.Diagnostic[] = [];
+    const parsed = ts.parseConfigFileTextToJson(path, content);
+    if (parsed.error !== undefined) {
+      diagnostics.push(parsed.error);
+      configs.push({
+        path,
+        basePath: configBasePath(path),
+        options: mergeCompilerOptions(),
+        diagnostics
+      });
+      continue;
+    }
+    const converted = ts.convertCompilerOptionsFromJson(parsed.config?.compilerOptions ?? {}, configBasePath(path), path);
+    diagnostics.push(...converted.errors);
+    configs.push({
+      path,
+      basePath: configBasePath(path),
+      options: mergeCompilerOptions(converted.options),
+      diagnostics,
+      files: stringArray(parsed.config?.files),
+      include: stringArray(parsed.config?.include),
+      exclude: stringArray(parsed.config?.exclude)
+    });
+  }
+  return configs;
+}
+
+function mergeCompilerOptions(...configOptions: readonly ts.CompilerOptions[]): ts.CompilerOptions {
+  return {
+    ...defaultCompilerOptions,
+    ...Object.assign({}, ...configOptions),
+    ...validationInvariantCompilerOptions
+  };
+}
+
+function scopedTypeScriptPaths(context: ValidationCheckContext): readonly string[] {
+  return uniqueSorted(
+    [...context.fileView.scopeFiles, ...context.fileView.overlays.map((overlay) => overlay.path)]
+      .map((path) => normalizeValidationFileViewPath(path))
+      .filter(isTypeScriptSourcePath)
+  );
+}
+
+function candidateConfigPaths(context: ValidationCheckContext, rootPaths: readonly string[]): readonly string[] {
+  const paths = new Set(configPaths(context));
+  for (const path of context.fileView.scopeFiles) {
+    const normalized = normalizeValidationFileViewPath(path);
+    if (isTypeScriptConfigPath(normalized)) paths.add(normalized);
+  }
+  for (const path of rootPaths) {
+    for (const ancestor of ancestorDirectories(path)) {
+      paths.add(ancestor.length === 0 ? "tsconfig.json" : `${ancestor}/tsconfig.json`);
+    }
+  }
+  return [...paths].sort();
+}
+
+function selectConfigForPath(configs: readonly ParsedTypeScriptConfig[], path: string): ParsedTypeScriptConfig | undefined {
+  const included = configs.filter((config) => configIncludesPath(config, path));
+  if (included.length > 0) return mostSpecificConfig(included);
+  return undefined;
+}
+
+function mostSpecificConfig(configs: readonly ParsedTypeScriptConfig[]): ParsedTypeScriptConfig | undefined {
+  return [...configs].sort((left, right) => {
+    const byBase = right.basePath.length - left.basePath.length;
+    if (byBase !== 0) return byBase;
+    return right.path.length - left.path.length;
+  })[0];
+}
+
+function configIncludesPath(config: ParsedTypeScriptConfig, path: string): boolean {
+  if (config.files !== undefined) {
+    return config.files.map((file) => joinRepoPaths(config.basePath, file)).includes(path);
+  }
+  const includes = config.include ?? [];
+  if (includes.length === 0) return isInsideConfigBase(config.basePath, path);
+  if (config.exclude?.some((pattern) => matchesConfigPattern(config.basePath, pattern, path)) === true) return false;
+  return includes.some((pattern) => matchesConfigPattern(config.basePath, pattern, path));
+}
+
+function isInsideConfigBase(basePath: string, path: string): boolean {
+  return basePath === "." || path === basePath || path.startsWith(`${basePath}/`);
+}
+
+function syntheticProjectKey(path: string): string {
+  const parts = path.split("/");
+  if (parts.length <= 1) return "synthetic:.";
+  return `synthetic:${parts[0]}`;
+}
+
+function matchesConfigPattern(basePath: string, pattern: string, path: string): boolean {
+  const target = joinRepoPaths(basePath, pattern);
+  if (target === undefined) return false;
+  if (target.endsWith("/**/*")) {
+    const prefix = target.slice(0, -"/**/*".length);
+    return path === prefix || path.startsWith(`${prefix}/`);
+  }
+  if (target.endsWith("/**")) {
+    const prefix = target.slice(0, -"/**".length);
+    return path === prefix || path.startsWith(`${prefix}/`);
+  }
+  if (!containsGlob(target)) return path === target || path.startsWith(`${target}/`);
+  return globPatternToRegex(target).test(path);
+}
+
+function containsGlob(pattern: string): boolean {
+  return pattern.includes("*") || pattern.includes("?") || pattern.includes("[");
+}
+
+function globPatternToRegex(pattern: string): RegExp {
+  let source = "^";
+  for (let index = 0; index < pattern.length; index += 1) {
+    const char = pattern[index];
+    const next = pattern[index + 1];
+    const afterNext = pattern[index + 2];
+    if (char === "*" && next === "*" && afterNext === "/") {
+      source += "(?:.*/)?";
+      index += 2;
+    } else if (char === "*" && next === "*") {
+      source += ".*";
+      index += 1;
+    } else if (char === "*") {
+      source += "[^/]*";
+    } else if (char === "?") {
+      source += "[^/]";
+    } else {
+      source += escapeRegex(char);
+    }
+  }
+  return new RegExp(`${source}(?:/.*)?$`);
+}
+
+function escapeRegex(value: string): string {
+  return value.replace(/[\\^$.*+?()[\]{}|]/g, "\\$&");
+}
+
+function ancestorDirectories(path: string): readonly string[] {
+  const parts = path.split("/");
+  parts.pop();
+  const ancestors = [parts.join("/")];
+  while (parts.length > 0) {
+    parts.pop();
+    ancestors.push(parts.join("/"));
+  }
+  return ancestors;
+}
+
+function isTypeScriptConfigPath(path: string): boolean {
+  const name = path.split("/").at(-1) ?? "";
+  return /^tsconfig(?:\.[^/]+)?\.json$/u.test(name);
+}
+
+function stringArray(value: unknown): readonly string[] | undefined {
+  return Array.isArray(value) && value.every((entry) => typeof entry === "string") ? value : undefined;
+}
+
+function joinRepoPaths(basePath: string, path: string): string | undefined {
+  const parts: string[] = [];
+  for (const segment of [basePath, path]) {
+    if (segment.startsWith("/")) return undefined;
+    for (const part of segment.split("/")) {
+      if (part.length === 0 || part === ".") continue;
+      if (part === "..") {
+        if (parts.length === 0) return undefined;
+        parts.pop();
+        continue;
+      }
+      parts.push(part);
+    }
+  }
+  return parts.join("/");
+}
+
+function ambientDeclarationPaths(context: ValidationCheckContext, config: ParsedTypeScriptConfig): readonly string[] {
+  const scopedAmbientPaths = context.scope.files
+    .map((path) => normalizeValidationFileViewPath(path))
+    .filter((path) => isAmbientDeclarationPath(path) && configIncludesPath(config, path));
+  const repoAmbientPaths = ambientDeclarationPathsFromRepoRoot(context, config);
+  return uniqueSorted([...scopedAmbientPaths, ...repoAmbientPaths]);
+}
+
+function ambientDeclarationPathsFromRepoRoot(context: ValidationCheckContext, config: ParsedTypeScriptConfig): readonly string[] {
+  const repoRoot = normalizedRepoRoot(context.request.repo.repoRoot);
+  if (repoRoot === undefined || ts.sys.readDirectory === undefined) return [];
+  const basePath = config.basePath === "." ? repoRoot : `${repoRoot}/${config.basePath}`;
+  const paths = ts.sys
+    .readDirectory(basePath, [".d.ts"], config.exclude, ["**/*"])
+    .map((path) => repoRelativePath(repoRoot, path))
+    .filter((path): path is string => path !== undefined)
+    .filter((path) => configIncludesPath(config, path));
+  return uniqueSorted(paths);
+}
+
+function normalizedRepoRoot(repoRoot: string | undefined): string | undefined {
+  if (repoRoot === undefined || repoRoot.length === 0) return undefined;
+  return repoRoot.replaceAll("\\", "/").replace(/\/+$/u, "");
+}
+
+function repoRelativePath(repoRoot: string, path: string): string | undefined {
+  const normalizedPath = path.replaceAll("\\", "/");
+  if (normalizedPath === repoRoot) return "";
+  if (!normalizedPath.startsWith(`${repoRoot}/`)) return undefined;
+  const relativePath = normalizedPath.slice(repoRoot.length + 1);
+  return relativePath.length === 0 ? undefined : relativePath;
+}
+
+function isAmbientDeclarationPath(path: string): boolean {
+  return path.endsWith(".d.ts");
+}
+
+function uniqueSorted(values: readonly string[]): readonly string[] {
+  return [...new Set(values)].sort();
 }

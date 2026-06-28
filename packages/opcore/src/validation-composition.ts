@@ -23,6 +23,7 @@ import {
   opcoreGraphReviewContext,
   opcoreGraphStatus
 } from "./graph-provider-client.js";
+import { commonSkippedPathSegments } from "./source-policy.js";
 
 declare const process: {
   cwd(): string;
@@ -39,7 +40,10 @@ export const checkCommandAdapter = createCheckCommandAdapter(defaultValidationAd
 export const opcoreValidationRunner = {
   runValidation(request: ValidationRequest): Promise<ValidationResult> {
     return createValidationRunner({
-      workspace: createNodeValidationWorkspace({ repoRoot: request.repo.repoRoot ?? process.cwd() }),
+      workspace: createNodeValidationWorkspace({
+        repoRoot: request.repo.repoRoot ?? process.cwd(),
+        skippedPathSegments: commonSkippedPathSegments
+      }),
       checks: defaultValidationChecks,
       graphProviderClient: createOpcoreValidationGraphProviderClient()
     }).runValidation(request);
@@ -62,7 +66,12 @@ export function createDefaultValidationStatusPayload(options: {
 function defaultValidationAdapterOptions(): ValidationCommandAdapterOptions {
   return {
     checks: defaultValidationChecks,
-    graphProviderClient: createOpcoreValidationGraphProviderClient()
+    graphProviderClient: createOpcoreValidationGraphProviderClient(),
+    workspaceFactory: (repoRoot) =>
+      createNodeValidationWorkspace({
+        repoRoot,
+        skippedPathSegments: commonSkippedPathSegments
+      })
   };
 }
 

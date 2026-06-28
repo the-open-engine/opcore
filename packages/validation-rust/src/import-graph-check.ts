@@ -63,6 +63,12 @@ interface RustModuleGraphBuildConfig {
   orphanMessage?: (path: string) => string;
 }
 
+interface RustUsePathResolutionContext {
+  context: ValidationCheckContext;
+  moduleIndex: RustModuleIndex;
+  seenReExportedVariants: Set<string>;
+}
+
 interface RustNamespace {
   path: string;
   content: string;
@@ -1096,10 +1102,77 @@ async function namespacePathExists(
   const [segment, ...rest] = segments;
   const child = await resolveChildNamespace(context, moduleIndex, namespace, segment);
   if (rest.length === 0) {
-    return child !== undefined || sourceNamespaceContains(namespace, segment);
+    return (
+      child !== undefined ||
+      sourceNamespaceContains(namespace, segment) ||
+      (await globReExportedPathExists({ context, moduleIndex, seenReExportedVariants }, namespace, segments))
+    );
   }
-  if (child === undefined) return false;
+  if (child === undefined) {
+    return globReExportedPathExists({ context, moduleIndex, seenReExportedVariants }, namespace, segments);
+  }
   return namespacePathExists(context, moduleIndex, child, rest, seenReExportedVariants);
+}
+
+async function globReExportedPathExists(
+  resolution: RustUsePathResolutionContext,
+  namespace: RustNamespace,
+  segments: readonly string[]
+): Promise<boolean> {
+  const seenKey = `${namespace.path}\0glob\0${segments.join("::")}`;
+  if (resolution.seenReExportedVariants.has(seenKey)) return false;
+  resolution.seenReExportedVariants.add(seenKey);
+  for (const globPath of globImportedPaths(namespace)) {
+    const globNamespace = await namespaceForUsePath(resolution.context, resolution.moduleIndex, namespace, globPath);
+    if (globNamespace === undefined) continue;
+    if (
+      await namespacePathExists(
+        resolution.context,
+        resolution.moduleIndex,
+        globNamespace,
+        segments,
+        resolution.seenReExportedVariants
+      )
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
+async function namespaceForUsePath(
+  context: ValidationCheckContext,
+  moduleIndex: RustModuleIndex,
+  namespace: RustNamespace,
+  usePath: readonly string[]
+): Promise<RustNamespace | undefined> {
+  const [qualifier, ...segments] = usePath;
+  if (qualifier === "crate") {
+    const root = await crateRootNamespace(context, moduleIndex, namespace);
+    return resolveNamespacePath(context, moduleIndex, root, segments);
+  }
+  if (qualifier === "self") {
+    return resolveNamespacePath(context, moduleIndex, namespace, segments);
+  }
+  if (qualifier === "super") {
+    const [root] = await superNamespaces(context, namespace, moduleIndex, segments);
+    return root === undefined ? undefined : resolveNamespacePath(context, moduleIndex, root.namespace, root.segments);
+  }
+  return resolveNamespacePath(context, moduleIndex, namespace, usePath);
+}
+
+async function resolveNamespacePath(
+  context: ValidationCheckContext,
+  moduleIndex: RustModuleIndex,
+  namespace: RustNamespace,
+  segments: readonly string[]
+): Promise<RustNamespace | undefined> {
+  let current: RustNamespace | undefined = namespace;
+  for (const segment of segments) {
+    if (current === undefined) return undefined;
+    current = await resolveChildNamespace(context, moduleIndex, current, segment);
+  }
+  return current;
 }
 
 async function reExportedEnumVariantExists(
@@ -1279,9 +1352,13 @@ function hasImportedBinding(namespace: RustNamespace, itemName: string): boolean
 function importedBindingsForName(namespace: RustNamespace, itemName: string): readonly ImportedBinding[] {
   return topLevelUseSpecs(namespace.content).flatMap((spec) =>
     importedBindings(spec.trim(), []).filter(
-    (binding) => binding.name === itemName && !isSelfReferentialImport(binding.path, binding.aliased, itemName)
+      (binding) => binding.name === itemName && !isSelfReferentialImport(namespace, binding.path, binding.aliased, itemName)
     )
   );
+}
+
+function globImportedPaths(namespace: RustNamespace): readonly (readonly string[])[] {
+  return topLevelUseSpecs(namespace.content).flatMap((spec) => globImports(spec.trim(), []));
 }
 
 interface ImportedBinding {
@@ -1306,8 +1383,31 @@ function importedBindings(spec: string, prefix: readonly string[]): readonly Imp
   return name === undefined ? [] : [{ name, path, aliased: alias !== null }];
 }
 
-function isSelfReferentialImport(path: readonly string[], aliased: boolean, itemName: string): boolean {
-  return !aliased && ["crate", "self", "super"].includes(path[0] ?? "") && path[1] === itemName;
+function globImports(spec: string, prefix: readonly string[]): readonly (readonly string[])[] {
+  const trimmed = spec.trim();
+  if (trimmed.length === 0) return [];
+  const group = braceGroup(trimmed);
+  if (group !== undefined) {
+    const groupPrefix = pathSegments(trimmed.slice(0, group.open).trim().replace(/::$/, ""));
+    const nextPrefix = appendUsePath(prefix, groupPrefix);
+    return splitTopLevelCommas(trimmed.slice(group.open + 1, group.close)).flatMap((entry) => globImports(entry, nextPrefix));
+  }
+  if (!/(?:^|::)\s*\*\s*$/.test(trimmed)) return [];
+  const path = appendUsePath(prefix, pathSegments(trimmed.replace(/::\s*\*\s*$/, "")));
+  return path.length === 0 ? [] : [path];
+}
+
+function isSelfReferentialImport(
+  namespace: RustNamespace,
+  path: readonly string[],
+  aliased: boolean,
+  itemName: string
+): boolean {
+  if (aliased || path[1] !== itemName) return false;
+  const qualifier = path[0];
+  if (qualifier === "self") return true;
+  if (qualifier === "crate") return isRootRustModule(namespace.sourcePath ?? namespace.path);
+  return false;
 }
 
 function escapeRegExp(value: string): string {

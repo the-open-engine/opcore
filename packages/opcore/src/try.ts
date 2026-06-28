@@ -16,9 +16,9 @@ import { join } from "node:path";
 import { routeOpcoreCheck } from "./check.js";
 import { routeOpcoreInit } from "./init.js";
 import {
+  createOpcoreMetricReport,
   createOpcoreMeasureDelta,
   readOpcoreMetricHistory,
-  readOpcoreMetricReport
 } from "./reporting.js";
 import { routeOpcoreScan } from "./scan.js";
 
@@ -179,7 +179,12 @@ async function runScenario(sampleRoot: string, seed: TryScenarioSeed): Promise<T
     ["try", ...checkArgs, "--repo", repoRoot],
     parseCommandArgv([...checkArgs, "--repo", repoRoot])
   );
-  const report = readOpcoreMetricReport(repoRoot);
+  if (scan.repoState === undefined) throw new Error(`opcore try scenario ${seed.id} scan did not return repoState`);
+  if (check.validationResult === undefined) throw new Error(`opcore try scenario ${seed.id} check did not return validationResult`);
+  const report = createOpcoreMetricReport({
+    repoState: scan.repoState,
+    validationResult: check.validationResult
+  });
   const measure = createOpcoreMeasureDelta({ current: report, history: readOpcoreMetricHistory(repoRoot) });
   const commands = [
     commandSummary(seed.id, ["opcore", "--repo", repoRoot], scan),
