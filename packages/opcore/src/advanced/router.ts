@@ -17,6 +17,7 @@ import {
   createDefaultValidationStatusPayload,
   validateCommandAdapter
 } from "./validation-composition.js";
+import { commandRouterResultForJsonOutput } from "../json-output.js";
 
 declare const process: {
   stdout: {
@@ -68,7 +69,7 @@ export async function runCli(options: RunCliOptions): Promise<number> {
   const stderr = options.stderr ?? ((text: string) => process.stderr.write(text));
   const routed = await routeCommand(options.argv, options.bin);
   if (routed.json) {
-    stdout(`${JSON.stringify(routed)}\n`);
+    stdout(`${JSON.stringify(commandRouterResultForJsonOutput(routed))}\n`);
   } else if (routed.status === "ok") {
     stdout(`${routed.message}\n`);
   } else {

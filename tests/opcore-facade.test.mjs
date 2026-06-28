@@ -298,7 +298,11 @@ describe("opcore public facade", () => {
       assert.equal(result.owner, "validation");
       assert.equal(result.validationResult.ok, true);
       assert.equal(result.validationResult.status, "passed");
-      assert.equal(result.validationResult.manifest.runs[0].checkId, "typescript.syntax");
+      assert.deepEqual(result.validationResult.manifest.checks, ["typescript.syntax"]);
+      assert.equal(Object.hasOwn(result.validationResult.manifest, "entries"), false);
+      assert.equal(Object.hasOwn(result.validationResult.manifest, "runs"), false);
+      assert.equal(Object.hasOwn(result.validationResult.manifest, "skippedChecks"), false);
+      assert.equal(result.timing.phases.some((phase) => phase.phase === "validation_typescript_syntax"), true);
     });
   });
 
@@ -315,7 +319,11 @@ describe("opcore public facade", () => {
       assert.equal(result.owner, "validation");
       assert.equal(result.validationResult.ok, true);
       assert.equal(result.validationResult.status, "passed");
-      assert.equal(result.validationResult.manifest.runs[0].checkId, "typescript.syntax");
+      assert.deepEqual(result.validationResult.manifest.checks, ["typescript.syntax"]);
+      assert.equal(Object.hasOwn(result.validationResult.manifest, "entries"), false);
+      assert.equal(Object.hasOwn(result.validationResult.manifest, "runs"), false);
+      assert.equal(Object.hasOwn(result.validationResult.manifest, "skippedChecks"), false);
+      assert.equal(result.timing.phases.some((phase) => phase.phase === "validation_typescript_syntax"), true);
     });
   });
 

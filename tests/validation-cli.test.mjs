@@ -74,7 +74,11 @@ describe("validation CLI", () => {
       const result = run(args, [0, 1]);
       assert.equal(result.owner, "validation");
       assert.equal(result.exitCode === 0 || result.exitCode === 1, true);
-      assert.equal(result.validationResult.manifest.entries.length, defaultCheckIds.length);
+      assert.equal(result.validationResult.manifest.checks.length, defaultCheckIds.length);
+      assert.equal(Object.hasOwn(result.validationResult.manifest, "entries"), false);
+      assert.equal(Object.hasOwn(result.validationResult.manifest, "runs"), false);
+      assert.equal(Object.hasOwn(result.validationResult.manifest, "skippedChecks"), false);
+      assert.equal(result.timing.phases.some((phase) => phase.phase === "validation_typescript_syntax"), true);
     }
   });
 
