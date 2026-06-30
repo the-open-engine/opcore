@@ -114,6 +114,30 @@ describe("opcore public facade", () => {
     });
   });
 
+  it("prints version and runtime provenance without scanning", () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-version-"));
+    try {
+      const human = runOpcore(["--version"], temp, 0);
+      assert.equal(human.stderr, "");
+      assert.match(human.stdout, /^@the-open-engine\/opcore 0\.1\.0-alpha\.0\b/);
+      assert.equal(existsSync(join(temp, ".opcore")), false);
+
+      const json = parseJson(runOpcore(["--version", "--json"], temp, 0).stdout);
+      assert.deepEqual(json.canonicalCommand, ["opcore", "version"]);
+      assert.equal(json.owner, "runtime");
+      assert.equal(json.runtimeInfo.schemaVersion, 1);
+      assert.equal(json.runtimeInfo.packageName, "@the-open-engine/opcore");
+      assert.equal(json.runtimeInfo.version, "0.1.0-alpha.0");
+      assert.equal(json.runtimeInfo.bin, "opcore");
+      assert.match(json.runtimeInfo.artifactSource, /^(source_checkout|installed_package|unknown)$/);
+      assert.match(json.runtimeInfo.packageRoot, /packages\/opcore$/);
+      assert.match(json.runtimeInfo.entrypoint, /packages\/opcore\/dist\/index\.js$/);
+      assert.equal(existsSync(join(temp, ".opcore")), false);
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
   it("labels unsupported JavaScript module formats distinctly from supported JavaScript", () => {
     const temp = mkdtempSync(join(tmpdir(), "opcore-js-module-status-"));
     try {
@@ -346,6 +370,37 @@ describe("opcore public facade", () => {
       assert.equal(Object.hasOwn(result.validationResult.manifest, "skippedChecks"), false);
       assert.equal(result.timing.phases.some((phase) => phase.phase === "validation_typescript_syntax"), true);
     });
+  });
+
+  it("returns structured check errors for missing explicit files and blank check ids", () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-check-invalid-"));
+    try {
+      writeFixtureFile(temp, "src/index.ts", "export const value = 1;\n");
+
+      const positional = parseJson(
+        runOpcore(["check", "src/missing.ts", "--checks", "typescript.syntax", "--json"], temp, 1).stdout
+      );
+      assert.equal(positional.status, "error");
+      assert.equal(positional.validationResult.status, "invalid_payload");
+      assert.equal(positional.validationResult.failure.category, "invalid_payload");
+      assert.match(positional.validationResult.failure.cause, /src\/missing\.ts/);
+
+      const explicit = parseJson(
+        runOpcore(["check", "files", "--files", "src/missing.ts", "--checks", "typescript.syntax", "--json"], temp, 1).stdout
+      );
+      assert.equal(explicit.status, "error");
+      assert.equal(explicit.validationResult.status, "invalid_payload");
+      assert.match(explicit.validationResult.failure.cause, /src\/missing\.ts/);
+
+      const blank = parseJson(runOpcore(["check", "--changed", "--checks", "", "--json"], temp, 1).stdout);
+      assert.equal(blank.status, "error");
+      assert.equal(blank.validationResult.status, "invalid_payload");
+      assert.equal(blank.argv.includes(""), true);
+      assert.match(blank.validationResult.failure.cause, /--checks|blank|required/i);
+      assert.doesNotMatch(blank.message, /file:\/\//);
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
   });
 
   it("returns measure deltas from .opcore artifacts without running validation", () => {

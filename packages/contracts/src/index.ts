@@ -2130,6 +2130,43 @@ export interface OpcoreRepoStatePayload {
   nextActions: readonly string[];
 }
 
+export const opcoreRuntimeArtifactSources = ["source_checkout", "installed_package", "unknown"] as const;
+export type OpcoreRuntimeArtifactSource = (typeof opcoreRuntimeArtifactSources)[number];
+
+export interface OpcoreRuntimeInfoPayload {
+  schemaVersion: 1;
+  packageName: "@the-open-engine/opcore";
+  version: string;
+  bin: "opcore";
+  artifactSource: OpcoreRuntimeArtifactSource;
+  packageRoot: string;
+  entrypoint: string;
+}
+
+export interface OpcoreDoctorPayload {
+  schemaVersion: 1;
+  runtime: OpcoreRuntimeInfoPayload;
+  repo: {
+    root: string;
+    requestedPath: string;
+  };
+  config: {
+    path: ".opcore/config";
+    state: "found" | "missing" | "unreadable";
+    message?: string;
+  };
+  checks: {
+    count: number;
+    ids: readonly string[];
+  };
+  graph: GraphProviderStatus;
+  generatedState: {
+    ignored: readonly string[];
+    guidance: string;
+  };
+  nextActions: readonly string[];
+}
+
 export interface OpcoreInitAction {
   kind: "write" | "upsert_block" | "create_hook" | "restore" | "remove";
   path: string;
@@ -2498,6 +2535,8 @@ export interface CommandRouterResult {
   editPlan?: EditPlan;
   editResult?: EditCommandResult;
   repoState?: OpcoreRepoStatePayload;
+  runtimeInfo?: OpcoreRuntimeInfoPayload;
+  opcoreDoctor?: OpcoreDoctorPayload;
   opcoreInit?: OpcoreInitPlanPayload;
   opcoreMeasure?: OpcoreMeasureDelta;
   opcoreTry?: OpcoreTryPayload;
@@ -2532,6 +2571,8 @@ export interface CommandRouterResultInput {
   editPlan?: EditPlan;
   editResult?: EditCommandResult;
   repoState?: OpcoreRepoStatePayload;
+  runtimeInfo?: OpcoreRuntimeInfoPayload;
+  opcoreDoctor?: OpcoreDoctorPayload;
   opcoreInit?: OpcoreInitPlanPayload;
   opcoreMeasure?: OpcoreMeasureDelta;
   opcoreTry?: OpcoreTryPayload;
@@ -3436,6 +3477,8 @@ export function createCommandRouterResult(input: CommandRouterResultInput): Comm
     editPlan: input.editPlan,
     editResult: input.editResult,
     repoState: input.repoState,
+    runtimeInfo: input.runtimeInfo,
+    opcoreDoctor: input.opcoreDoctor,
     opcoreInit: input.opcoreInit,
     opcoreMeasure: input.opcoreMeasure,
     opcoreTry: input.opcoreTry,
@@ -3469,10 +3512,11 @@ export async function routeCommandAdapter(options: RouteCommandAdapterOptions): 
 
   const showHelpOnEmpty = options.showHelpOnEmpty ?? group.name !== "check";
   if (parsed.args.some((arg) => commandHelpArgs.has(arg)) || (parsed.args.length === 0 && showHelpOnEmpty)) {
-    return commandHelpResult(bin, options.argv, parsed.json, group.name);
+    const routeName = parsed.args.find((arg) => !commandHelpArgs.has(arg) && !arg.startsWith("-"));
+    return commandHelpResult(bin, options.argv, parsed.json, group.name, routeName);
   }
 
-  const canonicalCommand = [...group.canonicalCommand, ...parsed.args];
+  const canonicalCommand = [...group.canonicalCommand, ...parsed.args.map(canonicalCommandArg)];
   const firstRouteArg = parsed.args.find((arg) => !arg.startsWith("-"));
   const validateFirstRouteArg = options.validateFirstRouteArg ?? true;
   if (validateFirstRouteArg && firstRouteArg && !group.commands.includes(firstRouteArg)) {
@@ -3529,10 +3573,11 @@ function commandHelpResult(
   bin: string,
   argv: readonly string[],
   json: boolean,
-  groupName?: string
+  groupName?: string,
+  routeName?: string
 ): CommandRouterResult {
   const group = groupName ? commandGroupByName(groupName) : undefined;
-  const canonicalCommand = group ? [...group.canonicalCommand, "help"] : ["opcore", "help"];
+  const canonicalCommand = group && routeName ? [...group.canonicalCommand, routeName, "help"] : group ? [...group.canonicalCommand, "help"] : ["opcore", "help"];
   return createCommandRouterResult({
     bin,
     argv,
@@ -3540,15 +3585,19 @@ function commandHelpResult(
     owner: group?.owner ?? "runtime",
     status: "ok",
     json,
-    message: commandHelpMessage(groupName)
+    message: commandHelpMessage(groupName, routeName)
   });
+}
+
+function canonicalCommandArg(arg: string): string {
+  return arg.length === 0 ? "<empty>" : arg;
 }
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-function commandHelpMessage(groupName?: string): string {
+function commandHelpMessage(groupName?: string, routeName?: string): string {
   if (!groupName) {
     return [
       "Opcore - local code intelligence and edit safety for coding agents.",
@@ -3557,12 +3606,75 @@ function commandHelpMessage(groupName?: string): string {
   }
   const group = commandGroupByName(groupName);
   if (!group) return `Unknown opcore command group: ${groupName}`;
+  const routeHelp = routeName ? commandRouteHelpMessage(groupName, routeName) : undefined;
+  if (routeHelp !== undefined) return routeHelp;
   return [
     `${group.canonicalCommand.join(" ")} - ${group.summary}`,
     `Commands: ${group.commands.join(", ")}`,
     ...(groupName === "graph" ? [`Syntax: ${contractHelpSyntax(group)}`] : []),
     `Example: ${contractHelpExample(groupName)}`
   ].join("\n");
+}
+
+function commandRouteHelpMessage(groupName: string, routeName: string): string | undefined {
+  if (groupName === "graph" && routeName === "update") {
+    return [
+      "Usage: opcore graph update [--repo <path>] [--base <ref>] [--paths <path...>] [--json]",
+      "Flags:",
+      "  --repo <path>       Repository root to update.",
+      "  --base <ref>        Optional base ref for changed-file metadata.",
+      "  --paths <path...>   Optional repo-relative paths to refresh.",
+      "  --json              Emit structured JSON.",
+      "Defaults:",
+      "  --repo defaults to the current working directory; JSON output is summary-oriented.",
+      "Examples:",
+      "  opcore graph update --repo . --base HEAD --json",
+      "  opcore graph update --repo . --paths src tests --json",
+      "Exit codes: 0 updated, 1 update failed, 64 unsupported."
+    ].join("\n");
+  }
+  if (groupName === "graph" && routeName === "build") {
+    return [
+      "Usage: opcore graph build [--repo <path>] [--paths <path...>] [--json]",
+      "Flags:",
+      "  --repo <path>       Repository root to build.",
+      "  --paths <path...>   Optional repo-relative paths to index.",
+      "  --json              Emit structured JSON.",
+      "Defaults:",
+      "  --repo defaults to the current working directory; JSON output is summary-oriented.",
+      "Examples:",
+      "  opcore graph build --repo . --json",
+      "Exit codes: 0 built, 1 build failed, 64 unsupported."
+    ].join("\n");
+  }
+  if (groupName === "graph" && routeName === "status") {
+    return [
+      "Usage: opcore graph status [--repo <path>] [--json]",
+      "Flags:",
+      "  --repo <path>       Repository root to inspect.",
+      "  --json              Emit structured JSON.",
+      "Defaults:",
+      "  --repo defaults to the current working directory.",
+      "Examples:",
+      "  opcore graph status --repo . --json",
+      "Exit codes: 0 available or stale status read, 1 status failed, 64 unsupported."
+    ].join("\n");
+  }
+  if (groupName === "validate" && routeName === "pre-write") {
+    return [
+      "Usage: opcore validate pre-write --request-file <file> [--timeout-ms <ms>] [--json]",
+      "Flags:",
+      "  --request-file <file>  ValidationRequest JSON payload.",
+      "  --timeout-ms <ms>      Pre-write timeout in milliseconds.",
+      "  --json                 Emit structured JSON.",
+      "Defaults:",
+      "  --timeout-ms defaults to 30000.",
+      "Examples:",
+      "  opcore validate pre-write --request-file ./validation-request.json --timeout-ms 30000 --json",
+      "Exit codes: 0 passed, 1 findings or errors, 64 unsupported."
+    ].join("\n");
+  }
+  return undefined;
 }
 
 function contractHelpSyntax(group: CommandGroupContract): string {
@@ -4015,7 +4127,7 @@ export function validateCommandRouterResult(result: CommandRouterResult): Comman
     throw new Error("Command router result schemaVersion must be 1");
   }
   validateNonEmptyString(result.bin, "Command router result bin");
-  validateStringArray(result.argv, "Command router result argv", { allowEmpty: true });
+  validateStringArray(result.argv, "Command router result argv", { allowEmpty: true, allowEmptyValues: true });
   validateStringArray(result.canonicalCommand, "Command router result canonicalCommand", { allowEmpty: false });
   validateCommandOwner(result.owner);
   validateCommandRouteStatus(result.status);
@@ -4042,12 +4154,20 @@ export function validateCommandRouterResult(result: CommandRouterResult): Comman
   if (result.editPlan !== undefined) validateEditPlanPayload(result.editPlan);
   if (result.editResult !== undefined) validateEditCommandResult(result.editResult);
   if (result.repoState !== undefined) validateOpcoreRepoStatePayload(result.repoState);
+  if (result.runtimeInfo !== undefined) validateOpcoreRuntimeInfoPayload(result.runtimeInfo);
+  if (result.opcoreDoctor !== undefined) validateOpcoreDoctorPayload(result.opcoreDoctor);
   if (result.opcoreInit !== undefined) validateOpcoreInitPlanPayload(result.opcoreInit);
   if (result.opcoreMeasure !== undefined) validateOpcoreMeasureDelta(result.opcoreMeasure);
   if (result.opcoreTry !== undefined) validateOpcoreTryPayload(result.opcoreTry);
   if (result.timing !== undefined) validateCommandTiming(result.timing);
   if (result.repoState !== undefined && result.owner !== "runtime") {
     throw new Error("Opcore repoState payload requires runtime owner");
+  }
+  if (result.runtimeInfo !== undefined && result.owner !== "runtime") {
+    throw new Error("Opcore runtime info payload requires runtime owner");
+  }
+  if (result.opcoreDoctor !== undefined && result.owner !== "runtime") {
+    throw new Error("Opcore doctor payload requires runtime owner");
   }
   if (result.opcoreInit !== undefined && result.owner !== "runtime") {
     throw new Error("Opcore init payload requires runtime owner");
@@ -4195,6 +4315,69 @@ export function validateOpcoreRepoStatePayload(payload: OpcoreRepoStatePayload):
   validateStringArray(payload.warnings, "Opcore repo state warnings", { allowEmpty: true });
   validateStringArray(payload.blockers, "Opcore repo state blockers", { allowEmpty: true });
   validateStringArray(payload.nextActions, "Opcore repo state nextActions", { allowEmpty: false });
+  return payload;
+}
+
+export function validateOpcoreRuntimeInfoPayload(payload: OpcoreRuntimeInfoPayload): OpcoreRuntimeInfoPayload {
+  if (!payload || typeof payload !== "object") {
+    throw new Error("Opcore runtime info payload is required");
+  }
+  if (payload.schemaVersion !== 1) {
+    throw new Error("Opcore runtime info schemaVersion must be 1");
+  }
+  if (payload.packageName !== "@the-open-engine/opcore") {
+    throw new Error("Opcore runtime info packageName must be @the-open-engine/opcore");
+  }
+  validateNonEmptyString(payload.version, "Opcore runtime info version");
+  if (payload.bin !== "opcore") {
+    throw new Error("Opcore runtime info bin must be opcore");
+  }
+  if (!includesString(opcoreRuntimeArtifactSources, payload.artifactSource)) {
+    throw new Error(`Unknown Opcore runtime artifact source: ${String(payload.artifactSource)}`);
+  }
+  validateNonEmptyString(payload.packageRoot, "Opcore runtime info packageRoot");
+  validateNonEmptyString(payload.entrypoint, "Opcore runtime info entrypoint");
+  return payload;
+}
+
+export function validateOpcoreDoctorPayload(payload: OpcoreDoctorPayload): OpcoreDoctorPayload {
+  if (!payload || typeof payload !== "object") {
+    throw new Error("Opcore doctor payload is required");
+  }
+  if (payload.schemaVersion !== 1) {
+    throw new Error("Opcore doctor payload schemaVersion must be 1");
+  }
+  validateOpcoreRuntimeInfoPayload(payload.runtime);
+  if (!payload.repo || typeof payload.repo !== "object") {
+    throw new Error("Opcore doctor repo is required");
+  }
+  validateNonEmptyString(payload.repo.root, "Opcore doctor repo root");
+  validateNonEmptyString(payload.repo.requestedPath, "Opcore doctor repo requestedPath");
+  if (!payload.config || typeof payload.config !== "object") {
+    throw new Error("Opcore doctor config is required");
+  }
+  if (payload.config.path !== ".opcore/config") {
+    throw new Error("Opcore doctor config path must be .opcore/config");
+  }
+  if (!includesString(["found", "missing", "unreadable"] as const, payload.config.state)) {
+    throw new Error(`Unknown Opcore doctor config state: ${String(payload.config.state)}`);
+  }
+  if (payload.config.message !== undefined) validateNonEmptyString(payload.config.message, "Opcore doctor config message");
+  if (!payload.checks || typeof payload.checks !== "object") {
+    throw new Error("Opcore doctor checks are required");
+  }
+  validateNonNegativeInteger(payload.checks.count, "Opcore doctor checks count");
+  validateStringArray(payload.checks.ids, "Opcore doctor checks ids", { allowEmpty: false });
+  if (payload.checks.ids.length !== payload.checks.count) {
+    throw new Error("Opcore doctor checks count must match ids length");
+  }
+  validateProviderStatus(payload.graph);
+  if (!payload.generatedState || typeof payload.generatedState !== "object") {
+    throw new Error("Opcore doctor generatedState is required");
+  }
+  validateStringArray(payload.generatedState.ignored, "Opcore doctor generatedState ignored", { allowEmpty: false });
+  validateNonEmptyString(payload.generatedState.guidance, "Opcore doctor generatedState guidance");
+  validateStringArray(payload.nextActions, "Opcore doctor nextActions", { allowEmpty: false });
   return payload;
 }
 
@@ -5099,8 +5282,8 @@ export function validateCommandAdapterRequest(request: CommandAdapterRequest): C
     throw new Error("Command adapter request schemaVersion must be 1");
   }
   validateNonEmptyString(request.bin, "Command adapter request bin");
-  validateStringArray(request.argv, "Command adapter request argv", { allowEmpty: true });
-  validateStringArray(request.args, "Command adapter request args", { allowEmpty: true });
+  validateStringArray(request.argv, "Command adapter request argv", { allowEmpty: true, allowEmptyValues: true });
+  validateStringArray(request.args, "Command adapter request args", { allowEmpty: true, allowEmptyValues: true });
   if (typeof request.json !== "boolean") {
     throw new Error("Command adapter request json must be boolean");
   }
@@ -8790,7 +8973,7 @@ function validateExitCodeForStatus(exitCode: unknown, status: CommandRouteStatus
 function validateStringArray(
   values: readonly string[] | undefined,
   label: string,
-  options: { allowEmpty: boolean }
+  options: { allowEmpty: boolean; allowEmptyValues?: boolean }
 ): readonly string[] {
   if (!Array.isArray(values)) {
     throw new Error(`${label} must be an array`);
@@ -8798,7 +8981,13 @@ function validateStringArray(
   if (!options.allowEmpty && values.length === 0) {
     throw new Error(`${label} must not be empty`);
   }
-  for (const value of values) validateNonEmptyString(value, label);
+  for (const value of values) {
+    if (options.allowEmptyValues === true) {
+      if (typeof value !== "string") throw new Error(`${label} must contain only strings`);
+    } else {
+      validateNonEmptyString(value, label);
+    }
+  }
   return values;
 }
 

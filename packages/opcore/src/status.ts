@@ -654,7 +654,19 @@ function formatAspStatusLine(asp: OpcoreRepoStatePayload["activation"]["asp"]): 
 }
 
 function opcoreStatusHelpMessage(): string {
-  return "opcore status [--repo <path>] [--verbose] [--json]";
+  return [
+    "Usage: opcore status [--repo <path>] [--verbose] [--json]",
+    "Flags:",
+    "  --repo <path>  Repository root to inspect.",
+    "  --verbose      Include non-enrolled ASP state in human output.",
+    "  --asp          Include ASP state in human output.",
+    "  --json         Emit structured JSON.",
+    "Defaults:",
+    "  --repo defaults to the current working directory; status is read-only.",
+    "Examples:",
+    "  opcore status --repo . --json",
+    "Exit codes: 0 status produced, 1 invalid repo or status error, 64 unsupported."
+  ].join("\n");
 }
 
 function runGit(cwd: string, args: readonly string[]): { status: number | null; stdout: string; stderr: string } {

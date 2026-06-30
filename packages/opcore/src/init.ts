@@ -1391,8 +1391,21 @@ function formatInteractiveOutcome(payload: OpcoreInitPlanPayload): string {
 
 function opcoreInitHelpMessage(): string {
   return [
-    "opcore init [--repo <path>] [--approve] [--json]",
-    "opcore init --undo --approve [--repo <path>] [--json]"
+    "Usage:",
+    "  opcore init [--repo <path>] [--approve] [--json]",
+    "  opcore init --undo --approve [--repo <path>] [--json]",
+    "Flags:",
+    "  --repo <path>          Repository root to set up.",
+    "  --approve              Apply the proposed additive setup.",
+    "  --undo                 Revert files recorded in .opcore/init-undo.json.",
+    "  --fail-closed-hook     Add the optional fail-closed pre-commit hook.",
+    "  --json                 Emit structured JSON.",
+    "Defaults:",
+    "  Without --approve, init is plan-only outside an interactive approval prompt.",
+    "Examples:",
+    "  opcore init --repo . --json",
+    "  opcore init --repo . --approve",
+    "Exit codes: 0 planned or applied, 1 setup error, 64 unsupported."
   ].join("\n");
 }
 

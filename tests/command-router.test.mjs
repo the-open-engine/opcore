@@ -377,6 +377,11 @@ describe("Opcore command router", () => {
     assert.equal(statusJson.exitCode, 0);
     assert.equal(doctorJson.exitCode, 0);
     assert.equal(helpJson.exitCode, 0);
+    assert.equal(doctorJson.runtimeInfo.packageName, "@the-open-engine/opcore");
+    assert.equal(doctorJson.opcoreDoctor.schemaVersion, 1);
+    assert.equal(doctorJson.opcoreDoctor.config.state, "missing");
+    assert.equal(doctorJson.opcoreDoctor.checks.count > 0, true);
+    assert.match(doctorJson.opcoreDoctor.generatedState.guidance, /\.opcore/);
     assertCommandTiming(statusJson);
     assertCommandTiming(doctorJson);
     assertCommandTiming(helpJson);
@@ -393,6 +398,16 @@ describe("Opcore command router", () => {
     const graphHelp = (await routeCommand(["graph", "--help"], "opcore")).message;
     assert.match(graphHelp, /Commands: build, update, watch, status, query, serve, impact, review-context, detect-changes, search/);
     assert.match(graphHelp, /opcore graph <build\|update\|watch\|status\|query\|serve\|impact\|review-context\|detect-changes\|search> --repo \. \[--json]/);
+    const graphUpdateHelp = await routeCommand(["graph", "update", "--help", "--json"], "opcore");
+    assert.equal(graphUpdateHelp.status, "ok");
+    assert.deepEqual(graphUpdateHelp.canonicalCommand, ["opcore", "graph", "update", "help"]);
+    assert.match(graphUpdateHelp.message, /Usage: opcore graph update/);
+    assert.match(graphUpdateHelp.message, /Flags:/);
+    assert.match(graphUpdateHelp.message, /Defaults:/);
+    assert.match(graphUpdateHelp.message, /Examples:/);
+    assert.match(graphUpdateHelp.message, /Exit codes:/);
+    assert.match(graphUpdateHelp.message, /summary-oriented/);
+    assert.doesNotMatch(graphUpdateHelp.message, /Commands: build, update/);
     const status = await routeCommand(["status", "--json"], "opcore");
     assertDefaultCheckIds(status.validationStatus.adapterRegistry.checkIds);
     assert.match((await routeCommand(["status"], "opcore")).message, /Run `opcore graph build`|Graph is available/);

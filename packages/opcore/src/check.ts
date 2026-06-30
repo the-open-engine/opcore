@@ -32,18 +32,19 @@ export async function routeOpcoreCheck(
 ): Promise<CommandRouterResult> {
   const rawArgs = parsed.args.slice(1);
   if (rawArgs.some((arg) => arg === "--help" || arg === "-h" || arg === "help") || rawArgs.length === 0) {
+    const helpRoute = checkHelpRoute(rawArgs);
     return createCommandRouterResult({
       bin: "opcore",
       argv,
-      canonicalCommand: ["opcore", "check", "help"],
+      canonicalCommand: helpRoute === undefined ? ["opcore", "check", "help"] : ["opcore", "check", helpRoute, "help"],
       owner: "validation",
       status: "ok",
       json: parsed.json,
-      message: opcoreCheckHelpMessage()
+      message: opcoreCheckHelpMessage(helpRoute)
     });
   }
   const args = normalizeCheckArgs(rawArgs);
-  const canonicalCommand = ["opcore", "check", ...args];
+  const canonicalCommand = ["opcore", "check", ...args.map(canonicalCheckArg)];
   const firstRoute = firstCheckPositional(args);
   if (firstRoute !== undefined && !checkRoutes.has(firstRoute)) {
     return createCommandRouterResult({
@@ -176,6 +177,10 @@ function optionConsumesNextValue(arg: string): boolean {
   ].includes(arg);
 }
 
+function canonicalCheckArg(arg: string): string {
+  return arg.length === 0 ? "<empty>" : arg;
+}
+
 function hasBase(args: readonly string[]): boolean {
   return args.some((arg) => arg === "--base" || arg.startsWith("--base="));
 }
@@ -184,11 +189,87 @@ function hasReportMode(args: readonly string[]): boolean {
   return args.some((arg) => arg === "--report-mode" || arg.startsWith("--report-mode=") || arg === "--introduced");
 }
 
-function opcoreCheckHelpMessage(): string {
+function checkHelpRoute(args: readonly string[]): string | undefined {
+  if (args.includes("--changed")) return "changed";
+  if (args.includes("--staged")) return "staged";
+  if (args.includes("--all")) return "all";
+  for (const arg of args) {
+    if (arg === "files" || arg === "changed" || arg === "staged" || arg === "all" || arg === "tree" || arg === "manifest") return arg;
+    if (!arg.startsWith("-") && arg !== "help") return "files";
+  }
+  return undefined;
+}
+
+function opcoreCheckHelpMessage(route?: string): string {
+  if (route === "changed") {
+    return [
+      "Usage: opcore check changed [--base <ref>] [--checks <ids>] [--json]",
+      "Flags:",
+      "  --base <ref>     Git base ref for changed-file scope.",
+      "  --checks <ids>   Comma-separated validation check ids.",
+      "  --json           Emit structured JSON.",
+      "Defaults:",
+      "  --base defaults to HEAD; --report-mode defaults to introduced.",
+      "Examples:",
+      "  opcore check --changed --json",
+      "  opcore check changed --base origin/main --checks typescript.syntax --json",
+      "Exit codes: 0 passed, 1 findings or errors, 64 unsupported."
+    ].join("\n");
+  }
+  if (route === "staged") {
+    return [
+      "Usage: opcore check staged [--checks <ids>] [--json]",
+      "Flags:",
+      "  --checks <ids>   Comma-separated validation check ids.",
+      "  --json           Emit structured JSON.",
+      "Defaults:",
+      "  Checks run on currently staged files.",
+      "Examples:",
+      "  opcore check --staged --json",
+      "Exit codes: 0 passed, 1 findings or errors, 64 unsupported."
+    ].join("\n");
+  }
+  if (route === "all") {
+    return [
+      "Usage: opcore check all [--checks <ids>] [--json]",
+      "Flags:",
+      "  --checks <ids>   Comma-separated validation check ids.",
+      "  --json           Emit structured JSON.",
+      "Defaults:",
+      "  Checks run on all supported repo files.",
+      "Examples:",
+      "  opcore check --all --json",
+      "Exit codes: 0 passed, 1 findings or errors, 64 unsupported."
+    ].join("\n");
+  }
+  if (route === "files") {
+    return [
+      "Usage: opcore check files --files <path...> [--checks <ids>] [--json]",
+      "Flags:",
+      "  --files <path...>  Explicit repo-relative files to validate.",
+      "  --checks <ids>     Comma-separated validation check ids.",
+      "  --json             Emit structured JSON.",
+      "Defaults:",
+      "  Bare file operands are treated as files scope.",
+      "Examples:",
+      "  opcore check src/index.ts --checks typescript.syntax --json",
+      "Exit codes: 0 passed, 1 findings or errors, 64 unsupported."
+    ].join("\n");
+  }
   return [
-    "opcore check --changed --json",
-    "opcore check --staged --json",
-    "opcore check <file...> --json",
+    "Usage:",
+    "  opcore check --changed --json",
+    "  opcore check --staged --json",
+    "  opcore check --all --json",
+    "  opcore check <file...> --json",
+    "Flags:",
+    "  --checks <ids>  Comma-separated validation check ids.",
+    "  --json          Emit structured JSON.",
+    "Defaults:",
+    "  changed uses --base HEAD and --report-mode introduced.",
+    "Examples:",
+    "  opcore check --changed --json",
+    "  opcore check src/index.ts --checks typescript.syntax --json",
     "Exit codes: 0 passed, 1 findings or errors, 64 unsupported."
   ].join("\n");
 }

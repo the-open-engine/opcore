@@ -89,6 +89,8 @@ import {
   validateOpcoreMeasureDelta,
   validateOpcoreMetricHistoryEntry,
   validateOpcoreMetricReport,
+  validateOpcoreRuntimeInfoPayload,
+  validateOpcoreDoctorPayload,
   validateOpcoreTryPayload,
   validateRepoShapeFingerprint,
   validateEditCommandResult,
@@ -1184,6 +1186,19 @@ describe("Opcore shared contracts", () => {
         opcoreInit: validOpcoreInitPlan()
       }).opcoreInit.mode,
       "plan"
+    );
+    assert.equal(validateOpcoreRuntimeInfoPayload(validOpcoreRuntimeInfo()).artifactSource, "source_checkout");
+    assert.equal(validateOpcoreDoctorPayload(validOpcoreDoctor()).config.state, "found");
+    assert.equal(
+      validateCommandRouterResult({
+        ...validRouterResult(),
+        bin: "opcore",
+        argv: ["doctor", "--json"],
+        canonicalCommand: ["opcore", "doctor"],
+        runtimeInfo: validOpcoreRuntimeInfo(),
+        opcoreDoctor: validOpcoreDoctor()
+      }).opcoreDoctor.runtime.version,
+      "0.1.0-alpha.0"
     );
     assert.equal(validateInspectRouteResult(validInspectRouteResult()).references[0].symbol.name, "GreetingModel");
     assert.equal(
@@ -4138,6 +4153,43 @@ function validRouterResult() {
     exitCode: 0,
     message: "router ready",
     json: true
+  };
+}
+
+function validOpcoreRuntimeInfo() {
+  return {
+    schemaVersion: 1,
+    packageName: "@the-open-engine/opcore",
+    version: "0.1.0-alpha.0",
+    bin: "opcore",
+    artifactSource: "source_checkout",
+    packageRoot: "/repo/packages/opcore",
+    entrypoint: "/repo/packages/opcore/dist/index.js"
+  };
+}
+
+function validOpcoreDoctor() {
+  return {
+    schemaVersion: 1,
+    runtime: validOpcoreRuntimeInfo(),
+    repo: {
+      root: "/repo",
+      requestedPath: "/repo"
+    },
+    config: {
+      path: ".opcore/config",
+      state: "found"
+    },
+    checks: {
+      count: 1,
+      ids: ["typescript.syntax"]
+    },
+    graph: availableGraphStatus(),
+    generatedState: {
+      ignored: [".opcore/"],
+      guidance: "Keep generated Opcore state ignored."
+    },
+    nextActions: ["Run opcore check --changed --json."]
   };
 }
 
