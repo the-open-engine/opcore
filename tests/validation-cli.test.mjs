@@ -239,6 +239,14 @@ describe("validation CLI", () => {
       assert.equal(manifest.validationResult.manifest.checks.includes("example.policy"), true);
       const equalsManifest = JSON.parse(runRaw(["check", "manifest", `--repo=${temp}`, "--json"]).stdout);
       assert.equal(equalsManifest.validationResult.manifest.checks.includes("example.policy"), true);
+      const relativeManifest = JSON.parse(runRaw(["check", "manifest", "--repo", ".", "--json"], [0], { cwd: temp }).stdout);
+      assert.equal(relativeManifest.validationResult.manifest.checks.includes("example.policy"), true);
+      const relativeEqualsManifest = JSON.parse(runRaw(["check", "manifest", "--repo=.", "--json"], [0], { cwd: temp }).stdout);
+      assert.equal(relativeEqualsManifest.validationResult.manifest.checks.includes("example.policy"), true);
+      const advancedRelativeManifest = run(["check", "manifest", "--repo", ".", "--json"], [0], { cwd: temp });
+      assert.equal(advancedRelativeManifest.validationResult.manifest.checks.includes("example.policy"), true);
+      const advancedValidateManifest = run(["validate", "manifest", "--repo=.", "--json"], [0], { cwd: temp });
+      assert.equal(advancedValidateManifest.validationResult.manifest.checks.includes("example.policy"), true);
       const validateManifest = run(["validate", "manifest", "--repo", temp, "--json"]);
       assert.equal(validateManifest.validationResult.manifest.checks.includes("example.policy"), true);
 
@@ -595,7 +603,7 @@ module.exports = {
 
 function run(args, expectedExitCodes = [0], options = {}) {
   const result = spawnSync(process.execPath, [latticeBin, ...args], {
-    cwd: repoRoot,
+    cwd: options.cwd ?? repoRoot,
     env: options.env ?? process.env,
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"]
@@ -619,7 +627,7 @@ function run(args, expectedExitCodes = [0], options = {}) {
 
 function runRaw(args, expectedExitCodes = [0], options = {}) {
   const result = spawnSync(process.execPath, [opcoreBin, ...args], {
-    cwd: repoRoot,
+    cwd: options.cwd ?? repoRoot,
     env: options.env ?? process.env,
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"]

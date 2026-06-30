@@ -30,11 +30,12 @@ export function validationChecksForRepo(
 }
 
 export function loadRepoCheckPacks(repoRoot: string): readonly OpcoreCheckPack[] {
-  const config = readRepoConfig(repoRoot);
+  const canonicalRepoRoot = resolve(repoRoot);
+  const config = readRepoConfig(canonicalRepoRoot);
   const packSpecifiers = config.checks?.packs ?? [];
   if (packSpecifiers.length === 0) return [];
-  const requireFromRepo = createRequire(join(repoRoot, "package.json"));
-  return packSpecifiers.map((specifier) => loadRepoCheckPack(repoRoot, requireFromRepo, specifier));
+  const requireFromRepo = createRequire(join(canonicalRepoRoot, "package.json"));
+  return packSpecifiers.map((specifier) => loadRepoCheckPack(canonicalRepoRoot, requireFromRepo, specifier));
 }
 
 function readRepoConfig(repoRoot: string): OpcoreRepoConfig {
