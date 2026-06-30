@@ -78,6 +78,30 @@ describe("opcore public facade", () => {
     }
   });
 
+  it("keeps first-run scan focused on languages present in the repo", () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-scan-ts-only-"));
+    try {
+      writeFixtureFile(temp, "src/index.ts", "export const value = 1;\n");
+
+      const human = runOpcore(["--repo", temp], temp, 0);
+      assert.match(human.stdout, /degraded-validation-tools=none/);
+      assert.doesNotMatch(human.stdout, /failed-checks=.*(?:rust|python)\./);
+      assert.match(human.stdout, new RegExp(`opcore graph build --repo ${escapeRegExp(realpathSync(temp))} --json`));
+      assert.equal(existsSync(join(temp, ".lattice")), false);
+
+      const result = parseJson(runOpcore(["--repo", temp, "--json"], temp, 0).stdout);
+      const checks = result.validationResult.manifest.checks;
+      assert.equal(checks.some((check) => check.startsWith("rust.")), false);
+      assert.equal(checks.some((check) => check.startsWith("python.")), false);
+      assert.equal(result.repoState.validation.degradedToolchains.some((tool) => tool.adapter === "rust"), false);
+      assert.equal(result.repoState.validation.degradedToolchains.some((tool) => tool.adapter === "python"), false);
+      assert.equal(result.repoState.nextActions[0], `opcore graph build --repo ${realpathSync(temp)} --json`);
+      assert.equal(existsSync(join(temp, ".lattice")), false);
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
   it("excludes generated provider roots from status coverage and scan validation", () => {
     const temp = mkdtempSync(join(tmpdir(), "opcore-provider-root-skip-"));
     try {

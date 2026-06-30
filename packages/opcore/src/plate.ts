@@ -1,4 +1,5 @@
 import type { OpcoreRepoStatePayload, ValidationResult } from "@the-open-engine/opcore-contracts";
+import { failedValidationRuns } from "./scan-presentation.js";
 
 /**
  * Human, TTY-only "constraint plate" rendering for `opcore` scan and
@@ -106,7 +107,7 @@ export function formatScanPlate(
   const total = coverage.totalFiles;
   const graphState = repoState.graph.state === "available" ? "graph fresh" : `graph ${repoState.graph.state}`;
   const runs = validationResult.manifest?.runs ?? [];
-  const failed = runs.filter((run) => run.status !== "passed");
+  const failed = failedValidationRuns(validationResult);
 
   const lines: string[] = [];
   lines.push("  " + topBorder("OPCORE", "LAYER 02 · CONSTRAINTS"));
@@ -174,7 +175,7 @@ export function formatScanPlate(
   lines.push("  " + footRule());
   const verdict = validationResult.status === "passed" ? "validation PASSED" : "validation FAILED";
   lines.push(`  ${verdict} · ${failed.length} checks · activation ${repoState.activation.level}`);
-  lines.push("  next  opcore check --changed --json       exit  0 pass · 1 findings · 64 unsupported");
+  lines.push(`  next  ${truncate(repoState.nextActions?.[0] ?? "opcore check --changed --json", 58)}`);
 
   const plate = lines.join("\n");
   return options.color ? colorize(plate) : plate;
@@ -185,7 +186,7 @@ export function formatCheckStamp(
 ): string {
   const { validationResult, scope, base } = args;
   const runs = validationResult.manifest?.runs ?? [];
-  const failed = runs.filter((run) => run.status !== "passed");
+  const failed = failedValidationRuns(validationResult);
   const passed = validationResult.status === "passed";
   const verdictRight = passed ? "CLEARED  ◦" : "BLOCKED  ✗";
 

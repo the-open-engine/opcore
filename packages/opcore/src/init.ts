@@ -27,6 +27,7 @@ import {
 } from "node:fs";
 import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
 import { createOpcoreScanAnalysis, type OpcoreScanAnalysis } from "./scan.js";
+import { failedValidationCheckIds } from "./scan-presentation.js";
 import { commonSkippedPathSegments, resolveRepo, type RepoResolution } from "./status.js";
 
 declare const process: {
@@ -314,9 +315,7 @@ function createInitRouterResult(
 }
 
 function createInitScanSummary(repoState: OpcoreRepoStatePayload, validationResult: ValidationResult): OpcoreInitScanSummary {
-  const failedChecks = validationResult.manifest?.runs
-    ?.filter((run) => run.status !== "passed")
-    .map((run) => run.checkId) ?? [];
+  const failedChecks = failedValidationCheckIds(validationResult);
   return {
     totalFiles: repoState.coverage.totalFiles,
     graphSupportedFiles: repoState.coverage.graph.supportedFiles,

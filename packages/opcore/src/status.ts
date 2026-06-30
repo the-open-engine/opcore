@@ -9,6 +9,7 @@ import { createCommandRouterResult } from "@the-open-engine/opcore-contracts";
 import { spawnSync } from "node:child_process";
 import { existsSync, readdirSync, realpathSync, statSync } from "node:fs";
 import { basename, extname, join, resolve, sep } from "node:path";
+import { relevantDegradedToolchainsForCoverage } from "./scan-presentation.js";
 import { commonSkippedPathSegments } from "./source-policy.js";
 import { createDefaultValidationStatusPayload } from "./validation-composition.js";
 export { commonSkippedPathSegments } from "./source-policy.js";
@@ -303,7 +304,7 @@ export function createRepoState(resolution: RepoResolution): OpcoreRepoStatePayl
   const census = readRepoCensus(resolution);
   const coverage = computeCoverage(census.files);
   const graphStatus = validationStatus.graph.status;
-  const validation = validationSummary(validationStatus);
+  const validation = validationSummary(validationStatus, coverage);
   const asp = discoverAspEnrollment(resolution.root);
   const warnings = statusWarnings({ coverage, validation, graphStatus, traversalFailures: census.traversalFailures });
   const blockers = statusBlockers(graphStatus, census.traversalFailures);
@@ -510,8 +511,12 @@ function computeCoverage(files: readonly string[]): OpcoreRepoStatePayload["cove
   };
 }
 
-function validationSummary(validationStatus: ReturnType<typeof createDefaultValidationStatusPayload>): OpcoreRepoStatePayload["validation"] {
+function validationSummary(
+  validationStatus: ReturnType<typeof createDefaultValidationStatusPayload>,
+  coverage: OpcoreRepoStatePayload["coverage"]
+): OpcoreRepoStatePayload["validation"] {
   const adapters = validationStatus.adapterRegistry.adapters ?? [];
+  const degraded = adapters.flatMap((adapter) => degradedToolchains(adapter));
   return {
     ready: validationStatus.ready,
     checkCount: validationStatus.adapterRegistry.checkIds.length,
@@ -522,7 +527,7 @@ function validationSummary(validationStatus: ReturnType<typeof createDefaultVali
       degradedChecks: (adapter.degradedChecks ?? []).map((check) => check.checkId),
       missingTools: (adapter.toolchain ?? []).filter((tool) => !tool.available).map((tool) => tool.tool)
     })),
-    degradedToolchains: adapters.flatMap((adapter) => degradedToolchains(adapter))
+    degradedToolchains: relevantDegradedToolchainsForCoverage(coverage, degraded)
   };
 }
 
@@ -593,7 +598,17 @@ function nextCommands(repoRoot: string, graphStatus: GraphProviderStatus, traver
   if (graphStatus.state === "available") {
     return [`opcore check --changed --repo ${repoRoot} --json`, `opcore --repo ${repoRoot} --json`];
   }
+  if (graphRefreshRecommended(graphStatus)) {
+    return [`opcore graph build --repo ${repoRoot} --json`, `opcore --repo ${repoRoot} --json`];
+  }
   return [`opcore --repo ${repoRoot} --json`, `opcore status --repo ${repoRoot} --json`];
+}
+
+function graphRefreshRecommended(status: GraphProviderStatus): boolean {
+  return status.state === "stale" ||
+    status.state === "schema_mismatch" ||
+    status.state === "skipped" ||
+    status.state === "required_missing";
 }
 
 function graphAction(status: GraphProviderStatus): string {
