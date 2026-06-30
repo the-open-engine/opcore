@@ -8,6 +8,7 @@ maintainers publish the alpha packages, run Opcore from a source checkout:
 ```bash
 npm ci
 npm run build
+node packages/opcore/dist/index.js --version --json
 node packages/opcore/dist/index.js init --repo /path/to/repo
 ```
 
@@ -15,6 +16,9 @@ What this shows:
 
 - The built source command starts the interactive onboarding wizard without
   relying on npm registry publication.
+- `--version --json` reports the exact package version, package root, entrypoint,
+  and whether the command is running from a source checkout or installed
+  package.
 - The wizard runs a read-only scan first, prints Coverage before Findings, reports concrete counts and locations, and asks before writing.
 - Scan/status/check/measure are read-only for source files.
 - Approved init writes only additive `.opcore/config`, one delimited guidance block in an existing agent file or new `AGENTS.md`, a managed `.opcore/` line in `.gitignore` for Git repos, and `.opcore/init-undo.json`.
@@ -23,6 +27,12 @@ What this shows:
 Alpha support is `darwin-arm64`, `darwin-x64`, and `linux-x64` with Node >=22. Unsupported platforms return typed degraded status instead of crashing. Windows is out of scope for `0.1.0-alpha.0`. Language coverage is deep for TypeScript/JavaScript, useful for Rust, and experimental degraded-honest for Python. Other non-TS/JS/Rust/Python files are counted in coverage; day-one checks skip them.
 
 ## Package Publication
+
+Local tarballs and `file:` installs from this checkout are temporary smoke-test
+tools. Do not commit machine-specific `file:/...` or
+`file:../../../Users/...` package references to another repo. During alpha
+staging, prefer the built source checkout unless maintainers have published the
+registry package.
 
 After package publication, the one-command first-run path is:
 
@@ -57,6 +67,8 @@ Run this inside the repository you want to inspect:
 
 ```bash
 opcore
+opcore --version --json
+opcore doctor --repo . --json
 opcore --repo .
 opcore status
 ```
@@ -66,6 +78,7 @@ Use JSON when another tool consumes the result:
 ```bash
 opcore --json
 opcore status --json
+opcore doctor --json
 ```
 
 Check changed files from agents or hooks:

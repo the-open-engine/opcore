@@ -5938,6 +5938,168 @@
         }
       }
     },
+    "OpcoreRuntimeInfoPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "packageName",
+        "version",
+        "bin",
+        "artifactSource",
+        "packageRoot",
+        "entrypoint"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "packageName": {
+          "const": "@the-open-engine/opcore"
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "bin": {
+          "const": "opcore"
+        },
+        "artifactSource": {
+          "enum": [
+            "source_checkout",
+            "installed_package",
+            "unknown"
+          ]
+        },
+        "packageRoot": {
+          "type": "string",
+          "minLength": 1
+        },
+        "entrypoint": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "OpcoreDoctorPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "runtime",
+        "repo",
+        "config",
+        "checks",
+        "graph",
+        "generatedState",
+        "nextActions"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "runtime": {
+          "$ref": "#/$defs/OpcoreRuntimeInfoPayload"
+        },
+        "repo": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "root",
+            "requestedPath"
+          ],
+          "properties": {
+            "root": {
+              "type": "string",
+              "minLength": 1
+            },
+            "requestedPath": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "config": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path",
+            "state"
+          ],
+          "properties": {
+            "path": {
+              "const": ".opcore/config"
+            },
+            "state": {
+              "enum": [
+                "found",
+                "missing",
+                "unreadable"
+              ]
+            },
+            "message": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "checks": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "count",
+            "ids"
+          ],
+          "properties": {
+            "count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "ids": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        "graph": {
+          "$ref": "#/$defs/GraphProviderStatus"
+        },
+        "generatedState": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "ignored",
+            "guidance"
+          ],
+          "properties": {
+            "ignored": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "guidance": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "nextActions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
     "OpcoreCoverageSupportedCounts": {
       "type": "object",
       "additionalProperties": false,
@@ -7879,6 +8041,12 @@
         },
         "repoState": {
           "$ref": "#/$defs/OpcoreRepoStatePayload"
+        },
+        "runtimeInfo": {
+          "$ref": "#/$defs/OpcoreRuntimeInfoPayload"
+        },
+        "opcoreDoctor": {
+          "$ref": "#/$defs/OpcoreDoctorPayload"
         },
         "opcoreInit": {
           "$ref": "#/$defs/OpcoreInitPlanPayload"
