@@ -154,7 +154,7 @@ Opcore's ASP Core check provider ships as a separate package, `@the-open-engine/
 
 ## Docs
 
-**[Quickstart](docs/quickstart.md) · [Concepts: coverage & findings](docs/concepts.md) · [Agent integration](docs/agent-integration.md) · [Architecture](docs/architecture/runtime-cli-ard.md) · [The Open Engine](https://theopenengine.com)**
+**[Quickstart](docs/quickstart.md) · [Concepts: coverage & findings](docs/concepts.md) · [Agent integration](docs/agent-integration.md) · [Architecture](docs/architecture/runtime-cli-ard.md) (`@docs/architecture/runtime-cli-ard.md`) · [The Open Engine](https://theopenengine.com)**
 
 ## Status
 

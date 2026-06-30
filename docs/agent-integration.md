@@ -38,6 +38,18 @@ Treat non-zero exits as blocked unless the calling workflow has a typed recovery
 | `not_implemented` | 2 |
 | `unsupported` | 64 |
 
+Repos can extend validation with repo-owned check packs configured in `.opcore/config`:
+
+```json
+{
+  "checks": {
+    "packs": ["./checks/opcore-checks.cjs", "@acme/opcore-checks"]
+  }
+}
+```
+
+Each pack exports `{ id, version?, checks }`, where `checks` are Opcore `ValidationCheckDefinition` objects. Pack specifiers resolve from the target repo root, so `opcore check --repo <path>` uses that repo's configured policies.
+
 ## Metrics
 
 ```bash

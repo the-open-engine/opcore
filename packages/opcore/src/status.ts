@@ -166,7 +166,20 @@ export function routeOpcoreStatus(argv: readonly string[], parsed: ParsedCommand
     });
   }
 
-  const repoState = createRepoState(resolution.resolution);
+  let repoState: OpcoreRepoStatePayload;
+  try {
+    repoState = createRepoState(resolution.resolution);
+  } catch (error) {
+    return createCommandRouterResult({
+      bin: "opcore",
+      argv,
+      canonicalCommand: ["opcore", "status"],
+      owner: "runtime",
+      status: "error",
+      json: parsed.json,
+      message: errorMessage(error)
+    });
+  }
   const includeAspLine = parsedStatus.showAspLine || repoState.activation.asp.state === "enrolled";
   return createCommandRouterResult({
     bin: "opcore",

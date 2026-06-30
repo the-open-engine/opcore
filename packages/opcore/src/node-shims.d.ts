@@ -75,6 +75,12 @@ declare module "node:readline/promises" {
   export function createInterface(options: { input: unknown; output: unknown }): Interface;
 }
 
+declare module "node:module" {
+  export function createRequire(url: string): {
+    (specifier: string): unknown;
+    resolve(specifier: string): string;
+  };
+}
 declare module "node:path" {
   export function basename(path: string): string;
   export function dirname(path: string): string;

@@ -508,8 +508,15 @@ function tempRepo(options = {}) {
     });
   });
   run(repo, "git", ["init", "--quiet"]);
-  run(repo, "git", ["add", "-A"]);
+  stageRepoEntries(repo);
   return repo;
+}
+
+function stageRepoEntries(repo) {
+  const files = run(repo, "git", ["ls-files", "--others", "--exclude-standard", "-z"]).stdout.split("\0").filter(Boolean);
+  for (let index = 0; index < files.length; index += 100) {
+    run(repo, "git", ["add", "--", ...files.slice(index, index + 100)]);
+  }
 }
 
 function withReleaseDocsLock(runLocked) {
