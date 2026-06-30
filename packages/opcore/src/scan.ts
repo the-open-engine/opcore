@@ -7,11 +7,17 @@ import type {
   ValidationResult
 } from "@the-open-engine/opcore-contracts";
 import { createCommandRouterResult } from "@the-open-engine/opcore-contracts";
-import { createNodeValidationWorkspace, createValidationRunner, type ValidationWorkspace } from "@the-open-engine/opcore-validation";
+import {
+  createNodeValidationWorkspace,
+  createValidationRunner,
+  type ValidationCheckDefinition,
+  type ValidationWorkspace
+} from "@the-open-engine/opcore-validation";
 import { readdir, readFile } from "node:fs/promises";
 import { join, relative, resolve, sep } from "node:path";
 import { formatScanPlate } from "./plate.js";
 import { createOpcoreMetricReport, writeOpcoreMetricArtifacts } from "./reporting.js";
+import { activeValidationAdaptersForCoverage, failedValidationCheckIds } from "./scan-presentation.js";
 import { commonSkippedPathSegments, createRepoState, parseOpcoreRepoArgs, type RepoResolution, resolveRepo } from "./status.js";
 import {
   createOpcoreValidationGraphProviderClient,
@@ -95,7 +101,7 @@ export async function createOpcoreScanAnalysis(resolution: RepoResolution): Prom
   };
   const validationResult = await createValidationRunner({
     workspace: createScanWorkspace(resolution),
-    checks: defaultValidationChecks,
+    checks: scanValidationChecks(repoState),
     graphProviderClient: createOpcoreValidationGraphProviderClient(),
     runtime: opcorePublicValidationRuntimePolicy
   }).runValidation(validationRequest);
@@ -109,6 +115,11 @@ export async function createOpcoreScanAnalysis(resolution: RepoResolution): Prom
     validationResult,
     metricReport
   };
+}
+
+function scanValidationChecks(repoState: OpcoreRepoStatePayload): readonly ValidationCheckDefinition[] {
+  const activeAdapters = activeValidationAdaptersForCoverage(repoState.coverage);
+  return defaultValidationChecks.filter((check) => activeAdapters.has(check.adapter));
 }
 
 function createScanWorkspace(resolution: RepoResolution): ValidationWorkspace {
@@ -176,9 +187,7 @@ function formatScanMessage(repoState: OpcoreRepoStatePayload, validationResult: 
   const degradedValidationTools = repoState.validation.degradedToolchains.length === 0
     ? "none"
     : repoState.validation.degradedToolchains.map((tool) => `${tool.adapter}:${tool.tool}`).join(", ");
-  const failedChecks = validationResult.manifest?.runs
-    ?.filter((run) => run.status !== "passed")
-    .map((run) => run.checkId) ?? [];
+  const failedChecks = failedValidationCheckIds(validationResult);
   return [
     "Coverage:",
     `  files=${repoState.coverage.totalFiles}`,
@@ -192,7 +201,9 @@ function formatScanMessage(repoState: OpcoreRepoStatePayload, validationResult: 
     `  diagnostics=${validationResult.diagnostics.length}`,
     `  validation=${validationResult.status}`,
     `  failed-checks=${failedChecks.length === 0 ? "none" : failedChecks.join(", ")}`,
-    `  activation=${repoState.activation.level}; ${repoState.activation.summary}`
+    `  activation=${repoState.activation.level}; ${repoState.activation.summary}`,
+    "Next:",
+    ...repoState.nextActions.slice(0, 2).map((action) => `  ${action}`)
   ].join("\n");
 }
 
