@@ -1,10 +1,18 @@
 import type { CommandGroupContract, CommandRouterResult, ParsedCommandArgv } from "@the-open-engine/opcore-contracts";
 import { createCommandRouterResult } from "@the-open-engine/opcore-contracts";
+import { formatCheckStamp } from "./plate.js";
 import { checkCommandAdapter, createOpcoreCheckCommandAdapter } from "./validation-composition.js";
 
 export interface OpcoreCheckRuntime {
   streamWriter?: (line: string) => void;
 }
+
+export interface OpcorePresentation {
+  stdoutIsTTY: boolean;
+  color: boolean;
+}
+
+const plainPresentation: OpcorePresentation = { stdoutIsTTY: false, color: false };
 
 const checkGroup: CommandGroupContract = {
   name: "check",
@@ -19,7 +27,8 @@ const checkRoutes = new Set(checkGroup.commands);
 export async function routeOpcoreCheck(
   argv: readonly string[],
   parsed: ParsedCommandArgv,
-  runtime: OpcoreCheckRuntime = {}
+  runtime: OpcoreCheckRuntime = {},
+  presentation: OpcorePresentation = plainPresentation
 ): Promise<CommandRouterResult> {
   const rawArgs = parsed.args.slice(1);
   if (rawArgs.some((arg) => arg === "--help" || arg === "-h" || arg === "help") || rawArgs.length === 0) {
@@ -62,6 +71,16 @@ export async function routeOpcoreCheck(
     group: checkGroup,
     canonicalCommand
   });
+  const fancy = presentation.stdoutIsTTY && !parsed.json;
+  const message =
+    fancy && result.validationResult !== undefined
+      ? formatCheckStamp({
+          validationResult: result.validationResult,
+          scope: (firstCheckPositional(args) ?? "check").toUpperCase(),
+          base: checkBaseRef(args),
+          color: presentation.color
+        })
+      : result.message;
   return createCommandRouterResult({
     bin: "opcore",
     argv,
@@ -69,10 +88,19 @@ export async function routeOpcoreCheck(
     owner: "validation",
     status: result.status,
     json: parsed.json,
-    message: result.message,
+    message,
     validationResult: result.validationResult,
     receipt: result.receipt
   });
+}
+
+function checkBaseRef(args: readonly string[]): string | undefined {
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (arg === "--base") return args[index + 1];
+    if (arg.startsWith("--base=")) return arg.slice("--base=".length);
+  }
+  return undefined;
 }
 
 function normalizeCheckArgs(args: readonly string[]): string[] {

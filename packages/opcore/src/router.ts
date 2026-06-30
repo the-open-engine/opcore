@@ -21,9 +21,10 @@ import { createCommandLatencyRecord, timeCommand } from "./timing.js";
 import { routeOpcoreTry } from "./try.js";
 import { routeCommand as routeAdvancedOpcoreCommand } from "./advanced/router.js";
 import { commandRouterResultForJsonOutput } from "./json-output.js";
-import type { OpcoreCheckRuntime } from "./check.js";
+import type { OpcoreCheckRuntime, OpcorePresentation } from "./check.js";
 
 declare const process: {
+  env?: Record<string, string | undefined>;
   stdin: {
     isTTY?: boolean;
   };
@@ -37,9 +38,19 @@ declare const process: {
   };
 };
 
+const plainPresentation: OpcorePresentation = { stdoutIsTTY: false, color: false };
+
+function resolvePresentation(options: RunOpcoreCliOptions): OpcorePresentation {
+  const stdoutIsTTY = options.stdoutIsTTY ?? process.stdout.isTTY === true;
+  const color = stdoutIsTTY && !(process.env && process.env.NO_COLOR);
+  return { stdoutIsTTY, color };
+}
+
 type Writer = (text: string) => void;
 
-interface OpcoreCommandRuntime extends OpcoreInitRuntime, OpcoreCheckRuntime {}
+interface OpcoreCommandRuntime extends OpcoreInitRuntime, OpcoreCheckRuntime {
+  presentation?: OpcorePresentation;
+}
 
 export interface RunOpcoreCliOptions {
   argv: readonly string[];
@@ -87,7 +98,8 @@ export async function runOpcoreCli(options: RunOpcoreCliOptions): Promise<number
   const stderr = options.stderr ?? ((text: string) => process.stderr.write(text));
   const routed = await routeOpcoreCommand(options.argv, options.bin ?? "opcore", {
     ...createOpcoreInitRuntime(options, stderr),
-    streamWriter: stdout
+    streamWriter: stdout,
+    presentation: resolvePresentation(options)
   });
   const streamFinalJson = shouldWriteValidationStreamFinalJson(routed, options.argv);
   const output = routed.json
@@ -116,11 +128,12 @@ async function routeOpcoreParsed(
   runtime: OpcoreCommandRuntime
 ): Promise<CommandRouterResult> {
   const [head, ...rest] = parsed.args;
-  if (head === undefined) return routeOpcoreScan(argv, rest, parsed.json);
+  const presentation = runtime.presentation ?? plainPresentation;
+  if (head === undefined) return routeOpcoreScan(argv, rest, parsed.json, presentation);
   if (helpArgs.has(head)) return routeHelp(argv, parsed.json);
-  if (head.startsWith("--")) return routeOpcoreScan(argv, parsed.args, parsed.json);
+  if (head.startsWith("--")) return routeOpcoreScan(argv, parsed.args, parsed.json, presentation);
   if (head === "status") return routeOpcoreStatus(argv, parsed);
-  if (head === "check") return routeOpcoreCheck(argv, parsed, runtime);
+  if (head === "check") return routeOpcoreCheck(argv, parsed, runtime, presentation);
   if (head === "init") return routeOpcoreInit(argv, parsed, runtime);
   if (head === "measure") return routeMeasure(argv, parsed);
   if (head === "try") return routeOpcoreTry(argv, parsed);
