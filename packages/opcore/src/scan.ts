@@ -10,6 +10,7 @@ import { createCommandRouterResult } from "@the-open-engine/opcore-contracts";
 import { createNodeValidationWorkspace, createValidationRunner, type ValidationWorkspace } from "@the-open-engine/opcore-validation";
 import { readdir, readFile } from "node:fs/promises";
 import { join, relative, resolve, sep } from "node:path";
+import { formatScanPlate } from "./plate.js";
 import { createOpcoreMetricReport, writeOpcoreMetricArtifacts } from "./reporting.js";
 import { commonSkippedPathSegments, createRepoState, parseOpcoreRepoArgs, type RepoResolution, resolveRepo } from "./status.js";
 import {
@@ -27,7 +28,12 @@ export interface OpcoreScanAnalysis {
   message: string;
 }
 
-export async function routeOpcoreScan(argv: readonly string[], args: readonly string[], json: boolean): Promise<CommandRouterResult> {
+export async function routeOpcoreScan(
+  argv: readonly string[],
+  args: readonly string[],
+  json: boolean,
+  presentation: { stdoutIsTTY: boolean; color: boolean } = { stdoutIsTTY: false, color: false }
+): Promise<CommandRouterResult> {
   const parsed = parseOpcoreRepoArgs(args, "opcore scan");
   if (!parsed.ok) {
     return createCommandRouterResult({
@@ -54,6 +60,10 @@ export async function routeOpcoreScan(argv: readonly string[], args: readonly st
   }
   const analysis = await createOpcoreScanAnalysis(resolution.resolution);
   writeOpcoreMetricArtifacts(analysis.repoState.repo.root, analysis.metricReport);
+  const fancy = presentation.stdoutIsTTY && !json;
+  const message = fancy
+    ? formatScanPlate(analysis.repoState, analysis.validationResult, { color: presentation.color })
+    : analysis.message;
   return createCommandRouterResult({
     bin: "opcore",
     argv,
@@ -61,7 +71,7 @@ export async function routeOpcoreScan(argv: readonly string[], args: readonly st
     owner: "runtime",
     status: "ok",
     json,
-    message: analysis.message,
+    message,
     repoState: analysis.repoState,
     validationResult: analysis.validationResult
   });
