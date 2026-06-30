@@ -72,6 +72,10 @@ export function createCheckCommandAdapter(options: ValidationCommandAdapterOptio
           provider: defaultValidationGraphProvider
         }
       );
+      const explicitFileScopeError = await validateExplicitFileScope(validationRequest, parsed, options);
+      if (explicitFileScopeError !== undefined) {
+        return validationCommandResult(request, invalidPayloadResult(explicitFileScopeError));
+      }
       return validationCommandResult(request, await runRequest(validationRequest, parsed, options));
     } catch (error) {
       return validationCommandResult(request, invalidPayloadResult(errorMessage(error)));
@@ -149,6 +153,22 @@ async function runRequest(
     };
   }
   return createValidationRunner(runnerOptions).runValidation(request);
+}
+
+async function validateExplicitFileScope(
+  request: ValidationRequest,
+  parsed: ParsedValidationCommandOptions,
+  options: ValidationCommandAdapterOptions
+): Promise<string | undefined> {
+  if (request.scope.kind !== "files") return undefined;
+  const workspace = workspaceForRequest(request, parsed, options);
+  const missing: string[] = [];
+  for (const path of request.scope.files) {
+    const result = await workspace.readFile(path);
+    if (result.status === "missing") missing.push(path);
+  }
+  if (missing.length === 0) return undefined;
+  return `opcore check files: explicit file scope includes missing file${missing.length === 1 ? "" : "s"}: ${missing.join(", ")}`;
 }
 
 async function runRequestWithTimeout(

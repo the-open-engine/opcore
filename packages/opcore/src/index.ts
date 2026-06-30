@@ -14,7 +14,9 @@ export { routeOpcoreCommand, runOpcoreCli } from "./router.js";
 export { AGENT_FILE_CANDIDATES, routeOpcoreInit } from "./init.js";
 export { routeOpcoreScan } from "./scan.js";
 export { routeOpcoreStatus } from "./status.js";
+export { routeOpcoreDoctor } from "./doctor.js";
 export { routeOpcoreTry } from "./try.js";
+export { formatOpcoreVersion, readOpcoreRuntimeInfo } from "./runtime-info.js";
 export {
   createOpcoreMeasureDelta,
   createOpcoreMetricReport,

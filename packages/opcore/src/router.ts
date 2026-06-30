@@ -13,12 +13,14 @@ import {
 import { routeOpcoreInit, type OpcoreInitRuntime } from "./init.js";
 import { routeOpcoreScan } from "./scan.js";
 import { parseOpcoreRepoArgs, resolveRepo, routeOpcoreStatus } from "./status.js";
+import { routeOpcoreDoctor } from "./doctor.js";
 import {
   commandRouterResultForStreamFinalOutput,
   shouldWriteValidationStreamFinalJson
 } from "./stream-output.js";
 import { createCommandLatencyRecord, timeCommand } from "./timing.js";
 import { routeOpcoreTry } from "./try.js";
+import { formatOpcoreVersion, readOpcoreRuntimeInfo } from "./runtime-info.js";
 import { routeCommand as routeAdvancedOpcoreCommand } from "./advanced/router.js";
 import { commandRouterResultForJsonOutput } from "./json-output.js";
 import type { OpcoreCheckRuntime, OpcorePresentation } from "./check.js";
@@ -64,7 +66,8 @@ export interface RunOpcoreCliOptions {
 }
 
 const helpArgs = new Set(["--help", "-h", "help"]);
-const advancedCommandGroups = new Set(["graph", "inspect", "edit", "validate", "doctor"]);
+const versionArgs = new Set(["--version", "-v", "version"]);
+const advancedCommandGroups = new Set(["graph", "inspect", "edit", "validate"]);
 
 export async function routeOpcoreCommand(
   argv: readonly string[],
@@ -131,8 +134,10 @@ async function routeOpcoreParsed(
   const presentation = runtime.presentation ?? plainPresentation;
   if (head === undefined) return routeOpcoreScan(argv, rest, parsed.json, presentation);
   if (helpArgs.has(head)) return routeHelp(argv, parsed.json);
+  if (versionArgs.has(head)) return routeVersion(argv, parsed);
   if (head.startsWith("--")) return routeOpcoreScan(argv, parsed.args, parsed.json, presentation);
   if (head === "status") return routeOpcoreStatus(argv, parsed);
+  if (head === "doctor") return routeOpcoreDoctor(argv, parsed);
   if (head === "check") return routeOpcoreCheck(argv, parsed, runtime, presentation);
   if (head === "init") return routeOpcoreInit(argv, parsed, runtime);
   if (head === "measure") return routeMeasure(argv, parsed);
@@ -146,6 +151,20 @@ async function routeOpcoreParsed(
     status: "unsupported",
     json: parsed.json,
     message: `Unsupported opcore command: ${head}`
+  });
+}
+
+function routeVersion(argv: readonly string[], parsed: ParsedCommandArgv): CommandRouterResult {
+  const runtimeInfo = readOpcoreRuntimeInfo();
+  return createCommandRouterResult({
+    bin: "opcore",
+    argv,
+    canonicalCommand: ["opcore", "version"],
+    owner: "runtime",
+    status: "ok",
+    json: parsed.json,
+    message: formatOpcoreVersion(runtimeInfo),
+    runtimeInfo
   });
 }
 
@@ -173,7 +192,17 @@ function routeMeasure(argv: readonly string[], parsed: ParsedCommandArgv): Comma
       owner: "runtime",
       status: "ok",
       json: parsed.json,
-      message: "opcore measure [--repo <path>] [--json]"
+      message: [
+        "Usage: opcore measure [--repo <path>] [--json]",
+        "Flags:",
+        "  --repo <path>  Repository root to read .opcore artifacts from.",
+        "  --json         Emit structured JSON.",
+        "Defaults:",
+        "  --repo defaults to the current working directory.",
+        "Examples:",
+        "  opcore measure --repo . --json",
+        "Exit codes: 0 report read, 1 missing or invalid artifacts, 64 unsupported."
+      ].join("\n")
     });
   }
   const parsedMeasure = parseOpcoreRepoArgs(args, "opcore measure");
@@ -247,6 +276,7 @@ function opcoreHelpMessage(): string {
     "",
     "Usage:",
     "  opcore [--repo <path>] [--json]",
+    "  opcore --version [--json]",
     "  opcore status [--repo <path>] [--verbose] [--json]",
     "  opcore check --changed --json",
     "  opcore check --staged --json",
@@ -259,10 +289,12 @@ function opcoreHelpMessage(): string {
     "  opcore inspect <symbols|definition|references|signature|implementations|search> <target> --repo . [--json]",
     "  opcore edit <exact|patch|tree|rename|move|signature> --repo . [--json]",
     "  opcore validate <request|hypothetical|pre-write|manifest> --request-file <file> --json",
-    "  opcore doctor [--json]",
+    "  opcore doctor [--repo <path>] [--json]",
     "",
     "Examples:",
+    "  opcore --version --json",
     "  opcore init --repo . --approve",
+    "  opcore doctor --repo . --json",
     "  opcore graph search \"GreetingCard\" --repo . --limit 5",
     "  opcore validate pre-write --request-file ./validation-request.json --timeout-ms 30000 --json",
     "",

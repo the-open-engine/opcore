@@ -54,8 +54,11 @@ $ opcore
 
 ```bash
 npm ci && npm run build
+node packages/opcore/dist/index.js --version --json
 node packages/opcore/dist/index.js init --repo /path/to/repo
 ```
+
+Local tarballs and `file:` installs from this checkout are useful for smoke tests only. Do not commit machine-specific `file:/...` or `file:../../../Users/...` entries to another repo's `package.json`; use the source checkout during alpha staging, or switch to the registry package after maintainers publish it.
 
 After package publication, install from npm:
 
@@ -74,7 +77,9 @@ If `opcore` is not found after a global install, check the npm global prefix wit
 
 ```bash
 opcore --repo .                 # read-only scan: coverage first, then findings
+opcore --version --json         # exact package version + artifact provenance
 opcore status --json            # readiness + coverage; never writes
+opcore doctor --repo . --json   # runtime/config/check-pack/graph diagnostics
 opcore check --changed --json   # the gate any agent can branch on (defaults --base HEAD)
 opcore init --repo . --approve  # approval-gated, additive AGENTS.md + .opcore/config
 opcore measure --repo .         # concrete before/after deltas from local history

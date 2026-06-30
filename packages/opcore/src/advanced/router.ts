@@ -24,6 +24,7 @@ import {
   commandRouterResultForStreamFinalOutput,
   shouldWriteValidationStreamFinalJson
 } from "../stream-output.js";
+import { routeOpcoreDoctor } from "../doctor.js";
 
 declare const process: {
   stdout: {
@@ -135,6 +136,9 @@ function routeRuntimeCommand(
   command: RuntimeCommand,
   rest: readonly string[]
 ): CommandRouterResult {
+  if (command === "doctor") {
+    return routeOpcoreDoctor(argv, { args: [command, ...rest], json: parsed.json });
+  }
   if (rest.some((arg) => helpArgs.has(arg))) {
     return routeHelp("opcore", argv, parsed.json, command);
   }
