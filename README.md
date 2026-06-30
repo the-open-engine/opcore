@@ -148,6 +148,10 @@ Opcore is **Layer 02 · Constraints** of [The Open Engine](https://theopenengine
 
 Each layer ships the same way: extracted from the platform we run, then opened.
 
+## ASP provider
+
+Opcore's ASP Core check provider ships as a separate package, `@the-open-engine/opcore-asp-provider`, and launches as `opcore-asp-provider --stdio`. Providers assess; hosts decide.
+
 ## Docs
 
 **[Quickstart](docs/quickstart.md) · [Concepts: coverage & findings](docs/concepts.md) · [Agent integration](docs/agent-integration.md) · [Architecture](docs/architecture/runtime-cli-ard.md) · [The Open Engine](https://theopenengine.com)**
