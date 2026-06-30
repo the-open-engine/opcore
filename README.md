@@ -61,12 +61,14 @@ After package publication, install from npm:
 
 ```bash
 # zero-install first run — nothing written outside .opcore/
-npx @the-open-engine/opcore@0.1.0-alpha.0
+npx @the-open-engine/opcore@0.1.0-alpha.0 init
 
 # or install globally / wire the gate into your agent repo
 npm install -g @the-open-engine/opcore@0.1.0-alpha.0
 npm i -D @the-open-engine/opcore@0.1.0-alpha.0
 ```
+
+If `opcore` is not found after a global install, check the npm global prefix with `npm prefix -g` and add `$(npm prefix -g)/bin` to your `PATH`.
 
 ## First run
 
@@ -83,7 +85,7 @@ opcore try                      # local sample repos, coverage-first, publishes 
 
 ## The gate
 
-`opcore check --changed --json` is the contract a coding agent runs **before an edit lands** — in the inner loop, not after a PR. Stable exit codes, JSON on stdout, works in a fresh `git init`.
+`opcore check --changed --json` is the contract a coding agent runs **before an edit lands** — in the inner loop, not after a PR. Stable exit codes, JSON on stdout, and it works in a freshly `git init` repo with no commits by treating the empty baseline as the comparison base.
 
 ```text
 $ opcore check --changed
@@ -132,7 +134,7 @@ Opcore is a hybrid: a **Rust graph core** owns extraction, persistence, and hot 
 
 `opcore` (scan) → `opcore init` (approval-gated setup) → `opcore check` (the agent gate) → `opcore measure` (deltas from local history).
 
-Findings are read **off the graph**, so they trace to a file, a symbol, and an edge — not a vibe. When no graph is built, Opcore says so instead of reporting a silent zero. Everything it writes lives under `.opcore/` (`report.json`, `history.jsonl`, and bounded `telemetry.jsonl`), and `init` is additive, idempotent, and reversible.
+Findings are read **off the graph**, so they trace to a file, a symbol, and an edge — not a vibe. When no graph is built, Opcore says so instead of reporting a silent zero. Everything it writes lives under `.opcore/` (`report.json`, `history.jsonl`, and bounded `telemetry.jsonl`), and `init` is additive, idempotent, and reversible. The `@the-open-engine/opcore` package exposes only the `opcore` bin. For the package and CLI ownership model, see the runtime and CLI architecture decision at @docs/architecture/runtime-cli-ard.md.
 
 ## The Open Engine
 
@@ -152,4 +154,4 @@ Each layer ships the same way: extracted from the platform we run, then opened.
 
 ## Status
 
-Maintainer-controlled alpha (`0.1.0-alpha.0`). Local code scans, honest coverage, setup guidance, and changed-file validation for coding agents. Package artifacts target `darwin-arm64`, `darwin-x64`, and `linux-x64`; unsupported platforms return a typed degraded status instead of crashing. Windows is out of scope for this alpha. Deep for TypeScript/JavaScript, useful for Rust, experimental for Python — and honest about the rest.
+Maintainer-controlled alpha (`0.1.0-alpha.0`). Local code scans, honest coverage, setup guidance, and changed-file validation for coding agents. Package artifacts target `darwin-arm64`, `darwin-x64`, and `linux-x64`. Unsupported platforms return typed degraded status instead of crashing. Windows is out of scope for `0.1.0-alpha.0`. Deep for TypeScript/JavaScript, useful for Rust, experimental for Python — and honest about the rest.
