@@ -54,7 +54,21 @@ function tempPolicyRepo() {
 
 function commitAll(repo) {
   const env = gitEnv();
-  assert.equal(spawnSync("git", ["add", "-A"], { cwd: repo, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).status, 0);
+  const lsFiles = spawnSync("git", ["ls-files", "--others", "--exclude-standard", "-z"], {
+    cwd: repo,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"]
+  });
+  assert.equal(lsFiles.status, 0, lsFiles.stderr);
+  const files = lsFiles.stdout.split("\0").filter(Boolean);
+  for (let index = 0; index < files.length; index += 100) {
+    const add = spawnSync("git", ["add", "--", ...files.slice(index, index + 100)], {
+      cwd: repo,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"]
+    });
+    assert.equal(add.status, 0, add.stderr);
+  }
   const commit = spawnSync("git", ["commit", "--quiet", "-m", "fixture"], {
     cwd: repo,
     env,

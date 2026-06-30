@@ -2,7 +2,7 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import { routeCommand } from "../packages/opcore/dist/advanced/index.js";
@@ -229,6 +229,109 @@ describe("validation CLI", () => {
     }
   });
 
+  it("loads repo configured validation check packs", () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-check-pack-"));
+    try {
+      writeRepoConfig(temp, ["./checks/example-check-pack.cjs"]);
+      writeCheckPack(temp, join(temp, "checks/example-check-pack.cjs"), "example.policy");
+
+      const manifest = JSON.parse(runRaw(["check", "manifest", "--repo", temp, "--json"]).stdout);
+      assert.equal(manifest.validationResult.manifest.checks.includes("example.policy"), true);
+      const equalsManifest = JSON.parse(runRaw(["check", "manifest", `--repo=${temp}`, "--json"]).stdout);
+      assert.equal(equalsManifest.validationResult.manifest.checks.includes("example.policy"), true);
+      const relativeManifest = JSON.parse(runRaw(["check", "manifest", "--repo", ".", "--json"], [0], { cwd: temp }).stdout);
+      assert.equal(relativeManifest.validationResult.manifest.checks.includes("example.policy"), true);
+      const relativeEqualsManifest = JSON.parse(runRaw(["check", "manifest", "--repo=.", "--json"], [0], { cwd: temp }).stdout);
+      assert.equal(relativeEqualsManifest.validationResult.manifest.checks.includes("example.policy"), true);
+      const advancedRelativeManifest = run(["check", "manifest", "--repo", ".", "--json"], [0], { cwd: temp });
+      assert.equal(advancedRelativeManifest.validationResult.manifest.checks.includes("example.policy"), true);
+      const advancedValidateManifest = run(["validate", "manifest", "--repo=.", "--json"], [0], { cwd: temp });
+      assert.equal(advancedValidateManifest.validationResult.manifest.checks.includes("example.policy"), true);
+      const validateManifest = run(["validate", "manifest", "--repo", temp, "--json"]);
+      assert.equal(validateManifest.validationResult.manifest.checks.includes("example.policy"), true);
+
+      const result = JSON.parse(
+        runRaw(
+          ["check", "files", "--files", "src/index.ts", "--repo", temp, "--checks", "example.policy", "--json"],
+          [1]
+        ).stdout
+      );
+      assert.equal(result.validationResult.status, "policy_failure");
+      assert.equal(result.validationResult.diagnostics[0].code, "example.policy");
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("resolves package check packs from target repo", () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-check-pack-package-"));
+    try {
+      writeRepoConfig(temp, ["@example/opcore-checks"]);
+      writeCheckPack(temp, join(temp, "node_modules/@example/opcore-checks/index.cjs"), "example.package-policy");
+      writeFileSync(
+        join(temp, "node_modules/@example/opcore-checks/package.json"),
+        `${JSON.stringify({ name: "@example/opcore-checks", main: "index.cjs" })}\n`
+      );
+
+      const manifest = JSON.parse(runRaw(["check", "manifest", "--repo", temp, "--json"]).stdout);
+      assert.equal(manifest.validationResult.manifest.checks.includes("example.package-policy"), true);
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("reports invalid check pack config and missing packs without crashing", () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-check-pack-invalid-"));
+    try {
+      writeRepoConfig(temp, [42]);
+      const result = JSON.parse(runRaw(["check", "manifest", "--repo", temp, "--json"], [1]).stdout);
+      assert.equal(result.status, "error");
+      assert.match(result.message, /checks\.packs\[0\]/);
+
+      writeRepoConfig(temp, ["./checks/missing.cjs"]);
+      const missing = JSON.parse(runRaw(["check", "manifest", "--repo", temp, "--json"], [1]).stdout);
+      assert.equal(missing.status, "error");
+      assert.match(missing.message, /Failed to load Opcore check pack \.\/checks\/missing\.cjs/);
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("reports invalid check pack config from status without crashing", () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-check-pack-status-invalid-"));
+    try {
+      writeRepoConfig(temp, [42]);
+      const result = JSON.parse(runRaw(["status", "--repo", temp, "--json"], [1]).stdout);
+      assert.equal(result.status, "error");
+      assert.match(result.message, /checks\.packs\[0\]/);
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects malformed and duplicate check packs", () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-check-pack-bad-"));
+    try {
+      writeRepoConfig(temp, ["./checks/malformed.cjs"]);
+      mkdirSync(join(temp, "checks"), { recursive: true });
+      writeFileSync(
+        join(temp, "checks/malformed.cjs"),
+        "module.exports = { id: \"malformed\", checks: [{ id: \"example.bad\" }] };\n"
+      );
+      const malformed = JSON.parse(runRaw(["check", "manifest", "--repo", temp, "--json"], [1]).stdout);
+      assert.equal(malformed.status, "error");
+      assert.match(malformed.message, /Validation check owner|required|run must be a function/);
+
+      writeRepoConfig(temp, ["./checks/duplicate.cjs"]);
+      writeCheckPack(temp, join(temp, "checks/duplicate.cjs"), "typescript.syntax");
+      const duplicate = JSON.parse(runRaw(["check", "manifest", "--repo", temp, "--json"], [1]).stdout);
+      assert.equal(duplicate.status, "error");
+      assert.match(duplicate.message, /Duplicate validation check id: typescript\.syntax/);
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
   it("rejects execution-only flags on manifest routes", () => {
     const checkManifest = run(["check", "manifest", "--files", "packages/contracts/src/index.ts", "--json"], [1]);
     const validateManifest = run(["validate", "manifest", "--request-file", "does-not-exist.json", "--json"], [1]);
@@ -449,9 +552,58 @@ function validRequest(repoRootPath) {
   };
 }
 
+function writeRepoConfig(repoRootPath, packs) {
+  mkdirSync(join(repoRootPath, ".opcore"), { recursive: true });
+  writeFileSync(
+    join(repoRootPath, ".opcore/config"),
+    `${JSON.stringify({
+      schemaVersion: 1,
+      kind: "opcore_init_config",
+      checks: { packs }
+    })}\n`
+  );
+}
+
+function writeCheckPack(repoRootPath, path, checkId) {
+  mkdirSync(dirname(path), { recursive: true });
+  mkdirSync(join(repoRootPath, "src"), { recursive: true });
+  writeFileSync(join(repoRootPath, "src/index.ts"), "export const value = 1;\n");
+  writeFileSync(
+    path,
+    `
+module.exports = {
+  id: "example-policy",
+  version: "1.0.0",
+  checks: [
+    {
+      id: ${JSON.stringify(checkId)},
+      owner: "example",
+      adapter: "example-check-pack",
+      defaultSeverity: "error",
+      supportedScopes: ["files", "changed", "staged", "all", "tree"],
+      run() {
+        return {
+          diagnostics: [
+            {
+              category: "policy",
+              severity: "error",
+              path: "src/index.ts",
+              code: ${JSON.stringify(checkId)},
+              message: "Example repo policy failed"
+            }
+          ]
+        };
+      }
+    }
+  ]
+};
+`
+  );
+}
+
 function run(args, expectedExitCodes = [0], options = {}) {
   const result = spawnSync(process.execPath, [latticeBin, ...args], {
-    cwd: repoRoot,
+    cwd: options.cwd ?? repoRoot,
     env: options.env ?? process.env,
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"]
@@ -475,7 +627,7 @@ function run(args, expectedExitCodes = [0], options = {}) {
 
 function runRaw(args, expectedExitCodes = [0], options = {}) {
   const result = spawnSync(process.execPath, [opcoreBin, ...args], {
-    cwd: repoRoot,
+    cwd: options.cwd ?? repoRoot,
     env: options.env ?? process.env,
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"]

@@ -28,6 +28,7 @@ import {
   cliGraphStatus
 } from "./graph-provider-client.js";
 import { invokeCloneAnalysis } from "../clone-invoker.js";
+import { validationChecksForRepo } from "../repo-check-packs.js";
 import { commonSkippedPathSegments } from "../source-policy.js";
 
 export const defaultValidationChecks = [
@@ -42,31 +43,32 @@ export const checkCommandAdapter = createCliCheckCommandAdapter();
 export const validateCommandAdapter = createCliValidateCommandAdapter();
 
 export function createCliCheckCommandAdapter(
-  options: Pick<ValidationCommandAdapterOptions, "streamWriter"> = {}
+  options: Pick<ValidationCommandAdapterOptions, "streamWriter" | "defaultRepoRoot"> = {}
 ): CommandAdapter {
   return createCheckCommandAdapter({
-    ...defaultValidationAdapterOptions(),
+    ...defaultValidationAdapterOptions(options.defaultRepoRoot),
     ...options
   });
 }
 
 export function createCliValidateCommandAdapter(
-  options: Pick<ValidationCommandAdapterOptions, "streamWriter"> = {}
+  options: Pick<ValidationCommandAdapterOptions, "streamWriter" | "defaultRepoRoot"> = {}
 ): CommandAdapter {
   return createValidateCommandAdapter({
-    ...defaultValidationAdapterOptions(),
+    ...defaultValidationAdapterOptions(options.defaultRepoRoot),
     ...options
   });
 }
 
 export const editValidationRunner = {
   runValidation(request: ValidationRequest): Promise<ValidationResult> {
+    const repoRoot = request.repo.repoRoot ?? process.cwd();
     return createValidationRunner({
       workspace: createNodeValidationWorkspace({
-        repoRoot: request.repo.repoRoot ?? process.cwd(),
+        repoRoot,
         skippedPathSegments: commonSkippedPathSegments
       }),
-      checks: defaultValidationChecks,
+      checks: validationChecksForRepo(repoRoot, defaultValidationChecks),
       graphProviderClient: createCliValidationGraphProviderClient()
     }).runValidation(request);
   }
@@ -82,17 +84,18 @@ export function createDefaultValidationStatusPayload(options: {
 }): ValidationStatusPayload {
   const graphMode = options.graphMode ?? "optional";
   return createValidationStatusPayload({
-    checks: defaultValidationChecks,
+    checks: validationChecksForRepo(options.repoRoot, defaultValidationChecks),
     adapters: [createRustValidationAdapterStatus(), createPythonValidationAdapterStatus()],
     graphMode,
     graphStatus: cliGraphStatus({ repoRoot: options.repoRoot }, graphMode)
   });
 }
 
-function defaultValidationAdapterOptions(): ValidationCommandAdapterOptions {
+function defaultValidationAdapterOptions(repoRoot = process.cwd()): ValidationCommandAdapterOptions {
   return {
-    checks: defaultValidationChecks,
+    checks: validationChecksForRepo(repoRoot, defaultValidationChecks),
     graphProviderClient: createCliValidationGraphProviderClient(),
+    defaultRepoRoot: repoRoot,
     workspaceFactory: (repoRoot) =>
       createNodeValidationWorkspace({
         repoRoot,

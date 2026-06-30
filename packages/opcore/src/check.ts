@@ -1,7 +1,11 @@
-import type { CommandGroupContract, CommandRouterResult, ParsedCommandArgv } from "@the-open-engine/opcore-contracts";
+import type { CommandAdapter, CommandGroupContract, CommandRouterResult, ParsedCommandArgv } from "@the-open-engine/opcore-contracts";
 import { createCommandRouterResult } from "@the-open-engine/opcore-contracts";
 import { formatCheckStamp } from "./plate.js";
 import { checkCommandAdapter, createOpcoreCheckCommandAdapter } from "./validation-composition.js";
+
+declare const process: {
+  cwd(): string;
+};
 
 export interface OpcoreCheckRuntime {
   streamWriter?: (line: string) => void;
@@ -57,12 +61,27 @@ export async function routeOpcoreCheck(
       message: `Unsupported opcore check route: ${firstRoute}`
     });
   }
-  const adapter =
-    runtime.streamWriter === undefined
-      ? checkCommandAdapter
-      : createOpcoreCheckCommandAdapter({
-          streamWriter: runtime.streamWriter
-        });
+  const repoRoot = repoRootArg(args) ?? process.cwd();
+  let adapter: CommandAdapter;
+  try {
+    adapter =
+      runtime.streamWriter === undefined && repoRoot === process.cwd()
+        ? checkCommandAdapter
+        : createOpcoreCheckCommandAdapter({
+            streamWriter: runtime.streamWriter,
+            defaultRepoRoot: repoRoot
+          });
+  } catch (error) {
+    return createCommandRouterResult({
+      bin: "opcore",
+      argv,
+      canonicalCommand,
+      owner: "validation",
+      status: "error",
+      json: parsed.json,
+      message: errorMessage(error)
+    });
+  }
   const result = await adapter({
     schemaVersion: 1,
     bin: "opcore",
@@ -102,6 +121,19 @@ function checkBaseRef(args: readonly string[]): string | undefined {
     if (arg.startsWith("--base=")) return arg.slice("--base=".length);
   }
   return undefined;
+}
+
+function repoRootArg(args: readonly string[]): string | undefined {
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (arg === "--repo") return args[index + 1];
+    if (arg.startsWith("--repo=")) return arg.slice("--repo=".length);
+  }
+  return undefined;
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }
 
 function normalizeCheckArgs(args: readonly string[]): string[] {

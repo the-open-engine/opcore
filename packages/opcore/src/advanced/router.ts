@@ -107,7 +107,20 @@ async function routeLattice(
   if (isRuntimeCommand(head)) {
     return routeRuntimeCommand(argv, parsed, head, rest);
   }
-  const adapter = adapterForGroup(head, runtime);
+  let adapter: CommandAdapter | undefined;
+  try {
+    adapter = adapterForGroup(head, runtime, rest);
+  } catch (error) {
+    return createCommandRouterResult({
+      bin: "opcore",
+      argv,
+      canonicalCommand: ["opcore", head, ...rest],
+      owner: head === "check" || head === "validate" ? "validation" : "runtime",
+      status: "error",
+      json: parsed.json,
+      message: errorMessage(error)
+    });
+  }
   if (adapter) {
     return routeCommandAdapter({
       bin: "opcore",
@@ -174,21 +187,36 @@ function isRuntimeCommand(command: string): command is RuntimeCommand {
   return runtimeCommands.has(command as RuntimeCommand);
 }
 
-function adapterForGroup(groupName: string, runtime: AdvancedCliRuntime): CommandAdapter | undefined {
+function adapterForGroup(groupName: string, runtime: AdvancedCliRuntime, args: readonly string[]): CommandAdapter | undefined {
   if (groupName === "graph") return graphCommandAdapter;
   if (groupName === "inspect") return inspectCommandAdapter;
   if (groupName === "edit") return editCommandAdapter;
   if (groupName === "check") {
-    return runtime.streamWriter === undefined
+    const repoRoot = repoRootArg(args) ?? process.cwd();
+    return runtime.streamWriter === undefined && repoRoot === process.cwd()
       ? checkCommandAdapter
-      : createCliCheckCommandAdapter({ streamWriter: runtime.streamWriter });
+      : createCliCheckCommandAdapter({ streamWriter: runtime.streamWriter, defaultRepoRoot: repoRoot });
   }
   if (groupName === "validate") {
-    return runtime.streamWriter === undefined
+    const repoRoot = repoRootArg(args) ?? process.cwd();
+    return runtime.streamWriter === undefined && repoRoot === process.cwd()
       ? validateCommandAdapter
-      : createCliValidateCommandAdapter({ streamWriter: runtime.streamWriter });
+      : createCliValidateCommandAdapter({ streamWriter: runtime.streamWriter, defaultRepoRoot: repoRoot });
   }
   return undefined;
+}
+
+function repoRootArg(args: readonly string[]): string | undefined {
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (arg === "--repo") return args[index + 1];
+    if (arg.startsWith("--repo=")) return arg.slice("--repo=".length);
+  }
+  return undefined;
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }
 
 function routeHelp(bin: string, argv: readonly string[], json: boolean, groupName?: string): CommandRouterResult {

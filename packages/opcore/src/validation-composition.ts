@@ -28,6 +28,7 @@ import {
   opcoreGraphStatus
 } from "./graph-provider-client.js";
 import { invokeCloneAnalysis } from "./clone-invoker.js";
+import { validationChecksForRepo } from "./repo-check-packs.js";
 import { commonSkippedPathSegments } from "./source-policy.js";
 
 declare const process: {
@@ -49,22 +50,23 @@ export const opcorePublicValidationRuntimePolicy: ValidationRuntimePolicy = {
 export const checkCommandAdapter = createOpcoreCheckCommandAdapter();
 
 export function createOpcoreCheckCommandAdapter(
-  options: Pick<ValidationCommandAdapterOptions, "streamWriter"> = {}
+  options: Pick<ValidationCommandAdapterOptions, "streamWriter" | "defaultRepoRoot"> = {}
 ): CommandAdapter {
   return createCheckCommandAdapter({
-    ...defaultValidationAdapterOptions(),
+    ...defaultValidationAdapterOptions(options.defaultRepoRoot),
     ...options
   });
 }
 
 export const opcoreValidationRunner = {
   runValidation(request: ValidationRequest): Promise<ValidationResult> {
+    const repoRoot = request.repo.repoRoot ?? process.cwd();
     return createValidationRunner({
       workspace: createNodeValidationWorkspace({
-        repoRoot: request.repo.repoRoot ?? process.cwd(),
+        repoRoot,
         skippedPathSegments: commonSkippedPathSegments
       }),
-      checks: defaultValidationChecks,
+      checks: validationChecksForRepo(repoRoot, defaultValidationChecks),
       graphProviderClient: createOpcoreValidationGraphProviderClient(),
       runtime: opcorePublicValidationRuntimePolicy
     }).runValidation(request);
@@ -77,18 +79,19 @@ export function createDefaultValidationStatusPayload(options: {
 }): ValidationStatusPayload {
   const graphMode = options.graphMode ?? "optional";
   return createValidationStatusPayload({
-    checks: defaultValidationChecks,
+    checks: validationChecksForRepo(options.repoRoot, defaultValidationChecks),
     adapters: [createRustValidationAdapterStatus(), createPythonValidationAdapterStatus()],
     graphMode,
     graphStatus: opcoreGraphStatus({ repoRoot: options.repoRoot }, graphMode)
   });
 }
 
-function defaultValidationAdapterOptions(): ValidationCommandAdapterOptions {
+function defaultValidationAdapterOptions(repoRoot = process.cwd()): ValidationCommandAdapterOptions {
   return {
-    checks: defaultValidationChecks,
+    checks: validationChecksForRepo(repoRoot, defaultValidationChecks),
     graphProviderClient: createOpcoreValidationGraphProviderClient(),
     runtime: opcorePublicValidationRuntimePolicy,
+    defaultRepoRoot: repoRoot,
     workspaceFactory: (repoRoot) =>
       createNodeValidationWorkspace({
         repoRoot,
