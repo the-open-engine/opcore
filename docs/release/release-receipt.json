@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "issue": "#29",
   "origin": "covibes-authored-release-proof",
-  "generatedAt": "2026-07-01T14:19:33.843Z",
-  "commitSha": "c2b3059da2085d7786b4da98a638b8080e586be3",
+  "generatedAt": "2026-07-01T16:50:18.014Z",
+  "commitSha": "d60560d0b1a64dff986a0b719de93484b1576b37",
   "privateRepo": true,
   "packageNames": [
     "@the-open-engine/opcore-contracts",
@@ -54,9 +54,9 @@
       "tarball": {
         "filename": "the-open-engine-opcore-contracts-0.1.0.tgz",
         "path": ".lattice/release/packages/the-open-engine-opcore-contracts-0.1.0.tgz",
-        "sha256": "539f51e98c2b6a603c5daf67af4bf96bd413c2bc8e94f7a71d407c0fd3c247ca",
-        "integrity": "sha512-Dkw6UkfpvSw0/09BUPIRNXCKiAGJ9BmDxR8N14GmmISz+sa9pWMN0eIX4S1Qy6vYv6qSvk6uKnr/LqDLhcrm2Q==",
-        "shasum": "a238b22f8978979dbbad6903cb41d641fed211af"
+        "sha256": "77c648d5c02391a810e4d56a398f676659185d1291f043cdad1fa323d4df4b40",
+        "integrity": "sha512-nJ/NPw6baUUYmRw9M2qsbD+YgiCJaidbTjqW2wkV3vmtaVpmnGw0so9NMYyp8aXSaFXYuGYfkiE8Q7UF8dFKFQ==",
+        "shasum": "de7293b714c90842ecd83c17eb5d8bc09bed2881"
       },
       "files": [
         "README.md",
@@ -123,9 +123,9 @@
       "tarball": {
         "filename": "the-open-engine-opcore-0.1.0.tgz",
         "path": ".lattice/release/packages/the-open-engine-opcore-0.1.0.tgz",
-        "sha256": "4fb4d2fd18fb093e6b9a7b283adcd29861bab20e2b8fcaa4113559f3a1b54a21",
-        "integrity": "sha512-W147BQMRxpyZLMWbmLjzEGmEtIukLXsGHO4OxDYQk/UoZ3whyssveZ2Buvfd1HiafXnLlmtqk79Nd8nUAYCjBw==",
-        "shasum": "ac41da433944a039b4fb2df59516724b76fff18d"
+        "sha256": "ef484c6ffb0401f52adef1f6d46fe43556100947fc5516d2352abd3fca36cbb7",
+        "integrity": "sha512-6kqDt1nZMroagcyRxZUkYFCCdGkEDNHDGFJE6ehr46KBxMrT1i0vzLvPbG1U1y92IVoa/QT5NVs6+tdGJCrGPA==",
+        "shasum": "239469c48e40f310982670e59b47ec41497b91aa"
       },
       "files": [
         "README.md",
@@ -174,6 +174,9 @@
         "dist/advanced/validation-composition.d.ts",
         "dist/advanced/validation-composition.d.ts.map",
         "dist/advanced/validation-composition.js",
+        "dist/agent-gate.d.ts",
+        "dist/agent-gate.d.ts.map",
+        "dist/agent-gate.js",
         "dist/check.d.ts",
         "dist/check.d.ts.map",
         "dist/check.js",
@@ -199,6 +202,9 @@
         "dist/plate.d.ts",
         "dist/plate.d.ts.map",
         "dist/plate.js",
+        "dist/postinstall.d.ts",
+        "dist/postinstall.d.ts.map",
+        "dist/postinstall.js",
         "dist/repo-check-packs.d.ts",
         "dist/repo-check-packs.d.ts.map",
         "dist/repo-check-packs.js",
@@ -240,7 +246,7 @@
         "dist/validation-composition.js",
         "package.json"
       ],
-      "fileCount": 111,
+      "fileCount": 117,
       "expectedFiles": [
         "README.md",
         "dist/advanced/asp-warm/asp-serve-cli.d.ts",
@@ -288,6 +294,9 @@
         "dist/advanced/validation-composition.d.ts",
         "dist/advanced/validation-composition.d.ts.map",
         "dist/advanced/validation-composition.js",
+        "dist/agent-gate.d.ts",
+        "dist/agent-gate.d.ts.map",
+        "dist/agent-gate.js",
         "dist/check.d.ts",
         "dist/check.d.ts.map",
         "dist/check.js",
@@ -313,6 +322,9 @@
         "dist/plate.d.ts",
         "dist/plate.d.ts.map",
         "dist/plate.js",
+        "dist/postinstall.d.ts",
+        "dist/postinstall.d.ts.map",
+        "dist/postinstall.js",
         "dist/repo-check-packs.d.ts",
         "dist/repo-check-packs.d.ts.map",
         "dist/repo-check-packs.js",
@@ -354,7 +366,7 @@
         "dist/validation-composition.js",
         "package.json"
       ],
-      "expectedFileCount": 111,
+      "expectedFileCount": 117,
       "bins": {
         "opcore": "dist/index.js"
       },
@@ -1763,9 +1775,9 @@
       "tarball": {
         "filename": "the-open-engine-opcore-fixtures-0.1.0.tgz",
         "path": ".lattice/release/packages/the-open-engine-opcore-fixtures-0.1.0.tgz",
-        "sha256": "4fe622714ad0552d4f8d1aafb71d374964902604206ea0d183238003c43d9135",
-        "integrity": "sha512-SfhhqgT5Ts/D0kuky3nJFYy4sFtVSbMqbE7lrGRyXGh/VsWob8e9Xk1hKq6m+H1TI5CR2XERNo8BjPAJnJfdjQ==",
-        "shasum": "c0dc65d00e50dc278252f91db2c1920ae6089420"
+        "sha256": "b20df9a4b8f7811665b39fd6aa5319bef70057ff8d899e5537a0964c0277bb58",
+        "integrity": "sha512-jyaDcJQ7GUaVT5Q60Wy1Uh0nofT/v9b3SBIzaO39YfdEJ7Kl9iHASx6w3vnG79iJ2JRcqxcsFaAb9ORbFEq7zw==",
+        "shasum": "7f22b2ad2024983fee6cb2b8bb3dd687f2115b64"
       },
       "files": [
         "README.md",
@@ -1923,7 +1935,7 @@
   "descriptor": {
     "path": "packages/opcore/dist/descriptors/opcore.managed-tool.json",
     "packageName": "@the-open-engine/opcore",
-    "checksumSha256": "978bb15ff1ac684b70f276ba47a90bdd449a4c46f164784709b1f42e3042a738",
+    "checksumSha256": "b6b82fb38b81f59cad93fd7cad33c1737c30df294a9361a3cac6c49a07ded3a9",
     "descriptor": {
       "schemaVersion": 1,
       "descriptorKind": "aggregate_opcore",
@@ -2257,6 +2269,30 @@
             "status",
             "doctor"
           ],
+          "writeGate": {
+            "initScopes": [
+              "repo",
+              "global"
+            ],
+            "harnesses": [
+              "claude-code",
+              "codex"
+            ],
+            "adapterPath": "dist/agent-gate.js",
+            "validationCommand": [
+              "opcore",
+              "validate",
+              "pre-write",
+              "--request-file",
+              "<request-file>",
+              "--timeout-ms",
+              "30000",
+              "--json"
+            ],
+            "adapterErrorPolicy": "fail_open",
+            "validationErrorPolicy": "fail_closed",
+            "codexBoundary": "pretooluse_guardrail"
+          },
           "checkIds": [
             "typescript.syntax",
             "typescript.types",
@@ -3552,17 +3588,17 @@
   },
   "provenance": {
     "reportPath": "docs/release/provenance-receipts.md",
-    "reportSha256": "e53e922af7b50eaad70372c328d981fa4df5941b297f61b2aa4c9f359b1ca20f",
-    "scannedFileCount": 519,
-    "historyCommitCount": 217,
+    "reportSha256": "47d20174f6c821f8c7d5948386d007cf9f0132092d718024534e1872f8902719",
+    "scannedFileCount": 524,
+    "historyCommitCount": 220,
     "findingCount": 0,
     "findings": []
   },
   "secretHistory": {
     "allowlistPath": "docs/release/secret-scan-allowlist.json",
     "allowlistSha256": "7060c267c912e3156b87c646e3bc970eac1ac8bdd964cf0a794b83e6f1250614",
-    "currentTreeScannedFileCount": 516,
-    "gitHistoryScannedCommitCount": 217,
+    "currentTreeScannedFileCount": 521,
+    "gitHistoryScannedCommitCount": 220,
     "findingCount": 0,
     "findings": []
   },
@@ -3602,8 +3638,8 @@
       "status": "passed",
       "exitCode": 0,
       "path": "docs/release/provenance-receipts.md",
-      "checksumSha256": "e53e922af7b50eaad70372c328d981fa4df5941b297f61b2aa4c9f359b1ca20f",
-      "summary": "519 files, 217 commits scanned"
+      "checksumSha256": "47d20174f6c821f8c7d5948386d007cf9f0132092d718024534e1872f8902719",
+      "summary": "524 files, 220 commits scanned"
     },
     {
       "id": "release-hygiene",
@@ -3614,7 +3650,7 @@
       "status": "passed",
       "exitCode": 0,
       "path": "docs/release/artifact-attestation.md",
-      "checksumSha256": "71a9e15784b858f356f1d549f7f7768cc8bbde5f6efa5ea9666c42948d56dcc3",
+      "checksumSha256": "b9983ab60b5b4a019c8f3fa79bee8d68505c84e00f77edebe117f0b4d4a67fbe",
       "summary": "release hygiene check passed"
     },
     {
@@ -3641,7 +3677,7 @@
       "exitCode": 0,
       "path": "docs/release/secret-scan-allowlist.json",
       "checksumSha256": "7060c267c912e3156b87c646e3bc970eac1ac8bdd964cf0a794b83e6f1250614",
-      "summary": "516 files, 217 commits scanned"
+      "summary": "521 files, 220 commits scanned"
     }
   ],
   "graphReleaseReceipt": {

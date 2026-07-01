@@ -192,7 +192,8 @@ for (const token of [
   "Opcore",
   "opcore try",
   "opcore --repo .",
-  "opcore init --repo . --approve",
+  "opcore init",
+  "opcore init --global",
   "opcore check --changed --json",
   "opcore measure --repo ."
 ]) {

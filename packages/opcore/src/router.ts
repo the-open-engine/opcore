@@ -59,6 +59,7 @@ export interface RunOpcoreCliOptions {
   bin?: string;
   stdout?: Writer;
   stderr?: Writer;
+  homeDir?: string;
   stdinIsTTY?: boolean;
   stdoutIsTTY?: boolean;
   stderrIsTTY?: boolean;
@@ -120,6 +121,7 @@ function createOpcoreInitRuntime(options: RunOpcoreCliOptions, stderr: Writer): 
     stdinIsTTY: options.stdinIsTTY ?? process.stdin.isTTY === true,
     stdoutIsTTY: options.stdoutIsTTY ?? process.stdout.isTTY === true,
     stderrIsTTY: options.stderrIsTTY ?? process.stderr.isTTY === true,
+    homeDir: options.homeDir,
     writeStderr: stderr,
     readLine: options.readLine ?? createReadLine()
   };

@@ -1507,6 +1507,42 @@ describe("Opcore JSON schema wire constraints", () => {
     assert.equal(
       isValidDefinition("OpcoreInitPlanPayload", {
         ...validOpcoreInitPlan(),
+        options: { ...validOpcoreInitPlan().options, scope: "global" },
+        agentFiles: [],
+        actions: [
+          {
+            kind: "wire_harness",
+            path: "~/.codex/hooks.json",
+            targetScope: "global",
+            summary: "Merge the Opcore Codex write gate hook.",
+            requiresApproval: true,
+            outsideOpcore: true
+          }
+        ]
+      }),
+      true
+    );
+    assert.equal(
+      isValidDefinition("OpcoreInitPlanPayload", {
+        ...validOpcoreInitPlan(),
+        options: { ...validOpcoreInitPlan().options, scope: "global" },
+        agentFiles: [],
+        actions: [
+          {
+            kind: "wire_harness",
+            path: "/tmp/hooks.json",
+            targetScope: "global",
+            summary: "Invalid absolute path.",
+            requiresApproval: true,
+            outsideOpcore: true
+          }
+        ]
+      }),
+      false
+    );
+    assert.equal(
+      isValidDefinition("OpcoreInitPlanPayload", {
+        ...validOpcoreInitPlan(),
         timings: undefined
       }),
       false
@@ -1735,6 +1771,22 @@ describe("Opcore JSON schema wire constraints", () => {
           validation: {
             ...validManagedToolDescriptor().capabilities.validation,
             graphModes: ["optional"]
+          }
+        }
+      }),
+      false
+    );
+    assert.equal(
+      isValidDefinition("ManagedToolDescriptor", {
+        ...validManagedToolDescriptor(),
+        capabilities: {
+          ...validManagedToolDescriptor().capabilities,
+          validation: {
+            ...validManagedToolDescriptor().capabilities.validation,
+            writeGate: {
+              ...validManagedToolDescriptor().capabilities.validation.writeGate,
+              validationErrorPolicy: "fail_open"
+            }
           }
         }
       }),
@@ -2895,6 +2947,7 @@ function validOpcoreInitPlan(overrides = {}) {
       requestedPath: "/repo"
     },
     options: {
+      scope: "repo",
       failClosedHook: false,
       dryRun: false
     },
@@ -2903,6 +2956,7 @@ function validOpcoreInitPlan(overrides = {}) {
       {
         kind: "write",
         path: ".opcore/config",
+        targetScope: "repo",
         summary: "Write additive Opcore init config.",
         requiresApproval: false,
         outsideOpcore: false
@@ -2910,6 +2964,7 @@ function validOpcoreInitPlan(overrides = {}) {
       {
         kind: "upsert_block",
         path: "AGENTS.md",
+        targetScope: "repo",
         summary: "Add or update delimited Opcore agent guidance.",
         requiresApproval: true,
         outsideOpcore: true
@@ -3221,6 +3276,15 @@ function validManagedToolDescriptor(overrides = {}) {
         graphModes: ["optional", "required"],
         hypothetical: true,
         statusSurfaces: ["status", "doctor"],
+        writeGate: {
+          initScopes: ["repo", "global"],
+          harnesses: ["claude-code", "codex"],
+          adapterPath: "dist/agent-gate.js",
+          validationCommand: ["opcore", "validate", "pre-write", "--request-file", "<request-file>", "--timeout-ms", "30000", "--json"],
+          adapterErrorPolicy: "fail_open",
+          validationErrorPolicy: "fail_closed",
+          codexBoundary: "pretooluse_guardrail"
+        },
         checkIds: [
           "typescript.syntax",
           "typescript.types",

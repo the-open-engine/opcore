@@ -534,14 +534,36 @@ describe("opcore public facade", () => {
     }
   });
 
-  it("applies approved init with config and guidance but no default hook", () => {
+  it("plans local init agent-gate wiring without writing hook configs under --json", () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-init-local-plan-"));
+    try {
+      initGitFixture(temp);
+
+      const result = parseJson(runOpcore(["init", "--repo", temp, "--local", "--json"], temp, 0).stdout);
+
+      assert.equal(result.opcoreInit.mode, "plan");
+      assert.equal(result.opcoreInit.approved, false);
+      assert.equal(result.opcoreInit.options.scope, "repo");
+      assert.equal(actionFor(result, ".opcore/hooks/opcore-agent-gate.mjs").kind, "create_hook");
+      assert.equal(actionFor(result, ".claude/settings.json").kind, "wire_harness");
+      assert.equal(actionFor(result, ".codex/hooks.json").kind, "wire_harness");
+      assert.equal(existsSync(join(temp, ".opcore")), false);
+      assert.equal(existsSync(join(temp, ".claude", "settings.json")), false);
+      assert.equal(existsSync(join(temp, ".codex", "hooks.json")), false);
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("applies approved init with config, guidance, Claude/Codex hooks, and idempotent undo", () => {
     const temp = mkdtempSync(join(tmpdir(), "opcore-init-apply-"));
     try {
       initGitFixture(temp);
-      const result = parseJson(runOpcore(["init", "--repo", temp, "--approve", "--json"], temp, 0).stdout);
+      const result = parseJson(runOpcore(["init", "--repo", temp, "--local", "--approve", "--json"], temp, 0).stdout);
 
       assert.equal(result.opcoreInit.mode, "apply");
       assert.equal(result.opcoreInit.approved, true);
+      assert.equal(result.opcoreInit.options.scope, "repo");
       assert.equal(result.opcoreInit.undoAvailable, true);
       assert.equal(result.opcoreInit.interaction.promptState, "not_requested");
       assert.equal(result.opcoreInit.timings.applyMs >= 0, true);
@@ -553,11 +575,18 @@ describe("opcore public facade", () => {
       assert.equal(existsSync(join(temp, ".opcore", "history.jsonl")), false);
       assert.equal(existsSync(join(temp, ".opcore", "telemetry.jsonl")), false);
       assert.equal(existsSync(join(temp, ".opcore", "hooks", "pre-commit-opcore-check.sh")), false);
+      assert.equal(existsSync(join(temp, ".opcore", "hooks", "opcore-agent-gate.mjs")), true);
+      const claudeSettings = JSON.parse(readFileSync(join(temp, ".claude", "settings.json"), "utf8"));
+      const codexHooks = JSON.parse(readFileSync(join(temp, ".codex", "hooks.json"), "utf8"));
+      assertHookCommand(claudeSettings, "Edit|MultiEdit|Write", ".opcore/hooks/opcore-agent-gate.mjs");
+      assertHookCommand(codexHooks, "apply_patch|Edit|Write", ".opcore/hooks/opcore-agent-gate.mjs");
       assert.equal(opcoreIgnoreLineCount(readFileSync(join(temp, ".gitignore"), "utf8")), 1);
       assertGitIgnored(temp, ".opcore/telemetry.jsonl");
       const config = JSON.parse(readFileSync(join(temp, ".opcore", "config"), "utf8"));
       assert.equal(config.schemaVersion, 1);
       assert.equal(config.guidance.checkCommand, "opcore check --changed");
+      assert.equal(config.hooks.writeGate, true);
+      assert.deepEqual(config.hooks.harnesses, ["claude-code", "codex"]);
       assert.deepEqual(config.onboarding.languages, result.opcoreInit.settings.languages);
       assert.equal(config.onboarding.scan.totalFiles, result.opcoreInit.scan.totalFiles);
       const agents = readFileSync(join(temp, "AGENTS.md"), "utf8");
@@ -571,6 +600,17 @@ describe("opcore public facade", () => {
         undo.entries.find((entry) => entry.path === ".gitignore"),
         { path: ".gitignore", existed: false, kind: "append_managed_line", line: ".opcore/", appended: ".opcore/\n" }
       );
+      assert.equal(undo.entries.some((entry) => entry.path === ".claude/settings.json"), true);
+      assert.equal(undo.entries.some((entry) => entry.path === ".codex/hooks.json"), true);
+      const claudeBefore = readFileSync(join(temp, ".claude", "settings.json"), "utf8");
+      const codexBefore = readFileSync(join(temp, ".codex", "hooks.json"), "utf8");
+      runOpcore(["init", "--repo", temp, "--local", "--approve", "--json"], temp, 0);
+      assert.equal(readFileSync(join(temp, ".claude", "settings.json"), "utf8"), claudeBefore);
+      assert.equal(readFileSync(join(temp, ".codex", "hooks.json"), "utf8"), codexBefore);
+      runOpcore(["init", "--repo", temp, "--local", "--undo", "--approve", "--json"], temp, 0);
+      assert.equal(existsSync(join(temp, ".opcore", "hooks", "opcore-agent-gate.mjs")), false);
+      assert.equal(existsSync(join(temp, ".claude", "settings.json")), false);
+      assert.equal(existsSync(join(temp, ".codex", "hooks.json")), false);
     } finally {
       rmSync(temp, { recursive: true, force: true });
     }
@@ -618,6 +658,102 @@ describe("opcore public facade", () => {
       assert.equal(existsSync(join(temp, "AGENTS.md")), false);
     } finally {
       rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("keeps global init --json plan-only without writing home harness files", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "opcore-init-global-plan-cwd-"));
+    const home = mkdtempSync(join(tmpdir(), "opcore-init-global-plan-home-"));
+    try {
+      const result = await runOpcoreCliInProcess(["init", "--global", "--json"], cwd, {
+        stdinIsTTY: false,
+        stdoutIsTTY: false,
+        stderrIsTTY: false,
+        homeDir: home
+      });
+      const parsed = parseJson(result.stdout);
+
+      assert.equal(result.exitCode, 0);
+      assert.equal(parsed.opcoreInit.mode, "plan");
+      assert.equal(parsed.opcoreInit.options.scope, "global");
+      assert.equal(actionFor(parsed, "~/.opcore/hooks/opcore-agent-gate.mjs").targetScope, "global");
+      assert.equal(actionFor(parsed, "~/.claude/settings.json").kind, "wire_harness");
+      assert.equal(actionFor(parsed, "~/.codex/hooks.json").kind, "wire_harness");
+      assert.equal(existsSync(join(home, ".opcore")), false);
+      assert.equal(existsSync(join(home, ".claude", "settings.json")), false);
+      assert.equal(existsSync(join(home, ".codex", "hooks.json")), false);
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+      rmSync(home, { recursive: true, force: true });
+    }
+  });
+
+  it("prompts interactive Git init for repo or global scope before approval", async () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-init-scope-prompt-"));
+    const home = mkdtempSync(join(tmpdir(), "opcore-init-scope-prompt-home-"));
+    try {
+      initGitFixture(temp);
+
+      const result = await runOpcoreCliInProcess(["init"], temp, { answer: ["global", "yes"], homeDir: home });
+
+      assert.equal(result.exitCode, 0);
+      assert.match(result.stdout, /Install the Opcore write gate for THIS repo, or GLOBALLY for all repos\?/);
+      assert.match(result.stdout, /Apply setup\? \[y\/N\]/);
+      assert.match(result.stdout, /opcore init applied/);
+      assert.equal(existsSync(join(home, ".opcore", "hooks", "opcore-agent-gate.mjs")), true);
+      assert.equal(existsSync(join(home, ".claude", "settings.json")), true);
+      assert.equal(existsSync(join(home, ".codex", "hooks.json")), true);
+      assert.equal(existsSync(join(temp, ".opcore", "config")), false);
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+      rmSync(home, { recursive: true, force: true });
+    }
+  });
+
+  it("applies and undoes global init without touching repo setup", async () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-init-global-cwd-"));
+    const home = mkdtempSync(join(tmpdir(), "opcore-init-global-home-"));
+    try {
+      const result = await runOpcoreCliInProcess(["init", "--global", "--approve", "--json"], temp, {
+        stdinIsTTY: false,
+        stdoutIsTTY: false,
+        stderrIsTTY: false,
+        homeDir: home
+      });
+      const parsed = parseJson(result.stdout);
+
+      assert.equal(result.exitCode, 0);
+      assert.equal(parsed.opcoreInit.mode, "apply");
+      assert.equal(parsed.opcoreInit.options.scope, "global");
+      assert.equal(parsed.opcoreInit.undoAvailable, true);
+      assert.equal(existsSync(join(temp, ".opcore", "config")), false);
+      assert.equal(existsSync(join(temp, "AGENTS.md")), false);
+      assert.equal(existsSync(join(home, ".opcore", "hooks", "opcore-agent-gate.mjs")), true);
+      const claudeSettings = JSON.parse(readFileSync(join(home, ".claude", "settings.json"), "utf8"));
+      const codexHooks = JSON.parse(readFileSync(join(home, ".codex", "hooks.json"), "utf8"));
+      assertHookCommand(claudeSettings, "Edit|MultiEdit|Write", ".opcore/hooks/opcore-agent-gate.mjs");
+      assertHookCommand(codexHooks, "apply_patch|Edit|Write", ".opcore/hooks/opcore-agent-gate.mjs");
+      const undo = JSON.parse(readFileSync(join(home, ".opcore", "init-undo.json"), "utf8"));
+      assert.equal(undo.kind, "opcore_global_init_undo");
+      assert.equal(undo.entries.some((entry) => entry.path === ".claude/settings.json"), true);
+      assert.equal(undo.entries.some((entry) => entry.path === ".codex/hooks.json"), true);
+
+      const undoResult = await runOpcoreCliInProcess(["init", "--global", "--undo", "--approve", "--json"], temp, {
+        stdinIsTTY: false,
+        stdoutIsTTY: false,
+        stderrIsTTY: false,
+        homeDir: home
+      });
+      const undoParsed = parseJson(undoResult.stdout);
+      assert.equal(undoResult.exitCode, 0);
+      assert.equal(undoParsed.opcoreInit.mode, "undo");
+      assert.equal(undoParsed.opcoreInit.options.scope, "global");
+      assert.equal(existsSync(join(home, ".opcore", "init-undo.json")), false);
+      assert.equal(existsSync(join(home, ".claude", "settings.json")), false);
+      assert.equal(existsSync(join(home, ".codex", "hooks.json")), false);
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+      rmSync(home, { recursive: true, force: true });
     }
   });
 
@@ -1259,6 +1395,33 @@ describe("opcore public facade", () => {
     }
   });
 
+  it("refuses global init when a home harness parent is a symlink", async () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-init-global-symlink-cwd-"));
+    const home = mkdtempSync(join(tmpdir(), "opcore-init-global-symlink-home-"));
+    const outside = mkdtempSync(join(tmpdir(), "opcore-init-global-symlink-outside-"));
+    try {
+      symlinkSync(outside, join(home, ".claude"), "dir");
+
+      const result = await runOpcoreCliInProcess(["init", "--global", "--approve", "--json"], temp, {
+        stdinIsTTY: false,
+        stdoutIsTTY: false,
+        stderrIsTTY: false,
+        homeDir: home
+      });
+      const parsed = parseJson(result.stdout);
+
+      assert.equal(result.exitCode, 1);
+      assert.equal(parsed.status, "error");
+      assert.match(parsed.message, /symlink/i);
+      assert.deepEqual(readdirSync(outside), []);
+      assert.equal(existsSync(join(home, ".opcore", "init-undo.json")), false);
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+      rmSync(home, { recursive: true, force: true });
+      rmSync(outside, { recursive: true, force: true });
+    }
+  });
+
   it("refuses undo restore when a recorded target symlink resolves outside the repo", () => {
     const temp = mkdtempSync(join(tmpdir(), "opcore-init-undo-symlink-"));
     const outside = join(mkdtempSync(join(tmpdir(), "opcore-init-undo-outside-")), "outside.md");
@@ -1398,6 +1561,7 @@ async function runOpcoreCliInProcess(args, cwd, options) {
   const previousCwd = process.cwd();
   let stdout = "";
   let stderr = "";
+  const answers = Array.isArray(options.answer) ? [...options.answer] : [options.answer];
   process.chdir(cwd);
   try {
     const exitCode = await runOpcoreCli({
@@ -1412,9 +1576,10 @@ async function runOpcoreCliInProcess(args, cwd, options) {
       stdinIsTTY: options.stdinIsTTY ?? true,
       stdoutIsTTY: options.stdoutIsTTY ?? true,
       stderrIsTTY: options.stderrIsTTY ?? false,
+      homeDir: options.homeDir,
       readLine: async (prompt) => {
         stdout += prompt;
-        return options.answer;
+        return answers.shift();
       }
     });
     return { exitCode, stdout, stderr };
@@ -1513,6 +1678,30 @@ function writeFixtureFile(root, path, content) {
 
 function parseJson(stdout) {
   return JSON.parse(stdout);
+}
+
+function actionFor(result, path) {
+  const action = result.opcoreInit.actions.find((entry) => entry.path === path);
+  assert.ok(action, `missing init action for ${path}`);
+  return action;
+}
+
+function assertHookCommand(config, matcher, commandFragment) {
+  const groups = config.hooks?.PreToolUse;
+  assert.equal(Array.isArray(groups), true);
+  const group = groups.find((entry) => entry.matcher === matcher);
+  assert.ok(group, `missing PreToolUse group for ${matcher}`);
+  assert.equal(Array.isArray(group.hooks), true);
+  assert.equal(
+    group.hooks.some((hook) =>
+      hook.type === "command" &&
+      typeof hook.command === "string" &&
+      hook.command.includes(commandFragment) &&
+      hook.command.includes("opcore-agent-gate.mjs")
+    ),
+    true,
+    `missing Opcore hook command for ${matcher}`
+  );
 }
 
 function firstNonEmptyLine(text) {

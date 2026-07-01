@@ -2,17 +2,16 @@
 
 Deterministic local changed-file validation gate for coding agents.
 
-Opcore gives coding agents and maintainers a read-only-first repo check loop: scan the current repo, report coverage, run changed-file validation, and track concrete local metric deltas. It is built for local feedback before review, not for remote publishing or opaque ratings.
+Opcore gives coding agents and maintainers a read-only-first repo check loop: scan the current repo, wire the changed-file write gate into supported agent harnesses, run validation, and track concrete local metric deltas. It is built for local feedback before review, not for remote publishing or opaque ratings.
 
 ## Install
 
 ```bash
-npx @the-open-engine/opcore              # zero-install first run
-npm install -g @the-open-engine/opcore   # global CLI
-npm i -D @the-open-engine/opcore         # wire the gate into an agent repo
+npx @the-open-engine/opcore init         # repo setup with a plan and approval prompt
+npm install -g @the-open-engine/opcore   # global CLI, then run opcore init --global
 ```
 
-Requires Node >=22.
+Install scripts do not modify repos or agent settings. The package only prints a setup reminder. Requires Node >=22.
 
 If `opcore` is not found after a global install, check npm's global prefix and put its `bin` directory on `PATH`:
 
@@ -23,24 +22,25 @@ export PATH="$(npm prefix -g)/bin:$PATH"
 
 ## First Run
 
-Run inside the repository you want to inspect:
+Run inside the repository you want to protect:
 
 ```bash
-opcore --repo .
-opcore init --repo . --approve
+opcore init
 ```
 
-`opcore` runs a read-only scan, prints Coverage before Findings, reports concrete counts and locations, and writes only `.opcore/report.json`, `.opcore/history.jsonl`, and bounded `.opcore/telemetry.jsonl`. Scan, status, check, and measure are read-only for source files. Approved `opcore init` writes only additive `.opcore/config`, one delimited guidance block in an existing agent file or new `AGENTS.md`, a managed `.opcore/` line in `.gitignore` for Git repos, and `.opcore/init-undo.json`. Undo recorded setup with `opcore init --undo`.
+`opcore init` runs a read-only scan first, shows the setup plan, and asks before writing on a TTY. In a Git repo, it asks whether to install the write gate for this repo or globally. `--json` and non-TTY runs stay plan-only unless you pass `--approve`.
+
+Approved repo setup writes additive `.opcore/config`, one delimited guidance block, a repo-local write-gate adapter, merged Claude Code/Codex hook entries, a managed `.opcore/` line in `.gitignore` for Git repos, and `.opcore/init-undo.json`. Approved global setup writes user-level hook config and `~/.opcore/init-undo.json`. Undo recorded setup with `opcore init --undo --approve` or `opcore init --global --undo --approve`.
 
 ## Changed-File Agent Gate
 
-Use the changed-file gate before handing edits to a reviewer or merge process:
+After `opcore init`, supported Claude Code and Codex write tool calls run the Opcore pre-write gate before the write lands. You can also run the changed-file gate manually before handing edits to a reviewer or merge process:
 
 ```bash
 opcore check --changed --json
 ```
 
-The command validates changed source files with stable JSON and agent-friendly exit codes. It is local, deterministic for current worktree inputs, and does not publish, install packages, run wrapper tools, or edit source files.
+The command validates changed source files with stable JSON and agent-friendly exit codes. It is local, deterministic for current worktree inputs, and does not publish, install packages, run wrapper tools, or edit source files. Codex coverage is limited to its current hook interception boundary for supported tool calls.
 
 `opcore check --changed --json` works in a freshly `git init` repo with no commits; it treats the empty baseline as the comparison base.
 
@@ -60,7 +60,9 @@ opcore
 opcore --repo .
 opcore status
 opcore init
+opcore init --global
 opcore init --repo . --approve
+opcore init --undo --approve
 opcore check --changed --json
 opcore check --staged --json
 opcore measure
@@ -70,8 +72,8 @@ opcore try
 
 - `opcore` scans read-only, prints Coverage before Findings, and writes only `.opcore/report.json`, `.opcore/history.jsonl`, and bounded `.opcore/telemetry.jsonl`.
 - `opcore status` reports activation readiness without running scans, installs, setup, checks, wrappers, or writes.
-- `opcore init` is scan-first and ask-before-write on a TTY; JSON preview runs stay plan-only unless approved.
-- `opcore check --changed --json` and `opcore check --staged --json` are agent gates for source changes.
+- `opcore init` is scan-first and ask-before-write on a TTY; approved setup merges Claude Code/Codex write-gate hooks without clobbering existing hooks.
+- `opcore check --changed --json` and `opcore check --staged --json` are manual agent gates for source changes.
 - `opcore measure` reads existing metric artifacts and reports named deltas.
 - `opcore try` creates local sample repos and runs the demo loop without publishing anything.
 

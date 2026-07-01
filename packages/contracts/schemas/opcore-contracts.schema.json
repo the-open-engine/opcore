@@ -72,6 +72,27 @@
         ]
       }
     },
+    "HomeRelativePath": {
+      "type": "string",
+      "minLength": 3,
+      "pattern": "^~/",
+      "not": {
+        "anyOf": [
+          {
+            "pattern": "(^|/)\\.\\.(/|$)"
+          },
+          {
+            "pattern": "\\u0000"
+          },
+          {
+            "pattern": "//"
+          },
+          {
+            "const": "~/."
+          }
+        ]
+      }
+    },
     "ContextDocFilename": {
       "allOf": [
         {
@@ -4115,6 +4136,7 @@
                 "graphModes",
                 "hypothetical",
                 "statusSurfaces",
+                "writeGate",
                 "checkIds"
               ],
               "properties": {
@@ -4300,6 +4322,111 @@
                       "status",
                       "doctor"
                     ]
+                  }
+                },
+                "writeGate": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "initScopes",
+                    "harnesses",
+                    "adapterPath",
+                    "validationCommand",
+                    "adapterErrorPolicy",
+                    "validationErrorPolicy",
+                    "codexBoundary"
+                  ],
+                  "properties": {
+                    "initScopes": {
+                      "type": "array",
+                      "minItems": 2,
+                      "maxItems": 2,
+                      "allOf": [
+                        {
+                          "contains": {
+                            "const": "repo"
+                          }
+                        },
+                        {
+                          "contains": {
+                            "const": "global"
+                          }
+                        }
+                      ],
+                      "items": {
+                        "enum": [
+                          "repo",
+                          "global"
+                        ]
+                      }
+                    },
+                    "harnesses": {
+                      "type": "array",
+                      "minItems": 2,
+                      "maxItems": 2,
+                      "allOf": [
+                        {
+                          "contains": {
+                            "const": "claude-code"
+                          }
+                        },
+                        {
+                          "contains": {
+                            "const": "codex"
+                          }
+                        }
+                      ],
+                      "items": {
+                        "enum": [
+                          "claude-code",
+                          "codex"
+                        ]
+                      }
+                    },
+                    "adapterPath": {
+                      "const": "dist/agent-gate.js"
+                    },
+                    "validationCommand": {
+                      "type": "array",
+                      "prefixItems": [
+                        {
+                          "const": "opcore"
+                        },
+                        {
+                          "const": "validate"
+                        },
+                        {
+                          "const": "pre-write"
+                        },
+                        {
+                          "const": "--request-file"
+                        },
+                        {
+                          "const": "<request-file>"
+                        },
+                        {
+                          "const": "--timeout-ms"
+                        },
+                        {
+                          "const": "30000"
+                        },
+                        {
+                          "const": "--json"
+                        }
+                      ],
+                      "items": false,
+                      "minItems": 8,
+                      "maxItems": 8
+                    },
+                    "adapterErrorPolicy": {
+                      "const": "fail_open"
+                    },
+                    "validationErrorPolicy": {
+                      "const": "fail_closed"
+                    },
+                    "codexBoundary": {
+                      "const": "pretooluse_guardrail"
+                    }
                   }
                 },
                 "checkIds": {
@@ -6906,6 +7033,7 @@
       "required": [
         "kind",
         "path",
+        "targetScope",
         "summary",
         "requiresApproval",
         "outsideOpcore"
@@ -6916,12 +7044,26 @@
             "write",
             "upsert_block",
             "create_hook",
+            "wire_harness",
             "restore",
             "remove"
           ]
         },
         "path": {
-          "$ref": "#/$defs/RepoRelativePath"
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RepoRelativePath"
+            },
+            {
+              "$ref": "#/$defs/HomeRelativePath"
+            }
+          ]
+        },
+        "targetScope": {
+          "enum": [
+            "repo",
+            "global"
+          ]
         },
         "summary": {
           "type": "string",
@@ -6938,8 +7080,34 @@
         {
           "if": {
             "properties": {
+              "targetScope": {
+                "const": "repo"
+              }
+            },
+            "required": [
+              "targetScope"
+            ]
+          },
+          "then": {
+            "properties": {
               "path": {
-                "pattern": "^\\.opcore(?:/|$)"
+                "$ref": "#/$defs/RepoRelativePath"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "path": {
+                "$ref": "#/$defs/HomeRelativePath"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "path": {
+                "pattern": "^(?:\\.opcore|~/\\.opcore)(?:/|$)"
               }
             },
             "required": [
@@ -7414,10 +7582,17 @@
           "type": "object",
           "additionalProperties": false,
           "required": [
+            "scope",
             "failClosedHook",
             "dryRun"
           ],
           "properties": {
+            "scope": {
+              "enum": [
+                "repo",
+                "global"
+              ]
+            },
             "failClosedHook": {
               "type": "boolean"
             },
