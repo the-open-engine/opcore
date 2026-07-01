@@ -2,22 +2,35 @@
 
 Deterministic local changed-file validation gate for coding agents.
 
-Opcore gives coding agents and maintainers a read-only-first repo check loop: scan the current repo, report coverage honestly, run changed-file validation, and track concrete local metric deltas. It is built for local feedback before review, not for remote publishing or opaque ratings.
+Opcore gives coding agents and maintainers a read-only-first repo check loop: scan the current repo, report coverage, run changed-file validation, and track concrete local metric deltas. It is built for local feedback before review, not for remote publishing or opaque ratings.
 
-## First Run From This Checkout
-
-Package publication is maintainer-controlled during alpha staging. Until
-maintainers publish the alpha packages, run Opcore from a source checkout:
+## Install
 
 ```bash
-npm ci
-npm run build
-node packages/opcore/dist/index.js init --repo /path/to/repo
+npx @the-open-engine/opcore              # zero-install first run
+npm install -g @the-open-engine/opcore   # global CLI
+npm i -D @the-open-engine/opcore         # wire the gate into an agent repo
 ```
 
-The command starts the interactive onboarding wizard. It runs a read-only scan first, prints Coverage before Findings, reports concrete counts and locations, shows the additive setup plan, and asks before writing anything.
+Requires Node >=22.
 
-Scan/status/check/measure are read-only for source files. The scan loop writes only `.opcore/report.json`, `.opcore/history.jsonl`, and bounded `.opcore/telemetry.jsonl`. Approved init writes only additive `.opcore/config`, one delimited guidance block in an existing agent file or new `AGENTS.md`, a managed `.opcore/` line in `.gitignore` for Git repos, and `.opcore/init-undo.json`. Undo recorded setup with `opcore init --undo`.
+If `opcore` is not found after a global install, check npm's global prefix and put its `bin` directory on `PATH`:
+
+```bash
+npm prefix -g
+export PATH="$(npm prefix -g)/bin:$PATH"
+```
+
+## First Run
+
+Run inside the repository you want to inspect:
+
+```bash
+opcore --repo .
+opcore init --repo . --approve
+```
+
+`opcore` runs a read-only scan, prints Coverage before Findings, reports concrete counts and locations, and writes only `.opcore/report.json`, `.opcore/history.jsonl`, and bounded `.opcore/telemetry.jsonl`. Scan, status, check, and measure are read-only for source files. Approved `opcore init` writes only additive `.opcore/config`, one delimited guidance block in an existing agent file or new `AGENTS.md`, a managed `.opcore/` line in `.gitignore` for Git repos, and `.opcore/init-undo.json`. Undo recorded setup with `opcore init --undo`.
 
 ## Changed-File Agent Gate
 
@@ -27,18 +40,18 @@ Use the changed-file gate before handing edits to a reviewer or merge process:
 opcore check --changed --json
 ```
 
-The command validates changed source files with stable JSON and agent-friendly exit codes. It is local, deterministic for current worktree inputs, and does not publish, install packages, set up ASP, set up ACE, run wrapper tools, or edit source files.
+The command validates changed source files with stable JSON and agent-friendly exit codes. It is local, deterministic for current worktree inputs, and does not publish, install packages, run wrapper tools, or edit source files.
 
 `opcore check --changed --json` works in a freshly `git init` repo with no commits; it treats the empty baseline as the comparison base.
 
-## Coverage Honesty
+## Coverage
 
 - TypeScript and JavaScript: deep graph-backed and validation signals for syntax, types, imports, relevant tests, dead exports, and graph structure when facts are available.
 - Rust: useful validation and toolchain signals for source hygiene, oversized files, module evidence, cargo, fmt, clippy, rustdoc, and optional-tool evidence when available.
 - Python: experimental degraded-honest validation for graph-backed `.py`/`.pyi` structure, untested modules, dead exports, syntax, and source-hygiene; `python.types` depends on mypy or pyright and reports missing tools as degraded.
 - Other non-TS/JS/Rust/Python languages: counted and reported as unsupported; Opcore does not invent findings or ratings for files it cannot assess.
 
-Metric output is named evidence and deltas, not a blended quality number.
+Metric output is named evidence and deltas.
 
 ## Command Reference
 
@@ -59,46 +72,16 @@ opcore try
 - `opcore status` reports activation readiness without running scans, installs, setup, checks, wrappers, or writes.
 - `opcore init` is scan-first and ask-before-write on a TTY; JSON preview runs stay plan-only unless approved.
 - `opcore check --changed --json` and `opcore check --staged --json` are agent gates for source changes.
-- `opcore measure` reads existing metric artifacts and reports named deltas, not a blended rating.
+- `opcore measure` reads existing metric artifacts and reports named deltas.
 - `opcore try` creates local sample repos and runs the demo loop without publishing anything.
-
-## Package Publication
-
-After package publication, the one-command first-run path is:
-
-```bash
-npx @the-open-engine/opcore@0.1.0-alpha.0 init
-```
-
-After package publication, install globally when you expect to run Opcore repeatedly:
-
-```bash
-npm install -g @the-open-engine/opcore@0.1.0-alpha.0
-opcore
-opcore init
-```
-
-If `opcore` is not found after a global install, check npm's global prefix and put its `bin` directory on `PATH`:
-
-```bash
-npm prefix -g
-export PATH="$(npm prefix -g)/bin:$PATH"
-```
-
-Restart the shell or add that export to the shell startup file used by the environment.
 
 ## Platform Support
 
-Alpha package artifacts target `darwin-arm64`, `darwin-x64`, and `linux-x64` with Node >=22. Unsupported platforms return typed degraded status instead of crashing. Windows is out of scope for `0.1.0-alpha.0`.
+Package artifacts target `darwin-arm64`, `darwin-x64`, and `linux-x64` with Node >=22. Unsupported platforms return typed degraded status instead of crashing.
 
 ## Advanced ASP Provider Note
 
-**Providers assess; ASP hosts decide.** The aggregate `@the-open-engine/opcore`
-package exposes only the `opcore` bin. `opcore-asp-provider --stdio` is provided
-by the separate `@the-open-engine/opcore-asp-provider` package, or by
-`node packages/asp-provider/dist/index.js --stdio` from a built source checkout.
-Provider output is evidence for the host to evaluate, not authority to decide
-policy, enforce gates, or apply changes.
+**Providers assess; ASP hosts decide.** The aggregate `@the-open-engine/opcore` package exposes only the `opcore` bin. `opcore-asp-provider --stdio` is provided by the separate `@the-open-engine/opcore-asp-provider` package. Provider output is evidence for the host to evaluate, not authority to decide policy, enforce gates, or apply changes.
 
 ## Docs
 

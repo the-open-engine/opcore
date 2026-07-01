@@ -7,23 +7,23 @@
   "graphPackageVersions": [
     {
       "packageName": "@the-open-engine/opcore-graph",
-      "version": "0.1.0-alpha.0"
+      "version": "0.1.0"
     },
     {
       "packageName": "@the-open-engine/opcore-contracts",
-      "version": "0.1.0-alpha.0"
+      "version": "0.1.0"
     },
     {
       "packageName": "@the-open-engine/opcore-graph-core-darwin-arm64",
-      "version": "0.1.0-alpha.0"
+      "version": "0.1.0"
     },
     {
       "packageName": "@the-open-engine/opcore-graph-core-darwin-x64",
-      "version": "0.1.0-alpha.0"
+      "version": "0.1.0"
     },
     {
       "packageName": "@the-open-engine/opcore-graph-core-linux-x64",
-      "version": "0.1.0-alpha.0"
+      "version": "0.1.0"
     }
   ],
   "graphProviderSchemaVersion": 1,
@@ -477,7 +477,7 @@
   ],
   "packageInspection": {
     "packageName": "@the-open-engine/opcore-graph",
-    "tarballName": "the-open-engine-opcore-graph-0.1.0-alpha.0.tgz",
+    "tarballName": "the-open-engine-opcore-graph-0.1.0.tgz",
     "fileCount": 17,
     "files": [
       "package.json",
@@ -560,7 +560,7 @@
   ],
   "graphArtifact": {
     "artifactName": "opcore-graph-core",
-    "artifactVersion": "0.1.0-alpha.0",
+    "artifactVersion": "0.1.0",
     "targetPlatform": "darwin-arm64",
     "binaryPath": "opcore-graph-core",
     "checksumPath": "opcore-graph-core.sha256",
@@ -624,7 +624,7 @@
       "targetPlatform": "darwin-arm64",
       "metadata": {
         "artifactName": "opcore-graph-core",
-        "artifactVersion": "0.1.0-alpha.0",
+        "artifactVersion": "0.1.0",
         "targetPlatform": "darwin-arm64",
         "binaryPath": "opcore-graph-core",
         "checksumPath": "opcore-graph-core.sha256",
@@ -650,7 +650,7 @@
       "targetPlatform": "darwin-x64",
       "metadata": {
         "artifactName": "opcore-graph-core",
-        "artifactVersion": "0.1.0-alpha.0",
+        "artifactVersion": "0.1.0",
         "targetPlatform": "darwin-x64",
         "binaryPath": "opcore-graph-core",
         "checksumPath": "opcore-graph-core.sha256",
@@ -676,7 +676,7 @@
       "targetPlatform": "linux-x64",
       "metadata": {
         "artifactName": "opcore-graph-core",
-        "artifactVersion": "0.1.0-alpha.0",
+        "artifactVersion": "0.1.0",
         "targetPlatform": "linux-x64",
         "binaryPath": "opcore-graph-core",
         "checksumPath": "opcore-graph-core.sha256",

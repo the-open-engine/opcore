@@ -248,7 +248,7 @@ describe("Opcore ASP provider", () => {
 
     assert.equal(manifest.$schema, "https://covibes.dev/asp/schemas/server-manifest.schema.json");
     assert.equal(manifest.manifestVersion, "asp-server/0.1");
-    assert.deepEqual(manifest.server, { id: "opcore", name: "Opcore", version: "0.1.0-alpha.0" });
+    assert.deepEqual(manifest.server, { id: "opcore", name: "Opcore", version: "0.1.0" });
     assert.deepEqual(manifest.protocolVersions, ["asp/0.1"]);
     assert.deepEqual(manifest.capabilities, ["check"]);
     assert.deepEqual(manifest.entrypoint, { transport: "stdio", bin: "opcore-asp-provider", args: ["--stdio"] });

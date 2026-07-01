@@ -2,7 +2,7 @@
 
 > Opcore is a deterministic, local, read-only robustness loop and a changed-file JSON validation gate for AI coding agents. It prints coverage before findings, reads real code structure from a Rust graph core, and returns stable exit codes. Opcore is Layer 02 (Constraints) of The Open Engine, sibling to the verification layer Zeroshot.
 
-Opcore is maintainer-controlled alpha (0.1.0-alpha.0). Hybrid runtime: a Rust graph core owns source extraction, persistence, and hot graph queries; TypeScript owns contracts, CLI routing, and validation policy.
+Opcore version 0.1.0. Hybrid runtime: a Rust graph core owns source extraction, persistence, and hot graph queries; TypeScript owns contracts, CLI routing, and validation policy.
 
 ## What Opcore is
 - Deterministic, local, read-only robustness loop for repositories worked on by coding agents.
@@ -29,9 +29,8 @@ Opcore is maintainer-controlled alpha (0.1.0-alpha.0). Hybrid runtime: a Rust gr
 - `opcore try [--json]` — local sample-repo demo loop; publishes nothing.
 
 ## Install
-- Maintainer-controlled alpha: package publication is gated during alpha staging. Until the packages are published, run Opcore from a source checkout: `npm ci && npm run build`, then `node packages/opcore/dist/index.js init --repo /path/to/repo`.
-- After package publication: `npx @the-open-engine/opcore@0.1.0-alpha.0 init` or `npm install -g @the-open-engine/opcore@0.1.0-alpha.0`.
-- Supported targets: darwin-arm64, darwin-x64, linux-x64. Windows is out of scope for 0.1.0-alpha.0.
+- `npx @the-open-engine/opcore` for a zero-install first run, `npm install -g @the-open-engine/opcore` for a global CLI, or `npm i -D @the-open-engine/opcore` to wire the gate into an agent repo. Requires Node >=22.
+- Supported targets: darwin-arm64, darwin-x64, linux-x64; Windows is unsupported.
 
 ## Docs
 - README: https://github.com/the-open-engine/opcore#readme

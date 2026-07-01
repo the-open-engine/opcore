@@ -1,6 +1,6 @@
 {
   "name": "@the-open-engine/opcore-graph-core-linux-x64",
-  "version": "0.1.0-alpha.0",
+  "version": "0.1.0",
   "description": "Opcore graph-core native binary for Linux x64.",
   "type": "module",
   "license": "MIT",

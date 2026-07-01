@@ -3,7 +3,7 @@ import { spawnSync } from "node:child_process";
 import { graphCoreNativePackageNames } from "./graph-native-targets.mjs";
 import { releasePackageDirForName } from "./release-package-dirs.mjs";
 
-const releaseVersion = valueAfter("--version") ?? "0.1.0-alpha.0";
+const releaseVersion = valueAfter("--version") ?? "0.1.0";
 const tag = valueAfter("--tag") ?? "alpha";
 const dryRun = process.argv.includes("--dry-run") || process.env.LATTICE_PUBLISH_DRY_RUN === "1";
 const implementationPackages = [

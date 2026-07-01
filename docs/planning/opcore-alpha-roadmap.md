@@ -120,4 +120,4 @@ Avoid:
 - ACE-managed distribution.
 - Source-editing or automatic-fix product claims.
 - A SaaS dashboard.
-- Windows support in `0.1.0-alpha.0`.
+- Windows support in `0.1.0`.

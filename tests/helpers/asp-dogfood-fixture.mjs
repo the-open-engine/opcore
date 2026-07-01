@@ -68,8 +68,8 @@ function installedPackagesFixture() {
     .filter((packageName) => !graphCoreNativePackageNames.includes(packageName) || packageName === installedNativePackageName)
     .map((packageName) => ({
     packageName,
-    version: "0.1.0-alpha.0",
-    tarball: { filename: `${packageName.split("/").pop()}-0.1.0-alpha.0.tgz`, sha256: "1".repeat(64) },
+    version: "0.1.0",
+    tarball: { filename: `${packageName.split("/").pop()}-0.1.0.tgz`, sha256: "1".repeat(64) },
     installedManifest: { path: `node_modules/${packageName}/package.json`, sha256: "2".repeat(64), bins: binsFor(packageName) },
     installedFiles: installedFilesFor(packageName)
   }));
@@ -138,7 +138,7 @@ function providerFixture() {
 function serverManifestFixture() {
   return {
     manifestVersion: "asp-server/0.1",
-    server: { id: "opcore", name: "Opcore", version: "0.1.0-alpha.0" },
+    server: { id: "opcore", name: "Opcore", version: "0.1.0" },
     protocolVersions: ["asp/0.1"],
     capabilities: ["check"],
     capabilityProfiles: ["core-check-provider", "opcore-core-check"],

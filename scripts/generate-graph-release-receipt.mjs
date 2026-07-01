@@ -568,7 +568,7 @@ function inspectGraphPackage() {
   }
   return {
     packageName: "@the-open-engine/opcore-graph",
-    tarballName: parsed[0]?.filename ?? "covibes-opcore-graph-0.1.0-alpha.0.tgz",
+    tarballName: parsed[0]?.filename ?? "covibes-opcore-graph-0.1.0.tgz",
     fileCount: files.length,
     files,
     forbiddenMarkersAbsent: true,

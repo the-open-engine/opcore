@@ -1,6 +1,6 @@
 {
   "name": "@the-open-engine/opcore-contracts",
-  "version": "0.1.0-alpha.0",
+  "version": "0.1.0",
   "description": "Public contracts and JSON schema for Opcore graph, edit, validation, and CLI routes.",
   "type": "module",
   "license": "MIT",

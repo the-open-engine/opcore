@@ -1,6 +1,6 @@
 {
   "name": "@the-open-engine/opcore-validation-typescript",
-  "version": "0.1.0-alpha.0",
+  "version": "0.1.0",
   "description": "TypeScript syntax, type, and graph-aware validation checks for Opcore.",
   "type": "module",
   "license": "MIT",
@@ -28,8 +28,8 @@
     "access": "public"
   },
   "dependencies": {
-    "@the-open-engine/opcore-contracts": "0.1.0-alpha.0",
-    "@the-open-engine/opcore-validation": "0.1.0-alpha.0",
+    "@the-open-engine/opcore-contracts": "0.1.0",
+    "@the-open-engine/opcore-validation": "0.1.0",
     "@typescript-eslint/typescript-estree": "^8.62.0",
     "typescript": "^5.9.3"
   },

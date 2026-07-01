@@ -31,9 +31,9 @@ export function formatOpcoreVersion(runtime = readOpcoreRuntimeInfo()): string {
 function readPackageVersion(): string {
   try {
     const parsed = JSON.parse(readFileSync(packageJsonPath, "utf8")) as { version?: unknown };
-    return typeof parsed.version === "string" && parsed.version.length > 0 ? parsed.version : "0.1.0-alpha.0";
+    return typeof parsed.version === "string" && parsed.version.length > 0 ? parsed.version : "0.1.0";
   } catch {
-    return "0.1.0-alpha.0";
+    return "0.1.0";
   }
 }
 

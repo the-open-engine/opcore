@@ -730,6 +730,6 @@ function latencyRecord(index) {
       ],
       processState: index === 0 ? "cold" : "warm"
     },
-    opcoreVersion: "0.1.0-alpha.0"
+    opcoreVersion: "0.1.0"
   });
 }

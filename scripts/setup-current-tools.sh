@@ -271,7 +271,7 @@ const metadata = {
   generatedAt: new Date().toISOString(),
   generatedBy: {
     name: "lattice-current-tool-setup",
-    version: "0.1.0-alpha.0"
+    version: "0.1.0"
   },
   tooling: {
     aceTools: {

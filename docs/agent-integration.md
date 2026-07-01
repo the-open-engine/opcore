@@ -2,6 +2,14 @@
 
 Opcore is a local CLI surface for agents that can run shell commands and consume JSON.
 
+## One-Paste Setup
+
+Paste this to any coding agent that runs shell commands (Claude Code, Cursor, Codex, Copilot). It installs Opcore, runs the approval-gated setup, and adopts the gate:
+
+> Set up Opcore in this repo: run `npx @the-open-engine/opcore init`, show me the plan it prints, and if it only adds `.opcore/` config plus an `AGENTS.md` guidance block, approve it. From then on, run `opcore check --changed --json` before finishing any edit and treat a non-zero exit as a blocked write.
+
+`opcore init` stays read-only until you approve its plan, and it preserves your existing lint, test, CI, and pre-commit guardrails.
+
 ## Readiness
 
 ```bash

@@ -896,7 +896,7 @@ function opcoreVersionForBin(command) {
     }
     current = dirname(current);
   }
-  return "0.1.0-alpha.0";
+  return "0.1.0";
 }
 
 function opcoreGitignoreLineCount(repoRoot) {
