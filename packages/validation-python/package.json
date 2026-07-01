@@ -1,6 +1,6 @@
 {
   "name": "@the-open-engine/opcore-validation-python",
-  "version": "0.1.0-alpha.0",
+  "version": "0.1.0",
   "description": "Internal Opcore Python validation adapter for gated language-support work.",
   "type": "module",
   "license": "MIT",
@@ -27,8 +27,8 @@
     "access": "public"
   },
   "dependencies": {
-    "@the-open-engine/opcore-contracts": "0.1.0-alpha.0",
-    "@the-open-engine/opcore-validation": "0.1.0-alpha.0"
+    "@the-open-engine/opcore-contracts": "0.1.0",
+    "@the-open-engine/opcore-validation": "0.1.0"
   },
   "engines": {
     "node": ">=22"

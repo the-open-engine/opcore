@@ -386,7 +386,7 @@ function parseMcpFrame(request: JsonRpcRequest, repo: RepoIdentity): ParsedServe
           protocolVersion: "2024-11-05",
           serverInfo: {
             name: "opcore-graph",
-            version: "0.1.0-alpha.0"
+            version: "0.1.0"
           },
           capabilities: graphServeCapabilities
         }

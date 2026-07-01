@@ -95,7 +95,7 @@ describe("cutover release receipt", () => {
           .filter((packageName) => !graphCoreNativePackageNames.includes(packageName) || packageName === graphCoreNativePackageNames[0])
           .map((packageName) => ({
             packageName,
-            version: "0.1.0-alpha.0",
+            version: "0.1.0",
             tarball: { filename: `${packageName}.tgz`, sha256: "b".repeat(64) },
             installedManifest: {
               path: `node_modules/${packageName}/package.json`,

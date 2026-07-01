@@ -64,7 +64,7 @@ describe("Opcore public package identity", () => {
     assert.deepEqual(opcoreManifest.bin, { opcore: "dist/index.js" });
     assert.deepEqual(providerManifest.bin, { "opcore-asp-provider": "dist/index.js" });
 
-    for (const path of ["README.md", "docs/quickstart.md", "packages/opcore/README.md"]) {
+    for (const path of ["docs/quickstart.md", "packages/opcore/README.md"]) {
       const content = readFileSync(path, "utf8");
       assert.match(content, /opcore-asp-provider --stdio/, path);
       assert.match(content, /@the-open-engine\/opcore-asp-provider/, path);

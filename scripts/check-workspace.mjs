@@ -17,7 +17,7 @@ const packageTracks = [
   { dir: "asp-provider", name: "@the-open-engine/opcore-asp-provider", bin: "opcore-asp-provider" },
   { dir: "fixtures", name: "@the-open-engine/opcore-fixtures" }
 ];
-const releaseVersion = "0.1.0-alpha.0";
+const releaseVersion = "0.1.0";
 const packageNames = new Set(packageTracks.map((entry) => entry.name));
 const publicPackageNames = new Set(packageTracks.filter((entry) => entry.dir !== "fixtures").map((entry) => entry.name));
 const rootNativeOptionalDependencies = new Map([
@@ -190,9 +190,6 @@ for (const [name, content] of [
 }
 for (const token of [
   "Opcore",
-  "Package publication is maintainer-controlled during alpha staging",
-  "node packages/opcore/dist/index.js init --repo /path/to/repo",
-  "npm install -g @the-open-engine/opcore@0.1.0-alpha.0",
   "opcore try",
   "opcore --repo .",
   "opcore init --repo . --approve",
@@ -207,21 +204,24 @@ for (const [name, content] of [
   ["packages/opcore/README.md", opcorePackageReadme]
 ]) {
   for (const token of [
-    "Package publication is maintainer-controlled during alpha staging",
-    "node packages/opcore/dist/index.js init --repo /path/to/repo",
-    "After package publication",
-    "npx @the-open-engine/opcore@0.1.0-alpha.0 init",
-    "npm install -g @the-open-engine/opcore@0.1.0-alpha.0",
-    "npm prefix -g",
-    "$(npm prefix -g)/bin",
+    "npm install -g @the-open-engine/opcore",
     "darwin-arm64",
     "darwin-x64",
     "linux-x64",
-    "Unsupported platforms return typed degraded status",
-    "Windows is out of scope for `0.1.0-alpha.0`",
-    "freshly `git init` repo with no commits",
     "opcore check --changed --json",
-    "@the-open-engine/opcore",
+    "@the-open-engine/opcore"
+  ]) {
+    requireIncludes(name, content, token);
+  }
+}
+for (const [name, content] of [
+  ["docs/quickstart.md", quickstart],
+  ["packages/opcore/README.md", opcorePackageReadme]
+]) {
+  for (const token of [
+    "npx @the-open-engine/opcore",
+    "Unsupported platforms return typed degraded status",
+    "freshly `git init` repo with no commits",
     "package exposes only"
   ]) {
     requireIncludes(name, content, token);

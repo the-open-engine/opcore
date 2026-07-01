@@ -2094,7 +2094,7 @@ describe("Opcore JSON schema wire constraints", () => {
         graphPackageVersions: [
           {
             packageName: "@the-open-engine/opcore-contracts",
-            version: "0.1.0-alpha.0"
+            version: "0.1.0"
           }
         ]
       }),
@@ -2839,7 +2839,7 @@ function validCommandLatencyRecord(overrides = {}) {
     exitCode: 0,
     repo: validRepoShapeFingerprint(),
     timing: validCommandTiming(),
-    opcoreVersion: "0.1.0-alpha.0",
+    opcoreVersion: "0.1.0",
     ...overrides
   };
 }
@@ -3147,7 +3147,7 @@ function validManagedToolDescriptor(overrides = {}) {
     packageIdentity: {
       packageName: "@the-open-engine/opcore",
       artifactName: "@the-open-engine/opcore",
-      version: "0.1.0-alpha.0"
+      version: "0.1.0"
     },
     entrypoints: [
       {
@@ -3336,7 +3336,7 @@ function descriptorNativeChecksumReferences(nativeArtifacts = descriptorNativeAr
 function validArtifactMetadata() {
   return {
     artifactName: "opcore-graph-core",
-    artifactVersion: "0.1.0-alpha.0",
+    artifactVersion: "0.1.0",
     targetPlatform: "test",
     binaryPath: "dist/native/test/opcore-graph-core",
     checksumPath: "dist/native/test/opcore-graph-core.sha256",
@@ -3350,7 +3350,7 @@ function validHandshake() {
     provider: "opcore-graph",
     graphSchemaVersion: 1,
     artifactName: "opcore-graph-core",
-    artifactVersion: "0.1.0-alpha.0",
+    artifactVersion: "0.1.0",
     targetPlatform: "test",
     supportedOperations: ["build", "update", "watch", "status", "query", "ping", "health", "shutdown"],
     nodeKinds: [
@@ -3590,7 +3590,7 @@ function validOpcoreRuntimeInfo() {
   return {
     schemaVersion: 1,
     packageName: "@the-open-engine/opcore",
-    version: "0.1.0-alpha.0",
+    version: "0.1.0",
     bin: "opcore",
     artifactSource: "source_checkout",
     packageRoot: "/repo/packages/opcore",
@@ -3881,11 +3881,11 @@ function validGraphReleaseReceipt() {
     graphPackageVersions: [
       {
         packageName: "@the-open-engine/opcore-graph",
-        version: "0.1.0-alpha.0"
+        version: "0.1.0"
       },
       ...graphCoreNativeSupportedTargets.map((target) => ({
         packageName: graphCoreNativePackageNameForTarget(target),
-        version: "0.1.0-alpha.0"
+        version: "0.1.0"
       }))
     ],
     graphProviderSchemaVersion: 1,
@@ -3977,7 +3977,7 @@ function validGraphReleaseReceipt() {
     })),
     packageInspection: {
       packageName: "@the-open-engine/opcore-graph",
-      tarballName: "covibes-opcore-graph-0.1.0-alpha.0.tgz",
+      tarballName: "covibes-opcore-graph-0.1.0.tgz",
       fileCount: 1,
       files: ["dist/index.js"],
       forbiddenMarkersAbsent: true,
@@ -4157,10 +4157,10 @@ function validReleaseReceipt() {
     return {
       packageName,
       packageRoot: packageRoots.get(packageName),
-      version: "0.1.0-alpha.0",
+      version: "0.1.0",
       manifest: {
         name: packageName,
-        version: "0.1.0-alpha.0",
+        version: "0.1.0",
         license: "MIT",
         ...(nativeTarget ? {} : { main: "dist/index.js", types: "dist/index.d.ts" }),
         files: nativeTarget ? ["opcore-graph-core", "opcore-graph-core.sha256", "metadata.json", "README.md"] : ["dist", "README.md"],
@@ -4169,7 +4169,7 @@ function validReleaseReceipt() {
         bundledDependencies: []
       },
       tarball: {
-        filename: packageName.replace("@the-open-engine/", "the-open-engine-").replace("/", "-") + "-0.1.0-alpha.0.tgz",
+        filename: packageName.replace("@the-open-engine/", "the-open-engine-").replace("/", "-") + "-0.1.0.tgz",
         path: ".lattice/release/packages/package.tgz",
         sha256: "c".repeat(64),
         integrity: "sha512-test",
@@ -4710,7 +4710,7 @@ function validAspDogfoodReceipt() {
   };
   const manifest = {
     manifestVersion: "asp-server/0.1",
-    server: { id: "opcore", name: "Opcore", version: "0.1.0-alpha.0" },
+    server: { id: "opcore", name: "Opcore", version: "0.1.0" },
     protocolVersions: ["asp/0.1"],
     capabilities: ["check"],
     capabilityProfiles: ["core-check-provider", "opcore-core-check"],

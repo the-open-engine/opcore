@@ -2,7 +2,7 @@
 
 Maintainer license evidence for the Opcore alpha release gate.
 
-Root package: opcore@0.1.0-alpha.0
+Root package: opcore@0.1.0
 Lockfile version: 3
 Third-party packages: 118
 Bundled runtime packages: 0
@@ -153,20 +153,20 @@ Workspace packages: 15
 
 | Package | Version | License | Manifest |
 |---------|---------|---------|----------|
-| @the-open-engine/opcore | 0.1.0-alpha.0 | MIT | packages/opcore/package.json |
-| @the-open-engine/opcore-asp-provider | 0.1.0-alpha.0 | MIT | packages/asp-provider/package.json |
-| @the-open-engine/opcore-contracts | 0.1.0-alpha.0 | MIT | packages/contracts/package.json |
-| @the-open-engine/opcore-edit | 0.1.0-alpha.0 | MIT | packages/edit/package.json |
-| @the-open-engine/opcore-fixtures | 0.1.0-alpha.0 | MIT | packages/fixtures/package.json |
-| @the-open-engine/opcore-graph | 0.1.0-alpha.0 | MIT | packages/graph/package.json |
-| @the-open-engine/opcore-graph-core-darwin-arm64 | 0.1.0-alpha.0 | MIT | packages/opcore-graph-core-darwin-arm64/package.json |
-| @the-open-engine/opcore-graph-core-darwin-x64 | 0.1.0-alpha.0 | MIT | packages/opcore-graph-core-darwin-x64/package.json |
-| @the-open-engine/opcore-graph-core-linux-x64 | 0.1.0-alpha.0 | MIT | packages/opcore-graph-core-linux-x64/package.json |
-| @the-open-engine/opcore-validation | 0.1.0-alpha.0 | MIT | packages/validation/package.json |
-| @the-open-engine/opcore-validation-clone | 0.1.0-alpha.0 | MIT | packages/validation-clone/package.json |
-| @the-open-engine/opcore-validation-docs | 0.1.0-alpha.0 | MIT | packages/validation-docs/package.json |
-| @the-open-engine/opcore-validation-python | 0.1.0-alpha.0 | MIT | packages/validation-python/package.json |
-| @the-open-engine/opcore-validation-rust | 0.1.0-alpha.0 | MIT | packages/validation-rust/package.json |
-| @the-open-engine/opcore-validation-typescript | 0.1.0-alpha.0 | MIT | packages/validation-typescript/package.json |
+| @the-open-engine/opcore | 0.1.0 | MIT | packages/opcore/package.json |
+| @the-open-engine/opcore-asp-provider | 0.1.0 | MIT | packages/asp-provider/package.json |
+| @the-open-engine/opcore-contracts | 0.1.0 | MIT | packages/contracts/package.json |
+| @the-open-engine/opcore-edit | 0.1.0 | MIT | packages/edit/package.json |
+| @the-open-engine/opcore-fixtures | 0.1.0 | MIT | packages/fixtures/package.json |
+| @the-open-engine/opcore-graph | 0.1.0 | MIT | packages/graph/package.json |
+| @the-open-engine/opcore-graph-core-darwin-arm64 | 0.1.0 | MIT | packages/opcore-graph-core-darwin-arm64/package.json |
+| @the-open-engine/opcore-graph-core-darwin-x64 | 0.1.0 | MIT | packages/opcore-graph-core-darwin-x64/package.json |
+| @the-open-engine/opcore-graph-core-linux-x64 | 0.1.0 | MIT | packages/opcore-graph-core-linux-x64/package.json |
+| @the-open-engine/opcore-validation | 0.1.0 | MIT | packages/validation/package.json |
+| @the-open-engine/opcore-validation-clone | 0.1.0 | MIT | packages/validation-clone/package.json |
+| @the-open-engine/opcore-validation-docs | 0.1.0 | MIT | packages/validation-docs/package.json |
+| @the-open-engine/opcore-validation-python | 0.1.0 | MIT | packages/validation-python/package.json |
+| @the-open-engine/opcore-validation-rust | 0.1.0 | MIT | packages/validation-rust/package.json |
+| @the-open-engine/opcore-validation-typescript | 0.1.0 | MIT | packages/validation-typescript/package.json |
 
 No unresolved third-party license entries.

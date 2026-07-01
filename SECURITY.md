@@ -16,7 +16,7 @@ After the first public release, the supported security line is:
 
 | Version | Supported |
 |---|---|
-| `0.1.x-alpha` | yes |
+| `0.1.x` | yes |
 | earlier snapshots | no |
 
 ## Scope

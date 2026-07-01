@@ -143,7 +143,7 @@ describe("opcore public facade", () => {
     try {
       const human = runOpcore(["--version"], temp, 0);
       assert.equal(human.stderr, "");
-      assert.match(human.stdout, /^@the-open-engine\/opcore 0\.1\.0-alpha\.0\b/);
+      assert.match(human.stdout, /^@the-open-engine\/opcore 0\.1\.0\b/);
       assert.equal(existsSync(join(temp, ".opcore")), false);
 
       const json = parseJson(runOpcore(["--version", "--json"], temp, 0).stdout);
@@ -151,7 +151,7 @@ describe("opcore public facade", () => {
       assert.equal(json.owner, "runtime");
       assert.equal(json.runtimeInfo.schemaVersion, 1);
       assert.equal(json.runtimeInfo.packageName, "@the-open-engine/opcore");
-      assert.equal(json.runtimeInfo.version, "0.1.0-alpha.0");
+      assert.equal(json.runtimeInfo.version, "0.1.0");
       assert.equal(json.runtimeInfo.bin, "opcore");
       assert.match(json.runtimeInfo.artifactSource, /^(source_checkout|installed_package|unknown)$/);
       assert.match(json.runtimeInfo.packageRoot, /packages\/opcore$/);
@@ -1703,6 +1703,6 @@ function measureLatencyRecord(recordedAt, totalMs, validationMs) {
         { phase: "validation_typescript_syntax", durationMs: Math.max(0, totalMs - validationMs) }
       ]
     },
-    opcoreVersion: "0.1.0-alpha.0"
+    opcoreVersion: "0.1.0"
   };
 }

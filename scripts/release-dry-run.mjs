@@ -12,7 +12,7 @@ import {
 } from "./graph-native-targets.mjs";
 import { releasePackageDirForName } from "./release-package-dirs.mjs";
 
-const releaseVersion = "0.1.0-alpha.0";
+const releaseVersion = "0.1.0";
 const implementationPackages = [
   "@the-open-engine/opcore-contracts",
   "@the-open-engine/opcore",

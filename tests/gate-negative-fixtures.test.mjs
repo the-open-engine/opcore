@@ -655,9 +655,9 @@ function minimalCutoverReceipt(repo, commandOverrides = {}) {
       .filter((packageName) => !graphCoreNativePackageNames.includes(packageName) || packageName === graphCoreNativePackageNames[0])
       .map((packageName) => ({
         packageName,
-        version: "0.1.0-alpha.0",
+        version: "0.1.0",
         tarball: {
-          filename: `${packageName.replace("@the-open-engine/", "the-open-engine-").replace("/", "-")}-0.1.0-alpha.0.tgz`,
+          filename: `${packageName.replace("@the-open-engine/", "the-open-engine-").replace("/", "-")}-0.1.0.tgz`,
           sha256: "1".repeat(64)
         },
         installedManifest: {
