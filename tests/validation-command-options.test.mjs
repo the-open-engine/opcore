@@ -95,6 +95,17 @@ describe("validation command timeout options", () => {
 });
 
 describe("check command options", () => {
+  it("preserves colon-delimited namespaced check ids in --checks", () => {
+    assert.deepEqual(parseCheckCommandOptions(["all", "--checks", "custom:security,custom:typescript"]).checks, [
+      "custom:security",
+      "custom:typescript"
+    ]);
+    assert.deepEqual(parseCheckCommandOptions(["all", "--checks=custom:agent-execution-boundaries"]).checks, [
+      "custom:agent-execution-boundaries"
+    ]);
+    assert.deepEqual(parseCheckCommandOptions(["all", "--check", "custom:security"]).checks, ["custom:security"]);
+  });
+
   it("parses fail-fast and streaming flags for execution routes", () => {
     assert.deepEqual(parseCheckCommandOptions(["files", "--files", "src/index.ts", "--fail-fast", "--stream"]), {
       route: "files",

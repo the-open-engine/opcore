@@ -143,32 +143,40 @@ async function parseTypeScriptConfigs(
   paths: readonly string[]
 ): Promise<readonly ParsedTypeScriptConfig[]> {
   const configs: ParsedTypeScriptConfig[] = [];
-  for (const path of paths) {
+  const pending = [...paths];
+  const seen = new Set<string>();
+  while (pending.length > 0) {
+    const path = pending.shift();
+    if (path === undefined || seen.has(path)) continue;
+    seen.add(path);
     const content = await readOptionalRepoFile(context, path);
     if (content === undefined) continue;
     const diagnostics: ts.Diagnostic[] = [];
+    const basePath = configBasePath(path);
     const parsed = ts.parseConfigFileTextToJson(path, content);
     if (parsed.error !== undefined) {
       diagnostics.push(parsed.error);
       configs.push({
         path,
-        basePath: configBasePath(path),
+        basePath,
         options: mergeCompilerOptions(),
         diagnostics
       });
       continue;
     }
-    const converted = ts.convertCompilerOptionsFromJson(parsed.config?.compilerOptions ?? {}, configBasePath(path), path);
+    const converted = ts.convertCompilerOptionsFromJson(parsed.config?.compilerOptions ?? {}, basePath, path);
+    const references = referencedConfigPaths(basePath, parsed.config?.references);
     diagnostics.push(...converted.errors);
     configs.push({
       path,
-      basePath: configBasePath(path),
+      basePath,
       options: mergeCompilerOptions(converted.options),
       diagnostics,
       files: stringArray(parsed.config?.files),
       include: stringArray(parsed.config?.include),
       exclude: stringArray(parsed.config?.exclude)
     });
+    pending.push(...references);
   }
   return configs;
 }
@@ -297,6 +305,22 @@ function ancestorDirectories(path: string): readonly string[] {
 function isTypeScriptConfigPath(path: string): boolean {
   const name = path.split("/").at(-1) ?? "";
   return /^tsconfig(?:\.[^/]+)?\.json$/u.test(name);
+}
+
+function referencedConfigPaths(basePath: string, value: unknown): readonly string[] {
+  if (!Array.isArray(value)) return [];
+  const paths: string[] = [];
+  for (const entry of value) {
+    if (typeof entry !== "object" || entry === null || Array.isArray(entry)) continue;
+    const referencePath = (entry as { path?: unknown }).path;
+    if (typeof referencePath !== "string" || referencePath.trim().length === 0) continue;
+    const normalizedReference = referencePath.trim().replaceAll("\\", "/");
+    const joined = joinRepoPaths(basePath, normalizedReference);
+    if (joined === undefined) continue;
+    const configPath = isTypeScriptConfigPath(joined) ? joined : joinRepoPaths(joined, "tsconfig.json");
+    if (configPath !== undefined) paths.push(configPath);
+  }
+  return uniqueSorted(paths);
 }
 
 function stringArray(value: unknown): readonly string[] | undefined {

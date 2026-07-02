@@ -340,10 +340,10 @@ function parseCommonOptions(args: readonly string[]): {
       state.checks.push(inlineValue(arg, "--check"));
     } else if (arg === "--checks") {
       state.checkFilterFlag = true;
-      state.checks.push(...splitPaths(requiredValue(args, ++index, "--checks")));
+      state.checks.push(...splitCheckIds(requiredValue(args, ++index, "--checks")));
     } else if (arg.startsWith("--checks=")) {
       state.checkFilterFlag = true;
-      state.checks.push(...splitPaths(inlineValue(arg, "--checks")));
+      state.checks.push(...splitCheckIds(inlineValue(arg, "--checks")));
     }
     else if (arg === "--introduced") {
       state.reportModeFlag = true;
@@ -534,6 +534,13 @@ function reportModeValue(value: string): ValidationReportMode {
 function splitPaths(value: string): string[] {
   return value
     .split(/[,:]/)
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+}
+
+function splitCheckIds(value: string): string[] {
+  return value
+    .split(",")
     .map((entry) => entry.trim())
     .filter(Boolean);
 }

@@ -428,6 +428,38 @@ describe("validation-typescript adapter", () => {
     assert.equal(result.status, "passed", JSON.stringify(result.diagnostics, null, 2));
   });
 
+  it("resolves solution-style tsconfig references for scoped path aliases", async () => {
+    const result = await runner({
+      files: {
+        "tsconfig.json": JSON.stringify({
+          files: [],
+          references: [{ path: "./tsconfig.app.json" }]
+        }),
+        "tsconfig.app.json": JSON.stringify({
+          compilerOptions: {
+            baseUrl: "./src",
+            paths: {
+              "@/*": ["*"]
+            }
+          },
+          include: ["src"]
+        }),
+        "src/a.ts": "export const a = 1;\n",
+        "src/b.ts": "import { a } from '@/a';\nexport const b: number = a;\n"
+      }
+    }).runValidation(
+      request({
+        checks: [TYPE_SCRIPT_TYPES_CHECK_ID],
+        scope: {
+          kind: "files",
+          files: ["src/b.ts"]
+        }
+      })
+    );
+
+    assert.equal(result.status, "passed", JSON.stringify(result.diagnostics, null, 2));
+  });
+
   it("uses nearest nested tsconfig options for full-repo TypeScript validation", async () => {
     const result = await runner({
       files: {
