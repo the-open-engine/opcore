@@ -1,17 +1,46 @@
-name: ci
+name: CI
 
 on:
   pull_request:
+    branches:
+      - main
+      - dev
   push:
     branches:
       - main
+      - dev
+  merge_group:
+    branches:
+      - main
+      - dev
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  ci:
-    name: ci
+  enforce-main-pr-source:
+    if: github.event_name == 'pull_request' && github.base_ref == 'main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check PR source branch
+        run: |
+          if [[ "${{ github.head_ref }}" != "dev" ]]; then
+            echo "::error::PRs to main MUST come from the dev branch."
+            echo ""
+            echo "Blocked PR from '${{ github.head_ref }}' to main."
+            echo ""
+            echo "Correct workflow:"
+            echo "  1. Merge feature work into dev."
+            echo "  2. Open the release PR from dev to main."
+            exit 1
+          fi
+          echo "PR from dev to main is allowed."
+
+  check:
+    name: check
+    needs: [enforce-main-pr-source]
+    if: always() && (needs.enforce-main-pr-source.result == 'success' || needs.enforce-main-pr-source.result == 'skipped')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -38,3 +67,143 @@ jobs:
 
       - name: Check
         run: npm run ci
+
+  native-artifact:
+    name: native-artifact (${{ matrix.target }})
+    needs: check
+    if: |
+      always() &&
+      needs.check.result == 'success' &&
+      (
+        github.ref == 'refs/heads/main' ||
+        (github.event_name == 'pull_request' && github.base_ref == 'main') ||
+        (github.event_name == 'merge_group' && (
+          github.event.merge_group.base_ref == 'main' ||
+          github.event.merge_group.base_ref == 'refs/heads/main' ||
+          startsWith(github.ref, 'refs/heads/gh-readonly-queue/main/')
+        ))
+      )
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: linux-x64
+            runner: ubuntu-latest
+            rust_target: x86_64-unknown-linux-musl
+          - target: darwin-x64
+            runner: macos-15-large
+            rust_target: x86_64-apple-darwin
+          - target: darwin-arm64
+            runner: macos-15-xlarge
+            rust_target: aarch64-apple-darwin
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust_target }}
+
+      - name: Setup Linux musl toolchain
+        if: matrix.target == 'linux-x64'
+        run: sudo apt-get update && sudo apt-get install -y musl-tools
+
+      - name: Install
+        run: npm ci
+
+      - name: Build native graph artifact
+        run: node scripts/build-graph-core-artifact.mjs --target ${{ matrix.target }}
+
+      - name: Release dry-run
+        run: npm run release:dry-run
+
+      - name: Archive graph artifacts
+        run: tar -C packages/opcore-graph-core-${{ matrix.target }} -czf "${RUNNER_TEMP}/opcore-graph-core-${{ matrix.target }}.tgz" .
+
+      - name: Upload graph artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: opcore-graph-core-${{ matrix.target }}
+          path: ${{ runner.temp }}/opcore-graph-core-${{ matrix.target }}.tgz
+
+  aggregate:
+    name: aggregate
+    needs: [check, native-artifact]
+    if: |
+      always() &&
+      needs.check.result == 'success' &&
+      needs.native-artifact.result == 'success' &&
+      (
+        github.ref == 'refs/heads/main' ||
+        (github.event_name == 'pull_request' && github.base_ref == 'main') ||
+        (github.event_name == 'merge_group' && (
+          github.event.merge_group.base_ref == 'main' ||
+          github.event.merge_group.base_ref == 'refs/heads/main' ||
+          startsWith(github.ref, 'refs/heads/gh-readonly-queue/main/')
+        ))
+      )
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Download darwin arm64 artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: opcore-graph-core-darwin-arm64
+          path: ${{ runner.temp }}/opcore-graph-core-darwin-arm64
+
+      - name: Download darwin x64 artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: opcore-graph-core-darwin-x64
+          path: ${{ runner.temp }}/opcore-graph-core-darwin-x64
+
+      - name: Download linux x64 artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: opcore-graph-core-linux-x64
+          path: ${{ runner.temp }}/opcore-graph-core-linux-x64
+
+      - name: Extract native graph artifacts
+        run: |
+          rm -rf packages/opcore-graph-core-darwin-arm64 packages/opcore-graph-core-darwin-x64 packages/opcore-graph-core-linux-x64
+          mkdir -p packages/opcore-graph-core-darwin-arm64 packages/opcore-graph-core-darwin-x64 packages/opcore-graph-core-linux-x64
+          tar -xzf "${RUNNER_TEMP}/opcore-graph-core-darwin-arm64/opcore-graph-core-darwin-arm64.tgz" -C packages/opcore-graph-core-darwin-arm64
+          tar -xzf "${RUNNER_TEMP}/opcore-graph-core-darwin-x64/opcore-graph-core-darwin-x64.tgz" -C packages/opcore-graph-core-darwin-x64
+          tar -xzf "${RUNNER_TEMP}/opcore-graph-core-linux-x64/opcore-graph-core-linux-x64.tgz" -C packages/opcore-graph-core-linux-x64
+
+      - name: Build JS artifacts
+        run: node node_modules/typescript/bin/tsc -b --pretty false && node scripts/write-cli-descriptor.mjs && node scripts/write-asp-provider-manifest.mjs
+
+      - name: Release dry-run
+        run: npm run release:dry-run
+        env:
+          OPCORE_REQUIRE_ALL_NATIVE_PACKAGES: "1"
+
+      - name: Pack, release, and cutover checks
+        run: npm run pack:check && npm run release-receipt:check && npm run cutover:check
+        env:
+          OPCORE_REQUIRE_ALL_NATIVE_PACKAGES: "1"
+          OPCORE_CUTOVER_REUSE_CURRENT_TOOL_GUARDRAILS: "1"

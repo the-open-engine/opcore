@@ -40,10 +40,12 @@ describe("native graph-core packaging policy", () => {
   });
 
   it("proves native release dry-runs per CI target and aligns Linux Rust target with the build script", () => {
-    const workflow = readFileSync(".github/workflows/release-dry-run.yml", "utf8");
+    const workflow = readFileSync(".github/workflows/ci.yml", "utf8");
     const triggerBlock = workflow.slice(workflow.indexOf("on:"), workflow.indexOf("permissions:"));
     assert.match(triggerBlock, /pull_request:/);
-    assert.match(triggerBlock, /\.github\/workflows\/release-dry-run\.yml/);
+    assert.match(triggerBlock, /merge_group:/);
+    assert.match(triggerBlock, /dev/);
+    assert.match(triggerBlock, /main/);
     const nativeJob = workflow.slice(workflow.indexOf("native-artifact:"), workflow.indexOf("aggregate:"));
     for (const [target, expected] of Object.entries(nativeTargets)) {
       assert.match(nativeJob, new RegExp(`target: ${target}[\\s\\S]*?rust_target: ${expected.rustTarget}`));
@@ -54,12 +56,28 @@ describe("native graph-core packaging policy", () => {
     assert.doesNotMatch(nativeJob, /path: packages\/opcore-graph-core-\$\{\{ matrix\.target \}\}\//);
     const aggregateJob = workflow.slice(workflow.indexOf("aggregate:"));
     assert.match(aggregateJob, /npm run release:dry-run/);
-    assert.match(aggregateJob, /LATTICE_REQUIRE_ALL_NATIVE_PACKAGES:\s*"1"/);
+    assert.match(aggregateJob, /OPCORE_REQUIRE_ALL_NATIVE_PACKAGES:\s*"1"/);
     assert.doesNotMatch(aggregateJob, /rust-toolchain|Setup Rust|cargo build|npm run build/);
     for (const target of Object.keys(nativeTargets)) {
       assert.match(aggregateJob, new RegExp(`tar -xzf "\\$\\{RUNNER_TEMP\\}/opcore-graph-core-${target}/opcore-graph-core-${target}\\.tgz" -C packages/opcore-graph-core-${target}`));
     }
     assert.match(readFileSync("scripts/release-dry-run.mjs", "utf8"), /assertCompleteNativeArtifacts/);
+  });
+
+  it("publishes only after successful main CI and reuses CI native artifacts", () => {
+    const workflow = readFileSync(".github/workflows/release.yml", "utf8");
+    assert.match(workflow, /workflow_run:/);
+    assert.match(workflow, /workflows: \["CI"\]/);
+    assert.match(workflow, /branches: \[main\]/);
+    assert.match(workflow, /id-token: write/);
+    assert.match(workflow, /NPM_TAG: latest/);
+    assert.match(workflow, /OPCORE_CONFIRM_PUBLISH:\s*"0\.1\.0"/);
+    assert.match(workflow, /OPCORE_REQUIRE_ALL_NATIVE_PACKAGES:\s*"1"/);
+    assert.match(workflow, /run-id: \$\{\{ github\.event\.workflow_run\.id \}\}/);
+    for (const target of Object.keys(nativeTargets)) {
+      assert.match(workflow, new RegExp(`name: opcore-graph-core-${target}`));
+      assert.match(workflow, new RegExp(`tar -xzf "\\$\\{RUNNER_TEMP\\}/opcore-graph-core-${target}/opcore-graph-core-${target}\\.tgz" -C packages/opcore-graph-core-${target}`));
+    }
   });
 
   it("fails aggregate release dry-run before packing when downloaded native binary mode is not executable", () => {
@@ -72,7 +90,7 @@ describe("native graph-core packaging policy", () => {
     try {
       chmodSync(binary, 0o644);
       const result = spawnSync(process.execPath, ["scripts/release-dry-run.mjs"], {
-        env: { ...process.env, LATTICE_REQUIRE_ALL_NATIVE_PACKAGES: "1" },
+        env: { ...process.env, OPCORE_REQUIRE_ALL_NATIVE_PACKAGES: "1" },
         encoding: "utf8",
         stdio: ["ignore", "pipe", "pipe"]
       });
@@ -108,7 +126,7 @@ describe("native graph-core packaging policy", () => {
       writeFileSync(metadataPath, `${JSON.stringify(metadata, null, 2)}\n`);
 
       const result = spawnSync(process.execPath, ["scripts/release-dry-run.mjs"], {
-        env: { ...process.env, LATTICE_REQUIRE_ALL_NATIVE_PACKAGES: "1" },
+        env: { ...process.env, OPCORE_REQUIRE_ALL_NATIVE_PACKAGES: "1" },
         encoding: "utf8",
         stdio: ["ignore", "pipe", "pipe"]
       });

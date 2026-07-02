@@ -63,7 +63,7 @@ for (const packageName of expectedPackageNames) {
   const expected = packlists[packageName]?.expectedFiles;
   if (!Array.isArray(expected)) throw new Error(`${packageName} must have expectedFiles in package-packlists.json`);
   const packageDir = packageDirsByName.get(packageName);
-  if (nativePackageNames.has(packageName) && process.env.LATTICE_REQUIRE_ALL_NATIVE_PACKAGES !== "1") {
+  if (nativePackageNames.has(packageName) && process.env.OPCORE_REQUIRE_ALL_NATIVE_PACKAGES !== "1") {
     const missing = expected.filter((file) => !existsSync(`${packageDir}/${file}`));
     if (missing.length > 0) continue;
   }

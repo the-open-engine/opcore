@@ -32,7 +32,7 @@ const publicPackages = [
 ];
 const cloneProtocolMarker = Buffer.from("opcore.clone.v1", "utf8");
 const target = currentGraphCoreNativeTarget();
-const requireAllNativePackages = process.env.LATTICE_REQUIRE_ALL_NATIVE_PACKAGES === "1";
+const requireAllNativePackages = process.env.OPCORE_REQUIRE_ALL_NATIVE_PACKAGES === "1";
 
 if (!graphCoreSupportedTargets.includes(target)) {
   throw new Error(`release:dry-run requires one of ${graphCoreSupportedTargets.join(", ")}; got ${target}`);
@@ -105,7 +105,7 @@ try {
 
   process.stdout.write(`release dry-run passed for ${releaseVersion} on ${target}\n`);
 } finally {
-  if (process.env.LATTICE_KEEP_RELEASE_DRY_RUN !== "1") {
+  if (process.env.OPCORE_KEEP_RELEASE_DRY_RUN !== "1") {
     rmSync(tempRoot, { recursive: true, force: true });
   } else {
     process.stdout.write(`kept dry-run project at ${tempRoot}\n`);

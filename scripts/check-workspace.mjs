@@ -496,7 +496,8 @@ function validateWorkflow(path, content) {
   if (content.includes("id-token")) fail(`${path} must not request id-token permissions`);
   if (!/fetch-depth:\s*0\b/.test(content)) fail(`${path} checkout must use fetch-depth: 0 for release provenance history scans`);
   const branches = extractPushBranches(content);
-  assertDeepEqual(branches, ["main"], `${path} push.branches`);
+  const expectedBranches = path.endsWith("ci.yml") ? ["main", "dev"] : ["main"];
+  assertDeepEqual(branches, expectedBranches, `${path} push.branches`);
 }
 
 function validateProvenanceWorkflow(path, content) {
