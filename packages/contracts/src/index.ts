@@ -1381,6 +1381,15 @@ export interface ManagedToolDescriptorCapabilities {
     graphModes: readonly GraphProviderMode[];
     hypothetical: true;
     statusSurfaces: readonly ("status" | "doctor")[];
+    writeGate: {
+      initScopes: readonly OpcoreInitScope[];
+      harnesses: readonly ("claude-code" | "codex")[];
+      adapterPath: string;
+      validationCommand: readonly string[];
+      adapterErrorPolicy: "fail_open";
+      validationErrorPolicy: "fail_closed";
+      codexBoundary: "pretooluse_guardrail";
+    };
     checkIds: readonly string[];
   };
 }
@@ -2167,9 +2176,13 @@ export interface OpcoreDoctorPayload {
   nextActions: readonly string[];
 }
 
+export const opcoreInitScopes = ["repo", "global"] as const;
+export type OpcoreInitScope = (typeof opcoreInitScopes)[number];
+
 export interface OpcoreInitAction {
-  kind: "write" | "upsert_block" | "create_hook" | "restore" | "remove";
+  kind: "write" | "upsert_block" | "create_hook" | "wire_harness" | "restore" | "remove";
   path: string;
+  targetScope: OpcoreInitScope;
   summary: string;
   requiresApproval: boolean;
   outsideOpcore: boolean;
@@ -2255,6 +2268,7 @@ export interface OpcoreInitPlanPayload {
     requestedPath: string;
   };
   options: {
+    scope: OpcoreInitScope;
     failClosedHook: boolean;
     dryRun: boolean;
   };
@@ -3902,7 +3916,36 @@ function validateManagedToolValidationCapabilities(validation: ManagedToolDescri
   validateExactStringSet(validation.graphModes, graphProviderModes, "Managed tool descriptor validation graph modes");
   if (validation.hypothetical !== true) throw new Error("Managed tool descriptor validation hypothetical must be true");
   validateExactStringSet(validation.statusSurfaces, ["status", "doctor"], "Managed tool descriptor validation status surfaces");
+  validateManagedToolValidationWriteGate(validation.writeGate);
   validateValidationChecks(validation.checkIds, "Managed tool descriptor validation checkIds");
+}
+
+function validateManagedToolValidationWriteGate(
+  writeGate: ManagedToolDescriptorCapabilities["validation"]["writeGate"]
+): void {
+  if (!writeGate || typeof writeGate !== "object") {
+    throw new Error("Managed tool descriptor validation writeGate is required");
+  }
+  validateExactStringSet(writeGate.initScopes, opcoreInitScopes, "Managed tool descriptor writeGate initScopes");
+  validateExactStringSet(writeGate.harnesses, ["claude-code", "codex"], "Managed tool descriptor writeGate harnesses");
+  validateManagedToolPackagePath(writeGate.adapterPath, "Managed tool descriptor writeGate adapterPath");
+  if (writeGate.adapterPath !== "dist/agent-gate.js") {
+    throw new Error("Managed tool descriptor writeGate adapterPath must be dist/agent-gate.js");
+  }
+  validateExactStringSequence(
+    writeGate.validationCommand,
+    ["opcore", "validate", "pre-write", "--request-file", "<request-file>", "--timeout-ms", "30000", "--json"],
+    "Managed tool descriptor writeGate validationCommand"
+  );
+  if (writeGate.adapterErrorPolicy !== "fail_open") {
+    throw new Error("Managed tool descriptor writeGate adapterErrorPolicy must be fail_open");
+  }
+  if (writeGate.validationErrorPolicy !== "fail_closed") {
+    throw new Error("Managed tool descriptor writeGate validationErrorPolicy must be fail_closed");
+  }
+  if (writeGate.codexBoundary !== "pretooluse_guardrail") {
+    throw new Error("Managed tool descriptor writeGate codexBoundary must be pretooluse_guardrail");
+  }
 }
 
 interface ManagedToolDescriptorArtifactValidationState {
@@ -4408,6 +4451,9 @@ export function validateOpcoreInitPlanPayload(payload: OpcoreInitPlanPayload): O
   if (!payload.options || typeof payload.options !== "object") {
     throw new Error("Opcore init options are required");
   }
+  if (!includesString(opcoreInitScopes, payload.options.scope)) {
+    throw new Error(`Unknown Opcore init scope: ${String(payload.options.scope)}`);
+  }
   if (typeof payload.options.failClosedHook !== "boolean") {
     throw new Error("Opcore init failClosedHook option must be boolean");
   }
@@ -4728,10 +4774,14 @@ function validateOpcoreInitAction(action: OpcoreInitAction): OpcoreInitAction {
   if (!action || typeof action !== "object") {
     throw new Error("Opcore init action is required");
   }
-  if (!includesString(["write", "upsert_block", "create_hook", "restore", "remove"] as const, action.kind)) {
+  if (!includesString(["write", "upsert_block", "create_hook", "wire_harness", "restore", "remove"] as const, action.kind)) {
     throw new Error(`Unknown Opcore init action kind: ${String(action.kind)}`);
   }
-  const path = validateRepoRelativePath(validateNonEmptyString(action.path, "Opcore init action path"));
+  if (!includesString(opcoreInitScopes, action.targetScope)) {
+    throw new Error(`Unknown Opcore init action targetScope: ${String(action.targetScope)}`);
+  }
+  const rawPath = validateNonEmptyString(action.path, "Opcore init action path");
+  const path = action.targetScope === "global" ? validateHomeRelativePath(rawPath) : validateRepoRelativePath(rawPath);
   validateNonEmptyString(action.summary, "Opcore init action summary");
   if (typeof action.requiresApproval !== "boolean") {
     throw new Error("Opcore init action requiresApproval must be boolean");
@@ -4739,7 +4789,9 @@ function validateOpcoreInitAction(action: OpcoreInitAction): OpcoreInitAction {
   if (typeof action.outsideOpcore !== "boolean") {
     throw new Error("Opcore init action outsideOpcore must be boolean");
   }
-  const insideOpcore = path === ".opcore" || path.startsWith(".opcore/");
+  const insideOpcore = action.targetScope === "global"
+    ? path === "~/.opcore" || path.startsWith("~/.opcore/")
+    : path === ".opcore" || path.startsWith(".opcore/");
   if (action.outsideOpcore === insideOpcore) {
     throw new Error("Opcore init action outsideOpcore must match action path");
   }
@@ -5486,6 +5538,29 @@ export function validateRepoRelativePath(path: string): string {
     normalized.endsWith("/..")
   ) {
     throw new Error(`Repo-relative path must not escape the repository: ${path}`);
+  }
+  return normalized;
+}
+
+export function validateHomeRelativePath(path: string): string {
+  if (typeof path !== "string" || path.length === 0) {
+    throw new Error("Home-relative path must be a non-empty string");
+  }
+  if (path.includes("\0")) {
+    throw new Error(`Home-relative path contains a null byte: ${path}`);
+  }
+  const normalized = path.replaceAll("\\", "/");
+  if (!normalized.startsWith("~/")) {
+    throw new Error(`Home-relative path must start with ~/: ${path}`);
+  }
+  if (
+    normalized === "~/" ||
+    normalized === "~/." ||
+    normalized.includes("/../") ||
+    normalized.endsWith("/..") ||
+    normalized.includes("//")
+  ) {
+    throw new Error(`Home-relative path must not escape the home directory: ${path}`);
   }
   return normalized;
 }

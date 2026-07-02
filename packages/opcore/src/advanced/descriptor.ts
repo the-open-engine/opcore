@@ -138,6 +138,15 @@ export function createOpcoreManagedToolDescriptor(options: OpcoreManagedToolDesc
         graphModes: graphProviderModes,
         hypothetical: true,
         statusSurfaces: ["status", "doctor"],
+        writeGate: {
+          initScopes: ["repo", "global"],
+          harnesses: ["claude-code", "codex"],
+          adapterPath: "dist/agent-gate.js",
+          validationCommand: ["opcore", "validate", "pre-write", "--request-file", "<request-file>", "--timeout-ms", "30000", "--json"],
+          adapterErrorPolicy: "fail_open",
+          validationErrorPolicy: "fail_closed",
+          codexBoundary: "pretooluse_guardrail"
+        },
         checkIds: [
           TYPE_SCRIPT_SYNTAX_CHECK_ID,
           TYPE_SCRIPT_TYPES_CHECK_ID,

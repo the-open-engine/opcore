@@ -25,7 +25,9 @@ import {
   statSync,
   writeFileSync
 } from "node:fs";
+import { homedir } from "node:os";
 import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
+import { opcoreAgentGateHookScriptContent } from "./agent-gate.js";
 import { createOpcoreScanAnalysis, type OpcoreScanAnalysis } from "./scan.js";
 import { failedValidationCheckIds } from "./scan-presentation.js";
 import { commonSkippedPathSegments, resolveRepo, type RepoResolution } from "./status.js";
@@ -49,11 +51,25 @@ const endMarker = "<!-- END OPCORE INIT -->";
 const configPath = ".opcore/config";
 const undoPath = ".opcore/init-undo.json";
 const hookPath = ".opcore/hooks/pre-commit-opcore-check.sh";
+const agentGateHookPath = ".opcore/hooks/opcore-agent-gate.mjs";
+const claudeSettingsPath = ".claude/settings.json";
+const codexHooksPath = ".codex/hooks.json";
 const failClosedHookActivationCommand = "cp .opcore/hooks/pre-commit-opcore-check.sh .git/hooks/pre-commit";
 const gitignorePath = ".gitignore";
 const opcoreIgnoreLine = ".opcore/";
 const defaultInitProgressIntervalMs = 5000;
-const allowedUndoPaths = new Set<string>([configPath, undoPath, hookPath, gitignorePath, ...AGENT_FILE_CANDIDATES]);
+const allowedUndoPaths = new Set<string>([
+  configPath,
+  undoPath,
+  hookPath,
+  agentGateHookPath,
+  claudeSettingsPath,
+  codexHooksPath,
+  gitignorePath,
+  ...AGENT_FILE_CANDIDATES
+]);
+const globalUndoPath = ".opcore/init-undo.json";
+const allowedGlobalUndoPaths = new Set<string>([globalUndoPath, agentGateHookPath, claudeSettingsPath, codexHooksPath]);
 const rustActiveValidationKinds = new Set([".rs", ".inc", "Cargo.toml"]);
 const pythonProjectFileNames = new Set(["pyproject.toml", "Pipfile", "poetry.lock", "uv.lock"]);
 const pythonVirtualEnvDirs = new Set([".venv", "venv", "env"]);
@@ -71,6 +87,9 @@ const pythonDiscoverySkipDirs = new Set([
 
 interface ParsedInitArgs {
   repo: string;
+  repoExplicit: boolean;
+  scope: "repo" | "global";
+  scopeExplicit: boolean;
   approved: boolean;
   dryRun: boolean;
   failClosedHook: boolean;
@@ -81,6 +100,7 @@ export interface OpcoreInitRuntime {
   stdinIsTTY?: boolean;
   stdoutIsTTY?: boolean;
   stderrIsTTY?: boolean;
+  homeDir?: string;
   writeStderr?: (text: string) => void;
   scanAnalysis?: (resolution: RepoResolution) => Promise<OpcoreScanAnalysis>;
   initProgressIntervalMs?: number;
@@ -112,6 +132,7 @@ type PlannedWrite = PlannedFileWrite | PlannedManagedLineAppend;
 interface PlannedFileWrite {
   kind: "write";
   path: string;
+  targetScope: "repo" | "global";
   content: string;
   executable?: boolean;
 }
@@ -119,13 +140,15 @@ interface PlannedFileWrite {
 interface PlannedManagedLineAppend {
   kind: "append_managed_line";
   path: string;
+  targetScope: "repo";
   line: string;
 }
 
 interface UndoMetadata {
   schemaVersion: 1;
-  kind: "opcore_init_undo";
-  repoRoot: string;
+  kind: "opcore_init_undo" | "opcore_global_init_undo";
+  repoRoot?: string;
+  homeRoot?: string;
   entries: readonly UndoEntry[];
 }
 
@@ -202,6 +225,7 @@ export async function routeOpcoreInit(
         parsed.json,
         resolution.resolution.root,
         resolution.resolution.requestedPath,
+        initHomeRoot(runtime),
         parsedInit.args,
         context,
         timing
@@ -214,6 +238,7 @@ export async function routeOpcoreInit(
       resolution.resolution.root,
       resolution.resolution.requestedPath,
       resolution.resolution.git,
+      initHomeRoot(runtime),
       parsedInit.args,
       context,
       timing,
@@ -229,20 +254,21 @@ function routeOpcoreInitUndo(
   json: boolean,
   repoRoot: string,
   requestedPath: string,
+  homeRoot: string,
   options: ParsedInitArgs,
   context: InitContext,
   timing: TimingState
 ): CommandRouterResult {
   const planStartedAt = nowMs();
-  const undo = planUndo(repoRoot, requestedPath, options, context);
+  const undo = planUndo(repoRoot, requestedPath, homeRoot, options, context);
   timing.planMs = elapsedMs(planStartedAt);
   const approved = options.approved && !options.dryRun;
   if (approved) {
     const applyStartedAt = nowMs();
-    applyUndo(repoRoot, undo);
+    applyUndo(scopeRoot(repoRoot, homeRoot, options.scope), options.scope, undo);
     timing.applyMs = elapsedMs(applyStartedAt);
   }
-  const payload = withContext(approved ? appliedUndoPayload(undo, repoRoot) : undo, context, timing);
+  const payload = withContext(approved ? appliedUndoPayload(undo, scopeRoot(repoRoot, homeRoot, options.scope), options.scope) : undo, context, timing);
   return createInitRouterResult(argv, json, "ok", formatInitPlan(payload, approved), ["opcore", "init"], payload);
 }
 
@@ -252,13 +278,24 @@ async function routeOpcoreInitPlanOrApply(
   repoRoot: string,
   requestedPath: string,
   git: boolean,
+  homeRoot: string,
   options: ParsedInitArgs,
   context: InitContext,
   timing: TimingState,
   runtime: OpcoreInitRuntime
 ): Promise<CommandRouterResult> {
+  if (shouldPromptForScope(json, options, git, runtime)) {
+    const promptStartedAt = nowMs();
+    const scopeAnswer = await runtime.readLine("Install the Opcore write gate for THIS repo, or GLOBALLY for all repos? [repo/global] ");
+    timing.promptMs += elapsedMs(promptStartedAt);
+    options = {
+      ...options,
+      scope: parseScopeAnswer(scopeAnswer),
+      scopeExplicit: true
+    };
+  }
   const planStartedAt = nowMs();
-  const planned = planInit(repoRoot, requestedPath, git, options, context);
+  const planned = planInit(repoRoot, requestedPath, git, homeRoot, options, context);
   timing.planMs = elapsedMs(planStartedAt);
   let payload = withContext(planned.payload, context, timing);
   let approved = options.approved && !options.dryRun;
@@ -270,7 +307,7 @@ async function routeOpcoreInitPlanOrApply(
     payload = withContext(payload, context, timing);
     const promptStartedAt = nowMs();
     const answer = await runtime.readLine(`${formatInitPlan(payload, false)}\nApply setup? [y/N] `);
-    timing.promptMs = elapsedMs(promptStartedAt);
+    timing.promptMs += elapsedMs(promptStartedAt);
     if (isExplicitYes(answer)) {
       approved = true;
       context.interaction = { tty: true, promptState: "approved" };
@@ -285,10 +322,10 @@ async function routeOpcoreInitPlanOrApply(
 
   if (approved) {
     const applyStartedAt = nowMs();
-    applyInit(repoRoot, planned.writes);
+    applyInit(scopeRoot(repoRoot, homeRoot, options.scope), options.scope, planned.writes);
     timing.applyMs = elapsedMs(applyStartedAt);
   }
-  payload = approved ? appliedInitPayload(payload, repoRoot) : payload;
+  payload = approved ? appliedInitPayload(payload, scopeRoot(repoRoot, homeRoot, options.scope), options.scope) : payload;
   payload = withContext(payload, context, timing);
   const message = prompted ? formatInteractiveOutcome(payload) : formatInitPlan(payload, approved);
   return createInitRouterResult(argv, json, "ok", message, ["opcore", "init"], payload);
@@ -578,6 +615,38 @@ function shouldPromptForApproval(json: boolean, options: ParsedInitArgs, runtime
   );
 }
 
+function shouldPromptForScope(
+  json: boolean,
+  options: ParsedInitArgs,
+  git: boolean,
+  runtime: OpcoreInitRuntime
+): runtime is OpcoreInitRuntime & { readLine: (prompt: string) => Promise<string> } {
+  return (
+    git &&
+    !json &&
+    !options.approved &&
+    !options.dryRun &&
+    !options.undo &&
+    !options.scopeExplicit &&
+    !options.repoExplicit &&
+    isInteractiveRuntime(runtime) &&
+    typeof runtime.readLine === "function"
+  );
+}
+
+function parseScopeAnswer(answer: string | undefined): ParsedInitArgs["scope"] {
+  const normalized = (answer ?? "").trim().toLowerCase();
+  return normalized === "g" || normalized === "global" ? "global" : "repo";
+}
+
+function initHomeRoot(runtime: OpcoreInitRuntime): string {
+  return realpathSync(resolve(runtime.homeDir ?? homedir()));
+}
+
+function scopeRoot(repoRoot: string, homeRoot: string, scope: ParsedInitArgs["scope"]): string {
+  return scope === "global" ? homeRoot : repoRoot;
+}
+
 function isInteractiveRuntime(runtime: OpcoreInitRuntime): boolean {
   return runtime.stdinIsTTY === true && runtime.stdoutIsTTY === true;
 }
@@ -653,6 +722,9 @@ function finalizeTimings(timing: TimingState): OpcoreInitTiming {
 function parseOpcoreInitArgs(args: readonly string[]): { ok: true; args: ParsedInitArgs } | { ok: false; message: string } {
   const parsed: ParsedInitArgs = {
     repo: process.cwd(),
+    repoExplicit: false,
+    scope: "repo",
+    scopeExplicit: false,
     approved: false,
     dryRun: false,
     failClosedHook: false,
@@ -664,6 +736,9 @@ function parseOpcoreInitArgs(args: readonly string[]): { ok: true; args: ParsedI
       const value = args[index + 1];
       if (!value || value.startsWith("--")) return { ok: false, message: "opcore init: --repo requires a path" };
       parsed.repo = value;
+      parsed.repoExplicit = true;
+      parsed.scope = "repo";
+      parsed.scopeExplicit = true;
       index += 1;
       continue;
     }
@@ -671,6 +746,19 @@ function parseOpcoreInitArgs(args: readonly string[]): { ok: true; args: ParsedI
       const value = arg.slice("--repo=".length);
       if (!value) return { ok: false, message: "opcore init: --repo requires a path" };
       parsed.repo = value;
+      parsed.repoExplicit = true;
+      parsed.scope = "repo";
+      parsed.scopeExplicit = true;
+      continue;
+    }
+    if (arg === "--global") {
+      parsed.scope = "global";
+      parsed.scopeExplicit = true;
+      continue;
+    }
+    if (arg === "--local") {
+      parsed.scope = "repo";
+      parsed.scopeExplicit = true;
       continue;
     }
     if (arg === "--approve" || arg === "--yes") {
@@ -698,22 +786,45 @@ function planInit(
   repoRoot: string,
   requestedPath: string,
   git: boolean,
+  homeRoot: string,
   options: ParsedInitArgs,
   context: InitContext
 ): PlannedInit {
+  if (options.scope === "global") return planGlobalInit(repoRoot, requestedPath, homeRoot, options, context);
   const agentFiles = detectAgentFiles(repoRoot);
   const config = createConfig(repoRoot, options.failClosedHook, context.scan, context.settings);
   const writes: PlannedWrite[] = [
     {
       kind: "write",
       path: configPath,
+      targetScope: "repo",
       content: `${JSON.stringify(config, null, 2)}\n`
     },
     ...agentFiles.map((path) => ({
       kind: "write" as const,
       path,
+      targetScope: "repo" as const,
       content: upsertOpcoreBlock(readOptionalRepoFile(repoRoot, path))
-    }))
+    })),
+    {
+      kind: "write",
+      path: agentGateHookPath,
+      targetScope: "repo",
+      content: opcoreAgentGateHookScriptContent(),
+      executable: true
+    },
+    {
+      kind: "write",
+      path: claudeSettingsPath,
+      targetScope: "repo",
+      content: `${JSON.stringify(mergeClaudeSettings(readJsonObjectIfExists(repoRoot, claudeSettingsPath), "repo"), null, 2)}\n`
+    },
+    {
+      kind: "write",
+      path: codexHooksPath,
+      targetScope: "repo",
+      content: `${JSON.stringify(mergeCodexHooks(readJsonObjectIfExists(repoRoot, codexHooksPath), "repo"), null, 2)}\n`
+    }
   ];
   if (git) {
     const gitignore = readOptionalRepoFile(repoRoot, gitignorePath);
@@ -721,6 +832,7 @@ function planInit(
       writes.push({
         kind: "append_managed_line",
         path: gitignorePath,
+        targetScope: "repo",
         line: opcoreIgnoreLine
       });
     }
@@ -729,11 +841,12 @@ function planInit(
     writes.push({
       kind: "write",
       path: hookPath,
+      targetScope: "repo",
       content: failClosedHookContent(),
       executable: true
     });
   }
-  const actions = createInitActions(agentFiles, options.failClosedHook, writes.some((write) => write.path === gitignorePath));
+  const actions = createInitActions(options.scope, agentFiles, options.failClosedHook, writes.some((write) => write.path === gitignorePath));
   return {
     writes,
     payload: {
@@ -745,12 +858,13 @@ function planInit(
         requestedPath
       },
       options: {
+        scope: options.scope,
         failClosedHook: options.failClosedHook,
         dryRun: options.dryRun
       },
       agentFiles,
       actions,
-      warnings: initWarnings(context.scan, git, options.failClosedHook),
+      warnings: initWarnings(context.scan, git, options.failClosedHook, options.scope),
       nextActions: initNextActions(options),
       undoAvailable: repoPathExists(repoRoot, undoPath),
       scan: context.scan,
@@ -761,26 +875,94 @@ function planInit(
   };
 }
 
-function appliedInitPayload(payload: OpcoreInitPlanPayload, repoRoot: string): OpcoreInitPlanPayload {
+function planGlobalInit(
+  repoRoot: string,
+  requestedPath: string,
+  homeRoot: string,
+  options: ParsedInitArgs,
+  context: InitContext
+): PlannedInit {
+  const writes: PlannedWrite[] = [
+    {
+      kind: "write",
+      path: agentGateHookPath,
+      targetScope: "global",
+      content: opcoreAgentGateHookScriptContent(),
+      executable: true
+    },
+    {
+      kind: "write",
+      path: claudeSettingsPath,
+      targetScope: "global",
+      content: `${JSON.stringify(mergeClaudeSettings(readJsonObjectIfExists(homeRoot, claudeSettingsPath), "global"), null, 2)}\n`
+    },
+    {
+      kind: "write",
+      path: codexHooksPath,
+      targetScope: "global",
+      content: `${JSON.stringify(mergeCodexHooks(readJsonObjectIfExists(homeRoot, codexHooksPath), "global"), null, 2)}\n`
+    }
+  ];
+  return {
+    writes,
+    payload: {
+      schemaVersion: 1,
+      mode: "plan",
+      approved: false,
+      repo: {
+        root: repoRoot,
+        requestedPath
+      },
+      options: {
+        scope: options.scope,
+        failClosedHook: options.failClosedHook,
+        dryRun: options.dryRun
+      },
+      agentFiles: [],
+      actions: createInitActions(options.scope, [], false, false),
+      warnings: initWarnings(context.scan, true, false, options.scope),
+      nextActions: initNextActions(options),
+      undoAvailable: repoPathExists(homeRoot, globalUndoPath),
+      scan: context.scan,
+      settings: context.settings,
+      interaction: context.interaction,
+      timings: context.timings
+    }
+  };
+}
+
+function appliedInitPayload(payload: OpcoreInitPlanPayload, root: string, scope: ParsedInitArgs["scope"]): OpcoreInitPlanPayload {
   return {
     ...payload,
     mode: "apply",
     approved: true,
     nextActions: appliedInitNextActions(payload),
-    undoAvailable: repoPathExists(repoRoot, undoPath)
+    undoAvailable: repoPathExists(root, undoPathForScope(scope))
   };
 }
 
 function initNextActions(options: ParsedInitArgs): string[] {
+  const scopedCommand = options.scope === "global" ? "opcore init --global --approve" : "opcore init --approve";
   const actions = options.dryRun
-    ? ["Run opcore init --approve to apply this plan."]
-    : ["Review this plan, then run opcore init --approve to write repo setup."];
+    ? [`Run ${scopedCommand} to apply this plan.`]
+    : [`Review this plan, then run ${scopedCommand} to write setup.`];
+  if (options.scope === "repo") {
+    actions.push("Claude Code and Codex write-gate hooks are installed by init; review Codex project hook trust with /hooks if Codex asks.");
+  } else {
+    actions.push("Global Claude Code and Codex write-gate hooks are installed by init; review Codex hook trust with /hooks if Codex asks.");
+  }
   if (options.failClosedHook) actions.push(failClosedHookManualInstallAction());
   return actions;
 }
 
 function appliedInitNextActions(payload: OpcoreInitPlanPayload): string[] {
-  const actions = ["Run opcore init --undo --approve to restore or remove recorded setup files."];
+  const undoCommand = payload.options.scope === "global" ? "opcore init --global --undo --approve" : "opcore init --undo --approve";
+  const actions = [`Run ${undoCommand} to restore or remove recorded setup files.`];
+  if (payload.options.scope === "repo") {
+    actions.push("Claude Code write calls are blocked on non-ok receipts. Codex uses a PreToolUse guardrail and may require hook trust review.");
+  } else {
+    actions.push("Global Claude Code write calls are blocked on non-ok receipts. Codex uses a PreToolUse guardrail and may require hook trust review.");
+  }
   if (payload.options.failClosedHook) actions.push(failClosedHookManualInstallAction());
   return actions;
 }
@@ -789,8 +971,15 @@ function failClosedHookManualInstallAction(): string {
   return `Manual install required before the fail-closed hook is active: ${failClosedHookActivationCommand}`;
 }
 
-function planUndo(repoRoot: string, requestedPath: string, options: ParsedInitArgs, context: InitContext): OpcoreInitPlanPayload {
-  const metadata = readUndoMetadata(repoRoot);
+function planUndo(
+  repoRoot: string,
+  requestedPath: string,
+  homeRoot: string,
+  options: ParsedInitArgs,
+  context: InitContext
+): OpcoreInitPlanPayload {
+  const root = scopeRoot(repoRoot, homeRoot, options.scope);
+  const metadata = readUndoMetadata(root, options.scope);
   return {
     schemaVersion: 1,
     mode: "undo",
@@ -800,6 +989,7 @@ function planUndo(repoRoot: string, requestedPath: string, options: ParsedInitAr
       requestedPath
     },
     options: {
+      scope: options.scope,
       failClosedHook: options.failClosedHook,
       dryRun: options.dryRun
     },
@@ -808,19 +998,20 @@ function planUndo(repoRoot: string, requestedPath: string, options: ParsedInitAr
       .filter((path) => AGENT_FILE_CANDIDATES.includes(path as (typeof AGENT_FILE_CANDIDATES)[number])),
     actions: metadata.entries.map((entry) => ({
       kind: entry.kind === "append_managed_line" ? "remove" : entry.existed ? "restore" : "remove",
-      path: entry.path,
+      path: actionPath(options.scope, entry.path),
+      targetScope: options.scope,
       summary: entry.kind === "append_managed_line"
         ? `Remove managed ${entry.line} gitignore entry from ${entry.path}.`
         : entry.existed
-          ? `Restore ${entry.path} from Opcore init backup.`
-          : `Remove ${entry.path} created by Opcore init.`,
+          ? `Restore ${actionPath(options.scope, entry.path)} from Opcore init backup.`
+          : `Remove ${actionPath(options.scope, entry.path)} created by Opcore init.`,
       requiresApproval: !entry.path.startsWith(".opcore/"),
       outsideOpcore: !entry.path.startsWith(".opcore/")
     })),
     warnings: [],
     nextActions: options.approved && !options.dryRun
       ? ["Opcore init metadata was restored or removed; rerun opcore init to recreate setup."]
-      : ["Run opcore init --undo --approve to restore or remove recorded setup files."],
+      : [`Run ${options.scope === "global" ? "opcore init --global --undo --approve" : "opcore init --undo --approve"} to restore or remove recorded setup files.`],
     undoAvailable: true,
     scan: context.scan,
     settings: context.settings,
@@ -829,57 +1020,94 @@ function planUndo(repoRoot: string, requestedPath: string, options: ParsedInitAr
   };
 }
 
-function appliedUndoPayload(payload: OpcoreInitPlanPayload, repoRoot: string): OpcoreInitPlanPayload {
+function appliedUndoPayload(payload: OpcoreInitPlanPayload, root: string, scope: ParsedInitArgs["scope"]): OpcoreInitPlanPayload {
   return {
     ...payload,
     approved: true,
     nextActions: ["Opcore init metadata was restored or removed; rerun opcore init to recreate setup."],
-    undoAvailable: repoPathExists(repoRoot, undoPath)
+    undoAvailable: repoPathExists(root, undoPathForScope(scope))
   };
 }
 
-function applyInit(repoRoot: string, writes: readonly PlannedWrite[]): void {
-  const previousMetadata = readUndoMetadataIfExists(repoRoot);
+function applyInit(root: string, scope: ParsedInitArgs["scope"], writes: readonly PlannedWrite[]): void {
+  const scopedWrites = writes.filter((write) => write.targetScope === scope);
+  const previousMetadata = readUndoMetadataIfExists(root, scope);
   const touchedPaths = uniqueStrings([
     ...(previousMetadata?.entries.map((entry) => entry.path) ?? []),
-    ...writes.map((write) => write.path),
-    undoPath
+    ...scopedWrites.map((write) => write.path),
+    undoPathForScope(scope)
   ]);
-  for (const path of touchedPaths) assertRepoMutationPath(repoRoot, path, "Opcore init target");
+  for (const path of touchedPaths) assertMutationPath(root, path, `Opcore ${scope} init target`);
   const metadata: UndoMetadata = {
     schemaVersion: 1,
-    kind: "opcore_init_undo",
-    repoRoot,
+    kind: scope === "global" ? "opcore_global_init_undo" : "opcore_init_undo",
+    ...(scope === "global" ? { homeRoot: root } : { repoRoot: root }),
     entries: touchedPaths.map((path) => {
       const previousEntry = previousMetadata?.entries.find((entry) => entry.path === path);
       if (previousEntry) return previousEntry;
-      return priorEntry(repoRoot, path, writes.find((write) => write.path === path));
+      return priorEntry(root, path, scopedWrites.find((write) => write.path === path));
     })
   };
-  for (const write of writes) writeRepoFile(repoRoot, write);
-  writeRepoFile(repoRoot, {
+  for (const write of scopedWrites) writeScopedFile(root, write);
+  writeScopedFile(root, {
     kind: "write",
-    path: undoPath,
+    path: undoPathForScope(scope),
+    targetScope: scope,
     content: `${JSON.stringify(metadata, null, 2)}\n`
   });
 }
 
-function applyUndo(repoRoot: string, payload: OpcoreInitPlanPayload): void {
-  const metadata = readUndoMetadata(repoRoot);
-  for (const entry of metadata.entries) assertRepoMutationPath(repoRoot, entry.path, "Opcore init undo target");
-  for (const entry of metadata.entries.filter((entry) => entry.path !== undoPath)) restoreUndoEntry(repoRoot, entry);
-  const undoEntry = metadata.entries.find((entry) => entry.path === undoPath);
-  if (undoEntry) restoreUndoEntry(repoRoot, undoEntry);
-  else rmSync(resolveRepoPath(repoRoot, undoPath), { force: true });
-  removeEmptyOpcoreHookDir(repoRoot);
+function applyUndo(root: string, scope: ParsedInitArgs["scope"], payload: OpcoreInitPlanPayload): void {
+  const metadata = readUndoMetadata(root, scope);
+  const scopedUndoPath = undoPathForScope(scope);
+  for (const entry of metadata.entries) assertMutationPath(root, entry.path, "Opcore init undo target");
+  for (const entry of metadata.entries.filter((entry) => entry.path !== scopedUndoPath)) restoreUndoEntry(root, entry);
+  const undoEntry = metadata.entries.find((entry) => entry.path === scopedUndoPath);
+  if (undoEntry) restoreUndoEntry(root, undoEntry);
+  else rmSync(resolveScopedPath(root, scopedUndoPath), { force: true });
+  removeEmptyOpcoreHookDir(root);
   void payload;
 }
 
-function createInitActions(agentFiles: readonly string[], failClosedHook: boolean, gitignoreWritePlanned: boolean): OpcoreInitAction[] {
+function createInitActions(
+  scope: ParsedInitArgs["scope"],
+  agentFiles: readonly string[],
+  failClosedHook: boolean,
+  gitignoreWritePlanned: boolean
+): OpcoreInitAction[] {
+  if (scope === "global") {
+    return [
+      {
+        kind: "create_hook",
+        path: actionPath(scope, agentGateHookPath),
+        targetScope: scope,
+        summary: "Install the global Opcore write-gate adapter script.",
+        requiresApproval: false,
+        outsideOpcore: false
+      },
+      {
+        kind: "wire_harness",
+        path: actionPath(scope, claudeSettingsPath),
+        targetScope: scope,
+        summary: "Merge the Opcore Claude Code PreToolUse write gate.",
+        requiresApproval: true,
+        outsideOpcore: true
+      },
+      {
+        kind: "wire_harness",
+        path: actionPath(scope, codexHooksPath),
+        targetScope: scope,
+        summary: "Merge the Opcore Codex PreToolUse write gate guardrail.",
+        requiresApproval: true,
+        outsideOpcore: true
+      }
+    ];
+  }
   const actions: OpcoreInitAction[] = [
     {
       kind: "write",
       path: configPath,
+      targetScope: scope,
       summary: "Write additive Opcore init config.",
       requiresApproval: false,
       outsideOpcore: false
@@ -887,15 +1115,41 @@ function createInitActions(agentFiles: readonly string[], failClosedHook: boolea
     ...agentFiles.map((path) => ({
       kind: "upsert_block" as const,
       path,
+      targetScope: scope,
       summary: "Add or update delimited Opcore agent guidance.",
       requiresApproval: true,
       outsideOpcore: true
-    }))
+    })),
+    {
+      kind: "create_hook",
+      path: agentGateHookPath,
+      targetScope: scope,
+      summary: "Install the repo-local Opcore write-gate adapter script.",
+      requiresApproval: false,
+      outsideOpcore: false
+    },
+    {
+      kind: "wire_harness",
+      path: claudeSettingsPath,
+      targetScope: scope,
+      summary: "Merge the Opcore Claude Code PreToolUse write gate.",
+      requiresApproval: true,
+      outsideOpcore: true
+    },
+    {
+      kind: "wire_harness",
+      path: codexHooksPath,
+      targetScope: scope,
+      summary: "Merge the Opcore Codex PreToolUse write gate guardrail.",
+      requiresApproval: true,
+      outsideOpcore: true
+    }
   ];
   if (gitignoreWritePlanned) {
     actions.push({
       kind: "write",
       path: gitignorePath,
+      targetScope: scope,
       summary: "Append managed .opcore/ gitignore entry.",
       requiresApproval: true,
       outsideOpcore: true
@@ -905,6 +1159,7 @@ function createInitActions(agentFiles: readonly string[], failClosedHook: boolea
     actions.push({
       kind: "create_hook",
       path: hookPath,
+      targetScope: scope,
       summary: `Manual install required: create fail-closed pre-commit hook script; activate with \`${failClosedHookActivationCommand}\`.`,
       requiresApproval: false,
       outsideOpcore: false
@@ -979,12 +1234,19 @@ function createConfig(
     },
     hooks: {
       ...existingHooks,
-      failClosedPreCommit: existingHooks.failClosedPreCommit === true || failClosedHook
+      failClosedPreCommit: existingHooks.failClosedPreCommit === true || failClosedHook,
+      writeGate: true,
+      harnesses: ["claude-code", "codex"]
     }
   };
 }
 
-function initWarnings(scan: OpcoreInitScanSummary, git: boolean, failClosedHook: boolean): string[] {
+function initWarnings(
+  scan: OpcoreInitScanSummary,
+  git: boolean,
+  failClosedHook: boolean,
+  scope: ParsedInitArgs["scope"]
+): string[] {
   const warnings: string[] = [];
   if (scan.unsupportedStacks.length > 0) {
     warnings.push(`Unsupported stacks: ${scan.unsupportedStacks.map((stack) => `${stack.language} (${stack.count})`).join(", ")}`);
@@ -996,6 +1258,11 @@ function initWarnings(scan: OpcoreInitScanSummary, git: boolean, failClosedHook:
     warnings.push("No Git repository detected; .opcore/ ignore entry not written.");
   }
   warnings.push("Do not weaken existing lint, test, CI, pre-commit, or agent guardrails.");
+  warnings.push(
+    scope === "global"
+      ? "Global write-gate hooks apply across repos; undo removes only Opcore-recorded global hook entries."
+      : "Repo write-gate hooks are additive; Codex project hooks may require trust review before they run."
+  );
   warnings.push(
     failClosedHook
       ? `Fail-closed hook script is opt-in. Manual install required: ${failClosedHookActivationCommand}`
@@ -1014,6 +1281,70 @@ function failClosedHookContent(): string {
     "opcore check --changed",
     ""
   ].join("\n");
+}
+
+function mergeClaudeSettings(existing: Record<string, unknown>, scope: ParsedInitArgs["scope"]): Record<string, unknown> {
+  return mergePreToolUseHook(existing, {
+    matcher: "Edit|MultiEdit|Write",
+    command: agentGateCommand("claude", scope),
+    statusMessage: "Running Opcore write gate"
+  });
+}
+
+function mergeCodexHooks(existing: Record<string, unknown>, scope: ParsedInitArgs["scope"]): Record<string, unknown> {
+  return mergePreToolUseHook(existing, {
+    matcher: "apply_patch|Edit|Write",
+    command: agentGateCommand("codex", scope),
+    statusMessage: "Running Opcore write gate"
+  });
+}
+
+function mergePreToolUseHook(
+  existing: Record<string, unknown>,
+  hook: { matcher: string; command: string; statusMessage: string }
+): Record<string, unknown> {
+  const hooks = isPlainObject(existing.hooks) ? existing.hooks : {};
+  const preToolUse = Array.isArray(hooks.PreToolUse) ? [...hooks.PreToolUse] : [];
+  const groupIndex = preToolUse.findIndex((entry) => isPlainObject(entry) && entry.matcher === hook.matcher);
+  const hookEntry = {
+    type: "command",
+    command: hook.command,
+    timeout: 30,
+    statusMessage: hook.statusMessage
+  };
+  if (groupIndex >= 0) {
+    const group = preToolUse[groupIndex];
+    if (isPlainObject(group)) {
+      const groupHooks = Array.isArray(group.hooks) ? [...group.hooks] : [];
+      const alreadyPresent = groupHooks.some(
+        (entry) => isPlainObject(entry) && typeof entry.command === "string" && entry.command.includes("opcore-agent-gate.mjs")
+      );
+      preToolUse[groupIndex] = {
+        ...group,
+        hooks: alreadyPresent ? groupHooks : [...groupHooks, hookEntry]
+      };
+    }
+  } else {
+    preToolUse.push({
+      matcher: hook.matcher,
+      hooks: [hookEntry]
+    });
+  }
+  return {
+    ...existing,
+    hooks: {
+      ...hooks,
+      PreToolUse: preToolUse
+    }
+  };
+}
+
+function agentGateCommand(harness: "claude" | "codex", scope: ParsedInitArgs["scope"]): string {
+  const hook = scope === "global"
+    ? "$HOME/.opcore/hooks/opcore-agent-gate.mjs"
+    : '"$(git rev-parse --show-toplevel)/.opcore/hooks/opcore-agent-gate.mjs"';
+  const repo = scope === "global" ? "" : ' --repo "$(git rev-parse --show-toplevel)"';
+  return `node ${hook} --harness ${harness}${repo}`;
 }
 
 function priorEntry(repoRoot: string, path: string, write: PlannedWrite | undefined): UndoEntry {
@@ -1051,6 +1382,10 @@ function writeRepoFile(repoRoot: string, write: PlannedWrite): void {
   }
 }
 
+function writeScopedFile(root: string, write: PlannedWrite): void {
+  writeRepoFile(root, write);
+}
+
 function restoreUndoEntry(repoRoot: string, entry: UndoEntry): void {
   const absolute = assertRepoMutationPath(repoRoot, entry.path, "Opcore init undo target");
   if (entry.kind === "append_managed_line") {
@@ -1075,22 +1410,26 @@ function restoreUndoEntry(repoRoot: string, entry: UndoEntry): void {
   writeFileSync(absolute, entry.content, "utf8");
 }
 
-function readUndoMetadata(repoRoot: string): UndoMetadata {
-  const raw = readFileSync(assertExistingRepoPath(repoRoot, undoPath, "Opcore init undo metadata", "file"), "utf8");
+function readUndoMetadata(root: string, scope: ParsedInitArgs["scope"]): UndoMetadata {
+  const scopedUndoPath = undoPathForScope(scope);
+  const raw = readFileSync(assertExistingRepoPath(root, scopedUndoPath, "Opcore init undo metadata", "file"), "utf8");
   const parsed = JSON.parse(raw) as unknown;
-  if (!isPlainObject(parsed) || parsed.schemaVersion !== 1 || parsed.kind !== "opcore_init_undo" || !Array.isArray(parsed.entries)) {
+  const expectedKind = scope === "global" ? "opcore_global_init_undo" : "opcore_init_undo";
+  if (!isPlainObject(parsed) || parsed.schemaVersion !== 1 || parsed.kind !== expectedKind || !Array.isArray(parsed.entries)) {
     throw new Error(".opcore/init-undo.json is not valid Opcore init undo metadata");
   }
-  if (typeof parsed.repoRoot !== "string" || resolve(parsed.repoRoot) !== resolve(repoRoot)) {
+  const recordedRoot = scope === "global" ? parsed.homeRoot : parsed.repoRoot;
+  if (typeof recordedRoot !== "string" || resolve(recordedRoot) !== resolve(root)) {
     throw new Error(".opcore/init-undo.json repoRoot does not match this repository");
   }
+  const allowedPaths = scope === "global" ? allowedGlobalUndoPaths : allowedUndoPaths;
   const seenPaths = new Set<string>();
   const entries: UndoEntry[] = [];
   for (const entry of parsed.entries) {
     if (!isPlainObject(entry) || typeof entry.path !== "string" || typeof entry.existed !== "boolean") {
       throw new Error(".opcore/init-undo.json contains an invalid entry");
     }
-    if (!allowedUndoPaths.has(entry.path)) {
+    if (!allowedPaths.has(entry.path)) {
       throw new Error(`.opcore/init-undo.json contains unsupported path: ${entry.path}`);
     }
     if (seenPaths.has(entry.path)) {
@@ -1113,7 +1452,7 @@ function readUndoMetadata(repoRoot: string): UndoMetadata {
       ) {
         throw new Error(`.opcore/init-undo.json append-managed-line entry for ${entry.path} has invalid appended text`);
       }
-      resolveRepoPath(repoRoot, entry.path);
+      resolveRepoPath(root, entry.path);
       entries.push({
         kind: "append_managed_line",
         path: entry.path,
@@ -1135,7 +1474,7 @@ function readUndoMetadata(repoRoot: string): UndoMetadata {
     if (!entry.existed && "content" in entry && entry.content !== undefined && typeof entry.content !== "string") {
       throw new Error(`.opcore/init-undo.json remove entry for ${entry.path} has invalid content`);
     }
-    resolveRepoPath(repoRoot, entry.path);
+    resolveRepoPath(root, entry.path);
     entries.push({
       kind: "restore_file",
       path: entry.path,
@@ -1145,15 +1484,15 @@ function readUndoMetadata(repoRoot: string): UndoMetadata {
   }
   return {
     schemaVersion: 1,
-    kind: "opcore_init_undo",
-    repoRoot: parsed.repoRoot,
+    kind: expectedKind,
+    ...(scope === "global" ? { homeRoot: recordedRoot } : { repoRoot: recordedRoot }),
     entries
   };
 }
 
-function readUndoMetadataIfExists(repoRoot: string): UndoMetadata | undefined {
-  if (!repoPathExists(repoRoot, undoPath)) return undefined;
-  return readUndoMetadata(repoRoot);
+function readUndoMetadataIfExists(root: string, scope: ParsedInitArgs["scope"]): UndoMetadata | undefined {
+  if (!repoPathExists(root, undoPathForScope(scope))) return undefined;
+  return readUndoMetadata(root, scope);
 }
 
 function readJsonObject(repoRoot: string, path: string): Record<string, unknown> {
@@ -1162,6 +1501,11 @@ function readJsonObject(repoRoot: string, path: string): Record<string, unknown>
   const parsed = JSON.parse(content) as unknown;
   if (!isPlainObject(parsed)) throw new Error(`${path} must contain a JSON object`);
   return parsed;
+}
+
+function readJsonObjectIfExists(repoRoot: string, path: string): Record<string, unknown> {
+  if (!repoPathExists(repoRoot, path)) return {};
+  return readJsonObject(repoRoot, path);
 }
 
 function readOptionalRepoFile(repoRoot: string, path: string): string | undefined {
@@ -1222,6 +1566,22 @@ function resolveRepoPath(repoRoot: string, path: string): string {
     throw new Error(`Repo-relative path escapes repository: ${path}`);
   }
   return absolute;
+}
+
+function resolveScopedPath(root: string, path: string): string {
+  return resolveRepoPath(root, path);
+}
+
+function assertMutationPath(root: string, path: string, label: string): string {
+  return assertRepoMutationPath(root, path, label);
+}
+
+function undoPathForScope(_scope: ParsedInitArgs["scope"]): string {
+  return undoPath;
+}
+
+function actionPath(scope: ParsedInitArgs["scope"], path: string): string {
+  return scope === "global" ? `~/${path}` : path;
 }
 
 function assertRepoMutationPath(repoRoot: string, path: string, label: string): string {
@@ -1372,6 +1732,7 @@ function formatInitPlan(payload: OpcoreInitPlanPayload, applied: boolean): strin
     `  activation=${payload.scan.activationLevel}`,
     heading,
     `Repo: ${payload.repo.root}`,
+    `Scope: ${payload.options.scope}`,
     `Mode: ${payload.mode}`,
     `Approved: ${payload.approved ? "yes" : "no"}`,
     "Actions:",
@@ -1391,19 +1752,23 @@ function formatInteractiveOutcome(payload: OpcoreInitPlanPayload): string {
 function opcoreInitHelpMessage(): string {
   return [
     "Usage:",
-    "  opcore init [--repo <path>] [--approve] [--json]",
-    "  opcore init --undo --approve [--repo <path>] [--json]",
+    "  opcore init [--repo <path>] [--local|--global] [--approve] [--json]",
+    "  opcore init --undo --approve [--repo <path>] [--local|--global] [--json]",
     "Flags:",
     "  --repo <path>          Repository root to set up.",
+    "  --local                Force repo-scoped setup.",
+    "  --global               Install the write gate in user-level agent settings.",
     "  --approve              Apply the proposed additive setup.",
     "  --undo                 Revert files recorded in .opcore/init-undo.json.",
     "  --fail-closed-hook     Add the optional fail-closed pre-commit hook.",
     "  --json                 Emit structured JSON.",
     "Defaults:",
     "  Without --approve, init is plan-only outside an interactive approval prompt.",
+    "  Inside a Git repo on a TTY, init asks whether to install for this repo or globally.",
     "Examples:",
     "  opcore init --repo . --json",
     "  opcore init --repo . --approve",
+    "  opcore init --global --approve",
     "Exit codes: 0 planned or applied, 1 setup error, 64 unsupported."
   ].join("\n");
 }

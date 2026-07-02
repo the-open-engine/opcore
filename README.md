@@ -18,7 +18,7 @@ Backed by a Rust code graph that reads dead exports, untested surface, fan-in ho
 
 </div>
 
-It runs locally, never changes your source, and ends every check in an exit code your agent can branch on.
+It runs locally, keeps setup approval-gated, and gives agents an exit code they can branch on.
 
 ```text
 $ opcore check --changed
@@ -48,15 +48,22 @@ A Rust code graph sees structure that single-file linters cannot: exports with n
 
 Every finding points to a file, a check ID, and a symbol.
 
-## Install
+## Install And Wire The Gate
 
 ```bash
-npx @the-open-engine/opcore              # zero-install first run
-npm install -g @the-open-engine/opcore   # global CLI
-npm i -D @the-open-engine/opcore         # wire the gate into an agent repo
+npx @the-open-engine/opcore init
 ```
 
-Requires Node >= 22.
+`opcore init` scans first, shows the plan, and asks before writing on a TTY. In a Git repo, it asks whether to install the Claude Code/Codex write gate for this repo or globally.
+
+For an explicit global install:
+
+```bash
+npm install -g @the-open-engine/opcore
+opcore init --global
+```
+
+Install scripts do not modify repos or agent settings. The package only prints a setup reminder. Requires Node >= 22.
 
 ## Commands
 
@@ -64,16 +71,20 @@ Requires Node >= 22.
 opcore --repo .                 # read-only scan: coverage, then findings
 opcore status                   # readiness and coverage; never writes
 opcore check --changed --json   # the agent gate; also --staged or explicit <files>
-opcore init --repo . --approve  # approval-gated, additive AGENTS.md + .opcore/config
+opcore init                     # scan, then wire repo/global agent hooks after approval
+opcore init --global            # install the write gate for all repos using global settings
+opcore init --undo --approve    # remove only what Opcore added
 opcore measure --repo .         # before/after deltas from local history
 opcore try                      # run the loop on generated sample repos
 ```
 
-Only `opcore init` writes to your repo, and only after you approve its plan.
+Only `opcore init` writes setup files, and only after approval. `--json` and non-TTY runs stay plan-only unless you pass `--approve`.
 
 ## How it works
 
-Opcore is hybrid: a Rust graph core owns extraction, persistence, and hot queries; TypeScript owns the contracts, CLI, and validation adapters. Findings are read off the graph, so they map to real structure instead of a text match. It writes `.opcore/report.json`, `.opcore/history.jsonl`, and bounded `.opcore/telemetry.jsonl`, plus one `AGENTS.md` block and one `.gitignore` line when you approve `opcore init`. For the ownership model, see @docs/architecture/runtime-cli-ard.md.
+Opcore is hybrid: a Rust graph core owns extraction, persistence, and hot queries; TypeScript owns the contracts, CLI, and validation adapters. Findings are read off the graph, so they map to real structure instead of a text match.
+
+Approved repo setup writes additive `.opcore` config, one guidance block, a small write-gate adapter, and merged Claude Code/Codex hook entries. Approved global setup writes user-level hook config under the same additive, undoable policy. For the ownership model, see @docs/architecture/runtime-cli-ard.md.
 
 ## Platforms
 

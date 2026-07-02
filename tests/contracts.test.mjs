@@ -1634,6 +1634,8 @@ describe("Opcore shared contracts", () => {
   it("validates Opcore init plans and router payloads", () => {
     const plan = validateOpcoreInitPlanPayload(validOpcoreInitPlan());
     assert.equal(plan.actions[0].path, ".opcore/config");
+    assert.equal(plan.options.scope, "repo");
+    assert.equal(plan.actions[0].targetScope, "repo");
     assert.equal(plan.agentFiles[0], "AGENTS.md");
     assert.equal(plan.scan.totalFiles, 2);
     assert.equal(plan.settings.languages[0].language, "TypeScript");
@@ -1672,6 +1674,34 @@ describe("Opcore shared contracts", () => {
               path: "../AGENTS.md"
             }
           ]
+        }),
+      /path/
+    );
+    const globalPlan = validateOpcoreInitPlanPayload({
+      ...plan,
+      options: {
+        ...plan.options,
+        scope: "global"
+      },
+      actions: [
+        {
+          kind: "wire_harness",
+          path: "~/.claude/settings.json",
+          targetScope: "global",
+          summary: "Merge the Opcore Claude Code write gate hook.",
+          requiresApproval: true,
+          outsideOpcore: true
+        }
+      ],
+      agentFiles: []
+    });
+    assert.equal(globalPlan.actions[0].path, "~/.claude/settings.json");
+    assert.equal(globalPlan.actions[0].targetScope, "global");
+    assert.throws(
+      () =>
+        validateOpcoreInitPlanPayload({
+          ...globalPlan,
+          actions: [{ ...globalPlan.actions[0], path: "/tmp/settings.json" }]
         }),
       /path/
     );
@@ -1733,6 +1763,12 @@ describe("Opcore shared contracts", () => {
     );
     assert.deepEqual(descriptor.capabilities.validation.graphModes, graphProviderModes);
     assert.deepEqual(descriptor.capabilities.validation.validateRoutes, ["request", "hypothetical", "pre-write", "manifest"]);
+    assert.deepEqual(descriptor.capabilities.validation.writeGate.initScopes, ["repo", "global"]);
+    assert.deepEqual(descriptor.capabilities.validation.writeGate.harnesses, ["claude-code", "codex"]);
+    assert.equal(descriptor.capabilities.validation.writeGate.adapterPath, "dist/agent-gate.js");
+    assert.equal(descriptor.capabilities.validation.writeGate.adapterErrorPolicy, "fail_open");
+    assert.equal(descriptor.capabilities.validation.writeGate.validationErrorPolicy, "fail_closed");
+    assert.equal(descriptor.capabilities.validation.writeGate.codexBoundary, "pretooluse_guardrail");
     assert.deepEqual(surfaceContracts(descriptor.optionalSurfaces), expectedOptionalAnalysisSurfaces());
   });
 
@@ -1940,6 +1976,23 @@ describe("Opcore shared contracts", () => {
           }
         }),
       /graph modes/
+    );
+    assert.throws(
+      () =>
+        validateManagedToolDescriptor({
+          ...validManagedToolDescriptor(),
+          capabilities: {
+            ...validManagedToolDescriptor().capabilities,
+            validation: {
+              ...validManagedToolDescriptor().capabilities.validation,
+              writeGate: {
+                ...validManagedToolDescriptor().capabilities.validation.writeGate,
+                validationErrorPolicy: "fail_open"
+              }
+            }
+          }
+        }),
+      /validationErrorPolicy/
     );
     assert.throws(
       () =>
@@ -3093,6 +3146,7 @@ function validOpcoreInitPlan(overrides = {}) {
       requestedPath: "/repo"
     },
     options: {
+      scope: "repo",
       failClosedHook: false,
       dryRun: false
     },
@@ -3101,6 +3155,7 @@ function validOpcoreInitPlan(overrides = {}) {
       {
         kind: "write",
         path: ".opcore/config",
+        targetScope: "repo",
         summary: "Write additive Opcore init config.",
         requiresApproval: false,
         outsideOpcore: false
@@ -3108,6 +3163,7 @@ function validOpcoreInitPlan(overrides = {}) {
       {
         kind: "upsert_block",
         path: "AGENTS.md",
+        targetScope: "repo",
         summary: "Add or update delimited Opcore agent guidance.",
         requiresApproval: true,
         outsideOpcore: true
@@ -3425,6 +3481,15 @@ function validManagedToolDescriptor(overrides = {}) {
         graphModes: ["optional", "required"],
         hypothetical: true,
         statusSurfaces: ["status", "doctor"],
+        writeGate: {
+          initScopes: ["repo", "global"],
+          harnesses: ["claude-code", "codex"],
+          adapterPath: "dist/agent-gate.js",
+          validationCommand: ["opcore", "validate", "pre-write", "--request-file", "<request-file>", "--timeout-ms", "30000", "--json"],
+          adapterErrorPolicy: "fail_open",
+          validationErrorPolicy: "fail_closed",
+          codexBoundary: "pretooluse_guardrail"
+        },
         checkIds: [
           "typescript.syntax",
           "typescript.types",

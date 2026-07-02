@@ -198,6 +198,8 @@ describe("conformance fixture metadata", () => {
     ]);
     assert.deepEqual(descriptor.capabilities.validation.graphModes, ["optional", "required"]);
     assert.deepEqual(descriptor.capabilities.validation.validateRoutes, ["request", "hypothetical", "pre-write", "manifest"]);
+    assert.deepEqual(descriptor.capabilities.validation.writeGate.harnesses, ["claude-code", "codex"]);
+    assert.equal(descriptor.capabilities.validation.writeGate.adapterPath, "dist/agent-gate.js");
     assert.deepEqual(
       descriptor.optionalSurfaces.map((surface) => surface.issue),
       ["#13", "#14", "#15", "#16"]

@@ -63,6 +63,7 @@ declare module "node:fs/promises" {
 }
 
 declare module "node:os" {
+  export function homedir(): string;
   export function tmpdir(): string;
 }
 

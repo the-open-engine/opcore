@@ -3,12 +3,11 @@
 ## Install
 
 ```bash
-npx @the-open-engine/opcore              # zero-install first run
-npm install -g @the-open-engine/opcore   # global CLI
-npm i -D @the-open-engine/opcore         # wire the gate into an agent repo
+npx @the-open-engine/opcore init         # repo setup with a plan and approval prompt
+npm install -g @the-open-engine/opcore   # global CLI, then run opcore init --global
 ```
 
-Requires Node >=22. Supported platforms are `darwin-arm64`, `darwin-x64`, and `linux-x64`. Unsupported platforms return typed degraded status instead of crashing.
+Install scripts do not modify repos or agent settings. The package only prints a setup reminder. Requires Node >=22. Supported platforms are `darwin-arm64`, `darwin-x64`, and `linux-x64`. Unsupported platforms return typed degraded status instead of crashing.
 
 If `opcore` is not found after a global install, check npm's global prefix and put its `bin` directory on `PATH`:
 
@@ -66,15 +65,17 @@ opcore measure --repo .
 
 ## Setup
 
-Approve setup non-interactively only when the plan is acceptable:
+Wire the write gate after reviewing the plan:
 
 ```bash
 opcore init
-opcore init --approve
+opcore init --global
 opcore init --repo . --approve
 ```
 
-`opcore init` runs the read-only scan first. When the scan completes, it prints coverage before findings, shows the additive setup plan, and prompts on a TTY. `opcore init --json` previews without writing. Approved init writes only additive `.opcore/config`, one delimited guidance block in an existing agent file or new `AGENTS.md`, a managed `.opcore/` line in `.gitignore` for Git repos, and `.opcore/init-undo.json`. Non-Git repos skip `.gitignore`; undo removes only the managed line via `opcore init --undo`. The `.opcore/` ignore covers `.opcore/telemetry.jsonl`.
+`opcore init` runs the read-only scan first. When the scan completes, it prints coverage before findings, shows the additive setup plan, and prompts on a TTY. In a Git repo, it asks whether to install the Claude Code/Codex write gate for this repo or globally. `opcore init --json` previews without writing, and non-TTY runs stay plan-only unless `--approve` is passed.
+
+Approved repo init writes additive `.opcore/config`, one delimited guidance block, a repo-local write-gate adapter, merged Claude Code/Codex hook entries, a managed `.opcore/` line in `.gitignore` for Git repos, and `.opcore/init-undo.json`. Approved global init writes user-level hook config plus `~/.opcore/init-undo.json`. Undo recorded setup with `opcore init --undo --approve` or `opcore init --global --undo --approve`.
 
 ## Coverage
 

@@ -53,6 +53,7 @@
     "directory": "packages/opcore"
   },
   "scripts": {
-    "build": "tsc -b && node ../../scripts/write-cli-descriptor.mjs"
+    "build": "tsc -b && node ../../scripts/write-cli-descriptor.mjs",
+    "postinstall": "node -e \"import('./dist/postinstall.js').catch(() => {})\""
   }
 }
