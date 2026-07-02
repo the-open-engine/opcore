@@ -7,9 +7,9 @@
 
 <br><br>
 
-**The changed-file validation gate a coding agent runs before an edit lands.**
+**The robustness engine for coding agents.**
 
-Backed by a Rust code graph that reads dead exports, untested surface, fan-in hotspots, and Rust module cycles.
+A local Rust code graph gives your agent repo-wide understanding, a validation gate that runs before an edit lands, and safe symbol-aware edits.
 
 [![license](https://img.shields.io/badge/license-MIT-171411?style=flat-square)](LICENSE)
 [![node](https://img.shields.io/badge/node-%E2%89%A5%2022-171411?style=flat-square)](#install)
@@ -36,9 +36,21 @@ $ opcore check --changed          # after an agent introduces a type error
 | `2` | Requested check is not implemented for this stack. |
 | `64` | Unsupported scope. Counted, not failed. |
 
+## What your agent gets
+
+Three things, all backed by a Rust code graph that sees what single-file tools miss.
+
+| Your agent can | With | So it can |
+| --- | --- | --- |
+| Understand the repo | `opcore graph` (query, impact, search), `opcore inspect` (definition, references, symbols, signatures) | see what calls a symbol and what a change reaches, before touching it |
+| Validate a change | `opcore check --changed` (stable exit codes), `opcore validate pre-write` | catch type errors, broken imports, and dead code before the write lands |
+| Edit safely | `opcore edit` (rename, move, signature, patch) | rename across every call site, applied atomically or not at all |
+
+Symbol-level navigation and refactors are deepest on TypeScript and JavaScript today; Rust and Python are narrower.
+
 ## What it checks
 
-A Rust code graph sees structure that single-file linters cannot: exports with no importer, symbols with no test, and modules that everything depends on.
+What the gate checks, by stack:
 
 | Stack | Depth | Checks |
 | --- | --- | --- |
@@ -48,37 +60,47 @@ A Rust code graph sees structure that single-file linters cannot: exports with n
 
 Every finding points to a file, a check ID, and a symbol.
 
-## Install And Wire The Gate
+## Getting started
+
+**1. Install.**
 
 ```bash
-npx @the-open-engine/opcore init
-```
-
-`opcore init` scans first, shows the plan, and asks before writing on a TTY. In a Git repo, it asks whether to install the Claude Code/Codex write gate for this repo or globally.
-
-For an explicit global install:
-
-```bash
+npx @the-open-engine/opcore              # zero-install
+# or
 npm install -g @the-open-engine/opcore
-opcore init --global
 ```
 
-Install scripts do not modify repos or agent settings. The package only prints a setup reminder. Requires Node >= 22.
+**2. See it work. Nothing gets written.**
+
+```bash
+opcore --repo .                          # read-only scan: coverage, then findings
+```
+
+**3. Wire the gate into your agent.**
+
+```bash
+opcore init                              # scans, shows the plan, asks repo or global, then wires the Claude Code/Codex write gate after you approve
+opcore init --global                     # same, for every repo
+```
+
+**4. Now every edit is gated.**
+
+```bash
+opcore check --changed --json            # runs in your agent's loop; branch on the exit code
+```
+
+Install scripts never touch your repo or agent settings; the package only prints a setup reminder. Requires Node >= 22.
 
 ## Commands
 
 ```bash
-opcore --repo .                 # read-only scan: coverage, then findings
 opcore status                   # readiness and coverage; never writes
-opcore check --changed --json   # the agent gate; also --staged or explicit <files>
-opcore init                     # scan, then wire repo/global agent hooks after approval
-opcore init --global            # install the write gate for all repos using global settings
-opcore init --undo --approve    # remove only what Opcore added
 opcore measure --repo .         # before/after deltas from local history
 opcore try                      # run the loop on generated sample repos
+opcore init --undo --approve    # remove only what Opcore added
 ```
 
-Only `opcore init` writes setup files, and only after approval. `--json` and non-TTY runs stay plan-only unless you pass `--approve`.
+`opcore check --changed` also takes `--staged` or explicit `<files>`. Only `opcore init` writes setup files, and only after approval; `--json` and non-TTY runs stay plan-only unless you pass `--approve`.
 
 ## How it works
 
