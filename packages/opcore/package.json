@@ -1,7 +1,7 @@
 {
   "name": "@the-open-engine/opcore",
   "version": "0.1.0",
-  "description": "Opcore CLI for read-only scans, setup guidance, validation gates, and metric deltas.",
+  "description": "Local quality gates and pre-write validation for AI coding agents.",
   "type": "module",
   "license": "MIT",
   "main": "dist/index.js",
@@ -18,12 +18,33 @@
     "README.md"
   ],
   "keywords": [
-    "code-intelligence",
+    "opcore",
+    "ai-agents",
+    "ai-coding",
+    "coding-agent",
     "coding-agents",
+    "agentic-engineering",
+    "agentic-coding",
+    "ai-engineering",
+    "quality-gate",
+    "quality-gates",
+    "validation-gate",
+    "pre-write-validation",
+    "pre-commit",
+    "git-hooks",
+    "code-intelligence",
+    "code-analysis",
+    "static-analysis",
+    "static-code-analysis",
+    "code-graph",
+    "dead-code",
     "robustness",
     "validation",
+    "local-first",
     "cli",
-    "developer-tools"
+    "developer-tools",
+    "typescript",
+    "rust"
   ],
   "publishConfig": {
     "access": "public"
