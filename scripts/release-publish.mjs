@@ -55,26 +55,51 @@ function valueAfter(flag) {
 }
 
 function verifyNpmPublishReadiness() {
+  if (hasTokenAuth()) {
+    process.stdout.write("using npm token publish auth\n");
+    run("npm", ["whoami"]);
+    verifyTokenMetadataWhenReadable();
+    return;
+  }
   if (hasTrustedPublishingContext()) {
+    const missingPackages = publicPackages.filter((packageName) => !packageExists(packageName));
+    if (missingPackages.length > 0) {
+      throw new Error(
+        [
+          "First npm publish requires NODE_AUTH_TOKEN/NPM_TOKEN because npm trusted publishing can only be configured after packages exist.",
+          `Missing packages: ${missingPackages.join(", ")}`
+        ].join("\n")
+      );
+    }
     process.stdout.write("using GitHub Actions OIDC trusted publishing context\n");
     return;
   }
-  if (!hasTokenAuth()) {
-    throw new Error("No npm publish auth available: configure trusted publishing for release.yml or provide NODE_AUTH_TOKEN/NPM_TOKEN");
+  throw new Error("No npm publish auth available: configure trusted publishing for release.yml or provide NODE_AUTH_TOKEN/NPM_TOKEN");
+}
+
+function verifyTokenMetadataWhenReadable() {
+  const tokenList = run("npm", ["token", "list", "--json"], { allowFailure: true });
+  if (tokenList.status !== 0) {
+    warnTokenMetadata(
+      "npm token list --json is unavailable for this publish token; skipping package write permission plus bypass_2fa metadata preflight"
+    );
+    return;
   }
-  run("npm", ["whoami"]);
-  const tokenList = run("npm", ["token", "list", "--json"]);
   let tokens;
   try {
     tokens = JSON.parse(tokenList.stdout);
   } catch (error) {
-    throw new Error(`npm token list --json did not return parseable token metadata: ${error.message}`);
+    warnTokenMetadata(`npm token list --json did not return parseable token metadata: ${error.message}`);
+    return;
   }
-  if (!Array.isArray(tokens)) throw new Error("npm token list --json did not return a token array");
+  if (!Array.isArray(tokens)) {
+    warnTokenMetadata("npm token list --json did not return a token array");
+    return;
+  }
   const publishReadyToken = tokens.find((token) => tokenAllowsPackageWrites(token) && tokenBypassesTwoFactor(token));
   if (!publishReadyToken) {
-    throw new Error(
-    "No npm token metadata entry has package write permission plus bypass_2fa/automation publish posture for all public packages"
+    warnTokenMetadata(
+      "No npm token metadata entry has package write permission plus bypass_2fa/automation publish posture for all public packages"
     );
   }
 }
@@ -94,6 +119,13 @@ function packageVersionExists(packageName) {
   }
   if (isNpmNotFound(result)) return false;
   throw commandError("npm", ["view", `${packageName}@${releaseVersion}`, "version", "--json"], result);
+}
+
+function packageExists(packageName) {
+  const result = run("npm", ["view", packageName, "name", "--json"], { allowFailure: true });
+  if (result.status === 0) return JSON.parse(result.stdout) === packageName;
+  if (isNpmNotFound(result)) return false;
+  throw commandError("npm", ["view", packageName, "name", "--json"], result);
 }
 
 function ensureDistTag(packageName) {
@@ -172,6 +204,10 @@ function hasTrustedPublishingContext() {
     process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN &&
     process.env.ACTIONS_ID_TOKEN_REQUEST_URL
   );
+}
+
+function warnTokenMetadata(message) {
+  process.stderr.write(`[release-publish] ${message}; publish will rely on npm registry authorization.\n`);
 }
 
 function isNpmNotFound(result) {
