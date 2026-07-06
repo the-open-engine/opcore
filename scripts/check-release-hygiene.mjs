@@ -57,11 +57,12 @@ for (const token of ["npm\", [\"token\", \"list\", \"--json\"]", "bypass_2fa", "
 
 const readme = readFileSync("README.md", "utf8");
 for (const token of [
-  "npm install -g @the-open-engine/opcore",
+  "npm install -g opcore",
+  "npx opcore install",
   "opcore try",
   "opcore --repo .",
-  "opcore init",
-  "opcore init --global",
+  "opcore install",
+  "opcore install --global",
   "opcore check --changed --json",
   "opcore measure --repo .",
   "darwin-arm64",

@@ -76,7 +76,7 @@ function installedPackagesFixture() {
 }
 
 function binsFor(packageName) {
-  if (packageName === "@the-open-engine/opcore") return { opcore: "dist/index.js" };
+  if (packageName === "opcore") return { opcore: "dist/index.js" };
   if (packageName === "@the-open-engine/opcore-asp-provider") return { "opcore-asp-provider": "dist/index.js" };
   return {};
 }
@@ -84,7 +84,7 @@ function binsFor(packageName) {
 function installedFilesFor(packageName) {
   const paths = [
     "package.json",
-    ...(packageName === "@the-open-engine/opcore" ? ["dist/index.js"] : []),
+    ...(packageName === "opcore" ? ["dist/index.js"] : []),
     ...(packageName === "@the-open-engine/opcore-asp-provider" ? ["dist/index.js", "dist/manifests/asp-server.json"] : [])
   ];
   return paths.map((path) => ({ path: `node_modules/${packageName}/${path}`, sha256: "3".repeat(64) }));

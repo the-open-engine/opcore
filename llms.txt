@@ -29,7 +29,7 @@ Opcore version 0.1.0. Hybrid runtime: a Rust graph core owns source extraction, 
 - `opcore try [--json]` — local sample-repo demo loop; publishes nothing.
 
 ## Install
-- `npx @the-open-engine/opcore` for a zero-install first run, `npm install -g @the-open-engine/opcore` for a global CLI, or `npm i -D @the-open-engine/opcore` to wire the gate into an agent repo. Requires Node >=22.
+- `npx opcore` for a zero-install first run, `npm install -g opcore` for a global CLI, or `npm i -D opcore` to wire the gate into an agent repo. Requires Node >=22.
 - Supported targets: darwin-arm64, darwin-x64, linux-x64; Windows is unsupported.
 
 ## Docs

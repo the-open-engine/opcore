@@ -20,9 +20,9 @@ try {
     "",
     `${green}${bold}OPCORE${reset}`,
     `${green}Opcore installed.${reset}`,
-    `Run ${bold}opcore init${reset} inside a repo to install the repo write gate.`,
-    `Run ${bold}opcore init --global${reset} to install the global write gate.`,
-    "Setup is approval-gated; install does not modify your repos or agent settings.",
+    `Run ${bold}opcore install${reset} inside a repo to install the repo write gate.`,
+    `Run ${bold}opcore install --global${reset} to install the global write gate.`,
+    "The npm postinstall only prints this message; run the command above to approve setup.",
     ""
   ].join("\n"));
 } catch {

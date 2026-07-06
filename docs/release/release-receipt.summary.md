@@ -15,7 +15,7 @@ License unresolved count: 0
 | Package | Tarball | SHA-256 | Files |
 |---------|---------|---------|-------|
 | @the-open-engine/opcore-contracts | the-open-engine-opcore-contracts-0.1.0.tgz | 77c648d5c02391a810e4d56a398f676659185d1291f043cdad1fa323d4df4b40 | 6 |
-| @the-open-engine/opcore | the-open-engine-opcore-0.1.0.tgz | ef484c6ffb0401f52adef1f6d46fe43556100947fc5516d2352abd3fca36cbb7 | 117 |
+| opcore | the-open-engine-opcore-0.1.0.tgz | ef484c6ffb0401f52adef1f6d46fe43556100947fc5516d2352abd3fca36cbb7 | 117 |
 | @the-open-engine/opcore-graph | the-open-engine-opcore-graph-0.1.0.tgz | 9b930eeb81a8f1eef1db8a3e499909344697a0a92333a2e5e8fa0018dfb7ae3a | 17 |
 | @the-open-engine/opcore-graph-core-darwin-arm64 | the-open-engine-opcore-graph-core-darwin-arm64-0.1.0.tgz | bddba8eb93e40e3123f67f2c37c5f006a679edffd2626907e10336bf575cf16b | 5 |
 | @the-open-engine/opcore-graph-core-darwin-x64 | the-open-engine-opcore-graph-core-darwin-x64-0.1.0.tgz | ab9fc93007193945fcab164dd650ab767660bdf24a059bf2a51d7f1ab880aec6 | 5 |

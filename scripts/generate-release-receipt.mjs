@@ -256,7 +256,7 @@ function collectDescriptorEvidence(descriptor, packages) {
   });
   return {
     path: descriptorPath,
-    packageName: "@the-open-engine/opcore",
+    packageName: "opcore",
     checksumSha256: sha256File(descriptorAbsolutePath),
     descriptor,
     commandGroups,
@@ -692,7 +692,7 @@ function validateNoOldPublicIdentity(packageName, manifest, bins) {
   for (const bin of Object.keys(bins)) {
     if (["lattice", "crg", "cix", "rox"].includes(bin)) throw new Error(`${packageName} exposes forbidden old public bin ${bin}`);
   }
-  if (packageName === "@the-open-engine/opcore") assertSameSet(Object.keys(bins), ["opcore"], `${packageName} bins`);
+  if (packageName === "opcore") assertSameSet(Object.keys(bins), ["opcore"], `${packageName} bins`);
   else if (packageName === "@the-open-engine/opcore-asp-provider") {
     assertSameSet(Object.keys(bins), ["opcore-asp-provider"], `${packageName} bins`);
   }

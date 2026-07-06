@@ -41,7 +41,7 @@ describe("lattice scaffold", () => {
 
     assert.deepEqual(packages, [
       "@the-open-engine/opcore-contracts",
-      "@the-open-engine/opcore",
+      "opcore",
       "@the-open-engine/opcore-graph",
       "@the-open-engine/opcore-edit",
       "@the-open-engine/opcore-validation",

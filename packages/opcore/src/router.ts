@@ -10,7 +10,7 @@ import {
   readOpcoreMetricReport,
   writeCommandLatencyTelemetry
 } from "./reporting.js";
-import { routeOpcoreInit, type OpcoreInitRuntime } from "./init.js";
+import { routeOpcoreInit, routeOpcoreInstall, routeOpcoreUninstall, type OpcoreInitRuntime } from "./init.js";
 import { routeOpcoreScan } from "./scan.js";
 import { parseOpcoreRepoArgs, resolveRepo, routeOpcoreStatus } from "./status.js";
 import { routeOpcoreDoctor } from "./doctor.js";
@@ -142,6 +142,8 @@ async function routeOpcoreParsed(
   if (head === "doctor") return routeOpcoreDoctor(argv, parsed);
   if (head === "check") return routeOpcoreCheck(argv, parsed, runtime, presentation);
   if (head === "init") return routeOpcoreInit(argv, parsed, runtime);
+  if (head === "install") return routeOpcoreInstall(argv, parsed, runtime);
+  if (head === "uninstall") return routeOpcoreUninstall(argv, parsed, runtime);
   if (head === "measure") return routeMeasure(argv, parsed);
   if (head === "try") return routeOpcoreTry(argv, parsed);
   if (advancedCommandGroups.has(head)) return routeAdvancedOpcoreCommand(argv, "opcore", { streamWriter: runtime.streamWriter });
@@ -280,6 +282,8 @@ function opcoreHelpMessage(): string {
     "  opcore [--repo <path>] [--json]",
     "  opcore --version [--json]",
     "  opcore status [--repo <path>] [--verbose] [--json]",
+    "  opcore install [--repo <path>] [--yes] [--json]",
+    "  opcore uninstall [--repo <path>] [--yes] [--json]",
     "  opcore check --changed --json",
     "  opcore check --staged --json",
     "  opcore check <file...> --json",
@@ -295,6 +299,7 @@ function opcoreHelpMessage(): string {
     "",
     "Examples:",
     "  opcore --version --json",
+    "  opcore install",
     "  opcore init --repo . --approve",
     "  opcore doctor --repo . --json",
     "  opcore graph search \"GreetingCard\" --repo . --limit 5",

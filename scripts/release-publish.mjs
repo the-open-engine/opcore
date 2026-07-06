@@ -8,7 +8,7 @@ const tag = valueAfter("--tag") ?? "alpha";
 const dryRun = process.argv.includes("--dry-run") || process.env.LATTICE_PUBLISH_DRY_RUN === "1";
 const implementationPackages = [
   "@the-open-engine/opcore-contracts",
-  "@the-open-engine/opcore",
+  "opcore",
   "@the-open-engine/opcore-graph",
   "@the-open-engine/opcore-edit",
   "@the-open-engine/opcore-validation",

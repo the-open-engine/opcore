@@ -487,12 +487,12 @@ describe("Opcore JSON schema wire constraints", () => {
     assert.equal(
       isValidDefinition(
         "ValidationRequest",
-        validationRequestWith({ scope: { kind: "package", packageName: "@the-open-engine/opcore", packageRoot: "../packages" } })
+        validationRequestWith({ scope: { kind: "package", packageName: "opcore", packageRoot: "../packages" } })
       ),
       false
     );
     assert.equal(
-      isValidDefinition("ValidationRequest", validationRequestWith({ scope: { kind: "package", packageName: "@the-open-engine/opcore" } })),
+      isValidDefinition("ValidationRequest", validationRequestWith({ scope: { kind: "package", packageName: "opcore" } })),
       false
     );
   });
@@ -2361,7 +2361,7 @@ describe("Opcore JSON schema wire constraints", () => {
       isValidDefinition("ReleaseReceipt", {
         ...receipt,
         packages: receipt.packages.map((entry) =>
-          entry.packageName === "@the-open-engine/opcore"
+          entry.packageName === "opcore"
             ? { ...entry, bins: { ...entry.bins, rox: "dist/index.js" } }
             : entry
         )
@@ -2556,7 +2556,7 @@ describe("Opcore JSON schema wire constraints", () => {
       isValidDefinition("ReleaseCutoverReceipt", {
         ...receipt,
         installedPackages: receipt.installedPackages.map((entry) =>
-          entry.packageName === "@the-open-engine/opcore"
+          entry.packageName === "opcore"
             ? { ...entry, installedManifest: { ...entry.installedManifest, bins: { lattice: "dist/index.js", crg: "dist/index.js" } } }
             : entry
         )
@@ -2735,7 +2735,7 @@ describe("Opcore JSON schema wire constraints", () => {
 function validRouterManifest() {
   return {
     schemaVersion: 1,
-    packageName: "@the-open-engine/opcore",
+    packageName: "opcore",
     bins: ["opcore"],
     exitSemantics: {
       ok: 0,
@@ -3197,17 +3197,17 @@ function validManagedToolDescriptor(overrides = {}) {
     aggregateIdentity: {
       name: "opcore",
       releaseLine: "opcore",
-      packageName: "@the-open-engine/opcore"
+      packageName: "opcore"
     },
     packageIdentity: {
-      packageName: "@the-open-engine/opcore",
-      artifactName: "@the-open-engine/opcore",
+      packageName: "opcore",
+      artifactName: "opcore",
       version: "0.1.0"
     },
     entrypoints: [
       {
         bin: "opcore",
-        packageName: "@the-open-engine/opcore",
+        packageName: "opcore",
         path: "dist/index.js",
         command: ["opcore"]
       }
@@ -3231,7 +3231,7 @@ function validManagedToolDescriptor(overrides = {}) {
             ? "@the-open-engine/opcore-edit"
             : name === "check" || name === "validate"
               ? "@the-open-engine/opcore-validation"
-              : "@the-open-engine/opcore"
+              : "opcore"
     })),
     healthProbes: [
       {
@@ -3299,14 +3299,14 @@ function validManagedToolDescriptor(overrides = {}) {
     artifacts: [
       {
         id: "cli-entrypoint",
-        packageName: "@the-open-engine/opcore",
+        packageName: "opcore",
         path: "dist/index.js",
         type: "entrypoint",
         required: true
       },
       {
         id: "descriptor",
-        packageName: "@the-open-engine/opcore",
+        packageName: "opcore",
         path: "dist/descriptors/opcore.managed-tool.json",
         type: "descriptor",
         required: true
@@ -3653,7 +3653,7 @@ function validRouterResult() {
 function validOpcoreRuntimeInfo() {
   return {
     schemaVersion: 1,
-    packageName: "@the-open-engine/opcore",
+    packageName: "opcore",
     version: "0.1.0",
     bin: "opcore",
     artifactSource: "source_checkout",
@@ -4141,7 +4141,7 @@ function validGraphReleaseReceipt() {
 function validReleaseReceipt() {
   const packageNames = [
     "@the-open-engine/opcore-contracts",
-    "@the-open-engine/opcore",
+    "opcore",
     "@the-open-engine/opcore-graph",
     ...graphCoreNativePackageNames,
     "@the-open-engine/opcore-edit",
@@ -4159,7 +4159,7 @@ function validReleaseReceipt() {
   const descriptor = validManagedToolDescriptor();
   const packageRoots = new Map([
     ["@the-open-engine/opcore-contracts", "packages/contracts"],
-    ["@the-open-engine/opcore", "packages/opcore"],
+    ["opcore", "packages/opcore"],
     ["@the-open-engine/opcore-graph", "packages/graph"],
     ...graphCoreNativeSupportedTargets.map((target) => [
       graphCoreNativePackageNameForTarget(target),
@@ -4176,7 +4176,7 @@ function validReleaseReceipt() {
     ["@the-open-engine/opcore-fixtures", "packages/fixtures"]
   ]);
   const packages = packageNames.map((packageName) => {
-    const isOpcore = packageName === "@the-open-engine/opcore";
+    const isOpcore = packageName === "opcore";
     const nativeTarget = graphCoreNativeSupportedTargets.find((target) => graphCoreNativePackageNameForTarget(target) === packageName);
     const nativeDescriptor = nativeTarget
       ? descriptor.capabilities.graph.nativeArtifacts.find((artifact) => artifact.targetPlatform === nativeTarget)
@@ -4276,7 +4276,7 @@ function validReleaseReceipt() {
     packages,
     descriptor: {
       path: "packages/opcore/dist/descriptors/opcore.managed-tool.json",
-      packageName: "@the-open-engine/opcore",
+      packageName: "opcore",
       checksumSha256: "b".repeat(64),
       descriptor,
       commandGroups: descriptor.commandGroups.map((group) => ({

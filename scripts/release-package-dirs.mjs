@@ -1,6 +1,6 @@
 export const releasePackageDirsByName = Object.freeze({
   "@the-open-engine/opcore-contracts": "packages/contracts",
-  "@the-open-engine/opcore": "packages/opcore",
+  "opcore": "packages/opcore",
   "@the-open-engine/opcore-graph": "packages/graph",
   "@the-open-engine/opcore-graph-core-darwin-arm64": "packages/opcore-graph-core-darwin-arm64",
   "@the-open-engine/opcore-graph-core-darwin-x64": "packages/opcore-graph-core-darwin-x64",

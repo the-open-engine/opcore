@@ -149,7 +149,7 @@ describe("conformance fixture metadata", () => {
       const descriptor = fixtureById(id).descriptor;
       assert.equal(descriptor.dataFile, "packages/fixtures/descriptors/opcore.managed-tool.json");
       assert.equal(descriptor.descriptorKind, "aggregate_opcore");
-      assert.equal(descriptor.packageName, "@the-open-engine/opcore");
+      assert.equal(descriptor.packageName, "opcore");
       assert.ok(descriptor.entrypoints.length > 0);
       assert.deepEqual(descriptor.commandGroups, [
         "opcore graph",

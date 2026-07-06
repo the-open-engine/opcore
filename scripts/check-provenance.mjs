@@ -10,7 +10,7 @@ const forbiddenPublicPackageNames = new Set([
   "@the-open-engine/opcore-rox-typescript"
 ]);
 const publicPackageNames = new Set([
-  "@the-open-engine/opcore",
+  "opcore",
   "@the-open-engine/opcore-contracts",
   "@the-open-engine/opcore-graph",
   "@the-open-engine/opcore-graph-core-darwin-arm64",
