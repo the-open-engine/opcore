@@ -143,14 +143,14 @@ describe("opcore public facade", () => {
     try {
       const human = runOpcore(["--version"], temp, 0);
       assert.equal(human.stderr, "");
-      assert.match(human.stdout, /^@the-open-engine\/opcore 0\.1\.0\b/);
+      assert.match(human.stdout, /^opcore 0\.1\.0\b/);
       assert.equal(existsSync(join(temp, ".opcore")), false);
 
       const json = parseJson(runOpcore(["--version", "--json"], temp, 0).stdout);
       assert.deepEqual(json.canonicalCommand, ["opcore", "version"]);
       assert.equal(json.owner, "runtime");
       assert.equal(json.runtimeInfo.schemaVersion, 1);
-      assert.equal(json.runtimeInfo.packageName, "@the-open-engine/opcore");
+      assert.equal(json.runtimeInfo.packageName, "opcore");
       assert.equal(json.runtimeInfo.version, "0.1.0");
       assert.equal(json.runtimeInfo.bin, "opcore");
       assert.match(json.runtimeInfo.artifactSource, /^(source_checkout|installed_package|unknown)$/);
@@ -550,6 +550,124 @@ describe("opcore public facade", () => {
       assert.equal(existsSync(join(temp, ".opcore")), false);
       assert.equal(existsSync(join(temp, ".claude", "settings.json")), false);
       assert.equal(existsSync(join(temp, ".codex", "hooks.json")), false);
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("plans install wizard setup with skill and active hook defaults without writing under --json", () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-install-plan-"));
+    try {
+      initGitFixture(temp);
+
+      const result = parseJson(runOpcore(["install", "--repo", temp, "--json"], temp, 0).stdout);
+
+      assert.deepEqual(result.canonicalCommand, ["opcore", "install"]);
+      assert.equal(result.opcoreInit.mode, "plan");
+      assert.equal(result.opcoreInit.approved, false);
+      assert.equal(result.opcoreInit.options.scope, "repo");
+      assert.equal(actionFor(result, ".agents/skills/opcore/SKILL.md").kind, "write");
+      assert.equal(actionFor(result, ".claude/skills/opcore/SKILL.md").kind, "write");
+      assert.equal(actionFor(result, ".opcore/hooks/opcore-agent-gate.mjs").kind, "create_hook");
+      assert.equal(actionFor(result, ".git/hooks/pre-commit").kind, "create_hook");
+      assert.match(result.message, /^Opcore install:/);
+      assert.match(result.message, /\[x\] Install Opcore agent skill/);
+      assert.match(result.message, /\[x\] Install Git pre-commit hook/);
+      assert.equal(existsSync(join(temp, ".agents", "skills", "opcore", "SKILL.md")), false);
+      assert.equal(existsSync(join(temp, ".claude", "skills", "opcore", "SKILL.md")), false);
+      assert.equal(existsSync(join(temp, ".git", "hooks", "pre-commit")), false);
+      assert.equal(existsSync(join(temp, ".opcore")), false);
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("does not overwrite an existing Git pre-commit hook during install", () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-install-existing-precommit-"));
+    try {
+      initGitFixture(temp);
+      const existingHook = "#!/usr/bin/env sh\necho existing\n";
+      writeFileSync(join(temp, ".git", "hooks", "pre-commit"), existingHook);
+
+      const plan = parseJson(runOpcore(["install", "--repo", temp, "--json"], temp, 0).stdout);
+
+      assert.equal(plan.opcoreInit.actions.some((action) => action.path === ".git/hooks/pre-commit"), false);
+      assert.match(plan.message, /\[ \] Install Git pre-commit hook/);
+      assert.match(plan.message, /Existing \.git\/hooks\/pre-commit detected/);
+
+      const apply = parseJson(runOpcore(["install", "--repo", temp, "--yes", "--json"], temp, 0).stdout);
+      const config = JSON.parse(readFileSync(join(temp, ".opcore", "config"), "utf8"));
+      const undo = JSON.parse(readFileSync(join(temp, ".opcore", "init-undo.json"), "utf8"));
+
+      assert.equal(apply.opcoreInit.approved, true);
+      assert.equal(readFileSync(join(temp, ".git", "hooks", "pre-commit"), "utf8"), existingHook);
+      assert.equal(config.hooks.activePreCommit, false);
+      assert.equal(undo.entries.some((entry) => entry.path === ".git/hooks/pre-commit"), false);
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("applies install with skills, write gates, active pre-commit, and uninstall", () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-install-apply-"));
+    try {
+      initGitFixture(temp);
+
+      const apply = parseJson(runOpcore(["install", "--repo", temp, "--yes", "--json"], temp, 0).stdout);
+
+      assert.deepEqual(apply.canonicalCommand, ["opcore", "install"]);
+      assert.equal(apply.opcoreInit.mode, "apply");
+      assert.equal(apply.opcoreInit.approved, true);
+      assert.equal(apply.opcoreInit.undoAvailable, true);
+      assert.equal(existsSync(join(temp, ".opcore", "config")), true);
+      assert.equal(existsSync(join(temp, ".opcore", "hooks", "opcore-agent-gate.mjs")), true);
+      assert.equal(existsSync(join(temp, ".agents", "skills", "opcore", "SKILL.md")), true);
+      assert.equal(existsSync(join(temp, ".claude", "skills", "opcore", "SKILL.md")), true);
+      assert.match(readFileSync(join(temp, ".agents", "skills", "opcore", "SKILL.md"), "utf8"), /^---\nname: opcore\n/);
+      assert.match(readFileSync(join(temp, ".claude", "skills", "opcore", "SKILL.md"), "utf8"), /opcore check --changed/);
+      const preCommit = readFileSync(join(temp, ".git", "hooks", "pre-commit"), "utf8");
+      assert.match(preCommit, /^#!\/usr\/bin\/env sh/);
+      assert.match(preCommit, /opcore check --changed/);
+      const claudeSettings = JSON.parse(readFileSync(join(temp, ".claude", "settings.json"), "utf8"));
+      const codexHooks = JSON.parse(readFileSync(join(temp, ".codex", "hooks.json"), "utf8"));
+      assertHookCommand(claudeSettings, "Edit|MultiEdit|Write", ".opcore/hooks/opcore-agent-gate.mjs");
+      assertHookCommand(codexHooks, "apply_patch|Edit|Write", ".opcore/hooks/opcore-agent-gate.mjs");
+      const undo = JSON.parse(readFileSync(join(temp, ".opcore", "init-undo.json"), "utf8"));
+      assert.equal(undo.entries.some((entry) => entry.path === ".git/hooks/pre-commit"), true);
+      assert.equal(undo.entries.some((entry) => entry.path === ".agents/skills/opcore/SKILL.md"), true);
+      assert.equal(undo.entries.some((entry) => entry.path === ".claude/skills/opcore/SKILL.md"), true);
+
+      const uninstall = parseJson(runOpcore(["uninstall", "--repo", temp, "--yes", "--json"], temp, 0).stdout);
+
+      assert.deepEqual(uninstall.canonicalCommand, ["opcore", "uninstall"]);
+      assert.equal(uninstall.opcoreInit.mode, "undo");
+      assert.equal(uninstall.opcoreInit.approved, true);
+      assert.equal(existsSync(join(temp, ".git", "hooks", "pre-commit")), false);
+      assert.equal(existsSync(join(temp, ".agents", "skills", "opcore", "SKILL.md")), false);
+      assert.equal(existsSync(join(temp, ".claude", "skills", "opcore", "SKILL.md")), false);
+      assert.equal(existsSync(join(temp, ".opcore", "config")), false);
+      assert.equal(existsSync(join(temp, ".opcore", "init-undo.json")), false);
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("prompts install as a default-yes wizard", async () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-install-tty-"));
+    try {
+      initGitFixture(temp);
+
+      const result = await runOpcoreCliInProcess(["install", "--repo", temp], temp, { answer: "" });
+
+      assert.equal(result.exitCode, 0);
+      assert.equal(result.stderr, "");
+      assert.match(result.stdout, /Opcore install:/);
+      assert.match(result.stdout, /\[x\] Install Opcore agent skill/);
+      assert.match(result.stdout, /\[x\] Install Git pre-commit hook/);
+      assert.match(result.stdout, /Apply setup\? \[Y\/n\]/);
+      assert.match(result.stdout, /opcore install applied/i);
+      assert.equal(existsSync(join(temp, ".agents", "skills", "opcore", "SKILL.md")), true);
+      assert.equal(existsSync(join(temp, ".git", "hooks", "pre-commit")), true);
     } finally {
       rmSync(temp, { recursive: true, force: true });
     }

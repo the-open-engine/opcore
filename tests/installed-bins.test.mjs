@@ -21,7 +21,7 @@ const currentNativePackage = graphCoreNativePackageNamesByTarget[currentTarget];
 
 const packageNames = [
   "@the-open-engine/opcore-contracts",
-  "@the-open-engine/opcore",
+  "opcore",
   "@the-open-engine/opcore-graph",
   currentNativePackage,
   "@the-open-engine/opcore-edit",
@@ -58,8 +58,8 @@ describe("installed package bins", () => {
       const opcoreScan = assertSmoke(project, ["--json"], 0, "opcore");
       assert.deepEqual(opcoreScan.canonicalCommand, ["opcore", "scan"]);
       assert.equal(Object.hasOwn(opcoreScan, "validationResult"), true);
-      const opcoreInit = assertSmoke(project, ["init", "--json"], 0, "opcore");
-      assert.deepEqual(opcoreInit.canonicalCommand, ["opcore", "init"]);
+      const opcoreInit = assertSmoke(project, ["install", "--json"], 0, "opcore");
+      assert.deepEqual(opcoreInit.canonicalCommand, ["opcore", "install"]);
       assert.equal(opcoreInit.opcoreInit.mode, "plan");
       assert.equal(Object.hasOwn(opcoreInit.opcoreInit, "scan"), true);
       assert.equal(Array.isArray(opcoreInit.opcoreInit.settings.languages), true);
@@ -155,7 +155,7 @@ describe("installed package bins", () => {
       for (const packageName of packageNames) {
         const manifestPath = join(project, "node_modules", ...packageName.split("/"), "package.json");
         const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
-        if (packageName === "@the-open-engine/opcore") {
+        if (packageName === "opcore") {
           assert.deepEqual(manifest.bin, { opcore: "dist/index.js" });
           assert.equal(
             manifest.exports["./descriptors/opcore.managed-tool.json"],
@@ -230,7 +230,7 @@ describe("installed package bins", () => {
         "@the-open-engine/opcore-validation-rust",
         "@the-open-engine/opcore-validation-typescript",
         "@the-open-engine/opcore-asp-provider",
-        "@the-open-engine/opcore"
+        "opcore"
       ].map((packageName) => packWorkspace(packageName, temp));
       const project = join(temp, "project");
       mkdirSync(project);
@@ -267,7 +267,7 @@ describe("installed package bins", () => {
         "@the-open-engine/opcore-validation-rust",
         "@the-open-engine/opcore-validation-typescript",
         "@the-open-engine/opcore-asp-provider",
-        "@the-open-engine/opcore"
+        "opcore"
       ].map((packageName) => packWorkspace(packageName, temp));
       const project = join(temp, "project");
       const globalPrefix = join(temp, "global-prefix");
@@ -298,11 +298,11 @@ describe("installed package bins", () => {
         const sourceSnapshot = snapshotFiles(fixture.repoRoot, fixture.sourceFiles);
         if (fixture.id === "fresh-git") assertHeadUnresolved(fixture.repoRoot);
 
-        const plan = assertCliJson(globalOpcore, ["init", "--repo", fixture.repoRoot, "--json"], 0, fixture.repoRoot, {
+        const plan = assertCliJson(globalOpcore, ["install", "--repo", fixture.repoRoot, "--json"], 0, fixture.repoRoot, {
           fixture,
           telemetryPath
         });
-        assert.deepEqual(plan.canonicalCommand, ["opcore", "init"], fixture.id);
+        assert.deepEqual(plan.canonicalCommand, ["opcore", "install"], fixture.id);
         assert.equal(plan.opcoreInit.mode, "plan", fixture.id);
         assert.equal(plan.opcoreInit.approved, false, fixture.id);
         assertTimingPayload(plan.opcoreInit.timings);
@@ -321,7 +321,7 @@ describe("installed package bins", () => {
         assertFixtureCoverage(scan.repoState, fixture);
         assertSourceSnapshot(fixture.repoRoot, sourceSnapshot);
 
-        const apply = assertCliJson(globalOpcore, ["init", "--repo", fixture.repoRoot, "--approve", "--json"], 0, fixture.repoRoot, {
+        const apply = assertCliJson(globalOpcore, ["install", "--repo", fixture.repoRoot, "--yes", "--json"], 0, fixture.repoRoot, {
           fixture,
           telemetryPath
         });
@@ -358,7 +358,7 @@ describe("installed package bins", () => {
           assertHeadUnresolved(fixture.repoRoot);
         }
 
-        const undo = assertCliJson(globalOpcore, ["init", "--undo", "--repo", fixture.repoRoot, "--approve", "--json"], 0, fixture.repoRoot, {
+        const undo = assertCliJson(globalOpcore, ["uninstall", "--repo", fixture.repoRoot, "--yes", "--json"], 0, fixture.repoRoot, {
           fixture,
           telemetryPath
         });
@@ -379,7 +379,7 @@ describe("installed package bins", () => {
       assert.equal(readFileSync(telemetryPath).byteLength <= commandLatencyTelemetryArtifactPolicy.maxBytes, true);
       assert.deepEqual(
         [...new Set(records.map((record) => record.canonicalCommand[1]))].sort(),
-        ["check", "init", "scan"]
+        ["check", "install", "scan", "uninstall"]
       );
       assert.equal(records.every((record) => validateCommandLatencyRecord(record) === record), true);
       assert.doesNotMatch(readFileSync(telemetryPath, "utf8"), onboardingForbiddenOutput);
@@ -434,7 +434,6 @@ function assertManagedDescriptor(project) {
   const descriptorPath = join(
     project,
     "node_modules",
-    "@the-open-engine",
     "opcore",
     "dist",
     "descriptors",
@@ -892,7 +891,7 @@ function opcoreVersionForBin(command) {
     const manifestPath = join(current, "package.json");
     if (existsSync(manifestPath)) {
       const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
-      if (manifest.name === "@the-open-engine/opcore" && typeof manifest.version === "string") return manifest.version;
+      if (manifest.name === "opcore" && typeof manifest.version === "string") return manifest.version;
     }
     current = dirname(current);
   }

@@ -802,7 +802,6 @@ function collectInstalledDescriptor(project, tarballs) {
   const descriptorAbsolutePath = join(
     project,
     "node_modules",
-    "@the-open-engine",
     "opcore",
     "dist",
     "descriptors",
@@ -810,8 +809,8 @@ function collectInstalledDescriptor(project, tarballs) {
   );
   const descriptor = validateManagedToolDescriptor(JSON.parse(readFileSync(descriptorAbsolutePath, "utf8")));
   return {
-    path: "node_modules/@the-open-engine/opcore/dist/descriptors/opcore.managed-tool.json",
-    packageName: "@the-open-engine/opcore",
+    path: "node_modules/opcore/dist/descriptors/opcore.managed-tool.json",
+    packageName: "opcore",
     checksumSha256: sha256File(descriptorAbsolutePath),
     descriptor,
     resolvedArtifacts: descriptor.artifacts.map((artifact) => {

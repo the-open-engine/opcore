@@ -10,7 +10,7 @@
       "dist/index.d.ts.map"
     ]
   },
-  "@the-open-engine/opcore": {
+  "opcore": {
     "directory": "packages/opcore",
     "expectedFiles": [
       "package.json",

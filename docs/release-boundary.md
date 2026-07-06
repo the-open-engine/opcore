@@ -28,7 +28,7 @@ identity to Opcore:
 - Rust validation: `@the-open-engine/opcore-validation-rust`;
 - clone validation: `@the-open-engine/opcore-validation-clone`;
 - edit: `@the-open-engine/opcore-edit`;
-- CLI/product: `@the-open-engine/opcore` with the `opcore` bin;
+- CLI/product: `opcore` with the `opcore` bin;
 - ASP provider: `@the-open-engine/opcore-asp-provider`;
 - native graph artifacts: `@the-open-engine/opcore-graph-core-*`.
 
@@ -37,7 +37,7 @@ output, or quickstart should expose legacy product naming.
 
 ## Required Public Surfaces
 
-- `@the-open-engine/opcore` with `opcore` bin.
+- `opcore` with `opcore` bin.
 - Platform native packages for supported alpha targets.
 - Optional ASP provider package or subpath, named as Opcore.
 - README quickstart.

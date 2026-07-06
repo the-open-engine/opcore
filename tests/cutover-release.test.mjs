@@ -101,7 +101,7 @@ describe("cutover release receipt", () => {
               path: `node_modules/${packageName}/package.json`,
               sha256: "c".repeat(64),
               bins:
-                packageName === "@the-open-engine/opcore"
+                packageName === "opcore"
                   ? { opcore: "dist/index.js" }
                   : packageName === "@the-open-engine/opcore-asp-provider"
                     ? { "opcore-asp-provider": "dist/index.js" }
@@ -111,7 +111,7 @@ describe("cutover release receipt", () => {
           })),
         descriptor: {
           path: "packages/opcore/dist/descriptors/opcore.managed-tool.json",
-          packageName: "@the-open-engine/opcore",
+          packageName: "opcore",
           checksumSha256: "d".repeat(64),
           descriptor,
           resolvedArtifacts: descriptor.artifacts.map((artifact) => ({ ...artifact, packageFile: true })),
@@ -189,7 +189,7 @@ describe("cutover release receipt", () => {
 function installedFilesFor(packageName) {
   const paths = [
     "package.json",
-    ...(packageName === "@the-open-engine/opcore" ? ["dist/index.js"] : []),
+    ...(packageName === "opcore" ? ["dist/index.js"] : []),
     ...(packageName === "@the-open-engine/opcore-asp-provider" ? ["dist/index.js", "dist/manifests/asp-server.json"] : [])
   ];
   return paths.map((path) => ({ path: `node_modules/${packageName}/${path}`, sha256: "4".repeat(64) }));

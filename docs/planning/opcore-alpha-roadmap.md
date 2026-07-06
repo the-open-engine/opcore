@@ -33,7 +33,7 @@ The Opcore alpha implementation status is:
 | #126 Native packaging | closed | Optional native packages exist for `darwin-arm64`, `darwin-x64`, and `linux-x64`; release dry-run consumes built artifacts. |
 | #127 TS/JS exports | closed | Graph-core emits export metadata for dead-export metrics. |
 | #128 Status | closed | `opcore status` is repo-aware, fast, and read-only. |
-| #129 Product facade | closed | `@the-open-engine/opcore` owns the public `opcore` bin, zero-command scan, and agent check wrapper. |
+| #129 Product facade | closed | `opcore` owns the public `opcore` bin, zero-command scan, and agent check wrapper. |
 | #130 Metrics/history | closed | Named drillable metric signals and `opcore measure` landed. |
 | #131 Init | closed | `opcore init` is plan-first, additive, approval-gated, and undo-aware. |
 | #132 Install skill | not shipped | No `opcore-install` skill is present in `.claude/skills`; installation remains through `opcore init`. |

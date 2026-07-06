@@ -14,7 +14,7 @@ import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { routeOpcoreCheck } from "./check.js";
-import { routeOpcoreInit } from "./init.js";
+import { routeOpcoreInstall } from "./init.js";
 import {
   createOpcoreMetricReport,
   createOpcoreMeasureDelta,
@@ -170,9 +170,9 @@ async function runScenario(sampleRoot: string, seed: TryScenarioSeed): Promise<T
   seed.write(repoRoot);
 
   const scan = await routeOpcoreScan(["try", "--repo", repoRoot, "--json"], ["--repo", repoRoot], true);
-  const init = await routeOpcoreInit(
-    ["try", "init", "--repo", repoRoot, "--approve", "--json"],
-    parseCommandArgv(["init", "--repo", repoRoot, "--approve", "--json"]),
+  const install = await routeOpcoreInstall(
+    ["try", "install", "--repo", repoRoot, "--yes", "--json"],
+    parseCommandArgv(["install", "--repo", repoRoot, "--yes", "--json"]),
     { stdinIsTTY: false, stdoutIsTTY: false }
   );
   const check = await routeOpcoreCheck(
@@ -188,7 +188,7 @@ async function runScenario(sampleRoot: string, seed: TryScenarioSeed): Promise<T
   const measure = createOpcoreMeasureDelta({ current: report, history: readOpcoreMetricHistory(repoRoot) });
   const commands = [
     commandSummary(seed.id, ["opcore", "--repo", repoRoot], scan),
-    commandSummary(seed.id, ["opcore", "init", "--repo", repoRoot, "--approve"], init),
+    commandSummary(seed.id, ["opcore", "install", "--repo", repoRoot, "--yes"], install),
     commandSummary(seed.id, ["opcore", ...checkArgs.filter((arg) => arg !== "--json"), "--repo", repoRoot], check),
     {
       scenarioId: seed.id,
@@ -307,7 +307,7 @@ function formatTryHuman(payload: OpcoreTryPayload): string {
     ...(signals.length === 0 ? ["  none"] : signals.map((signal) => `  ${signal.id}: count=${signal.count} delta=${formatSigned(signal.delta)}`)),
     "Loop:",
     "  opcore --repo <sample>",
-    "  opcore init --repo <sample> --approve",
+    "  opcore install --repo <sample> --yes",
     "  opcore check --changed --checks typescript.syntax,typescript.types,rust.source-hygiene,rust.file-length,python.syntax,python.source-hygiene --json",
     "  opcore measure --repo <sample>",
     "Sandbox:",
