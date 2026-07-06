@@ -608,6 +608,34 @@ describe("opcore public facade", () => {
     }
   });
 
+  it("skips active pre-commit setup in linked Git worktrees without failing install", () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-install-linked-worktree-"));
+    const repo = join(temp, "repo");
+    const linked = join(temp, "linked");
+    try {
+      mkdirSync(repo);
+      initGitFixture(repo);
+      run("git", ["worktree", "add", "-b", "linked-install-test", linked, "main"], repo, 0);
+
+      const plan = parseJson(runOpcore(["install", "--repo", linked, "--json"], linked, 0).stdout);
+
+      assert.equal(plan.opcoreInit.actions.some((action) => action.path === ".git/hooks/pre-commit"), false);
+      assert.match(plan.message, /\[ \] Install Git pre-commit hook/);
+      assert.match(plan.message, /Linked Git worktree detected/);
+
+      const apply = parseJson(runOpcore(["install", "--repo", linked, "--yes", "--json"], linked, 0).stdout);
+      const config = JSON.parse(readFileSync(join(linked, ".opcore", "config"), "utf8"));
+      const undo = JSON.parse(readFileSync(join(linked, ".opcore", "init-undo.json"), "utf8"));
+
+      assert.equal(apply.opcoreInit.approved, true);
+      assert.equal(config.hooks.activePreCommit, false);
+      assert.equal(undo.entries.some((entry) => entry.path === ".git/hooks/pre-commit"), false);
+      assert.equal(existsSync(join(linked, ".opcore", "hooks", "opcore-agent-gate.mjs")), true);
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
   it("applies install with skills, write gates, active pre-commit, and uninstall", () => {
     const temp = mkdtempSync(join(tmpdir(), "opcore-install-apply-"));
     try {

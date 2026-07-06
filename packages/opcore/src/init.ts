@@ -871,7 +871,11 @@ function planInit(
 ): PlannedInit {
   if (options.scope === "global") return planGlobalInit(repoRoot, requestedPath, homeRoot, options, context);
   const agentFiles = detectAgentFiles(repoRoot);
-  const activePreCommitWritePlanned = options.activePreCommitHook && git && !repoPathExists(repoRoot, activePreCommitHookPath);
+  const linkedGitWorktree = git && isLinkedGitWorktree(repoRoot);
+  const activePreCommitWritePlanned = options.activePreCommitHook &&
+    git &&
+    !linkedGitWorktree &&
+    !repoPathExists(repoRoot, activePreCommitHookPath);
   const config = createConfig(repoRoot, options.failClosedHook, activePreCommitWritePlanned, context.scan, context.settings);
   const writes: PlannedWrite[] = [
     {
@@ -973,7 +977,8 @@ function planInit(
         options.failClosedHook,
         options.scope,
         activePreCommitWritePlanned,
-        options.activePreCommitHook && git
+        options.activePreCommitHook && git,
+        linkedGitWorktree
       ),
       nextActions: initNextActions(options),
       undoAvailable: repoPathExists(repoRoot, undoPath),
@@ -1036,7 +1041,7 @@ function planGlobalInit(
       },
       agentFiles: [],
       actions: createInitActions(options.scope, [], options, false, false),
-      warnings: initWarnings(context.scan, true, false, options.scope, false, false),
+      warnings: initWarnings(context.scan, true, false, options.scope, false, false, false),
       nextActions: initNextActions(options),
       undoAvailable: repoPathExists(homeRoot, globalUndoPath),
       scan: context.scan,
@@ -1415,7 +1420,8 @@ function initWarnings(
   failClosedHook: boolean,
   scope: ParsedInitArgs["scope"],
   activePreCommitHook: boolean,
-  activePreCommitRequested: boolean
+  activePreCommitRequested: boolean,
+  linkedGitWorktree: boolean
 ): string[] {
   const warnings: string[] = [];
   if (scan.unsupportedStacks.length > 0) {
@@ -1438,6 +1444,8 @@ function initWarnings(
       ? `Fail-closed hook script is opt-in. Manual install required: ${failClosedHookActivationCommand}`
       : activePreCommitHook && git
         ? "Git pre-commit hook will run opcore check --changed when no existing .git/hooks/pre-commit is present."
+        : linkedGitWorktree
+          ? "Linked Git worktree detected; Opcore will not install .git/hooks/pre-commit from this checkout."
         : activePreCommitRequested
           ? "Existing .git/hooks/pre-commit detected; Opcore will not overwrite it."
         : "Fail-closed hooks are opt-in and are not created unless --fail-closed-hook is approved."
@@ -1844,6 +1852,11 @@ function assertExistingAncestorInsideRepo(repoRoot: string, absolutePath: string
 
 function repoPathExists(repoRoot: string, path: string): boolean {
   return lstatIfExists(resolveRepoPath(repoRoot, path)) !== undefined;
+}
+
+function isLinkedGitWorktree(repoRoot: string): boolean {
+  const gitPath = lstatIfExists(resolveRepoPath(repoRoot, ".git"));
+  return gitPath?.isFile() === true;
 }
 
 function lstatIfExists(path: string): ReturnType<typeof lstatSync> | undefined {
