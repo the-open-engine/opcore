@@ -701,6 +701,114 @@ describe("opcore public facade", () => {
     }
   });
 
+  it("runs the keyboard install wizard and applies with enter only", async () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-install-wizard-"));
+    try {
+      initGitFixture(temp);
+
+      const result = await runOpcoreCliInProcess(["install", "--repo", temp], temp, {
+        stderrIsTTY: true,
+        keys: ["\r", "\r"]
+      });
+
+      assert.equal(result.exitCode, 0);
+      assert.match(result.stdout, /^opcore install applied\n$/);
+      const stderrPlain = result.stderr.replace(/\x1b\[[0-9;?]*[a-zA-Z]/g, "");
+      assert.match(stderrPlain, /opcore install/);
+      assert.match(stderrPlain, /Coverage/);
+      assert.match(stderrPlain, /Plan/);
+      assert.match(stderrPlain, /OPCORE · INSTALLED/);
+      assert.doesNotMatch(result.stdout + result.stderr, /\[Y\/n\]/);
+      assert.equal(existsSync(join(temp, ".opcore", "config")), true);
+      assert.equal(existsSync(join(temp, ".opcore", "hooks", "opcore-agent-gate.mjs")), true);
+      assert.equal(existsSync(join(temp, ".claude", "skills", "opcore", "SKILL.md")), true);
+      assert.equal(existsSync(join(temp, ".git", "hooks", "pre-commit")), true);
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("toggles pre-commit and write-gate hooks off in the install wizard before applying", async () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-install-wizard-toggles-"));
+    try {
+      initGitFixture(temp);
+
+      // down (hooks), space (off), down (pre-commit), space (off), enter (action row), enter (Install)
+      const result = await runOpcoreCliInProcess(["install", "--repo", temp], temp, {
+        stderrIsTTY: true,
+        keys: ["\x1b[B", " ", "\x1b[B", " ", "\r", "\r"]
+      });
+
+      assert.equal(result.exitCode, 0);
+      assert.match(result.stdout, /opcore install applied/);
+      assert.equal(existsSync(join(temp, ".opcore", "config")), true);
+      assert.equal(existsSync(join(temp, ".claude", "skills", "opcore", "SKILL.md")), true);
+      assert.equal(existsSync(join(temp, ".opcore", "hooks", "opcore-agent-gate.mjs")), false);
+      assert.equal(existsSync(join(temp, ".claude", "settings.json")), false);
+      assert.equal(existsSync(join(temp, ".codex", "hooks.json")), false);
+      assert.equal(existsSync(join(temp, ".git", "hooks", "pre-commit")), false);
+      const config = JSON.parse(readFileSync(join(temp, ".opcore", "config"), "utf8"));
+      assert.equal(config.hooks.writeGate, false);
+      assert.deepEqual(config.hooks.harnesses, []);
+      assert.equal(config.hooks.activePreCommit, false);
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("declines the install wizard with esc and writes nothing", async () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-install-wizard-decline-"));
+    try {
+      initGitFixture(temp);
+
+      const result = await runOpcoreCliInProcess(["install", "--repo", temp], temp, {
+        stderrIsTTY: true,
+        keys: ["\x1b"]
+      });
+
+      assert.equal(result.exitCode, 0);
+      assert.match(result.stdout, /^opcore install declined\n$/);
+      const stderrPlain = result.stderr.replace(/\x1b\[[0-9;?]*[a-zA-Z]/g, "");
+      assert.match(stderrPlain, /Cancelled/);
+      assert.match(stderrPlain, /nothing written/);
+      assert.equal(existsSync(join(temp, ".opcore")), false);
+      assert.equal(existsSync(join(temp, ".claude")), false);
+      assert.equal(existsSync(join(temp, ".git", "hooks", "pre-commit")), false);
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("prompts scope in the install wizard and applies a global install from the keyboard", async () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-install-wizard-scope-"));
+    const home = mkdtempSync(join(tmpdir(), "opcore-install-wizard-home-"));
+    try {
+      initGitFixture(temp);
+
+      // scope: down (all repos), enter · plan: enter (action row), enter (Install)
+      const result = await runOpcoreCliInProcess(["install"], temp, {
+        stderrIsTTY: true,
+        homeDir: home,
+        keys: ["\x1b[B", "\r", "\r", "\r"]
+      });
+
+      assert.equal(result.exitCode, 0);
+      assert.match(result.stdout, /opcore install applied/);
+      const stderrPlain = result.stderr.replace(/\x1b\[[0-9;?]*[a-zA-Z]/g, "");
+      assert.match(stderrPlain, /Scope/);
+      assert.match(stderrPlain, /all repos/);
+      assert.equal(existsSync(join(home, ".opcore", "hooks", "opcore-agent-gate.mjs")), true);
+      assert.equal(existsSync(join(home, ".claude", "settings.json")), true);
+      assert.equal(existsSync(join(home, ".codex", "hooks.json")), true);
+      assert.equal(existsSync(join(home, ".opcore", "init-undo.json")), true);
+      assert.equal(existsSync(join(temp, ".opcore")), false);
+      assert.equal(existsSync(join(temp, ".claude")), false);
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+      rmSync(home, { recursive: true, force: true });
+    }
+  });
+
   it("applies approved init with config, guidance, Claude/Codex hooks, and idempotent undo", () => {
     const temp = mkdtempSync(join(tmpdir(), "opcore-init-apply-"));
     try {
@@ -1726,7 +1834,17 @@ async function runOpcoreCliInProcess(args, cwd, options) {
       readLine: async (prompt) => {
         stdout += prompt;
         return answers.shift();
-      }
+      },
+      readKey: Array.isArray(options.keys)
+        ? (() => {
+          const keys = [...options.keys];
+          return async () => {
+            if (keys.length === 0) throw new Error("install wizard test ran out of scripted keys");
+            return keys.shift();
+          };
+        })()
+        : undefined,
+      initWizardMotion: false
     });
     return { exitCode, stdout, stderr };
   } finally {
