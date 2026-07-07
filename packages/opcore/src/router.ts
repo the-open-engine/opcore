@@ -29,6 +29,13 @@ declare const process: {
   env?: Record<string, string | undefined>;
   stdin: {
     isTTY?: boolean;
+    isRaw?: boolean;
+    setRawMode?: (mode: boolean) => void;
+    setEncoding?: (encoding: string) => void;
+    resume(): void;
+    pause(): void;
+    on(event: "data", listener: (chunk: unknown) => void): void;
+    off(event: "data", listener: (chunk: unknown) => void): void;
   };
   stdout: {
     isTTY?: boolean;
@@ -64,6 +71,8 @@ export interface RunOpcoreCliOptions {
   stdoutIsTTY?: boolean;
   stderrIsTTY?: boolean;
   readLine?: (prompt: string) => Promise<string>;
+  readKey?: () => Promise<string>;
+  initWizardMotion?: boolean;
 }
 
 const helpArgs = new Set(["--help", "-h", "help"]);
@@ -117,14 +126,39 @@ export async function runOpcoreCli(options: RunOpcoreCliOptions): Promise<number
 }
 
 function createOpcoreInitRuntime(options: RunOpcoreCliOptions, stderr: Writer): OpcoreInitRuntime {
+  const stderrIsTTY = options.stderrIsTTY ?? process.stderr.isTTY === true;
+  const noColor = Boolean(process.env && process.env.NO_COLOR);
   return {
     stdinIsTTY: options.stdinIsTTY ?? process.stdin.isTTY === true,
     stdoutIsTTY: options.stdoutIsTTY ?? process.stdout.isTTY === true,
-    stderrIsTTY: options.stderrIsTTY ?? process.stderr.isTTY === true,
+    stderrIsTTY,
+    stderrColor: stderrIsTTY && !noColor,
+    stderrTrueColor: /truecolor|24bit/.test((process.env && process.env.COLORTERM) ?? ""),
     homeDir: options.homeDir,
     writeStderr: stderr,
-    readLine: options.readLine ?? createReadLine()
+    readLine: options.readLine ?? createReadLine(),
+    readKey: options.readKey ?? createReadKey(),
+    initWizardMotion: options.initWizardMotion
   };
+}
+
+function createReadKey(): (() => Promise<string>) | undefined {
+  if (process.stdin.isTTY !== true || typeof process.stdin.setRawMode !== "function") return undefined;
+  return () =>
+    new Promise<string>((resolveKey) => {
+      const stdin = process.stdin;
+      const wasRaw = stdin.isRaw === true;
+      stdin.setRawMode?.(true);
+      stdin.resume();
+      const onData = (chunk: unknown) => {
+        stdin.off("data", onData);
+        if (!wasRaw) stdin.setRawMode?.(false);
+        stdin.pause();
+        resolveKey(typeof chunk === "string" ? chunk : String(chunk));
+      };
+      stdin.setEncoding?.("utf8");
+      stdin.on("data", onData);
+    });
 }
 
 async function routeOpcoreParsed(

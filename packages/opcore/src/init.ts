@@ -28,6 +28,15 @@ import {
 import { homedir } from "node:os";
 import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
 import { opcoreAgentGateHookScriptContent } from "./agent-gate.js";
+import {
+  createInstallWizardRenderer,
+  type InstallWizardChoices,
+  type InstallWizardFileRow,
+  type InstallWizardGroup,
+  type InstallWizardGroupKey,
+  type InstallWizardPlanView,
+  type InstallWizardRenderer
+} from "./install-wizard.js";
 import { createOpcoreScanAnalysis, type OpcoreScanAnalysis } from "./scan.js";
 import { failedValidationCheckIds } from "./scan-presentation.js";
 import { commonSkippedPathSegments, resolveRepo, type RepoResolution } from "./status.js";
@@ -110,6 +119,7 @@ interface ParsedInitArgs {
   dryRun: boolean;
   failClosedHook: boolean;
   agentSkill: boolean;
+  writeGateHooks: boolean;
   activePreCommitHook: boolean;
   undo: boolean;
 }
@@ -118,11 +128,15 @@ export interface OpcoreInitRuntime {
   stdinIsTTY?: boolean;
   stdoutIsTTY?: boolean;
   stderrIsTTY?: boolean;
+  stderrColor?: boolean;
+  stderrTrueColor?: boolean;
   homeDir?: string;
   writeStderr?: (text: string) => void;
   scanAnalysis?: (resolution: RepoResolution) => Promise<OpcoreScanAnalysis>;
   initProgressIntervalMs?: number;
   readLine?: (prompt: string) => Promise<string>;
+  readKey?: () => Promise<string>;
+  initWizardMotion?: boolean;
 }
 
 interface InitContext {
@@ -231,6 +245,7 @@ async function routeOpcoreSetup(
     return createInitRouterResult(argv, parsed.json, "error", resolution.message);
   }
 
+  const wizard = createInstallWizard(parsed.json, parsedInit.args, runtime, command);
   try {
     const timing: TimingState = {
       startedAt: nowMs(),
@@ -240,13 +255,15 @@ async function routeOpcoreSetup(
       applyMs: 0
     };
     const scanStartedAt = nowMs();
-    const progress = startInitScanProgress(parsed.json, runtime, command);
+    const progress = wizard
+      ? startWizardScanProgress(wizard, runtime, repoDisplayLabel(resolution.resolution.root, initHomeRoot(runtime)))
+      : startInitScanProgress(parsed.json, runtime, command);
     const scanAnalysis = runtime.scanAnalysis ?? createOpcoreScanAnalysis;
     let analysis: OpcoreScanAnalysis;
     try {
       analysis = await scanAnalysis(resolution.resolution);
       timing.scanMs = elapsedMs(scanStartedAt);
-      progress?.complete(timing.scanMs);
+      progress?.complete(timing.scanMs, analysis.repoState.coverage.totalFiles);
     } catch (error) {
       timing.scanMs = elapsedMs(scanStartedAt);
       progress?.fail(timing.scanMs);
@@ -276,6 +293,21 @@ async function routeOpcoreSetup(
       );
     }
 
+    if (wizard) {
+      return await runInstallWizardFlow(
+        argv,
+        resolution.resolution.root,
+        resolution.resolution.requestedPath,
+        resolution.resolution.git,
+        initHomeRoot(runtime),
+        parsedInit.args,
+        context,
+        timing,
+        wizard,
+        command
+      );
+    }
+
     return await routeOpcoreInitPlanOrApply(
       argv,
       parsed.json,
@@ -291,7 +323,72 @@ async function routeOpcoreSetup(
     );
   } catch (error) {
     return createInitRouterResult(argv, parsed.json, "error", `opcore ${command} failed: ${errorMessage(error)}`);
+  } finally {
+    wizard?.showCursor();
   }
+}
+
+function createInstallWizard(
+  json: boolean,
+  options: ParsedInitArgs,
+  runtime: OpcoreInitRuntime,
+  command: OpcoreSetupCommand
+): InstallWizardRenderer | undefined {
+  if (command !== "install" || json || options.approved || options.dryRun || options.undo) return undefined;
+  if (!isInteractiveRuntime(runtime) || runtime.stderrIsTTY !== true) return undefined;
+  if (typeof runtime.readKey !== "function" || typeof runtime.writeStderr !== "function") return undefined;
+  const writeStderr = runtime.writeStderr;
+  const readKey = runtime.readKey;
+  return createInstallWizardRenderer(
+    {
+      write: (text) => writeProgress(writeStderr, text),
+      readKey,
+      color: runtime.stderrColor === true,
+      motion: runtime.initWizardMotion !== false
+    },
+    runtime.stderrTrueColor === true
+  );
+}
+
+function startWizardScanProgress(
+  wizard: InstallWizardRenderer,
+  runtime: OpcoreInitRuntime,
+  repoLabel: string
+): { complete(scanMs: number, totalFiles?: number): void; fail(scanMs: number): void } {
+  wizard.hideCursor();
+  wizard.header(repoLabel);
+  const startedAt = nowMs();
+  let finished = false;
+  let frame = 0;
+  wizard.scanFrame(frame, 0);
+  const intervalMs = runtime.initWizardMotion === false ? 0 : 120;
+  const timer = intervalMs > 0
+    ? (setInterval(() => {
+      if (finished) return;
+      frame += 1;
+      wizard.scanFrame(frame, elapsedMs(startedAt));
+    }, intervalMs) as ReturnType<typeof setInterval> & { unref?: () => void })
+    : undefined;
+  timer?.unref?.();
+  return {
+    complete: (scanMs: number, totalFiles?: number) => {
+      if (finished) return;
+      finished = true;
+      if (timer) clearInterval(timer);
+      wizard.scanDone(scanMs, totalFiles);
+    },
+    fail: (scanMs: number) => {
+      if (finished) return;
+      finished = true;
+      if (timer) clearInterval(timer);
+      wizard.scanFailed(scanMs);
+    }
+  };
+}
+
+function repoDisplayLabel(root: string, homeRoot: string): string {
+  if (root === homeRoot) return "~";
+  return root.startsWith(`${homeRoot}${sep}`) ? `~${root.slice(homeRoot.length)}` : root;
 }
 
 function routeOpcoreInitUndo(
@@ -380,6 +477,169 @@ async function routeOpcoreInitPlanOrApply(
   payload = withContext(payload, context, timing);
   const message = prompted ? formatInteractiveOutcome(payload, command) : formatSetupPlan(payload, approved, command);
   return createInitRouterResult(argv, json, "ok", message, ["opcore", command], payload);
+}
+
+async function runInstallWizardFlow(
+  argv: readonly string[],
+  repoRoot: string,
+  requestedPath: string,
+  git: boolean,
+  homeRoot: string,
+  options: ParsedInitArgs,
+  context: InitContext,
+  timing: TimingState,
+  wizard: InstallWizardRenderer,
+  command: OpcoreSetupCommand
+): Promise<CommandRouterResult> {
+  await wizard.coverage(context.scan);
+
+  if (git && !options.scopeExplicit && !options.repoExplicit) {
+    const promptStartedAt = nowMs();
+    const scope = await wizard.selectScope(repoDisplayLabel(repoRoot, homeRoot));
+    timing.promptMs += elapsedMs(promptStartedAt);
+    if (scope === null) {
+      return declinedInstallWizardResult(argv, repoRoot, requestedPath, git, homeRoot, options, context, timing, wizard, command);
+    }
+    options = { ...options, scope, scopeExplicit: true };
+  }
+
+  const planFor = createInstallPlanCache(repoRoot, requestedPath, git, homeRoot, options, context);
+  const probe = planFor({ agentSkill: true, writeGateHooks: true, activePreCommitHook: true });
+  const model = {
+    groups: createInstallWizardGroups(options.scope, git, repoRoot, probe.payload.actions),
+    initial: {
+      agentSkill: options.agentSkill,
+      writeGateHooks: options.writeGateHooks,
+      activePreCommitHook: options.activePreCommitHook
+    },
+    planView: (choices: InstallWizardChoices) => installWizardPlanView(planFor(choices).payload.actions)
+  };
+  context.interaction = { tty: true, promptState: "requested" };
+  const promptStartedAt = nowMs();
+  const outcome = await wizard.planApproval(model);
+  timing.promptMs += elapsedMs(promptStartedAt);
+  options = { ...options, ...outcome.choices };
+  if (!outcome.confirmed) {
+    return declinedInstallWizardResult(argv, repoRoot, requestedPath, git, homeRoot, options, context, timing, wizard, command);
+  }
+
+  context.interaction = { tty: true, promptState: "approved" };
+  const planStartedAt = nowMs();
+  const planned = planInit(repoRoot, requestedPath, git, homeRoot, options, context);
+  timing.planMs += elapsedMs(planStartedAt);
+  const root = scopeRoot(repoRoot, homeRoot, options.scope);
+  const applyStartedAt = nowMs();
+  applyInit(root, options.scope, planned.writes);
+  timing.applyMs = elapsedMs(applyStartedAt);
+  await wizard.applyCascade(planned.payload.actions.map((action) => action.path), timing.applyMs);
+  const undoCommand = options.scope === "global" ? "opcore uninstall --global --yes" : "opcore uninstall";
+  wizard.doneCard(planned.payload.actions.length, options.scope, undoCommand);
+  const payload = withContext(appliedInitPayload(planned.payload, root, options.scope, command), context, timing);
+  return createInitRouterResult(argv, false, "ok", `opcore ${command} applied`, ["opcore", command], payload);
+}
+
+function declinedInstallWizardResult(
+  argv: readonly string[],
+  repoRoot: string,
+  requestedPath: string,
+  git: boolean,
+  homeRoot: string,
+  options: ParsedInitArgs,
+  context: InitContext,
+  timing: TimingState,
+  wizard: InstallWizardRenderer,
+  command: OpcoreSetupCommand
+): CommandRouterResult {
+  wizard.cancelled();
+  context.interaction = { tty: true, promptState: "declined" };
+  const planStartedAt = nowMs();
+  const planned = planInit(repoRoot, requestedPath, git, homeRoot, options, context);
+  timing.planMs += elapsedMs(planStartedAt);
+  const payload: OpcoreInitPlanPayload = {
+    ...withContext(planned.payload, context, timing),
+    nextActions: [`No files written. Rerun opcore ${command} when ready.`]
+  };
+  return createInitRouterResult(argv, false, "ok", `opcore ${command} declined`, ["opcore", command], payload);
+}
+
+function createInstallPlanCache(
+  repoRoot: string,
+  requestedPath: string,
+  git: boolean,
+  homeRoot: string,
+  options: ParsedInitArgs,
+  context: InitContext
+): (choices: InstallWizardChoices) => PlannedInit {
+  const cache = new Map<string, PlannedInit>();
+  return (choices) => {
+    const key = `${choices.agentSkill}|${choices.writeGateHooks}|${choices.activePreCommitHook}`;
+    const cached = cache.get(key);
+    if (cached) return cached;
+    const planned = planInit(repoRoot, requestedPath, git, homeRoot, { ...options, ...choices }, context);
+    cache.set(key, planned);
+    return planned;
+  };
+}
+
+function createInstallWizardGroups(
+  scope: ParsedInitArgs["scope"],
+  git: boolean,
+  repoRoot: string,
+  probeActions: readonly OpcoreInitAction[]
+): InstallWizardGroup[] {
+  const groups: InstallWizardGroup[] = [
+    { key: "skill", label: "agent skill", available: true },
+    { key: "hooks", label: "write-gate hooks", available: true }
+  ];
+  if (scope === "global") return groups;
+  const preCommitPlanned = probeActions.some((action) => action.path === activePreCommitHookPath);
+  if (preCommitPlanned) {
+    groups.push({ key: "precommit", label: "pre-commit hook", available: true });
+  } else {
+    groups.push({
+      key: "precommit",
+      label: "pre-commit hook",
+      available: false,
+      unavailableNote: !git
+        ? "no git repo"
+        : isLinkedGitWorktree(repoRoot)
+          ? "linked worktree — skipped"
+          : "existing hook kept"
+    });
+  }
+  return groups;
+}
+
+function installWizardPlanView(actions: readonly OpcoreInitAction[]): InstallWizardPlanView {
+  const baseRows: InstallWizardFileRow[] = [];
+  const groupRows: Record<InstallWizardGroupKey, InstallWizardFileRow[]> = { skill: [], hooks: [], precommit: [] };
+  for (const action of actions) {
+    const row: InstallWizardFileRow = {
+      path: action.path,
+      mark: action.kind === "upsert_block" || action.kind === "wire_harness"
+        ? "~"
+        : action.path === gitignorePath
+          ? "»"
+          : "+",
+      outsideOpcore: action.outsideOpcore
+    };
+    const group = installWizardGroupForPath(action.path);
+    if (group) groupRows[group].push(row);
+    else baseRows.push(row);
+  }
+  return {
+    baseRows,
+    groupRows,
+    totalWrites: actions.length,
+    outsideWrites: actions.filter((action) => action.outsideOpcore).length
+  };
+}
+
+function installWizardGroupForPath(path: string): InstallWizardGroupKey | undefined {
+  if (path.endsWith("skills/opcore/SKILL.md")) return "skill";
+  if (path.endsWith(agentGateHookPath) || path.endsWith(claudeSettingsPath) || path.endsWith(codexHooksPath)) return "hooks";
+  if (path.endsWith(activePreCommitHookPath)) return "precommit";
+  return undefined;
 }
 
 function createInitRouterResult(
@@ -721,7 +981,7 @@ function startInitScanProgress(
   json: boolean,
   runtime: OpcoreInitRuntime,
   command: OpcoreSetupCommand
-): { complete(scanMs: number): void; fail(scanMs: number): void } | undefined {
+): { complete(scanMs: number, totalFiles?: number): void; fail(scanMs: number): void } | undefined {
   if (json || runtime.stderrIsTTY !== true || typeof runtime.writeStderr !== "function") return undefined;
   const startedAt = nowMs();
   const intervalMs = normalizeProgressIntervalMs(runtime.initProgressIntervalMs);
@@ -798,6 +1058,7 @@ function parseOpcoreInitArgs(
     dryRun: false,
     failClosedHook: false,
     agentSkill: command === "install",
+    writeGateHooks: true,
     activePreCommitHook: command === "install",
     undo: command === "uninstall"
   };
@@ -876,7 +1137,14 @@ function planInit(
     git &&
     !linkedGitWorktree &&
     !repoPathExists(repoRoot, activePreCommitHookPath);
-  const config = createConfig(repoRoot, options.failClosedHook, activePreCommitWritePlanned, context.scan, context.settings);
+  const config = createConfig(
+    repoRoot,
+    options.failClosedHook,
+    activePreCommitWritePlanned,
+    options.writeGateHooks,
+    context.scan,
+    context.settings
+  );
   const writes: PlannedWrite[] = [
     {
       kind: "write",
@@ -889,27 +1157,31 @@ function planInit(
       path,
       targetScope: "repo" as const,
       content: upsertOpcoreBlock(readOptionalRepoFile(repoRoot, path))
-    })),
-    {
-      kind: "write",
-      path: agentGateHookPath,
-      targetScope: "repo",
-      content: opcoreAgentGateHookScriptContent(),
-      executable: true
-    },
-    {
-      kind: "write",
-      path: claudeSettingsPath,
-      targetScope: "repo",
-      content: `${JSON.stringify(mergeClaudeSettings(readJsonObjectIfExists(repoRoot, claudeSettingsPath), "repo"), null, 2)}\n`
-    },
-    {
-      kind: "write",
-      path: codexHooksPath,
-      targetScope: "repo",
-      content: `${JSON.stringify(mergeCodexHooks(readJsonObjectIfExists(repoRoot, codexHooksPath), "repo"), null, 2)}\n`
-    }
+    }))
   ];
+  if (options.writeGateHooks) {
+    writes.push(
+      {
+        kind: "write",
+        path: agentGateHookPath,
+        targetScope: "repo",
+        content: opcoreAgentGateHookScriptContent(),
+        executable: true
+      },
+      {
+        kind: "write",
+        path: claudeSettingsPath,
+        targetScope: "repo",
+        content: `${JSON.stringify(mergeClaudeSettings(readJsonObjectIfExists(repoRoot, claudeSettingsPath), "repo"), null, 2)}\n`
+      },
+      {
+        kind: "write",
+        path: codexHooksPath,
+        targetScope: "repo",
+        content: `${JSON.stringify(mergeCodexHooks(readJsonObjectIfExists(repoRoot, codexHooksPath), "repo"), null, 2)}\n`
+      }
+    );
+  }
   if (options.agentSkill) {
     writes.push(...agentSkillPaths.map((path) => ({
       kind: "write" as const,
@@ -998,31 +1270,37 @@ function planGlobalInit(
   context: InitContext
 ): PlannedInit {
   const writes: PlannedWrite[] = [
-    {
-      kind: "write",
-      path: agentGateHookPath,
-      targetScope: "global",
-      content: opcoreAgentGateHookScriptContent(),
-      executable: true
-    },
+    ...(options.writeGateHooks
+      ? [{
+        kind: "write" as const,
+        path: agentGateHookPath,
+        targetScope: "global" as const,
+        content: opcoreAgentGateHookScriptContent(),
+        executable: true
+      }]
+      : []),
     ...(options.agentSkill ? agentSkillPaths.map((path) => ({
       kind: "write" as const,
       path,
       targetScope: "global" as const,
       content: opcoreAgentSkillContent()
     })) : []),
-    {
-      kind: "write",
-      path: claudeSettingsPath,
-      targetScope: "global",
-      content: `${JSON.stringify(mergeClaudeSettings(readJsonObjectIfExists(homeRoot, claudeSettingsPath), "global"), null, 2)}\n`
-    },
-    {
-      kind: "write",
-      path: codexHooksPath,
-      targetScope: "global",
-      content: `${JSON.stringify(mergeCodexHooks(readJsonObjectIfExists(homeRoot, codexHooksPath), "global"), null, 2)}\n`
-    }
+    ...(options.writeGateHooks
+      ? [
+        {
+          kind: "write" as const,
+          path: claudeSettingsPath,
+          targetScope: "global" as const,
+          content: `${JSON.stringify(mergeClaudeSettings(readJsonObjectIfExists(homeRoot, claudeSettingsPath), "global"), null, 2)}\n`
+        },
+        {
+          kind: "write" as const,
+          path: codexHooksPath,
+          targetScope: "global" as const,
+          content: `${JSON.stringify(mergeCodexHooks(readJsonObjectIfExists(homeRoot, codexHooksPath), "global"), null, 2)}\n`
+        }
+      ]
+      : [])
   ];
   return {
     writes,
@@ -1236,31 +1514,37 @@ function createInitActions(
     : [];
   if (scope === "global") {
     return [
-      {
-        kind: "create_hook",
-        path: actionPath(scope, agentGateHookPath),
-        targetScope: scope,
-        summary: "Install the global Opcore write-gate adapter script.",
-        requiresApproval: false,
-        outsideOpcore: false
-      },
+      ...(options.writeGateHooks
+        ? [{
+          kind: "create_hook" as const,
+          path: actionPath(scope, agentGateHookPath),
+          targetScope: scope,
+          summary: "Install the global Opcore write-gate adapter script.",
+          requiresApproval: false,
+          outsideOpcore: false
+        }]
+        : []),
       ...skillActions,
-      {
-        kind: "wire_harness",
-        path: actionPath(scope, claudeSettingsPath),
-        targetScope: scope,
-        summary: "Merge the Opcore Claude Code PreToolUse write gate.",
-        requiresApproval: true,
-        outsideOpcore: true
-      },
-      {
-        kind: "wire_harness",
-        path: actionPath(scope, codexHooksPath),
-        targetScope: scope,
-        summary: "Merge the Opcore Codex PreToolUse write gate guardrail.",
-        requiresApproval: true,
-        outsideOpcore: true
-      }
+      ...(options.writeGateHooks
+        ? [
+          {
+            kind: "wire_harness" as const,
+            path: actionPath(scope, claudeSettingsPath),
+            targetScope: scope,
+            summary: "Merge the Opcore Claude Code PreToolUse write gate.",
+            requiresApproval: true,
+            outsideOpcore: true
+          },
+          {
+            kind: "wire_harness" as const,
+            path: actionPath(scope, codexHooksPath),
+            targetScope: scope,
+            summary: "Merge the Opcore Codex PreToolUse write gate guardrail.",
+            requiresApproval: true,
+            outsideOpcore: true
+          }
+        ]
+        : [])
     ];
   }
   const actions: OpcoreInitAction[] = [
@@ -1281,30 +1565,34 @@ function createInitActions(
       outsideOpcore: true
     })),
     ...skillActions,
-    {
-      kind: "create_hook",
-      path: agentGateHookPath,
-      targetScope: scope,
-      summary: "Install the repo-local Opcore write-gate adapter script.",
-      requiresApproval: false,
-      outsideOpcore: false
-    },
-    {
-      kind: "wire_harness",
-      path: claudeSettingsPath,
-      targetScope: scope,
-      summary: "Merge the Opcore Claude Code PreToolUse write gate.",
-      requiresApproval: true,
-      outsideOpcore: true
-    },
-    {
-      kind: "wire_harness",
-      path: codexHooksPath,
-      targetScope: scope,
-      summary: "Merge the Opcore Codex PreToolUse write gate guardrail.",
-      requiresApproval: true,
-      outsideOpcore: true
-    }
+    ...(options.writeGateHooks
+      ? [
+        {
+          kind: "create_hook" as const,
+          path: agentGateHookPath,
+          targetScope: scope,
+          summary: "Install the repo-local Opcore write-gate adapter script.",
+          requiresApproval: false,
+          outsideOpcore: false
+        },
+        {
+          kind: "wire_harness" as const,
+          path: claudeSettingsPath,
+          targetScope: scope,
+          summary: "Merge the Opcore Claude Code PreToolUse write gate.",
+          requiresApproval: true,
+          outsideOpcore: true
+        },
+        {
+          kind: "wire_harness" as const,
+          path: codexHooksPath,
+          targetScope: scope,
+          summary: "Merge the Opcore Codex PreToolUse write gate guardrail.",
+          requiresApproval: true,
+          outsideOpcore: true
+        }
+      ]
+      : [])
   ];
   if (gitignoreWritePlanned) {
     actions.push({
@@ -1378,6 +1666,7 @@ function createConfig(
   repoRoot: string,
   failClosedHook: boolean,
   activePreCommitHook: boolean,
+  writeGateHooks: boolean,
   scan: OpcoreInitScanSummary,
   settings: OpcoreInitSettings
 ): Record<string, unknown> {
@@ -1408,8 +1697,10 @@ function createConfig(
       ...existingHooks,
       failClosedPreCommit: existingHooks.failClosedPreCommit === true || failClosedHook || activePreCommitHook,
       activePreCommit: existingHooks.activePreCommit === true || activePreCommitHook,
-      writeGate: true,
-      harnesses: ["claude-code", "codex"]
+      writeGate: existingHooks.writeGate === true || writeGateHooks,
+      harnesses: writeGateHooks
+        ? ["claude-code", "codex"]
+        : Array.isArray(existingHooks.harnesses) ? existingHooks.harnesses : []
     }
   };
 }
@@ -1911,6 +2202,7 @@ function formatSetupPlan(payload: OpcoreInitPlanPayload, applied: boolean, comma
 
 function formatInstallPlan(payload: OpcoreInitPlanPayload, applied: boolean): string {
   const skillEnabled = payload.actions.some((action) => action.path.endsWith("/skills/opcore/SKILL.md"));
+  const hooksEnabled = payload.actions.some((action) => action.path.endsWith(claudeSettingsPath));
   const activePreCommitEnabled = payload.actions.some((action) => action.path === activePreCommitHookPath);
   const scanSummary = `Analyzed ${payload.scan.totalFiles} files; validation=${payload.scan.validationStatus}; diagnostics=${payload.scan.diagnosticCount}.`;
   return [
@@ -1918,7 +2210,7 @@ function formatInstallPlan(payload: OpcoreInitPlanPayload, applied: boolean): st
     `  ${scanSummary}`,
     "Setup choices:",
     `${skillEnabled ? "[x]" : "[ ]"} Install Opcore agent skill`,
-    "[x] Install Claude Code and Codex write-gate hooks",
+    `${hooksEnabled ? "[x]" : "[ ]"} Install Claude Code and Codex write-gate hooks`,
     `${activePreCommitEnabled ? "[x]" : "[ ]"} Install Git pre-commit hook`,
     "",
     formatInitPlan(payload, applied, "--yes")
