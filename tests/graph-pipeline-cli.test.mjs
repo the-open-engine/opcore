@@ -56,7 +56,7 @@ describe("graph pipeline CLI", () => {
       ]);
       assert.equal(repeatBuild.providerStatus.state, "available");
       assert.equal(build.graphPipeline.summary.operation, "build");
-      assert.ok(existsSync(join(fixtureRoot, ".lattice/graph/graph.db")));
+      assert.ok(existsSync(join(fixtureRoot, ".opcore/graph/graph.db")));
 
       writeFileSync(join(fixtureRoot, "src/math.js"), "export function add(left, right) { return left + right + 3; }\n");
       unlinkSync(join(fixtureRoot, "src/legacy-widget.jsx"));
@@ -142,9 +142,9 @@ describe("graph pipeline CLI", () => {
       assert.equal(watch.graphPipeline.summary.operation, "watch");
       assert.equal(watch.graphPipeline.lifecycle.idleTimeoutMs, 1800000);
       for (const artifact of ["pid", "state.json", "daemon.log"]) {
-        assert.ok(existsSync(join(fixtureRoot, ".lattice/graph/daemon", artifact)), artifact);
+        assert.ok(existsSync(join(fixtureRoot, ".opcore/graph/daemon", artifact)), artifact);
       }
-      const lifecycle = JSON.parse(readFileSync(join(fixtureRoot, ".lattice/graph/daemon/state.json"), "utf8"));
+      const lifecycle = JSON.parse(readFileSync(join(fixtureRoot, ".opcore/graph/daemon/state.json"), "utf8"));
       assert.equal(lifecycle.state, "stopped");
       assert.equal(lifecycle.idleTimeoutMs, 1800000);
     });
@@ -169,7 +169,7 @@ describe("graph pipeline CLI", () => {
       assert.equal(isProcessAlive(pid), true);
 
       assert.equal(waitForProcessExit(pid, 5000), true);
-      const lifecycle = JSON.parse(readFileSync(join(fixtureRoot, ".lattice/graph/daemon/state.json"), "utf8"));
+      const lifecycle = JSON.parse(readFileSync(join(fixtureRoot, ".opcore/graph/daemon/state.json"), "utf8"));
       assert.equal(lifecycle.state, "stopped");
       assert.equal(lifecycle.idleTimeoutMs, 500);
       assert.match(lifecycle.message, /idle timeout/);
@@ -180,7 +180,7 @@ describe("graph pipeline CLI", () => {
     withFixtureCopy((fixtureRoot) => {
       const watch = run(latticeBin, ["graph", "watch", "--repo", fixtureRoot, "--poll-interval-ms", "50", "--json"], 0, {
         env: {
-          LATTICE_GRAPH_WATCH_IDLE_TIMEOUT_MS: "500"
+          OPCORE_GRAPH_WATCH_IDLE_TIMEOUT_MS: "500"
         }
       });
       const pid = watch.graphPipeline.lifecycle.pid;
@@ -188,7 +188,7 @@ describe("graph pipeline CLI", () => {
       assert.equal(watch.graphPipeline.lifecycle.idleTimeoutMs, 500);
 
       assert.equal(waitForProcessExit(pid, 5000), true);
-      const lifecycle = JSON.parse(readFileSync(join(fixtureRoot, ".lattice/graph/daemon/state.json"), "utf8"));
+      const lifecycle = JSON.parse(readFileSync(join(fixtureRoot, ".opcore/graph/daemon/state.json"), "utf8"));
       assert.equal(lifecycle.state, "stopped");
       assert.equal(lifecycle.idleTimeoutMs, 500);
       assert.match(lifecycle.message, /idle timeout/);
@@ -250,7 +250,7 @@ describe("graph pipeline CLI", () => {
         assert.equal(status.providerStatus.failure.category, "stale_snapshot");
         assert.match(status.providerStatus.freshness.reason, /watch root src is missing/);
 
-        const lifecycle = JSON.parse(readFileSync(join(temp, ".lattice/graph/daemon/state.json"), "utf8"));
+        const lifecycle = JSON.parse(readFileSync(join(temp, ".opcore/graph/daemon/state.json"), "utf8"));
         assert.equal(lifecycle.state, "available");
         assert.equal(lifecycle.idleTimeoutMs, 0);
         assert.match(lifecycle.message, /watch root src is missing/);
@@ -272,7 +272,7 @@ describe("graph pipeline CLI", () => {
       assert.equal(watch.providerStatus.state, "error");
       assert.equal(watch.graphPipeline, undefined);
       assert.match(watch.providerStatus.failure.message, /parse|extraction|expected/i);
-      const lifecycle = JSON.parse(readFileSync(join(temp, ".lattice/graph/daemon/state.json"), "utf8"));
+      const lifecycle = JSON.parse(readFileSync(join(temp, ".opcore/graph/daemon/state.json"), "utf8"));
       assert.equal(lifecycle.state, "error");
       assert.match(lifecycle.message, /parse|extraction|expected/i);
     } finally {
@@ -308,7 +308,7 @@ describe("graph pipeline CLI", () => {
         [".claude/runtime", "generated.ts"],
         [".codex/runtime", "generated.ts"],
         [".gemini/runtime", "generated.ts"],
-        [".lattice/graph", "generated.ts"],
+        [".opcore/graph", "generated.ts"],
         [".opencode/runtime", "generated.ts"],
         [".rox-cache", "generated.ts"],
         [".robustness-engine-cache", "generated.ts"],
@@ -339,7 +339,7 @@ describe("graph pipeline CLI", () => {
       assert.equal(build.graphPipeline.summary.discoveredFiles, 2);
       assert.equal(build.graphPipeline.summary.parsedFiles, 2);
       assert.deepEqual(build.graphPipeline.summary.changedFiles, ["src/app.ts", "src/tool.py"]);
-      const db = new DatabaseSync(join(temp, ".lattice/graph/graph.db"));
+      const db = new DatabaseSync(join(temp, ".opcore/graph/graph.db"));
       try {
         assert.equal(db.prepare("select count(*) as count from nodes where path = ?").get("src/tool.py").count > 0, true);
       } finally {
@@ -352,7 +352,7 @@ describe("graph pipeline CLI", () => {
 
   it("rejects stale non-once watch lifecycle state from a dead daemon", () => {
     withFixtureCopy((fixtureRoot) => {
-      const daemonDir = join(fixtureRoot, ".lattice/graph/daemon");
+      const daemonDir = join(fixtureRoot, ".opcore/graph/daemon");
       const pidPath = join(daemonDir, "pid");
       const statePath = join(daemonDir, "state.json");
       const logPath = join(daemonDir, "daemon.log");
@@ -393,7 +393,7 @@ describe("graph pipeline CLI", () => {
 
   it("reports stale active lifecycle status as daemon unavailable", () => {
     withFixtureCopy((fixtureRoot) => {
-      const daemonDir = join(fixtureRoot, ".lattice/graph/daemon");
+      const daemonDir = join(fixtureRoot, ".opcore/graph/daemon");
       const pidPath = join(daemonDir, "pid");
       const statePath = join(daemonDir, "state.json");
       mkdirSync(daemonDir, { recursive: true });
@@ -439,7 +439,7 @@ describe("graph pipeline CLI", () => {
       const build = run(latticeBin, ["graph", "build", "--repo", fixtureRoot, "--json"]);
       assert.equal(build.providerStatus.state, "available");
 
-      const daemonDir = join(fixtureRoot, ".lattice/graph/daemon");
+      const daemonDir = join(fixtureRoot, ".opcore/graph/daemon");
       const pidPath = join(daemonDir, "pid");
       const statePath = join(daemonDir, "state.json");
       mkdirSync(daemonDir, { recursive: true });
@@ -481,7 +481,7 @@ describe("graph pipeline CLI", () => {
       const build = run(latticeBin, ["graph", "build", "--repo", fixtureRoot, "--json"]);
       assert.equal(build.providerStatus.state, "available");
 
-      const daemonDir = join(fixtureRoot, ".lattice/graph/daemon");
+      const daemonDir = join(fixtureRoot, ".opcore/graph/daemon");
       const pidPath = join(daemonDir, "pid");
       const statePath = join(daemonDir, "state.json");
       mkdirSync(daemonDir, { recursive: true });
@@ -505,7 +505,7 @@ describe("graph pipeline CLI", () => {
 
   it("reports corrupt lifecycle state during watch startup", () => {
     withFixtureCopy((fixtureRoot) => {
-      const daemonDir = join(fixtureRoot, ".lattice/graph/daemon");
+      const daemonDir = join(fixtureRoot, ".opcore/graph/daemon");
       const pidPath = join(daemonDir, "pid");
       const statePath = join(daemonDir, "state.json");
       const logPath = join(daemonDir, "daemon.log");
@@ -596,9 +596,9 @@ describe("graph pipeline CLI", () => {
       const duplicateStatus = run(latticeBin, ["graph", "status", "--repo", temp, "--paths", "src//nested", "--json"]);
       assert.equal(duplicateStatus.providerStatus.state, "available");
 
-      rmSync(join(temp, ".lattice"), { recursive: true, force: true });
+      rmSync(join(temp, ".opcore"), { recursive: true, force: true });
       const envWatch = run(latticeBin, ["graph", "watch", "--repo", temp, "--once", "--json"], 0, {
-        env: { LATTICE_GRAPH_WATCH_PATHS: "./src//nested/" }
+        env: { OPCORE_GRAPH_WATCH_PATHS: "./src//nested/" }
       });
       assert.equal(envWatch.providerStatus.state, "available");
       assert.deepEqual(envWatch.graphPipeline.summary.changedFiles, ["src/nested/app.ts"]);
@@ -608,7 +608,7 @@ describe("graph pipeline CLI", () => {
     }
   });
 
-  it("scopes watch from LATTICE_GRAPH_WATCH_PATHS only and ignores CRG_WATCH_PATHS", () => {
+  it("scopes watch from OPCORE_GRAPH_WATCH_PATHS only and ignores CRG_WATCH_PATHS", () => {
     const temp = mkdtempSync(join(tmpdir(), "lattice-watch-env-paths-"));
     try {
       mkdirSync(join(temp, "src"), { recursive: true });
@@ -616,13 +616,13 @@ describe("graph pipeline CLI", () => {
       writeFileSync(join(temp, "src/b.ts"), "export const b = 2;\n");
 
       const latticeScoped = run(latticeBin, ["graph", "watch", "--repo", temp, "--once", "--json"], 0, {
-        env: { LATTICE_GRAPH_WATCH_PATHS: "./src/a.ts" }
+        env: { OPCORE_GRAPH_WATCH_PATHS: "./src/a.ts" }
       });
       assert.equal(latticeScoped.providerStatus.state, "available");
       assert.deepEqual(latticeScoped.graphPipeline.summary.watchPaths, ["src/a.ts"]);
       assert.deepEqual(latticeScoped.graphPipeline.summary.changedFiles, ["src/a.ts"]);
 
-      rmSync(join(temp, ".lattice"), { recursive: true, force: true });
+      rmSync(join(temp, ".opcore"), { recursive: true, force: true });
       const crgIgnored = run(latticeBin, ["graph", "watch", "--repo", temp, "--once", "--json"], 0, {
         env: { CRG_WATCH_PATHS: "src/a.ts" }
       });
@@ -688,7 +688,7 @@ describe("graph pipeline CLI", () => {
       writeFileSync(join(temp, "src/a.ts"), "export const a = 1;\n");
       writeFileSync(join(temp, "src/b.ts"), "export const b = 2;\n");
       const env = {
-        LATTICE_GRAPH_WATCH_PATHS: "src/a.ts",
+        OPCORE_GRAPH_WATCH_PATHS: "src/a.ts",
         CRG_WATCH_PATHS: "src/a.ts"
       };
 
@@ -738,7 +738,7 @@ describe("graph pipeline CLI", () => {
       assert.equal(canonical.providerStatus.state, "stale");
       assert.equal(repeated.providerStatus.state, "stale");
       assert.equal(existsSync(join(repo, ".lattice")), false);
-      assert.equal(existsSync(join(repo, ".lattice/graph/graph.db")), false);
+      assert.equal(existsSync(join(repo, ".opcore/graph/graph.db")), false);
     } finally {
       rmSync(temp, { recursive: true, force: true });
     }
@@ -757,7 +757,7 @@ describe("graph pipeline CLI", () => {
       assert.equal(canonical.providerStatus.repo.repoRoot, repeated.providerStatus.repo.repoRoot);
       assert.equal(canonical.providerStatus.repo.repoRoot.endsWith(temp), true);
       assert.equal(existsSync(join(temp, ".lattice")), false);
-      assert.equal(existsSync(join(temp, ".lattice/graph/graph.db")), false);
+      assert.equal(existsSync(join(temp, ".opcore/graph/graph.db")), false);
     } finally {
       rmSync(temp, { recursive: true, force: true });
     }
@@ -830,7 +830,7 @@ function createRuntimeIgnoredFiles(fixtureRoot) {
     ["ignored", "drop.ts"],
     ["node_modules/pkg", "index.ts"],
     [".ace/runtime", "generated.ts"],
-    [".lattice/graph", "generated.ts"],
+    [".opcore/graph", "generated.ts"],
     [".rox-cache", "generated.ts"],
     [".robustness-engine-cache", "generated.ts"],
     ["dist", "generated.ts"]
@@ -905,7 +905,7 @@ function writeRustOnlyRepo(root) {
 }
 
 function assertRustStoreRows(repoRoot, options) {
-  const db = new DatabaseSync(join(repoRoot, ".lattice/graph/graph.db"), { readOnly: true });
+  const db = new DatabaseSync(join(repoRoot, ".opcore/graph/graph.db"), { readOnly: true });
   try {
     assert.equal(db.prepare("select count(*) as count from file_hashes where language = 'rust'").get().count, options.rustFiles);
     assert.ok(db.prepare("select count(*) as count from nodes").get().count > 0);
@@ -967,5 +967,8 @@ function stopProcess(pid) {
 
 function skipGeneratedStore(source) {
   const normalized = source.replaceAll("\\", "/");
-  return !normalized.endsWith("/.lattice") && !normalized.includes("/.lattice/");
+  return !normalized.endsWith("/.opcore") &&
+    !normalized.includes("/.opcore/") &&
+    !normalized.endsWith("/.lattice") &&
+    !normalized.includes("/.lattice/");
 }

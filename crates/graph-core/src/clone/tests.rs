@@ -33,7 +33,7 @@ fn detects_cross_file_duplicate_blocks_with_stable_line_free_identity() -> TestR
         vec!["src/a.ts".to_string(), "src/b.ts".to_string()]
     );
     assert!(result.db_path.is_some());
-    assert!(fixture.path().join(".lattice/clone/clone.db").exists());
+    assert!(fixture.path().join(".opcore/clone/clone.db").exists());
     Ok(())
 }
 
@@ -49,7 +49,7 @@ fn no_overlay_non_git_repo_does_not_write_persistent_db() -> TestResult {
     assert!(!result.findings.is_empty());
     assert!(!result.persisted);
     assert!(result.db_path.is_none());
-    assert!(!fixture.path().join(".lattice/clone/clone.db").exists());
+    assert!(!fixture.path().join(".opcore/clone/clone.db").exists());
     Ok(())
 }
 
@@ -76,7 +76,7 @@ fn introduced_mode_reports_overlay_clones_without_writing_persistent_db() -> Tes
 
     assert!(!result.persisted);
     assert!(result.db_path.is_none());
-    assert!(!fixture.path().join(".lattice/clone/clone.db").exists());
+    assert!(!fixture.path().join(".opcore/clone/clone.db").exists());
     assert!(result.findings.iter().any(|finding| {
         finding.path == "src/new.ts" && finding.peer_path == "src/existing.ts" && finding.introduced
     }));
@@ -114,7 +114,7 @@ fn no_overlay_dirty_git_sources_do_not_write_persistent_db() -> TestResult {
 
     assert!(!result.persisted);
     assert!(result.db_path.is_none());
-    assert!(!fixture.path().join(".lattice/clone/clone.db").exists());
+    assert!(!fixture.path().join(".opcore/clone/clone.db").exists());
     Ok(())
 }
 
@@ -131,7 +131,7 @@ fn no_overlay_deleted_tracked_source_does_not_write_persistent_db() -> TestResul
 
     assert!(!result.persisted);
     assert!(result.db_path.is_none());
-    assert!(!fixture.path().join(".lattice/clone/clone.db").exists());
+    assert!(!fixture.path().join(".opcore/clone/clone.db").exists());
     Ok(())
 }
 
@@ -148,7 +148,7 @@ fn scoped_no_overlay_requests_are_ephemeral() -> TestResult {
 
     assert!(!result.persisted);
     assert!(result.db_path.is_none());
-    assert!(!fixture.path().join(".lattice/clone/clone.db").exists());
+    assert!(!fixture.path().join(".opcore/clone/clone.db").exists());
     assert!(result
         .findings
         .iter()

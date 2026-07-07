@@ -311,6 +311,7 @@ fn ignore_matcher(repo_root: &Path) -> Result<IgnoreMatcher, GraphExtractionDiag
         "**/.gemini/**",
         "**/.lattice/**",
         "**/.opencode/**",
+        "**/.opcore/**",
         "**/.rox-cache/**",
         ".robustness-engine-cache/**",
         "**/.robustness-engine-cache/**",

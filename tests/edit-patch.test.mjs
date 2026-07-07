@@ -245,8 +245,8 @@ describe("edit patch planning", () => {
   it("refuses stale context, unsafe paths, generated targets, symlink escapes, and binary content", async () => {
     await withTempRepo(async (root) => {
       await writeFile(join(root, "src/a.ts"), "actual\n", "utf8");
-      await mkdir(join(root, ".lattice/graph"), { recursive: true });
-      await writeFile(join(root, ".lattice/graph/state.json"), "old\n", "utf8");
+      await mkdir(join(root, ".opcore/graph"), { recursive: true });
+      await writeFile(join(root, ".opcore/graph/state.json"), "old\n", "utf8");
       await writeFile(join(root, "src/binary.bin"), new Uint8Array([0, 1, 2, 3]));
       const outside = await mkdtemp(join(tmpdir(), "lattice-patch-outside-"));
       try {
@@ -259,7 +259,7 @@ describe("edit patch planning", () => {
           ["absolute_path", "--- /tmp/a.ts\n+++ /tmp/a.ts\n@@ -1 +1 @@\n-old\n+new\n"],
           ["absolute_path", "--- //server/share/a.ts\n+++ //server/share/a.ts\n@@ -1 +1 @@\n-old\n+new\n"],
           ["unsafe_edit", patchFor("link/escaped.ts", "outside", "inside")],
-          ["unsupported_change", patchFor(".lattice/graph/state.json", "old", "new")],
+          ["unsupported_change", patchFor(".opcore/graph/state.json", "old", "new")],
           ["unsupported_change", patchFor("src/binary.bin", "\u0000\u0001\u0002\u0003", "text")]
         ];
         for (const [category, patch] of cases) {

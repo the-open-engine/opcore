@@ -3,7 +3,7 @@
 Maintainer cutover gate proves installed Opcore artifacts handle canonical release commands without dev-tool fallback.
 
 Machine receipt: docs/release/cutover-receipt.json
-Machine receipt SHA-256: fcc9edcac84496fa33fbf56029f160daf0dd7c0844a448a4cf2af73cdf8f38b2
+Machine receipt SHA-256: e071801d44eb0ceb64a19e1527cb341a3b886a5e9c75aaa106322748c1de5e62
 
 Installed packages: 1
 Command receipts: 28

@@ -20,7 +20,7 @@ use session::{write_lifecycle_state, WatchSession};
 
 const GRAPH_DAEMON_PROTOCOL: &str = "opcore.graph.daemon";
 pub const DEFAULT_WATCH_IDLE_TIMEOUT_MS: u64 = 1_800_000;
-pub const WATCH_IDLE_TIMEOUT_ENV: &str = "LATTICE_GRAPH_WATCH_IDLE_TIMEOUT_MS";
+pub const WATCH_IDLE_TIMEOUT_ENV: &str = "OPCORE_GRAPH_WATCH_IDLE_TIMEOUT_MS";
 
 type KindCounts = BTreeMap<String, u32>;
 
@@ -144,7 +144,7 @@ fn watch_response_from_pipeline(
         repo: session.repo.clone(),
         freshness: available_freshness(&lifecycle),
         db_path: Some(display_path(
-            &repo_root.join(".lattice").join("graph").join("graph.db"),
+            &repo_root.join(".opcore").join("graph").join("graph.db"),
         )),
         nodes_by_kind,
         edges_by_kind,

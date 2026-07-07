@@ -327,7 +327,7 @@ async function withBuiltFixture(runFixture) {
 }
 
 function corruptSnapshotSchema(repoRoot) {
-  const db = new DatabaseSync(join(repoRoot, ".lattice/graph/graph.db"));
+  const db = new DatabaseSync(join(repoRoot, ".opcore/graph/graph.db"));
   try {
     const metadata = JSON.parse(db.prepare("select value from metadata where key = 'lattice_snapshot_metadata'").get().value);
     metadata.schemaVersion = 2;
@@ -375,5 +375,8 @@ function readLatencyRecords(repoRoot) {
 
 function skipGeneratedStore(source) {
   const normalized = source.replaceAll("\\", "/");
-  return !normalized.endsWith("/.lattice") && !normalized.includes("/.lattice/");
+  return !normalized.endsWith("/.opcore") &&
+    !normalized.includes("/.opcore/") &&
+    !normalized.endsWith("/.lattice") &&
+    !normalized.includes("/.lattice/");
 }

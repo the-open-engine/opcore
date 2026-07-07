@@ -49,14 +49,14 @@ describe("edit tree planning", () => {
     await withTempRepo(async (root) => {
       await writeFile(join(root, ".gitignore"), "ignored/\n", "utf8");
       await mkdir(join(root, "ignored"), { recursive: true });
-      await mkdir(join(root, ".lattice/graph"), { recursive: true });
+      await mkdir(join(root, ".opcore/graph"), { recursive: true });
       await writeFile(join(root, "src/a.ts"), "old\n", "utf8");
       await writeFile(join(root, "src/binary.bin"), new Uint8Array([0, 1, 2]));
       const workspace = await createNodeEditWorkspace({ repoRoot: root });
       const cases = [
         ["conflict", { files: [{ path: "src/a.ts", content: "new\n", checksumBefore: "sha256:stale" }] }],
         ["unsupported_change", { files: [{ path: "ignored/a.ts", content: "new\n" }] }],
-        ["unsupported_change", { files: [{ path: ".lattice/graph/state.json", content: "new\n" }] }],
+        ["unsupported_change", { files: [{ path: ".opcore/graph/state.json", content: "new\n" }] }],
         ["unsupported_change", { files: [{ path: "src/binary.bin", content: "text\n" }] }],
         ["unsupported_change", { files: [{ path: "src/proposed.ts", content: "\u0000bad" }] }]
       ];

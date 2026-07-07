@@ -56,7 +56,7 @@ These rows are not required for CRG graph parity and must not be read as Opcore 
 
 Export metadata is represented by the SQLite `nodes.is_exported` column and `idx_nodes_exported_name` index in `packages/fixtures/graph-reference-evidence/sqlite-fixtures.json`. The reference fixtures do not require `attributes.exported` as fixture evidence.
 
-The graph-release receipt records direct SQLite reader evidence for status counts, edge counts, impact edges from file, search-by-name, and freshness metadata against `packages/fixtures/source-extraction/wave1/.lattice/graph/graph.db`.
+The graph-release receipt records direct SQLite reader evidence for status counts, edge counts, impact edges from file, search-by-name, and freshness metadata against `packages/fixtures/source-extraction/wave1/.opcore/graph/graph.db`.
 
 ## Replacement Claim
 

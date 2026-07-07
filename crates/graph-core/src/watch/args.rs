@@ -151,12 +151,12 @@ fn split_paths(value: &str) -> Vec<String> {
 }
 
 fn env_watch_paths() -> Result<Vec<String>, String> {
-    std::env::var("LATTICE_GRAPH_WATCH_PATHS")
+    std::env::var("OPCORE_GRAPH_WATCH_PATHS")
         .map(|value| split_paths(&value))
         .or_else(|error| match error {
             std::env::VarError::NotPresent => Ok(Vec::new()),
             std::env::VarError::NotUnicode(_) => {
-                Err("LATTICE_GRAPH_WATCH_PATHS must be UTF-8".to_string())
+                Err("OPCORE_GRAPH_WATCH_PATHS must be UTF-8".to_string())
             }
         })
 }
@@ -285,39 +285,39 @@ mod tests {
         run: impl FnOnce() -> Result<T, String>,
     ) -> Result<T, String> {
         let _guard = ENV_LOCK.lock().map_err(|error| error.to_string())?;
-        let previous = std::env::var("LATTICE_GRAPH_WATCH_IDLE_TIMEOUT_MS").ok();
+        let previous = std::env::var("OPCORE_GRAPH_WATCH_IDLE_TIMEOUT_MS").ok();
         match value {
-            Some(value) => std::env::set_var("LATTICE_GRAPH_WATCH_IDLE_TIMEOUT_MS", value),
-            None => std::env::remove_var("LATTICE_GRAPH_WATCH_IDLE_TIMEOUT_MS"),
+            Some(value) => std::env::set_var("OPCORE_GRAPH_WATCH_IDLE_TIMEOUT_MS", value),
+            None => std::env::remove_var("OPCORE_GRAPH_WATCH_IDLE_TIMEOUT_MS"),
         }
         let result = run();
         match previous {
-            Some(value) => std::env::set_var("LATTICE_GRAPH_WATCH_IDLE_TIMEOUT_MS", value),
-            None => std::env::remove_var("LATTICE_GRAPH_WATCH_IDLE_TIMEOUT_MS"),
+            Some(value) => std::env::set_var("OPCORE_GRAPH_WATCH_IDLE_TIMEOUT_MS", value),
+            None => std::env::remove_var("OPCORE_GRAPH_WATCH_IDLE_TIMEOUT_MS"),
         }
         result
     }
 
     fn with_watch_env<T>(
-        lattice_value: Option<&str>,
+        opcore_value: Option<&str>,
         crg_value: Option<&str>,
         run: impl FnOnce() -> Result<T, String>,
     ) -> Result<T, String> {
         let _guard = ENV_LOCK.lock().map_err(|error| error.to_string())?;
-        let old_lattice = std::env::var("LATTICE_GRAPH_WATCH_PATHS").ok();
+        let old_opcore = std::env::var("OPCORE_GRAPH_WATCH_PATHS").ok();
         let old_crg = std::env::var("CRG_WATCH_PATHS").ok();
-        match lattice_value {
-            Some(value) => std::env::set_var("LATTICE_GRAPH_WATCH_PATHS", value),
-            None => std::env::remove_var("LATTICE_GRAPH_WATCH_PATHS"),
+        match opcore_value {
+            Some(value) => std::env::set_var("OPCORE_GRAPH_WATCH_PATHS", value),
+            None => std::env::remove_var("OPCORE_GRAPH_WATCH_PATHS"),
         }
         match crg_value {
             Some(value) => std::env::set_var("CRG_WATCH_PATHS", value),
             None => std::env::remove_var("CRG_WATCH_PATHS"),
         }
         let result = run();
-        match old_lattice {
-            Some(value) => std::env::set_var("LATTICE_GRAPH_WATCH_PATHS", value),
-            None => std::env::remove_var("LATTICE_GRAPH_WATCH_PATHS"),
+        match old_opcore {
+            Some(value) => std::env::set_var("OPCORE_GRAPH_WATCH_PATHS", value),
+            None => std::env::remove_var("OPCORE_GRAPH_WATCH_PATHS"),
         }
         match old_crg {
             Some(value) => std::env::set_var("CRG_WATCH_PATHS", value),

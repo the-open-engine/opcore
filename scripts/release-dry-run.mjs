@@ -22,7 +22,7 @@ if (!graphCoreSupportedTargets.includes(target)) {
   throw new Error(`release:dry-run requires one of ${graphCoreSupportedTargets.join(", ")}; got ${target}`);
 }
 
-const tempRoot = mkdtempSync(join(tmpdir(), "lattice-release-dry-run-"));
+const tempRoot = mkdtempSync(join(tmpdir(), "opcore-release-dry-run-"));
 try {
   const packDir = join(tempRoot, "packages");
   const project = join(tempRoot, "project");

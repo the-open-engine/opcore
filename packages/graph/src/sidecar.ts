@@ -98,7 +98,7 @@ function invokeGraphCoreWatch(
       summary: {
         operation: "watch",
         repo: request.repo,
-        storePath: join(repoRoot, ".lattice", "graph", "graph.db"),
+        storePath: join(repoRoot, ".opcore", "graph", "graph.db"),
         startedAt: lifecycle.startedAt,
         completedAt: lifecycle.updatedAt,
         durationMs: 0,
@@ -190,7 +190,7 @@ function pollWatchLifecycle(
   pollIntervalMs: number
 ): { lifecycle?: GraphWatchLifecycle; status?: GraphProviderStatus } {
   if (!pid) return {};
-  const statePath = join(repoRoot, ".lattice", "graph", "daemon", "state.json");
+  const statePath = join(repoRoot, ".opcore", "graph", "daemon", "state.json");
   const deadline = Date.now() + 2500;
   let lifecycleReadFailure: string | undefined;
   let lastLifecycle: GraphWatchLifecycle | undefined;
@@ -280,7 +280,7 @@ function lifecycleStatus(request: GraphDaemonRequest, lifecycle: GraphWatchLifec
       schemaVersion: 1,
       repo: request.repo,
       freshness,
-      dbPath: request.repo.repoRoot ? join(resolve(request.repo.repoRoot), ".lattice", "graph", "graph.db") : undefined,
+      dbPath: request.repo.repoRoot ? join(resolve(request.repo.repoRoot), ".opcore", "graph", "graph.db") : undefined,
       nodes_by_kind: {},
       edges_by_kind: {},
       message: lifecycle.message ?? "graph watch daemon available",

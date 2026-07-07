@@ -212,7 +212,7 @@ it("validates changed-scope after-state clones without persisting dirty or untra
       result.diagnostics.some((diagnostic) => diagnostic.path === "src/changed.ts" && diagnostic.code === "CLONE_DUPLICATE"),
       JSON.stringify(result.diagnostics, null, 2)
     );
-    assert.equal(existsSync(join(temp, ".lattice/clone/clone.db")), false);
+    assert.equal(existsSync(join(temp, ".opcore/clone/clone.db")), false);
   } finally {
     rmSync(temp, { recursive: true, force: true });
   }
@@ -255,7 +255,7 @@ it("validates staged after-state clones against staged peers instead of dirty di
       result.diagnostics.some((diagnostic) => diagnostic.path === "src/staged.ts" && diagnostic.code === "CLONE_DUPLICATE"),
       JSON.stringify(result.diagnostics, null, 2)
     );
-    assert.equal(existsSync(join(temp, ".lattice/clone/clone.db")), false);
+    assert.equal(existsSync(join(temp, ".opcore/clone/clone.db")), false);
   } finally {
     rmSync(temp, { recursive: true, force: true });
   }
@@ -309,7 +309,7 @@ it("validates tree after-state clones against tree peers instead of dirty disk p
       result.diagnostics.some((diagnostic) => diagnostic.path === "src/tree.ts" && diagnostic.code === "CLONE_DUPLICATE"),
       JSON.stringify(result.diagnostics, null, 2)
     );
-    assert.equal(existsSync(join(temp, ".lattice/clone/clone.db")), false);
+    assert.equal(existsSync(join(temp, ".opcore/clone/clone.db")), false);
   } finally {
     rmSync(temp, { recursive: true, force: true });
   }

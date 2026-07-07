@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "issue": "#29",
   "origin": "covibes-authored-release-proof",
-  "generatedAt": "2026-07-07T16:25:24.881Z",
-  "commitSha": "e50bb57eb9e478c64a2a3c449e518b600582b4e2",
+  "generatedAt": "2026-07-07T23:03:10.714Z",
+  "commitSha": "d2a430ae1b7f1ebcbf036628bc006955715c1793",
   "privateRepo": true,
   "packageNames": [
     "opcore"
@@ -95,10 +95,10 @@
       },
       "tarball": {
         "filename": "opcore-0.1.0.tgz",
-        "path": ".lattice/release/packages/opcore-0.1.0.tgz",
-        "sha256": "b2545dfa9e7aea2e86cd3deaff77210ffb74f429b0c0e5a8ed648198c2a1d27f",
-        "integrity": "sha512-mxM5vjlqYX/YCbVwP/kc40CyHH6h8dMunvgafwUdh1f6Ejdn84twl+VtqbItJIHoLoXi9E42nmWePorc1LIvfg==",
-        "shasum": "cfc4cac6de4a515ff4a32fb23d14681ef7417d7e"
+        "path": ".opcore/release/packages/opcore-0.1.0.tgz",
+        "sha256": "18ef2b5d69b0004c835e4a55fcaae5bddfb1bba1190a85c95f387bb0d4afe00a",
+        "integrity": "sha512-BQ77fnewrd12EOPqqUrQ4I26mOtJ8gRshU85eVHV87xY9g2D1e+4XnxuY0X/3H0BSLoK7SJHq2Zsbdopfw0HHQ==",
+        "shasum": "dade1564a26448a9fb5bf3be53718e7d22c15bd0"
       },
       "files": [
         "README.md",
@@ -2226,15 +2226,15 @@
             "targetPlatform": "darwin-arm64",
             "binaryPath": "opcore-graph-core",
             "checksumPath": "opcore-graph-core.sha256",
-            "checksumSha256": "b4cdc0d9fbef2f2c67dc849cb80309f6e6edb8ab933dc8d4fb89b279f4b252e7",
+            "checksumSha256": "7a362d98f710646a8b7b4425451361f13504f586a720b0e851dfda85821f0d93",
             "buildProfile": "release"
           },
           "binaryPath": "node_modules/@the-open-engine/opcore-graph-core-darwin-arm64/opcore-graph-core",
           "checksumPath": "node_modules/@the-open-engine/opcore-graph-core-darwin-arm64/opcore-graph-core.sha256",
           "metadataPath": "node_modules/@the-open-engine/opcore-graph-core-darwin-arm64/metadata.json",
-          "binarySha256": "b4cdc0d9fbef2f2c67dc849cb80309f6e6edb8ab933dc8d4fb89b279f4b252e7",
-          "checksumFileSha256": "87addced7ce9fa6cab167ecb559f2e0db763926576e260d3d8851cafd3a3c954",
-          "metadataSha256": "041becbac4eb6bf87bd4a5661248788f7734875348f41326d51c3621aaa95477",
+          "binarySha256": "7a362d98f710646a8b7b4425451361f13504f586a720b0e851dfda85821f0d93",
+          "checksumFileSha256": "5fe0896dccc3ea1d019c2ef99af8fae5af6e950a3777bc234e705b3c964c196f",
+          "metadataSha256": "a84ec9b019971d1db3192780378333fb9bdec246cd72546c059cb9de9439943a",
           "descriptorArtifactId": "graph-core-binary-darwin-arm64",
           "descriptorChecksumId": "graph-core-binary-sha256-darwin-arm64"
         },
@@ -3017,7 +3017,7 @@
         "artifactRef": "graph-core-binary-darwin-arm64",
         "required": true,
         "packageFile": true,
-        "value": "b4cdc0d9fbef2f2c67dc849cb80309f6e6edb8ab933dc8d4fb89b279f4b252e7"
+        "value": "7a362d98f710646a8b7b4425451361f13504f586a720b0e851dfda85821f0d93"
       },
       {
         "id": "graph-core-binary-sha256-darwin-x64",
@@ -3052,15 +3052,15 @@
         "targetPlatform": "darwin-arm64",
         "binaryPath": "opcore-graph-core",
         "checksumPath": "opcore-graph-core.sha256",
-        "checksumSha256": "b4cdc0d9fbef2f2c67dc849cb80309f6e6edb8ab933dc8d4fb89b279f4b252e7",
+        "checksumSha256": "7a362d98f710646a8b7b4425451361f13504f586a720b0e851dfda85821f0d93",
         "buildProfile": "release"
       },
       "binaryPath": "node_modules/@the-open-engine/opcore-graph-core-darwin-arm64/opcore-graph-core",
       "checksumPath": "node_modules/@the-open-engine/opcore-graph-core-darwin-arm64/opcore-graph-core.sha256",
       "metadataPath": "node_modules/@the-open-engine/opcore-graph-core-darwin-arm64/metadata.json",
-      "binarySha256": "b4cdc0d9fbef2f2c67dc849cb80309f6e6edb8ab933dc8d4fb89b279f4b252e7",
-      "checksumFileSha256": "87addced7ce9fa6cab167ecb559f2e0db763926576e260d3d8851cafd3a3c954",
-      "metadataSha256": "041becbac4eb6bf87bd4a5661248788f7734875348f41326d51c3621aaa95477",
+      "binarySha256": "7a362d98f710646a8b7b4425451361f13504f586a720b0e851dfda85821f0d93",
+      "checksumFileSha256": "5fe0896dccc3ea1d019c2ef99af8fae5af6e950a3777bc234e705b3c964c196f",
+      "metadataSha256": "a84ec9b019971d1db3192780378333fb9bdec246cd72546c059cb9de9439943a",
       "descriptorArtifactId": "graph-core-binary-darwin-arm64",
       "descriptorChecksumId": "graph-core-binary-sha256-darwin-arm64"
     },
@@ -4185,9 +4185,9 @@
   },
   "provenance": {
     "reportPath": "docs/release/provenance-receipts.md",
-    "reportSha256": "426f897f1817c17b38a1adf04dda449d1e838413a287264f9c2dd5d07252cbc3",
+    "reportSha256": "c3117649e9c98b7d7f4506e1fbbb30b28f83dad82c313709735d402104f282d3",
     "scannedFileCount": 528,
-    "historyCommitCount": 238,
+    "historyCommitCount": 239,
     "findingCount": 0,
     "findings": []
   },
@@ -4195,7 +4195,7 @@
     "allowlistPath": "docs/release/secret-scan-allowlist.json",
     "allowlistSha256": "7060c267c912e3156b87c646e3bc970eac1ac8bdd964cf0a794b83e6f1250614",
     "currentTreeScannedFileCount": 525,
-    "gitHistoryScannedCommitCount": 238,
+    "gitHistoryScannedCommitCount": 239,
     "findingCount": 0,
     "findings": []
   },
@@ -4235,8 +4235,8 @@
       "status": "passed",
       "exitCode": 0,
       "path": "docs/release/provenance-receipts.md",
-      "checksumSha256": "426f897f1817c17b38a1adf04dda449d1e838413a287264f9c2dd5d07252cbc3",
-      "summary": "528 files, 238 commits scanned"
+      "checksumSha256": "c3117649e9c98b7d7f4506e1fbbb30b28f83dad82c313709735d402104f282d3",
+      "summary": "528 files, 239 commits scanned"
     },
     {
       "id": "release-hygiene",
@@ -4247,7 +4247,7 @@
       "status": "passed",
       "exitCode": 0,
       "path": "docs/release/artifact-attestation.md",
-      "checksumSha256": "a563254154ad3f007a1e61cdc067c37e542c521b19070660351a905628528ea8",
+      "checksumSha256": "56dcec52a6f3f89e534306d6674d1ec8dad0d39b1fe35b0c977e0633f0cadd41",
       "summary": "release hygiene check passed"
     },
     {
@@ -4260,7 +4260,7 @@
       "status": "passed",
       "exitCode": 0,
       "path": "docs/release/graph-release-receipt.json",
-      "checksumSha256": "262f8ead0eb405e3037dfcaacdf70f1cbb31890bb1221e45ee46ab82dfc02298",
+      "checksumSha256": "b440dc936876a4696152da6b915da6c7f8b1baa81e555a2d89020ef803ce3abb",
       "summary": "graph release receipt #17 validated as input evidence"
     },
     {
@@ -4274,12 +4274,12 @@
       "exitCode": 0,
       "path": "docs/release/secret-scan-allowlist.json",
       "checksumSha256": "7060c267c912e3156b87c646e3bc970eac1ac8bdd964cf0a794b83e6f1250614",
-      "summary": "525 files, 238 commits scanned"
+      "summary": "525 files, 239 commits scanned"
     }
   ],
   "graphReleaseReceipt": {
     "path": "docs/release/graph-release-receipt.json",
     "issue": "#17",
-    "checksumSha256": "262f8ead0eb405e3037dfcaacdf70f1cbb31890bb1221e45ee46ab82dfc02298"
+    "checksumSha256": "b440dc936876a4696152da6b915da6c7f8b1baa81e555a2d89020ef803ce3abb"
   }
 }

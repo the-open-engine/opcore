@@ -3861,7 +3861,7 @@ function availableGraphStatus() {
 
 function validWalCheckpoint() {
   return {
-    walPath: ".lattice/graph/graph.db-wal",
+    walPath: ".opcore/graph/graph.db-wal",
     bytesBefore: 8192,
     bytesAfter: 0,
     budgetBytes: 1,
@@ -4430,7 +4430,7 @@ function validGraphReleaseReceipt() {
       query: "select 1",
       status: "passed",
       rowCount: 1,
-      fixture: "packages/fixtures/source-extraction/wave1/.lattice/graph/graph.db"
+      fixture: "packages/fixtures/source-extraction/wave1/.opcore/graph/graph.db"
     })),
     serveTransport: [
       {
@@ -4640,7 +4640,7 @@ function validReleaseReceipt() {
       },
       tarball: {
         filename: "opcore-0.1.0.tgz",
-        path: ".lattice/release/packages/opcore-0.1.0.tgz",
+        path: ".opcore/release/packages/opcore-0.1.0.tgz",
         sha256: "c".repeat(64),
         integrity: "sha512-test",
         shasum: "d".repeat(40)

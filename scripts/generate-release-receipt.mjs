@@ -37,7 +37,7 @@ const provenanceReportPath = "docs/release/provenance-receipts.md";
 const artifactAttestationPath = "docs/release/artifact-attestation.md";
 const secretAllowlistPath = "docs/release/secret-scan-allowlist.json";
 const graphReleaseReceiptPath = "docs/release/graph-release-receipt.json";
-const packDestination = ".lattice/release/packages";
+const packDestination = ".opcore/release/packages";
 
 const args = new Set(process.argv.slice(2));
 const writeDocs = args.has("--write");

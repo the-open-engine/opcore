@@ -636,10 +636,10 @@ export const conformanceFixtureMetadata = [
       statuses: ["available", "stale", "warming", "schema_mismatch", "daemon_unavailable", "error"],
       phaseTimings: ["discovery", "extraction", "store", "watch"],
       artifacts: [
-        ".lattice/graph/graph.db",
-        ".lattice/graph/daemon/pid",
-        ".lattice/graph/daemon/state.json",
-        ".lattice/graph/daemon/daemon.log"
+        ".opcore/graph/graph.db",
+        ".opcore/graph/daemon/pid",
+        ".opcore/graph/daemon/state.json",
+        ".opcore/graph/daemon/daemon.log"
       ],
       dataFile: "packages/fixtures/graph-pipeline/pipeline-fixtures.json"
     }

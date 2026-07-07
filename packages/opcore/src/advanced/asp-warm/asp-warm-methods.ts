@@ -101,7 +101,7 @@ export class AspWarmMethods {
         },
         session: {
           methods: ["session/shutdown"],
-          statePath: ".lattice/asp/session.json"
+          statePath: ".opcore/asp/session.json"
         }
       }
     };

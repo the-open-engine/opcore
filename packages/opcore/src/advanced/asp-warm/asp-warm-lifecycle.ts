@@ -56,7 +56,7 @@ class DefaultAspWarmLifecycle implements AspWarmLifecycle {
 
   constructor(options: AspWarmLifecycleOptions) {
     this.repoRoot = resolve(options.repoRoot);
-    this.statePath = join(this.repoRoot, ".lattice/asp/session.json");
+    this.statePath = join(this.repoRoot, ".opcore/asp/session.json");
     this.pid = options.pid ?? process.pid;
     this.now = options.now ?? (() => Date.now());
     this.isProcessAlive = options.isProcessAlive ?? defaultIsProcessAlive;
@@ -137,7 +137,7 @@ class DefaultAspWarmLifecycle implements AspWarmLifecycle {
   }
 
   private writeState(state: AspWarmLifecycleState): void {
-    mkdirSync(join(this.repoRoot, ".lattice/asp"), { recursive: true });
+    mkdirSync(join(this.repoRoot, ".opcore/asp"), { recursive: true });
     writeFileSync(this.statePath, `${JSON.stringify(state, null, 2)}\n`);
   }
 }

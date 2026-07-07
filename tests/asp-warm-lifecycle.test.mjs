@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { createAspWarmLifecycle } from "../packages/opcore/dist/advanced/asp-warm/asp-warm-lifecycle.js";
 
 describe("ASP warm lifecycle", () => {
-  it("keeps singleton and idle-timeout state under .lattice/asp", () => {
+  it("keeps singleton and idle-timeout state under .opcore/asp", () => {
     const repo = mkdtempSync(join(tmpdir(), "opcore-asp-warm-lifecycle-"));
     let now = 1000;
     const livePids = new Set([111]);
@@ -19,7 +19,7 @@ describe("ASP warm lifecycle", () => {
       });
       const acquired = first.acquire({ idleTimeoutMs: 500 });
       assert.equal(acquired.ok, true);
-      assert.equal(existsSync(join(repo, ".lattice/asp/session.json")), true);
+      assert.equal(existsSync(join(repo, ".opcore/asp/session.json")), true);
 
       const blocked = createAspWarmLifecycle({
         repoRoot: repo,
@@ -38,7 +38,7 @@ describe("ASP warm lifecycle", () => {
       assert.equal(first.shouldShutdownForIdle(), false);
       first.shutdown("test-complete");
 
-      const state = JSON.parse(readFileSync(join(repo, ".lattice/asp/session.json"), "utf8"));
+      const state = JSON.parse(readFileSync(join(repo, ".opcore/asp/session.json"), "utf8"));
       assert.equal(state.state, "shutdown");
       assert.equal(state.reason, "test-complete");
       assert.equal(state.pid, 111);
@@ -69,7 +69,7 @@ describe("ASP warm lifecycle", () => {
       const acquired = replacement.acquire({ idleTimeoutMs: 1000 });
 
       assert.equal(acquired.ok, true);
-      const state = JSON.parse(readFileSync(join(repo, ".lattice/asp/session.json"), "utf8"));
+      const state = JSON.parse(readFileSync(join(repo, ".opcore/asp/session.json"), "utf8"));
       assert.equal(state.pid, 444);
       assert.equal(state.state, "running");
     } finally {

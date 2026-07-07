@@ -325,35 +325,35 @@
       "query": "select kind, count(*) as count from nodes group by kind order by kind",
       "status": "passed",
       "rowCount": 5,
-      "fixture": "packages/fixtures/source-extraction/wave1/.lattice/graph/graph.db"
+      "fixture": "packages/fixtures/source-extraction/wave1/.opcore/graph/graph.db"
     },
     {
       "id": "status-edge-counts",
       "query": "select kind, count(*) as count from edges group by kind order by kind",
       "status": "passed",
       "rowCount": 7,
-      "fixture": "packages/fixtures/source-extraction/wave1/.lattice/graph/graph.db"
+      "fixture": "packages/fixtures/source-extraction/wave1/.opcore/graph/graph.db"
     },
     {
       "id": "impact-edges-from-file",
       "query": "select kind, source_qualified, target_qualified from edges where file_path = ?",
       "status": "passed",
       "rowCount": 13,
-      "fixture": "packages/fixtures/source-extraction/wave1/.lattice/graph/graph.db"
+      "fixture": "packages/fixtures/source-extraction/wave1/.opcore/graph/graph.db"
     },
     {
       "id": "search-by-name",
       "query": "select qualified_name, kind, file_path, line_start, line_end from nodes where name like ? order by kind, qualified_name limit ?",
       "status": "passed",
       "rowCount": 5,
-      "fixture": "packages/fixtures/source-extraction/wave1/.lattice/graph/graph.db"
+      "fixture": "packages/fixtures/source-extraction/wave1/.opcore/graph/graph.db"
     },
     {
       "id": "freshness-metadata",
       "query": "select key, value from metadata where key in ('schema_version', 'last_updated', 'last_build_type') order by key",
       "status": "passed",
       "rowCount": 3,
-      "fixture": "packages/fixtures/source-extraction/wave1/.lattice/graph/graph.db"
+      "fixture": "packages/fixtures/source-extraction/wave1/.opcore/graph/graph.db"
     }
   ],
   "serveTransport": [

@@ -17,7 +17,7 @@ struct WatchPaths {
 
 impl WatchPaths {
     fn new(repo_root: &Path) -> Self {
-        let daemon_dir = repo_root.join(".lattice").join("graph").join("daemon");
+        let daemon_dir = repo_root.join(".opcore").join("graph").join("daemon");
         Self {
             lock_path: daemon_dir.join("watch.lock"),
             pid_path: daemon_dir.join("pid"),
