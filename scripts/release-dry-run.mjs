@@ -15,7 +15,7 @@ import { releasePackageDirForName } from "./release-package-dirs.mjs";
 const releaseVersion = "0.1.0";
 const implementationPackages = [
   "@the-open-engine/opcore-contracts",
-  "@the-open-engine/opcore",
+  "opcore",
   "@the-open-engine/opcore-graph",
   "@the-open-engine/opcore-edit",
   "@the-open-engine/opcore-validation",
@@ -40,7 +40,7 @@ if (!graphCoreSupportedTargets.includes(target)) {
 
 const installPackages = [
   "@the-open-engine/opcore-contracts",
-  "@the-open-engine/opcore",
+  "opcore",
   "@the-open-engine/opcore-graph",
   graphCoreNativePackageNames.find((packageName) => packageName.endsWith(target)),
   "@the-open-engine/opcore-edit",

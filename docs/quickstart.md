@@ -3,8 +3,8 @@
 ## Install
 
 ```bash
-npx @the-open-engine/opcore init         # repo setup with a plan and approval prompt
-npm install -g @the-open-engine/opcore   # global CLI, then run opcore init --global
+npx opcore install         # repo setup with a plan and approval prompt
+npm install -g opcore   # global CLI, then run opcore install --global
 ```
 
 Install scripts do not modify repos or agent settings. The package only prints a setup reminder. Requires Node >=22. Supported platforms are `darwin-arm64`, `darwin-x64`, and `linux-x64`. Unsupported platforms return typed degraded status instead of crashing.
@@ -68,14 +68,14 @@ opcore measure --repo .
 Wire the write gate after reviewing the plan:
 
 ```bash
-opcore init
-opcore init --global
-opcore init --repo . --approve
+opcore install
+opcore install --global
+opcore install --repo . --yes
 ```
 
-`opcore init` runs the read-only scan first. When the scan completes, it prints coverage before findings, shows the additive setup plan, and prompts on a TTY. In a Git repo, it asks whether to install the Claude Code/Codex write gate for this repo or globally. `opcore init --json` previews without writing, and non-TTY runs stay plan-only unless `--approve` is passed.
+`opcore install` runs the read-only scan first. When the scan completes, it prints coverage before findings, shows the additive setup plan, and prompts on a TTY. In a Git repo, it asks whether to install the Claude Code/Codex write gate for this repo or globally. `opcore install --json` previews without writing, and non-TTY runs stay plan-only unless `--yes` is passed.
 
-Approved repo init writes additive `.opcore/config`, one delimited guidance block, a repo-local write-gate adapter, merged Claude Code/Codex hook entries, a managed `.opcore/` line in `.gitignore` for Git repos, and `.opcore/init-undo.json`. Approved global init writes user-level hook config plus `~/.opcore/init-undo.json`. Undo recorded setup with `opcore init --undo --approve` or `opcore init --global --undo --approve`.
+Approved repo install writes additive `.opcore/config`, one delimited guidance block, repo and Claude skill files, a repo-local write-gate adapter, merged Claude Code/Codex hook entries, a managed `.opcore/` line in `.gitignore` for Git repos, an active Git pre-commit hook when safe, and `.opcore/init-undo.json`. Approved global install writes user-level hook config plus `~/.opcore/init-undo.json`. Undo recorded setup with `opcore uninstall --yes` or `opcore uninstall --global --yes`.
 
 ## Coverage
 
@@ -97,6 +97,6 @@ Private ASP hosts may launch the provider process behind host-owned decisions an
 opcore-asp-provider --stdio
 ```
 
-The aggregate `@the-open-engine/opcore` package exposes only the `opcore` bin; `opcore-asp-provider` comes from the separate `@the-open-engine/opcore-asp-provider` package.
+The aggregate `opcore` package exposes only the `opcore` bin; `opcore-asp-provider` comes from the separate `@the-open-engine/opcore-asp-provider` package.
 
 Do not treat provider output as a gate decision. The provider returns ASP Assessments; the ASP host returns allow, deny, or indeterminate decisions plus receipts.

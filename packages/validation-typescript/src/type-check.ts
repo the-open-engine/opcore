@@ -7,7 +7,8 @@ import {
   createOverlayAwareTypeScriptProgramIterator,
   emitTypeScriptProgramBuildInfo,
   repoSourceFiles,
-  toRepoRelativeCompilerPath
+  toRepoRelativeCompilerPath,
+  type OverlayAwareTypeScriptProgram
 } from "./compiler-host.js";
 import { mapTypeScriptDiagnostics } from "./diagnostics.js";
 
@@ -42,18 +43,26 @@ export function createTypeCheck(): ValidationCheckDefinition {
               ...diagnosticsProvider.getGlobalDiagnostics()
             ],
             bundle.repoRoot
-          ),
-          ...collectTypeScriptSemanticDiagnostics({
-            repoRoot: bundle.repoRoot,
-            sourceFiles: repoSourceFiles(bundle),
-            getSemanticDiagnostics: (sourceFile) => diagnosticsProvider.getSemanticDiagnostics(sourceFile)
-          })
+        ),
+        ...collectTypeScriptSemanticDiagnostics({
+          repoRoot: bundle.repoRoot,
+          sourceFiles: scopedRepoSourceFiles(bundle),
+          getSemanticDiagnostics: (sourceFile) => diagnosticsProvider.getSemanticDiagnostics(sourceFile)
+        })
         );
         emitTypeScriptProgramBuildInfo(bundle);
       }
       return { diagnostics };
     }
   };
+}
+
+function scopedRepoSourceFiles(bundle: OverlayAwareTypeScriptProgram): readonly ts.SourceFile[] {
+  const rootPathSet = new Set(bundle.sourceSet.rootPaths);
+  return repoSourceFiles(bundle).filter((sourceFile) => {
+    const path = toRepoRelativeCompilerPath(sourceFile.fileName, bundle.repoRoot);
+    return path !== undefined && rootPathSet.has(path);
+  });
 }
 
 export function collectTypeScriptSemanticDiagnostics(

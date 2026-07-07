@@ -5,7 +5,7 @@ import { isAbsolute, join, normalize } from "node:path";
 const requiredContextHeader = "UPDATE THIS FILE when making architectural changes, adding patterns, or changing conventions.";
 const packageTracks = [
   { dir: "contracts", name: "@the-open-engine/opcore-contracts" },
-  { dir: "opcore", name: "@the-open-engine/opcore", bin: "opcore" },
+  { dir: "opcore", name: "opcore", bin: "opcore" },
   { dir: "graph", name: "@the-open-engine/opcore-graph" },
   { dir: "edit", name: "@the-open-engine/opcore-edit" },
   { dir: "validation", name: "@the-open-engine/opcore-validation" },
@@ -190,10 +190,11 @@ for (const [name, content] of [
 }
 for (const token of [
   "Opcore",
+  "npx opcore install",
   "opcore try",
   "opcore --repo .",
-  "opcore init",
-  "opcore init --global",
+  "opcore install",
+  "opcore install --global",
   "opcore check --changed --json",
   "opcore measure --repo ."
 ]) {
@@ -205,12 +206,12 @@ for (const [name, content] of [
   ["packages/opcore/README.md", opcorePackageReadme]
 ]) {
   for (const token of [
-    "npm install -g @the-open-engine/opcore",
+    "npm install -g opcore",
     "darwin-arm64",
     "darwin-x64",
     "linux-x64",
     "opcore check --changed --json",
-    "@the-open-engine/opcore"
+    "opcore"
   ]) {
     requireIncludes(name, content, token);
   }
@@ -220,7 +221,7 @@ for (const [name, content] of [
   ["packages/opcore/README.md", opcorePackageReadme]
 ]) {
   for (const token of [
-    "npx @the-open-engine/opcore",
+    "npx opcore",
     "Unsupported platforms return typed degraded status",
     "freshly `git init` repo with no commits",
     "package exposes only"

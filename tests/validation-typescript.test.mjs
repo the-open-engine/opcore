@@ -241,6 +241,29 @@ describe("validation-typescript adapter", () => {
     assert.equal(result.diagnostics[0].code, "2322");
   });
 
+  it("uses imported support files without widening scoped type diagnostics", async () => {
+    const result = await runner({
+      files: {
+        "src/index.ts": `
+          import { value } from "./support";
+          export const selected: string = String(value);
+        `,
+        "src/support.ts": `
+          export const value = 1;
+          const broken: string = 1;
+        `
+      }
+    }).runValidation(
+      request({
+        checks: [TYPE_SCRIPT_TYPES_CHECK_ID],
+        scope: { kind: "files", files: ["src/index.ts"] }
+      })
+    );
+
+    assert.equal(result.status, "passed", JSON.stringify(result.diagnostics, null, 2));
+    assert.deepEqual(result.diagnostics, []);
+  });
+
   it("reports file-length diagnostics from overlay after-state content", async () => {
     const result = await runner({
       files: {

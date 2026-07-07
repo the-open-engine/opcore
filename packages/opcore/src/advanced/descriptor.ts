@@ -29,12 +29,12 @@ export const descriptorArtifactPath = "dist/descriptors/opcore.managed-tool.json
 
 const commandGroupPackageNames: Record<ManagedToolDescriptorCommandGroupName, string> = {
   graph: "@the-open-engine/opcore-graph",
-  inspect: "@the-open-engine/opcore",
+  inspect: "opcore",
   edit: "@the-open-engine/opcore-edit",
   check: "@the-open-engine/opcore-validation",
   validate: "@the-open-engine/opcore-validation",
-  status: "@the-open-engine/opcore",
-  doctor: "@the-open-engine/opcore"
+  status: "opcore",
+  doctor: "opcore"
 };
 
 export interface OpcoreManagedToolDescriptorOptions {
@@ -61,18 +61,18 @@ export function createOpcoreManagedToolDescriptor(options: OpcoreManagedToolDesc
     aggregateIdentity: {
       name: "opcore",
       releaseLine: "opcore",
-      packageName: "@the-open-engine/opcore",
+      packageName: "opcore",
       ...(options.version ? { version: options.version } : {})
     },
     packageIdentity: {
-      packageName: "@the-open-engine/opcore",
-      artifactName: "@the-open-engine/opcore",
+      packageName: "opcore",
+      artifactName: "opcore",
       ...(options.version ? { version: options.version } : {})
     },
     entrypoints: [
       {
         bin: "opcore",
-        packageName: "@the-open-engine/opcore",
+        packageName: "opcore",
         path: "dist/index.js",
         command: ["opcore"]
       }
@@ -165,14 +165,14 @@ export function createOpcoreManagedToolDescriptor(options: OpcoreManagedToolDesc
     artifacts: [
       {
         id: "cli-entrypoint",
-        packageName: "@the-open-engine/opcore",
+        packageName: "opcore",
         path: "dist/index.js",
         type: "entrypoint",
         required: true
       },
       {
         id: "descriptor",
-        packageName: "@the-open-engine/opcore",
+        packageName: "opcore",
         path: descriptorArtifactPath,
         type: "descriptor",
         required: true

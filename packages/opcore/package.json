@@ -1,5 +1,5 @@
 {
-  "name": "@the-open-engine/opcore",
+  "name": "opcore",
   "version": "0.1.0",
   "description": "Local quality gates and pre-write validation for AI coding agents.",
   "type": "module",

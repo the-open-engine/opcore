@@ -10,7 +10,7 @@ import {
   readOpcoreMetricReport,
   writeCommandLatencyTelemetry
 } from "./reporting.js";
-import { routeOpcoreInit, type OpcoreInitRuntime } from "./init.js";
+import { routeOpcoreInit, routeOpcoreInstall, routeOpcoreUninstall, type OpcoreInitRuntime } from "./init.js";
 import { routeOpcoreScan } from "./scan.js";
 import { parseOpcoreRepoArgs, resolveRepo, routeOpcoreStatus } from "./status.js";
 import { routeOpcoreDoctor } from "./doctor.js";
@@ -29,6 +29,13 @@ declare const process: {
   env?: Record<string, string | undefined>;
   stdin: {
     isTTY?: boolean;
+    isRaw?: boolean;
+    setRawMode?: (mode: boolean) => void;
+    setEncoding?: (encoding: string) => void;
+    resume(): void;
+    pause(): void;
+    on(event: "data", listener: (chunk: unknown) => void): void;
+    off(event: "data", listener: (chunk: unknown) => void): void;
   };
   stdout: {
     isTTY?: boolean;
@@ -64,6 +71,8 @@ export interface RunOpcoreCliOptions {
   stdoutIsTTY?: boolean;
   stderrIsTTY?: boolean;
   readLine?: (prompt: string) => Promise<string>;
+  readKey?: () => Promise<string>;
+  initWizardMotion?: boolean;
 }
 
 const helpArgs = new Set(["--help", "-h", "help"]);
@@ -117,14 +126,39 @@ export async function runOpcoreCli(options: RunOpcoreCliOptions): Promise<number
 }
 
 function createOpcoreInitRuntime(options: RunOpcoreCliOptions, stderr: Writer): OpcoreInitRuntime {
+  const stderrIsTTY = options.stderrIsTTY ?? process.stderr.isTTY === true;
+  const noColor = Boolean(process.env && process.env.NO_COLOR);
   return {
     stdinIsTTY: options.stdinIsTTY ?? process.stdin.isTTY === true,
     stdoutIsTTY: options.stdoutIsTTY ?? process.stdout.isTTY === true,
-    stderrIsTTY: options.stderrIsTTY ?? process.stderr.isTTY === true,
+    stderrIsTTY,
+    stderrColor: stderrIsTTY && !noColor,
+    stderrTrueColor: /truecolor|24bit/.test((process.env && process.env.COLORTERM) ?? ""),
     homeDir: options.homeDir,
     writeStderr: stderr,
-    readLine: options.readLine ?? createReadLine()
+    readLine: options.readLine ?? createReadLine(),
+    readKey: options.readKey ?? createReadKey(),
+    initWizardMotion: options.initWizardMotion
   };
+}
+
+function createReadKey(): (() => Promise<string>) | undefined {
+  if (process.stdin.isTTY !== true || typeof process.stdin.setRawMode !== "function") return undefined;
+  return () =>
+    new Promise<string>((resolveKey) => {
+      const stdin = process.stdin;
+      const wasRaw = stdin.isRaw === true;
+      stdin.setRawMode?.(true);
+      stdin.resume();
+      const onData = (chunk: unknown) => {
+        stdin.off("data", onData);
+        if (!wasRaw) stdin.setRawMode?.(false);
+        stdin.pause();
+        resolveKey(typeof chunk === "string" ? chunk : String(chunk));
+      };
+      stdin.setEncoding?.("utf8");
+      stdin.on("data", onData);
+    });
 }
 
 async function routeOpcoreParsed(
@@ -142,6 +176,8 @@ async function routeOpcoreParsed(
   if (head === "doctor") return routeOpcoreDoctor(argv, parsed);
   if (head === "check") return routeOpcoreCheck(argv, parsed, runtime, presentation);
   if (head === "init") return routeOpcoreInit(argv, parsed, runtime);
+  if (head === "install") return routeOpcoreInstall(argv, parsed, runtime);
+  if (head === "uninstall") return routeOpcoreUninstall(argv, parsed, runtime);
   if (head === "measure") return routeMeasure(argv, parsed);
   if (head === "try") return routeOpcoreTry(argv, parsed);
   if (advancedCommandGroups.has(head)) return routeAdvancedOpcoreCommand(argv, "opcore", { streamWriter: runtime.streamWriter });
@@ -280,6 +316,8 @@ function opcoreHelpMessage(): string {
     "  opcore [--repo <path>] [--json]",
     "  opcore --version [--json]",
     "  opcore status [--repo <path>] [--verbose] [--json]",
+    "  opcore install [--repo <path>] [--yes] [--json]",
+    "  opcore uninstall [--repo <path>] [--yes] [--json]",
     "  opcore check --changed --json",
     "  opcore check --staged --json",
     "  opcore check <file...> --json",
@@ -295,6 +333,7 @@ function opcoreHelpMessage(): string {
     "",
     "Examples:",
     "  opcore --version --json",
+    "  opcore install",
     "  opcore init --repo . --approve",
     "  opcore doctor --repo . --json",
     "  opcore graph search \"GreetingCard\" --repo . --limit 5",

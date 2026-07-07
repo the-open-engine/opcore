@@ -664,7 +664,7 @@ function minimalCutoverReceipt(repo, commandOverrides = {}) {
           path: `node_modules/${packageName}/package.json`,
           sha256: "3".repeat(64),
           bins:
-            packageName === "@the-open-engine/opcore"
+            packageName === "opcore"
               ? { opcore: "dist/index.js" }
               : packageName === "@the-open-engine/opcore-asp-provider"
                 ? { "opcore-asp-provider": "dist/index.js" }
@@ -673,8 +673,8 @@ function minimalCutoverReceipt(repo, commandOverrides = {}) {
         installedFiles: installedFilesFor(packageName)
       })),
     descriptor: {
-      path: "node_modules/@the-open-engine/opcore/dist/descriptors/opcore.managed-tool.json",
-      packageName: "@the-open-engine/opcore",
+      path: "node_modules/opcore/dist/descriptors/opcore.managed-tool.json",
+      packageName: "opcore",
       checksumSha256: "7".repeat(64),
       descriptor,
       resolvedArtifacts: descriptor.artifacts.map((artifact) => ({ ...artifact, packageFile: true })),
@@ -711,7 +711,7 @@ function minimalCutoverReceipt(repo, commandOverrides = {}) {
 function installedFilesFor(packageName) {
   const paths = [
     "package.json",
-    ...(packageName === "@the-open-engine/opcore" ? ["dist/index.js"] : []),
+    ...(packageName === "opcore" ? ["dist/index.js"] : []),
     ...(packageName === "@the-open-engine/opcore-asp-provider" ? ["dist/index.js", "dist/manifests/asp-server.json"] : [])
   ];
   return paths.map((path) => ({ path: `node_modules/${packageName}/${path}`, sha256: "4".repeat(64) }));

@@ -3472,7 +3472,7 @@
               "const": "opcore"
             },
             "packageName": {
-              "const": "@the-open-engine/opcore"
+              "const": "opcore"
             },
             "version": {
               "type": "string"
@@ -3488,10 +3488,10 @@
           ],
           "properties": {
             "packageName": {
-              "const": "@the-open-engine/opcore"
+              "const": "opcore"
             },
             "artifactName": {
-              "const": "@the-open-engine/opcore"
+              "const": "opcore"
             },
             "version": {
               "type": "string",
@@ -3517,7 +3517,7 @@
                 "const": "opcore"
               },
               "packageName": {
-                "const": "@the-open-engine/opcore"
+                "const": "opcore"
               },
               "path": {
                 "$ref": "#/$defs/ManagedToolPackagePath"
@@ -4453,7 +4453,7 @@
                     "const": "descriptor"
                   },
                   "packageName": {
-                    "const": "@the-open-engine/opcore"
+                    "const": "opcore"
                   },
                   "type": {
                     "const": "descriptor"
@@ -6082,7 +6082,7 @@
           "const": 1
         },
         "packageName": {
-          "const": "@the-open-engine/opcore"
+          "const": "opcore"
         },
         "version": {
           "type": "string",
@@ -12433,7 +12433,7 @@
     "ReleaseReceiptPackageName": {
       "enum": [
         "@the-open-engine/opcore-contracts",
-        "@the-open-engine/opcore",
+        "opcore",
         "@the-open-engine/opcore-graph",
         "@the-open-engine/opcore-graph-core-darwin-arm64",
         "@the-open-engine/opcore-graph-core-darwin-x64",
@@ -12855,7 +12855,7 @@
           "if": {
             "properties": {
               "packageName": {
-                "const": "@the-open-engine/opcore"
+                "const": "opcore"
               }
             }
           },
@@ -13055,7 +13055,7 @@
           "$ref": "#/$defs/RepoRelativePath"
         },
         "packageName": {
-          "const": "@the-open-engine/opcore"
+          "const": "opcore"
         },
         "checksumSha256": {
           "$ref": "#/$defs/Sha256"
@@ -13533,7 +13533,7 @@
             },
             {
               "contains": {
-                "const": "@the-open-engine/opcore"
+                "const": "opcore"
               },
               "minContains": 1,
               "maxContains": 1
@@ -13736,7 +13736,7 @@
                 ],
                 "properties": {
                   "packageName": {
-                    "const": "@the-open-engine/opcore"
+                    "const": "opcore"
                   }
                 }
               },
@@ -14169,7 +14169,7 @@
           "if": {
             "properties": {
               "packageName": {
-                "const": "@the-open-engine/opcore"
+                "const": "opcore"
               }
             }
           },
@@ -14233,7 +14233,7 @@
           "minLength": 1
         },
         "packageName": {
-          "const": "@the-open-engine/opcore"
+          "const": "opcore"
         },
         "checksumSha256": {
           "$ref": "#/$defs/Sha256"
@@ -17471,7 +17471,7 @@
             },
             {
               "contains": {
-                "const": "@the-open-engine/opcore"
+                "const": "opcore"
               },
               "minContains": 1,
               "maxContains": 1
@@ -17615,7 +17615,7 @@
                 ],
                 "properties": {
                   "packageName": {
-                    "const": "@the-open-engine/opcore"
+                    "const": "opcore"
                   }
                 }
               },
@@ -18407,7 +18407,7 @@
             },
             {
               "contains": {
-                "const": "@the-open-engine/opcore"
+                "const": "opcore"
               },
               "minContains": 1,
               "maxContains": 1
@@ -18551,7 +18551,7 @@
                 ],
                 "properties": {
                   "packageName": {
-                    "const": "@the-open-engine/opcore"
+                    "const": "opcore"
                   }
                 }
               },

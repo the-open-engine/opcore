@@ -377,7 +377,7 @@ describe("Opcore command router", () => {
     assert.equal(statusJson.exitCode, 0);
     assert.equal(doctorJson.exitCode, 0);
     assert.equal(helpJson.exitCode, 0);
-    assert.equal(doctorJson.runtimeInfo.packageName, "@the-open-engine/opcore");
+    assert.equal(doctorJson.runtimeInfo.packageName, "opcore");
     assert.equal(doctorJson.opcoreDoctor.schemaVersion, 1);
     assert.equal(doctorJson.opcoreDoctor.config.state, "missing");
     assert.equal(doctorJson.opcoreDoctor.checks.count > 0, true);

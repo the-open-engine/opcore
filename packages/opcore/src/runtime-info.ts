@@ -14,7 +14,7 @@ export function readOpcoreRuntimeInfo(): OpcoreRuntimeInfoPayload {
   const version = readPackageVersion();
   cachedRuntimeInfo = {
     schemaVersion: 1,
-    packageName: "@the-open-engine/opcore",
+    packageName: "opcore",
     version,
     bin: "opcore",
     artifactSource: classifyArtifactSource(),
@@ -39,7 +39,7 @@ function readPackageVersion(): string {
 
 function classifyArtifactSource(): OpcoreRuntimeInfoPayload["artifactSource"] {
   const normalizedRoot = packageRoot.replaceAll("\\", "/");
-  if (normalizedRoot.includes("/node_modules/@the-open-engine/opcore")) return "installed_package";
+  if (normalizedRoot.includes("/node_modules/opcore")) return "installed_package";
   if (normalizedRoot.endsWith("/packages/opcore") && existsSync(join(packageRoot, "..", "..", "package.json"))) {
     return "source_checkout";
   }
