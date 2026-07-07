@@ -21,8 +21,8 @@ test("Opcore postinstall banner is colored, non-fatal, and setup-only", () => {
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /\u001b\[[0-9;]+m/);
   assert.match(result.stdout, /OPCORE/);
-  assert.match(result.stdout, /opcore init\b/);
-  assert.match(result.stdout, /opcore init --global\b/);
+  assert.match(result.stdout, /opcore install\b/);
+  assert.match(result.stdout, /opcore install --global\b/);
   assert.doesNotMatch(result.stdout, /publish|auto-fix|security|SAST|\blattice\b|\brox\b|\bcrg\b|\bcix\b/i);
   assert.equal(result.stderr, "");
 });

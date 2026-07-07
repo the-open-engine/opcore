@@ -4,18 +4,18 @@
   "aggregateIdentity": {
     "name": "opcore",
     "releaseLine": "opcore",
-    "packageName": "@the-open-engine/opcore",
+    "packageName": "opcore",
     "version": "0.1.0"
   },
   "packageIdentity": {
-    "packageName": "@the-open-engine/opcore",
-    "artifactName": "@the-open-engine/opcore",
+    "packageName": "opcore",
+    "artifactName": "opcore",
     "version": "0.1.0"
   },
   "entrypoints": [
     {
       "bin": "opcore",
-      "packageName": "@the-open-engine/opcore",
+      "packageName": "opcore",
       "path": "dist/index.js",
       "command": [
         "opcore"
@@ -57,7 +57,7 @@
         "implementations",
         "search"
       ],
-      "packageName": "@the-open-engine/opcore"
+      "packageName": "opcore"
     },
     {
       "name": "edit",
@@ -118,7 +118,7 @@
       "commands": [
         "status"
       ],
-      "packageName": "@the-open-engine/opcore"
+      "packageName": "opcore"
     },
     {
       "name": "doctor",
@@ -129,7 +129,7 @@
       "commands": [
         "doctor"
       ],
-      "packageName": "@the-open-engine/opcore"
+      "packageName": "opcore"
     }
   ],
   "healthProbes": [
@@ -380,14 +380,14 @@
   "artifacts": [
     {
       "id": "cli-entrypoint",
-      "packageName": "@the-open-engine/opcore",
+      "packageName": "opcore",
       "path": "dist/index.js",
       "type": "entrypoint",
       "required": true
     },
     {
       "id": "descriptor",
-      "packageName": "@the-open-engine/opcore",
+      "packageName": "opcore",
       "path": "dist/descriptors/opcore.managed-tool.json",
       "type": "descriptor",
       "required": true

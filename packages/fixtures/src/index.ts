@@ -118,7 +118,7 @@ export interface SyntheticFixtureMetadata {
   descriptor?: {
     dataFile?: string;
     descriptorKind?: "aggregate_opcore";
-    packageName?: "@the-open-engine/opcore";
+    packageName?: "opcore";
     entrypoints: readonly string[];
     commandGroups: readonly string[];
     healthProbes: readonly string[];
@@ -406,7 +406,7 @@ export const conformanceFixtureMetadata = [
     descriptor: {
       dataFile: "packages/fixtures/descriptors/opcore.managed-tool.json",
       descriptorKind: "aggregate_opcore",
-      packageName: "@the-open-engine/opcore",
+      packageName: "opcore",
       entrypoints: ["opcore"],
       commandGroups: [
         "opcore graph",
@@ -464,7 +464,7 @@ export const conformanceFixtureMetadata = [
       ],
       provenanceHooks: ["npm run pack:check", "npm run provenance:check"],
       artifactPackages: [
-        "@the-open-engine/opcore",
+        "opcore",
         "@the-open-engine/opcore-contracts",
         "@the-open-engine/opcore-graph",
         "@the-open-engine/opcore-graph-core-darwin-arm64",
@@ -777,7 +777,7 @@ export const conformanceFixtureMetadata = [
     descriptor: {
       dataFile: "packages/fixtures/descriptors/opcore.managed-tool.json",
       descriptorKind: "aggregate_opcore",
-      packageName: "@the-open-engine/opcore",
+      packageName: "opcore",
       entrypoints: ["opcore"],
       commandGroups: [
         "opcore graph",
@@ -804,7 +804,7 @@ export const conformanceFixtureMetadata = [
       ],
       provenanceHooks: ["npm pack --dry-run", "npm run provenance:check"],
       artifactPackages: [
-        "@the-open-engine/opcore",
+        "opcore",
         "@the-open-engine/opcore-graph",
         "@the-open-engine/opcore-graph-core-darwin-arm64",
         "@the-open-engine/opcore-graph-core-darwin-x64",

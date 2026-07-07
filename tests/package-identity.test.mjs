@@ -5,7 +5,7 @@ import { join } from "node:path";
 
 const expectedWorkspacePackages = new Map([
   ["packages/contracts", "@the-open-engine/opcore-contracts"],
-  ["packages/opcore", "@the-open-engine/opcore"],
+  ["packages/opcore", "opcore"],
   ["packages/graph", "@the-open-engine/opcore-graph"],
   ["packages/edit", "@the-open-engine/opcore-edit"],
   ["packages/validation", "@the-open-engine/opcore-validation"],

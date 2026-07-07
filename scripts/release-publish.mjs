@@ -9,16 +9,16 @@ const dryRun = process.argv.includes("--dry-run") || process.env.OPCORE_PUBLISH_
 const npmEnv = npmPublishEnv();
 const implementationPackages = [
   "@the-open-engine/opcore-contracts",
+  "@the-open-engine/opcore-graph",
+  "@the-open-engine/opcore-edit",
   "@the-open-engine/opcore-validation",
   "@the-open-engine/opcore-validation-clone",
   "@the-open-engine/opcore-validation-docs",
   "@the-open-engine/opcore-validation-python",
   "@the-open-engine/opcore-validation-rust",
   "@the-open-engine/opcore-validation-typescript",
-  "@the-open-engine/opcore-graph",
-  "@the-open-engine/opcore-edit",
   "@the-open-engine/opcore-asp-provider",
-  "@the-open-engine/opcore"
+  "opcore"
 ];
 const publicPackages = [...graphCoreNativePackageNames, ...implementationPackages];
 

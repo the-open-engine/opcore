@@ -6,15 +6,15 @@ Opcore is a local CLI surface for agents that can run shell commands and consume
 
 Paste this to any coding agent that runs shell commands (Claude Code, Cursor, Codex, Copilot). It installs Opcore, runs the approval-gated setup, and adopts the gate:
 
-> Set up Opcore in this repo: run `npx @the-open-engine/opcore init`, show me the plan it prints, and approve it if it only adds Opcore config, agent guidance, and Claude Code/Codex write-gate wiring. From then on, treat Opcore hook feedback or a non-zero `opcore check --changed --json` exit as a blocked write.
+> Set up Opcore in this repo: run `npx opcore install`, show me the plan it prints, and approve it if it only adds Opcore config, agent guidance, and Claude Code/Codex write-gate wiring. From then on, treat Opcore hook feedback or a non-zero `opcore check --changed --json` exit as a blocked write.
 
-`opcore init` stays read-only until you approve its plan, preserves existing lint, test, CI, pre-commit, and agent guardrails, and never runs setup from npm install.
+`opcore install` stays read-only until you approve its plan, preserves existing lint, test, CI, pre-commit, and agent guardrails, and never runs setup from npm install.
 
-After `npm install -g @the-open-engine/opcore` or `npx @the-open-engine/opcore`, the package prints a setup reminder only. Run one of:
+After `npm install -g opcore` or `npx opcore`, the package prints a setup reminder only. Run one of:
 
 ```bash
-opcore init
-opcore init --global
+opcore install
+opcore install --global
 ```
 
 ## Readiness
@@ -28,25 +28,25 @@ opcore status --repo . --json
 ## Setup Guidance
 
 ```bash
-opcore init --repo . --json
-opcore init --repo . --local --approve --json
-opcore init --global --approve --json
+opcore install --repo . --json
+opcore install --repo . --local --yes --json
+opcore install --global --yes --json
 ```
 
-Preview first. In a Git repo on a TTY, `opcore init` asks whether to install the write gate for this repo or globally. `--local` forces repo scope, and `--global` writes user-level harness settings. Approved repo init writes additive config, one delimited guidance block, a repo-local write-gate adapter, and additive Claude Code/Codex hook entries. Approved global init writes the adapter under `~/.opcore/hooks/` and merges user-level Claude Code/Codex hook settings.
+Preview first. In a Git repo on a TTY, `opcore install` asks whether to install the write gate for this repo or globally. `--local` forces repo scope, and `--global` writes user-level harness settings. Approved repo install writes additive config, one delimited guidance block, repo and Claude skill files, a repo-local write-gate adapter, additive Claude Code/Codex hook entries, and an active pre-commit hook when no existing hook is present. Approved global install writes the adapter under `~/.opcore/hooks/`, installs user-level skill files, and merges user-level Claude Code/Codex hook settings.
 
 Undo with:
 
 ```bash
-opcore init --repo . --local --undo --approve --json
-opcore init --global --undo --approve --json
+opcore uninstall --repo . --local --yes --json
+opcore uninstall --global --yes --json
 ```
 
 Undo restores or removes only paths recorded by Opcore init metadata. Repo metadata lives at `.opcore/init-undo.json`; global metadata lives at `~/.opcore/init-undo.json`.
 
 ## Write-Time Harness Gate
 
-`opcore init` installs a small adapter script that reads the harness hook payload on stdin, maps file writes and edits into a hypothetical `ValidationRequest`, and calls:
+`opcore install` installs a small adapter script that reads the harness hook payload on stdin, maps file writes and edits into a hypothetical `ValidationRequest`, and calls:
 
 ```bash
 opcore validate pre-write --request-file <json> --timeout-ms 30000 --json

@@ -1294,12 +1294,12 @@ export type ManagedToolDescriptorCommandGroupName = (typeof managedToolDescripto
 
 const managedToolDescriptorCommandGroupPackageNames: Record<ManagedToolDescriptorCommandGroupName, string> = {
   graph: "@the-open-engine/opcore-graph",
-  inspect: "@the-open-engine/opcore",
+  inspect: "opcore",
   edit: "@the-open-engine/opcore-edit",
   check: "@the-open-engine/opcore-validation",
   validate: "@the-open-engine/opcore-validation",
-  status: "@the-open-engine/opcore",
-  doctor: "@the-open-engine/opcore"
+  status: "opcore",
+  doctor: "opcore"
 };
 
 export const managedToolDescriptorArtifactTypes = [
@@ -1319,12 +1319,12 @@ export interface ManagedToolDescriptor {
   aggregateIdentity: {
     name: "opcore";
     releaseLine: "opcore";
-    packageName: "@the-open-engine/opcore";
+    packageName: "opcore";
     version?: string;
   };
   packageIdentity: {
-    packageName: "@the-open-engine/opcore";
-    artifactName: "@the-open-engine/opcore";
+    packageName: "opcore";
+    artifactName: "opcore";
     version?: string;
   };
   entrypoints: readonly ManagedToolDescriptorEntrypoint[];
@@ -1339,7 +1339,7 @@ export interface ManagedToolDescriptor {
 
 export interface ManagedToolDescriptorEntrypoint {
   bin: "opcore";
-  packageName: "@the-open-engine/opcore";
+  packageName: "opcore";
   path: string;
   command: readonly string[];
 }
@@ -1579,7 +1579,7 @@ export function graphCoreNativePackageNameForTarget(target: GraphCoreNativeSuppo
 
 export const releaseReceiptPackageNames = [
   "@the-open-engine/opcore-contracts",
-  "@the-open-engine/opcore",
+  "opcore",
   "@the-open-engine/opcore-graph",
   "@the-open-engine/opcore-graph-core-darwin-arm64",
   "@the-open-engine/opcore-graph-core-darwin-x64",
@@ -2042,7 +2042,7 @@ export interface CommandGroupContract {
 
 export interface CommandRouterManifest {
   schemaVersion: 1;
-  packageName: "@the-open-engine/opcore" | (string & {});
+  packageName: "opcore" | (string & {});
   bins: readonly string[];
   exitSemantics: CommandExitSemantics;
   ownershipBoundaries: readonly {
@@ -2144,7 +2144,7 @@ export type OpcoreRuntimeArtifactSource = (typeof opcoreRuntimeArtifactSources)[
 
 export interface OpcoreRuntimeInfoPayload {
   schemaVersion: 1;
-  packageName: "@the-open-engine/opcore";
+  packageName: "opcore";
   version: string;
   bin: "opcore";
   artifactSource: OpcoreRuntimeArtifactSource;
@@ -2634,7 +2634,7 @@ export const commandExitSemantics: CommandExitSemantics = {
 
 export const commandRouterManifest: CommandRouterManifest = {
   schemaVersion: 1,
-  packageName: "@the-open-engine/opcore",
+  packageName: "opcore",
   bins: ["opcore"],
   exitSemantics: commandExitSemantics,
   ownershipBoundaries: [
@@ -3017,7 +3017,7 @@ export interface ReleaseReceiptResolvedChecksumEvidence {
 
 export interface ReleaseReceiptDescriptorEvidence {
   path: string;
-  packageName: "@the-open-engine/opcore";
+  packageName: "opcore";
   checksumSha256: string;
   descriptor: ManagedToolDescriptor;
   commandGroups: readonly ReleaseReceiptDescriptorCommandGroupEvidence[];
@@ -3140,7 +3140,7 @@ export interface ReleaseCutoverInstalledPackageEvidence {
 
 export interface ReleaseCutoverDescriptorEvidence {
   path: string;
-  packageName: "@the-open-engine/opcore";
+  packageName: "opcore";
   checksumSha256: string;
   descriptor: ManagedToolDescriptor;
   resolvedArtifacts: readonly ReleaseReceiptResolvedArtifactEvidence[];
@@ -3743,8 +3743,8 @@ function validateManagedToolIdentity(descriptor: ManagedToolDescriptor): void {
   if (!aggregate || typeof aggregate !== "object") throw new Error("Managed tool descriptor aggregateIdentity is required");
   if (aggregate.name !== "opcore") throw new Error("Managed tool descriptor aggregateIdentity.name must be opcore");
   if (aggregate.releaseLine !== "opcore") throw new Error("Managed tool descriptor aggregateIdentity.releaseLine must be opcore");
-  if (aggregate.packageName !== "@the-open-engine/opcore") {
-    throw new Error("Managed tool descriptor aggregateIdentity.packageName must be @the-open-engine/opcore");
+  if (aggregate.packageName !== "opcore") {
+    throw new Error("Managed tool descriptor aggregateIdentity.packageName must be opcore");
   }
   if (aggregate.version !== undefined) validateNonEmptyString(aggregate.version, "Managed tool descriptor aggregateIdentity.version");
 
@@ -3752,11 +3752,11 @@ function validateManagedToolIdentity(descriptor: ManagedToolDescriptor): void {
   if (!packageIdentity || typeof packageIdentity !== "object") {
     throw new Error("Managed tool descriptor packageIdentity is required");
   }
-  if (packageIdentity.packageName !== "@the-open-engine/opcore") {
-    throw new Error("Managed tool descriptor packageIdentity.packageName must be @the-open-engine/opcore");
+  if (packageIdentity.packageName !== "opcore") {
+    throw new Error("Managed tool descriptor packageIdentity.packageName must be opcore");
   }
-  if (packageIdentity.artifactName !== "@the-open-engine/opcore") {
-    throw new Error("Managed tool descriptor packageIdentity.artifactName must be @the-open-engine/opcore");
+  if (packageIdentity.artifactName !== "opcore") {
+    throw new Error("Managed tool descriptor packageIdentity.artifactName must be opcore");
   }
   if (packageIdentity.version !== undefined) validateNonEmptyString(packageIdentity.version, "Managed tool descriptor packageIdentity.version");
 }
@@ -3776,8 +3776,8 @@ function validateManagedToolEntrypoints(entrypoints: readonly ManagedToolDescrip
   for (const entrypoint of entrypoints) {
     if (!entrypoint || typeof entrypoint !== "object") throw new Error("Managed tool descriptor entrypoint is required");
     if (entrypoint.bin !== "opcore") throw new Error("Managed tool descriptor must expose the opcore entrypoint");
-    if (entrypoint.packageName !== "@the-open-engine/opcore") {
-      throw new Error("Managed tool descriptor entrypoint packageName must be @the-open-engine/opcore");
+    if (entrypoint.packageName !== "opcore") {
+      throw new Error("Managed tool descriptor entrypoint packageName must be opcore");
     }
     validateManagedToolPackagePath(entrypoint.path, "Managed tool descriptor entrypoint path");
     if (entrypoint.path !== "dist/index.js") {
@@ -4006,7 +4006,7 @@ function validateManagedToolArtifacts(artifacts: readonly ManagedToolDescriptorA
     !artifacts.some(
       (artifact) =>
         artifact.id === "descriptor" &&
-        artifact.packageName === "@the-open-engine/opcore" &&
+        artifact.packageName === "opcore" &&
         artifact.path === "dist/descriptors/opcore.managed-tool.json" &&
         artifact.type === "descriptor" &&
         artifact.required
@@ -4368,8 +4368,8 @@ export function validateOpcoreRuntimeInfoPayload(payload: OpcoreRuntimeInfoPaylo
   if (payload.schemaVersion !== 1) {
     throw new Error("Opcore runtime info schemaVersion must be 1");
   }
-  if (payload.packageName !== "@the-open-engine/opcore") {
-    throw new Error("Opcore runtime info packageName must be @the-open-engine/opcore");
+  if (payload.packageName !== "opcore") {
+    throw new Error("Opcore runtime info packageName must be opcore");
   }
   validateNonEmptyString(payload.version, "Opcore runtime info version");
   if (payload.bin !== "opcore") {
@@ -7980,8 +7980,8 @@ function validateReleaseReceiptDescriptor(
 ): void {
   if (!descriptorEvidence || typeof descriptorEvidence !== "object") throw new Error("Release receipt descriptor evidence is required");
   validateRepoRelativePath(descriptorEvidence.path);
-  if (descriptorEvidence.packageName !== "@the-open-engine/opcore") {
-    throw new Error("Release receipt descriptor packageName must be @the-open-engine/opcore");
+  if (descriptorEvidence.packageName !== "opcore") {
+    throw new Error("Release receipt descriptor packageName must be opcore");
   }
   validateSha256(descriptorEvidence.checksumSha256, "Release receipt descriptor checksumSha256");
   const descriptor = validateManagedToolDescriptor(descriptorEvidence.descriptor);
@@ -8221,7 +8221,7 @@ function validateReleaseReceiptBins(bins: Readonly<Record<string, string>>, pack
     if (["lattice", "crg", "cix", "rox"].includes(bin)) throw new Error(`Release receipt package exposes old public bin ${bin}`);
     validateRepoRelativePath(bins[bin]);
   }
-  if (packageName === "@the-open-engine/opcore") {
+  if (packageName === "opcore") {
     validateExactStringSet(binNames, ["opcore"], "Release receipt Opcore package bins");
   } else if (packageName === "@the-open-engine/opcore-asp-provider") {
     validateExactStringSet(binNames, ["opcore-asp-provider"], "Release receipt ASP provider package bins");
@@ -8303,8 +8303,8 @@ function validateReleaseCutoverInstalledPackageSet(packageNames: readonly string
 function validateReleaseCutoverDescriptor(descriptorEvidence: ReleaseCutoverDescriptorEvidence): void {
   if (!descriptorEvidence || typeof descriptorEvidence !== "object") throw new Error("Release cutover descriptor evidence is required");
   validateNonEmptyString(descriptorEvidence.path, "Release cutover descriptor path");
-  if (descriptorEvidence.packageName !== "@the-open-engine/opcore") {
-    throw new Error("Release cutover descriptor packageName must be @the-open-engine/opcore");
+  if (descriptorEvidence.packageName !== "opcore") {
+    throw new Error("Release cutover descriptor packageName must be opcore");
   }
   validateSha256(descriptorEvidence.checksumSha256, "Release cutover descriptor checksumSha256");
   const descriptor = validateManagedToolDescriptor(descriptorEvidence.descriptor);

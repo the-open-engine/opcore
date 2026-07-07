@@ -28,6 +28,15 @@ import {
 import { homedir } from "node:os";
 import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
 import { opcoreAgentGateHookScriptContent } from "./agent-gate.js";
+import {
+  createInstallWizardRenderer,
+  type InstallWizardChoices,
+  type InstallWizardFileRow,
+  type InstallWizardGroup,
+  type InstallWizardGroupKey,
+  type InstallWizardPlanView,
+  type InstallWizardRenderer
+} from "./install-wizard.js";
 import { createOpcoreScanAnalysis, type OpcoreScanAnalysis } from "./scan.js";
 import { failedValidationCheckIds } from "./scan-presentation.js";
 import { commonSkippedPathSegments, resolveRepo, type RepoResolution } from "./status.js";
@@ -52,24 +61,39 @@ const configPath = ".opcore/config";
 const undoPath = ".opcore/init-undo.json";
 const hookPath = ".opcore/hooks/pre-commit-opcore-check.sh";
 const agentGateHookPath = ".opcore/hooks/opcore-agent-gate.mjs";
+const repoAgentSkillPath = ".agents/skills/opcore/SKILL.md";
+const claudeAgentSkillPath = ".claude/skills/opcore/SKILL.md";
+const agentSkillPaths = [repoAgentSkillPath, claudeAgentSkillPath] as const;
 const claudeSettingsPath = ".claude/settings.json";
 const codexHooksPath = ".codex/hooks.json";
+const activePreCommitHookPath = ".git/hooks/pre-commit";
 const failClosedHookActivationCommand = "cp .opcore/hooks/pre-commit-opcore-check.sh .git/hooks/pre-commit";
 const gitignorePath = ".gitignore";
 const opcoreIgnoreLine = ".opcore/";
 const defaultInitProgressIntervalMs = 5000;
+type OpcoreSetupCommand = "init" | "install" | "uninstall";
 const allowedUndoPaths = new Set<string>([
   configPath,
   undoPath,
   hookPath,
   agentGateHookPath,
+  repoAgentSkillPath,
+  claudeAgentSkillPath,
   claudeSettingsPath,
   codexHooksPath,
+  activePreCommitHookPath,
   gitignorePath,
   ...AGENT_FILE_CANDIDATES
 ]);
 const globalUndoPath = ".opcore/init-undo.json";
-const allowedGlobalUndoPaths = new Set<string>([globalUndoPath, agentGateHookPath, claudeSettingsPath, codexHooksPath]);
+const allowedGlobalUndoPaths = new Set<string>([
+  globalUndoPath,
+  agentGateHookPath,
+  repoAgentSkillPath,
+  claudeAgentSkillPath,
+  claudeSettingsPath,
+  codexHooksPath
+]);
 const rustActiveValidationKinds = new Set([".rs", ".inc", "Cargo.toml"]);
 const pythonProjectFileNames = new Set(["pyproject.toml", "Pipfile", "poetry.lock", "uv.lock"]);
 const pythonVirtualEnvDirs = new Set([".venv", "venv", "env"]);
@@ -86,6 +110,7 @@ const pythonDiscoverySkipDirs = new Set([
 ]);
 
 interface ParsedInitArgs {
+  command: OpcoreSetupCommand;
   repo: string;
   repoExplicit: boolean;
   scope: "repo" | "global";
@@ -93,6 +118,9 @@ interface ParsedInitArgs {
   approved: boolean;
   dryRun: boolean;
   failClosedHook: boolean;
+  agentSkill: boolean;
+  writeGateHooks: boolean;
+  activePreCommitHook: boolean;
   undo: boolean;
 }
 
@@ -100,11 +128,15 @@ export interface OpcoreInitRuntime {
   stdinIsTTY?: boolean;
   stdoutIsTTY?: boolean;
   stderrIsTTY?: boolean;
+  stderrColor?: boolean;
+  stderrTrueColor?: boolean;
   homeDir?: string;
   writeStderr?: (text: string) => void;
   scanAnalysis?: (resolution: RepoResolution) => Promise<OpcoreScanAnalysis>;
   initProgressIntervalMs?: number;
   readLine?: (prompt: string) => Promise<string>;
+  readKey?: () => Promise<string>;
+  initWizardMotion?: boolean;
 }
 
 interface InitContext {
@@ -174,20 +206,46 @@ export async function routeOpcoreInit(
   parsed: ParsedCommandArgv,
   runtime: OpcoreInitRuntime = {}
 ): Promise<CommandRouterResult> {
+  return routeOpcoreSetup(argv, parsed, runtime, "init");
+}
+
+export async function routeOpcoreInstall(
+  argv: readonly string[],
+  parsed: ParsedCommandArgv,
+  runtime: OpcoreInitRuntime = {}
+): Promise<CommandRouterResult> {
+  return routeOpcoreSetup(argv, parsed, runtime, "install");
+}
+
+export async function routeOpcoreUninstall(
+  argv: readonly string[],
+  parsed: ParsedCommandArgv,
+  runtime: OpcoreInitRuntime = {}
+): Promise<CommandRouterResult> {
+  return routeOpcoreSetup(argv, parsed, runtime, "uninstall");
+}
+
+async function routeOpcoreSetup(
+  argv: readonly string[],
+  parsed: ParsedCommandArgv,
+  runtime: OpcoreInitRuntime,
+  command: OpcoreSetupCommand
+): Promise<CommandRouterResult> {
   const rest = parsed.args.slice(1);
   if (rest.some((arg) => helpArgs.has(arg))) {
-    return createInitRouterResult(argv, parsed.json, "ok", opcoreInitHelpMessage(), ["opcore", "init", "help"]);
+    return createInitRouterResult(argv, parsed.json, "ok", opcoreSetupHelpMessage(command), ["opcore", command, "help"]);
   }
 
-  const parsedInit = parseOpcoreInitArgs(rest);
+  const parsedInit = parseOpcoreInitArgs(rest, command);
   if (!parsedInit.ok) {
     return createInitRouterResult(argv, parsed.json, "error", parsedInit.message);
   }
-  const resolution = resolveRepo(parsedInit.args.repo, "opcore init");
+  const resolution = resolveRepo(parsedInit.args.repo, `opcore ${command}`);
   if (!resolution.ok) {
     return createInitRouterResult(argv, parsed.json, "error", resolution.message);
   }
 
+  const wizard = createInstallWizard(parsed.json, parsedInit.args, runtime, command);
   try {
     const timing: TimingState = {
       startedAt: nowMs(),
@@ -197,13 +255,15 @@ export async function routeOpcoreInit(
       applyMs: 0
     };
     const scanStartedAt = nowMs();
-    const progress = startInitScanProgress(parsed.json, runtime);
+    const progress = wizard
+      ? startWizardScanProgress(wizard, runtime, repoDisplayLabel(resolution.resolution.root, initHomeRoot(runtime)))
+      : startInitScanProgress(parsed.json, runtime, command);
     const scanAnalysis = runtime.scanAnalysis ?? createOpcoreScanAnalysis;
     let analysis: OpcoreScanAnalysis;
     try {
       analysis = await scanAnalysis(resolution.resolution);
       timing.scanMs = elapsedMs(scanStartedAt);
-      progress?.complete(timing.scanMs);
+      progress?.complete(timing.scanMs, analysis.repoState.coverage.totalFiles);
     } catch (error) {
       timing.scanMs = elapsedMs(scanStartedAt);
       progress?.fail(timing.scanMs);
@@ -228,7 +288,23 @@ export async function routeOpcoreInit(
         initHomeRoot(runtime),
         parsedInit.args,
         context,
-        timing
+        timing,
+        command
+      );
+    }
+
+    if (wizard) {
+      return await runInstallWizardFlow(
+        argv,
+        resolution.resolution.root,
+        resolution.resolution.requestedPath,
+        resolution.resolution.git,
+        initHomeRoot(runtime),
+        parsedInit.args,
+        context,
+        timing,
+        wizard,
+        command
       );
     }
 
@@ -242,11 +318,77 @@ export async function routeOpcoreInit(
       parsedInit.args,
       context,
       timing,
-      runtime
+      runtime,
+      command
     );
   } catch (error) {
-    return createInitRouterResult(argv, parsed.json, "error", `opcore init failed: ${errorMessage(error)}`);
+    return createInitRouterResult(argv, parsed.json, "error", `opcore ${command} failed: ${errorMessage(error)}`);
+  } finally {
+    wizard?.showCursor();
   }
+}
+
+function createInstallWizard(
+  json: boolean,
+  options: ParsedInitArgs,
+  runtime: OpcoreInitRuntime,
+  command: OpcoreSetupCommand
+): InstallWizardRenderer | undefined {
+  if (command !== "install" || json || options.approved || options.dryRun || options.undo) return undefined;
+  if (!isInteractiveRuntime(runtime) || runtime.stderrIsTTY !== true) return undefined;
+  if (typeof runtime.readKey !== "function" || typeof runtime.writeStderr !== "function") return undefined;
+  const writeStderr = runtime.writeStderr;
+  const readKey = runtime.readKey;
+  return createInstallWizardRenderer(
+    {
+      write: (text) => writeProgress(writeStderr, text),
+      readKey,
+      color: runtime.stderrColor === true,
+      motion: runtime.initWizardMotion !== false
+    },
+    runtime.stderrTrueColor === true
+  );
+}
+
+function startWizardScanProgress(
+  wizard: InstallWizardRenderer,
+  runtime: OpcoreInitRuntime,
+  repoLabel: string
+): { complete(scanMs: number, totalFiles?: number): void; fail(scanMs: number): void } {
+  wizard.hideCursor();
+  wizard.header(repoLabel);
+  const startedAt = nowMs();
+  let finished = false;
+  let frame = 0;
+  wizard.scanFrame(frame, 0);
+  const intervalMs = runtime.initWizardMotion === false ? 0 : 120;
+  const timer = intervalMs > 0
+    ? (setInterval(() => {
+      if (finished) return;
+      frame += 1;
+      wizard.scanFrame(frame, elapsedMs(startedAt));
+    }, intervalMs) as ReturnType<typeof setInterval> & { unref?: () => void })
+    : undefined;
+  timer?.unref?.();
+  return {
+    complete: (scanMs: number, totalFiles?: number) => {
+      if (finished) return;
+      finished = true;
+      if (timer) clearInterval(timer);
+      wizard.scanDone(scanMs, totalFiles);
+    },
+    fail: (scanMs: number) => {
+      if (finished) return;
+      finished = true;
+      if (timer) clearInterval(timer);
+      wizard.scanFailed(scanMs);
+    }
+  };
+}
+
+function repoDisplayLabel(root: string, homeRoot: string): string {
+  if (root === homeRoot) return "~";
+  return root.startsWith(`${homeRoot}${sep}`) ? `~${root.slice(homeRoot.length)}` : root;
 }
 
 function routeOpcoreInitUndo(
@@ -257,7 +399,8 @@ function routeOpcoreInitUndo(
   homeRoot: string,
   options: ParsedInitArgs,
   context: InitContext,
-  timing: TimingState
+  timing: TimingState,
+  command: OpcoreSetupCommand
 ): CommandRouterResult {
   const planStartedAt = nowMs();
   const undo = planUndo(repoRoot, requestedPath, homeRoot, options, context);
@@ -268,8 +411,12 @@ function routeOpcoreInitUndo(
     applyUndo(scopeRoot(repoRoot, homeRoot, options.scope), options.scope, undo);
     timing.applyMs = elapsedMs(applyStartedAt);
   }
-  const payload = withContext(approved ? appliedUndoPayload(undo, scopeRoot(repoRoot, homeRoot, options.scope), options.scope) : undo, context, timing);
-  return createInitRouterResult(argv, json, "ok", formatInitPlan(payload, approved), ["opcore", "init"], payload);
+  const payload = withContext(
+    approved ? appliedUndoPayload(undo, scopeRoot(repoRoot, homeRoot, options.scope), options.scope, command) : undo,
+    context,
+    timing
+  );
+  return createInitRouterResult(argv, json, "ok", formatSetupPlan(payload, approved, command), ["opcore", command], payload);
 }
 
 async function routeOpcoreInitPlanOrApply(
@@ -282,7 +429,8 @@ async function routeOpcoreInitPlanOrApply(
   options: ParsedInitArgs,
   context: InitContext,
   timing: TimingState,
-  runtime: OpcoreInitRuntime
+  runtime: OpcoreInitRuntime,
+  command: OpcoreSetupCommand
 ): Promise<CommandRouterResult> {
   if (shouldPromptForScope(json, options, git, runtime)) {
     const promptStartedAt = nowMs();
@@ -306,16 +454,16 @@ async function routeOpcoreInitPlanOrApply(
     context.interaction = { tty: true, promptState: "requested" };
     payload = withContext(payload, context, timing);
     const promptStartedAt = nowMs();
-    const answer = await runtime.readLine(`${formatInitPlan(payload, false)}\nApply setup? [y/N] `);
+    const answer = await runtime.readLine(`${formatSetupPlan(payload, false, command)}\nApply setup? ${approvalPromptSuffix(command)} `);
     timing.promptMs += elapsedMs(promptStartedAt);
-    if (isExplicitYes(answer)) {
+    if (isApprovedAnswer(answer, command)) {
       approved = true;
       context.interaction = { tty: true, promptState: "approved" };
     } else {
       context.interaction = { tty: true, promptState: "declined" };
       payload = {
         ...payload,
-        nextActions: ["No files written. Rerun opcore init when ready."]
+        nextActions: [`No files written. Rerun opcore ${command === "uninstall" ? "uninstall" : command} when ready.`]
       };
     }
   }
@@ -325,10 +473,173 @@ async function routeOpcoreInitPlanOrApply(
     applyInit(scopeRoot(repoRoot, homeRoot, options.scope), options.scope, planned.writes);
     timing.applyMs = elapsedMs(applyStartedAt);
   }
-  payload = approved ? appliedInitPayload(payload, scopeRoot(repoRoot, homeRoot, options.scope), options.scope) : payload;
+  payload = approved ? appliedInitPayload(payload, scopeRoot(repoRoot, homeRoot, options.scope), options.scope, command) : payload;
   payload = withContext(payload, context, timing);
-  const message = prompted ? formatInteractiveOutcome(payload) : formatInitPlan(payload, approved);
-  return createInitRouterResult(argv, json, "ok", message, ["opcore", "init"], payload);
+  const message = prompted ? formatInteractiveOutcome(payload, command) : formatSetupPlan(payload, approved, command);
+  return createInitRouterResult(argv, json, "ok", message, ["opcore", command], payload);
+}
+
+async function runInstallWizardFlow(
+  argv: readonly string[],
+  repoRoot: string,
+  requestedPath: string,
+  git: boolean,
+  homeRoot: string,
+  options: ParsedInitArgs,
+  context: InitContext,
+  timing: TimingState,
+  wizard: InstallWizardRenderer,
+  command: OpcoreSetupCommand
+): Promise<CommandRouterResult> {
+  await wizard.coverage(context.scan);
+
+  if (git && !options.scopeExplicit && !options.repoExplicit) {
+    const promptStartedAt = nowMs();
+    const scope = await wizard.selectScope(repoDisplayLabel(repoRoot, homeRoot));
+    timing.promptMs += elapsedMs(promptStartedAt);
+    if (scope === null) {
+      return declinedInstallWizardResult(argv, repoRoot, requestedPath, git, homeRoot, options, context, timing, wizard, command);
+    }
+    options = { ...options, scope, scopeExplicit: true };
+  }
+
+  const planFor = createInstallPlanCache(repoRoot, requestedPath, git, homeRoot, options, context);
+  const probe = planFor({ agentSkill: true, writeGateHooks: true, activePreCommitHook: true });
+  const model = {
+    groups: createInstallWizardGroups(options.scope, git, repoRoot, probe.payload.actions),
+    initial: {
+      agentSkill: options.agentSkill,
+      writeGateHooks: options.writeGateHooks,
+      activePreCommitHook: options.activePreCommitHook
+    },
+    planView: (choices: InstallWizardChoices) => installWizardPlanView(planFor(choices).payload.actions)
+  };
+  context.interaction = { tty: true, promptState: "requested" };
+  const promptStartedAt = nowMs();
+  const outcome = await wizard.planApproval(model);
+  timing.promptMs += elapsedMs(promptStartedAt);
+  options = { ...options, ...outcome.choices };
+  if (!outcome.confirmed) {
+    return declinedInstallWizardResult(argv, repoRoot, requestedPath, git, homeRoot, options, context, timing, wizard, command);
+  }
+
+  context.interaction = { tty: true, promptState: "approved" };
+  const planStartedAt = nowMs();
+  const planned = planInit(repoRoot, requestedPath, git, homeRoot, options, context);
+  timing.planMs += elapsedMs(planStartedAt);
+  const root = scopeRoot(repoRoot, homeRoot, options.scope);
+  const applyStartedAt = nowMs();
+  applyInit(root, options.scope, planned.writes);
+  timing.applyMs = elapsedMs(applyStartedAt);
+  await wizard.applyCascade(planned.payload.actions.map((action) => action.path), timing.applyMs);
+  const undoCommand = options.scope === "global" ? "opcore uninstall --global --yes" : "opcore uninstall";
+  wizard.doneCard(planned.payload.actions.length, options.scope, undoCommand);
+  const payload = withContext(appliedInitPayload(planned.payload, root, options.scope, command), context, timing);
+  return createInitRouterResult(argv, false, "ok", `opcore ${command} applied`, ["opcore", command], payload);
+}
+
+function declinedInstallWizardResult(
+  argv: readonly string[],
+  repoRoot: string,
+  requestedPath: string,
+  git: boolean,
+  homeRoot: string,
+  options: ParsedInitArgs,
+  context: InitContext,
+  timing: TimingState,
+  wizard: InstallWizardRenderer,
+  command: OpcoreSetupCommand
+): CommandRouterResult {
+  wizard.cancelled();
+  context.interaction = { tty: true, promptState: "declined" };
+  const planStartedAt = nowMs();
+  const planned = planInit(repoRoot, requestedPath, git, homeRoot, options, context);
+  timing.planMs += elapsedMs(planStartedAt);
+  const payload: OpcoreInitPlanPayload = {
+    ...withContext(planned.payload, context, timing),
+    nextActions: [`No files written. Rerun opcore ${command} when ready.`]
+  };
+  return createInitRouterResult(argv, false, "ok", `opcore ${command} declined`, ["opcore", command], payload);
+}
+
+function createInstallPlanCache(
+  repoRoot: string,
+  requestedPath: string,
+  git: boolean,
+  homeRoot: string,
+  options: ParsedInitArgs,
+  context: InitContext
+): (choices: InstallWizardChoices) => PlannedInit {
+  const cache = new Map<string, PlannedInit>();
+  return (choices) => {
+    const key = `${choices.agentSkill}|${choices.writeGateHooks}|${choices.activePreCommitHook}`;
+    const cached = cache.get(key);
+    if (cached) return cached;
+    const planned = planInit(repoRoot, requestedPath, git, homeRoot, { ...options, ...choices }, context);
+    cache.set(key, planned);
+    return planned;
+  };
+}
+
+function createInstallWizardGroups(
+  scope: ParsedInitArgs["scope"],
+  git: boolean,
+  repoRoot: string,
+  probeActions: readonly OpcoreInitAction[]
+): InstallWizardGroup[] {
+  const groups: InstallWizardGroup[] = [
+    { key: "skill", label: "agent skill", available: true },
+    { key: "hooks", label: "write-gate hooks", available: true }
+  ];
+  if (scope === "global") return groups;
+  const preCommitPlanned = probeActions.some((action) => action.path === activePreCommitHookPath);
+  if (preCommitPlanned) {
+    groups.push({ key: "precommit", label: "pre-commit hook", available: true });
+  } else {
+    groups.push({
+      key: "precommit",
+      label: "pre-commit hook",
+      available: false,
+      unavailableNote: !git
+        ? "no git repo"
+        : isLinkedGitWorktree(repoRoot)
+          ? "linked worktree — skipped"
+          : "existing hook kept"
+    });
+  }
+  return groups;
+}
+
+function installWizardPlanView(actions: readonly OpcoreInitAction[]): InstallWizardPlanView {
+  const baseRows: InstallWizardFileRow[] = [];
+  const groupRows: Record<InstallWizardGroupKey, InstallWizardFileRow[]> = { skill: [], hooks: [], precommit: [] };
+  for (const action of actions) {
+    const row: InstallWizardFileRow = {
+      path: action.path,
+      mark: action.kind === "upsert_block" || action.kind === "wire_harness"
+        ? "~"
+        : action.path === gitignorePath
+          ? "»"
+          : "+",
+      outsideOpcore: action.outsideOpcore
+    };
+    const group = installWizardGroupForPath(action.path);
+    if (group) groupRows[group].push(row);
+    else baseRows.push(row);
+  }
+  return {
+    baseRows,
+    groupRows,
+    totalWrites: actions.length,
+    outsideWrites: actions.filter((action) => action.outsideOpcore).length
+  };
+}
+
+function installWizardGroupForPath(path: string): InstallWizardGroupKey | undefined {
+  if (path.endsWith("skills/opcore/SKILL.md")) return "skill";
+  if (path.endsWith(agentGateHookPath) || path.endsWith(claudeSettingsPath) || path.endsWith(codexHooksPath)) return "hooks";
+  if (path.endsWith(activePreCommitHookPath)) return "precommit";
+  return undefined;
 }
 
 function createInitRouterResult(
@@ -656,18 +967,32 @@ function isExplicitYes(answer: string): boolean {
   return normalized === "y" || normalized === "yes";
 }
 
-function startInitScanProgress(json: boolean, runtime: OpcoreInitRuntime): { complete(scanMs: number): void; fail(scanMs: number): void } | undefined {
+function isApprovedAnswer(answer: string | undefined, command: OpcoreSetupCommand): boolean {
+  const normalized = (answer ?? "").trim().toLowerCase();
+  if (command === "install") return normalized === "" || normalized === "y" || normalized === "yes";
+  return isExplicitYes(answer ?? "");
+}
+
+function approvalPromptSuffix(command: OpcoreSetupCommand): string {
+  return command === "install" ? "[Y/n]" : "[y/N]";
+}
+
+function startInitScanProgress(
+  json: boolean,
+  runtime: OpcoreInitRuntime,
+  command: OpcoreSetupCommand
+): { complete(scanMs: number, totalFiles?: number): void; fail(scanMs: number): void } | undefined {
   if (json || runtime.stderrIsTTY !== true || typeof runtime.writeStderr !== "function") return undefined;
   const startedAt = nowMs();
   const intervalMs = normalizeProgressIntervalMs(runtime.initProgressIntervalMs);
   let finished = false;
   const write = (text: string) => writeProgress(runtime.writeStderr, text);
   const writeProgressLine = (text: string) => write(`\r\x1b[2K${text}`);
-  write("Opcore init: scanning repository before setup...");
+  write(`Opcore ${command}: scanning repository before setup...`);
   const timer = setInterval(() => {
     if (finished) return;
     const elapsedSeconds = Math.max(1, Math.floor(elapsedMs(startedAt) / 1000));
-    writeProgressLine(`Opcore init: still scanning repository before setup (${elapsedSeconds}s elapsed)...`);
+    writeProgressLine(`Opcore ${command}: still scanning repository before setup (${elapsedSeconds}s elapsed)...`);
   }, intervalMs) as ReturnType<typeof setInterval> & { unref?: () => void };
   timer.unref?.();
   return {
@@ -675,13 +1000,13 @@ function startInitScanProgress(json: boolean, runtime: OpcoreInitRuntime): { com
       if (finished) return;
       finished = true;
       clearInterval(timer);
-      writeProgressLine(`Opcore init: scan complete in ${scanMs}ms.\n`);
+      writeProgressLine(`Opcore ${command}: scan complete in ${scanMs}ms.\n`);
     },
     fail: (scanMs: number) => {
       if (finished) return;
       finished = true;
       clearInterval(timer);
-      writeProgressLine(`Opcore init: scan failed after ${scanMs}ms.\n`);
+      writeProgressLine(`Opcore ${command}: scan failed after ${scanMs}ms.\n`);
     }
   };
 }
@@ -719,8 +1044,12 @@ function finalizeTimings(timing: TimingState): OpcoreInitTiming {
   };
 }
 
-function parseOpcoreInitArgs(args: readonly string[]): { ok: true; args: ParsedInitArgs } | { ok: false; message: string } {
+function parseOpcoreInitArgs(
+  args: readonly string[],
+  command: OpcoreSetupCommand
+): { ok: true; args: ParsedInitArgs } | { ok: false; message: string } {
   const parsed: ParsedInitArgs = {
+    command,
     repo: process.cwd(),
     repoExplicit: false,
     scope: "repo",
@@ -728,13 +1057,16 @@ function parseOpcoreInitArgs(args: readonly string[]): { ok: true; args: ParsedI
     approved: false,
     dryRun: false,
     failClosedHook: false,
-    undo: false
+    agentSkill: command === "install",
+    writeGateHooks: true,
+    activePreCommitHook: command === "install",
+    undo: command === "uninstall"
   };
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
     if (arg === "--repo") {
       const value = args[index + 1];
-      if (!value || value.startsWith("--")) return { ok: false, message: "opcore init: --repo requires a path" };
+      if (!value || value.startsWith("--")) return { ok: false, message: `opcore ${command}: --repo requires a path` };
       parsed.repo = value;
       parsed.repoExplicit = true;
       parsed.scope = "repo";
@@ -744,7 +1076,7 @@ function parseOpcoreInitArgs(args: readonly string[]): { ok: true; args: ParsedI
     }
     if (arg.startsWith("--repo=")) {
       const value = arg.slice("--repo=".length);
-      if (!value) return { ok: false, message: "opcore init: --repo requires a path" };
+      if (!value) return { ok: false, message: `opcore ${command}: --repo requires a path` };
       parsed.repo = value;
       parsed.repoExplicit = true;
       parsed.scope = "repo";
@@ -773,11 +1105,19 @@ function parseOpcoreInitArgs(args: readonly string[]): { ok: true; args: ParsedI
       parsed.failClosedHook = true;
       continue;
     }
-    if (arg === "--undo") {
+    if (arg === "--no-pre-commit" && command === "install") {
+      parsed.activePreCommitHook = false;
+      continue;
+    }
+    if (arg === "--no-skill" && command === "install") {
+      parsed.agentSkill = false;
+      continue;
+    }
+    if (arg === "--undo" && command !== "install") {
       parsed.undo = true;
       continue;
     }
-    return { ok: false, message: `opcore init: unsupported argument ${arg}` };
+    return { ok: false, message: `opcore ${command}: unsupported argument ${arg}` };
   }
   return { ok: true, args: parsed };
 }
@@ -792,7 +1132,19 @@ function planInit(
 ): PlannedInit {
   if (options.scope === "global") return planGlobalInit(repoRoot, requestedPath, homeRoot, options, context);
   const agentFiles = detectAgentFiles(repoRoot);
-  const config = createConfig(repoRoot, options.failClosedHook, context.scan, context.settings);
+  const linkedGitWorktree = git && isLinkedGitWorktree(repoRoot);
+  const activePreCommitWritePlanned = options.activePreCommitHook &&
+    git &&
+    !linkedGitWorktree &&
+    !repoPathExists(repoRoot, activePreCommitHookPath);
+  const config = createConfig(
+    repoRoot,
+    options.failClosedHook,
+    activePreCommitWritePlanned,
+    options.writeGateHooks,
+    context.scan,
+    context.settings
+  );
   const writes: PlannedWrite[] = [
     {
       kind: "write",
@@ -805,27 +1157,39 @@ function planInit(
       path,
       targetScope: "repo" as const,
       content: upsertOpcoreBlock(readOptionalRepoFile(repoRoot, path))
-    })),
-    {
-      kind: "write",
-      path: agentGateHookPath,
-      targetScope: "repo",
-      content: opcoreAgentGateHookScriptContent(),
-      executable: true
-    },
-    {
-      kind: "write",
-      path: claudeSettingsPath,
-      targetScope: "repo",
-      content: `${JSON.stringify(mergeClaudeSettings(readJsonObjectIfExists(repoRoot, claudeSettingsPath), "repo"), null, 2)}\n`
-    },
-    {
-      kind: "write",
-      path: codexHooksPath,
-      targetScope: "repo",
-      content: `${JSON.stringify(mergeCodexHooks(readJsonObjectIfExists(repoRoot, codexHooksPath), "repo"), null, 2)}\n`
-    }
+    }))
   ];
+  if (options.writeGateHooks) {
+    writes.push(
+      {
+        kind: "write",
+        path: agentGateHookPath,
+        targetScope: "repo",
+        content: opcoreAgentGateHookScriptContent(),
+        executable: true
+      },
+      {
+        kind: "write",
+        path: claudeSettingsPath,
+        targetScope: "repo",
+        content: `${JSON.stringify(mergeClaudeSettings(readJsonObjectIfExists(repoRoot, claudeSettingsPath), "repo"), null, 2)}\n`
+      },
+      {
+        kind: "write",
+        path: codexHooksPath,
+        targetScope: "repo",
+        content: `${JSON.stringify(mergeCodexHooks(readJsonObjectIfExists(repoRoot, codexHooksPath), "repo"), null, 2)}\n`
+      }
+    );
+  }
+  if (options.agentSkill) {
+    writes.push(...agentSkillPaths.map((path) => ({
+      kind: "write" as const,
+      path,
+      targetScope: "repo" as const,
+      content: opcoreAgentSkillContent()
+    })));
+  }
   if (git) {
     const gitignore = readOptionalRepoFile(repoRoot, gitignorePath);
     if (!gitignoreIgnoresOpcore(gitignore ?? "")) {
@@ -834,6 +1198,15 @@ function planInit(
         path: gitignorePath,
         targetScope: "repo",
         line: opcoreIgnoreLine
+      });
+    }
+    if (activePreCommitWritePlanned) {
+      writes.push({
+        kind: "write",
+        path: activePreCommitHookPath,
+        targetScope: "repo",
+        content: activePreCommitHookContent(),
+        executable: true
       });
     }
   }
@@ -846,7 +1219,13 @@ function planInit(
       executable: true
     });
   }
-  const actions = createInitActions(options.scope, agentFiles, options.failClosedHook, writes.some((write) => write.path === gitignorePath));
+  const actions = createInitActions(
+    options.scope,
+    agentFiles,
+    options,
+    writes.some((write) => write.path === gitignorePath),
+    activePreCommitWritePlanned
+  );
   return {
     writes,
     payload: {
@@ -864,7 +1243,15 @@ function planInit(
       },
       agentFiles,
       actions,
-      warnings: initWarnings(context.scan, git, options.failClosedHook, options.scope),
+      warnings: initWarnings(
+        context.scan,
+        git,
+        options.failClosedHook,
+        options.scope,
+        activePreCommitWritePlanned,
+        options.activePreCommitHook && git,
+        linkedGitWorktree
+      ),
       nextActions: initNextActions(options),
       undoAvailable: repoPathExists(repoRoot, undoPath),
       scan: context.scan,
@@ -883,25 +1270,37 @@ function planGlobalInit(
   context: InitContext
 ): PlannedInit {
   const writes: PlannedWrite[] = [
-    {
-      kind: "write",
-      path: agentGateHookPath,
-      targetScope: "global",
-      content: opcoreAgentGateHookScriptContent(),
-      executable: true
-    },
-    {
-      kind: "write",
-      path: claudeSettingsPath,
-      targetScope: "global",
-      content: `${JSON.stringify(mergeClaudeSettings(readJsonObjectIfExists(homeRoot, claudeSettingsPath), "global"), null, 2)}\n`
-    },
-    {
-      kind: "write",
-      path: codexHooksPath,
-      targetScope: "global",
-      content: `${JSON.stringify(mergeCodexHooks(readJsonObjectIfExists(homeRoot, codexHooksPath), "global"), null, 2)}\n`
-    }
+    ...(options.writeGateHooks
+      ? [{
+        kind: "write" as const,
+        path: agentGateHookPath,
+        targetScope: "global" as const,
+        content: opcoreAgentGateHookScriptContent(),
+        executable: true
+      }]
+      : []),
+    ...(options.agentSkill ? agentSkillPaths.map((path) => ({
+      kind: "write" as const,
+      path,
+      targetScope: "global" as const,
+      content: opcoreAgentSkillContent()
+    })) : []),
+    ...(options.writeGateHooks
+      ? [
+        {
+          kind: "write" as const,
+          path: claudeSettingsPath,
+          targetScope: "global" as const,
+          content: `${JSON.stringify(mergeClaudeSettings(readJsonObjectIfExists(homeRoot, claudeSettingsPath), "global"), null, 2)}\n`
+        },
+        {
+          kind: "write" as const,
+          path: codexHooksPath,
+          targetScope: "global" as const,
+          content: `${JSON.stringify(mergeCodexHooks(readJsonObjectIfExists(homeRoot, codexHooksPath), "global"), null, 2)}\n`
+        }
+      ]
+      : [])
   ];
   return {
     writes,
@@ -919,8 +1318,8 @@ function planGlobalInit(
         dryRun: options.dryRun
       },
       agentFiles: [],
-      actions: createInitActions(options.scope, [], false, false),
-      warnings: initWarnings(context.scan, true, false, options.scope),
+      actions: createInitActions(options.scope, [], options, false, false),
+      warnings: initWarnings(context.scan, true, false, options.scope, false, false, false),
       nextActions: initNextActions(options),
       undoAvailable: repoPathExists(homeRoot, globalUndoPath),
       scan: context.scan,
@@ -931,32 +1330,42 @@ function planGlobalInit(
   };
 }
 
-function appliedInitPayload(payload: OpcoreInitPlanPayload, root: string, scope: ParsedInitArgs["scope"]): OpcoreInitPlanPayload {
+function appliedInitPayload(
+  payload: OpcoreInitPlanPayload,
+  root: string,
+  scope: ParsedInitArgs["scope"],
+  command: OpcoreSetupCommand
+): OpcoreInitPlanPayload {
   return {
     ...payload,
     mode: "apply",
     approved: true,
-    nextActions: appliedInitNextActions(payload),
+    nextActions: appliedInitNextActions(payload, command),
     undoAvailable: repoPathExists(root, undoPathForScope(scope))
   };
 }
 
 function initNextActions(options: ParsedInitArgs): string[] {
-  const scopedCommand = options.scope === "global" ? "opcore init --global --approve" : "opcore init --approve";
+  const approveFlag = options.command === "install" ? "--yes" : "--approve";
+  const scopedCommand = options.scope === "global"
+    ? `opcore ${options.command} --global ${approveFlag}`
+    : `opcore ${options.command} ${approveFlag}`;
   const actions = options.dryRun
     ? [`Run ${scopedCommand} to apply this plan.`]
     : [`Review this plan, then run ${scopedCommand} to write setup.`];
   if (options.scope === "repo") {
-    actions.push("Claude Code and Codex write-gate hooks are installed by init; review Codex project hook trust with /hooks if Codex asks.");
+    actions.push("Claude Code and Codex write-gate hooks are installed by Opcore setup; review Codex project hook trust with /hooks if Codex asks.");
   } else {
-    actions.push("Global Claude Code and Codex write-gate hooks are installed by init; review Codex hook trust with /hooks if Codex asks.");
+    actions.push("Global Claude Code and Codex write-gate hooks are installed by Opcore setup; review Codex hook trust with /hooks if Codex asks.");
   }
   if (options.failClosedHook) actions.push(failClosedHookManualInstallAction());
   return actions;
 }
 
-function appliedInitNextActions(payload: OpcoreInitPlanPayload): string[] {
-  const undoCommand = payload.options.scope === "global" ? "opcore init --global --undo --approve" : "opcore init --undo --approve";
+function appliedInitNextActions(payload: OpcoreInitPlanPayload, command: OpcoreSetupCommand): string[] {
+  const undoCommand = command === "install"
+    ? payload.options.scope === "global" ? "opcore uninstall --global --yes" : "opcore uninstall --yes"
+    : payload.options.scope === "global" ? "opcore init --global --undo --approve" : "opcore init --undo --approve";
   const actions = [`Run ${undoCommand} to restore or remove recorded setup files.`];
   if (payload.options.scope === "repo") {
     actions.push("Claude Code write calls are blocked on non-ok receipts. Codex uses a PreToolUse guardrail and may require hook trust review.");
@@ -1010,8 +1419,8 @@ function planUndo(
     })),
     warnings: [],
     nextActions: options.approved && !options.dryRun
-      ? ["Opcore init metadata was restored or removed; rerun opcore init to recreate setup."]
-      : [`Run ${options.scope === "global" ? "opcore init --global --undo --approve" : "opcore init --undo --approve"} to restore or remove recorded setup files.`],
+      ? [undoAppliedNextAction(options.command)]
+      : [undoPreviewNextAction(options)],
     undoAvailable: true,
     scan: context.scan,
     settings: context.settings,
@@ -1020,13 +1429,30 @@ function planUndo(
   };
 }
 
-function appliedUndoPayload(payload: OpcoreInitPlanPayload, root: string, scope: ParsedInitArgs["scope"]): OpcoreInitPlanPayload {
+function appliedUndoPayload(
+  payload: OpcoreInitPlanPayload,
+  root: string,
+  scope: ParsedInitArgs["scope"],
+  command: OpcoreSetupCommand
+): OpcoreInitPlanPayload {
   return {
     ...payload,
     approved: true,
-    nextActions: ["Opcore init metadata was restored or removed; rerun opcore init to recreate setup."],
+    nextActions: [undoAppliedNextAction(command)],
     undoAvailable: repoPathExists(root, undoPathForScope(scope))
   };
+}
+
+function undoAppliedNextAction(command: OpcoreSetupCommand): string {
+  if (command === "uninstall") return "Opcore setup metadata was restored or removed; rerun opcore install to recreate setup.";
+  return "Opcore init metadata was restored or removed; rerun opcore init to recreate setup.";
+}
+
+function undoPreviewNextAction(options: ParsedInitArgs): string {
+  if (options.command === "uninstall") {
+    return `Run ${options.scope === "global" ? "opcore uninstall --global --yes" : "opcore uninstall --yes"} to restore or remove recorded setup files.`;
+  }
+  return `Run ${options.scope === "global" ? "opcore init --global --undo --approve" : "opcore init --undo --approve"} to restore or remove recorded setup files.`;
 }
 
 function applyInit(root: string, scope: ParsedInitArgs["scope"], writes: readonly PlannedWrite[]): void {
@@ -1072,35 +1498,53 @@ function applyUndo(root: string, scope: ParsedInitArgs["scope"], payload: Opcore
 function createInitActions(
   scope: ParsedInitArgs["scope"],
   agentFiles: readonly string[],
-  failClosedHook: boolean,
-  gitignoreWritePlanned: boolean
+  options: ParsedInitArgs,
+  gitignoreWritePlanned: boolean,
+  activePreCommitWritePlanned: boolean
 ): OpcoreInitAction[] {
+  const skillActions: OpcoreInitAction[] = options.agentSkill
+    ? agentSkillPaths.map((path) => ({
+      kind: "write" as const,
+      path: actionPath(scope, path),
+      targetScope: scope,
+      summary: "Install the Opcore agent skill.",
+      requiresApproval: true,
+      outsideOpcore: true
+    }))
+    : [];
   if (scope === "global") {
     return [
-      {
-        kind: "create_hook",
-        path: actionPath(scope, agentGateHookPath),
-        targetScope: scope,
-        summary: "Install the global Opcore write-gate adapter script.",
-        requiresApproval: false,
-        outsideOpcore: false
-      },
-      {
-        kind: "wire_harness",
-        path: actionPath(scope, claudeSettingsPath),
-        targetScope: scope,
-        summary: "Merge the Opcore Claude Code PreToolUse write gate.",
-        requiresApproval: true,
-        outsideOpcore: true
-      },
-      {
-        kind: "wire_harness",
-        path: actionPath(scope, codexHooksPath),
-        targetScope: scope,
-        summary: "Merge the Opcore Codex PreToolUse write gate guardrail.",
-        requiresApproval: true,
-        outsideOpcore: true
-      }
+      ...(options.writeGateHooks
+        ? [{
+          kind: "create_hook" as const,
+          path: actionPath(scope, agentGateHookPath),
+          targetScope: scope,
+          summary: "Install the global Opcore write-gate adapter script.",
+          requiresApproval: false,
+          outsideOpcore: false
+        }]
+        : []),
+      ...skillActions,
+      ...(options.writeGateHooks
+        ? [
+          {
+            kind: "wire_harness" as const,
+            path: actionPath(scope, claudeSettingsPath),
+            targetScope: scope,
+            summary: "Merge the Opcore Claude Code PreToolUse write gate.",
+            requiresApproval: true,
+            outsideOpcore: true
+          },
+          {
+            kind: "wire_harness" as const,
+            path: actionPath(scope, codexHooksPath),
+            targetScope: scope,
+            summary: "Merge the Opcore Codex PreToolUse write gate guardrail.",
+            requiresApproval: true,
+            outsideOpcore: true
+          }
+        ]
+        : [])
     ];
   }
   const actions: OpcoreInitAction[] = [
@@ -1120,30 +1564,35 @@ function createInitActions(
       requiresApproval: true,
       outsideOpcore: true
     })),
-    {
-      kind: "create_hook",
-      path: agentGateHookPath,
-      targetScope: scope,
-      summary: "Install the repo-local Opcore write-gate adapter script.",
-      requiresApproval: false,
-      outsideOpcore: false
-    },
-    {
-      kind: "wire_harness",
-      path: claudeSettingsPath,
-      targetScope: scope,
-      summary: "Merge the Opcore Claude Code PreToolUse write gate.",
-      requiresApproval: true,
-      outsideOpcore: true
-    },
-    {
-      kind: "wire_harness",
-      path: codexHooksPath,
-      targetScope: scope,
-      summary: "Merge the Opcore Codex PreToolUse write gate guardrail.",
-      requiresApproval: true,
-      outsideOpcore: true
-    }
+    ...skillActions,
+    ...(options.writeGateHooks
+      ? [
+        {
+          kind: "create_hook" as const,
+          path: agentGateHookPath,
+          targetScope: scope,
+          summary: "Install the repo-local Opcore write-gate adapter script.",
+          requiresApproval: false,
+          outsideOpcore: false
+        },
+        {
+          kind: "wire_harness" as const,
+          path: claudeSettingsPath,
+          targetScope: scope,
+          summary: "Merge the Opcore Claude Code PreToolUse write gate.",
+          requiresApproval: true,
+          outsideOpcore: true
+        },
+        {
+          kind: "wire_harness" as const,
+          path: codexHooksPath,
+          targetScope: scope,
+          summary: "Merge the Opcore Codex PreToolUse write gate guardrail.",
+          requiresApproval: true,
+          outsideOpcore: true
+        }
+      ]
+      : [])
   ];
   if (gitignoreWritePlanned) {
     actions.push({
@@ -1155,7 +1604,17 @@ function createInitActions(
       outsideOpcore: true
     });
   }
-  if (failClosedHook) {
+  if (activePreCommitWritePlanned) {
+    actions.push({
+      kind: "create_hook",
+      path: activePreCommitHookPath,
+      targetScope: scope,
+      summary: "Install active Git pre-commit hook that runs `opcore check --changed`.",
+      requiresApproval: true,
+      outsideOpcore: true
+    });
+  }
+  if (options.failClosedHook) {
     actions.push({
       kind: "create_hook",
       path: hookPath,
@@ -1206,6 +1665,8 @@ function guidanceBlock(): string {
 function createConfig(
   repoRoot: string,
   failClosedHook: boolean,
+  activePreCommitHook: boolean,
+  writeGateHooks: boolean,
   scan: OpcoreInitScanSummary,
   settings: OpcoreInitSettings
 ): Record<string, unknown> {
@@ -1234,9 +1695,12 @@ function createConfig(
     },
     hooks: {
       ...existingHooks,
-      failClosedPreCommit: existingHooks.failClosedPreCommit === true || failClosedHook,
-      writeGate: true,
-      harnesses: ["claude-code", "codex"]
+      failClosedPreCommit: existingHooks.failClosedPreCommit === true || failClosedHook || activePreCommitHook,
+      activePreCommit: existingHooks.activePreCommit === true || activePreCommitHook,
+      writeGate: existingHooks.writeGate === true || writeGateHooks,
+      harnesses: writeGateHooks
+        ? ["claude-code", "codex"]
+        : Array.isArray(existingHooks.harnesses) ? existingHooks.harnesses : []
     }
   };
 }
@@ -1245,7 +1709,10 @@ function initWarnings(
   scan: OpcoreInitScanSummary,
   git: boolean,
   failClosedHook: boolean,
-  scope: ParsedInitArgs["scope"]
+  scope: ParsedInitArgs["scope"],
+  activePreCommitHook: boolean,
+  activePreCommitRequested: boolean,
+  linkedGitWorktree: boolean
 ): string[] {
   const warnings: string[] = [];
   if (scan.unsupportedStacks.length > 0) {
@@ -1266,7 +1733,13 @@ function initWarnings(
   warnings.push(
     failClosedHook
       ? `Fail-closed hook script is opt-in. Manual install required: ${failClosedHookActivationCommand}`
-      : "Fail-closed hooks are opt-in and are not created unless --fail-closed-hook is approved."
+      : activePreCommitHook && git
+        ? "Git pre-commit hook will run opcore check --changed when no existing .git/hooks/pre-commit is present."
+        : linkedGitWorktree
+          ? "Linked Git worktree detected; Opcore will not install .git/hooks/pre-commit from this checkout."
+        : activePreCommitRequested
+          ? "Existing .git/hooks/pre-commit detected; Opcore will not overwrite it."
+        : "Fail-closed hooks are opt-in and are not created unless --fail-closed-hook is approved."
   );
   return warnings;
 }
@@ -1279,6 +1752,36 @@ function failClosedHookContent(): string {
     `# Activation command: ${failClosedHookActivationCommand}`,
     "set -eu",
     "opcore check --changed",
+    ""
+  ].join("\n");
+}
+
+function activePreCommitHookContent(): string {
+  return [
+    "#!/usr/bin/env sh",
+    "# Installed by opcore install. Remove with opcore uninstall.",
+    "set -eu",
+    "opcore check --changed",
+    ""
+  ].join("\n");
+}
+
+function opcoreAgentSkillContent(): string {
+  return [
+    "---",
+    "name: opcore",
+    "description: Use when working in a repository that has installed Opcore robustness checks.",
+    "---",
+    "",
+    "# Opcore",
+    "",
+    "Use Opcore as the repository-local robustness gate for coding-agent edits.",
+    "",
+    "- Run `opcore status` to inspect activation and coverage before broad work.",
+    "- Run `opcore check --changed` before finalizing source edits.",
+    "- Treat unsupported stacks and degraded tools honestly; do not report them as clean coverage.",
+    "- Preserve existing lint, test, CI, pre-commit, and agent guardrails.",
+    "- The installed write gate is a hook guardrail for supported edit tools, not host authority.",
     ""
   ].join("\n");
 }
@@ -1642,6 +2145,11 @@ function repoPathExists(repoRoot: string, path: string): boolean {
   return lstatIfExists(resolveRepoPath(repoRoot, path)) !== undefined;
 }
 
+function isLinkedGitWorktree(repoRoot: string): boolean {
+  const gitPath = lstatIfExists(resolveRepoPath(repoRoot, ".git"));
+  return gitPath?.isFile() === true;
+}
+
 function lstatIfExists(path: string): ReturnType<typeof lstatSync> | undefined {
   try {
     return lstatSync(path);
@@ -1686,18 +2194,51 @@ function uniqueStrings(values: readonly string[]): string[] {
   return [...new Set(values)];
 }
 
-function formatInitPlan(payload: OpcoreInitPlanPayload, applied: boolean): string {
+function formatSetupPlan(payload: OpcoreInitPlanPayload, applied: boolean, command: OpcoreSetupCommand): string {
+  if (command === "install") return formatInstallPlan(payload, applied);
+  if (command === "uninstall") return formatUninstallPlan(payload, applied);
+  return formatInitPlan(payload, applied);
+}
+
+function formatInstallPlan(payload: OpcoreInitPlanPayload, applied: boolean): string {
+  const skillEnabled = payload.actions.some((action) => action.path.endsWith("/skills/opcore/SKILL.md"));
+  const hooksEnabled = payload.actions.some((action) => action.path.endsWith(claudeSettingsPath));
+  const activePreCommitEnabled = payload.actions.some((action) => action.path === activePreCommitHookPath);
+  const scanSummary = `Analyzed ${payload.scan.totalFiles} files; validation=${payload.scan.validationStatus}; diagnostics=${payload.scan.diagnosticCount}.`;
+  return [
+    "Opcore install:",
+    `  ${scanSummary}`,
+    "Setup choices:",
+    `${skillEnabled ? "[x]" : "[ ]"} Install Opcore agent skill`,
+    `${hooksEnabled ? "[x]" : "[ ]"} Install Claude Code and Codex write-gate hooks`,
+    `${activePreCommitEnabled ? "[x]" : "[ ]"} Install Git pre-commit hook`,
+    "",
+    formatInitPlan(payload, applied, "--yes")
+  ].join("\n");
+}
+
+function formatUninstallPlan(payload: OpcoreInitPlanPayload, applied: boolean): string {
+  return [
+    "Opcore uninstall:",
+    "  Restore or remove only files recorded in .opcore/init-undo.json.",
+    "",
+    formatInitPlan(payload, applied, "--yes")
+  ].join("\n");
+}
+
+function formatInitPlan(payload: OpcoreInitPlanPayload, applied: boolean, approvalFlag?: string): string {
   const heading = payload.mode === "undo" ? "Undo:" : "Setup:";
+  const requiredApprovalFlag = approvalFlag ?? (payload.mode === "undo" ? "--undo --approve" : "--approve");
   const actionLines = payload.actions.map((action) => `- ${action.kind} ${action.path}: ${action.summary}`);
   const approvalLine = payload.interaction.promptState === "requested"
     ? "Approval: awaiting TTY response."
     : payload.interaction.promptState === "declined"
       ? "Approval: declined; no files written."
-      : applied
+    : applied
     ? "Approval: applied."
     : payload.mode === "undo"
-      ? "Approval: required; rerun with --undo --approve to restore/remove recorded files."
-      : "Approval: required; rerun with --approve to write this setup.";
+      ? `Approval: required; rerun with ${requiredApprovalFlag} to restore/remove recorded files.`
+      : `Approval: required; rerun with ${requiredApprovalFlag} to write this setup.`;
   const languages = payload.scan.languages.length === 0
     ? "none"
     : payload.scan.languages.map((entry) => `${entry.language} ${entry.files}`).join(", ");
@@ -1707,6 +2248,9 @@ function formatInitPlan(payload: OpcoreInitPlanPayload, applied: boolean): strin
   const degradedValidationTools = payload.scan.degradedRustTools.length === 0
     ? "none"
     : payload.scan.degradedRustTools.map((tool) => `${tool.adapter}:${tool.tool}`).join(", ");
+  const warningLines = payload.warnings.length === 0
+    ? ["  none"]
+    : payload.warnings.map((warning) => `  ${warning}`);
   const pythonDependencyManagers = payload.settings.python?.dependencyManagers.length
     ? payload.settings.python.dependencyManagers.map((manager) => `${manager.kind}:${manager.path}`).join(", ")
     : "none";
@@ -1730,6 +2274,8 @@ function formatInitPlan(payload: OpcoreInitPlanPayload, applied: boolean): strin
     `  failed-checks=${payload.scan.failedChecks.length === 0 ? "none" : payload.scan.failedChecks.join(", ")}`,
     `  graph=${payload.scan.graphState}`,
     `  activation=${payload.scan.activationLevel}`,
+    "Warnings:",
+    ...warningLines,
     heading,
     `Repo: ${payload.repo.root}`,
     `Scope: ${payload.options.scope}`,
@@ -1743,10 +2289,16 @@ function formatInitPlan(payload: OpcoreInitPlanPayload, applied: boolean): strin
   ].join("\n");
 }
 
-function formatInteractiveOutcome(payload: OpcoreInitPlanPayload): string {
+function formatInteractiveOutcome(payload: OpcoreInitPlanPayload, command: OpcoreSetupCommand): string {
   return payload.approved
-    ? "opcore init applied\nApproval: applied."
-    : "opcore init declined\nApproval: declined; no files written.";
+    ? `opcore ${command} applied\nApproval: applied.`
+    : `opcore ${command} declined\nApproval: declined; no files written.`;
+}
+
+function opcoreSetupHelpMessage(command: OpcoreSetupCommand): string {
+  if (command === "install") return opcoreInstallHelpMessage();
+  if (command === "uninstall") return opcoreUninstallHelpMessage();
+  return opcoreInitHelpMessage();
 }
 
 function opcoreInitHelpMessage(): string {
@@ -1769,6 +2321,46 @@ function opcoreInitHelpMessage(): string {
     "  opcore init --repo . --json",
     "  opcore init --repo . --approve",
     "  opcore init --global --approve",
+    "Exit codes: 0 planned or applied, 1 setup error, 64 unsupported."
+  ].join("\n");
+}
+
+function opcoreInstallHelpMessage(): string {
+  return [
+    "Usage:",
+    "  opcore install [--repo <path>] [--local|--global] [--yes] [--json]",
+    "Flags:",
+    "  --repo <path>          Repository root to set up.",
+    "  --local                Force repo-scoped setup.",
+    "  --global               Install user-level agent skills and write-gate hooks.",
+    "  --yes                 Apply the proposed setup without prompting.",
+    "  --no-skill             Do not install the Opcore agent skill.",
+    "  --no-pre-commit        Do not install the repo Git pre-commit hook.",
+    "  --json                 Emit structured JSON.",
+    "Defaults:",
+    "  install scans first, then applies on --yes or an interactive default-yes approval prompt.",
+    "Examples:",
+    "  opcore install",
+    "  opcore install --repo . --yes",
+    "Exit codes: 0 planned or applied, 1 setup error, 64 unsupported."
+  ].join("\n");
+}
+
+function opcoreUninstallHelpMessage(): string {
+  return [
+    "Usage:",
+    "  opcore uninstall [--repo <path>] [--local|--global] [--yes] [--json]",
+    "Flags:",
+    "  --repo <path>          Repository root to restore/remove recorded setup from.",
+    "  --local                Force repo-scoped uninstall.",
+    "  --global               Restore/remove user-level recorded setup.",
+    "  --yes                 Apply the uninstall without prompting.",
+    "  --json                 Emit structured JSON.",
+    "Defaults:",
+    "  uninstall restores or removes only files recorded in .opcore/init-undo.json.",
+    "Examples:",
+    "  opcore uninstall --repo . --yes",
+    "  opcore uninstall --global --yes",
     "Exit codes: 0 planned or applied, 1 setup error, 64 unsupported."
   ].join("\n");
 }

@@ -153,7 +153,7 @@ Workspace packages: 15
 
 | Package | Version | License | Manifest |
 |---------|---------|---------|----------|
-| @the-open-engine/opcore | 0.1.0 | MIT | packages/opcore/package.json |
+| opcore | 0.1.0 | MIT | packages/opcore/package.json |
 | @the-open-engine/opcore-asp-provider | 0.1.0 | MIT | packages/asp-provider/package.json |
 | @the-open-engine/opcore-contracts | 0.1.0 | MIT | packages/contracts/package.json |
 | @the-open-engine/opcore-edit | 0.1.0 | MIT | packages/edit/package.json |

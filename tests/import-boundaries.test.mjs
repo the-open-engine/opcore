@@ -16,7 +16,7 @@ const implementationPackages = new Set([
 ]);
 const packageNamesByDir = new Map([
   ["contracts", "@the-open-engine/opcore-contracts"],
-  ["opcore", "@the-open-engine/opcore"],
+  ["opcore", "opcore"],
   ["graph", "@the-open-engine/opcore-graph"],
   ["edit", "@the-open-engine/opcore-edit"],
   ["validation", "@the-open-engine/opcore-validation"],
@@ -152,7 +152,7 @@ describe("package import boundaries", () => {
       "asp-provider"
     ]) {
       const manifest = JSON.parse(readFileSync(`packages/${packageDir}/package.json`, "utf8"));
-      assert.equal(manifest.dependencies?.["@the-open-engine/opcore"], undefined, packageDir);
+      assert.equal(manifest.dependencies?.["opcore"], undefined, packageDir);
       const tsconfig = JSON.parse(readFileSync(`packages/${packageDir}/tsconfig.json`, "utf8"));
       assert.equal(
         (tsconfig.references ?? []).some((reference) => reference.path === "../cli"),
