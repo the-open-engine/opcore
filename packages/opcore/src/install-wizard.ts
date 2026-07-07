@@ -1,4 +1,24 @@
 import type { OpcoreInitScanSummary } from "@the-open-engine/opcore-contracts";
+import {
+  CANCEL_KEYS,
+  createWizardTheme,
+  displayWidth,
+  DOWN_KEYS,
+  ENTER_KEYS,
+  fit,
+  gutter,
+  LEFT_KEYS,
+  padEndPlain,
+  padStartPlain,
+  RIGHT_KEYS,
+  seconds,
+  stepHead,
+  UP_KEYS,
+  WIZARD_SPINNER,
+  WIZARD_WIDTH,
+  WizardScreen,
+  type WizardTheme
+} from "./install-wizard-screen.js";
 
 /**
  * Interactive TTY presentation for `opcore install` (issue #199).
@@ -57,11 +77,7 @@ export interface InstallWizardPlanOutcome {
   confirmed: boolean;
 }
 
-const WIDTH = 74;
 const GAUGE_CELLS = 10;
-const SPINNER = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"] as const;
-const ACCENT_TRUECOLOR = "38;2;194;36;12";
-const ACCENT_256 = "38;5;130";
 
 const LANGUAGE_TIERS: Record<string, string> = {
   typescript: "deep",
@@ -72,115 +88,14 @@ const LANGUAGE_TIERS: Record<string, string> = {
   python: "exp."
 };
 
-type Style = (text: string) => string;
-
-interface Theme {
-  accent: Style;
-  bold: Style;
-  dim: Style;
-  plain: Style;
-}
-
-function createTheme(color: boolean, trueColor: boolean): Theme {
-  if (!color) {
-    const plain: Style = (text) => text;
-    return { accent: plain, bold: plain, dim: plain, plain };
-  }
-  const sgr = (code: string): Style => (text) => `\x1b[${code}m${text}\x1b[0m`;
-  return {
-    accent: sgr(trueColor ? ACCENT_TRUECOLOR : ACCENT_256),
-    bold: sgr("1"),
-    dim: sgr("2"),
-    plain: (text) => text
-  };
-}
-
-function stripAnsi(text: string): string {
-  return text.replace(/\x1b\[[0-9;]*m/g, "");
-}
-
-function displayWidth(text: string): number {
-  return [...stripAnsi(text)].length;
-}
-
-function fit(text: string, max: number): string {
-  const chars = [...text];
-  return chars.length > max ? `${chars.slice(0, Math.max(0, max - 1)).join("")}…` : text;
-}
-
-function padEndPlain(text: string, width: number): string {
-  const length = [...text].length;
-  return length >= width ? text : text + " ".repeat(width - length);
-}
-
-function padStartPlain(text: string, width: number): string {
-  const length = [...text].length;
-  return length >= width ? text : " ".repeat(width - length) + text;
-}
-
-function seconds(ms: number): string {
-  return `${(ms / 1000).toFixed(1)}s`;
-}
-
-/**
- * Live region renderer: repaints only the in-progress block in place with
- * cursor-up + clear, so committed steps scroll away as a clean transcript.
- */
-export class WizardScreen {
-  private live = 0;
-
-  constructor(private readonly io: Pick<InstallWizardIO, "write" | "motion">) {}
-
-  paint(lines: readonly string[]): void {
-    let out = "";
-    if (this.live > 0) out += `\x1b[${this.live}A\x1b[0J`;
-    out += `${lines.join("\n")}\n`;
-    this.io.write(out);
-    this.live = lines.length;
-  }
-
-  commit(lines: readonly string[]): void {
-    this.paint(lines);
-    this.live = 0;
-  }
-
-  line(text = ""): void {
-    this.commit([text]);
-  }
-
-  async sleep(ms: number): Promise<void> {
-    if (!this.io.motion || ms <= 0) return;
-    await new Promise<void>((resolvePromise) => {
-      setTimeout(resolvePromise, ms);
-    });
-  }
-}
-
-function stepHead(theme: Theme, glyph: string, glyphStyle: Style, title: string, meta: string, titleStyle?: Style): string {
-  const dots = Math.max(2, WIDTH - `${glyph}  ${title}`.length - displayWidth(meta) - 2);
-  const styledTitle = (titleStyle ?? theme.plain)(title);
-  return `  ${glyphStyle(glyph)}  ${styledTitle} ${theme.dim("·".repeat(dots))}${meta ? ` ${meta}` : ""}`;
-}
-
-function gutter(theme: Theme, text = ""): string {
-  return `  ${theme.dim("│")}${text ? `    ${text}` : ""}`;
-}
-
-const CANCEL_KEYS = new Set(["\x1b", "q", "\x03"]);
-const UP_KEYS = new Set(["\x1b[A", "k"]);
-const DOWN_KEYS = new Set(["\x1b[B", "j"]);
-const LEFT_KEYS = new Set(["\x1b[D", "h"]);
-const RIGHT_KEYS = new Set(["\x1b[C", "l"]);
-const ENTER_KEYS = new Set(["\r", "\n"]);
-
 export function createInstallWizardRenderer(io: InstallWizardIO, trueColor: boolean): InstallWizardRenderer {
-  return new InstallWizardRenderer(io, createTheme(io.color, trueColor));
+  return new InstallWizardRenderer(io, createWizardTheme(io.color, trueColor));
 }
 
 export class InstallWizardRenderer {
   readonly screen: WizardScreen;
 
-  constructor(private readonly io: InstallWizardIO, private readonly theme: Theme) {
+  constructor(private readonly io: InstallWizardIO, private readonly theme: WizardTheme) {
     this.screen = new WizardScreen(io);
   }
 
@@ -195,8 +110,8 @@ export class InstallWizardRenderer {
   header(repoLabel: string): void {
     const theme = this.theme;
     const left = "opcore install";
-    const right = fit(repoLabel, WIDTH - left.length - 4);
-    const gap = Math.max(2, WIDTH + 2 - left.length - displayWidth(right));
+    const right = fit(repoLabel, WIZARD_WIDTH - left.length - 4);
+    const gap = Math.max(2, WIZARD_WIDTH + 2 - left.length - displayWidth(right));
     this.screen.line(`  ${theme.bold(theme.accent(left))}${" ".repeat(gap)}${theme.dim(right)}`);
     this.screen.line(`  ${theme.dim("Every change, within tolerance. · read-only until you approve")}`);
     this.screen.line();
@@ -205,21 +120,21 @@ export class InstallWizardRenderer {
   scanFrame(frame: number, elapsedMs: number): void {
     const theme = this.theme;
     this.screen.paint([
-      stepHead(theme, "◆", theme.accent, "Scan", theme.dim("read-only"), theme.bold),
-      gutter(theme, `${theme.accent(SPINNER[frame % SPINNER.length])}  scanning repository  ${theme.accent(seconds(elapsedMs))}`)
+      stepHead(theme, "active", "Scan", theme.dim("read-only")),
+      gutter(theme, `${theme.accent(WIZARD_SPINNER[frame % WIZARD_SPINNER.length])}  scanning repository  ${theme.accent(seconds(elapsedMs))}`)
     ]);
   }
 
   scanDone(scanMs: number, totalFiles: number | undefined): void {
     const theme = this.theme;
     const meta = totalFiles === undefined ? seconds(scanMs) : `${seconds(scanMs)} · ${totalFiles} files`;
-    this.screen.commit([stepHead(theme, "●", theme.plain, "Scan", theme.dim(meta))]);
+    this.screen.commit([stepHead(theme, "done", "Scan", theme.dim(meta))]);
     this.screen.line(gutter(theme));
   }
 
   scanFailed(scanMs: number): void {
     const theme = this.theme;
-    this.screen.commit([stepHead(theme, "●", theme.plain, "Scan", theme.accent(`failed after ${seconds(scanMs)}`))]);
+    this.screen.commit([stepHead(theme, "done", "Scan", theme.accent(`failed after ${seconds(scanMs)}`))]);
   }
 
   private coverageLines(scan: OpcoreInitScanSummary): string[] {
@@ -275,7 +190,7 @@ export class InstallWizardRenderer {
   async coverage(scan: OpcoreInitScanSummary): Promise<void> {
     const theme = this.theme;
     const body = this.coverageLines(scan);
-    const activeHead = stepHead(theme, "◆", theme.accent, "Coverage", theme.dim(`${scan.totalFiles} files`), theme.bold);
+    const activeHead = stepHead(theme, "active", "Coverage", theme.dim(`${scan.totalFiles} files`));
     for (let index = 1; index <= body.length; index += 1) {
       this.screen.paint([activeHead, ...body.slice(0, index)]);
       await this.screen.sleep(45);
@@ -286,20 +201,20 @@ export class InstallWizardRenderer {
     const meta = failed === 0
       ? `${scan.totalFiles} files · ${findings}`
       : `${scan.totalFiles} files · ${findings} · ${failed} ${failed === 1 ? "check" : "checks"} failed`;
-    this.screen.commit([stepHead(theme, "●", theme.plain, "Coverage", theme.dim(meta)), ...body]);
+    this.screen.commit([stepHead(theme, "done", "Coverage", theme.dim(meta)), ...body]);
     this.screen.line(gutter(theme));
   }
 
   private scopeLines(repoLabel: string, index: number, confirmed: "repo" | "global" | null): string[] {
     const theme = this.theme;
     if (confirmed !== null) {
-      return [stepHead(theme, "●", theme.plain, "Scope", theme.dim(confirmed === "repo" ? "this repo" : "all repos"))];
+      return [stepHead(theme, "done", "Scope", theme.dim(confirmed === "repo" ? "this repo" : "all repos"))];
     }
     const options = [
       { label: "this repo", note: fit(repoLabel, 44) },
       { label: "all repos", note: "~/.opcore · ~/.claude · ~/.codex" }
     ];
-    const lines = [stepHead(theme, "◆", theme.accent, "Scope", theme.dim("write-gate reach"), theme.bold), gutter(theme)];
+    const lines = [stepHead(theme, "active", "Scope", theme.dim("write-gate reach")), gutter(theme)];
     options.forEach((option, optionIndex) => {
       const lit = optionIndex === index;
       const cursor = lit ? theme.accent("▸") : " ";
@@ -318,8 +233,7 @@ export class InstallWizardRenderer {
     for (;;) {
       const key = await this.io.readKey();
       if (CANCEL_KEYS.has(key)) return null;
-      if (UP_KEYS.has(key) || key === "r") index = 0;
-      else if (DOWN_KEYS.has(key) || key === "g") index = 1;
+      index = scopeIndexForKey(key, index);
       if (ENTER_KEYS.has(key) || key === "r" || key === "g") {
         const scope = index === 0 ? "repo" : "global";
         this.screen.commit(this.scopeLines(repoLabel, index, scope));
@@ -330,93 +244,120 @@ export class InstallWizardRenderer {
     }
   }
 
-  private planLines(
-    model: InstallWizardPlanModel,
-    choices: InstallWizardChoices,
-    view: InstallWizardPlanView,
-    focus: number,
-    action: 0 | 1
-  ): string[] {
+  private planLines(frame: PlanFrame): string[] {
     const theme = this.theme;
-    const focusable = model.groups.filter((group) => group.available);
     const lines = [
-      stepHead(theme, "◆", theme.accent, "Plan", theme.dim(`${view.totalWrites} writes · nothing written yet`), theme.bold),
+      stepHead(theme, "active", "Plan", theme.dim(`${frame.view.totalWrites} writes · nothing written yet`)),
       gutter(theme)
     ];
-    if (view.baseRows.length > 0) {
-      const base = view.baseRows.map((row) => (row.outsideOpcore ? row.path : theme.dim(row.path)));
-      lines.push(gutter(theme, `${theme.dim(padEndPlain("base", 5))} ${fitJoined(base, theme.dim(" · "), WIDTH - 12)}`));
+    if (frame.view.baseRows.length > 0) {
+      const base = frame.view.baseRows.map((row) => (row.outsideOpcore ? row.path : theme.dim(row.path)));
+      lines.push(gutter(theme, `${theme.dim(padEndPlain("base", 5))} ${fitJoined(base, theme.dim(" · "), WIZARD_WIDTH - 12)}`));
       lines.push(gutter(theme));
     }
+    lines.push(...this.planGroupLines(frame));
+    lines.push(gutter(theme));
+    lines.push(...this.planActionLines(frame));
+    return lines;
+  }
+
+  private planGroupLines(frame: PlanFrame): string[] {
+    const theme = this.theme;
+    const lines: string[] = [];
     let focusIndex = 0;
-    for (const group of model.groups) {
+    for (const group of frame.groups) {
       if (!group.available) {
         lines.push(gutter(theme, theme.dim(`  [-] ${group.label}  ${group.unavailableNote ?? "unavailable"}`)));
         continue;
       }
-      const enabled = choiceFor(choices, group.key);
-      const focused = focus === focusIndex;
+      const enabled = choiceFor(frame.choices, group.key);
+      const focused = frame.focus === focusIndex;
       const cursor = focused ? theme.accent("▸") : " ";
       const box = enabled ? "[x]" : theme.dim("[ ]");
       const label = focused ? theme.bold(group.label) : enabled ? group.label : theme.dim(group.label);
       lines.push(gutter(theme, `${cursor} ${box} ${label}`));
-      if (enabled) {
-        for (const row of view.groupRows[group.key] ?? []) {
-          const path = row.outsideOpcore ? row.path : theme.dim(row.path);
-          lines.push(gutter(theme, `     ${theme.dim(row.mark)} ${path}`));
-        }
-      }
+      if (enabled) lines.push(...this.planFileLines(frame.view.groupRows[group.key] ?? []));
       focusIndex += 1;
     }
-    lines.push(gutter(theme));
-    const onAction = focus === focusable.length;
-    const install = onAction && action === 0 ? theme.accent(theme.bold("▸ Install")) : theme.dim("  Install");
-    const cancel = onAction && action === 1 ? theme.bold("▸ Cancel") : theme.dim("  Cancel");
-    lines.push(gutter(theme, `${install}     ${cancel}`));
-    const hint = onAction ? "←→ choose · ↵ confirm · esc cancel" : "↑↓ move · space toggle · ↵ continue";
-    lines.push(gutter(theme, theme.dim(hint)));
     return lines;
   }
 
-  async planApproval(model: InstallWizardPlanModel): Promise<InstallWizardPlanOutcome> {
+  private planFileLines(rows: readonly InstallWizardFileRow[]): string[] {
     const theme = this.theme;
-    const choices: InstallWizardChoices = { ...model.initial };
+    return rows.map((row) => {
+      const path = row.outsideOpcore ? row.path : theme.dim(row.path);
+      return gutter(theme, `     ${theme.dim(row.mark)} ${path}`);
+    });
+  }
+
+  private planActionLines(frame: PlanFrame): string[] {
+    const theme = this.theme;
+    const onAction = frame.focus === frame.focusableCount;
+    const install = onAction && frame.action === 0 ? theme.accent(theme.bold("▸ Install")) : theme.dim("  Install");
+    const cancel = onAction && frame.action === 1 ? theme.bold("▸ Cancel") : theme.dim("  Cancel");
+    const hint = onAction ? "←→ choose · ↵ confirm · esc cancel" : "↑↓ move · space toggle · ↵ continue";
+    return [gutter(theme, `${install}     ${cancel}`), gutter(theme, theme.dim(hint))];
+  }
+
+  async planApproval(model: InstallWizardPlanModel): Promise<InstallWizardPlanOutcome> {
     const focusable = model.groups.filter((group) => group.available);
-    let focus = 0;
-    let action: 0 | 1 = 0;
-    let view = model.planView(choices);
-    this.screen.paint(this.planLines(model, choices, view, focus, action));
+    const frame: PlanFrame = {
+      groups: model.groups,
+      focusableCount: focusable.length,
+      choices: { ...model.initial },
+      view: model.planView(model.initial),
+      focus: 0,
+      action: 0
+    };
+    this.screen.paint(this.planLines(frame));
     for (;;) {
       const key = await this.io.readKey();
-      if (CANCEL_KEYS.has(key)) return { choices, confirmed: false };
-      if (UP_KEYS.has(key)) focus = Math.max(0, focus - 1);
-      else if (DOWN_KEYS.has(key)) focus = Math.min(focusable.length, focus + 1);
-      else if (focus === focusable.length && (LEFT_KEYS.has(key) || RIGHT_KEYS.has(key))) action = action === 0 ? 1 : 0;
-      else if (key === " " && focus < focusable.length) {
-        toggleChoice(choices, focusable[focus].key);
-        view = model.planView(choices);
-      } else if (ENTER_KEYS.has(key)) {
-        if (focus < focusable.length) {
-          focus = focusable.length;
-        } else if (action === 1) {
-          return { choices, confirmed: false };
-        } else if (view.totalWrites > 0) {
-          this.screen.commit([
-            stepHead(theme, "●", theme.plain, "Plan", theme.dim(`${view.totalWrites} writes · ${view.outsideWrites} touch your files`)),
-            gutter(theme, theme.dim("guardrails, not enforcement · existing lint/test/CI untouched"))
-          ]);
-          this.screen.line(gutter(theme));
-          return { choices, confirmed: true };
-        }
-      }
-      this.screen.paint(this.planLines(model, choices, view, focus, action));
+      if (CANCEL_KEYS.has(key)) return { choices: frame.choices, confirmed: false };
+      const outcome = this.reducePlanKey(model, focusable, frame, key);
+      if (outcome !== null) return outcome;
+      this.screen.paint(this.planLines(frame));
     }
+  }
+
+  private reducePlanKey(
+    model: InstallWizardPlanModel,
+    focusable: readonly InstallWizardGroup[],
+    frame: PlanFrame,
+    key: string
+  ): InstallWizardPlanOutcome | null {
+    if (UP_KEYS.has(key)) frame.focus = Math.max(0, frame.focus - 1);
+    else if (DOWN_KEYS.has(key)) frame.focus = Math.min(focusable.length, frame.focus + 1);
+    else if (frame.focus === focusable.length && (LEFT_KEYS.has(key) || RIGHT_KEYS.has(key))) {
+      frame.action = frame.action === 0 ? 1 : 0;
+    } else if (key === " " && frame.focus < focusable.length) {
+      toggleChoice(frame.choices, focusable[frame.focus].key);
+      frame.view = model.planView(frame.choices);
+    } else if (ENTER_KEYS.has(key)) {
+      return this.reducePlanEnter(frame);
+    }
+    return null;
+  }
+
+  private reducePlanEnter(frame: PlanFrame): InstallWizardPlanOutcome | null {
+    const theme = this.theme;
+    if (frame.focus < frame.focusableCount) {
+      frame.focus = frame.focusableCount;
+      return null;
+    }
+    if (frame.action === 1) return { choices: frame.choices, confirmed: false };
+    if (frame.view.totalWrites === 0) return null;
+    this.screen.commit([
+      stepHead(theme, "done", "Plan", theme.dim(`${frame.view.totalWrites} writes · ${frame.view.outsideWrites} touch your files`)),
+      gutter(theme, theme.dim("guardrails, not enforcement · existing lint/test/CI untouched"))
+    ]);
+    this.screen.line(gutter(theme));
+    return { choices: frame.choices, confirmed: true };
   }
 
   async applyCascade(paths: readonly string[], applyMs: number): Promise<void> {
     const theme = this.theme;
     const frame = (shown: number): string[] => [
-      stepHead(theme, "◆", theme.accent, "Install", theme.dim(`writing ${paths.length}`), theme.bold),
+      stepHead(theme, "active", "Install", theme.dim(`writing ${paths.length}`)),
       ...paths.map((path, index) => {
         const sealed = index < shown;
         const rail = sealed ? theme.accent("┃") : theme.dim("│");
@@ -429,7 +370,7 @@ export class InstallWizardRenderer {
       await this.screen.sleep(45);
     }
     await this.screen.sleep(100);
-    this.screen.commit([stepHead(theme, "●", theme.plain, "Install", theme.dim(`${paths.length} files · ${seconds(applyMs)}`))]);
+    this.screen.commit([stepHead(theme, "done", "Install", theme.dim(`${paths.length} files · ${seconds(applyMs)}`))]);
     this.screen.line(gutter(theme));
   }
 
@@ -458,11 +399,26 @@ export class InstallWizardRenderer {
   cancelled(): void {
     const theme = this.theme;
     this.screen.commit([
-      stepHead(theme, "●", theme.plain, "Cancelled", theme.dim("nothing written")),
+      stepHead(theme, "done", "Cancelled", theme.dim("nothing written")),
       gutter(theme, `${theme.dim("scan was read-only · re-run ")}${theme.accent("opcore install")}${theme.dim(" when ready")}`)
     ]);
     this.screen.line();
   }
+}
+
+interface PlanFrame {
+  groups: readonly InstallWizardGroup[];
+  focusableCount: number;
+  choices: InstallWizardChoices;
+  view: InstallWizardPlanView;
+  focus: number;
+  action: 0 | 1;
+}
+
+function scopeIndexForKey(key: string, index: number): number {
+  if (UP_KEYS.has(key) || key === "r") return 0;
+  if (DOWN_KEYS.has(key) || key === "g") return 1;
+  return index;
 }
 
 function choiceFor(choices: InstallWizardChoices, key: InstallWizardGroupKey): boolean {
