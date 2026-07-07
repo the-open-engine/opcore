@@ -5,7 +5,7 @@ Maintainer license evidence for the Opcore alpha release gate.
 Root package: opcore@0.1.0
 Lockfile version: 3
 Third-party packages: 118
-Bundled runtime packages: 0
+Bundled runtime packages: 34
 Workspace packages: 15
 
 ## Third-Party Inventory
@@ -147,13 +147,45 @@ Workspace packages: 15
 
 | Package | Version | License | Source |
 |---------|---------|---------|--------|
-| none | n/a | n/a | n/a |
+| @the-open-engine/opcore-asp-provider | 0.1.0 | MIT | packages/asp-provider/package.json |
+| @the-open-engine/opcore-contracts | 0.1.0 | MIT | packages/contracts/package.json |
+| @the-open-engine/opcore-edit | 0.1.0 | MIT | packages/edit/package.json |
+| @the-open-engine/opcore-graph | 0.1.0 | MIT | packages/graph/package.json |
+| @the-open-engine/opcore-graph-core-darwin-arm64 | 0.1.0 | MIT | packages/opcore-graph-core-darwin-arm64/package.json |
+| @the-open-engine/opcore-graph-core-darwin-x64 | 0.1.0 | MIT | packages/opcore-graph-core-darwin-x64/package.json |
+| @the-open-engine/opcore-graph-core-linux-x64 | 0.1.0 | MIT | packages/opcore-graph-core-linux-x64/package.json |
+| @the-open-engine/opcore-validation | 0.1.0 | MIT | packages/validation/package.json |
+| @the-open-engine/opcore-validation-clone | 0.1.0 | MIT | packages/validation-clone/package.json |
+| @the-open-engine/opcore-validation-docs | 0.1.0 | MIT | packages/validation-docs/package.json |
+| @the-open-engine/opcore-validation-python | 0.1.0 | MIT | packages/validation-python/package.json |
+| @the-open-engine/opcore-validation-rust | 0.1.0 | MIT | packages/validation-rust/package.json |
+| @the-open-engine/opcore-validation-typescript | 0.1.0 | MIT | packages/validation-typescript/package.json |
+| @ts-morph/common | 0.29.0 | MIT | node_modules/@ts-morph/common |
+| @typescript-eslint/project-service | 8.62.0 | MIT | node_modules/@typescript-eslint/project-service |
+| @typescript-eslint/tsconfig-utils | 8.62.0 | MIT | node_modules/@typescript-eslint/tsconfig-utils |
+| @typescript-eslint/types | 8.62.0 | MIT | node_modules/@typescript-eslint/types |
+| @typescript-eslint/typescript-estree | 8.62.0 | MIT | node_modules/@typescript-eslint/typescript-estree |
+| @typescript-eslint/visitor-keys | 8.62.0 | MIT | node_modules/@typescript-eslint/visitor-keys |
+| balanced-match | 4.0.4 | MIT | node_modules/balanced-match |
+| brace-expansion | 5.0.6 | MIT | node_modules/brace-expansion |
+| code-block-writer | 13.0.3 | MIT | node_modules/code-block-writer |
+| debug | 4.4.3 | MIT | node_modules/debug |
+| eslint-visitor-keys | 4.2.1 | Apache-2.0 | node_modules/eslint-visitor-keys |
+| fdir | 6.5.0 | MIT | node_modules/fdir |
+| minimatch | 10.2.5 | BlueOak-1.0.0 | node_modules/minimatch |
+| ms | 2.1.3 | MIT | node_modules/ms |
+| path-browserify | 1.0.1 | MIT | node_modules/path-browserify |
+| picomatch | 4.0.4 | MIT | node_modules/picomatch |
+| semver | 7.8.5 | ISC | node_modules/semver |
+| tinyglobby | 0.2.17 | MIT | node_modules/tinyglobby |
+| ts-api-utils | 2.5.0 | MIT | node_modules/ts-api-utils |
+| ts-morph | 28.0.0 | MIT | node_modules/ts-morph |
+| typescript | 5.9.3 | Apache-2.0 | node_modules/typescript |
 
 ## Workspace Packages
 
 | Package | Version | License | Manifest |
 |---------|---------|---------|----------|
-| opcore | 0.1.0 | MIT | packages/opcore/package.json |
 | @the-open-engine/opcore-asp-provider | 0.1.0 | MIT | packages/asp-provider/package.json |
 | @the-open-engine/opcore-contracts | 0.1.0 | MIT | packages/contracts/package.json |
 | @the-open-engine/opcore-edit | 0.1.0 | MIT | packages/edit/package.json |
@@ -168,5 +200,6 @@ Workspace packages: 15
 | @the-open-engine/opcore-validation-python | 0.1.0 | MIT | packages/validation-python/package.json |
 | @the-open-engine/opcore-validation-rust | 0.1.0 | MIT | packages/validation-rust/package.json |
 | @the-open-engine/opcore-validation-typescript | 0.1.0 | MIT | packages/validation-typescript/package.json |
+| opcore | 0.1.0 | MIT | packages/opcore/package.json |
 
 No unresolved third-party license entries.

@@ -203,9 +203,9 @@ describe("Opcore ASP provider", () => {
     assert.equal(existsSync(manifestPath), true, "run npm run build before asp-provider tests");
     const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
     assert.equal(manifest.providerId, "opcore");
-    assert.equal(manifest.packageName, "@the-open-engine/opcore-asp-provider");
+    assert.equal(manifest.packageName, "opcore");
     assert.deepEqual(manifest.executable, {
-      packageName: "@the-open-engine/opcore-asp-provider",
+      packageName: "opcore",
       bin: "opcore-asp-provider",
       args: ["--stdio"]
     });

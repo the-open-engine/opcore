@@ -7,29 +7,13 @@ import { tmpdir } from "node:os";
 import {
   currentGraphCoreNativeTarget,
   graphCoreNativePackageForTarget,
-  graphCoreNativePackageNames,
   graphCoreSupportedTargets
 } from "./graph-native-targets.mjs";
-import { releasePackageDirForName } from "./release-package-dirs.mjs";
+import { publicReleasePackageNames, releasePackageDirForName } from "./release-package-dirs.mjs";
+import { createStagedOpcorePackage } from "./stage-opcore-bundle.mjs";
 
 const releaseVersion = "0.1.0";
-const implementationPackages = [
-  "@the-open-engine/opcore-contracts",
-  "opcore",
-  "@the-open-engine/opcore-graph",
-  "@the-open-engine/opcore-edit",
-  "@the-open-engine/opcore-validation",
-  "@the-open-engine/opcore-validation-clone",
-  "@the-open-engine/opcore-validation-docs",
-  "@the-open-engine/opcore-validation-python",
-  "@the-open-engine/opcore-validation-rust",
-  "@the-open-engine/opcore-validation-typescript",
-  "@the-open-engine/opcore-asp-provider"
-];
-const publicPackages = [
-  ...graphCoreNativePackageNames,
-  ...implementationPackages
-];
+const publicPackages = publicReleasePackageNames;
 const cloneProtocolMarker = Buffer.from("opcore.clone.v1", "utf8");
 const target = currentGraphCoreNativeTarget();
 const requireAllNativePackages = process.env.OPCORE_REQUIRE_ALL_NATIVE_PACKAGES === "1";
@@ -37,21 +21,6 @@ const requireAllNativePackages = process.env.OPCORE_REQUIRE_ALL_NATIVE_PACKAGES 
 if (!graphCoreSupportedTargets.includes(target)) {
   throw new Error(`release:dry-run requires one of ${graphCoreSupportedTargets.join(", ")}; got ${target}`);
 }
-
-const installPackages = [
-  "@the-open-engine/opcore-contracts",
-  "opcore",
-  "@the-open-engine/opcore-graph",
-  graphCoreNativePackageNames.find((packageName) => packageName.endsWith(target)),
-  "@the-open-engine/opcore-edit",
-  "@the-open-engine/opcore-validation",
-  "@the-open-engine/opcore-validation-clone",
-  "@the-open-engine/opcore-validation-docs",
-  "@the-open-engine/opcore-validation-python",
-  "@the-open-engine/opcore-validation-rust",
-  "@the-open-engine/opcore-validation-typescript",
-  "@the-open-engine/opcore-asp-provider"
-].filter(Boolean);
 
 const tempRoot = mkdtempSync(join(tmpdir(), "lattice-release-dry-run-"));
 try {
@@ -65,7 +34,7 @@ try {
 
   run("npm", ["init", "-y"], { cwd: project });
   const tarballsByPackage = new Map(publicPackages.map((packageName, index) => [packageName, tarballs[index]]));
-  run("npm", ["install", "--ignore-scripts", "--no-audit", "--no-fund", ...installPackages.map((packageName) => tarballsByPackage.get(packageName))], {
+  run("npm", ["install", "--ignore-scripts", "--no-audit", "--no-fund", ...publicPackages.map((packageName) => tarballsByPackage.get(packageName))], {
     cwd: project
   });
   installFixture(project);
@@ -113,12 +82,17 @@ try {
 }
 
 function packWorkspace(packageName, destination) {
-  const result = run("npm", ["pack", "--json", "--pack-destination", destination], {
-    cwd: releasePackageDirForName(packageName)
-  });
-  const parsed = JSON.parse(result.stdout)[0];
-  if (parsed.version !== releaseVersion) throw new Error(`${packageName} packed version ${parsed.version}, expected ${releaseVersion}`);
-  return join(destination, parsed.filename);
+  const staged = packageName === "opcore" ? createStagedOpcorePackage(destination) : undefined;
+  try {
+    const result = run("npm", ["pack", "--json", "--pack-destination", destination], {
+      cwd: staged?.packageDir ?? releasePackageDirForName(packageName)
+    });
+    const parsed = JSON.parse(result.stdout)[0];
+    if (parsed.version !== releaseVersion) throw new Error(`${packageName} packed version ${parsed.version}, expected ${releaseVersion}`);
+    return join(destination, parsed.filename);
+  } finally {
+    staged?.cleanup();
+  }
 }
 
 function prepareArtifacts() {

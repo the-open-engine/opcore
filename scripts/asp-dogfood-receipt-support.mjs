@@ -2,15 +2,9 @@ import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
-import { aspDogfoodForbiddenProviderMarkers, releaseReceiptPackageNames } from "../packages/contracts/dist/index.js";
-import {
-  currentGraphCoreNativeTarget,
-  graphCoreNativePackageForTarget
-} from "./graph-native-targets.mjs";
-import {
-  isNativeReleasePackageName,
-  releasePackageDirForName
-} from "./release-package-dirs.mjs";
+import { aspDogfoodForbiddenProviderMarkers, aspDogfoodGuardrailIds, releaseReceiptPackageNames } from "../packages/contracts/dist/index.js";
+import { releasePackageDirForName } from "./release-package-dirs.mjs";
+import { createStagedOpcorePackage } from "./stage-opcore-bundle.mjs";
 
 const currentToolEnvVars = [
   "LATTICE_CURRENT_TOOLS_DIR",
@@ -19,20 +13,25 @@ const currentToolEnvVars = [
   "LATTICE_CURRENT_CRG_PATH",
   "LATTICE_CURRENT_CIX_PATH"
 ];
+const aspDogfoodReceiptPath = "docs/release/asp-dogfood-receipt.json";
 
 export function packWorkspace(repoRoot, packageName, destination) {
-  const packageDir = join(repoRoot, releasePackageDirForName(packageName));
-  const result = runRequired("npm", ["pack", "--json", "--pack-destination", destination], {
-    cwd: packageDir
-  });
-  const parsed = JSON.parse(result.stdout)[0];
-  const path = join(destination, parsed.filename);
-  return { packageName, packageDir, filename: parsed.filename, path, sha256: sha256File(path) };
+  const staged = packageName === "opcore" ? createStagedOpcorePackage(destination) : undefined;
+  try {
+    const packageDir = join(repoRoot, releasePackageDirForName(packageName));
+    const result = runRequired("npm", ["pack", "--json", "--pack-destination", destination], {
+      cwd: staged?.packageDir ?? packageDir
+    });
+    const parsed = JSON.parse(result.stdout)[0];
+    const path = join(destination, parsed.filename);
+    return { packageName, packageDir, filename: parsed.filename, path, sha256: sha256File(path) };
+  } finally {
+    staged?.cleanup();
+  }
 }
 
 export function releaseRuntimeInstallPackageNames() {
-  const currentNativePackage = graphCoreNativePackageForTarget(currentGraphCoreNativeTarget()).packageName;
-  return releaseReceiptPackageNames.filter((packageName) => !isNativeReleasePackageName(packageName) || packageName === currentNativePackage);
+  return releaseReceiptPackageNames;
 }
 
 export function locateAspManager() {
@@ -46,7 +45,7 @@ export function locateAspManager() {
 }
 
 export function writeAspServerManifest(tempRoot, project, providerIndex) {
-  const packageManifest = readJson(join(project, "node_modules", "@the-open-engine", "opcore-asp-provider", "package.json"));
+  const packageManifest = readJson(join(project, "node_modules", "opcore", "package.json"));
   const indexSha256 = sha256File(providerIndex);
   const manifest = aspServerManifest(packageManifest.version, indexSha256, binPath(project, "opcore-asp-provider"));
   const path = join(tempRoot, "asp-server.opcore.json");
@@ -139,10 +138,42 @@ export function maybeRunCiVerify(repoRoot, asp, env) {
 }
 
 export function runCurrentToolGuardrails(repoRoot, includeAll) {
+  if (process.env.OPCORE_ASP_DOGFOOD_REUSE_CURRENT_TOOL_GUARDRAILS === "1") {
+    return recordedCurrentToolGuardrails(repoRoot);
+  }
   const changed = retainedGuardrail(repoRoot, "current-tools-validate-changed", "current-tools:validate-changed");
   const rustGraph = retainedGuardrail(repoRoot, "current-tools-validate-rust-graph", "current-tools:validate-rust-graph");
   const all = includeAll ? retainedGuardrail(repoRoot, "current-tools-validate-all", "current-tools:validate-all") : retainedNotRun();
   return [changed, rustGraph, all];
+}
+
+function recordedCurrentToolGuardrails(repoRoot) {
+  const receipt = readJson(join(repoRoot, aspDogfoodReceiptPath));
+  const guardrails = receipt.currentToolGuardrails;
+  if (!Array.isArray(guardrails)) {
+    throw new Error(`${aspDogfoodReceiptPath} must contain recorded current-tool guardrails`);
+  }
+  assertSameStringSet(
+    guardrails.map((entry) => entry?.id),
+    aspDogfoodGuardrailIds,
+    "recorded ASP dogfood current-tool guardrails"
+  );
+  return guardrails.map((entry) => {
+    if (!entry || typeof entry !== "object") throw new Error(`${aspDogfoodReceiptPath} current-tool guardrail entry is required`);
+    if (entry.retained !== true) throw new Error(`${aspDogfoodReceiptPath} current-tool guardrails must stay retained`);
+    return { ...entry };
+  });
+}
+
+function assertSameStringSet(actual, expected, label) {
+  const actualSet = new Set(actual);
+  const expectedSet = new Set(expected);
+  if (actualSet.size !== actual.length || expectedSet.size !== expected.length) {
+    throw new Error(`${label} must not contain duplicates`);
+  }
+  if (actualSet.size !== expectedSet.size || [...expectedSet].some((entry) => !actualSet.has(entry))) {
+    throw new Error(`${label} mismatch: expected ${[...expectedSet].join(", ")}, got ${[...actualSet].join(", ")}`);
+  }
 }
 
 function retainedGuardrail(repoRoot, id, scriptName) {

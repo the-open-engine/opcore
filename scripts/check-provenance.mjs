@@ -9,22 +9,7 @@ const forbiddenPublicPackageNames = new Set([
   "@the-open-engine/opcore-rox",
   "@the-open-engine/opcore-rox-typescript"
 ]);
-const publicPackageNames = new Set([
-  "opcore",
-  "@the-open-engine/opcore-contracts",
-  "@the-open-engine/opcore-graph",
-  "@the-open-engine/opcore-graph-core-darwin-arm64",
-  "@the-open-engine/opcore-graph-core-darwin-x64",
-  "@the-open-engine/opcore-graph-core-linux-x64",
-  "@the-open-engine/opcore-edit",
-  "@the-open-engine/opcore-validation",
-  "@the-open-engine/opcore-validation-clone",
-  "@the-open-engine/opcore-validation-docs",
-  "@the-open-engine/opcore-validation-python",
-  "@the-open-engine/opcore-validation-rust",
-  "@the-open-engine/opcore-validation-typescript",
-  "@the-open-engine/opcore-asp-provider"
-]);
+const publicPackageNames = new Set(["opcore"]);
 const forbiddenPublicBins = new Set(["lattice", "crg", "cix", "rox"]);
 const forbiddenGeneratedRoots = [
   ".ace/",

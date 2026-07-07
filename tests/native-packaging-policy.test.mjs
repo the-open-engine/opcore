@@ -3,6 +3,10 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { chmodSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
+import {
+  bundledReleasePackageNames,
+  publicReleasePackageNames
+} from "../scripts/release-package-dirs.mjs";
 
 const nativeTargets = {
   "darwin-arm64": { os: "darwin", cpu: "arm64", rustTarget: "aarch64-apple-darwin" },
@@ -15,7 +19,23 @@ const nativePackageDir = (target) => `packages/opcore-graph-core-${target}`;
 const readJson = (path) => JSON.parse(readFileSync(path, "utf8"));
 
 describe("native graph-core packaging policy", () => {
-  it("encodes npm os/cpu support in each public native package manifest", () => {
+  it("keeps npm publishing strict single-package while bundling internal native artifacts", () => {
+    assert.deepEqual(publicReleasePackageNames, ["opcore"]);
+    for (const target of Object.keys(nativeTargets)) {
+      assert.equal(bundledReleasePackageNames.includes(nativePackageName(target)), true, target);
+    }
+    assert.equal(bundledReleasePackageNames.includes("@the-open-engine/opcore-asp-provider"), true);
+    assert.equal(bundledReleasePackageNames.includes("opcore"), false);
+
+    const releasePublish = readFileSync("scripts/release-publish.mjs", "utf8");
+    assert.doesNotMatch(releasePublish, /graphCoreNativePackageNames/);
+    assert.match(releasePublish, /publicReleasePackageNames/);
+    assert.match(releasePublish, /createStagedOpcorePackage/);
+    assert.match(releasePublish, /cwd:\s*packageDirs\.get\(packageName\)/);
+    assert.doesNotMatch(releasePublish, /cwd:\s*releasePackageDirForName\(packageName\)/);
+  });
+
+  it("encodes npm os/cpu support in each bundled native package manifest", () => {
     for (const [target, expected] of Object.entries(nativeTargets)) {
       const manifest = readJson(`${nativePackageDir(target)}/package.json`);
       assert.equal(manifest.name, nativePackageName(target));

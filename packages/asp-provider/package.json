@@ -26,9 +26,6 @@
     "validation",
     "developer-tools"
   ],
-  "publishConfig": {
-    "access": "public"
-  },
   "bin": {
     "opcore-asp-provider": "dist/index.js"
   },
@@ -51,5 +48,6 @@
   },
   "scripts": {
     "build": "tsc -b && node ../../scripts/write-asp-provider-manifest.mjs"
-  }
+  },
+  "private": true
 }

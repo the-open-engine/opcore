@@ -1,13 +1,13 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import {
   graphCoreNativePackageNameForTarget,
-  graphCoreNativePackageNames,
+  graphCoreNativeSupportedTargets,
   releaseCutoverCurrentToolGuardrailIds,
   releaseCutoverNegativeCheckIds,
   releaseCutoverPythonCommandIds,
@@ -15,6 +15,7 @@ import {
   releaseCutoverRustCommandIds,
   releaseReceiptPackageNames
 } from "../packages/contracts/dist/index.js";
+import { bundledExternalRuntimePackageNames } from "../scripts/release-package-dirs.mjs";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const releaseDocsLockTimeoutMs = 900000;
@@ -507,9 +508,20 @@ function tempRepo(options = {}) {
       }
     });
   });
+  if (options.includeDist) copyBundledExternalRuntimePackages(repo);
   run(repo, "git", ["init", "--quiet"]);
   stageRepoEntries(repo);
   return repo;
+}
+
+function copyBundledExternalRuntimePackages(repo) {
+  for (const packageName of bundledExternalRuntimePackageNames) {
+    const source = join(repoRoot, "node_modules", ...packageName.split("/"));
+    if (!existsSync(source)) throw new Error(`Missing external runtime package fixture source: node_modules/${packageName}`);
+    const destination = join(repo, "node_modules", ...packageName.split("/"));
+    mkdirSync(dirname(destination), { recursive: true });
+    cpSync(source, destination, { recursive: true });
+  }
 }
 
 function stageRepoEntries(repo) {
@@ -651,9 +663,7 @@ function minimalCutoverReceipt(repo, commandOverrides = {}) {
     commitSha: "a".repeat(40),
     privateRepo: true,
     packageNames,
-    installedPackages: packageNames
-      .filter((packageName) => !graphCoreNativePackageNames.includes(packageName) || packageName === graphCoreNativePackageNames[0])
-      .map((packageName) => ({
+    installedPackages: packageNames.map((packageName) => ({
         packageName,
         version: "0.1.0",
         tarball: {
@@ -665,9 +675,7 @@ function minimalCutoverReceipt(repo, commandOverrides = {}) {
           sha256: "3".repeat(64),
           bins:
             packageName === "opcore"
-              ? { opcore: "dist/index.js" }
-              : packageName === "@the-open-engine/opcore-asp-provider"
-                ? { "opcore-asp-provider": "dist/index.js" }
+              ? { opcore: "dist/index.js", "opcore-asp-provider": "dist/asp-provider-bin.js" }
                 : {}
         },
         installedFiles: installedFilesFor(packageName)
@@ -711,8 +719,16 @@ function minimalCutoverReceipt(repo, commandOverrides = {}) {
 function installedFilesFor(packageName) {
   const paths = [
     "package.json",
-    ...(packageName === "opcore" ? ["dist/index.js"] : []),
-    ...(packageName === "@the-open-engine/opcore-asp-provider" ? ["dist/index.js", "dist/manifests/asp-server.json"] : [])
+    ...(packageName === "opcore"
+      ? [
+          "dist/index.js",
+          "dist/asp-provider-bin.js",
+          "node_modules/@the-open-engine/opcore-asp-provider/dist/manifests/asp-server.json",
+          ...graphCoreNativeSupportedTargets.map(
+            (target) => `node_modules/${graphCoreNativePackageNameForTarget(target)}/opcore-graph-core`
+          )
+        ]
+      : [])
   ];
   return paths.map((path) => ({ path: `node_modules/${packageName}/${path}`, sha256: "4".repeat(64) }));
 }

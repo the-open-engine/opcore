@@ -19,6 +19,7 @@ describe("build artifact cleanup", () => {
       const canonicalDescriptorPath = join(descriptorDir, "opcore.managed-tool.json");
       const staleDistPath = join(tempRepo, "packages/opcore/dist/lattice");
       const distIndexPath = join(tempRepo, "packages/opcore/dist/index.js");
+      const aspProviderBinPath = join(tempRepo, "packages/opcore/dist/asp-provider-bin.js");
       const advancedIndexPath = join(tempRepo, "packages/opcore/dist/advanced/index.js");
       writeFileSync(staleDescriptorPath, "{\"name\":\"old\"}\n");
       writeFileSync(canonicalDescriptorPath, "{\"name\":\"canonical-before\"}\n");
@@ -31,6 +32,7 @@ describe("build artifact cleanup", () => {
       assert.equal(existsSync(staleDistPath), false);
       assert.equal(existsSync(canonicalDescriptorPath), true);
       assert.equal(readFileSync(distIndexPath, "utf8"), "public bin\n");
+      assert.equal(readFileSync(aspProviderBinPath, "utf8"), "asp provider bin\n");
       assert.equal(readFileSync(advancedIndexPath, "utf8"), "advanced router\n");
     } finally {
       rmSync(tempRepo, { recursive: true, force: true });
@@ -57,6 +59,7 @@ function seedDescriptorWriterFixture(tempRepo) {
     `${JSON.stringify({ type: "module", version: "9.8.7" }, null, 2)}\n`
   );
   writeFileSync(join(tempRepo, "packages/opcore/dist/index.js"), "public bin\n");
+  writeFileSync(join(tempRepo, "packages/opcore/dist/asp-provider-bin.js"), "asp provider bin\n");
   writeFileSync(join(tempRepo, "packages/opcore/dist/advanced/index.js"), "advanced router\n");
   writeFileSync(
     join(tempRepo, "packages/opcore/dist/advanced/descriptor.js"),

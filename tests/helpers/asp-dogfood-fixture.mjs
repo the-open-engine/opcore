@@ -1,7 +1,7 @@
 import {
   aspDogfoodForbiddenProviderMarkers,
   graphCoreNativePackageNameForTarget,
-  graphCoreNativePackageNames,
+  graphCoreNativeSupportedTargets,
   releaseReceiptPackageNames
 } from "../../packages/contracts/dist/index.js";
 
@@ -63,9 +63,7 @@ function receiptHeader() {
 }
 
 function installedPackagesFixture() {
-  const installedNativePackageName = graphCoreNativePackageNameForTarget("darwin-arm64");
   return releaseReceiptPackageNames
-    .filter((packageName) => !graphCoreNativePackageNames.includes(packageName) || packageName === installedNativePackageName)
     .map((packageName) => ({
     packageName,
     version: "0.1.0",
@@ -76,16 +74,24 @@ function installedPackagesFixture() {
 }
 
 function binsFor(packageName) {
-  if (packageName === "opcore") return { opcore: "dist/index.js" };
-  if (packageName === "@the-open-engine/opcore-asp-provider") return { "opcore-asp-provider": "dist/index.js" };
+  if (packageName === "opcore") return { opcore: "dist/index.js", "opcore-asp-provider": "dist/asp-provider-bin.js" };
   return {};
 }
 
 function installedFilesFor(packageName) {
   const paths = [
     "package.json",
-    ...(packageName === "opcore" ? ["dist/index.js"] : []),
-    ...(packageName === "@the-open-engine/opcore-asp-provider" ? ["dist/index.js", "dist/manifests/asp-server.json"] : [])
+    ...(packageName === "opcore"
+      ? [
+          "dist/index.js",
+          "dist/asp-provider-bin.js",
+          "node_modules/@the-open-engine/opcore-asp-provider/dist/index.js",
+          "node_modules/@the-open-engine/opcore-asp-provider/dist/manifests/asp-server.json",
+          ...graphCoreNativeSupportedTargets.map((target) =>
+            `node_modules/${graphCoreNativePackageNameForTarget(target)}/opcore-graph-core`
+          )
+        ]
+      : [])
   ];
   return paths.map((path) => ({ path: `node_modules/${packageName}/${path}`, sha256: "3".repeat(64) }));
 }
@@ -125,9 +131,9 @@ function hostFixtureFixture() {
 function providerFixture() {
   return {
     providerId: "opcore",
-    packageName: "@the-open-engine/opcore-asp-provider",
+    packageName: "opcore",
     binPath: "node_modules/.bin/opcore-asp-provider",
-    indexPath: "node_modules/@the-open-engine/opcore-asp-provider/dist/index.js",
+    indexPath: "node_modules/opcore/node_modules/@the-open-engine/opcore-asp-provider/dist/index.js",
     indexSha256: "e".repeat(64),
     command: ["opcore-asp-provider", "--stdio"],
     entrypoint: { transport: "stdio", bin: "/tmp/opcore-asp-dogfood/project/node_modules/.bin/opcore-asp-provider", args: ["--stdio"] },

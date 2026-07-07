@@ -1,53 +1,45 @@
 #!/usr/bin/env node
 import { spawnSync } from "node:child_process";
-import { graphCoreNativePackageNames } from "./graph-native-targets.mjs";
-import { releasePackageDirForName } from "./release-package-dirs.mjs";
+import { mkdtempSync, rmSync } from "node:fs";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
+import { publicReleasePackageNames, releasePackageDirForName } from "./release-package-dirs.mjs";
+import { createStagedOpcorePackage } from "./stage-opcore-bundle.mjs";
 
 const releaseVersion = valueAfter("--version") ?? "0.1.0";
 const tag = valueAfter("--tag") ?? "latest";
 const dryRun = process.argv.includes("--dry-run") || process.env.OPCORE_PUBLISH_DRY_RUN === "1";
 const npmEnv = npmPublishEnv();
-const implementationPackages = [
-  "@the-open-engine/opcore-contracts",
-  "@the-open-engine/opcore-graph",
-  "@the-open-engine/opcore-edit",
-  "@the-open-engine/opcore-validation",
-  "@the-open-engine/opcore-validation-clone",
-  "@the-open-engine/opcore-validation-docs",
-  "@the-open-engine/opcore-validation-python",
-  "@the-open-engine/opcore-validation-rust",
-  "@the-open-engine/opcore-validation-typescript",
-  "@the-open-engine/opcore-asp-provider",
-  "opcore"
-];
-const publicPackages = [...graphCoreNativePackageNames, ...implementationPackages];
+const publicPackages = publicReleasePackageNames;
 
 if (!dryRun) verifyNpmPublishReadiness();
 run("npm", ["run", "release:dry-run"]);
 
-for (const packageName of publicPackages) {
-  run("npm", publishArgs(packageName, { dryRun: true }), { cwd: releasePackageDirForName(packageName) });
-}
-
-if (dryRun) {
-  process.stdout.write(`publish dry-run passed for ${releaseVersion} with tag ${tag}\n`);
-  process.exit(0);
-}
-
-if (process.env.OPCORE_CONFIRM_PUBLISH !== releaseVersion) {
-  throw new Error(`Set OPCORE_CONFIRM_PUBLISH=${releaseVersion} to publish public packages`);
-}
-
-for (const packageName of publicPackages) {
-  if (packageVersionExists(packageName)) {
-    process.stdout.write(`${packageName}@${releaseVersion} already published; ensuring ${tag} dist-tag\n`);
-  } else {
-    run("npm", publishArgs(packageName), { cwd: releasePackageDirForName(packageName) });
+withStagedPublishPackages((packageDirs) => {
+  for (const packageName of publicPackages) {
+    run("npm", publishArgs(packageName, { dryRun: true }), { cwd: packageDirs.get(packageName) });
   }
-  ensureDistTag(packageName);
-}
 
-process.stdout.write(`published Opcore ${releaseVersion} with npm tag ${tag}\n`);
+  if (dryRun) {
+    process.stdout.write(`publish dry-run passed for ${releaseVersion} with tag ${tag}\n`);
+    return;
+  }
+
+  if (process.env.OPCORE_CONFIRM_PUBLISH !== releaseVersion) {
+    throw new Error(`Set OPCORE_CONFIRM_PUBLISH=${releaseVersion} to publish public packages`);
+  }
+
+  for (const packageName of publicPackages) {
+    if (packageVersionExists(packageName)) {
+      process.stdout.write(`${packageName}@${releaseVersion} already published; ensuring ${tag} dist-tag\n`);
+    } else {
+      run("npm", publishArgs(packageName), { cwd: packageDirs.get(packageName) });
+    }
+    ensureDistTag(packageName);
+  }
+
+  process.stdout.write(`published Opcore ${releaseVersion} with npm tag ${tag}\n`);
+});
 
 function valueAfter(flag) {
   const index = process.argv.indexOf(flag);
@@ -109,6 +101,24 @@ function publishArgs(packageName, options = {}) {
   if (hasTrustedPublishingContext() && !options.dryRun) args.push("--provenance");
   if (options.dryRun) args.push("--dry-run");
   return args;
+}
+
+function withStagedPublishPackages(callback) {
+  const stageParent = mkdtempSync(join(tmpdir(), "opcore-publish-"));
+  const stagedPackages = [];
+  try {
+    const packageDirs = new Map(
+      publicPackages.map((packageName) => {
+        const staged = packageName === "opcore" ? createStagedOpcorePackage(stageParent) : undefined;
+        if (staged) stagedPackages.push(staged);
+        return [packageName, staged?.packageDir ?? releasePackageDirForName(packageName)];
+      })
+    );
+    return callback(packageDirs);
+  } finally {
+    for (const staged of stagedPackages) staged.cleanup();
+    rmSync(stageParent, { recursive: true, force: true });
+  }
 }
 
 function packageVersionExists(packageName) {

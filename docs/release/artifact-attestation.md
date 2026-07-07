@@ -12,16 +12,16 @@ Graph input evidence: docs/release/graph-release-receipt.json
 
 | Platform | Binary | Binary SHA-256 | Checksum File |
 |----------|--------|----------------|---------------|
-| darwin-arm64 | opcore-graph-core | b4cdc0d9fbef2f2c67dc849cb80309f6e6edb8ab933dc8d4fb89b279f4b252e7 | opcore-graph-core.sha256 |
-| darwin-x64 | opcore-graph-core | 1b72afa74d48b087c967cb01b39630ed3fa58b5a2895037a778eb5612ef73059 | opcore-graph-core.sha256 |
-| linux-x64 | opcore-graph-core | 70cb6d213d74594f337a67522c879b77767872dc4601063686f1abe70886127b | opcore-graph-core.sha256 |
+| darwin-arm64 | node_modules/@the-open-engine/opcore-graph-core-darwin-arm64/opcore-graph-core | b4cdc0d9fbef2f2c67dc849cb80309f6e6edb8ab933dc8d4fb89b279f4b252e7 | node_modules/@the-open-engine/opcore-graph-core-darwin-arm64/opcore-graph-core.sha256 |
+| darwin-x64 | node_modules/@the-open-engine/opcore-graph-core-darwin-x64/opcore-graph-core | 1b72afa74d48b087c967cb01b39630ed3fa58b5a2895037a778eb5612ef73059 | node_modules/@the-open-engine/opcore-graph-core-darwin-x64/opcore-graph-core.sha256 |
+| linux-x64 | node_modules/@the-open-engine/opcore-graph-core-linux-x64/opcore-graph-core | 70cb6d213d74594f337a67522c879b77767872dc4601063686f1abe70886127b | node_modules/@the-open-engine/opcore-graph-core-linux-x64/opcore-graph-core.sha256 |
 
 No package publishing happens in this gate.
 
 ## Cutover Gate
 
 Issue #30 receipt: docs/release/cutover-receipt.json
-Cutover receipt SHA-256: e4a8216b6a8615d77db1e6587e45abfd847ea4551dc6ba4c7d940ee0aa53bd6c
+Cutover receipt SHA-256: 5e9b017a4194612a77bc3035b0404f06b054aaa575adf9bb0a089f996f0d9a59
 Installed command receipts: 28
 Rust command receipts: 7
 Python command receipts: 8

@@ -1293,11 +1293,11 @@ export const managedToolDescriptorCommandGroups = ["graph", "inspect", "edit", "
 export type ManagedToolDescriptorCommandGroupName = (typeof managedToolDescriptorCommandGroups)[number];
 
 const managedToolDescriptorCommandGroupPackageNames: Record<ManagedToolDescriptorCommandGroupName, string> = {
-  graph: "@the-open-engine/opcore-graph",
+  graph: "opcore",
   inspect: "opcore",
-  edit: "@the-open-engine/opcore-edit",
-  check: "@the-open-engine/opcore-validation",
-  validate: "@the-open-engine/opcore-validation",
+  edit: "opcore",
+  check: "opcore",
+  validate: "opcore",
   status: "opcore",
   doctor: "opcore"
 };
@@ -1396,10 +1396,11 @@ export interface ManagedToolDescriptorCapabilities {
 
 export interface ManagedToolDescriptorNativeArtifact {
   targetPlatform: GraphCoreNativeSupportedTarget;
-  packageName: GraphCoreNativePackageName;
-  binaryPath: "opcore-graph-core";
-  metadataPath: "metadata.json";
-  checksumPath: "opcore-graph-core.sha256";
+  packageName: "opcore";
+  bundledPackageName: GraphCoreNativePackageName;
+  binaryPath: string;
+  metadataPath: string;
+  checksumPath: string;
   artifactIds: {
       binaryArtifactId: string;
       metadataArtifactId: string;
@@ -1577,24 +1578,22 @@ export function graphCoreNativePackageNameForTarget(target: GraphCoreNativeSuppo
   return graphCoreNativePackageNamesByTarget[target];
 }
 
-export const releaseReceiptPackageNames = [
+export const releaseReceiptPackageNames = ["opcore"] as const;
+export type ReleaseReceiptPackageName = (typeof releaseReceiptPackageNames)[number];
+
+export const releaseReceiptBundledPackageNames = [
+  "@the-open-engine/opcore-asp-provider",
   "@the-open-engine/opcore-contracts",
-  "opcore",
-  "@the-open-engine/opcore-graph",
-  "@the-open-engine/opcore-graph-core-darwin-arm64",
-  "@the-open-engine/opcore-graph-core-darwin-x64",
-  "@the-open-engine/opcore-graph-core-linux-x64",
   "@the-open-engine/opcore-edit",
+  "@the-open-engine/opcore-graph",
   "@the-open-engine/opcore-validation",
   "@the-open-engine/opcore-validation-clone",
   "@the-open-engine/opcore-validation-docs",
   "@the-open-engine/opcore-validation-python",
   "@the-open-engine/opcore-validation-rust",
   "@the-open-engine/opcore-validation-typescript",
-  "@the-open-engine/opcore-asp-provider",
-  "@the-open-engine/opcore-fixtures"
+  ...graphCoreNativePackageNames
 ] as const;
-export type ReleaseReceiptPackageName = (typeof releaseReceiptPackageNames)[number];
 
 export const releaseReceiptCommandGroups = ["graph", "inspect", "edit", "check", "validate", "status", "doctor"] as const;
 export type ReleaseReceiptCommandGroupName = (typeof releaseReceiptCommandGroups)[number];
@@ -2960,7 +2959,8 @@ export interface ReleaseReceiptPackageManifestMetadata {
 }
 
 export interface ReleaseReceiptNativeArtifactEvidence {
-  packageName: GraphCoreNativePackageName;
+  packageName: "opcore";
+  bundledPackageName: GraphCoreNativePackageName;
   targetPlatform: GraphCoreNativeSupportedTarget;
   metadata: GraphProviderArtifactMetadata;
   binaryPath: string;
@@ -3326,7 +3326,7 @@ export interface AspDogfoodProviderManifestEvidence {
 
 export interface AspDogfoodProviderEvidence {
   providerId: "opcore";
-  packageName: "@the-open-engine/opcore-asp-provider";
+  packageName: "opcore";
   binPath: string;
   indexPath: string;
   indexSha256: string;
@@ -3861,14 +3861,21 @@ function validateManagedToolGraphCapabilities(graph: ManagedToolDescriptorCapabi
   );
   for (const artifact of graph.nativeArtifacts) {
     if (!artifact || typeof artifact !== "object") throw new Error("Managed tool descriptor graph native artifact is required");
-    const expectedPackageName = graphCoreNativePackageNameForTarget(artifact.targetPlatform);
-    if (artifact.packageName !== expectedPackageName) {
-      throw new Error(`Managed tool descriptor graph native packageName for ${artifact.targetPlatform} must be ${expectedPackageName}`);
+    const expectedBundledPackageName = graphCoreNativePackageNameForTarget(artifact.targetPlatform);
+    if (artifact.packageName !== "opcore") {
+      throw new Error(`Managed tool descriptor graph native packageName for ${artifact.targetPlatform} must be opcore`);
     }
-    if (artifact.binaryPath !== "opcore-graph-core") throw new Error("Managed tool descriptor graph native binaryPath must be opcore-graph-core");
-    if (artifact.metadataPath !== "metadata.json") throw new Error("Managed tool descriptor graph native metadataPath must be metadata.json");
-    if (artifact.checksumPath !== "opcore-graph-core.sha256") {
-      throw new Error("Managed tool descriptor graph native checksumPath must be opcore-graph-core.sha256");
+    if (artifact.bundledPackageName !== expectedBundledPackageName) {
+      throw new Error(`Managed tool descriptor graph native bundledPackageName for ${artifact.targetPlatform} must be ${expectedBundledPackageName}`);
+    }
+    if (artifact.binaryPath !== bundledGraphCoreNativePath(expectedBundledPackageName, "opcore-graph-core")) {
+      throw new Error("Managed tool descriptor graph native binaryPath must point at bundled opcore-graph-core");
+    }
+    if (artifact.metadataPath !== bundledGraphCoreNativePath(expectedBundledPackageName, "metadata.json")) {
+      throw new Error("Managed tool descriptor graph native metadataPath must point at bundled metadata.json");
+    }
+    if (artifact.checksumPath !== bundledGraphCoreNativePath(expectedBundledPackageName, "opcore-graph-core.sha256")) {
+      throw new Error("Managed tool descriptor graph native checksumPath must point at bundled opcore-graph-core.sha256");
     }
     if (!artifact.artifactIds || typeof artifact.artifactIds !== "object") {
       throw new Error("Managed tool descriptor graph native artifact ids are required");
@@ -3975,29 +3982,32 @@ function validateManagedToolArtifacts(artifacts: readonly ManagedToolDescriptorA
   }
 
   for (const target of graphCoreNativeSupportedTargets) {
-    const packageName = graphCoreNativePackageNameForTarget(target);
+    const bundledPackageName = graphCoreNativePackageNameForTarget(target);
+    const binaryPath = bundledGraphCoreNativePath(bundledPackageName, "opcore-graph-core");
+    const metadataPath = bundledGraphCoreNativePath(bundledPackageName, "metadata.json");
+    const checksumPath = bundledGraphCoreNativePath(bundledPackageName, "opcore-graph-core.sha256");
     const binary = artifacts.find((artifact) => artifact.id === `graph-core-binary-${target}`);
     const metadata = artifacts.find((artifact) => artifact.id === `graph-core-metadata-${target}`);
     const checksum = artifacts.find((artifact) => artifact.id === `graph-core-checksum-${target}`);
     if (
       !binary ||
-      binary.packageName !== packageName ||
+      binary.packageName !== "opcore" ||
       binary.type !== "native_binary" ||
       !binary.required ||
-      binary.path !== "opcore-graph-core" ||
+      binary.path !== binaryPath ||
       binary.checksumRef !== `graph-core-binary-sha256-${target}`
     ) {
       throw new Error(`Managed tool descriptor must include graph native binary artifact for ${target}`);
     }
-    if (!metadata || metadata.packageName !== packageName || metadata.type !== "manifest" || !metadata.required || metadata.path !== "metadata.json") {
+    if (!metadata || metadata.packageName !== "opcore" || metadata.type !== "manifest" || !metadata.required || metadata.path !== metadataPath) {
       throw new Error(`Managed tool descriptor must include graph native metadata artifact for ${target}`);
     }
     if (
       !checksum ||
-      checksum.packageName !== packageName ||
+      checksum.packageName !== "opcore" ||
       checksum.type !== "checksum" ||
       !checksum.required ||
-      checksum.path !== "opcore-graph-core.sha256"
+      checksum.path !== checksumPath
     ) {
       throw new Error(`Managed tool descriptor must include graph native checksum artifact for ${target}`);
     }
@@ -7921,13 +7931,15 @@ function validateReleaseReceiptPackage(packageEvidence: ReleaseReceiptPackageEvi
       throw new Error(`Release receipt descriptor reference ${descriptorReference.id} is not in ${packageEvidence.packageName} packed files`);
     }
   }
-  if (isGraphCoreNativePackageName(packageEvidence.packageName)) {
+  if (packageEvidence.packageName === "opcore") {
     validateNonEmptyArray(packageEvidence.nativeArtifacts, "Release receipt native package artifacts");
     validateExactStringSet(
-      packageEvidence.nativeArtifacts.map((entry) => entry.packageName),
-      [packageEvidence.packageName],
-      `${packageEvidence.packageName} native artifact packageName`
+      packageEvidence.nativeArtifacts.map((entry) => entry.targetPlatform),
+      graphCoreNativeSupportedTargets,
+      "Release receipt Opcore bundled native artifact targets"
     );
+  } else if (isGraphCoreNativePackageName(packageEvidence.packageName)) {
+    throw new Error("Release receipt must not publish native graph-core packages separately");
   } else if (packageEvidence.nativeArtifacts.length > 0) {
     throw new Error(`${packageEvidence.packageName} must not report native graph artifacts`);
   }
@@ -8115,12 +8127,24 @@ function validateReleaseReceiptNativeArtifacts(
 
 function validateReleaseReceiptNativeArtifact(nativeArtifact: ReleaseReceiptNativeArtifactEvidence): void {
   if (!nativeArtifact || typeof nativeArtifact !== "object") throw new Error("Release receipt native artifact evidence is required");
-  if (!isGraphCoreNativePackageName(nativeArtifact.packageName)) {
-    throw new Error("Release receipt native artifact packageName must be an Opcore graph-core native package");
+  if (nativeArtifact.packageName !== "opcore") {
+    throw new Error("Release receipt native artifact packageName must be opcore");
   }
-  const expectedTarget = graphCoreNativeTargetForPackageName(nativeArtifact.packageName);
+  if (!isGraphCoreNativePackageName(nativeArtifact.bundledPackageName)) {
+    throw new Error("Release receipt native artifact bundledPackageName must be an Opcore graph-core native package");
+  }
+  const expectedTarget = graphCoreNativeTargetForPackageName(nativeArtifact.bundledPackageName);
   if (nativeArtifact.targetPlatform !== expectedTarget) {
     throw new Error(`Release receipt native artifact targetPlatform must be ${expectedTarget}`);
+  }
+  if (nativeArtifact.binaryPath !== bundledGraphCoreNativePath(nativeArtifact.bundledPackageName, "opcore-graph-core")) {
+    throw new Error("Release receipt native artifact binaryPath must point at the bundled native binary");
+  }
+  if (nativeArtifact.checksumPath !== bundledGraphCoreNativePath(nativeArtifact.bundledPackageName, "opcore-graph-core.sha256")) {
+    throw new Error("Release receipt native artifact checksumPath must point at the bundled native checksum");
+  }
+  if (nativeArtifact.metadataPath !== bundledGraphCoreNativePath(nativeArtifact.bundledPackageName, "metadata.json")) {
+    throw new Error("Release receipt native artifact metadataPath must point at the bundled native metadata");
   }
   validateGraphProviderArtifactMetadata(nativeArtifact.metadata);
   validateRepoRelativePath(nativeArtifact.binaryPath);
@@ -8134,10 +8158,10 @@ function validateReleaseReceiptNativeArtifact(nativeArtifact: ReleaseReceiptNati
   if (nativeArtifact.metadata.targetPlatform !== nativeArtifact.targetPlatform) {
     throw new Error("Release receipt native artifact targetPlatform must match metadata");
   }
-  if (nativeArtifact.metadata.binaryPath !== nativeArtifact.binaryPath) {
+  if (nativeArtifact.metadata.binaryPath !== "opcore-graph-core") {
     throw new Error("Release receipt native artifact binaryPath must match metadata");
   }
-  if (nativeArtifact.metadata.checksumPath !== nativeArtifact.checksumPath) {
+  if (nativeArtifact.metadata.checksumPath !== "opcore-graph-core.sha256") {
     throw new Error("Release receipt native artifact checksumPath must match metadata");
   }
   if (nativeArtifact.metadata.checksumSha256 !== nativeArtifact.binarySha256) {
@@ -8152,8 +8176,8 @@ function validateReleaseReceiptLicense(license: ReleaseReceiptLicenseEvidence): 
   validateNonNegativeInteger(license.productionDependencyCount, "Release receipt license productionDependencyCount");
   validateNonNegativeInteger(license.bundledDependencyCount, "Release receipt license bundledDependencyCount");
   validateNonNegativeInteger(license.workspacePackageCount, "Release receipt license workspacePackageCount");
-  if (license.workspacePackageCount !== releaseReceiptPackageNames.length) {
-    throw new Error(`Release receipt license workspacePackageCount must be ${releaseReceiptPackageNames.length}`);
+  if (license.workspacePackageCount < releaseReceiptPackageNames.length) {
+    throw new Error(`Release receipt license workspacePackageCount must be at least ${releaseReceiptPackageNames.length}`);
   }
   if (license.unresolvedLicenseCount !== 0) throw new Error("Release receipt license unresolvedLicenseCount must be 0");
   if (!Array.isArray(license.packages)) throw new Error("Release receipt license packages must be an array");
@@ -8222,9 +8246,7 @@ function validateReleaseReceiptBins(bins: Readonly<Record<string, string>>, pack
     validateRepoRelativePath(bins[bin]);
   }
   if (packageName === "opcore") {
-    validateExactStringSet(binNames, ["opcore"], "Release receipt Opcore package bins");
-  } else if (packageName === "@the-open-engine/opcore-asp-provider") {
-    validateExactStringSet(binNames, ["opcore-asp-provider"], "Release receipt ASP provider package bins");
+    validateExactStringSet(binNames, ["opcore", "opcore-asp-provider"], "Release receipt Opcore package bins");
   } else if (binNames.length > 0) {
     throw new Error(`${packageName} must not expose CLI bins`);
   }
@@ -8276,25 +8298,21 @@ function validateReleaseCutoverInstalledFiles(entry: ReleaseCutoverInstalledPack
   for (const binPath of binPaths) {
     if (!paths.includes(binPath)) throw new Error(`Release cutover installed files must include bin target ${binPath}`);
   }
-  if (
-    entry.packageName === "@the-open-engine/opcore-asp-provider" &&
-    !paths.includes("node_modules/@the-open-engine/opcore-asp-provider/dist/manifests/asp-server.json")
-  ) {
-    throw new Error("Release cutover ASP provider installed files must include canonical asp-server.json");
+  if (entry.packageName === "opcore") {
+    if (!paths.includes("node_modules/opcore/node_modules/@the-open-engine/opcore-asp-provider/dist/manifests/asp-server.json")) {
+      throw new Error("Release cutover Opcore installed files must include bundled canonical asp-server.json");
+    }
+    for (const target of graphCoreNativeSupportedTargets) {
+      const bundledPackageName = graphCoreNativePackageNameForTarget(target);
+      if (!paths.includes(`node_modules/opcore/${bundledGraphCoreNativePath(bundledPackageName, "opcore-graph-core")}`)) {
+        throw new Error(`Release cutover Opcore installed files must include bundled native binary for ${target}`);
+      }
+    }
   }
 }
 
 function validateReleaseCutoverInstalledPackageSet(packageNames: readonly string[]): void {
-  const nativePackages = packageNames.filter((packageName) => includesString(graphCoreNativePackageNames, packageName));
-  if (nativePackages.length !== 1) {
-    throw new Error("Release cutover installed package evidence must include exactly one platform native package");
-  }
-  const requiredPortablePackages = releaseReceiptPackageNames.filter((packageName) => !includesString(graphCoreNativePackageNames, packageName));
-  validateExactStringSet(
-    packageNames.filter((packageName) => !includesString(graphCoreNativePackageNames, packageName)),
-    requiredPortablePackages,
-    "Release cutover portable installed package evidence"
-  );
+  validateExactStringSet(packageNames, releaseReceiptPackageNames, "Release cutover installed package evidence");
   for (const packageName of packageNames) {
     validateReleaseReceiptPackageName(packageName, "Release cutover installed package packageName");
   }
@@ -8348,7 +8366,7 @@ function validateReleaseCutoverEnvironmentIsolation(environment: ReleaseCutoverE
   if (environment.pathSanitized !== true) throw new Error("Release cutover PATH must be sanitized");
   if (environment.aceRuntimeBinExcluded !== true) throw new Error("Release cutover ACE runtime bin must be excluded");
   if (environment.siblingCovibesExcluded !== true) throw new Error("Release cutover sibling Covibes paths must be excluded");
-  if (environment.opcoreBinOnly !== true) throw new Error("Release cutover installed project must expose only opcore bin");
+  if (environment.opcoreBinOnly !== true) throw new Error("Release cutover installed project must expose only Opcore-owned bins");
   const oldBins = environment.oldBinsAbsent;
   if (!oldBins || oldBins.lattice !== true || oldBins.crg !== true || oldBins.cix !== true || oldBins.rox !== true) {
     throw new Error("Release cutover old public bins must be absent");
@@ -8676,16 +8694,16 @@ function validateAspDogfoodHostFixture(fixture: AspDogfoodHostFixtureEvidence): 
 function validateAspDogfoodProvider(provider: AspDogfoodProviderEvidence): void {
   if (!provider || typeof provider !== "object") throw new Error("ASP dogfood provider evidence is required");
   if (provider.providerId !== "opcore") throw new Error("ASP dogfood providerId must be opcore");
-  if (provider.packageName !== "@the-open-engine/opcore-asp-provider") {
-    throw new Error("ASP dogfood provider package must be @the-open-engine/opcore-asp-provider");
+  if (provider.packageName !== "opcore") {
+    throw new Error("ASP dogfood provider package must be opcore");
   }
   validateNonEmptyString(provider.binPath, "ASP dogfood provider binPath");
   if (!provider.binPath.endsWith("node_modules/.bin/opcore-asp-provider")) {
     throw new Error("ASP dogfood provider binPath must use installed node_modules/.bin/opcore-asp-provider");
   }
   validateNonEmptyString(provider.indexPath, "ASP dogfood provider indexPath");
-  if (!provider.indexPath.endsWith("node_modules/@the-open-engine/opcore-asp-provider/dist/index.js")) {
-    throw new Error("ASP dogfood provider indexPath must be installed opcore-asp-provider dist/index.js");
+  if (!provider.indexPath.endsWith("node_modules/opcore/node_modules/@the-open-engine/opcore-asp-provider/dist/index.js")) {
+    throw new Error("ASP dogfood provider indexPath must be bundled opcore-asp-provider dist/index.js");
   }
   validateSha256(provider.indexSha256, "ASP dogfood provider indexSha256");
   validateExactStringSequence(provider.command, ["opcore-asp-provider", "--stdio"], "ASP dogfood provider command");
@@ -8945,6 +8963,10 @@ function validateReleaseReceiptPackageName(value: unknown, label: string): Relea
 
 function isGraphCoreNativePackageName(value: unknown): value is GraphCoreNativePackageName {
   return includesString(graphCoreNativePackageNames, value);
+}
+
+function bundledGraphCoreNativePath(packageName: GraphCoreNativePackageName, file: "metadata.json" | "opcore-graph-core" | "opcore-graph-core.sha256"): string {
+  return `node_modules/${packageName}/${file}`;
 }
 
 function graphCoreNativeTargetForPackageName(packageName: GraphCoreNativePackageName): GraphCoreNativeSupportedTarget {

@@ -16,6 +16,7 @@ import { basename, dirname, join, relative, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import {
+  releaseCutoverCurrentToolGuardrailIds,
   releaseCutoverPythonCommandIds,
   releaseCutoverRustCommandIds,
   releaseCutoverRequiredCommandIds,
@@ -23,14 +24,8 @@ import {
   validateManagedToolDescriptor,
   validateReleaseCutoverReceipt
 } from "../packages/contracts/dist/index.js";
-import {
-  currentGraphCoreNativeTarget,
-  graphCoreNativePackageForTarget
-} from "./graph-native-targets.mjs";
-import {
-  isNativeReleasePackageName,
-  releasePackageDirForName
-} from "./release-package-dirs.mjs";
+import { releasePackageDirForName } from "./release-package-dirs.mjs";
+import { createStagedOpcorePackage } from "./stage-opcore-bundle.mjs";
 import {
   collectInstalledPackageTextEntries,
   collectPackageTarballTextEntries,
@@ -572,8 +567,23 @@ function currentToolGuardrailsForCutover() {
 }
 
 function recordedCurrentToolGuardrailsForCutover() {
-  const receipt = validateReleaseCutoverReceipt(readJson(join(repoRoot, cutoverReceiptPath)));
-  return receipt.currentToolGuardrails.map((entry) => ({ ...entry }));
+  const receipt = readJson(join(repoRoot, cutoverReceiptPath));
+  const guardrails = receipt.currentToolGuardrails;
+  if (!Array.isArray(guardrails)) {
+    throw new Error(`${cutoverReceiptPath} must contain recorded current-tool guardrails`);
+  }
+  assertSameSet(
+    guardrails.map((entry) => entry?.id),
+    releaseCutoverCurrentToolGuardrailIds,
+    "recorded current-tool guardrails"
+  );
+  return guardrails.map((entry) => {
+    if (!entry || typeof entry !== "object") throw new Error(`${cutoverReceiptPath} current-tool guardrail entry is required`);
+    if (entry.retained !== true || entry.oldToolReplacementClaimed !== false) {
+      throw new Error(`${cutoverReceiptPath} current-tool guardrails must stay retained without old-tool replacement claims`);
+    }
+    return { ...entry };
+  });
 }
 
 function runCurrentToolGuardrailsForCutover() {
@@ -607,17 +617,24 @@ function runCurrentToolGuardrail(id, npmArgs, assertion) {
 }
 
 function packWorkspace(packageName, destination) {
+  const staged = packageName === "opcore" ? createStagedOpcorePackage(destination) : undefined;
   const packageDir = join(repoRoot, releasePackageDirForName(packageName));
-  const result = run("npm", ["pack", "--json", "--pack-destination", destination], { cwd: packageDir });
-  const parsed = JSON.parse(result.stdout)[0];
-  const path = join(destination, parsed.filename);
-  return {
-    packageName,
-    packageDir,
-    filename: parsed.filename,
-    path,
-    sha256: sha256File(path)
-  };
+  try {
+    const result = run("npm", ["pack", "--json", "--pack-destination", destination], {
+      cwd: staged?.packageDir ?? packageDir
+    });
+    const parsed = JSON.parse(result.stdout)[0];
+    const path = join(destination, parsed.filename);
+    return {
+      packageName,
+      packageDir,
+      filename: parsed.filename,
+      path,
+      sha256: sha256File(path)
+    };
+  } finally {
+    staged?.cleanup();
+  }
 }
 
 function readReleasePackageTarball(packageName) {
@@ -642,8 +659,7 @@ function releasePackageTarballFilename(packageName, version) {
 }
 
 function releaseRuntimeInstallPackageNames() {
-  const currentNativePackage = graphCoreNativePackageForTarget(currentGraphCoreNativeTarget()).packageName;
-  return releaseReceiptPackageNames.filter((packageName) => !isNativeReleasePackageName(packageName) || packageName === currentNativePackage);
+  return releaseReceiptPackageNames;
 }
 
 function installFixture(project) {

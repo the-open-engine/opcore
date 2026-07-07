@@ -23,9 +23,6 @@
     "cli",
     "developer-tools"
   ],
-  "publishConfig": {
-    "access": "public"
-  },
   "dependencies": {
     "@the-open-engine/opcore-contracts": "0.1.0",
     "@the-open-engine/opcore-validation": "0.1.0"
@@ -40,5 +37,6 @@
   },
   "scripts": {
     "build": "tsc -b"
-  }
+  },
+  "private": true
 }

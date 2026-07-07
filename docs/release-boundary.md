@@ -17,29 +17,25 @@ their build output. Both make the public release depend on an internal repo and
 leak the wrong product identity through npm metadata, stack traces, generated
 schemas, or release receipts.
 
-The release repo should keep the current package boundaries, but rename public
-identity to Opcore:
+The release repo should keep the current source package boundaries, but publish
+only the `opcore` npm package. Internal workspace packages, the ASP provider,
+and the native graph artifacts are bundled inside that tarball as implementation
+payloads, not published as user-installable packages.
 
-- root workspace: private `opcore-workspace`;
-- contracts: `@the-open-engine/opcore-contracts`;
-- graph: `@the-open-engine/opcore-graph`;
-- validation: `@the-open-engine/opcore-validation`;
-- TypeScript validation: `@the-open-engine/opcore-validation-typescript`;
-- Rust validation: `@the-open-engine/opcore-validation-rust`;
-- clone validation: `@the-open-engine/opcore-validation-clone`;
-- edit: `@the-open-engine/opcore-edit`;
-- CLI/product: `opcore` with the `opcore` bin;
-- ASP provider: `@the-open-engine/opcore-asp-provider`;
-- native graph artifacts: `@the-open-engine/opcore-graph-core-*`.
+- root workspace: private `opcore`;
+- public npm package: `opcore`;
+- public bins from that package: `opcore` and `opcore-asp-provider`;
+- internal bundled packages: contracts, graph, edit, validation adapters, ASP
+  provider, and `opcore-graph-core-*` native artifacts.
 
 No public package, dependency, generated schema, tarball file list, install
 output, or quickstart should expose legacy product naming.
 
 ## Required Public Surfaces
 
-- `opcore` with `opcore` bin.
-- Platform native packages for supported alpha targets.
-- Optional ASP provider package or subpath, named as Opcore.
+- `opcore` with `opcore` and `opcore-asp-provider` bins.
+- Bundled platform native artifacts for supported alpha targets.
+- ASP provider metadata that names the `opcore` package.
 - README quickstart.
 - Agent setup guidance.
 - Release receipt or maintainer proof that is clearly private until approval.

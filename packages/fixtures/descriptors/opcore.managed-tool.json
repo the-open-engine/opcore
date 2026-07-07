@@ -41,7 +41,7 @@
         "detect-changes",
         "search"
       ],
-      "packageName": "@the-open-engine/opcore-graph"
+      "packageName": "opcore"
     },
     {
       "name": "inspect",
@@ -77,7 +77,7 @@
         "move",
         "signature"
       ],
-      "packageName": "@the-open-engine/opcore-edit"
+      "packageName": "opcore"
     },
     {
       "name": "check",
@@ -93,7 +93,7 @@
         "all",
         "manifest"
       ],
-      "packageName": "@the-open-engine/opcore-validation"
+      "packageName": "opcore"
     },
     {
       "name": "validate",
@@ -107,7 +107,7 @@
         "pre-write",
         "manifest"
       ],
-      "packageName": "@the-open-engine/opcore-validation"
+      "packageName": "opcore"
     },
     {
       "name": "status",
@@ -231,10 +231,11 @@
       "nativeArtifacts": [
         {
           "targetPlatform": "darwin-arm64",
-          "packageName": "@the-open-engine/opcore-graph-core-darwin-arm64",
-          "binaryPath": "opcore-graph-core",
-          "metadataPath": "metadata.json",
-          "checksumPath": "opcore-graph-core.sha256",
+          "packageName": "opcore",
+          "bundledPackageName": "@the-open-engine/opcore-graph-core-darwin-arm64",
+          "binaryPath": "node_modules/@the-open-engine/opcore-graph-core-darwin-arm64/opcore-graph-core",
+          "metadataPath": "node_modules/@the-open-engine/opcore-graph-core-darwin-arm64/metadata.json",
+          "checksumPath": "node_modules/@the-open-engine/opcore-graph-core-darwin-arm64/opcore-graph-core.sha256",
           "artifactIds": {
             "binaryArtifactId": "graph-core-binary-darwin-arm64",
             "metadataArtifactId": "graph-core-metadata-darwin-arm64",
@@ -244,10 +245,11 @@
         },
         {
           "targetPlatform": "darwin-x64",
-          "packageName": "@the-open-engine/opcore-graph-core-darwin-x64",
-          "binaryPath": "opcore-graph-core",
-          "metadataPath": "metadata.json",
-          "checksumPath": "opcore-graph-core.sha256",
+          "packageName": "opcore",
+          "bundledPackageName": "@the-open-engine/opcore-graph-core-darwin-x64",
+          "binaryPath": "node_modules/@the-open-engine/opcore-graph-core-darwin-x64/opcore-graph-core",
+          "metadataPath": "node_modules/@the-open-engine/opcore-graph-core-darwin-x64/metadata.json",
+          "checksumPath": "node_modules/@the-open-engine/opcore-graph-core-darwin-x64/opcore-graph-core.sha256",
           "artifactIds": {
             "binaryArtifactId": "graph-core-binary-darwin-x64",
             "metadataArtifactId": "graph-core-metadata-darwin-x64",
@@ -257,10 +259,11 @@
         },
         {
           "targetPlatform": "linux-x64",
-          "packageName": "@the-open-engine/opcore-graph-core-linux-x64",
-          "binaryPath": "opcore-graph-core",
-          "metadataPath": "metadata.json",
-          "checksumPath": "opcore-graph-core.sha256",
+          "packageName": "opcore",
+          "bundledPackageName": "@the-open-engine/opcore-graph-core-linux-x64",
+          "binaryPath": "node_modules/@the-open-engine/opcore-graph-core-linux-x64/opcore-graph-core",
+          "metadataPath": "node_modules/@the-open-engine/opcore-graph-core-linux-x64/metadata.json",
+          "checksumPath": "node_modules/@the-open-engine/opcore-graph-core-linux-x64/opcore-graph-core.sha256",
           "artifactIds": {
             "binaryArtifactId": "graph-core-binary-linux-x64",
             "metadataArtifactId": "graph-core-metadata-linux-x64",
@@ -373,7 +376,23 @@
         "rust.graph-signals",
         "rust.unused-deps",
         "rust.file-length",
-        "rust.function-metrics"
+        "rust.function-metrics",
+        "python.syntax",
+        "python.source-hygiene",
+        "python.types",
+        "python.import-graph",
+        "python.dead-code",
+        "python.relevant-tests",
+        "docs.existence",
+        "docs.staleness",
+        "docs.freshness",
+        "docs.length",
+        "docs.dry",
+        "docs.content-quality",
+        "docs.code-blocks",
+        "docs.rules-why",
+        "docs.hub-coverage",
+        "clone.duplication"
       ]
     }
   },
@@ -394,74 +413,74 @@
     },
     {
       "id": "contracts-schema",
-      "packageName": "@the-open-engine/opcore-contracts",
-      "path": "schemas/opcore-contracts.schema.json",
+      "packageName": "opcore",
+      "path": "node_modules/@the-open-engine/opcore-contracts/schemas/opcore-contracts.schema.json",
       "type": "schema",
       "required": true
     },
     {
       "id": "graph-core-binary-darwin-arm64",
-      "packageName": "@the-open-engine/opcore-graph-core-darwin-arm64",
-      "path": "opcore-graph-core",
+      "packageName": "opcore",
+      "path": "node_modules/@the-open-engine/opcore-graph-core-darwin-arm64/opcore-graph-core",
       "type": "native_binary",
       "required": true,
       "checksumRef": "graph-core-binary-sha256-darwin-arm64"
     },
     {
       "id": "graph-core-metadata-darwin-arm64",
-      "packageName": "@the-open-engine/opcore-graph-core-darwin-arm64",
-      "path": "metadata.json",
+      "packageName": "opcore",
+      "path": "node_modules/@the-open-engine/opcore-graph-core-darwin-arm64/metadata.json",
       "type": "manifest",
       "required": true
     },
     {
       "id": "graph-core-checksum-darwin-arm64",
-      "packageName": "@the-open-engine/opcore-graph-core-darwin-arm64",
-      "path": "opcore-graph-core.sha256",
+      "packageName": "opcore",
+      "path": "node_modules/@the-open-engine/opcore-graph-core-darwin-arm64/opcore-graph-core.sha256",
       "type": "checksum",
       "required": true
     },
     {
       "id": "graph-core-binary-darwin-x64",
-      "packageName": "@the-open-engine/opcore-graph-core-darwin-x64",
-      "path": "opcore-graph-core",
+      "packageName": "opcore",
+      "path": "node_modules/@the-open-engine/opcore-graph-core-darwin-x64/opcore-graph-core",
       "type": "native_binary",
       "required": true,
       "checksumRef": "graph-core-binary-sha256-darwin-x64"
     },
     {
       "id": "graph-core-metadata-darwin-x64",
-      "packageName": "@the-open-engine/opcore-graph-core-darwin-x64",
-      "path": "metadata.json",
+      "packageName": "opcore",
+      "path": "node_modules/@the-open-engine/opcore-graph-core-darwin-x64/metadata.json",
       "type": "manifest",
       "required": true
     },
     {
       "id": "graph-core-checksum-darwin-x64",
-      "packageName": "@the-open-engine/opcore-graph-core-darwin-x64",
-      "path": "opcore-graph-core.sha256",
+      "packageName": "opcore",
+      "path": "node_modules/@the-open-engine/opcore-graph-core-darwin-x64/opcore-graph-core.sha256",
       "type": "checksum",
       "required": true
     },
     {
       "id": "graph-core-binary-linux-x64",
-      "packageName": "@the-open-engine/opcore-graph-core-linux-x64",
-      "path": "opcore-graph-core",
+      "packageName": "opcore",
+      "path": "node_modules/@the-open-engine/opcore-graph-core-linux-x64/opcore-graph-core",
       "type": "native_binary",
       "required": true,
       "checksumRef": "graph-core-binary-sha256-linux-x64"
     },
     {
       "id": "graph-core-metadata-linux-x64",
-      "packageName": "@the-open-engine/opcore-graph-core-linux-x64",
-      "path": "metadata.json",
+      "packageName": "opcore",
+      "path": "node_modules/@the-open-engine/opcore-graph-core-linux-x64/metadata.json",
       "type": "manifest",
       "required": true
     },
     {
       "id": "graph-core-checksum-linux-x64",
-      "packageName": "@the-open-engine/opcore-graph-core-linux-x64",
-      "path": "opcore-graph-core.sha256",
+      "packageName": "opcore",
+      "path": "node_modules/@the-open-engine/opcore-graph-core-linux-x64/opcore-graph-core.sha256",
       "type": "checksum",
       "required": true
     }
@@ -469,24 +488,24 @@
   "checksums": [
     {
       "id": "graph-core-binary-sha256-darwin-arm64",
-      "packageName": "@the-open-engine/opcore-graph-core-darwin-arm64",
-      "path": "opcore-graph-core.sha256",
+      "packageName": "opcore",
+      "path": "node_modules/@the-open-engine/opcore-graph-core-darwin-arm64/opcore-graph-core.sha256",
       "algorithm": "sha256",
       "artifactRef": "graph-core-binary-darwin-arm64",
       "required": true
     },
     {
       "id": "graph-core-binary-sha256-darwin-x64",
-      "packageName": "@the-open-engine/opcore-graph-core-darwin-x64",
-      "path": "opcore-graph-core.sha256",
+      "packageName": "opcore",
+      "path": "node_modules/@the-open-engine/opcore-graph-core-darwin-x64/opcore-graph-core.sha256",
       "algorithm": "sha256",
       "artifactRef": "graph-core-binary-darwin-x64",
       "required": true
     },
     {
       "id": "graph-core-binary-sha256-linux-x64",
-      "packageName": "@the-open-engine/opcore-graph-core-linux-x64",
-      "path": "opcore-graph-core.sha256",
+      "packageName": "opcore",
+      "path": "node_modules/@the-open-engine/opcore-graph-core-linux-x64/opcore-graph-core.sha256",
       "algorithm": "sha256",
       "artifactRef": "graph-core-binary-linux-x64",
       "required": true

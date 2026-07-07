@@ -83,7 +83,9 @@ Package artifacts target `darwin-arm64`, `darwin-x64`, and `linux-x64` with Node
 
 ## Advanced ASP Provider Note
 
-**Providers assess; ASP hosts decide.** The aggregate `opcore` package exposes only the `opcore` bin. `opcore-asp-provider --stdio` is provided by the separate `@the-open-engine/opcore-asp-provider` package. Provider output is evidence for the host to evaluate, not authority to decide policy, enforce gates, or apply changes.
+**Providers assess; ASP hosts decide.** The `opcore` package exposes both `opcore` and `opcore-asp-provider`. Provider output is evidence for the host to evaluate, not authority to decide policy, enforce gates, or apply changes.
+
+Private ASP hosts may launch the bundled provider with `opcore-asp-provider --stdio`.
 
 ## Docs
 

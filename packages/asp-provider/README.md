@@ -25,18 +25,17 @@ and honest coverage; the ASP host owns the allow/deny/transaction outcome.
 
 ## Install
 
-Package publication is maintainer-controlled during alpha staging. After
-publication, install the provider package directly:
+The provider is bundled inside the public `opcore` package during alpha. Install
+Opcore once:
 
 ```sh
-npm install @the-open-engine/opcore-asp-provider
+npm install opcore
 ```
 
-This installs the `opcore-asp-provider` bin alongside its Opcore validation
-dependencies. The package is launched by an ASP host/manager, not run directly by an
-end user. A provisional install manifest is included at
-`@the-open-engine/opcore-asp-provider/manifests/opcore-asp-provider.provisional.json`
-(see [Provisional manifest](#provisional-manifest)).
+This installs the `opcore-asp-provider` bin alongside the `opcore` bin and bundled
+validation dependencies. The provider is launched by an ASP host/manager, not run
+directly by an end user. A provisional install manifest is included in the bundled
+provider payload (see [Provisional manifest](#provisional-manifest)).
 
 ## Launch
 

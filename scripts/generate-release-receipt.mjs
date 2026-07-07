@@ -13,8 +13,6 @@ import { join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   graphCoreNativePackageNameForTarget,
-  graphCoreNativePackageNames,
-  graphCoreNativeSupportedTargets,
   releaseReceiptCommandGroups,
   releaseReceiptPackageNames,
   releaseReceiptReportIds,
@@ -27,6 +25,7 @@ import {
   collectPackageSourceTextEntries
 } from "./lib/launch-claim-scrub.mjs";
 import { releasePackageDirForName } from "./release-package-dirs.mjs";
+import { createStagedOpcorePackage } from "./stage-opcore-bundle.mjs";
 
 const repoRoot = fileURLToPath(new URL("..", import.meta.url));
 const packlistsPath = "tests/fixtures/package-packlists.json";
@@ -103,23 +102,36 @@ function collectPackageEvidence(descriptor) {
   const packlists = readJson(packlistsPath);
   rmSync(join(repoRoot, packDestination), { recursive: true, force: true });
   mkdirSync(join(repoRoot, packDestination), { recursive: true });
-  return releaseReceiptPackageNames.map((packageName) => collectOnePackageEvidence(packageName, packlists, descriptor));
+  const stagedPackages = new Map();
+  try {
+    return releaseReceiptPackageNames.map((packageName) =>
+      collectOnePackageEvidence(packageName, packlists, descriptor, stagedPackages)
+    );
+  } finally {
+    for (const staged of stagedPackages.values()) staged.cleanup();
+  }
 }
 
-function collectOnePackageEvidence(packageName, packlists, descriptor) {
+function collectOnePackageEvidence(packageName, packlists, descriptor, stagedPackages) {
   const fixture = packlists[packageName];
   if (!fixture?.directory) throw new Error(`Missing package packlist fixture for ${packageName}`);
   const packageRoot = fixture.directory;
-  const manifest = readJson(`${packageRoot}/package.json`);
+  const packageSource = packageSourceFor(packageName, stagedPackages);
+  const manifest = JSON.parse(readFileSync(join(packageSource.repoRoot, packageSource.packageRoot, "package.json"), "utf8"));
   if (manifest.name !== packageName) throw new Error(`${packageRoot}/package.json name mismatch: ${manifest.name}`);
   const pack = runJson("npm", ["pack", "--json", "--pack-destination", join(repoRoot, packDestination)], {
-    cwd: join(repoRoot, releasePackageDirForName(packageName))
+    cwd: packageSource.packageDir
   })[0];
   const files = (pack.files ?? []).map((entry) => entry.path).sort();
   const expectedFiles = expectedPackFiles(fixture).sort();
   assertSameSet(files, expectedFiles, `${packageName} packed files`);
   assertLaunchScrubClean(
-    collectPackageSourceTextEntries({ repoRoot, packageName, packageRoot, files }),
+    collectPackageSourceTextEntries({
+      repoRoot: packageSource.repoRoot,
+      packageName,
+      packageRoot: packageSource.packageRoot,
+      files
+    }),
     `${packageName} package output scrub failed`
   );
   const tarballPath = `${packDestination}/${pack.filename}`;
@@ -127,7 +139,9 @@ function collectOnePackageEvidence(packageName, packlists, descriptor) {
   if (!existsSync(tarballAbsolutePath)) throw new Error(`npm pack did not write tarball: ${tarballPath}`);
   const bins = manifest.bin ?? {};
   validateNoOldPublicIdentity(packageName, manifest, bins);
-  const nativeArtifacts = graphCoreNativePackageNames.includes(packageName) ? collectNativeArtifacts(packageRoot, packageName, descriptor) : [];
+  const nativeArtifacts = packageName === "opcore"
+    ? collectNativeArtifacts(packageSource.repoRoot, packageSource.packageRoot, packageName, descriptor)
+    : [];
   return {
     packageName,
     packageRoot,
@@ -163,55 +177,70 @@ function collectOnePackageEvidence(packageName, packlists, descriptor) {
   };
 }
 
+function packageSourceFor(packageName, stagedPackages) {
+  if (packageName !== "opcore") {
+    const packageRoot = releasePackageDirForName(packageName);
+    return {
+      repoRoot,
+      packageRoot,
+      packageDir: join(repoRoot, packageRoot)
+    };
+  }
+  if (!stagedPackages.has(packageName)) {
+    stagedPackages.set(packageName, createStagedOpcorePackage(join(repoRoot, packDestination)));
+  }
+  const staged = stagedPackages.get(packageName);
+  return { repoRoot: staged.stageRoot, packageRoot: staged.packageRoot, packageDir: staged.packageDir };
+}
+
 function expectedPackFiles(fixture) {
   return [...fixture.expectedFiles];
 }
 
-function collectNativeArtifacts(packageRoot, packageName, descriptor) {
-  const target = graphCoreNativeTargetForPackageName(packageName);
+function collectNativeArtifacts(packageSourceRoot, packageSourceRootPath, packageName, descriptor) {
+  return descriptor.capabilities.graph.nativeArtifacts.map((nativeArtifact) =>
+    collectOneNativeArtifact(packageSourceRoot, packageSourceRootPath, packageName, descriptor, nativeArtifact)
+  );
+}
+
+function collectOneNativeArtifact(packageSourceRoot, packageSourceRootPath, packageName, descriptor, nativeArtifact) {
+  const target = nativeArtifact.targetPlatform;
   const binary = requiredDescriptorArtifact(descriptor, `graph-core-binary-${target}`);
   const metadataArtifact = requiredDescriptorArtifact(descriptor, `graph-core-metadata-${target}`);
   const checksumArtifact = requiredDescriptorArtifact(descriptor, `graph-core-checksum-${target}`);
   const descriptorChecksum = requiredDescriptorChecksum(descriptor, `graph-core-binary-sha256-${target}`);
-  const binaryAbsolutePath = join(repoRoot, packageRoot, binary.path);
-  const checksumAbsolutePath = join(repoRoot, packageRoot, checksumArtifact.path);
-  const metadataAbsolutePath = join(repoRoot, packageRoot, metadataArtifact.path);
+  const binaryAbsolutePath = join(packageSourceRoot, packageSourceRootPath, binary.path);
+  const checksumAbsolutePath = join(packageSourceRoot, packageSourceRootPath, checksumArtifact.path);
+  const metadataAbsolutePath = join(packageSourceRoot, packageSourceRootPath, metadataArtifact.path);
   for (const path of [binaryAbsolutePath, checksumAbsolutePath, metadataAbsolutePath]) {
-    if (!existsSync(path)) throw new Error(`Missing graph native artifact evidence: ${relative(repoRoot, path)}`);
+    if (!existsSync(path)) throw new Error(`Missing graph native artifact evidence: ${relative(packageSourceRoot, path)}`);
   }
   const binarySha256 = sha256File(binaryAbsolutePath);
   const checksumText = readFileSync(checksumAbsolutePath, "utf8").trim();
   if (!checksumText.startsWith(binarySha256)) {
-    throw new Error(`Graph native checksum file does not match binary: ${relative(repoRoot, checksumAbsolutePath)}`);
+    throw new Error(`Graph native checksum file does not match binary: ${relative(packageSourceRoot, checksumAbsolutePath)}`);
   }
   const metadata = JSON.parse(readFileSync(metadataAbsolutePath, "utf8"));
   if (metadata.checksumSha256 !== binarySha256) {
-    throw new Error(`Graph native metadata checksumSha256 does not match binary: ${relative(repoRoot, metadataAbsolutePath)}`);
+    throw new Error(`Graph native metadata checksumSha256 does not match binary: ${relative(packageSourceRoot, metadataAbsolutePath)}`);
   }
-  if (metadata.targetPlatform !== target || metadata.binaryPath !== binary.path || metadata.checksumPath !== checksumArtifact.path) {
+  if (metadata.targetPlatform !== target || metadata.binaryPath !== "opcore-graph-core" || metadata.checksumPath !== "opcore-graph-core.sha256") {
     throw new Error("Graph native metadata paths must match descriptor artifacts");
   }
-  return [
-    {
-      packageName,
-      targetPlatform: metadata.targetPlatform,
-      metadata,
-      binaryPath: binary.path,
-      checksumPath: checksumArtifact.path,
-      metadataPath: metadataArtifact.path,
-      binarySha256,
-      checksumFileSha256: sha256File(checksumAbsolutePath),
-      metadataSha256: sha256File(metadataAbsolutePath),
-      descriptorArtifactId: binary.id,
-      descriptorChecksumId: descriptorChecksum.id
-    }
-  ];
-}
-
-function graphCoreNativeTargetForPackageName(packageName) {
-  const target = graphCoreNativeSupportedTargets.find((entry) => graphCoreNativePackageNameForTarget(entry) === packageName);
-  if (!target) throw new Error(`Unknown Opcore graph-core native package: ${packageName}`);
-  return target;
+  return {
+    packageName,
+    bundledPackageName: graphCoreNativePackageNameForTarget(target),
+    targetPlatform: metadata.targetPlatform,
+    metadata,
+    binaryPath: binary.path,
+    checksumPath: checksumArtifact.path,
+    metadataPath: metadataArtifact.path,
+    binarySha256,
+    checksumFileSha256: sha256File(checksumAbsolutePath),
+    metadataSha256: sha256File(metadataAbsolutePath),
+    descriptorArtifactId: binary.id,
+    descriptorChecksumId: descriptorChecksum.id
+  };
 }
 
 function collectDescriptorEvidence(descriptor, packages) {
@@ -237,12 +266,16 @@ function collectDescriptorEvidence(descriptor, packages) {
   });
   const resolvedChecksums = descriptor.checksums.map((checksum) => {
     assertPackageFile(packages, checksum.packageName, checksum.path, `descriptor checksum ${checksum.id}`);
-    const packageRoot = packages.find((entry) => entry.packageName === checksum.packageName)?.packageRoot;
-    const checksumPath = join(repoRoot, packageRoot, checksum.path);
+    const packageEntry = packages.find((entry) => entry.packageName === checksum.packageName);
+    const packageRoot = packageEntry?.packageRoot;
+    const checksumPath = packageRoot ? join(repoRoot, packageRoot, checksum.path) : undefined;
     const artifact = descriptor.artifacts.find((entry) => entry.id === checksum.artifactRef);
     if (!artifact) throw new Error(`Descriptor checksum ${checksum.id} references missing artifact ${checksum.artifactRef}`);
-    const artifactPath = join(repoRoot, packageRoot, artifact.path);
-    const value = checksum.value ?? (existsSync(artifactPath) ? sha256File(artifactPath) : sha256File(checksumPath));
+    const artifactPath = packageRoot ? join(repoRoot, packageRoot, artifact.path) : undefined;
+    const nativeChecksum = packageEntry?.nativeArtifacts.find((entry) => entry.descriptorChecksumId === checksum.id);
+    const value = checksum.value
+      ?? nativeChecksum?.binarySha256
+      ?? (artifactPath && existsSync(artifactPath) ? sha256File(artifactPath) : sha256File(checksumPath));
     return {
       id: checksum.id,
       packageName: checksum.packageName,
@@ -692,10 +725,7 @@ function validateNoOldPublicIdentity(packageName, manifest, bins) {
   for (const bin of Object.keys(bins)) {
     if (["lattice", "crg", "cix", "rox"].includes(bin)) throw new Error(`${packageName} exposes forbidden old public bin ${bin}`);
   }
-  if (packageName === "opcore") assertSameSet(Object.keys(bins), ["opcore"], `${packageName} bins`);
-  else if (packageName === "@the-open-engine/opcore-asp-provider") {
-    assertSameSet(Object.keys(bins), ["opcore-asp-provider"], `${packageName} bins`);
-  }
+  if (packageName === "opcore") assertSameSet(Object.keys(bins), ["opcore", "opcore-asp-provider"], `${packageName} bins`);
   else if (Object.keys(bins).length > 0) throw new Error(`${packageName} must not expose public bins`);
 }
 
