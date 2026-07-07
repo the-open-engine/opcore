@@ -3,7 +3,7 @@
 Maintainer release receipt for the Opcore alpha package gate.
 
 Machine receipt: docs/release/release-receipt.json
-Machine receipt SHA-256: c69bf194d306fd96325c72f89734e048f20552f7cd2390376c15d29650a45624
+Machine receipt SHA-256: ca3cd98456618c5de74194432754107dbf192fe5d04ea14a22f11cb92bc3b948
 
 Canonical command groups: graph, inspect, edit, check, validate, status, doctor
 Native graph artifacts: 3
@@ -22,10 +22,10 @@ License unresolved count: 0
 |--------|--------|---------|---------|
 | package-inspection | passed | n/a | npm pack package inspection passed |
 | license | passed | aaca97fbd7e61ac50129aa4c28768b7707001aada36e4bfa12518b86d45ca963 | 118 production dependencies, 0 unresolved |
-| provenance | passed | 5637f7862aa4fa4e917583bf086343f5d35433dba17a03ebfb71e1b40a4259d0 | 528 files, 237 commits scanned |
-| release-hygiene | passed | 1f280ff9d8fb9a107d6c2477cf8623b583f9874eb1856245bae329818366dc60 | release hygiene check passed |
+| provenance | passed | 426f897f1817c17b38a1adf04dda449d1e838413a287264f9c2dd5d07252cbc3 | 528 files, 238 commits scanned |
+| release-hygiene | passed | a563254154ad3f007a1e61cdc067c37e542c521b19070660351a905628528ea8 | release hygiene check passed |
 | graph-release | passed | 262f8ead0eb405e3037dfcaacdf70f1cbb31890bb1221e45ee46ab82dfc02298 | graph release receipt #17 validated as input evidence |
-| secret-history | passed | 7060c267c912e3156b87c646e3bc970eac1ac8bdd964cf0a794b83e6f1250614 | 525 files, 237 commits scanned |
+| secret-history | passed | 7060c267c912e3156b87c646e3bc970eac1ac8bdd964cf0a794b83e6f1250614 | 525 files, 238 commits scanned |
 
 Secret allowlist: docs/release/secret-scan-allowlist.json. Add entries only for reviewed false positives with path or commit scope, reviewer, reason, expiry, and optional fingerprint/kind narrowing.
 

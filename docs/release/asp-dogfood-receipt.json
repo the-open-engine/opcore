@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "issue": "#120",
   "origin": "covibes-authored-asp-dogfood-proof",
-  "generatedAt": "2026-07-07T16:04:34.987Z",
-  "commitSha": "2e7c51865717e8ae04d574e4c73d0e815148d134",
+  "generatedAt": "2026-07-07T16:27:00.275Z",
+  "commitSha": "e50bb57eb9e478c64a2a3c449e518b600582b4e2",
   "privateRepo": true,
   "bootstrapSource": "local-sibling",
   "packageNames": [
@@ -4069,7 +4069,7 @@
     "commitSha": "5217f1f0c7819c62fcca380a9a49de06d11fa829"
   },
   "aspHome": {
-    "path": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-csdWZo/asp-home-xtpGhJ",
+    "path": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-home-ktyy75",
     "temp": true,
     "isolated": true,
     "sharedStateMutated": false,
@@ -4077,7 +4077,7 @@
     "aceRuntimeBinExcluded": true
   },
   "hostFixture": {
-    "repo": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-csdWZo/asp-host-fixture",
+    "repo": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-host-fixture",
     "temp": true,
     "sourceRepoMutated": false,
     "baselineCommitted": true,
@@ -4097,14 +4097,14 @@
     ],
     "entrypoint": {
       "transport": "stdio",
-      "bin": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-csdWZo/project/node_modules/.bin/opcore-asp-provider",
+      "bin": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/project/node_modules/.bin/opcore-asp-provider",
       "args": [
         "--stdio"
       ]
     },
     "manifest": {
-      "manifestPath": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-csdWZo/asp-server.opcore.json",
-      "manifestSha256": "84a2d26fdbc232ccc34d434c1d74153469b2df5c73da58d8e0f5a1f7235c6c25",
+      "manifestPath": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-server.opcore.json",
+      "manifestSha256": "7331d62055dc1384a10bfa90ffb06d280eb647c53af656007c279f0391291de2",
       "manifest": {
         "manifestVersion": "asp-server/0.1",
         "server": {
@@ -4124,7 +4124,7 @@
         ],
         "entrypoint": {
           "transport": "stdio",
-          "bin": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-csdWZo/project/node_modules/.bin/opcore-asp-provider",
+          "bin": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/project/node_modules/.bin/opcore-asp-provider",
           "args": [
             "--stdio"
           ]
@@ -4182,13 +4182,13 @@
       ],
       "status": "passed",
       "exitCode": 0,
-      "stdoutSha256": "9136db128820a21290e461cfc14292fff62aa6a62a6db43a85628dd8554336db",
+      "stdoutSha256": "0e062f30906c9f0b2f44466fda0361005ba13e0a6d2c1a5606f4f53d3b3f23ad",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "output": {
         "schemaVersion": 1,
         "manager": {
           "state": "unavailable",
-          "aspHome": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-csdWZo/asp-home-xtpGhJ",
+          "aspHome": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-home-ktyy75",
           "detail": "Manager daemon is not running."
         },
         "host": {
@@ -4328,12 +4328,12 @@
         "server",
         "add",
         "--manifest",
-        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-csdWZo/asp-server.opcore.json",
+        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-server.opcore.json",
         "--json"
       ],
       "status": "passed",
       "exitCode": 0,
-      "stdoutSha256": "d3f6f2ba5a26380092e4503d2269837e609512b8bbea15c9a552fb4f4b7c7c90",
+      "stdoutSha256": "f8a5b5b65062ac0f20bc549909358ce1362568c098c56e625fca6fe9db931ecc",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "output": {
         "schemaVersion": 1,
@@ -4351,7 +4351,7 @@
           ],
           "source": {
             "kind": "manifest",
-            "manifestSource": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-csdWZo/asp-server.opcore.json"
+            "manifestSource": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-server.opcore.json"
           },
           "install": {
             "state": "installed",
@@ -4405,8 +4405,8 @@
             "providerAutoLaunchForGates": false
           },
           "degraded": [],
-          "installedAt": "2026-07-07T16:04:33.435Z",
-          "manifestPath": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-csdWZo/asp-home-xtpGhJ/servers/manifests/opcore/asp-server.json"
+          "installedAt": "2026-07-07T16:26:58.798Z",
+          "manifestPath": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-home-ktyy75/servers/manifests/opcore/asp-server.json"
         }
       },
       "assertion": "asp-server-add completed through standalone ASP manager"
@@ -4422,7 +4422,7 @@
       ],
       "status": "passed",
       "exitCode": 0,
-      "stdoutSha256": "3fc8654ddee3edfb8df8440b0a6ef314de22518957a50943af84eec56506a0b1",
+      "stdoutSha256": "61c9d522765af451f851b11f757b7f889f8181bdae7316f433773fa1b9952e46",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "output": {
         "schemaVersion": 1,
@@ -4439,7 +4439,7 @@
           ],
           "source": {
             "kind": "manifest",
-            "manifestSource": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-csdWZo/asp-server.opcore.json"
+            "manifestSource": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-server.opcore.json"
           },
           "install": {
             "state": "installed",
@@ -4493,8 +4493,8 @@
             "providerAutoLaunchForGates": false
           },
           "degraded": [],
-          "installedAt": "2026-07-07T16:04:33.435Z",
-          "manifestPath": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-csdWZo/asp-home-xtpGhJ/servers/manifests/opcore/asp-server.json"
+          "installedAt": "2026-07-07T16:26:58.798Z",
+          "manifestPath": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-home-ktyy75/servers/manifests/opcore/asp-server.json"
         },
         "authority": {
           "managerGrantsGateAuthority": false,
@@ -4508,7 +4508,7 @@
     }
   },
   "repoEnrollment": {
-    "repo": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-csdWZo/asp-host-fixture",
+    "repo": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-host-fixture",
     "mode": "advisory",
     "repoAdd": {
       "id": "asp-repo-add",
@@ -4516,29 +4516,29 @@
         "asp",
         "repo",
         "add",
-        "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-csdWZo/asp-host-fixture",
+        "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-host-fixture",
         "--json"
       ],
       "status": "passed",
       "exitCode": 0,
-      "stdoutSha256": "23f41f04e674983cccae05f201dce4e1f374b6670211de41ea84d3bf6503e946",
+      "stdoutSha256": "758cdddf83332258f344edd7a008f44fed5fb7874f575492a89705cd7983f8f5",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "output": {
         "schemaVersion": 1,
         "action": "add",
         "repo": {
-          "path": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-csdWZo/asp-host-fixture",
+          "path": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-host-fixture",
           "state": "ready",
           "enrolled": true,
           "identity": {
             "kind": "git",
-            "value": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-csdWZo/asp-host-fixture:4c7b0576ba2264b4eb73604c70c023ab89227acd"
+            "value": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-host-fixture:32e6519fd9e2c1d06b7cd3f549b7d0c704024f65"
           },
           "git": {
-            "topLevel": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-csdWZo/asp-host-fixture",
+            "topLevel": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-host-fixture",
             "gitDir": ".git",
             "head": "main",
-            "commit": "4c7b0576ba2264b4eb73604c70c023ab89227acd"
+            "commit": "32e6519fd9e2c1d06b7cd3f549b7d0c704024f65"
           },
           "enabledServerIds": [],
           "enabledServers": [],
@@ -4571,7 +4571,7 @@
             "ciEnforced": false,
             "providerAutoLaunchForGates": false
           },
-          "updatedAt": "2026-07-07T16:04:33.562Z"
+          "updatedAt": "2026-07-07T16:26:58.921Z"
         },
         "authority": {
           "managerGrantsGateAuthority": false,
@@ -4591,31 +4591,31 @@
         "enable",
         "opcore",
         "--repo",
-        "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-csdWZo/asp-host-fixture",
+        "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-host-fixture",
         "--mode",
         "advisory",
         "--json"
       ],
       "status": "passed",
       "exitCode": 0,
-      "stdoutSha256": "664c5ce4590b53794972291441746f376d42782c7c6a397666d1d5c500e99689",
+      "stdoutSha256": "ca1548becfe59bc24b3e3727be0add500b88d16bcc6ef42175ab1078071243a9",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "output": {
         "schemaVersion": 1,
         "action": "enable",
         "repo": {
-          "path": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-csdWZo/asp-host-fixture",
+          "path": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-host-fixture",
           "state": "ready",
           "enrolled": true,
           "identity": {
             "kind": "git",
-            "value": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-csdWZo/asp-host-fixture:4c7b0576ba2264b4eb73604c70c023ab89227acd"
+            "value": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-host-fixture:32e6519fd9e2c1d06b7cd3f549b7d0c704024f65"
           },
           "git": {
-            "topLevel": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-csdWZo/asp-host-fixture",
+            "topLevel": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-host-fixture",
             "gitDir": ".git",
             "head": "main",
-            "commit": "4c7b0576ba2264b4eb73604c70c023ab89227acd"
+            "commit": "32e6519fd9e2c1d06b7cd3f549b7d0c704024f65"
           },
           "enabledServerIds": [
             "opcore"
@@ -4624,7 +4624,7 @@
             {
               "id": "opcore",
               "mode": "advisory",
-              "enabledAt": "2026-07-07T16:04:33.627Z"
+              "enabledAt": "2026-07-07T16:26:58.985Z"
             }
           ],
           "installedServers": [
@@ -4641,7 +4641,7 @@
               ],
               "source": {
                 "kind": "manifest",
-                "manifestSource": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-csdWZo/asp-server.opcore.json"
+                "manifestSource": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-server.opcore.json"
               },
               "install": {
                 "state": "installed",
@@ -4695,8 +4695,8 @@
                 "providerAutoLaunchForGates": false
               },
               "degraded": [],
-              "installedAt": "2026-07-07T16:04:33.435Z",
-              "manifestPath": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-csdWZo/asp-home-xtpGhJ/servers/manifests/opcore/asp-server.json"
+              "installedAt": "2026-07-07T16:26:58.798Z",
+              "manifestPath": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-home-ktyy75/servers/manifests/opcore/asp-server.json"
             }
           ],
           "missingServerIds": [],
@@ -4727,7 +4727,7 @@
             "ciEnforced": false,
             "providerAutoLaunchForGates": false
           },
-          "updatedAt": "2026-07-07T16:04:33.628Z"
+          "updatedAt": "2026-07-07T16:26:58.986Z"
         },
         "authority": {
           "managerGrantsGateAuthority": false,
@@ -4745,29 +4745,29 @@
         "asp",
         "repo",
         "status",
-        "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-csdWZo/asp-host-fixture",
+        "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-host-fixture",
         "--json"
       ],
       "status": "passed",
       "exitCode": 0,
-      "stdoutSha256": "3365b79bc89e868f27a3722258c84d906cca2a540bd32385e2493dcd6779f702",
+      "stdoutSha256": "7226cef51782dccae980ade006c4ee5278cf6da1e98714fbd9358c761c7fdcb2",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "output": {
         "schemaVersion": 1,
         "action": "status",
         "repo": {
-          "path": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-csdWZo/asp-host-fixture",
+          "path": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-host-fixture",
           "state": "ready",
           "enrolled": true,
           "identity": {
             "kind": "git",
-            "value": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-csdWZo/asp-host-fixture:4c7b0576ba2264b4eb73604c70c023ab89227acd"
+            "value": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-host-fixture:32e6519fd9e2c1d06b7cd3f549b7d0c704024f65"
           },
           "git": {
-            "topLevel": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-csdWZo/asp-host-fixture",
+            "topLevel": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-host-fixture",
             "gitDir": ".git",
             "head": "main",
-            "commit": "4c7b0576ba2264b4eb73604c70c023ab89227acd"
+            "commit": "32e6519fd9e2c1d06b7cd3f549b7d0c704024f65"
           },
           "enabledServerIds": [
             "opcore"
@@ -4776,7 +4776,7 @@
             {
               "id": "opcore",
               "mode": "advisory",
-              "enabledAt": "2026-07-07T16:04:33.627Z"
+              "enabledAt": "2026-07-07T16:26:58.985Z"
             }
           ],
           "installedServers": [
@@ -4793,7 +4793,7 @@
               ],
               "source": {
                 "kind": "manifest",
-                "manifestSource": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-csdWZo/asp-server.opcore.json"
+                "manifestSource": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-server.opcore.json"
               },
               "install": {
                 "state": "installed",
@@ -4847,8 +4847,8 @@
                 "providerAutoLaunchForGates": false
               },
               "degraded": [],
-              "installedAt": "2026-07-07T16:04:33.435Z",
-              "manifestPath": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-csdWZo/asp-home-xtpGhJ/servers/manifests/opcore/asp-server.json"
+              "installedAt": "2026-07-07T16:26:58.798Z",
+              "manifestPath": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-home-ktyy75/servers/manifests/opcore/asp-server.json"
             }
           ],
           "missingServerIds": [],
@@ -4879,7 +4879,7 @@
             "ciEnforced": false,
             "providerAutoLaunchForGates": false
           },
-          "updatedAt": "2026-07-07T16:04:33.628Z"
+          "updatedAt": "2026-07-07T16:26:58.986Z"
         },
         "authority": {
           "managerGrantsGateAuthority": false,
@@ -4899,7 +4899,7 @@
         "asp",
         "check",
         "--repo",
-        "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-csdWZo/asp-host-fixture",
+        "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-host-fixture",
         "--changed",
         "--call-site",
         "interactive",
@@ -4907,28 +4907,28 @@
       ],
       "status": "passed",
       "exitCode": 0,
-      "stdoutSha256": "f33b07ee8843a9afc24cc8ab6623df32cb95e8a05d3fc39ef7e31306b43805a9",
+      "stdoutSha256": "10256bde6e2dd228d9b7ffd2c629b0e2663740d093f4d73dd8c20b2f0b74a6bf",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "output": {
         "schemaVersion": 1,
         "command": "check",
-        "repo": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-csdWZo/asp-host-fixture",
+        "repo": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-host-fixture",
         "scope": "changed",
         "baseRef": "HEAD",
         "callSite": "interactive",
         "repoEnrollment": {
-          "path": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-csdWZo/asp-host-fixture",
+          "path": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-host-fixture",
           "state": "ready",
           "enrolled": true,
           "identity": {
             "kind": "git",
-            "value": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-csdWZo/asp-host-fixture:4c7b0576ba2264b4eb73604c70c023ab89227acd"
+            "value": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-host-fixture:32e6519fd9e2c1d06b7cd3f549b7d0c704024f65"
           },
           "git": {
-            "topLevel": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-csdWZo/asp-host-fixture",
+            "topLevel": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-host-fixture",
             "gitDir": ".git",
             "head": "main",
-            "commit": "4c7b0576ba2264b4eb73604c70c023ab89227acd"
+            "commit": "32e6519fd9e2c1d06b7cd3f549b7d0c704024f65"
           },
           "enabledServerIds": [
             "opcore"
@@ -4937,7 +4937,7 @@
             {
               "id": "opcore",
               "mode": "advisory",
-              "enabledAt": "2026-07-07T16:04:33.627Z"
+              "enabledAt": "2026-07-07T16:26:58.985Z"
             }
           ],
           "installedServers": [
@@ -4954,7 +4954,7 @@
               ],
               "source": {
                 "kind": "manifest",
-                "manifestSource": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-csdWZo/asp-server.opcore.json"
+                "manifestSource": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-server.opcore.json"
               },
               "install": {
                 "state": "installed",
@@ -5008,8 +5008,8 @@
                 "providerAutoLaunchForGates": false
               },
               "degraded": [],
-              "installedAt": "2026-07-07T16:04:33.435Z",
-              "manifestPath": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-csdWZo/asp-home-xtpGhJ/servers/manifests/opcore/asp-server.json"
+              "installedAt": "2026-07-07T16:26:58.798Z",
+              "manifestPath": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-home-ktyy75/servers/manifests/opcore/asp-server.json"
             }
           ],
           "missingServerIds": [],
@@ -5040,12 +5040,12 @@
             "ciEnforced": false,
             "providerAutoLaunchForGates": false
           },
-          "updatedAt": "2026-07-07T16:04:33.628Z"
+          "updatedAt": "2026-07-07T16:26:58.986Z"
         },
         "changeset": {
           "baseline": {
             "rev": "tree:sha256:f5425825927b8ae60621322e6005e0abe76dfd1d9eeb3a759f268d3c25ddb2fa",
-            "stampedAt": "2026-07-07T16:04:33.778Z"
+            "stampedAt": "2026-07-07T16:26:59.139Z"
           },
           "changes": [
             {
@@ -5060,8 +5060,8 @@
           "pass": true,
           "decision": "allow",
           "callSite": "interactive",
-          "requestDigest": "sha256:3c149733e95d9eb7cbd9d106a7e0b99efc272040614542f5aff70da36b1a31e9",
-          "changesetDigest": "sha256:1cf1a403b702b0292d521065424eb97a050aec0d4cfb1429f4c193cf0f1287ab",
+          "requestDigest": "sha256:f9b5d0b2fb78cd03b5707380ee9da171b1ffb52e2fcf2599b0f5882bdeaecc13",
+          "changesetDigest": "sha256:e5a1591194e167ff801a7f983ed82ba823e0f0f02359f92ac2bec3808030a9ab",
           "findings": [],
           "coverage": {
             "exhaustive": false,
@@ -5110,8 +5110,8 @@
             "transactionGuarantee": "none"
           },
           "receipt": {
-            "receiptId": "core-evaluate-1783440274265",
-            "issuedAt": "2026-07-07T16:04:34.265Z",
+            "receiptId": "core-evaluate-1783441619629",
+            "issuedAt": "2026-07-07T16:26:59.629Z",
             "kind": "evaluate",
             "host": {
               "name": "core-host",
@@ -5134,7 +5134,7 @@
             "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
             "baseline": {
               "rev": "tree:sha256:f5425825927b8ae60621322e6005e0abe76dfd1d9eeb3a759f268d3c25ddb2fa",
-              "stampedAt": "2026-07-07T16:04:33.778Z"
+              "stampedAt": "2026-07-07T16:26:59.139Z"
             },
             "validAsOf": {
               "rev": "tree:sha256:f5425825927b8ae60621322e6005e0abe76dfd1d9eeb3a759f268d3c25ddb2fa",
@@ -5182,9 +5182,9 @@
               "transactionGuarantee": "none"
             },
             "timing": {
-              "startedAt": "2026-07-07T16:04:33.793Z",
-              "endedAt": "2026-07-07T16:04:34.265Z",
-              "elapsedMs": 472
+              "startedAt": "2026-07-07T16:26:59.154Z",
+              "endedAt": "2026-07-07T16:26:59.629Z",
+              "elapsedMs": 475
             },
             "failures": [
               {
@@ -5200,13 +5200,13 @@
             "experimental": true,
             "trustArtifact": false,
             "callSite": "interactive",
-            "requestDigest": "sha256:3c149733e95d9eb7cbd9d106a7e0b99efc272040614542f5aff70da36b1a31e9",
-            "changesetDigest": "sha256:1cf1a403b702b0292d521065424eb97a050aec0d4cfb1429f4c193cf0f1287ab"
+            "requestDigest": "sha256:f9b5d0b2fb78cd03b5707380ee9da171b1ffb52e2fcf2599b0f5882bdeaecc13",
+            "changesetDigest": "sha256:e5a1591194e167ff801a7f983ed82ba823e0f0f02359f92ac2bec3808030a9ab"
           }
         },
         "receipt": {
-          "receiptId": "core-evaluate-1783440274265",
-          "issuedAt": "2026-07-07T16:04:34.265Z",
+          "receiptId": "core-evaluate-1783441619629",
+          "issuedAt": "2026-07-07T16:26:59.629Z",
           "kind": "evaluate",
           "host": {
             "name": "core-host",
@@ -5229,7 +5229,7 @@
           "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
           "baseline": {
             "rev": "tree:sha256:f5425825927b8ae60621322e6005e0abe76dfd1d9eeb3a759f268d3c25ddb2fa",
-            "stampedAt": "2026-07-07T16:04:33.778Z"
+            "stampedAt": "2026-07-07T16:26:59.139Z"
           },
           "validAsOf": {
             "rev": "tree:sha256:f5425825927b8ae60621322e6005e0abe76dfd1d9eeb3a759f268d3c25ddb2fa",
@@ -5277,9 +5277,9 @@
             "transactionGuarantee": "none"
           },
           "timing": {
-            "startedAt": "2026-07-07T16:04:33.793Z",
-            "endedAt": "2026-07-07T16:04:34.265Z",
-            "elapsedMs": 472
+            "startedAt": "2026-07-07T16:26:59.154Z",
+            "endedAt": "2026-07-07T16:26:59.629Z",
+            "elapsedMs": 475
           },
           "failures": [
             {
@@ -5295,8 +5295,8 @@
           "experimental": true,
           "trustArtifact": false,
           "callSite": "interactive",
-          "requestDigest": "sha256:3c149733e95d9eb7cbd9d106a7e0b99efc272040614542f5aff70da36b1a31e9",
-          "changesetDigest": "sha256:1cf1a403b702b0292d521065424eb97a050aec0d4cfb1429f4c193cf0f1287ab"
+          "requestDigest": "sha256:f9b5d0b2fb78cd03b5707380ee9da171b1ffb52e2fcf2599b0f5882bdeaecc13",
+          "changesetDigest": "sha256:e5a1591194e167ff801a7f983ed82ba823e0f0f02359f92ac2bec3808030a9ab"
         }
       },
       "assertion": "asp-check-changed completed through standalone ASP manager",
@@ -5304,8 +5304,8 @@
         "pass": true,
         "decision": "allow",
         "callSite": "interactive",
-        "requestDigest": "sha256:3c149733e95d9eb7cbd9d106a7e0b99efc272040614542f5aff70da36b1a31e9",
-        "changesetDigest": "sha256:1cf1a403b702b0292d521065424eb97a050aec0d4cfb1429f4c193cf0f1287ab",
+        "requestDigest": "sha256:f9b5d0b2fb78cd03b5707380ee9da171b1ffb52e2fcf2599b0f5882bdeaecc13",
+        "changesetDigest": "sha256:e5a1591194e167ff801a7f983ed82ba823e0f0f02359f92ac2bec3808030a9ab",
         "findings": [],
         "coverage": {
           "exhaustive": false,
@@ -5354,8 +5354,8 @@
           "transactionGuarantee": "none"
         },
         "receipt": {
-          "receiptId": "core-evaluate-1783440274265",
-          "issuedAt": "2026-07-07T16:04:34.265Z",
+          "receiptId": "core-evaluate-1783441619629",
+          "issuedAt": "2026-07-07T16:26:59.629Z",
           "kind": "evaluate",
           "host": {
             "name": "core-host",
@@ -5378,7 +5378,7 @@
           "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
           "baseline": {
             "rev": "tree:sha256:f5425825927b8ae60621322e6005e0abe76dfd1d9eeb3a759f268d3c25ddb2fa",
-            "stampedAt": "2026-07-07T16:04:33.778Z"
+            "stampedAt": "2026-07-07T16:26:59.139Z"
           },
           "validAsOf": {
             "rev": "tree:sha256:f5425825927b8ae60621322e6005e0abe76dfd1d9eeb3a759f268d3c25ddb2fa",
@@ -5426,9 +5426,9 @@
             "transactionGuarantee": "none"
           },
           "timing": {
-            "startedAt": "2026-07-07T16:04:33.793Z",
-            "endedAt": "2026-07-07T16:04:34.265Z",
-            "elapsedMs": 472
+            "startedAt": "2026-07-07T16:26:59.154Z",
+            "endedAt": "2026-07-07T16:26:59.629Z",
+            "elapsedMs": 475
           },
           "failures": [
             {
@@ -5444,13 +5444,13 @@
           "experimental": true,
           "trustArtifact": false,
           "callSite": "interactive",
-          "requestDigest": "sha256:3c149733e95d9eb7cbd9d106a7e0b99efc272040614542f5aff70da36b1a31e9",
-          "changesetDigest": "sha256:1cf1a403b702b0292d521065424eb97a050aec0d4cfb1429f4c193cf0f1287ab"
+          "requestDigest": "sha256:f9b5d0b2fb78cd03b5707380ee9da171b1ffb52e2fcf2599b0f5882bdeaecc13",
+          "changesetDigest": "sha256:e5a1591194e167ff801a7f983ed82ba823e0f0f02359f92ac2bec3808030a9ab"
         }
       },
       "receipt": {
-        "receiptId": "core-evaluate-1783440274265",
-        "issuedAt": "2026-07-07T16:04:34.265Z",
+        "receiptId": "core-evaluate-1783441619629",
+        "issuedAt": "2026-07-07T16:26:59.629Z",
         "kind": "evaluate",
         "host": {
           "name": "core-host",
@@ -5473,7 +5473,7 @@
         "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
         "baseline": {
           "rev": "tree:sha256:f5425825927b8ae60621322e6005e0abe76dfd1d9eeb3a759f268d3c25ddb2fa",
-          "stampedAt": "2026-07-07T16:04:33.778Z"
+          "stampedAt": "2026-07-07T16:26:59.139Z"
         },
         "validAsOf": {
           "rev": "tree:sha256:f5425825927b8ae60621322e6005e0abe76dfd1d9eeb3a759f268d3c25ddb2fa",
@@ -5521,9 +5521,9 @@
           "transactionGuarantee": "none"
         },
         "timing": {
-          "startedAt": "2026-07-07T16:04:33.793Z",
-          "endedAt": "2026-07-07T16:04:34.265Z",
-          "elapsedMs": 472
+          "startedAt": "2026-07-07T16:26:59.154Z",
+          "endedAt": "2026-07-07T16:26:59.629Z",
+          "elapsedMs": 475
         },
         "failures": [
           {
@@ -5539,8 +5539,8 @@
         "experimental": true,
         "trustArtifact": false,
         "callSite": "interactive",
-        "requestDigest": "sha256:3c149733e95d9eb7cbd9d106a7e0b99efc272040614542f5aff70da36b1a31e9",
-        "changesetDigest": "sha256:1cf1a403b702b0292d521065424eb97a050aec0d4cfb1429f4c193cf0f1287ab"
+        "requestDigest": "sha256:f9b5d0b2fb78cd03b5707380ee9da171b1ffb52e2fcf2599b0f5882bdeaecc13",
+        "changesetDigest": "sha256:e5a1591194e167ff801a7f983ed82ba823e0f0f02359f92ac2bec3808030a9ab"
       },
       "assurance": {
         "mode": "gated",
@@ -5554,34 +5554,34 @@
         "ci",
         "verify",
         "--repo",
-        "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-csdWZo/asp-host-fixture",
+        "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-host-fixture",
         "--changed-from",
         "main",
         "--json"
       ],
       "status": "failed",
       "exitCode": 1,
-      "stdoutSha256": "75d3d9b50660b81e33d3b7ebff343119384eae97500d037e89343848973bde3b",
+      "stdoutSha256": "695c29055bf9e9acd393550b923ddc866825ae4ce04058f878f4910e38494fc1",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "output": {
         "schemaVersion": 1,
         "command": "ci.verify",
-        "repo": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-csdWZo/asp-host-fixture",
+        "repo": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-host-fixture",
         "changedFrom": "main",
         "baseRef": "main",
         "repoEnrollment": {
-          "path": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-csdWZo/asp-host-fixture",
+          "path": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-host-fixture",
           "state": "ready",
           "enrolled": true,
           "identity": {
             "kind": "git",
-            "value": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-csdWZo/asp-host-fixture:4c7b0576ba2264b4eb73604c70c023ab89227acd"
+            "value": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-host-fixture:32e6519fd9e2c1d06b7cd3f549b7d0c704024f65"
           },
           "git": {
-            "topLevel": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-csdWZo/asp-host-fixture",
+            "topLevel": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-host-fixture",
             "gitDir": ".git",
             "head": "main",
-            "commit": "4c7b0576ba2264b4eb73604c70c023ab89227acd"
+            "commit": "32e6519fd9e2c1d06b7cd3f549b7d0c704024f65"
           },
           "enabledServerIds": [
             "opcore"
@@ -5590,7 +5590,7 @@
             {
               "id": "opcore",
               "mode": "advisory",
-              "enabledAt": "2026-07-07T16:04:33.627Z"
+              "enabledAt": "2026-07-07T16:26:58.985Z"
             }
           ],
           "installedServers": [
@@ -5607,7 +5607,7 @@
               ],
               "source": {
                 "kind": "manifest",
-                "manifestSource": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-csdWZo/asp-server.opcore.json"
+                "manifestSource": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-server.opcore.json"
               },
               "install": {
                 "state": "installed",
@@ -5661,8 +5661,8 @@
                 "providerAutoLaunchForGates": false
               },
               "degraded": [],
-              "installedAt": "2026-07-07T16:04:33.435Z",
-              "manifestPath": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-csdWZo/asp-home-xtpGhJ/servers/manifests/opcore/asp-server.json"
+              "installedAt": "2026-07-07T16:26:58.798Z",
+              "manifestPath": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-home-ktyy75/servers/manifests/opcore/asp-server.json"
             }
           ],
           "missingServerIds": [],
@@ -5693,7 +5693,7 @@
             "ciEnforced": false,
             "providerAutoLaunchForGates": false
           },
-          "updatedAt": "2026-07-07T16:04:33.628Z"
+          "updatedAt": "2026-07-07T16:26:58.986Z"
         },
         "verified": false,
         "gatePassed": false,
@@ -5719,7 +5719,7 @@
         "changeset": {
           "baseline": {
             "rev": "tree:sha256:f5425825927b8ae60621322e6005e0abe76dfd1d9eeb3a759f268d3c25ddb2fa",
-            "stampedAt": "2026-07-07T16:04:34.367Z"
+            "stampedAt": "2026-07-07T16:26:59.734Z"
           },
           "changes": [
             {
@@ -5734,8 +5734,8 @@
           "pass": false,
           "decision": "indeterminate",
           "callSite": "gate",
-          "requestDigest": "sha256:8b309c2634c77f1d6ec82280f41f814e96b76735cecb74d338294ab8ef5671ec",
-          "changesetDigest": "sha256:68b4b4d8bb66aeba752a3aa7de76d324d4a3a47ac7f7323ab58aa1ce4cf65019",
+          "requestDigest": "sha256:87bb61986573d77ba6ba3d708e240c4498cbfbc95b327da70b5f790b0e3c9cad",
+          "changesetDigest": "sha256:1bde93ca542a56d3f58a5af6a5e474d344b199e424219633915725d2fd0c0def",
           "findings": [],
           "coverage": {
             "exhaustive": false,
@@ -5765,8 +5765,8 @@
             "transactionGuarantee": "none"
           },
           "receipt": {
-            "receiptId": "core-evaluate-1783440274382",
-            "issuedAt": "2026-07-07T16:04:34.382Z",
+            "receiptId": "core-evaluate-1783441619750",
+            "issuedAt": "2026-07-07T16:26:59.750Z",
             "kind": "evaluate",
             "host": {
               "name": "core-host",
@@ -5778,7 +5778,7 @@
             "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
             "baseline": {
               "rev": "tree:sha256:f5425825927b8ae60621322e6005e0abe76dfd1d9eeb3a759f268d3c25ddb2fa",
-              "stampedAt": "2026-07-07T16:04:34.367Z"
+              "stampedAt": "2026-07-07T16:26:59.734Z"
             },
             "validAsOf": {
               "rev": "tree:sha256:f5425825927b8ae60621322e6005e0abe76dfd1d9eeb3a759f268d3c25ddb2fa"
@@ -5807,9 +5807,9 @@
               "transactionGuarantee": "none"
             },
             "timing": {
-              "startedAt": "2026-07-07T16:04:34.381Z",
-              "endedAt": "2026-07-07T16:04:34.382Z",
-              "elapsedMs": 1
+              "startedAt": "2026-07-07T16:26:59.750Z",
+              "endedAt": "2026-07-07T16:26:59.750Z",
+              "elapsedMs": 0
             },
             "failures": [
               {
@@ -5823,13 +5823,13 @@
             "experimental": true,
             "trustArtifact": false,
             "callSite": "gate",
-            "requestDigest": "sha256:8b309c2634c77f1d6ec82280f41f814e96b76735cecb74d338294ab8ef5671ec",
-            "changesetDigest": "sha256:68b4b4d8bb66aeba752a3aa7de76d324d4a3a47ac7f7323ab58aa1ce4cf65019"
+            "requestDigest": "sha256:87bb61986573d77ba6ba3d708e240c4498cbfbc95b327da70b5f790b0e3c9cad",
+            "changesetDigest": "sha256:1bde93ca542a56d3f58a5af6a5e474d344b199e424219633915725d2fd0c0def"
           }
         },
         "receipt": {
-          "receiptId": "core-evaluate-1783440274382",
-          "issuedAt": "2026-07-07T16:04:34.382Z",
+          "receiptId": "core-evaluate-1783441619750",
+          "issuedAt": "2026-07-07T16:26:59.750Z",
           "kind": "evaluate",
           "host": {
             "name": "core-host",
@@ -5841,7 +5841,7 @@
           "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
           "baseline": {
             "rev": "tree:sha256:f5425825927b8ae60621322e6005e0abe76dfd1d9eeb3a759f268d3c25ddb2fa",
-            "stampedAt": "2026-07-07T16:04:34.367Z"
+            "stampedAt": "2026-07-07T16:26:59.734Z"
           },
           "validAsOf": {
             "rev": "tree:sha256:f5425825927b8ae60621322e6005e0abe76dfd1d9eeb3a759f268d3c25ddb2fa"
@@ -5870,9 +5870,9 @@
             "transactionGuarantee": "none"
           },
           "timing": {
-            "startedAt": "2026-07-07T16:04:34.381Z",
-            "endedAt": "2026-07-07T16:04:34.382Z",
-            "elapsedMs": 1
+            "startedAt": "2026-07-07T16:26:59.750Z",
+            "endedAt": "2026-07-07T16:26:59.750Z",
+            "elapsedMs": 0
           },
           "failures": [
             {
@@ -5886,8 +5886,8 @@
           "experimental": true,
           "trustArtifact": false,
           "callSite": "gate",
-          "requestDigest": "sha256:8b309c2634c77f1d6ec82280f41f814e96b76735cecb74d338294ab8ef5671ec",
-          "changesetDigest": "sha256:68b4b4d8bb66aeba752a3aa7de76d324d4a3a47ac7f7323ab58aa1ce4cf65019"
+          "requestDigest": "sha256:87bb61986573d77ba6ba3d708e240c4498cbfbc95b327da70b5f790b0e3c9cad",
+          "changesetDigest": "sha256:1bde93ca542a56d3f58a5af6a5e474d344b199e424219633915725d2fd0c0def"
         }
       },
       "assertion": "ASP CI verifier output recorded as host-owned evidence, not old-tool replacement"
@@ -5901,7 +5901,7 @@
     ],
     "status": "passed",
     "exitCode": 0,
-    "stdoutSha256": "3a28364797604620d152ed3756ebb56ba573a9fdbfc5fe38dd74c75127fd781b",
+    "stdoutSha256": "3d8dda76838df39f0f1be0c7692eff2bbee4749ced67841b4ba7cb073a842c85",
     "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "output": {
       "initialize": {
@@ -6607,7 +6607,7 @@
         "capabilityFamily": "check"
       },
       "timing": {
-        "durationMs": 404,
+        "durationMs": 314,
         "phases": [
           {
             "phase": "host_workspace_binding",
@@ -6619,11 +6619,11 @@
           },
           {
             "phase": "validation",
-            "durationMs": 403
+            "durationMs": 313
           },
           {
             "phase": "validation_typescript_syntax",
-            "durationMs": 111
+            "durationMs": 119
           }
         ],
         "processState": "cold"

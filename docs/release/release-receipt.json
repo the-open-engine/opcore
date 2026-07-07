@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "issue": "#29",
   "origin": "covibes-authored-release-proof",
-  "generatedAt": "2026-07-07T16:00:42.550Z",
-  "commitSha": "2e7c51865717e8ae04d574e4c73d0e815148d134",
+  "generatedAt": "2026-07-07T16:25:24.881Z",
+  "commitSha": "e50bb57eb9e478c64a2a3c449e518b600582b4e2",
   "privateRepo": true,
   "packageNames": [
     "opcore"
@@ -4185,9 +4185,9 @@
   },
   "provenance": {
     "reportPath": "docs/release/provenance-receipts.md",
-    "reportSha256": "5637f7862aa4fa4e917583bf086343f5d35433dba17a03ebfb71e1b40a4259d0",
+    "reportSha256": "426f897f1817c17b38a1adf04dda449d1e838413a287264f9c2dd5d07252cbc3",
     "scannedFileCount": 528,
-    "historyCommitCount": 237,
+    "historyCommitCount": 238,
     "findingCount": 0,
     "findings": []
   },
@@ -4195,7 +4195,7 @@
     "allowlistPath": "docs/release/secret-scan-allowlist.json",
     "allowlistSha256": "7060c267c912e3156b87c646e3bc970eac1ac8bdd964cf0a794b83e6f1250614",
     "currentTreeScannedFileCount": 525,
-    "gitHistoryScannedCommitCount": 237,
+    "gitHistoryScannedCommitCount": 238,
     "findingCount": 0,
     "findings": []
   },
@@ -4235,8 +4235,8 @@
       "status": "passed",
       "exitCode": 0,
       "path": "docs/release/provenance-receipts.md",
-      "checksumSha256": "5637f7862aa4fa4e917583bf086343f5d35433dba17a03ebfb71e1b40a4259d0",
-      "summary": "528 files, 237 commits scanned"
+      "checksumSha256": "426f897f1817c17b38a1adf04dda449d1e838413a287264f9c2dd5d07252cbc3",
+      "summary": "528 files, 238 commits scanned"
     },
     {
       "id": "release-hygiene",
@@ -4247,7 +4247,7 @@
       "status": "passed",
       "exitCode": 0,
       "path": "docs/release/artifact-attestation.md",
-      "checksumSha256": "1f280ff9d8fb9a107d6c2477cf8623b583f9874eb1856245bae329818366dc60",
+      "checksumSha256": "a563254154ad3f007a1e61cdc067c37e542c521b19070660351a905628528ea8",
       "summary": "release hygiene check passed"
     },
     {
@@ -4274,7 +4274,7 @@
       "exitCode": 0,
       "path": "docs/release/secret-scan-allowlist.json",
       "checksumSha256": "7060c267c912e3156b87c646e3bc970eac1ac8bdd964cf0a794b83e6f1250614",
-      "summary": "525 files, 237 commits scanned"
+      "summary": "525 files, 238 commits scanned"
     }
   ],
   "graphReleaseReceipt": {

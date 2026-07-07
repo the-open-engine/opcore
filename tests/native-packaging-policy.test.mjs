@@ -33,6 +33,10 @@ describe("native graph-core packaging policy", () => {
     assert.match(releasePublish, /createStagedOpcorePackage/);
     assert.match(releasePublish, /cwd:\s*packageDirs\.get\(packageName\)/);
     assert.doesNotMatch(releasePublish, /cwd:\s*releasePackageDirForName\(packageName\)/);
+
+    const stageBundle = readFileSync("scripts/stage-opcore-bundle.mjs", "utf8");
+    assert.match(stageBundle, /disableLifecycleScripts: true/);
+    assert.match(stageBundle, /delete manifest\.scripts/);
   });
 
   it("encodes npm os/cpu support in each bundled native package manifest", () => {
