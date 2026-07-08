@@ -97,10 +97,14 @@ function verifyTokenMetadataWhenReadable() {
 }
 
 function publishArgs(packageName, options = {}) {
-  const args = ["publish", "--access", "public", "--tag", tag];
-  if (hasTrustedPublishingContext() && !options.dryRun) args.push("--provenance");
+  const args = ["publish", "--access", "public", "--tag", tag, "--loglevel", "notice"];
+  if (shouldPublishWithProvenance(options)) args.push("--provenance");
   if (options.dryRun) args.push("--dry-run");
   return args;
+}
+
+function shouldPublishWithProvenance(options = {}) {
+  return hasTrustedPublishingContext() && !hasTokenAuth() && !options.dryRun;
 }
 
 function withStagedPublishPackages(callback) {

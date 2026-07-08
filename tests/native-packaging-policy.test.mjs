@@ -33,6 +33,8 @@ describe("native graph-core packaging policy", () => {
     assert.match(releasePublish, /createStagedOpcorePackage/);
     assert.match(releasePublish, /cwd:\s*packageDirs\.get\(packageName\)/);
     assert.doesNotMatch(releasePublish, /cwd:\s*releasePackageDirForName\(packageName\)/);
+    assert.match(releasePublish, /--loglevel", "notice"/);
+    assert.match(releasePublish, /hasTrustedPublishingContext\(\) && !hasTokenAuth\(\) && !options\.dryRun/);
 
     const stageBundle = readFileSync("scripts/stage-opcore-bundle.mjs", "utf8");
     assert.match(stageBundle, /disableLifecycleScripts: true/);
