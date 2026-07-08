@@ -6,7 +6,8 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
-  graphCoreNativePackageNames,
+  graphCoreNativePackageNameForTarget,
+  graphCoreNativeSupportedTargets,
   releaseCutoverCurrentToolGuardrailIds,
   releaseCutoverNegativeCheckIds,
   releaseCutoverPythonCommandIds,
@@ -35,14 +36,31 @@ describe("cutover release receipt", () => {
         })
       );
       const receipt = validateReleaseCutoverReceipt(JSON.parse(result.stdout));
-      const recordedReceipt = validateReleaseCutoverReceipt(JSON.parse(readFileSync(resolve(repoRoot, "docs/release/cutover-receipt.json"), "utf8")));
+      const recordedReceipt = JSON.parse(readFileSync(resolve(repoRoot, "docs/release/cutover-receipt.json"), "utf8"));
       assert.equal(receipt.issue, "#30");
       assert.deepEqual(receipt.packageNames, releaseReceiptPackageNames);
-      assert.equal(receipt.installedPackages.filter((entry) => graphCoreNativePackageNames.includes(entry.packageName)).length, 1);
       assert.deepEqual(
-        receipt.installedPackages.filter((entry) => !graphCoreNativePackageNames.includes(entry.packageName)).map((entry) => entry.packageName).sort(),
-        releaseReceiptPackageNames.filter((packageName) => !graphCoreNativePackageNames.includes(packageName)).sort()
+        receipt.installedPackages.map((entry) => entry.packageName).sort(),
+        releaseReceiptPackageNames.slice().sort()
       );
+      const opcoreInstall = receipt.installedPackages.find((entry) => entry.packageName === "opcore");
+      assert.deepEqual(opcoreInstall?.installedManifest.bins, {
+        opcore: "dist/index.js",
+        "opcore-asp-provider": "dist/asp-provider-bin.js"
+      });
+      const opcoreInstalledFiles = new Set(opcoreInstall?.installedFiles.map((entry) => entry.path) ?? []);
+      assert.equal(
+        opcoreInstalledFiles.has("node_modules/opcore/node_modules/@the-open-engine/opcore-asp-provider/dist/manifests/asp-server.json"),
+        true
+      );
+      for (const target of graphCoreNativeSupportedTargets) {
+        const nativePackageName = graphCoreNativePackageNameForTarget(target);
+        assert.equal(
+          opcoreInstalledFiles.has(`node_modules/opcore/node_modules/${nativePackageName}/opcore-graph-core`),
+          true,
+          target
+        );
+      }
       assert.equal(receipt.environmentIsolation.currentToolEnvCleared, true);
       assert.equal(receipt.environmentIsolation.aceRuntimeBinExcluded, true);
       assert.equal(receipt.environmentIsolation.siblingCovibesExcluded, true);
@@ -91,9 +109,7 @@ describe("cutover release receipt", () => {
         commitSha: "a".repeat(40),
         privateRepo: true,
         packageNames: releaseReceiptPackageNames,
-        installedPackages: releaseReceiptPackageNames
-          .filter((packageName) => !graphCoreNativePackageNames.includes(packageName) || packageName === graphCoreNativePackageNames[0])
-          .map((packageName) => ({
+        installedPackages: releaseReceiptPackageNames.map((packageName) => ({
             packageName,
             version: "0.1.0",
             tarball: { filename: `${packageName}.tgz`, sha256: "b".repeat(64) },
@@ -102,9 +118,7 @@ describe("cutover release receipt", () => {
               sha256: "c".repeat(64),
               bins:
                 packageName === "opcore"
-                  ? { opcore: "dist/index.js" }
-                  : packageName === "@the-open-engine/opcore-asp-provider"
-                    ? { "opcore-asp-provider": "dist/index.js" }
+                  ? { opcore: "dist/index.js", "opcore-asp-provider": "dist/asp-provider-bin.js" }
                     : {}
             },
             installedFiles: installedFilesFor(packageName)
@@ -189,8 +203,16 @@ describe("cutover release receipt", () => {
 function installedFilesFor(packageName) {
   const paths = [
     "package.json",
-    ...(packageName === "opcore" ? ["dist/index.js"] : []),
-    ...(packageName === "@the-open-engine/opcore-asp-provider" ? ["dist/index.js", "dist/manifests/asp-server.json"] : [])
+    ...(packageName === "opcore"
+      ? [
+          "dist/index.js",
+          "dist/asp-provider-bin.js",
+          "node_modules/@the-open-engine/opcore-asp-provider/dist/manifests/asp-server.json",
+          ...graphCoreNativeSupportedTargets.map(
+            (target) => `node_modules/${graphCoreNativePackageNameForTarget(target)}/opcore-graph-core`
+          )
+        ]
+      : [])
   ];
   return paths.map((path) => ({ path: `node_modules/${packageName}/${path}`, sha256: "4".repeat(64) }));
 }

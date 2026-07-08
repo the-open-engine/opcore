@@ -9,7 +9,7 @@ use std::process::{Command, Stdio};
 
 pub(super) fn lifecycle_status(repo_root: &str) -> Option<GraphProviderStatus> {
     let daemon_dir = std::path::Path::new(repo_root)
-        .join(".lattice")
+        .join(".opcore")
         .join("graph")
         .join("daemon");
     let state_path = daemon_dir.join("state.json");

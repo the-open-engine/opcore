@@ -18,7 +18,7 @@ pub struct StorePaths {
 impl StorePaths {
     pub fn for_repo_root(repo_root: impl Into<PathBuf>) -> Self {
         let repo_root = repo_root.into();
-        let graph_dir = repo_root.join(".lattice").join("graph");
+        let graph_dir = repo_root.join(".opcore").join("graph");
         let db_path = graph_dir.join("graph.db");
         Self {
             repo_root,

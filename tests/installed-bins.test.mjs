@@ -13,33 +13,21 @@ import {
   validateManagedToolDescriptor
 } from "../packages/contracts/dist/index.js";
 import { releasePackageDirForName } from "../scripts/release-package-dirs.mjs";
+import { createStagedOpcorePackage } from "../scripts/stage-opcore-bundle.mjs";
 
 const removedLegacyCommandField = `legacy${"Command"}`;
 const onboardingForbiddenOutput = /(^|[\\/"'\s])(?:lattice|crg|cix|rox)(?:$|[\\/"'\s])|\.ace\/runtime|LATTICE_CURRENT_TOOLS_DIR|\/Users\/tom|oldToolReplacementClaimed"?\s*:\s*true/i;
 const currentTarget = `${process.platform}-${process.arch}`;
 const currentNativePackage = graphCoreNativePackageNamesByTarget[currentTarget];
 
-const packageNames = [
-  "@the-open-engine/opcore-contracts",
-  "opcore",
-  "@the-open-engine/opcore-graph",
-  currentNativePackage,
-  "@the-open-engine/opcore-edit",
-  "@the-open-engine/opcore-validation",
-  "@the-open-engine/opcore-validation-clone",
-  "@the-open-engine/opcore-validation-docs",
-  "@the-open-engine/opcore-validation-python",
-  "@the-open-engine/opcore-validation-rust",
-  "@the-open-engine/opcore-validation-typescript",
-  "@the-open-engine/opcore-asp-provider"
-].filter(Boolean);
+const packageNames = ["opcore"];
 
 describe("installed package bins", () => {
-  it("installs packed packages and exposes only canonical Opcore bins", { timeout: 120000 }, () => {
+  it("installs the packed Opcore package and exposes only canonical Opcore bins", { timeout: 120000 }, () => {
     assert.ok(currentNativePackage, `unsupported local graph-core target ${currentTarget}`);
     const temp = mkdtempSync(join(tmpdir(), "lattice-installed-bins-"));
     try {
-      const tarballs = packageNames.map((packageName) => packWorkspace(packageName, temp));
+      const tarballs = [packWorkspace("opcore", temp)];
       const project = join(temp, "project");
       mkdirSync(project);
       run("npm", ["init", "-y"], { cwd: project });
@@ -156,61 +144,18 @@ describe("installed package bins", () => {
         const manifestPath = join(project, "node_modules", ...packageName.split("/"), "package.json");
         const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
         if (packageName === "opcore") {
-          assert.deepEqual(manifest.bin, { opcore: "dist/index.js" });
+          assert.deepEqual(manifest.bin, {
+            opcore: "dist/index.js",
+            "opcore-asp-provider": "dist/asp-provider-bin.js"
+          });
           assert.equal(
             manifest.exports["./descriptors/opcore.managed-tool.json"],
             "./dist/descriptors/opcore.managed-tool.json"
           );
-        } else if (packageName === "@the-open-engine/opcore-asp-provider") {
-          assert.deepEqual(manifest.bin, { "opcore-asp-provider": "dist/index.js" });
-          assert.equal(
-            manifest.exports["./manifests/asp-server.json"],
-            "./dist/manifests/asp-server.json"
-          );
-          assert.equal(
-            manifest.exports["./manifests/opcore-asp-provider.provisional.json"],
-            "./dist/manifests/opcore-asp-provider.provisional.json"
-          );
-          const canonicalManifestPath = join(
-            project,
-            "node_modules",
-            "@the-open-engine",
-            "opcore-asp-provider",
-            "dist",
-            "manifests",
-            "asp-server.json"
-          );
-          assert.equal(
-            existsSync(
-              join(
-                project,
-                "node_modules",
-                "@the-open-engine",
-                "opcore-asp-provider",
-                "dist",
-                "manifests",
-                "opcore-asp-provider.provisional.json"
-              )
-            ),
-            true
-          );
-          assert.equal(existsSync(canonicalManifestPath), true, canonicalManifestPath);
-          const canonicalManifest = JSON.parse(readFileSync(canonicalManifestPath, "utf8"));
-          const installedIndexPath = join(
-            project,
-            "node_modules",
-            "@the-open-engine",
-            "opcore-asp-provider",
-            "dist",
-            "index.js"
-          );
-          const installedIndexSha256 = createHash("sha256").update(readFileSync(installedIndexPath)).digest("hex");
-          assert.deepEqual(canonicalManifest.entrypoint, { transport: "stdio", bin: "opcore-asp-provider", args: ["--stdio"] });
-          assert.equal(canonicalManifest.artifact.fingerprint, `sha256:${installedIndexSha256}`);
-          assert.deepEqual(canonicalManifest.artifact.checksums, [{ path: "dist/index.js", sha256: installedIndexSha256 }]);
         } else assert.equal(Object.hasOwn(manifest, "bin"), false, packageName);
         assert.doesNotMatch(JSON.stringify(manifest), /file:\.\.\/|\.\.\/(contracts|cli|graph|edit|validation|fixtures)/);
       }
+      assertBundledAspProvider(project);
     } finally {
       rmSync(temp, { recursive: true, force: true });
     }
@@ -219,19 +164,7 @@ describe("installed package bins", () => {
   it("installs packed Opcore alone with the opcore bin", { timeout: 120000 }, () => {
     const temp = mkdtempSync(join(tmpdir(), "opcore-installed-bin-"));
     try {
-      const tarballs = [
-        "@the-open-engine/opcore-contracts",
-        "@the-open-engine/opcore-graph",
-        "@the-open-engine/opcore-edit",
-        "@the-open-engine/opcore-validation",
-        "@the-open-engine/opcore-validation-clone",
-        "@the-open-engine/opcore-validation-docs",
-        "@the-open-engine/opcore-validation-python",
-        "@the-open-engine/opcore-validation-rust",
-        "@the-open-engine/opcore-validation-typescript",
-        "@the-open-engine/opcore-asp-provider",
-        "opcore"
-      ].map((packageName) => packWorkspace(packageName, temp));
+      const tarballs = [packWorkspace("opcore", temp)];
       const project = join(temp, "project");
       mkdirSync(project);
       run("npm", ["init", "-y"], { cwd: project });
@@ -255,20 +188,7 @@ describe("installed package bins", () => {
     assert.ok(currentNativePackage, `unsupported local graph-core target ${currentTarget}`);
     const temp = mkdtempSync(join(tmpdir(), "opcore-installed-onboarding-"));
     try {
-      const tarballs = [
-        "@the-open-engine/opcore-contracts",
-        "@the-open-engine/opcore-graph",
-        currentNativePackage,
-        "@the-open-engine/opcore-edit",
-        "@the-open-engine/opcore-validation",
-        "@the-open-engine/opcore-validation-clone",
-        "@the-open-engine/opcore-validation-docs",
-        "@the-open-engine/opcore-validation-python",
-        "@the-open-engine/opcore-validation-rust",
-        "@the-open-engine/opcore-validation-typescript",
-        "@the-open-engine/opcore-asp-provider",
-        "opcore"
-      ].map((packageName) => packWorkspace(packageName, temp));
+      const tarballs = [packWorkspace("opcore", temp)];
       const project = join(temp, "project");
       const globalPrefix = join(temp, "global-prefix");
       mkdirSync(project);
@@ -390,11 +310,20 @@ describe("installed package bins", () => {
 });
 
 function packWorkspace(packageName, destination) {
-  const result = run("npm", ["pack", "--json", "--pack-destination", destination], {
-    cwd: releasePackageDirForName(packageName)
-  });
-  const parsed = JSON.parse(result.stdout);
-  return join(destination, parsed[0].filename);
+  const packageDir = releasePackageDirForName(packageName);
+  if (packageName !== "opcore") {
+    const result = run("npm", ["pack", "--json", "--pack-destination", destination], { cwd: packageDir });
+    const parsed = JSON.parse(result.stdout);
+    return join(destination, parsed[0].filename);
+  }
+  const staged = createStagedOpcorePackage(destination);
+  try {
+    const result = run("npm", ["pack", "--json", "--pack-destination", destination], { cwd: staged.packageDir });
+    const parsed = JSON.parse(result.stdout);
+    return join(destination, parsed[0].filename);
+  } finally {
+    staged.cleanup();
+  }
 }
 
 function patchFor(path, before, after) {
@@ -413,6 +342,8 @@ function assertGraphArtifact(project) {
   const nativeDir = join(
     project,
     "node_modules",
+    "opcore",
+    "node_modules",
         ...currentNativePackage.split("/")
       );
   const binary = join(nativeDir, "opcore-graph-core");
@@ -428,6 +359,48 @@ function assertGraphArtifact(project) {
   const actual = createHash("sha256").update(readFileSync(binary)).digest("hex");
   assert.equal(actual, expected);
   assert.equal(metadata.checksumSha256, actual);
+}
+
+function assertBundledAspProvider(project) {
+  const canonicalManifestPath = join(
+    project,
+    "node_modules",
+    "opcore",
+    "node_modules",
+    "@the-open-engine",
+    "opcore-asp-provider",
+    "dist",
+    "manifests",
+    "asp-server.json"
+  );
+  const provisionalManifestPath = join(
+    project,
+    "node_modules",
+    "opcore",
+    "node_modules",
+    "@the-open-engine",
+    "opcore-asp-provider",
+    "dist",
+    "manifests",
+    "opcore-asp-provider.provisional.json"
+  );
+  assert.equal(existsSync(canonicalManifestPath), true, canonicalManifestPath);
+  assert.equal(existsSync(provisionalManifestPath), true, provisionalManifestPath);
+  const canonicalManifest = JSON.parse(readFileSync(canonicalManifestPath, "utf8"));
+  const installedIndexPath = join(
+    project,
+    "node_modules",
+    "opcore",
+    "node_modules",
+    "@the-open-engine",
+    "opcore-asp-provider",
+    "dist",
+    "index.js"
+  );
+  const installedIndexSha256 = createHash("sha256").update(readFileSync(installedIndexPath)).digest("hex");
+  assert.deepEqual(canonicalManifest.entrypoint, { transport: "stdio", bin: "opcore-asp-provider", args: ["--stdio"] });
+  assert.equal(canonicalManifest.artifact.fingerprint, `sha256:${installedIndexSha256}`);
+  assert.deepEqual(canonicalManifest.artifact.checksums, [{ path: "dist/index.js", sha256: installedIndexSha256 }]);
 }
 
 function assertManagedDescriptor(project) {

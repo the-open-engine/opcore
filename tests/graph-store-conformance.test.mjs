@@ -36,7 +36,7 @@ describe("GraphProvider SQLite store conformance", () => {
       const refresh = graphProviderBuild({ repoRoot: fixtureRoot }).status;
       assert.equal(refresh.state, "available");
       assert.ok(refresh.dbPath);
-      assert.equal(refresh.dbPath, join(canonicalFixtureRoot, ".lattice/graph/graph.db"));
+      assert.equal(refresh.dbPath, join(canonicalFixtureRoot, ".opcore/graph/graph.db"));
       assert.ok(existsSync(refresh.dbPath));
 
       const result = graphProviderQuery({ repoRoot: fixtureRoot });
@@ -113,7 +113,7 @@ describe("GraphProvider SQLite store conformance", () => {
       const refresh = graphProviderBuild({ repoRoot: fixtureRoot }).status;
       assert.equal(refresh.state, "available");
       assert.ok(refresh.dbPath);
-      assert.equal(refresh.dbPath, join(canonicalFixtureRoot, ".lattice/graph/graph.db"));
+      assert.equal(refresh.dbPath, join(canonicalFixtureRoot, ".opcore/graph/graph.db"));
       assert.ok(existsSync(refresh.dbPath));
 
       const status = graphProviderStatus({ repoRoot: fixtureRoot });
@@ -425,7 +425,7 @@ describe("GraphProvider SQLite store conformance", () => {
       try {
         const refresh = graphProviderBuild({ repoRoot: "wave1" }).status;
         assert.equal(refresh.state, "available");
-        assert.equal(refresh.dbPath, join(realpathSync(fixtureRoot), ".lattice/graph/graph.db"));
+        assert.equal(refresh.dbPath, join(realpathSync(fixtureRoot), ".opcore/graph/graph.db"));
 
         const db = new DatabaseSync(refresh.dbPath, { readOnly: true });
         try {
@@ -500,7 +500,7 @@ describe("GraphProvider SQLite store conformance", () => {
       const missing = graphProviderQuery({ repoRoot: fixtureRoot });
       assert.equal(missing.status.state, "stale");
       assert.equal(missing.nodes, undefined);
-      assert.equal(existsSync(join(fixtureRoot, ".lattice/graph/graph.db")), false);
+      assert.equal(existsSync(join(fixtureRoot, ".opcore/graph/graph.db")), false);
 
       const build = graphProviderBuild({ repoRoot: fixtureRoot });
       assert.equal(build.status.state, "available");
@@ -605,7 +605,7 @@ describe("GraphProvider SQLite store conformance", () => {
         ".claude/runtime/generated.ts",
         ".codex/runtime/generated.ts",
         ".gemini/runtime/generated.ts",
-        ".lattice/graph/generated.ts",
+        ".opcore/graph/generated.ts",
         ".opencode/runtime/generated.ts",
         ".rox-cache/generated.ts",
         ".robustness-engine-cache/generated.ts",
@@ -732,7 +732,7 @@ function createRuntimeIgnoredFiles(fixtureRoot) {
     [".claude/runtime", "generated.ts"],
     [".codex/runtime", "generated.ts"],
     [".gemini/runtime", "generated.ts"],
-    [".lattice/graph", "generated.ts"],
+    [".opcore/graph", "generated.ts"],
     [".opencode/runtime", "generated.ts"],
     [".rox-cache", "generated.ts"],
     [".robustness-engine-cache", "generated.ts"],
@@ -745,7 +745,10 @@ function createRuntimeIgnoredFiles(fixtureRoot) {
 
 function skipGeneratedStore(source) {
   const normalized = source.replaceAll("\\", "/");
-  return !normalized.endsWith("/.lattice") && !normalized.includes("/.lattice/");
+  return !normalized.endsWith("/.opcore") &&
+    !normalized.includes("/.opcore/") &&
+    !normalized.endsWith("/.lattice") &&
+    !normalized.includes("/.lattice/");
 }
 
 function assertFreshMetadataTimestamp(value, minEpochMs) {

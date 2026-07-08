@@ -216,7 +216,7 @@ describe("GraphProvider search conformance", () => {
     withFixtureCopy((fixtureRoot) => {
       const build = graphProviderBuild({ repoRoot: fixtureRoot });
       assert.equal(build.status.state, "available");
-      const daemonDir = join(fixtureRoot, ".lattice/graph/daemon");
+      const daemonDir = join(fixtureRoot, ".opcore/graph/daemon");
       const pidPath = join(daemonDir, "pid");
       const statePath = join(daemonDir, "state.json");
       mkdirSync(daemonDir, { recursive: true });

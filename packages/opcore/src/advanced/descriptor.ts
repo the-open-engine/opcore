@@ -28,11 +28,11 @@ import { rustValidationCheckIds } from "@the-open-engine/opcore-validation-rust"
 export const descriptorArtifactPath = "dist/descriptors/opcore.managed-tool.json" as const;
 
 const commandGroupPackageNames: Record<ManagedToolDescriptorCommandGroupName, string> = {
-  graph: "@the-open-engine/opcore-graph",
+  graph: "opcore",
   inspect: "opcore",
-  edit: "@the-open-engine/opcore-edit",
-  check: "@the-open-engine/opcore-validation",
-  validate: "@the-open-engine/opcore-validation",
+  edit: "opcore",
+  check: "opcore",
+  validate: "opcore",
   status: "opcore",
   doctor: "opcore"
 };
@@ -42,12 +42,14 @@ export interface OpcoreManagedToolDescriptorOptions {
 }
 
 export function createOpcoreManagedToolDescriptor(options: OpcoreManagedToolDescriptorOptions = {}): ManagedToolDescriptor {
+  const bundledNativePath = (packageName: string, file: string) => `node_modules/${packageName}/${file}`;
   const nativeArtifacts = graphCoreNativeSupportedTargets.map((targetPlatform) => ({
     targetPlatform,
-    packageName: graphCoreNativePackageNameForTarget(targetPlatform),
-    binaryPath: "opcore-graph-core" as const,
-    metadataPath: "metadata.json" as const,
-    checksumPath: "opcore-graph-core.sha256" as const,
+    packageName: "opcore" as const,
+    bundledPackageName: graphCoreNativePackageNameForTarget(targetPlatform),
+    binaryPath: bundledNativePath(graphCoreNativePackageNameForTarget(targetPlatform), "opcore-graph-core"),
+    metadataPath: bundledNativePath(graphCoreNativePackageNameForTarget(targetPlatform), "metadata.json"),
+    checksumPath: bundledNativePath(graphCoreNativePackageNameForTarget(targetPlatform), "opcore-graph-core.sha256"),
     artifactIds: {
       binaryArtifactId: `graph-core-binary-${targetPlatform}`,
       metadataArtifactId: `graph-core-metadata-${targetPlatform}`,
@@ -179,8 +181,8 @@ export function createOpcoreManagedToolDescriptor(options: OpcoreManagedToolDesc
       },
       {
         id: "contracts-schema",
-        packageName: "@the-open-engine/opcore-contracts",
-        path: "schemas/opcore-contracts.schema.json",
+        packageName: "opcore",
+        path: "node_modules/@the-open-engine/opcore-contracts/schemas/opcore-contracts.schema.json",
         type: "schema",
         required: true
       },

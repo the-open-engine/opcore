@@ -30,3 +30,4 @@ for (const entry of readdirSync(outputDir, { withFileTypes: true })) {
 rmSync(resolve(repoRoot, "packages", "opcore", "dist", "lattice"), { recursive: true, force: true });
 writeFileSync(outputPath, `${JSON.stringify(descriptor, null, 2)}\n`);
 chmodSync(resolve(repoRoot, "packages", "opcore", "dist", "index.js"), 0o755);
+chmodSync(resolve(repoRoot, "packages", "opcore", "dist", "asp-provider-bin.js"), 0o755);

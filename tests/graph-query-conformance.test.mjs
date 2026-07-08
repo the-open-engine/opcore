@@ -367,7 +367,10 @@ function withPythonFixture(runFixture) {
 
 function skipGeneratedStore(source) {
   const normalized = source.replaceAll("\\", "/");
-  return !normalized.endsWith("/.lattice") && !normalized.includes("/.lattice/");
+  return !normalized.endsWith("/.opcore") &&
+    !normalized.includes("/.opcore/") &&
+    !normalized.endsWith("/.lattice") &&
+    !normalized.includes("/.lattice/");
 }
 
 function paths(nodes) {
@@ -386,7 +389,7 @@ function assertLimitedGraph(result, limit) {
 }
 
 function writeWarmingLifecycle(fixtureRoot) {
-  const daemonDir = join(fixtureRoot, ".lattice/graph/daemon");
+  const daemonDir = join(fixtureRoot, ".opcore/graph/daemon");
   const pidPath = join(daemonDir, "pid");
   const statePath = join(daemonDir, "state.json");
   mkdirSync(daemonDir, { recursive: true });
@@ -410,7 +413,7 @@ function writeWarmingLifecycle(fixtureRoot) {
 }
 
 function corruptSnapshotSchema(fixtureRoot) {
-  const db = new DatabaseSync(join(fixtureRoot, ".lattice/graph/graph.db"));
+  const db = new DatabaseSync(join(fixtureRoot, ".opcore/graph/graph.db"));
   try {
     const metadata = JSON.parse(db.prepare("select value from metadata where key = 'lattice_snapshot_metadata'").get().value);
     metadata.schemaVersion = 2;

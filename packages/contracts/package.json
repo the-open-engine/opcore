@@ -26,9 +26,6 @@
     "cli",
     "developer-tools"
   ],
-  "publishConfig": {
-    "access": "public"
-  },
   "scripts": {
     "build": "tsc -b"
   },
@@ -39,5 +36,6 @@
     "type": "git",
     "url": "git+https://github.com/the-open-engine/opcore.git",
     "directory": "packages/contracts"
-  }
+  },
+  "private": true
 }

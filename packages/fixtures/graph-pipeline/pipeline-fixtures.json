@@ -60,9 +60,9 @@
       "operation": "watch",
       "expectedStatus": "available",
       "artifacts": [
-        ".lattice/graph/daemon/pid",
-        ".lattice/graph/daemon/state.json",
-        ".lattice/graph/daemon/daemon.log"
+        ".opcore/graph/daemon/pid",
+        ".opcore/graph/daemon/state.json",
+        ".opcore/graph/daemon/daemon.log"
       ]
     },
     {

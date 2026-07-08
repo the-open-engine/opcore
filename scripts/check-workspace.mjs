@@ -19,7 +19,7 @@ const packageTracks = [
 ];
 const releaseVersion = "0.1.0";
 const packageNames = new Set(packageTracks.map((entry) => entry.name));
-const publicPackageNames = new Set(packageTracks.filter((entry) => entry.dir !== "fixtures").map((entry) => entry.name));
+const publicPackageNames = new Set(["opcore"]);
 const rootNativeOptionalDependencies = new Map([
   ["@the-open-engine/opcore-graph-core-darwin-arm64", "file:packages/opcore-graph-core-darwin-arm64"],
   ["@the-open-engine/opcore-graph-core-darwin-x64", "file:packages/opcore-graph-core-darwin-x64"],
@@ -130,9 +130,12 @@ requireIncludes("package.json scripts.latency:check", root.scripts["latency:chec
 requireIncludes(
   "package.json scripts.test:ci",
   root.scripts["test:ci"],
-  "OPCORE_CI_RECEIPT_GATES_RUN_SEPARATELY=1"
+  "scripts/run-test-ci.mjs"
 );
-requireIncludes("package.json scripts.test:ci", root.scripts["test:ci"], "tests/*.test.mjs");
+const ciTestRunnerScript = readFileSync("scripts/run-test-ci.mjs", "utf8");
+requireIncludes("scripts/run-test-ci.mjs", ciTestRunnerScript, "OPCORE_CI_RECEIPT_GATES_RUN_SEPARATELY");
+requireIncludes("scripts/run-test-ci.mjs", ciTestRunnerScript, "tests");
+requireIncludes("scripts/run-test-ci.mjs", ciTestRunnerScript, "native-packaging-policy.test.mjs");
 const graphReleaseReceiptScript = readFileSync("scripts/generate-graph-release-receipt.mjs", "utf8");
 for (const token of ["conformance:check", "pack:check", "license:report", "provenance:check"]) {
   requireIncludes("scripts/generate-graph-release-receipt.mjs", graphReleaseReceiptScript, token);
@@ -144,6 +147,12 @@ for (const token of ["scripts/check-release-hygiene.mjs", "scripts/check-provena
 const cutoverReceiptScript = readFileSync("scripts/generate-cutover-receipt.mjs", "utf8");
 requireIncludes("scripts/generate-cutover-receipt.mjs", cutoverReceiptScript, "OPCORE_CUTOVER_REUSE_RELEASE_PACKAGES");
 requireIncludes("scripts/generate-cutover-receipt.mjs", cutoverReceiptScript, "OPCORE_CUTOVER_REUSE_CURRENT_TOOL_GUARDRAILS");
+const aspDogfoodReceiptSupportScript = readFileSync("scripts/asp-dogfood-receipt-support.mjs", "utf8");
+requireIncludes(
+  "scripts/asp-dogfood-receipt-support.mjs",
+  aspDogfoodReceiptSupportScript,
+  "OPCORE_ASP_DOGFOOD_REUSE_CURRENT_TOOL_GUARDRAILS"
+);
 validateDependencySpecs("package.json", root);
 assertDeepEqual(root.optionalDependencies ?? {}, Object.fromEntries(rootNativeOptionalDependencies), "Root native optionalDependencies");
 
@@ -224,7 +233,7 @@ for (const [name, content] of [
     "npx opcore",
     "Unsupported platforms return typed degraded status",
     "freshly `git init` repo with no commits",
-    "package exposes only"
+    "package exposes both"
   ]) {
     requireIncludes(name, content, token);
   }
@@ -395,19 +404,19 @@ function validatePackageManifest(packagePath, manifest, track) {
   if (manifest.repository?.directory !== `packages/${track.dir}`) {
     fail(`${manifest.name} repository.directory must be packages/${track.dir}`);
   }
-  if (track.dir === "fixtures") {
-    if (manifest.private !== true) fail(`${manifest.name} must stay private/internal for ${releaseVersion}`);
-    if (hasOwn(manifest, "publishConfig")) fail(`${manifest.name} must not declare publishConfig`);
-  } else {
+  if (track.dir === "opcore") {
     if (hasOwn(manifest, "private")) fail(`${manifest.name} must not declare private`);
     assertDeepEqual(manifest.publishConfig, { access: "public" }, `${manifest.name} publishConfig`);
     if (!publicPackageNames.has(manifest.name)) fail(`${manifest.name} is not in the public package set`);
+  } else {
+    if (manifest.private !== true) fail(`${manifest.name} must stay private/internal for ${releaseVersion}`);
+    if (hasOwn(manifest, "publishConfig")) fail(`${manifest.name} must not declare publishConfig`);
   }
   if (manifest.name.includes("code-review-graph") || manifest.name.includes("gungnir")) {
     fail(`${manifest.name} uses a forbidden public package name`);
   }
   if (track.dir === "opcore") {
-    assertDeepEqual(manifest.bin, { opcore: "dist/index.js" }, `${manifest.name} bin`);
+    assertDeepEqual(manifest.bin, { opcore: "dist/index.js", "opcore-asp-provider": "dist/asp-provider-bin.js" }, `${manifest.name} bin`);
   } else if (track.dir === "asp-provider") {
     assertDeepEqual(manifest.bin, { "opcore-asp-provider": "dist/index.js" }, `${manifest.name} bin`);
   } else if (hasOwn(manifest, "bin")) {
@@ -497,7 +506,8 @@ function validateWorkflow(path, content) {
   if (content.includes("id-token")) fail(`${path} must not request id-token permissions`);
   if (!/fetch-depth:\s*0\b/.test(content)) fail(`${path} checkout must use fetch-depth: 0 for release provenance history scans`);
   const branches = extractPushBranches(content);
-  assertDeepEqual(branches, ["main"], `${path} push.branches`);
+  const expectedBranches = path.endsWith("ci.yml") ? ["main", "dev"] : ["main"];
+  assertDeepEqual(branches, expectedBranches, `${path} push.branches`);
 }
 
 function validateProvenanceWorkflow(path, content) {

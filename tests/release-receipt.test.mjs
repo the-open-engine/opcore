@@ -34,19 +34,17 @@ describe("release receipt gate", () => {
       for (const artifact of receipt.descriptor.resolvedArtifacts) {
         assert.equal(descriptorFiles.get(artifact.packageName).has(artifact.path), true, artifact.id);
       }
-      assert.equal(receipt.packageNames.includes("@the-open-engine/opcore-validation-python"), true);
-      assert.equal(receipt.packageNames.includes("@the-open-engine/opcore-fixtures"), true);
-      const pythonValidationFiles = descriptorFiles.get("@the-open-engine/opcore-validation-python");
-      assert.equal(pythonValidationFiles.has("dist/index.js"), true);
-      assert.equal(pythonValidationFiles.has("dist/toolchain.js"), true);
-      const fixtureFiles = descriptorFiles.get("@the-open-engine/opcore-fixtures");
+      assert.deepEqual(receipt.packageNames, ["opcore"]);
+      const opcoreFiles = descriptorFiles.get("opcore");
       for (const path of [
-        "source-extraction/python/python.expected.json",
-        "source-extraction/python/src/pkg/models.py",
-        "source-extraction/python/src/pkg/stubs.pyi",
-        "validation-python/failing/pkg/app.py"
+        "dist/index.js",
+        "dist/asp-provider-bin.js",
+        "node_modules/@the-open-engine/opcore-asp-provider/dist/index.js",
+        "node_modules/@the-open-engine/opcore-asp-provider/dist/manifests/asp-server.json",
+        "node_modules/@the-open-engine/opcore-validation-python/dist/index.js",
+        "node_modules/@the-open-engine/opcore-validation-python/dist/toolchain.js"
       ]) {
-        assert.equal(fixtureFiles.has(path), true, path);
+        assert.equal(opcoreFiles.has(path), true, path);
       }
       assert.equal(receipt.license.unresolvedLicenseCount, 0);
       assert.equal(receipt.secretHistory.findingCount, 0);

@@ -7,7 +7,7 @@ pub(super) fn persist_clone_index(
     sources: &[CloneSource],
     classes: &[CloneClass],
 ) -> Result<PathBuf, CloneError> {
-    let clone_dir = repo_root.join(".lattice").join("clone");
+    let clone_dir = repo_root.join(".opcore").join("clone");
     std::fs::create_dir_all(&clone_dir)?;
     let db_path = clone_dir.join("clone.db");
     let mut connection = Connection::open(&db_path)?;

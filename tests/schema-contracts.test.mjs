@@ -394,7 +394,7 @@ describe("Opcore JSON schema wire constraints", () => {
       isValidDefinition("GraphProviderStatus", {
         ...availableStatus,
         walCheckpoint: {
-          walPath: ".lattice/graph/graph.db-wal",
+          walPath: ".opcore/graph/graph.db-wal",
           bytesBefore: 8192,
           bytesAfter: 0,
           budgetBytes: 1,
@@ -407,7 +407,7 @@ describe("Opcore JSON schema wire constraints", () => {
       isValidDefinition("GraphProviderStatus", {
         ...availableStatus,
         walCheckpoint: {
-          walPath: ".lattice/graph/graph.db-wal",
+          walPath: ".opcore/graph/graph.db-wal",
           bytesBefore: -1,
           bytesAfter: 0,
           budgetBytes: 1,
@@ -999,6 +999,25 @@ describe("Opcore JSON schema wire constraints", () => {
   it("accepts command-router manifest and result schemas", () => {
     assert.equal(isValidDefinition("CommandRouterManifest", validRouterManifest()), true);
     assert.equal(isValidDefinition("ManagedToolDescriptor", validManagedToolDescriptor()), true);
+    assert.equal(
+      isValidDefinition("ManagedToolDescriptor", {
+        ...validManagedToolDescriptor(),
+        capabilities: {
+          ...validManagedToolDescriptor().capabilities,
+          graph: {
+            ...validManagedToolDescriptor().capabilities.graph,
+            nativeArtifacts: validManagedToolDescriptor().capabilities.graph.nativeArtifacts.map((artifact) => ({
+              ...artifact,
+              packageName: artifact.bundledPackageName,
+              binaryPath: "opcore-graph-core",
+              metadataPath: "metadata.json",
+              checksumPath: "opcore-graph-core.sha256"
+            }))
+          }
+        }
+      }),
+      false
+    );
     assert.equal(isValidDefinition("CommandRouterResult", validRouterResult()), true);
     assert.equal(isValidDefinition("CommandRouterResult", { ...validRouterResult(), timing: validCommandTiming() }), true);
     assert.equal(
@@ -2346,7 +2365,17 @@ describe("Opcore JSON schema wire constraints", () => {
     assert.equal(
       isValidDefinition("ReleaseReceipt", {
         ...receipt,
-        packages: receipt.packages.filter((entry) => entry.packageName !== "@the-open-engine/opcore-edit")
+        packageNames: [...receipt.packageNames, "@the-open-engine/opcore-graph"],
+        packages: [
+          ...receipt.packages,
+          {
+            ...receipt.packages[0],
+            packageName: "@the-open-engine/opcore-graph",
+            packageRoot: "packages/graph",
+            manifest: { ...receipt.packages[0].manifest, name: "@the-open-engine/opcore-graph" },
+            nativeArtifacts: []
+          }
+        ]
       }),
       false
     );
@@ -2372,6 +2401,26 @@ describe("Opcore JSON schema wire constraints", () => {
       isValidDefinition("ReleaseReceipt", {
         ...receipt,
         nativeArtifacts: receipt.nativeArtifacts.map((entry) => ({ ...entry, binarySha256: "not-sha" }))
+      }),
+      false
+    );
+    assert.equal(
+      isValidDefinition("ReleaseReceipt", {
+        ...receipt,
+        nativeArtifacts: receipt.nativeArtifacts.map((entry) => ({
+          ...entry,
+          packageName: entry.bundledPackageName
+        }))
+      }),
+      false
+    );
+    assert.equal(
+      isValidDefinition("ReleaseReceipt", {
+        ...receipt,
+        nativeArtifacts: receipt.nativeArtifacts.map((entry) => ({
+          ...entry,
+          bundledPackageName: "opcore"
+        }))
       }),
       false
     );
@@ -2567,11 +2616,11 @@ describe("Opcore JSON schema wire constraints", () => {
       isValidDefinition("ReleaseCutoverReceipt", {
         ...receipt,
         installedPackages: receipt.installedPackages.map((entry) =>
-          entry.packageName === "@the-open-engine/opcore-asp-provider"
+          entry.packageName === "opcore"
             ? {
                 ...entry,
                 installedFiles: entry.installedFiles.filter(
-                  (file) => file.path !== "node_modules/@the-open-engine/opcore-asp-provider/dist/manifests/asp-server.json"
+                  (file) => file.path !== "node_modules/opcore/node_modules/@the-open-engine/opcore-asp-provider/dist/manifests/asp-server.json"
                 )
               }
             : entry
@@ -3224,14 +3273,7 @@ function validManagedToolDescriptor(overrides = {}) {
       name,
       canonicalCommand: ["opcore", name],
       commands,
-      packageName:
-        name === "graph"
-          ? "@the-open-engine/opcore-graph"
-          : name === "edit"
-            ? "@the-open-engine/opcore-edit"
-            : name === "check" || name === "validate"
-              ? "@the-open-engine/opcore-validation"
-              : "opcore"
+      packageName: "opcore"
     })),
     healthProbes: [
       {
@@ -3313,8 +3355,8 @@ function validManagedToolDescriptor(overrides = {}) {
       },
       {
         id: "contracts-schema",
-        packageName: "@the-open-engine/opcore-contracts",
-        path: "schemas/opcore-contracts.schema.json",
+        packageName: "opcore",
+        path: "node_modules/@the-open-engine/opcore-contracts/schemas/opcore-contracts.schema.json",
         type: "schema",
         required: true
       },
@@ -3344,19 +3386,23 @@ function validManagedToolDescriptor(overrides = {}) {
 }
 
 function descriptorNativeArtifacts() {
-  return graphCoreNativeSupportedTargets.map((targetPlatform) => ({
-    targetPlatform,
-    packageName: graphCoreNativePackageNameForTarget(targetPlatform),
-    binaryPath: "opcore-graph-core",
-    metadataPath: "metadata.json",
-    checksumPath: "opcore-graph-core.sha256",
-    artifactIds: {
-      binaryArtifactId: `graph-core-binary-${targetPlatform}`,
-      metadataArtifactId: `graph-core-metadata-${targetPlatform}`,
-      checksumArtifactId: `graph-core-checksum-${targetPlatform}`,
-      checksumId: `graph-core-binary-sha256-${targetPlatform}`
-    }
-  }));
+  return graphCoreNativeSupportedTargets.map((targetPlatform) => {
+    const bundledPackageName = graphCoreNativePackageNameForTarget(targetPlatform);
+    return {
+      targetPlatform,
+      packageName: "opcore",
+      bundledPackageName,
+      binaryPath: `node_modules/${bundledPackageName}/opcore-graph-core`,
+      metadataPath: `node_modules/${bundledPackageName}/metadata.json`,
+      checksumPath: `node_modules/${bundledPackageName}/opcore-graph-core.sha256`,
+      artifactIds: {
+        binaryArtifactId: `graph-core-binary-${targetPlatform}`,
+        metadataArtifactId: `graph-core-metadata-${targetPlatform}`,
+        checksumArtifactId: `graph-core-checksum-${targetPlatform}`,
+        checksumId: `graph-core-binary-sha256-${targetPlatform}`
+      }
+    };
+  });
 }
 
 function descriptorNativeArtifactReferences(nativeArtifacts = descriptorNativeArtifacts()) {
@@ -3992,7 +4038,7 @@ function validGraphReleaseReceipt() {
       query: "select 1",
       status: "passed",
       rowCount: 1,
-      fixture: "packages/fixtures/source-extraction/wave1/.lattice/graph/graph.db"
+      fixture: "packages/fixtures/source-extraction/wave1/.opcore/graph/graph.db"
     })),
     serveTransport: [
       {
@@ -4139,102 +4185,74 @@ function validGraphReleaseReceipt() {
 }
 
 function validReleaseReceipt() {
-  const packageNames = [
-    "@the-open-engine/opcore-contracts",
-    "opcore",
-    "@the-open-engine/opcore-graph",
-    ...graphCoreNativePackageNames,
-    "@the-open-engine/opcore-edit",
-    "@the-open-engine/opcore-validation",
-    "@the-open-engine/opcore-validation-clone",
-    "@the-open-engine/opcore-validation-docs",
-    "@the-open-engine/opcore-validation-python",
-    "@the-open-engine/opcore-validation-rust",
-    "@the-open-engine/opcore-validation-typescript",
-    "@the-open-engine/opcore-asp-provider",
-    "@the-open-engine/opcore-fixtures"
-  ];
+  const packageNames = ["opcore"];
   const commandGroups = ["graph", "inspect", "edit", "check", "validate", "status", "doctor"];
   const reportIds = ["package-inspection", "license", "provenance", "release-hygiene", "graph-release", "secret-history"];
   const descriptor = validManagedToolDescriptor();
-  const packageRoots = new Map([
-    ["@the-open-engine/opcore-contracts", "packages/contracts"],
-    ["opcore", "packages/opcore"],
-    ["@the-open-engine/opcore-graph", "packages/graph"],
-    ...graphCoreNativeSupportedTargets.map((target) => [
-      graphCoreNativePackageNameForTarget(target),
-      `packages/${graphCoreNativePackageNameForTarget(target).replace("@the-open-engine/", "")}`
-    ]),
-    ["@the-open-engine/opcore-edit", "packages/edit"],
-    ["@the-open-engine/opcore-validation", "packages/validation"],
-    ["@the-open-engine/opcore-validation-clone", "packages/validation-clone"],
-    ["@the-open-engine/opcore-validation-docs", "packages/validation-docs"],
-    ["@the-open-engine/opcore-validation-python", "packages/validation-python"],
-    ["@the-open-engine/opcore-validation-rust", "packages/validation-rust"],
-    ["@the-open-engine/opcore-validation-typescript", "packages/validation-typescript"],
-    ["@the-open-engine/opcore-asp-provider", "packages/asp-provider"],
-    ["@the-open-engine/opcore-fixtures", "packages/fixtures"]
-  ]);
   const packages = packageNames.map((packageName) => {
     const isOpcore = packageName === "opcore";
-    const nativeTarget = graphCoreNativeSupportedTargets.find((target) => graphCoreNativePackageNameForTarget(target) === packageName);
-    const nativeDescriptor = nativeTarget
-      ? descriptor.capabilities.graph.nativeArtifacts.find((artifact) => artifact.targetPlatform === nativeTarget)
-      : undefined;
-    const nativeBinaryArtifact = nativeDescriptor
-      ? descriptor.artifacts.find((artifact) => artifact.id === nativeDescriptor.artifactIds.binaryArtifactId)
-      : undefined;
-    const nativeMetadataArtifact = nativeDescriptor
-      ? descriptor.artifacts.find((artifact) => artifact.id === nativeDescriptor.artifactIds.metadataArtifactId)
-      : undefined;
-    const nativeChecksumArtifact = nativeDescriptor
-      ? descriptor.artifacts.find((artifact) => artifact.id === nativeDescriptor.artifactIds.checksumArtifactId)
-      : undefined;
-    const nativeChecksum = nativeDescriptor
-      ? descriptor.checksums.find((checksum) => checksum.id === nativeDescriptor.artifactIds.checksumId)
-      : undefined;
-    const graphMetadata = nativeTarget
-      ? {
+    const nativeArtifacts = descriptor.capabilities.graph.nativeArtifacts.map((nativeDescriptor) => {
+      const nativeBinaryArtifact = descriptor.artifacts.find((artifact) => artifact.id === nativeDescriptor.artifactIds.binaryArtifactId);
+      const nativeMetadataArtifact = descriptor.artifacts.find((artifact) => artifact.id === nativeDescriptor.artifactIds.metadataArtifactId);
+      const nativeChecksumArtifact = descriptor.artifacts.find((artifact) => artifact.id === nativeDescriptor.artifactIds.checksumArtifactId);
+      const nativeChecksum = descriptor.checksums.find((checksum) => checksum.id === nativeDescriptor.artifactIds.checksumId);
+      const graphMetadata = {
           ...validArtifactMetadata(),
-          targetPlatform: nativeTarget,
-          binaryPath: nativeBinaryArtifact.path,
-          checksumPath: nativeChecksumArtifact.path,
+          targetPlatform: nativeDescriptor.targetPlatform,
+          binaryPath: "opcore-graph-core",
+          checksumPath: "opcore-graph-core.sha256",
           checksumSha256: "e".repeat(64)
-        }
-      : undefined;
+        };
+      return {
+        packageName,
+        bundledPackageName: nativeDescriptor.bundledPackageName,
+        targetPlatform: nativeDescriptor.targetPlatform,
+        metadata: graphMetadata,
+        binaryPath: nativeBinaryArtifact.path,
+        checksumPath: nativeChecksumArtifact.path,
+        metadataPath: nativeMetadataArtifact.path,
+        binarySha256: "e".repeat(64),
+        checksumFileSha256: "f".repeat(64),
+        metadataSha256: "a".repeat(64),
+        descriptorArtifactId: nativeBinaryArtifact.id,
+        descriptorChecksumId: nativeChecksum.id
+      };
+    });
     const files = [
       ...new Set([
         "package.json",
         "README.md",
-        ...(nativeTarget ? [] : ["dist/index.js"]),
-        ...(packageName === "@the-open-engine/opcore-asp-provider"
-          ? ["dist/manifests/asp-server.json", "dist/manifests/opcore-asp-provider.provisional.json"]
-          : []),
+        "dist/index.js",
+        "dist/asp-provider-bin.js",
+        "node_modules/@the-open-engine/opcore-asp-provider/dist/index.js",
+        "node_modules/@the-open-engine/opcore-asp-provider/dist/manifests/asp-server.json",
         ...descriptor.artifacts.filter((artifact) => artifact.packageName === packageName).map((artifact) => artifact.path)
       ])
     ];
     const bins = isOpcore
-      ? { opcore: "dist/index.js" }
-      : packageName === "@the-open-engine/opcore-asp-provider"
-        ? { "opcore-asp-provider": "dist/index.js" }
-          : {};
+      ? { opcore: "dist/index.js", "opcore-asp-provider": "dist/asp-provider-bin.js" }
+      : {};
     return {
       packageName,
-      packageRoot: packageRoots.get(packageName),
+      packageRoot: "packages/opcore",
       version: "0.1.0",
       manifest: {
         name: packageName,
         version: "0.1.0",
         license: "MIT",
-        ...(nativeTarget ? {} : { main: "dist/index.js", types: "dist/index.d.ts" }),
-        files: nativeTarget ? ["opcore-graph-core", "opcore-graph-core.sha256", "metadata.json", "README.md"] : ["dist", "README.md"],
+        main: "dist/index.js",
+        types: "dist/index.d.ts",
+        files: ["dist", "README.md"],
         bins,
         dependencies: {},
-        bundledDependencies: []
+        bundledDependencies: [
+          "@the-open-engine/opcore-asp-provider",
+          ...graphCoreNativePackageNames
+        ]
       },
       tarball: {
         filename: packageName.replace("@the-open-engine/", "the-open-engine-").replace("/", "-") + "-0.1.0.tgz",
-        path: ".lattice/release/packages/package.tgz",
+        path: ".opcore/release/packages/package.tgz",
         sha256: "c".repeat(64),
         integrity: "sha512-test",
         shasum: "d".repeat(40)
@@ -4245,23 +4263,7 @@ function validReleaseReceipt() {
       expectedFileCount: files.length,
       bins,
       descriptorReferences: descriptor.artifacts.filter((artifact) => artifact.packageName === packageName),
-      nativeArtifacts: nativeTarget
-        ? [
-            {
-              packageName,
-              targetPlatform: nativeTarget,
-              metadata: graphMetadata,
-              binaryPath: nativeBinaryArtifact.path,
-              checksumPath: nativeChecksumArtifact.path,
-              metadataPath: nativeMetadataArtifact.path,
-              binarySha256: "e".repeat(64),
-              checksumFileSha256: "f".repeat(64),
-              metadataSha256: "a".repeat(64),
-              descriptorArtifactId: nativeBinaryArtifact.id,
-              descriptorChecksumId: nativeChecksum.id
-            }
-          ]
-        : []
+      nativeArtifacts
     };
   });
   return {
@@ -4823,9 +4825,9 @@ function validAspDogfoodReceipt() {
     },
     provider: {
       providerId: "opcore",
-      packageName: "@the-open-engine/opcore-asp-provider",
+      packageName: "opcore",
       binPath: "node_modules/.bin/opcore-asp-provider",
-      indexPath: "node_modules/@the-open-engine/opcore-asp-provider/dist/index.js",
+      indexPath: "node_modules/opcore/node_modules/@the-open-engine/opcore-asp-provider/dist/index.js",
       indexSha256: "e".repeat(64),
       command: ["opcore-asp-provider", "--stdio"],
       entrypoint: { transport: "stdio", bin: "/tmp/opcore-asp-dogfood/project/node_modules/.bin/opcore-asp-provider", args: ["--stdio"] },

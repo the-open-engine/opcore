@@ -24,7 +24,7 @@ The warm server reuses the ASP provider JSON-RPC peer and delegates `check/evalu
 
 The warm project registry keeps a bounded process-local Project, reconciles it against Git HEAD and file-system changes, snapshots before in-memory edits, reverts after preview, and poisons/rebuilds after unexpected mid-edit faults. It never calls `save()` and never writes source files.
 
-Lifecycle state is stored under `.lattice/asp/session.json` with singleton PID/liveness, idle timeout, and shutdown state. This is session bookkeeping only; no socket, daemon manager, auto-spawn, or background service is introduced.
+Lifecycle state is stored under `.opcore/asp/session.json` with singleton PID/liveness, idle timeout, and shutdown state. This is session bookkeeping only; no socket, daemon manager, auto-spawn, or background service is introduced.
 
 ## Consequences
 

@@ -1,0 +1,114 @@
+name: Release
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Dry run only; manual dispatch never publishes.
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  actions: read
+  contents: write
+  id-token: write
+
+jobs:
+  release:
+    name: release
+    if: |
+      (github.event_name == 'workflow_dispatch' && inputs.dry_run == true) ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+    runs-on: ubuntu-latest
+    env:
+      RELEASE_VERSION: "0.1.0"
+      NPM_TAG: latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+
+      - name: Use latest npm
+        run: npm install -g npm@latest
+
+      - name: Install
+        run: npm ci
+
+      - name: Download darwin arm64 artifact
+        if: github.event_name == 'workflow_run'
+        uses: actions/download-artifact@v4
+        with:
+          name: opcore-graph-core-darwin-arm64
+          path: ${{ runner.temp }}/opcore-graph-core-darwin-arm64
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download darwin x64 artifact
+        if: github.event_name == 'workflow_run'
+        uses: actions/download-artifact@v4
+        with:
+          name: opcore-graph-core-darwin-x64
+          path: ${{ runner.temp }}/opcore-graph-core-darwin-x64
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download linux x64 artifact
+        if: github.event_name == 'workflow_run'
+        uses: actions/download-artifact@v4
+        with:
+          name: opcore-graph-core-linux-x64
+          path: ${{ runner.temp }}/opcore-graph-core-linux-x64
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract native graph artifacts
+        if: github.event_name == 'workflow_run'
+        run: |
+          rm -rf packages/opcore-graph-core-darwin-arm64 packages/opcore-graph-core-darwin-x64 packages/opcore-graph-core-linux-x64
+          mkdir -p packages/opcore-graph-core-darwin-arm64 packages/opcore-graph-core-darwin-x64 packages/opcore-graph-core-linux-x64
+          tar -xzf "${RUNNER_TEMP}/opcore-graph-core-darwin-arm64/opcore-graph-core-darwin-arm64.tgz" -C packages/opcore-graph-core-darwin-arm64
+          tar -xzf "${RUNNER_TEMP}/opcore-graph-core-darwin-x64/opcore-graph-core-darwin-x64.tgz" -C packages/opcore-graph-core-darwin-x64
+          tar -xzf "${RUNNER_TEMP}/opcore-graph-core-linux-x64/opcore-graph-core-linux-x64.tgz" -C packages/opcore-graph-core-linux-x64
+
+      - name: Publish dry-run
+        if: github.event_name == 'workflow_dispatch'
+        run: npm run release:publish -- --version "$RELEASE_VERSION" --tag "$NPM_TAG" --dry-run
+        env:
+          OPCORE_PUBLISH_DRY_RUN: "1"
+          OPCORE_REQUIRE_ALL_NATIVE_PACKAGES: "1"
+
+      - name: Publish
+        if: github.event_name == 'workflow_run'
+        run: npm run release:publish -- --version "$RELEASE_VERSION" --tag "$NPM_TAG"
+        env:
+          OPCORE_CONFIRM_PUBLISH: "0.1.0"
+          OPCORE_REQUIRE_ALL_NATIVE_PACKAGES: "1"
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Create GitHub release
+        if: github.event_name == 'workflow_run'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          if gh release view "v${RELEASE_VERSION}" >/dev/null 2>&1; then
+            echo "GitHub release v${RELEASE_VERSION} already exists."
+          else
+            gh release create "v${RELEASE_VERSION}" \
+              --target "$RELEASE_SHA" \
+              --title "Opcore ${RELEASE_VERSION}" \
+              --notes "Initial Opcore alpha release."
+          fi

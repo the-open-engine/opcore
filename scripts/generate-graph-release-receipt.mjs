@@ -261,7 +261,7 @@ function requireServeTransportDuration(serveTransport, id) {
 
 function assembleBaseReceipt({ fixtureRoot, installSetupMs, coverage, rustCoverage, serveEvidence }) {
   const directSqliteQueries = runDirectSqliteQueries(fixtureRoot);
-  const dbPath = join(realpathSync(fixtureRoot), ".lattice/graph/graph.db");
+  const dbPath = join(realpathSync(fixtureRoot), ".opcore/graph/graph.db");
   return {
     schemaVersion: 1,
     issue: "#17",
@@ -342,7 +342,7 @@ function runCovered(id, script, args, fixture = "packages/fixtures/source-extrac
 }
 
 function releaseReceiptCommandOutput(parsed) {
-  if (process.env.LATTICE_GRAPH_RELEASE_TEST_DROP_WAL_EVIDENCE !== "1") return parsed;
+  if (process.env.OPCORE_GRAPH_RELEASE_TEST_DROP_WAL_EVIDENCE !== "1") return parsed;
   const clone = JSON.parse(JSON.stringify(parsed));
   if (clone.graphPipeline?.summary) delete clone.graphPipeline.summary.walCheckpoint;
   if (clone.graphPipeline?.status) delete clone.graphPipeline.status.walCheckpoint;
@@ -391,7 +391,7 @@ function validateWalBytes(checkpoint, key) {
 }
 
 function runDirectSqliteQueries(fixtureRoot) {
-  const dbPath = join(realpathSync(fixtureRoot), ".lattice/graph/graph.db");
+  const dbPath = join(realpathSync(fixtureRoot), ".opcore/graph/graph.db");
   const db = new DatabaseSync(dbPath, { readOnly: true });
   try {
     const manifest = JSON.parse(readFileSync(join(repoRoot, sqliteReferenceFixture), "utf8"));
@@ -408,7 +408,7 @@ function runDirectSqliteQueries(fixtureRoot) {
         query: entry.sql,
         status: "passed",
         rowCount: rows.length,
-        fixture: "packages/fixtures/source-extraction/wave1/.lattice/graph/graph.db"
+        fixture: "packages/fixtures/source-extraction/wave1/.opcore/graph/graph.db"
       };
     });
   } finally {
@@ -863,7 +863,7 @@ function fileSize(path) {
 }
 
 function skipGeneratedStore(source) {
-  return !source.includes(`${join(".lattice", "graph")}`);
+  return !source.includes(`${join(".opcore", "graph")}`);
 }
 
 function elapsed(start) {

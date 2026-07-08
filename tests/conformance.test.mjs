@@ -286,7 +286,7 @@ describe("conformance fixture metadata", () => {
     assert.deepEqual(pipeline.operations, ["build", "update", "watch", "status", "ping", "health"]);
     assert.ok(pipeline.statuses.includes("warming"));
     assert.deepEqual(pipeline.phaseTimings, ["discovery", "extraction", "store", "watch"]);
-    assert.ok(pipeline.artifacts.includes(".lattice/graph/daemon/state.json"));
+    assert.ok(pipeline.artifacts.includes(".opcore/graph/daemon/state.json"));
   });
 
   it("describes #11 graph query fixtures", () => {

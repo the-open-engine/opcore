@@ -22,12 +22,10 @@
     "static-analysis",
     "native"
   ],
-  "publishConfig": {
-    "access": "public"
-  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/the-open-engine/opcore.git",
     "directory": "packages/opcore-graph-core-darwin-x64"
-  }
+  },
+  "private": true
 }

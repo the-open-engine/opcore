@@ -245,7 +245,7 @@ describe("graph-core native artifact", () => {
       });
       assert.equal(health.status.state, "available");
 
-      const daemonDir = join(fixtureRoot, ".lattice/graph/daemon");
+      const daemonDir = join(fixtureRoot, ".opcore/graph/daemon");
       const statePath = join(daemonDir, "state.json");
       mkdirSync(daemonDir, { recursive: true });
       writeFileSync(

@@ -208,7 +208,7 @@ describe("graph query CLI typed failures", () => {
     });
 
     withBuiltFixture((fixtureRoot) => {
-      const daemonDir = join(fixtureRoot, ".lattice/graph/daemon");
+      const daemonDir = join(fixtureRoot, ".opcore/graph/daemon");
       mkdirSync(daemonDir, { recursive: true });
       writeFileSync(join(daemonDir, "pid"), "999999\n");
       writeFileSync(

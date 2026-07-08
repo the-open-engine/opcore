@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "issue": "#17",
   "origin": "covibes-authored-synthetic",
-  "generatedAt": "2026-07-01T14:18:24.646Z",
-  "commitSha": "c2b3059da2085d7786b4da98a638b8080e586be3",
+  "generatedAt": "2026-07-07T22:49:38.454Z",
+  "commitSha": "d2a430ae1b7f1ebcbf036628bc006955715c1793",
   "graphPackageVersions": [
     {
       "packageName": "@the-open-engine/opcore-graph",
@@ -59,7 +59,7 @@
       "status": "passed",
       "exitCode": 0,
       "fixture": "packages/fixtures/source-extraction/wave1",
-      "durationMs": 669
+      "durationMs": 379
     },
     {
       "id": "opcore-graph-update",
@@ -76,7 +76,7 @@
       "status": "passed",
       "exitCode": 0,
       "fixture": "packages/fixtures/source-extraction/wave1",
-      "durationMs": 339
+      "durationMs": 343
     },
     {
       "id": "opcore-graph-watch",
@@ -93,7 +93,7 @@
       "status": "passed",
       "exitCode": 0,
       "fixture": "packages/fixtures/source-extraction/wave1",
-      "durationMs": 321
+      "durationMs": 319
     },
     {
       "id": "opcore-graph-status",
@@ -110,7 +110,7 @@
       "status": "passed",
       "exitCode": 0,
       "fixture": "packages/fixtures/source-extraction/wave1",
-      "durationMs": 319
+      "durationMs": 324
     },
     {
       "id": "opcore-graph-query",
@@ -127,7 +127,7 @@
       "status": "passed",
       "exitCode": 0,
       "fixture": "packages/fixtures/source-extraction/wave1",
-      "durationMs": 308
+      "durationMs": 316
     },
     {
       "id": "opcore-graph-impact",
@@ -144,7 +144,7 @@
       "status": "passed",
       "exitCode": 0,
       "fixture": "packages/fixtures/source-extraction/wave1",
-      "durationMs": 308
+      "durationMs": 303
     },
     {
       "id": "opcore-graph-search",
@@ -161,7 +161,7 @@
       "status": "passed",
       "exitCode": 0,
       "fixture": "packages/fixtures/source-extraction/wave1",
-      "durationMs": 329
+      "durationMs": 305
     },
     {
       "id": "opcore-graph-serve",
@@ -178,7 +178,7 @@
       "status": "passed",
       "exitCode": 0,
       "fixture": "packages/fixtures/source-extraction/wave1",
-      "durationMs": 310
+      "durationMs": 289
     }
   ],
   "rustCommandCoverage": [
@@ -197,7 +197,7 @@
       "status": "passed",
       "exitCode": 0,
       "fixture": "packages/fixtures/source-extraction/rust-only",
-      "durationMs": 324
+      "durationMs": 300
     },
     {
       "id": "opcore-graph-rust-update",
@@ -214,7 +214,7 @@
       "status": "passed",
       "exitCode": 0,
       "fixture": "packages/fixtures/source-extraction/rust-only",
-      "durationMs": 311
+      "durationMs": 327
     },
     {
       "id": "opcore-graph-rust-watch",
@@ -248,7 +248,7 @@
       "status": "passed",
       "exitCode": 0,
       "fixture": "packages/fixtures/source-extraction/rust-only",
-      "durationMs": 308
+      "durationMs": 309
     },
     {
       "id": "opcore-graph-rust-query",
@@ -265,7 +265,7 @@
       "status": "passed",
       "exitCode": 0,
       "fixture": "packages/fixtures/source-extraction/rust-only",
-      "durationMs": 310
+      "durationMs": 302
     },
     {
       "id": "opcore-graph-rust-impact",
@@ -282,7 +282,7 @@
       "status": "passed",
       "exitCode": 0,
       "fixture": "packages/fixtures/source-extraction/rust-only",
-      "durationMs": 312
+      "durationMs": 305
     },
     {
       "id": "opcore-graph-rust-search",
@@ -299,7 +299,7 @@
       "status": "passed",
       "exitCode": 0,
       "fixture": "packages/fixtures/source-extraction/rust-only",
-      "durationMs": 308
+      "durationMs": 322
     },
     {
       "id": "opcore-graph-rust-serve",
@@ -316,7 +316,7 @@
       "status": "passed",
       "exitCode": 0,
       "fixture": "packages/fixtures/source-extraction/rust-only",
-      "durationMs": 300
+      "durationMs": 302
     }
   ],
   "directSqliteQueries": [
@@ -325,35 +325,35 @@
       "query": "select kind, count(*) as count from nodes group by kind order by kind",
       "status": "passed",
       "rowCount": 6,
-      "fixture": "packages/fixtures/source-extraction/wave1/.lattice/graph/graph.db"
+      "fixture": "packages/fixtures/source-extraction/wave1/.opcore/graph/graph.db"
     },
     {
       "id": "status-edge-counts",
       "query": "select kind, count(*) as count from edges group by kind order by kind",
       "status": "passed",
       "rowCount": 7,
-      "fixture": "packages/fixtures/source-extraction/wave1/.lattice/graph/graph.db"
+      "fixture": "packages/fixtures/source-extraction/wave1/.opcore/graph/graph.db"
     },
     {
       "id": "impact-edges-from-file",
       "query": "select kind, source_qualified, target_qualified from edges where file_path = ?",
       "status": "passed",
       "rowCount": 18,
-      "fixture": "packages/fixtures/source-extraction/wave1/.lattice/graph/graph.db"
+      "fixture": "packages/fixtures/source-extraction/wave1/.opcore/graph/graph.db"
     },
     {
       "id": "search-by-name",
       "query": "select qualified_name, kind, file_path, line_start, line_end from nodes where name like ? order by kind, qualified_name limit ?",
       "status": "passed",
       "rowCount": 5,
-      "fixture": "packages/fixtures/source-extraction/wave1/.lattice/graph/graph.db"
+      "fixture": "packages/fixtures/source-extraction/wave1/.opcore/graph/graph.db"
     },
     {
       "id": "freshness-metadata",
       "query": "select key, value from metadata where key in ('schema_version', 'last_updated', 'last_build_type') order by key",
       "status": "passed",
       "rowCount": 3,
-      "fixture": "packages/fixtures/source-extraction/wave1/.lattice/graph/graph.db"
+      "fixture": "packages/fixtures/source-extraction/wave1/.opcore/graph/graph.db"
     }
   ],
   "serveTransport": [
@@ -404,7 +404,7 @@
     },
     {
       "metric": "cold_build_ms",
-      "value": 669,
+      "value": 379,
       "unit": "ms",
       "baselineIssue": "#19",
       "baselineReceipt": "packages/fixtures/graph-reference-evidence/baseline-receipts.json",
@@ -412,7 +412,7 @@
     },
     {
       "metric": "incremental_update_ms",
-      "value": 339,
+      "value": 343,
       "unit": "ms",
       "baselineIssue": "#19",
       "baselineReceipt": "packages/fixtures/graph-reference-evidence/baseline-receipts.json",
@@ -420,7 +420,7 @@
     },
     {
       "metric": "impact_cold_ms",
-      "value": 308,
+      "value": 303,
       "unit": "ms",
       "baselineIssue": "#19",
       "baselineReceipt": "packages/fixtures/graph-reference-evidence/baseline-receipts.json",
@@ -428,7 +428,7 @@
     },
     {
       "metric": "impact_hot_ms",
-      "value": 312,
+      "value": 299,
       "unit": "ms",
       "baselineIssue": "#19",
       "baselineReceipt": "packages/fixtures/graph-reference-evidence/baseline-receipts.json",
@@ -436,7 +436,7 @@
     },
     {
       "metric": "search_ms",
-      "value": 329,
+      "value": 305,
       "unit": "ms",
       "baselineIssue": "#19",
       "baselineReceipt": "packages/fixtures/graph-reference-evidence/baseline-receipts.json",
@@ -444,7 +444,7 @@
     },
     {
       "metric": "daemon_startup_ms",
-      "value": 628,
+      "value": 599,
       "unit": "ms",
       "baselineIssue": "#19",
       "baselineReceipt": "packages/fixtures/graph-reference-evidence/baseline-receipts.json",
@@ -452,7 +452,7 @@
     },
     {
       "metric": "daemon_query_ms",
-      "value": 628,
+      "value": 598,
       "unit": "ms",
       "baselineIssue": "#19",
       "baselineReceipt": "packages/fixtures/graph-reference-evidence/baseline-receipts.json",
@@ -527,15 +527,15 @@
         "targetPlatform": "darwin-arm64",
         "binaryPath": "opcore-graph-core",
         "checksumPath": "opcore-graph-core.sha256",
-        "checksumSha256": "b4cdc0d9fbef2f2c67dc849cb80309f6e6edb8ab933dc8d4fb89b279f4b252e7",
+        "checksumSha256": "7a362d98f710646a8b7b4425451361f13504f586a720b0e851dfda85821f0d93",
         "buildProfile": "release"
       },
       "binaryPath": "opcore-graph-core",
       "checksumPath": "opcore-graph-core.sha256",
       "metadataPath": "metadata.json",
-      "binarySha256": "b4cdc0d9fbef2f2c67dc849cb80309f6e6edb8ab933dc8d4fb89b279f4b252e7",
-      "checksumFileSha256": "87addced7ce9fa6cab167ecb559f2e0db763926576e260d3d8851cafd3a3c954",
-      "metadataSha256": "041becbac4eb6bf87bd4a5661248788f7734875348f41326d51c3621aaa95477",
+      "binarySha256": "7a362d98f710646a8b7b4425451361f13504f586a720b0e851dfda85821f0d93",
+      "checksumFileSha256": "5fe0896dccc3ea1d019c2ef99af8fae5af6e950a3777bc234e705b3c964c196f",
+      "metadataSha256": "a84ec9b019971d1db3192780378333fb9bdec246cd72546c059cb9de9439943a",
       "packageFiles": [
         "package.json",
         "README.md",
@@ -649,7 +649,7 @@
     "targetPlatform": "darwin-arm64",
     "binaryPath": "opcore-graph-core",
     "checksumPath": "opcore-graph-core.sha256",
-    "checksumSha256": "b4cdc0d9fbef2f2c67dc849cb80309f6e6edb8ab933dc8d4fb89b279f4b252e7",
+    "checksumSha256": "7a362d98f710646a8b7b4425451361f13504f586a720b0e851dfda85821f0d93",
     "buildProfile": "release"
   },
   "optionalSurfaces": [
@@ -682,19 +682,19 @@
     {
       "issue": "#7",
       "receiptPath": "docs/release/graph-release-receipt.payload.json",
-      "checksumSha256": "fce0cb7da518b6bba8d7c48072fee5e727e4fe0c19c92893f5a70374eb8833e9",
+      "checksumSha256": "5f3372eddfbfefaadbb608d1f1f19b1940814b84cd753d8c11aafad5d412ecf1",
       "rollbackNote": "Keep ACE wrappers on current external tools if receipt regresses."
     },
     {
       "issue": "#28",
       "receiptPath": "docs/release/graph-release-receipt.payload.json",
-      "checksumSha256": "fce0cb7da518b6bba8d7c48072fee5e727e4fe0c19c92893f5a70374eb8833e9",
+      "checksumSha256": "5f3372eddfbfefaadbb608d1f1f19b1940814b84cd753d8c11aafad5d412ecf1",
       "rollbackNote": "Keep ACE wrappers on current external tools if receipt regresses."
     },
     {
       "issue": "#29",
       "receiptPath": "docs/release/graph-release-receipt.payload.json",
-      "checksumSha256": "fce0cb7da518b6bba8d7c48072fee5e727e4fe0c19c92893f5a70374eb8833e9",
+      "checksumSha256": "5f3372eddfbfefaadbb608d1f1f19b1940814b84cd753d8c11aafad5d412ecf1",
       "rollbackNote": "Keep ACE wrappers on current external tools if receipt regresses."
     }
   ]

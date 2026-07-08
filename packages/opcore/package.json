@@ -50,8 +50,45 @@
     "access": "public"
   },
   "bin": {
-    "opcore": "dist/index.js"
+    "opcore": "dist/index.js",
+    "opcore-asp-provider": "dist/asp-provider-bin.js"
   },
+  "bundleDependencies": [
+    "@the-open-engine/opcore-asp-provider",
+    "@the-open-engine/opcore-contracts",
+    "@the-open-engine/opcore-edit",
+    "@the-open-engine/opcore-graph",
+    "@the-open-engine/opcore-validation",
+    "@the-open-engine/opcore-validation-clone",
+    "@the-open-engine/opcore-validation-docs",
+    "@the-open-engine/opcore-validation-python",
+    "@the-open-engine/opcore-validation-rust",
+    "@the-open-engine/opcore-validation-typescript",
+    "@the-open-engine/opcore-graph-core-darwin-arm64",
+    "@the-open-engine/opcore-graph-core-darwin-x64",
+    "@the-open-engine/opcore-graph-core-linux-x64",
+    "@ts-morph/common",
+    "@typescript-eslint/project-service",
+    "@typescript-eslint/tsconfig-utils",
+    "@typescript-eslint/types",
+    "@typescript-eslint/typescript-estree",
+    "@typescript-eslint/visitor-keys",
+    "balanced-match",
+    "brace-expansion",
+    "code-block-writer",
+    "debug",
+    "eslint-visitor-keys",
+    "fdir",
+    "minimatch",
+    "ms",
+    "path-browserify",
+    "picomatch",
+    "semver",
+    "tinyglobby",
+    "ts-api-utils",
+    "ts-morph",
+    "typescript"
+  ],
   "dependencies": {
     "@the-open-engine/opcore-asp-provider": "0.1.0",
     "@the-open-engine/opcore-edit": "0.1.0",
@@ -63,7 +100,14 @@
     "@the-open-engine/opcore-validation-python": "0.1.0",
     "@the-open-engine/opcore-validation-rust": "0.1.0",
     "@the-open-engine/opcore-validation-typescript": "0.1.0",
-    "ts-morph": "^28.0.0"
+    "@typescript-eslint/typescript-estree": "^8.62.0",
+    "ts-morph": "^28.0.0",
+    "typescript": "^5.9.3"
+  },
+  "optionalDependencies": {
+    "@the-open-engine/opcore-graph-core-darwin-arm64": "0.1.0",
+    "@the-open-engine/opcore-graph-core-darwin-x64": "0.1.0",
+    "@the-open-engine/opcore-graph-core-linux-x64": "0.1.0"
   },
   "engines": {
     "node": ">=22"

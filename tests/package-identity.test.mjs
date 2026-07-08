@@ -18,6 +18,49 @@ const expectedWorkspacePackages = new Map([
   ["packages/fixtures", "@the-open-engine/opcore-fixtures"]
 ]);
 
+const bundledImplementationPackages = [
+  "@the-open-engine/opcore-asp-provider",
+  "@the-open-engine/opcore-contracts",
+  "@the-open-engine/opcore-edit",
+  "@the-open-engine/opcore-graph",
+  "@the-open-engine/opcore-validation",
+  "@the-open-engine/opcore-validation-clone",
+  "@the-open-engine/opcore-validation-docs",
+  "@the-open-engine/opcore-validation-python",
+  "@the-open-engine/opcore-validation-rust",
+  "@the-open-engine/opcore-validation-typescript"
+];
+
+const bundledNativePackages = [
+  "@the-open-engine/opcore-graph-core-darwin-arm64",
+  "@the-open-engine/opcore-graph-core-darwin-x64",
+  "@the-open-engine/opcore-graph-core-linux-x64"
+];
+
+const bundledExternalRuntimePackages = [
+  "@ts-morph/common",
+  "@typescript-eslint/project-service",
+  "@typescript-eslint/tsconfig-utils",
+  "@typescript-eslint/types",
+  "@typescript-eslint/typescript-estree",
+  "@typescript-eslint/visitor-keys",
+  "balanced-match",
+  "brace-expansion",
+  "code-block-writer",
+  "debug",
+  "eslint-visitor-keys",
+  "fdir",
+  "minimatch",
+  "ms",
+  "path-browserify",
+  "picomatch",
+  "semver",
+  "tinyglobby",
+  "ts-api-utils",
+  "ts-morph",
+  "typescript"
+];
+
 const forbiddenPackagePattern =
   /@the-open-engine\/lattice-(contracts|cli|graph|edit|validation|validation-clone|validation-docs|validation-python|validation-rust|validation-typescript|fixtures)|github\.com\/the-open-engine\/advanced/g;
 
@@ -35,14 +78,19 @@ describe("Opcore public package identity", () => {
     }
   });
 
-  it("ships the Opcore bin and descriptor from the Opcore package", () => {
+  it("ships all public release bins and descriptors from the single Opcore package", () => {
     const manifest = readJson("packages/opcore/package.json");
     assert.deepEqual(manifest.bin, {
-      opcore: "dist/index.js"
+      opcore: "dist/index.js",
+      "opcore-asp-provider": "dist/asp-provider-bin.js"
     });
     assert.equal(
       manifest.exports["./descriptors/opcore.managed-tool.json"],
       "./dist/descriptors/opcore.managed-tool.json"
+    );
+    assert.deepEqual(
+      [...manifest.bundleDependencies].sort(),
+      [...bundledImplementationPackages, ...bundledNativePackages, ...bundledExternalRuntimePackages].sort()
     );
     const oldCliPackage = ["packages", "cli"].join("/");
     assert.equal(existsSync(oldCliPackage), false, `${oldCliPackage} must not remain a package`);
@@ -51,6 +99,7 @@ describe("Opcore public package identity", () => {
   it("marks packaged bin entrypoints executable after build", () => {
     const binTargets = [
       "packages/opcore/dist/index.js",
+      "packages/opcore/dist/asp-provider-bin.js",
       "packages/asp-provider/dist/index.js"
     ];
     for (const binTarget of binTargets) {
@@ -58,18 +107,21 @@ describe("Opcore public package identity", () => {
     }
   });
 
-  it("documents the ASP provider as a separate package from the Opcore CLI", () => {
+  it("documents the ASP provider as a bundled bin from the Opcore package", () => {
     const opcoreManifest = readJson("packages/opcore/package.json");
     const providerManifest = readJson("packages/asp-provider/package.json");
-    assert.deepEqual(opcoreManifest.bin, { opcore: "dist/index.js" });
+    assert.deepEqual(opcoreManifest.bin, {
+      opcore: "dist/index.js",
+      "opcore-asp-provider": "dist/asp-provider-bin.js"
+    });
     assert.deepEqual(providerManifest.bin, { "opcore-asp-provider": "dist/index.js" });
 
     for (const path of ["docs/quickstart.md", "packages/opcore/README.md"]) {
       const content = readFileSync(path, "utf8");
       assert.match(content, /opcore-asp-provider --stdio/, path);
-      assert.match(content, /@the-open-engine\/opcore-asp-provider/, path);
-      assert.match(content, /@the-open-engine\/opcore/, path);
-      assert.match(content, /(?:provides|exposes) only (?:the )?`opcore` bin/, path);
+      assert.match(content, /single `opcore` npm package|`opcore` package exposes both/i, path);
+      assert.doesNotMatch(content, /separate `@the-open-engine\/opcore-asp-provider` package/, path);
+      assert.doesNotMatch(content, /(?:provides|exposes) only (?:the )?`opcore` bin/, path);
     }
   });
 

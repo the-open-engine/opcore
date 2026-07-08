@@ -11,7 +11,7 @@ This ledger enumerates CRG-to-`opcore graph` parity from retained receipts only.
 Receipt sources:
 
 - `docs/release/graph-release-receipt.json` issue `#17`, regenerated with in-repo fixture `packages/fixtures/source-extraction/wave1`.
-- `docs/release/cutover-receipt.json` issue `#30`, generated `2026-06-27T10:22:13.799Z`, installed `node_modules/.bin/opcore` proof with `environmentIsolation.opcoreBinOnly: true` and `environmentIsolation.oldBinsAbsent.{crg,cix,rox}: true`.
+- `docs/release/cutover-receipt.json` issue `#30`, generated `2026-06-27T10:22:13.799Z`, installed `node_modules/.bin/opcore` proof with `environmentIsolation.opcoreBinOnly: true` meaning only Opcore-owned bins are exposed and `environmentIsolation.oldBinsAbsent.{crg,cix,rox}: true`.
 - `docs/release/asp-dogfood-receipt.json` issue `#120`, generated `2026-06-26T19:04:19.583Z`, with `oldToolReplacementClaimed: false` and retained current-tool guardrails.
 
 ## Issue Namespace
@@ -56,11 +56,11 @@ These rows are not required for CRG graph parity and must not be read as Opcore 
 
 Export metadata is represented by the SQLite `nodes.is_exported` column and `idx_nodes_exported_name` index in `packages/fixtures/graph-reference-evidence/sqlite-fixtures.json`. The reference fixtures do not require `attributes.exported` as fixture evidence.
 
-The graph-release receipt records direct SQLite reader evidence for status counts, edge counts, impact edges from file, search-by-name, and freshness metadata against `packages/fixtures/source-extraction/wave1/.lattice/graph/graph.db`.
+The graph-release receipt records direct SQLite reader evidence for status counts, edge counts, impact edges from file, search-by-name, and freshness metadata against `packages/fixtures/source-extraction/wave1/.opcore/graph/graph.db`.
 
 ## Replacement Claim
 
-CRG graph parity is installed-receipt-backed: `cutover-receipt.json` runs `opcore graph` through `node_modules/.bin/opcore` while `environmentIsolation.opcoreBinOnly` and `environmentIsolation.oldBinsAbsent.{crg,cix,rox}` are all `true`.
+CRG graph parity is installed-receipt-backed: `cutover-receipt.json` runs `opcore graph` through `node_modules/.bin/opcore` while `environmentIsolation.opcoreBinOnly` confirms only Opcore-owned bins are exposed and `environmentIsolation.oldBinsAbsent.{crg,cix,rox}` is `true`.
 
 The formal old-tool replacement claim remains withheld. `asp-dogfood-receipt.json` pins `oldToolReplacementClaimed: false`, records retained `current-tools:validate-changed` and `current-tools:validate-rust-graph` guardrails, and keeps inspect/edit gaps outside ASP dogfood authority. ACE wrappers remain on current tools until explicit downstream cutover work changes that.
 

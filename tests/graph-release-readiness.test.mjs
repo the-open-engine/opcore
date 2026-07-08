@@ -117,7 +117,7 @@ describe("graph release readiness receipt", () => {
     const result = spawnSync("npm", ["run", "--silent", "graph-release:check", "--", "--json"], {
       cwd: repoRoot,
       encoding: "utf8",
-      env: { ...process.env, LATTICE_GRAPH_RELEASE_TEST_DROP_WAL_EVIDENCE: "1" },
+      env: { ...process.env, OPCORE_GRAPH_RELEASE_TEST_DROP_WAL_EVIDENCE: "1" },
       stdio: ["ignore", "pipe", "pipe"]
     });
     assert.notEqual(result.status, 0, "missing WAL evidence must fail graph-release:check");

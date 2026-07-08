@@ -373,7 +373,7 @@ fn status_for_missing_store_is_read_only() -> TestResult {
         json!("graph store snapshot is missing"),
     );
     assert!(!repo.path().join(".lattice").exists());
-    assert!(!repo.path().join(".lattice/graph/graph.db").exists());
+    assert!(!repo.path().join(".opcore/graph/graph.db").exists());
     Ok(())
 }
 

@@ -4475,13 +4475,13 @@
                     "const": "graph-core-binary-darwin-arm64"
                   },
                   "packageName": {
-                    "const": "@the-open-engine/opcore-graph-core-darwin-arm64"
+                    "const": "opcore"
                   },
                   "type": {
                     "const": "native_binary"
                   },
                   "path": {
-                    "const": "opcore-graph-core"
+                    "const": "node_modules/@the-open-engine/opcore-graph-core-darwin-arm64/opcore-graph-core"
                   },
                   "required": {
                     "const": true
@@ -4500,13 +4500,13 @@
                     "const": "graph-core-metadata-darwin-arm64"
                   },
                   "packageName": {
-                    "const": "@the-open-engine/opcore-graph-core-darwin-arm64"
+                    "const": "opcore"
                   },
                   "type": {
                     "const": "manifest"
                   },
                   "path": {
-                    "const": "metadata.json"
+                    "const": "node_modules/@the-open-engine/opcore-graph-core-darwin-arm64/metadata.json"
                   },
                   "required": {
                     "const": true
@@ -4522,13 +4522,13 @@
                     "const": "graph-core-checksum-darwin-arm64"
                   },
                   "packageName": {
-                    "const": "@the-open-engine/opcore-graph-core-darwin-arm64"
+                    "const": "opcore"
                   },
                   "type": {
                     "const": "checksum"
                   },
                   "path": {
-                    "const": "opcore-graph-core.sha256"
+                    "const": "node_modules/@the-open-engine/opcore-graph-core-darwin-arm64/opcore-graph-core.sha256"
                   },
                   "required": {
                     "const": true
@@ -4544,13 +4544,13 @@
                     "const": "graph-core-binary-darwin-x64"
                   },
                   "packageName": {
-                    "const": "@the-open-engine/opcore-graph-core-darwin-x64"
+                    "const": "opcore"
                   },
                   "type": {
                     "const": "native_binary"
                   },
                   "path": {
-                    "const": "opcore-graph-core"
+                    "const": "node_modules/@the-open-engine/opcore-graph-core-darwin-x64/opcore-graph-core"
                   },
                   "required": {
                     "const": true
@@ -4569,13 +4569,13 @@
                     "const": "graph-core-metadata-darwin-x64"
                   },
                   "packageName": {
-                    "const": "@the-open-engine/opcore-graph-core-darwin-x64"
+                    "const": "opcore"
                   },
                   "type": {
                     "const": "manifest"
                   },
                   "path": {
-                    "const": "metadata.json"
+                    "const": "node_modules/@the-open-engine/opcore-graph-core-darwin-x64/metadata.json"
                   },
                   "required": {
                     "const": true
@@ -4591,13 +4591,13 @@
                     "const": "graph-core-checksum-darwin-x64"
                   },
                   "packageName": {
-                    "const": "@the-open-engine/opcore-graph-core-darwin-x64"
+                    "const": "opcore"
                   },
                   "type": {
                     "const": "checksum"
                   },
                   "path": {
-                    "const": "opcore-graph-core.sha256"
+                    "const": "node_modules/@the-open-engine/opcore-graph-core-darwin-x64/opcore-graph-core.sha256"
                   },
                   "required": {
                     "const": true
@@ -4613,13 +4613,13 @@
                     "const": "graph-core-binary-linux-x64"
                   },
                   "packageName": {
-                    "const": "@the-open-engine/opcore-graph-core-linux-x64"
+                    "const": "opcore"
                   },
                   "type": {
                     "const": "native_binary"
                   },
                   "path": {
-                    "const": "opcore-graph-core"
+                    "const": "node_modules/@the-open-engine/opcore-graph-core-linux-x64/opcore-graph-core"
                   },
                   "required": {
                     "const": true
@@ -4638,13 +4638,13 @@
                     "const": "graph-core-metadata-linux-x64"
                   },
                   "packageName": {
-                    "const": "@the-open-engine/opcore-graph-core-linux-x64"
+                    "const": "opcore"
                   },
                   "type": {
                     "const": "manifest"
                   },
                   "path": {
-                    "const": "metadata.json"
+                    "const": "node_modules/@the-open-engine/opcore-graph-core-linux-x64/metadata.json"
                   },
                   "required": {
                     "const": true
@@ -4660,13 +4660,13 @@
                     "const": "graph-core-checksum-linux-x64"
                   },
                   "packageName": {
-                    "const": "@the-open-engine/opcore-graph-core-linux-x64"
+                    "const": "opcore"
                   },
                   "type": {
                     "const": "checksum"
                   },
                   "path": {
-                    "const": "opcore-graph-core.sha256"
+                    "const": "node_modules/@the-open-engine/opcore-graph-core-linux-x64/opcore-graph-core.sha256"
                   },
                   "required": {
                     "const": true
@@ -4769,10 +4769,10 @@
                     "const": "graph-core-binary-sha256-darwin-arm64"
                   },
                   "packageName": {
-                    "const": "@the-open-engine/opcore-graph-core-darwin-arm64"
+                    "const": "opcore"
                   },
                   "path": {
-                    "const": "opcore-graph-core.sha256"
+                    "const": "node_modules/@the-open-engine/opcore-graph-core-darwin-arm64/opcore-graph-core.sha256"
                   },
                   "algorithm": {
                     "const": "sha256"
@@ -4794,10 +4794,10 @@
                     "const": "graph-core-binary-sha256-darwin-x64"
                   },
                   "packageName": {
-                    "const": "@the-open-engine/opcore-graph-core-darwin-x64"
+                    "const": "opcore"
                   },
                   "path": {
-                    "const": "opcore-graph-core.sha256"
+                    "const": "node_modules/@the-open-engine/opcore-graph-core-darwin-x64/opcore-graph-core.sha256"
                   },
                   "algorithm": {
                     "const": "sha256"
@@ -4819,10 +4819,10 @@
                     "const": "graph-core-binary-sha256-linux-x64"
                   },
                   "packageName": {
-                    "const": "@the-open-engine/opcore-graph-core-linux-x64"
+                    "const": "opcore"
                   },
                   "path": {
-                    "const": "opcore-graph-core.sha256"
+                    "const": "node_modules/@the-open-engine/opcore-graph-core-linux-x64/opcore-graph-core.sha256"
                   },
                   "algorithm": {
                     "const": "sha256"
@@ -12432,21 +12432,7 @@
     },
     "ReleaseReceiptPackageName": {
       "enum": [
-        "@the-open-engine/opcore-contracts",
-        "opcore",
-        "@the-open-engine/opcore-graph",
-        "@the-open-engine/opcore-graph-core-darwin-arm64",
-        "@the-open-engine/opcore-graph-core-darwin-x64",
-        "@the-open-engine/opcore-graph-core-linux-x64",
-        "@the-open-engine/opcore-edit",
-        "@the-open-engine/opcore-validation",
-        "@the-open-engine/opcore-validation-clone",
-        "@the-open-engine/opcore-validation-docs",
-        "@the-open-engine/opcore-validation-python",
-        "@the-open-engine/opcore-validation-rust",
-        "@the-open-engine/opcore-validation-typescript",
-        "@the-open-engine/opcore-asp-provider",
-        "@the-open-engine/opcore-fixtures"
+        "opcore"
       ]
     },
     "ReleaseReceiptCommandGroupName": {
@@ -12605,11 +12591,7 @@
           "if": {
             "properties": {
               "name": {
-                "enum": [
-                  "@the-open-engine/opcore-graph-core-darwin-arm64",
-                  "@the-open-engine/opcore-graph-core-darwin-x64",
-                  "@the-open-engine/opcore-graph-core-linux-x64"
-                ]
+                "const": "opcore"
               }
             },
             "required": [
@@ -12617,26 +12599,24 @@
             ]
           },
           "then": {
-            "not": {
-              "anyOf": [
-                {
-                  "required": [
-                    "main"
-                  ]
-                },
-                {
-                  "required": [
-                    "types"
-                  ]
-                }
-              ]
-            }
-          },
-          "else": {
             "required": [
               "main",
               "types"
-            ]
+            ],
+            "properties": {
+              "bins": {
+                "required": [
+                  "opcore",
+                  "opcore-asp-provider"
+                ]
+              },
+              "bundledDependencies": {
+                "contains": {
+                  "const": "@the-open-engine/opcore-asp-provider"
+                },
+                "minContains": 1
+              }
+            }
           }
         }
       ]
@@ -12646,6 +12626,7 @@
       "additionalProperties": false,
       "required": [
         "packageName",
+        "bundledPackageName",
         "targetPlatform",
         "metadata",
         "binaryPath",
@@ -12659,7 +12640,7 @@
       ],
       "properties": {
         "packageName": {
-          "$ref": "#/$defs/GraphCoreNativePackageName"
+          "const": "opcore"
         },
         "targetPlatform": {
           "$ref": "#/$defs/GraphCoreNativeSupportedTarget"
@@ -12692,6 +12673,9 @@
         "descriptorChecksumId": {
           "type": "string",
           "minLength": 1
+        },
+        "bundledPackageName": {
+          "$ref": "#/$defs/GraphCoreNativePackageName"
         }
       },
       "allOf": [
@@ -12708,8 +12692,17 @@
           },
           "then": {
             "properties": {
-              "packageName": {
+              "bundledPackageName": {
                 "const": "@the-open-engine/opcore-graph-core-darwin-arm64"
+              },
+              "binaryPath": {
+                "const": "node_modules/@the-open-engine/opcore-graph-core-darwin-arm64/opcore-graph-core"
+              },
+              "checksumPath": {
+                "const": "node_modules/@the-open-engine/opcore-graph-core-darwin-arm64/opcore-graph-core.sha256"
+              },
+              "metadataPath": {
+                "const": "node_modules/@the-open-engine/opcore-graph-core-darwin-arm64/metadata.json"
               }
             }
           }
@@ -12727,8 +12720,17 @@
           },
           "then": {
             "properties": {
-              "packageName": {
+              "bundledPackageName": {
                 "const": "@the-open-engine/opcore-graph-core-darwin-x64"
+              },
+              "binaryPath": {
+                "const": "node_modules/@the-open-engine/opcore-graph-core-darwin-x64/opcore-graph-core"
+              },
+              "checksumPath": {
+                "const": "node_modules/@the-open-engine/opcore-graph-core-darwin-x64/opcore-graph-core.sha256"
+              },
+              "metadataPath": {
+                "const": "node_modules/@the-open-engine/opcore-graph-core-darwin-x64/metadata.json"
               }
             }
           }
@@ -12746,8 +12748,17 @@
           },
           "then": {
             "properties": {
-              "packageName": {
+              "bundledPackageName": {
                 "const": "@the-open-engine/opcore-graph-core-linux-x64"
+              },
+              "binaryPath": {
+                "const": "node_modules/@the-open-engine/opcore-graph-core-linux-x64/opcore-graph-core"
+              },
+              "checksumPath": {
+                "const": "node_modules/@the-open-engine/opcore-graph-core-linux-x64/opcore-graph-core.sha256"
+              },
+              "metadataPath": {
+                "const": "node_modules/@the-open-engine/opcore-graph-core-linux-x64/metadata.json"
               }
             }
           }
@@ -12857,61 +12868,22 @@
               "packageName": {
                 "const": "opcore"
               }
-            }
+            },
+            "required": [
+              "packageName"
+            ]
           },
           "then": {
             "properties": {
               "bins": {
                 "required": [
                   "opcore",
-                  "opcore"
-                ]
-              }
-            }
-          }
-        },
-        {
-          "if": {
-            "properties": {
-              "packageName": {
-                "const": "@the-open-engine/opcore-asp-provider"
-              }
-            }
-          },
-          "then": {
-            "properties": {
-              "bins": {
-                "required": [
                   "opcore-asp-provider"
                 ]
-              }
-            }
-          }
-        },
-        {
-          "if": {
-            "properties": {
-              "packageName": {
-                "enum": [
-                  "@the-open-engine/opcore-graph-core-darwin-arm64",
-                  "@the-open-engine/opcore-graph-core-darwin-x64",
-                  "@the-open-engine/opcore-graph-core-linux-x64"
-                ]
-              }
-            }
-          },
-          "then": {
-            "properties": {
+              },
               "nativeArtifacts": {
-                "minItems": 1,
-                "maxItems": 1
-              }
-            }
-          },
-          "else": {
-            "properties": {
-              "nativeArtifacts": {
-                "maxItems": 0
+                "minItems": 3,
+                "maxItems": 3
               }
             }
           }
@@ -13254,7 +13226,8 @@
           "minimum": 0
         },
         "workspacePackageCount": {
-          "const": 15
+          "type": "integer",
+          "minimum": 1
         },
         "unresolvedLicenseCount": {
           "const": 0
@@ -13518,113 +13491,15 @@
         },
         "packageNames": {
           "type": "array",
-          "minItems": 15,
-          "maxItems": 15,
+          "minItems": 1,
+          "maxItems": 1,
           "items": {
             "$ref": "#/$defs/ReleaseReceiptPackageName"
           },
           "allOf": [
             {
               "contains": {
-                "const": "@the-open-engine/opcore-contracts"
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
                 "const": "opcore"
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "const": "@the-open-engine/opcore-graph"
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "const": "@the-open-engine/opcore-graph-core-darwin-arm64"
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "const": "@the-open-engine/opcore-graph-core-darwin-x64"
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "const": "@the-open-engine/opcore-graph-core-linux-x64"
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "const": "@the-open-engine/opcore-edit"
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "const": "@the-open-engine/opcore-validation"
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "const": "@the-open-engine/opcore-validation-clone"
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "const": "@the-open-engine/opcore-validation-docs"
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "const": "@the-open-engine/opcore-validation-python"
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "const": "@the-open-engine/opcore-validation-rust"
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "const": "@the-open-engine/opcore-validation-typescript"
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "const": "@the-open-engine/opcore-asp-provider"
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "const": "@the-open-engine/opcore-fixtures"
               },
               "minContains": 1,
               "maxContains": 1
@@ -13692,8 +13567,8 @@
         },
         "packages": {
           "type": "array",
-          "minItems": 15,
-          "maxItems": 15,
+          "minItems": 1,
+          "maxItems": 1,
           "items": {
             "$ref": "#/$defs/ReleaseReceiptPackageEvidence"
           },
@@ -13706,217 +13581,7 @@
                 ],
                 "properties": {
                   "packageName": {
-                    "const": "@the-open-engine/opcore-contracts"
-                  }
-                }
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "type": "object",
-                "required": [
-                  "packageName"
-                ],
-                "properties": {
-                  "packageName": {
-                    "const": "@the-open-engine/opcore-validation-python"
-                  }
-                }
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "type": "object",
-                "required": [
-                  "packageName"
-                ],
-                "properties": {
-                  "packageName": {
                     "const": "opcore"
-                  }
-                }
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "type": "object",
-                "required": [
-                  "packageName"
-                ],
-                "properties": {
-                  "packageName": {
-                    "const": "@the-open-engine/opcore-graph"
-                  }
-                }
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "type": "object",
-                "required": [
-                  "packageName"
-                ],
-                "properties": {
-                  "packageName": {
-                    "const": "@the-open-engine/opcore-graph-core-darwin-arm64"
-                  }
-                }
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "type": "object",
-                "required": [
-                  "packageName"
-                ],
-                "properties": {
-                  "packageName": {
-                    "const": "@the-open-engine/opcore-graph-core-darwin-x64"
-                  }
-                }
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "type": "object",
-                "required": [
-                  "packageName"
-                ],
-                "properties": {
-                  "packageName": {
-                    "const": "@the-open-engine/opcore-graph-core-linux-x64"
-                  }
-                }
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "type": "object",
-                "required": [
-                  "packageName"
-                ],
-                "properties": {
-                  "packageName": {
-                    "const": "@the-open-engine/opcore-edit"
-                  }
-                }
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "type": "object",
-                "required": [
-                  "packageName"
-                ],
-                "properties": {
-                  "packageName": {
-                    "const": "@the-open-engine/opcore-validation"
-                  }
-                }
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "type": "object",
-                "required": [
-                  "packageName"
-                ],
-                "properties": {
-                  "packageName": {
-                    "const": "@the-open-engine/opcore-validation-clone"
-                  }
-                }
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "type": "object",
-                "required": [
-                  "packageName"
-                ],
-                "properties": {
-                  "packageName": {
-                    "const": "@the-open-engine/opcore-validation-docs"
-                  }
-                }
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "type": "object",
-                "required": [
-                  "packageName"
-                ],
-                "properties": {
-                  "packageName": {
-                    "const": "@the-open-engine/opcore-validation-rust"
-                  }
-                }
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "type": "object",
-                "required": [
-                  "packageName"
-                ],
-                "properties": {
-                  "packageName": {
-                    "const": "@the-open-engine/opcore-validation-typescript"
-                  }
-                }
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "type": "object",
-                "required": [
-                  "packageName"
-                ],
-                "properties": {
-                  "packageName": {
-                    "const": "@the-open-engine/opcore-asp-provider"
-                  }
-                }
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "type": "object",
-                "required": [
-                  "packageName"
-                ],
-                "properties": {
-                  "packageName": {
-                    "const": "@the-open-engine/opcore-fixtures"
                   }
                 }
               },
@@ -14171,7 +13836,10 @@
               "packageName": {
                 "const": "opcore"
               }
-            }
+            },
+            "required": [
+              "packageName"
+            ]
           },
           "then": {
             "properties": {
@@ -14179,37 +13847,71 @@
                 "properties": {
                   "bins": {
                     "required": [
-                      "opcore"
+                      "opcore",
+                      "opcore-asp-provider"
                     ]
                   }
                 }
-              }
-            }
-          }
-        },
-        {
-          "if": {
-            "properties": {
-              "packageName": {
-                "const": "@the-open-engine/opcore-asp-provider"
-              }
-            }
-          },
-          "then": {
-            "properties": {
+              },
               "installedFiles": {
-                "contains": {
-                  "type": "object",
-                  "required": [
-                    "path"
-                  ],
-                  "properties": {
-                    "path": {
-                      "const": "node_modules/@the-open-engine/opcore-asp-provider/dist/manifests/asp-server.json"
-                    }
+                "allOf": [
+                  {
+                    "contains": {
+                      "type": "object",
+                      "required": [
+                        "path"
+                      ],
+                      "properties": {
+                        "path": {
+                          "const": "node_modules/opcore/node_modules/@the-open-engine/opcore-asp-provider/dist/manifests/asp-server.json"
+                        }
+                      }
+                    },
+                    "minContains": 1
+                  },
+                  {
+                    "contains": {
+                      "type": "object",
+                      "required": [
+                        "path"
+                      ],
+                      "properties": {
+                        "path": {
+                          "const": "node_modules/opcore/node_modules/@the-open-engine/opcore-graph-core-darwin-arm64/opcore-graph-core"
+                        }
+                      }
+                    },
+                    "minContains": 1
+                  },
+                  {
+                    "contains": {
+                      "type": "object",
+                      "required": [
+                        "path"
+                      ],
+                      "properties": {
+                        "path": {
+                          "const": "node_modules/opcore/node_modules/@the-open-engine/opcore-graph-core-darwin-x64/opcore-graph-core"
+                        }
+                      }
+                    },
+                    "minContains": 1
+                  },
+                  {
+                    "contains": {
+                      "type": "object",
+                      "required": [
+                        "path"
+                      ],
+                      "properties": {
+                        "path": {
+                          "const": "node_modules/opcore/node_modules/@the-open-engine/opcore-graph-core-linux-x64/opcore-graph-core"
+                        }
+                      }
+                    },
+                    "minContains": 1
                   }
-                },
-                "minContains": 1
+                ]
               }
             }
           }
@@ -17456,113 +17158,15 @@
         },
         "packageNames": {
           "type": "array",
-          "minItems": 15,
-          "maxItems": 15,
+          "minItems": 1,
+          "maxItems": 1,
           "items": {
             "$ref": "#/$defs/ReleaseReceiptPackageName"
           },
           "allOf": [
             {
               "contains": {
-                "const": "@the-open-engine/opcore-contracts"
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
                 "const": "opcore"
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "const": "@the-open-engine/opcore-graph"
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "const": "@the-open-engine/opcore-graph-core-darwin-arm64"
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "const": "@the-open-engine/opcore-graph-core-darwin-x64"
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "const": "@the-open-engine/opcore-graph-core-linux-x64"
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "const": "@the-open-engine/opcore-edit"
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "const": "@the-open-engine/opcore-validation"
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "const": "@the-open-engine/opcore-validation-clone"
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "const": "@the-open-engine/opcore-validation-docs"
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "const": "@the-open-engine/opcore-validation-python"
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "const": "@the-open-engine/opcore-validation-rust"
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "const": "@the-open-engine/opcore-validation-typescript"
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "const": "@the-open-engine/opcore-asp-provider"
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "const": "@the-open-engine/opcore-fixtures"
               },
               "minContains": 1,
               "maxContains": 1
@@ -17571,8 +17175,8 @@
         },
         "installedPackages": {
           "type": "array",
-          "minItems": 13,
-          "maxItems": 13,
+          "minItems": 1,
+          "maxItems": 1,
           "items": {
             "$ref": "#/$defs/ReleaseCutoverInstalledPackageEvidence"
           },
@@ -17585,191 +17189,7 @@
                 ],
                 "properties": {
                   "packageName": {
-                    "const": "@the-open-engine/opcore-contracts"
-                  }
-                }
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "type": "object",
-                "required": [
-                  "packageName"
-                ],
-                "properties": {
-                  "packageName": {
-                    "const": "@the-open-engine/opcore-validation-python"
-                  }
-                }
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "type": "object",
-                "required": [
-                  "packageName"
-                ],
-                "properties": {
-                  "packageName": {
                     "const": "opcore"
-                  }
-                }
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "type": "object",
-                "required": [
-                  "packageName"
-                ],
-                "properties": {
-                  "packageName": {
-                    "const": "@the-open-engine/opcore-graph"
-                  }
-                }
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "type": "object",
-                "required": [
-                  "packageName"
-                ],
-                "properties": {
-                  "packageName": {
-                    "const": "@the-open-engine/opcore-edit"
-                  }
-                }
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "type": "object",
-                "required": [
-                  "packageName"
-                ],
-                "properties": {
-                  "packageName": {
-                    "const": "@the-open-engine/opcore-validation"
-                  }
-                }
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "type": "object",
-                "required": [
-                  "packageName"
-                ],
-                "properties": {
-                  "packageName": {
-                    "const": "@the-open-engine/opcore-validation-clone"
-                  }
-                }
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "type": "object",
-                "required": [
-                  "packageName"
-                ],
-                "properties": {
-                  "packageName": {
-                    "const": "@the-open-engine/opcore-validation-docs"
-                  }
-                }
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "type": "object",
-                "required": [
-                  "packageName"
-                ],
-                "properties": {
-                  "packageName": {
-                    "const": "@the-open-engine/opcore-validation-rust"
-                  }
-                }
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "type": "object",
-                "required": [
-                  "packageName"
-                ],
-                "properties": {
-                  "packageName": {
-                    "const": "@the-open-engine/opcore-validation-typescript"
-                  }
-                }
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "type": "object",
-                "required": [
-                  "packageName"
-                ],
-                "properties": {
-                  "packageName": {
-                    "const": "@the-open-engine/opcore-asp-provider"
-                  }
-                }
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "type": "object",
-                "required": [
-                  "packageName"
-                ],
-                "properties": {
-                  "packageName": {
-                    "enum": [
-                      "@the-open-engine/opcore-graph-core-darwin-arm64",
-                      "@the-open-engine/opcore-graph-core-darwin-x64",
-                      "@the-open-engine/opcore-graph-core-linux-x64"
-                    ]
-                  }
-                }
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "type": "object",
-                "required": [
-                  "packageName"
-                ],
-                "properties": {
-                  "packageName": {
-                    "const": "@the-open-engine/opcore-fixtures"
                   }
                 }
               },
@@ -17908,7 +17328,7 @@
               "const": "opcore"
             },
             "packageName": {
-              "const": "@the-open-engine/opcore-asp-provider"
+              "const": "opcore"
             },
             "binPath": {
               "type": "string",
@@ -17916,7 +17336,7 @@
             },
             "indexPath": {
               "type": "string",
-              "pattern": "node_modules/@the-open-engine/opcore-asp-provider/dist/index\\.js$"
+              "pattern": "node_modules/opcore/node_modules/@the-open-engine/opcore-asp-provider/dist/index\\.js$"
             },
             "indexSha256": {
               "$ref": "#/$defs/Sha256"
@@ -18392,113 +17812,15 @@
         },
         "packageNames": {
           "type": "array",
-          "minItems": 15,
-          "maxItems": 15,
+          "minItems": 1,
+          "maxItems": 1,
           "items": {
             "$ref": "#/$defs/ReleaseReceiptPackageName"
           },
           "allOf": [
             {
               "contains": {
-                "const": "@the-open-engine/opcore-contracts"
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
                 "const": "opcore"
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "const": "@the-open-engine/opcore-graph"
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "const": "@the-open-engine/opcore-graph-core-darwin-arm64"
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "const": "@the-open-engine/opcore-graph-core-darwin-x64"
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "const": "@the-open-engine/opcore-graph-core-linux-x64"
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "const": "@the-open-engine/opcore-edit"
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "const": "@the-open-engine/opcore-validation"
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "const": "@the-open-engine/opcore-validation-clone"
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "const": "@the-open-engine/opcore-validation-docs"
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "const": "@the-open-engine/opcore-validation-python"
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "const": "@the-open-engine/opcore-validation-rust"
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "const": "@the-open-engine/opcore-validation-typescript"
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "const": "@the-open-engine/opcore-asp-provider"
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "const": "@the-open-engine/opcore-fixtures"
               },
               "minContains": 1,
               "maxContains": 1
@@ -18507,8 +17829,8 @@
         },
         "installedPackages": {
           "type": "array",
-          "minItems": 13,
-          "maxItems": 13,
+          "minItems": 1,
+          "maxItems": 1,
           "items": {
             "$ref": "#/$defs/ReleaseCutoverInstalledPackageEvidence"
           },
@@ -18521,191 +17843,7 @@
                 ],
                 "properties": {
                   "packageName": {
-                    "const": "@the-open-engine/opcore-contracts"
-                  }
-                }
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "type": "object",
-                "required": [
-                  "packageName"
-                ],
-                "properties": {
-                  "packageName": {
-                    "const": "@the-open-engine/opcore-validation-python"
-                  }
-                }
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "type": "object",
-                "required": [
-                  "packageName"
-                ],
-                "properties": {
-                  "packageName": {
                     "const": "opcore"
-                  }
-                }
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "type": "object",
-                "required": [
-                  "packageName"
-                ],
-                "properties": {
-                  "packageName": {
-                    "const": "@the-open-engine/opcore-graph"
-                  }
-                }
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "type": "object",
-                "required": [
-                  "packageName"
-                ],
-                "properties": {
-                  "packageName": {
-                    "const": "@the-open-engine/opcore-edit"
-                  }
-                }
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "type": "object",
-                "required": [
-                  "packageName"
-                ],
-                "properties": {
-                  "packageName": {
-                    "const": "@the-open-engine/opcore-validation"
-                  }
-                }
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "type": "object",
-                "required": [
-                  "packageName"
-                ],
-                "properties": {
-                  "packageName": {
-                    "const": "@the-open-engine/opcore-validation-clone"
-                  }
-                }
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "type": "object",
-                "required": [
-                  "packageName"
-                ],
-                "properties": {
-                  "packageName": {
-                    "const": "@the-open-engine/opcore-validation-docs"
-                  }
-                }
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "type": "object",
-                "required": [
-                  "packageName"
-                ],
-                "properties": {
-                  "packageName": {
-                    "const": "@the-open-engine/opcore-validation-rust"
-                  }
-                }
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "type": "object",
-                "required": [
-                  "packageName"
-                ],
-                "properties": {
-                  "packageName": {
-                    "const": "@the-open-engine/opcore-validation-typescript"
-                  }
-                }
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "type": "object",
-                "required": [
-                  "packageName"
-                ],
-                "properties": {
-                  "packageName": {
-                    "const": "@the-open-engine/opcore-asp-provider"
-                  }
-                }
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "type": "object",
-                "required": [
-                  "packageName"
-                ],
-                "properties": {
-                  "packageName": {
-                    "enum": [
-                      "@the-open-engine/opcore-graph-core-darwin-arm64",
-                      "@the-open-engine/opcore-graph-core-darwin-x64",
-                      "@the-open-engine/opcore-graph-core-linux-x64"
-                    ]
-                  }
-                }
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "type": "object",
-                "required": [
-                  "packageName"
-                ],
-                "properties": {
-                  "packageName": {
-                    "const": "@the-open-engine/opcore-fixtures"
                   }
                 }
               },
@@ -20307,6 +19445,7 @@
       "required": [
         "targetPlatform",
         "packageName",
+        "bundledPackageName",
         "binaryPath",
         "metadataPath",
         "checksumPath",
@@ -20317,16 +19456,16 @@
           "$ref": "#/$defs/GraphCoreNativeSupportedTarget"
         },
         "packageName": {
-          "$ref": "#/$defs/GraphCoreNativePackageName"
+          "const": "opcore"
         },
         "binaryPath": {
-          "const": "opcore-graph-core"
+          "$ref": "#/$defs/ManagedToolPackagePath"
         },
         "metadataPath": {
-          "const": "metadata.json"
+          "$ref": "#/$defs/ManagedToolPackagePath"
         },
         "checksumPath": {
-          "const": "opcore-graph-core.sha256"
+          "$ref": "#/$defs/ManagedToolPackagePath"
         },
         "artifactIds": {
           "type": "object",
@@ -20355,6 +19494,9 @@
               "pattern": "^graph-core-checksum-(darwin-arm64|darwin-x64|linux-x64)$"
             }
           }
+        },
+        "bundledPackageName": {
+          "$ref": "#/$defs/GraphCoreNativePackageName"
         }
       },
       "allOf": [
@@ -20371,8 +19513,17 @@
           },
           "then": {
             "properties": {
-              "packageName": {
+              "bundledPackageName": {
                 "const": "@the-open-engine/opcore-graph-core-darwin-arm64"
+              },
+              "binaryPath": {
+                "const": "node_modules/@the-open-engine/opcore-graph-core-darwin-arm64/opcore-graph-core"
+              },
+              "metadataPath": {
+                "const": "node_modules/@the-open-engine/opcore-graph-core-darwin-arm64/metadata.json"
+              },
+              "checksumPath": {
+                "const": "node_modules/@the-open-engine/opcore-graph-core-darwin-arm64/opcore-graph-core.sha256"
               },
               "artifactIds": {
                 "properties": {
@@ -20406,8 +19557,17 @@
           },
           "then": {
             "properties": {
-              "packageName": {
+              "bundledPackageName": {
                 "const": "@the-open-engine/opcore-graph-core-darwin-x64"
+              },
+              "binaryPath": {
+                "const": "node_modules/@the-open-engine/opcore-graph-core-darwin-x64/opcore-graph-core"
+              },
+              "metadataPath": {
+                "const": "node_modules/@the-open-engine/opcore-graph-core-darwin-x64/metadata.json"
+              },
+              "checksumPath": {
+                "const": "node_modules/@the-open-engine/opcore-graph-core-darwin-x64/opcore-graph-core.sha256"
               },
               "artifactIds": {
                 "properties": {
@@ -20441,8 +19601,17 @@
           },
           "then": {
             "properties": {
-              "packageName": {
+              "bundledPackageName": {
                 "const": "@the-open-engine/opcore-graph-core-linux-x64"
+              },
+              "binaryPath": {
+                "const": "node_modules/@the-open-engine/opcore-graph-core-linux-x64/opcore-graph-core"
+              },
+              "metadataPath": {
+                "const": "node_modules/@the-open-engine/opcore-graph-core-linux-x64/metadata.json"
+              },
+              "checksumPath": {
+                "const": "node_modules/@the-open-engine/opcore-graph-core-linux-x64/opcore-graph-core.sha256"
               },
               "artifactIds": {
                 "properties": {

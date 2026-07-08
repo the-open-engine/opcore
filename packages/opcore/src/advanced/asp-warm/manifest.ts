@@ -1,6 +1,6 @@
 export const aspWarmSessionManifest = {
   publicHelp: false,
-  stateDir: ".lattice/asp",
+  stateDir: ".opcore/asp",
   capabilities: ["check", "inspect/references", "edit/rename", "session/shutdown"],
   writesSourceFiles: false,
   autoSpawned: false,

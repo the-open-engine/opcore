@@ -499,11 +499,11 @@ async function withFixtureCopy(runFixture) {
 }
 
 function skipGeneratedStore(source) {
-  return !source.includes(`${join(".lattice", "graph")}`);
+  return !source.includes(`${join(".opcore", "graph")}`);
 }
 
 function corruptSnapshotSchema(fixtureRoot) {
-  const db = new DatabaseSync(join(fixtureRoot, ".lattice/graph/graph.db"));
+  const db = new DatabaseSync(join(fixtureRoot, ".opcore/graph/graph.db"));
   try {
     const metadata = JSON.parse(db.prepare("select value from metadata where key = 'lattice_snapshot_metadata'").get().value);
     metadata.schemaVersion = 2;

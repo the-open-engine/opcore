@@ -2,24 +2,6 @@ name: release-dry-run
 
 on:
   workflow_dispatch:
-  pull_request:
-    paths:
-      - "packages/**"
-      - "crates/**"
-      - "scripts/**"
-      - "Cargo.*"
-      - "package*.json"
-      - ".github/workflows/release-dry-run.yml"
-  push:
-    branches:
-      - main
-    paths:
-      - "packages/**"
-      - "crates/**"
-      - "scripts/**"
-      - "Cargo.*"
-      - "package*.json"
-      - ".github/workflows/release-dry-run.yml"
 
 permissions:
   contents: read
@@ -131,10 +113,10 @@ jobs:
       - name: Release dry-run
         run: npm run release:dry-run
         env:
-          LATTICE_REQUIRE_ALL_NATIVE_PACKAGES: "1"
+          OPCORE_REQUIRE_ALL_NATIVE_PACKAGES: "1"
 
       - name: Pack, release, and cutover checks
         run: npm run pack:check && npm run release-receipt:check && npm run cutover:check
         env:
-          LATTICE_REQUIRE_ALL_NATIVE_PACKAGES: "1"
+          OPCORE_REQUIRE_ALL_NATIVE_PACKAGES: "1"
           OPCORE_CUTOVER_REUSE_CURRENT_TOOL_GUARDRAILS: "1"

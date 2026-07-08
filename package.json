@@ -55,7 +55,7 @@
     "setup": "npm ci && npm run setup:tools",
     "setup:tools": "bash ./scripts/setup-current-tools.sh",
     "test": "node --test tests/*.test.mjs",
-    "test:ci": "OPCORE_CI_RECEIPT_GATES_RUN_SEPARATELY=1 node --test tests/*.test.mjs",
+    "test:ci": "node scripts/run-test-ci.mjs",
     "verify": "bash ./scripts/ci/run-local-ci-equivalent.sh",
     "current-tools:validate-all": "./.ace/runtime/bin/rox check --all --no-daemon",
     "current-tools:validate-rust-graph": "node scripts/check-rust-graph-function-metrics.mjs",

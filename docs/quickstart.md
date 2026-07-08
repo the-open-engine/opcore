@@ -97,6 +97,6 @@ Private ASP hosts may launch the provider process behind host-owned decisions an
 opcore-asp-provider --stdio
 ```
 
-The aggregate `opcore` package exposes only the `opcore` bin; `opcore-asp-provider` comes from the separate `@the-open-engine/opcore-asp-provider` package.
+The single `opcore` npm package exposes both `opcore` and `opcore-asp-provider`; no separate provider package is installed for the alpha.
 
 Do not treat provider output as a gate decision. The provider returns ASP Assessments; the ASP host returns allow, deny, or indeterminate decisions plus receipts.

@@ -100,13 +100,13 @@ function installPackedProject(tempRoot) {
 }
 
 function providerEvidence(tempRoot, project) {
-  const providerIndex = join(project, "node_modules", "@the-open-engine", "opcore-asp-provider", "dist", "index.js");
+  const providerIndex = join(project, "node_modules", "opcore", "node_modules", "@the-open-engine", "opcore-asp-provider", "dist", "index.js");
   const manifest = writeAspServerManifest(tempRoot, project, providerIndex);
   return {
     providerId: "opcore",
-    packageName: "@the-open-engine/opcore-asp-provider",
+    packageName: "opcore",
     binPath: "node_modules/.bin/opcore-asp-provider",
-    indexPath: "node_modules/@the-open-engine/opcore-asp-provider/dist/index.js",
+    indexPath: "node_modules/opcore/node_modules/@the-open-engine/opcore-asp-provider/dist/index.js",
     indexSha256: sha256File(providerIndex),
     command: ["opcore-asp-provider", "--stdio"],
     entrypoint: manifest.manifest.entrypoint,

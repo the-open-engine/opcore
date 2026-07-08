@@ -1,11 +1,11 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { createAspHostFixtureRepo } from "../scripts/asp-dogfood-receipt-support.mjs";
+import { createAspHostFixtureRepo, runCurrentToolGuardrails } from "../scripts/asp-dogfood-receipt-support.mjs";
 import { validateAspDogfoodReceipt } from "../packages/contracts/dist/index.js";
 import { invalidAspDogfoodCases, validAspDogfoodReceipt } from "./helpers/asp-dogfood-fixture.mjs";
 
@@ -41,6 +41,22 @@ describe("ASP dogfood receipt", () => {
     const ciVerify = receipt.hostEvaluation.ciVerify;
     receipt.hostEvaluation.ciVerify = { ...ciVerify, status: "failed", exitCode: 1, assertion: "asp ci verify failed evidence recorded" };
     assert.equal(validateAspDogfoodReceipt(receipt).issue, "#120");
+  });
+
+  it("can reuse recorded retained current-tool guardrails for receipt refreshes", () => {
+    const temp = mkdtempSync(join(tmpdir(), "lattice-asp-dogfood-guardrails-test-"));
+    const previous = process.env.OPCORE_ASP_DOGFOOD_REUSE_CURRENT_TOOL_GUARDRAILS;
+    try {
+      mkdirSync(join(temp, "docs", "release"), { recursive: true });
+      const receipt = validAspDogfoodReceipt();
+      writeFileSync(join(temp, "docs", "release", "asp-dogfood-receipt.json"), `${JSON.stringify(receipt, null, 2)}\n`);
+      process.env.OPCORE_ASP_DOGFOOD_REUSE_CURRENT_TOOL_GUARDRAILS = "1";
+      assert.deepEqual(runCurrentToolGuardrails(temp, true), receipt.currentToolGuardrails);
+    } finally {
+      if (previous === undefined) delete process.env.OPCORE_ASP_DOGFOOD_REUSE_CURRENT_TOOL_GUARDRAILS;
+      else process.env.OPCORE_ASP_DOGFOOD_REUSE_CURRENT_TOOL_GUARDRAILS = previous;
+      rmSync(temp, { recursive: true, force: true });
+    }
   });
 
   it("creates an isolated changed fixture repo for clean-tree host dogfood", () => {

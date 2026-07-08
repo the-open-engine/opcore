@@ -254,7 +254,7 @@ async function withFixtureCopy(runFixture) {
 }
 
 function skipGeneratedStore(source) {
-  return !source.includes(`${join(".lattice", "graph")}`);
+  return !source.includes(`${join(".opcore", "graph")}`);
 }
 
 function patchFor(path, before, after) {

@@ -41,7 +41,7 @@ const patchTreeForbiddenRoots = [
   ".code-review-graph",
   ".rox-cache",
   ".robustness-engine-cache",
-  ".lattice/graph",
+  ".opcore/graph",
   "target",
   "node_modules"
 ] as const;

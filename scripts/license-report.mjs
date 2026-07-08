@@ -40,12 +40,12 @@ for (const [lockPath, entry] of Object.entries(packages)) {
   if (!lockPath.startsWith("packages/")) continue;
   const bundled = entry.bundleDependencies ?? entry.bundledDependencies ?? [];
   for (const name of bundled) {
-    const runtimeEntry = packages[`node_modules/${name}`];
+    const runtimeEntry = bundledPackageMetadata(name);
     bundledRuntime.push({
       name,
-      version: runtimeEntry?.version ?? "workspace-bundled",
-      license: runtimeEntry?.license ?? "UNKNOWN",
-      source: lockPath
+      version: runtimeEntry.version,
+      license: runtimeEntry.license,
+      source: runtimeEntry.source ?? lockPath
     });
   }
 }
@@ -140,4 +140,25 @@ function comparePackage(left, right) {
 
 function formatPackage(entry) {
   return `${entry.name}@${entry.version}`;
+}
+
+function bundledPackageMetadata(name) {
+  const runtimeEntry = packages[`node_modules/${name}`];
+  if (!runtimeEntry) {
+    return { version: "workspace-bundled", license: "UNKNOWN" };
+  }
+  if (runtimeEntry.link === true && runtimeEntry.resolved) {
+    const manifestPath = join(runtimeEntry.resolved, "package.json");
+    const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+    return {
+      version: manifest.version ?? "workspace-bundled",
+      license: manifest.license ?? "UNKNOWN",
+      source: manifestPath
+    };
+  }
+  return {
+    version: runtimeEntry.version ?? "unknown",
+    license: runtimeEntry.license ?? "UNKNOWN",
+    source: `node_modules/${name}`
+  };
 }
