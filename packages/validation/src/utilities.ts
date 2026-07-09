@@ -148,25 +148,25 @@ export function repoPathHasGlobSyntax(pattern: string, characterClasses = false)
 export function repoPathGlobToRegex(pattern: string, options: RepoPathGlobOptions = {}): RegExp {
   let source = "^";
   for (let index = 0; index < pattern.length; index += 1) {
-    const char = pattern[index];
-    const next = pattern[index + 1];
-    const afterNext = pattern[index + 2];
-    if (char === "*" && next === "*" && afterNext === "/" && options.optionalGlobstarSlash === true) {
-      source += "(?:.*/)?";
-      index += 2;
-    } else if (char === "*" && next === "*") {
-      source += ".*";
-      index += 1;
-    } else if (char === "*") {
-      source += "[^/]*";
-    } else if (char === "?") {
-      source += "[^/]";
-    } else {
-      source += escapeRegex(char ?? "");
-    }
+    const token = repoPathGlobToken(pattern, index, options);
+    source += token.source;
+    index += token.consumed - 1;
   }
   const suffix = options.matchDescendants === true ? "(?:/.*)?$" : "$";
   return new RegExp(`${source}${suffix}`);
+}
+
+function repoPathGlobToken(pattern: string, index: number, options: RepoPathGlobOptions): { source: string; consumed: number } {
+  const char = pattern[index];
+  const next = pattern[index + 1];
+  const afterNext = pattern[index + 2];
+  if (char === "*" && next === "*" && afterNext === "/" && options.optionalGlobstarSlash === true) {
+    return { source: "(?:.*/)?", consumed: 3 };
+  }
+  if (char === "*" && next === "*") return { source: ".*", consumed: 2 };
+  if (char === "*") return { source: "[^/]*", consumed: 1 };
+  if (char === "?") return { source: "[^/]", consumed: 1 };
+  return { source: escapeRegex(char ?? ""), consumed: 1 };
 }
 
 function escapeRegex(value: string): string {

@@ -201,6 +201,17 @@ pub fn analyze_clones(request: CloneAnalysisRequest) -> Result<CloneAnalysisResu
 }
 
 fn validate_request(request: &CloneAnalysisRequest) -> Result<(), CloneError> {
+    validate_protocol(request)?;
+    if request.repo.repo_root.as_deref().is_none_or(str::is_empty) {
+        return Err(CloneError::MissingRepoRoot);
+    }
+    validate_positive_options(request)?;
+    validate_request_paths(request)?;
+    validate_modes(&request.modes)?;
+    Ok(())
+}
+
+fn validate_protocol(request: &CloneAnalysisRequest) -> Result<(), CloneError> {
     if request.protocol != CLONE_PROTOCOL {
         return Err(CloneError::InvalidRequest(format!(
             "protocol must be {CLONE_PROTOCOL}"
@@ -211,29 +222,26 @@ fn validate_request(request: &CloneAnalysisRequest) -> Result<(), CloneError> {
             "schemaVersion must be {CLONE_SCHEMA_VERSION}"
         )));
     }
-    if request.repo.repo_root.as_deref().is_none_or(str::is_empty) {
-        return Err(CloneError::MissingRepoRoot);
+    Ok(())
+}
+
+fn validate_positive_options(request: &CloneAnalysisRequest) -> Result<(), CloneError> {
+    validate_positive_option("windowSize", request.window_size)?;
+    validate_positive_option("minLines", request.min_lines)?;
+    validate_positive_option("minTokens", request.min_tokens)?;
+    validate_positive_option("threshold", request.threshold)
+}
+
+fn validate_positive_option(label: &str, value: Option<usize>) -> Result<(), CloneError> {
+    if value == Some(0) {
+        return Err(CloneError::InvalidRequest(format!(
+            "{label} must be positive"
+        )));
     }
-    if request.window_size == Some(0) {
-        return Err(CloneError::InvalidRequest(
-            "windowSize must be positive".to_string(),
-        ));
-    }
-    if request.min_lines == Some(0) {
-        return Err(CloneError::InvalidRequest(
-            "minLines must be positive".to_string(),
-        ));
-    }
-    if request.min_tokens == Some(0) {
-        return Err(CloneError::InvalidRequest(
-            "minTokens must be positive".to_string(),
-        ));
-    }
-    if request.threshold == Some(0) {
-        return Err(CloneError::InvalidRequest(
-            "threshold must be positive".to_string(),
-        ));
-    }
+    Ok(())
+}
+
+fn validate_request_paths(request: &CloneAnalysisRequest) -> Result<(), CloneError> {
     for path in &request.paths {
         normalize_repo_relative_path(path, "clone request path")
             .map_err(|message| CloneError::InvalidRequest(message.to_string()))?;
@@ -251,16 +259,20 @@ fn validate_request(request: &CloneAnalysisRequest) -> Result<(), CloneError> {
     for pattern in &request.exclude {
         validate_clone_pattern(pattern, "clone exclude pattern")?;
     }
-    for mode in &request.modes {
+    for overlay in &request.overlays {
+        normalize_repo_relative_path(overlay.path(), "clone overlay path")
+            .map_err(|message| CloneError::InvalidRequest(message.to_string()))?;
+    }
+    Ok(())
+}
+
+fn validate_modes(modes: &[String]) -> Result<(), CloneError> {
+    for mode in modes {
         if mode.is_empty() {
             return Err(CloneError::InvalidRequest(
                 "clone mode must be non-empty".to_string(),
             ));
         }
-    }
-    for overlay in &request.overlays {
-        normalize_repo_relative_path(overlay.path(), "clone overlay path")
-            .map_err(|message| CloneError::InvalidRequest(message.to_string()))?;
     }
     Ok(())
 }

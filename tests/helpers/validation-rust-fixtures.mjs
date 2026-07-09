@@ -45,7 +45,7 @@ export function request(overrides = {}) {
 export function rustCrate(overrides = {}) {
   return {
     "Cargo.toml": '[workspace]\nmembers = ["crates/app"]\nresolver = "2"\n',
-    "crates/app/Cargo.toml": '[package]\nname = "app"\nversion = "0.1.0"\nedition = "2021"\n',
+    "crates/app/Cargo.toml": '[package]\nname = "app"\nversion = "0.2.0"\nedition = "2021"\n',
     "crates/app/src/lib.rs": "pub fn answer() -> i32 { 42 }\n",
     ...overrides
   };

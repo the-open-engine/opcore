@@ -76,7 +76,7 @@ describe("Opcore ASP provider", () => {
 
         const init = await peer.request("initialize", {
           protocolVersion: "asp/0.1",
-          host: { name: "fake-host", version: "0.1.0-test" },
+          host: { name: "fake-host", version: "0.2.0-test" },
           hostCapabilities: { readBlob: true, listTree: true, putBlob: false },
           workspace: { root: repo, baseline: host.baseline },
           assuranceMode: "gated"
@@ -160,7 +160,7 @@ describe("Opcore ASP provider", () => {
       try {
         await peer.request("initialize", {
           protocolVersion: "asp/0.1",
-          host: { name: "fake-host", version: "0.1.0-test" },
+          host: { name: "fake-host", version: "0.2.0-test" },
           hostCapabilities: { readBlob: true, listTree: true, putBlob: false },
           workspace: { root: repo, baseline: host.baseline },
           assuranceMode: "gated"
@@ -232,7 +232,7 @@ describe("Opcore ASP provider", () => {
       try {
         await peer.request("initialize", {
           protocolVersion: "asp/0.1",
-          host: { name: "fake-host", version: "0.1.0-test" },
+          host: { name: "fake-host", version: "0.2.0-test" },
           hostCapabilities: { readBlob: true, listTree: true, putBlob: false },
           workspace: { root: repo, baseline: host.baseline },
           assuranceMode: "gated"
@@ -316,7 +316,7 @@ describe("Opcore ASP provider", () => {
 
     assert.equal(manifest.$schema, "https://covibes.dev/asp/schemas/server-manifest.schema.json");
     assert.equal(manifest.manifestVersion, "asp-server/0.1");
-    assert.deepEqual(manifest.server, { id: "opcore", name: "Opcore", version: "0.1.0" });
+    assert.deepEqual(manifest.server, { id: "opcore", name: "Opcore", version: "0.2.0" });
     assert.deepEqual(manifest.protocolVersions, ["asp/0.1"]);
     assert.deepEqual(manifest.capabilities, ["check"]);
     assert.deepEqual(manifest.entrypoint, { transport: "stdio", bin: "opcore-asp-provider", args: ["--stdio"] });

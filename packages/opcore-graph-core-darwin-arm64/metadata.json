@@ -1,9 +1,9 @@
 {
   "artifactName": "opcore-graph-core",
-  "artifactVersion": "0.1.0",
+  "artifactVersion": "0.2.0",
   "targetPlatform": "darwin-arm64",
   "binaryPath": "opcore-graph-core",
   "checksumPath": "opcore-graph-core.sha256",
-  "checksumSha256": "28dcd0e65e9200cc75f70247c4f6da96eb21d7ac74aea6a87c25444179a81752",
+  "checksumSha256": "c222610c492e628fa48ff50be22310e5bf8ebcd62bffbde1903d1fa91c45f6cb",
   "buildProfile": "release"
 }

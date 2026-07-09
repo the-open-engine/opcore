@@ -53,11 +53,23 @@ function resolvePackSpecifier(repoRoot: string, specifier: string): string {
 function normalizeCheckPackExport(value: unknown): OpcoreCheckPack {
   const candidate = isPlainObject(value) && "default" in value ? value.default : value;
   if (!isPlainObject(candidate)) throw new Error("check pack export must be an object");
-  const id = candidate.id;
-  if (typeof id !== "string" || id.trim().length === 0) throw new Error("check pack id must be a non-empty string");
-  const version = candidate.version;
-  if (version !== undefined && typeof version !== "string") throw new Error(`check pack ${id} version must be a string`);
-  const checks = candidate.checks;
-  if (!Array.isArray(checks) || checks.length === 0) throw new Error(`check pack ${id} checks must be a non-empty array`);
+  const id = readCheckPackId(candidate.id);
+  const version = readCheckPackVersion(candidate.version, id);
+  const checks = readCheckPackChecks(candidate.checks, id);
   return version === undefined ? { id, checks } : { id, version, checks };
+}
+
+function readCheckPackId(value: unknown): string {
+  if (typeof value !== "string" || value.trim().length === 0) throw new Error("check pack id must be a non-empty string");
+  return value;
+}
+
+function readCheckPackVersion(value: unknown, id: string): string | undefined {
+  if (value !== undefined && typeof value !== "string") throw new Error(`check pack ${id} version must be a string`);
+  return value;
+}
+
+function readCheckPackChecks(value: unknown, id: string): readonly ValidationCheckDefinition[] {
+  if (!Array.isArray(value) || value.length === 0) throw new Error(`check pack ${id} checks must be a non-empty array`);
+  return value;
 }

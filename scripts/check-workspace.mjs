@@ -18,7 +18,7 @@ const packageTracks = [
   { dir: "asp-provider", name: "@the-open-engine/opcore-asp-provider", bin: "opcore-asp-provider" },
   { dir: "fixtures", name: "@the-open-engine/opcore-fixtures" }
 ];
-const releaseVersion = "0.1.0";
+const releaseVersion = "0.2.0";
 const packageNames = new Set(packageTracks.map((entry) => entry.name));
 const publicPackageNames = new Set(["opcore"]);
 const rootNativeOptionalDependencies = new Map([

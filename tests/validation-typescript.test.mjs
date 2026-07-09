@@ -2611,7 +2611,7 @@ function graphHandshake(overrides = {}) {
     provider: "opcore-graph",
     graphSchemaVersion: 1,
     artifactName: "opcore-graph-core",
-    artifactVersion: "0.1.0",
+    artifactVersion: "0.2.0",
     targetPlatform: "test",
     supportedOperations: ["build", "update", "watch", "status", "query", "ping", "health", "shutdown"],
     nodeKinds: ["File", "Function", "Variable"],
@@ -2636,7 +2636,7 @@ function graphHandshake(overrides = {}) {
     ],
     artifact: {
       artifactName: "opcore-graph-core",
-      artifactVersion: "0.1.0",
+      artifactVersion: "0.2.0",
       targetPlatform: "test",
       binaryPath: "dist/native/test/opcore-graph-core",
       checksumPath: "dist/native/test/opcore-graph-core.sha256",

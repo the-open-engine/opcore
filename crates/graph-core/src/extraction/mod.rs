@@ -1,6 +1,7 @@
 pub mod diagnostics;
 mod discovery;
 mod facts;
+mod ignore;
 mod language;
 mod parser;
 mod python_imports;

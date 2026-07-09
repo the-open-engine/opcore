@@ -35,25 +35,57 @@ export function deadCodeEntrypointReachability(
   const fileImports = fileImportAdjacency(edges, fileNodesByAlias);
   const contains = fileContainsAdjacency(edges, fileNodesByAlias, symbolNodesByAlias);
   const symbolReferences = symbolReferenceAdjacency(edges, symbolNodesByAlias);
+  const fileReachability = collectReachableFiles(entrypointPaths, fileNodesByAlias, fileImports, contains);
+  const reachableSymbolAliases = collectReachableSymbols(fileReachability.pendingSymbols, symbolNodesByAlias, symbolReferences);
+
+  return {
+    configured: entrypointPaths.length > 0,
+    entrypointPaths,
+    reachableFileAliases: fileReachability.reachableFileAliases,
+    reachableSymbolAliases
+  };
+}
+
+function collectReachableFiles(
+  entrypointPaths: readonly string[],
+  fileNodesByAlias: ReadonlyMap<string, string>,
+  fileImports: ReadonlyMap<string, readonly string[]>,
+  contains: ReadonlyMap<string, readonly string[]>
+): { readonly reachableFileAliases: ReadonlySet<string>; readonly pendingSymbols: readonly string[] } {
   const reachableFileAliases = new Set<string>();
-  const reachableSymbolAliases = new Set<string>();
   const pendingFiles = [...entrypointPaths.flatMap((path) => fileAliases(path, fileNodesByAlias.get(path)))];
   const pendingSymbols: string[] = [];
-
   while (pendingFiles.length > 0) {
     const alias = pendingFiles.shift();
     if (alias === undefined || reachableFileAliases.has(alias)) continue;
     reachableFileAliases.add(alias);
-    const filePath = filePathFromAlias(alias) ?? fileNodesByAlias.get(alias);
-    if (filePath !== undefined) {
-      for (const fileAlias of fileAliases(filePath, fileNodesByAlias.get(filePath))) {
-        if (!reachableFileAliases.has(fileAlias)) pendingFiles.push(fileAlias);
-      }
-    }
+    enqueueFileAliases(alias, fileNodesByAlias, reachableFileAliases, pendingFiles);
     for (const symbolAlias of contains.get(alias) ?? []) pendingSymbols.push(symbolAlias);
     for (const target of fileImports.get(alias) ?? []) pendingFiles.push(target);
   }
+  return { reachableFileAliases, pendingSymbols };
+}
 
+function enqueueFileAliases(
+  alias: string,
+  fileNodesByAlias: ReadonlyMap<string, string>,
+  reachableFileAliases: ReadonlySet<string>,
+  pendingFiles: string[]
+): void {
+  const filePath = filePathFromAlias(alias) ?? fileNodesByAlias.get(alias);
+  if (filePath === undefined) return;
+  for (const fileAlias of fileAliases(filePath, fileNodesByAlias.get(filePath))) {
+    if (!reachableFileAliases.has(fileAlias)) pendingFiles.push(fileAlias);
+  }
+}
+
+function collectReachableSymbols(
+  initialSymbols: readonly string[],
+  symbolNodesByAlias: ReadonlyMap<string, GraphFactNode>,
+  symbolReferences: ReadonlyMap<string, readonly string[]>
+): ReadonlySet<string> {
+  const reachableSymbolAliases = new Set<string>();
+  const pendingSymbols = [...initialSymbols];
   while (pendingSymbols.length > 0) {
     const alias = pendingSymbols.shift();
     if (alias === undefined || reachableSymbolAliases.has(alias)) continue;
@@ -66,13 +98,7 @@ export function deadCodeEntrypointReachability(
     }
     for (const target of symbolReferences.get(alias) ?? []) pendingSymbols.push(target);
   }
-
-  return {
-    configured: entrypointPaths.length > 0,
-    entrypointPaths,
-    reachableFileAliases,
-    reachableSymbolAliases
-  };
+  return reachableSymbolAliases;
 }
 
 function mapFileNodeAliases(nodes: readonly GraphFactNode[]): ReadonlyMap<string, string> {

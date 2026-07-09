@@ -514,7 +514,7 @@ function assertAspProviderInitializeSmoke(project) {
     method: "initialize",
     params: {
       protocolVersion: "asp/0.1",
-      host: { name: "installed-bin-smoke", version: "0.1.0-test" },
+      host: { name: "installed-bin-smoke", version: "0.2.0-test" },
       hostCapabilities: { readBlob: true, listTree: true, putBlob: false },
       workspace: {
         root: project,
@@ -626,7 +626,7 @@ function createOnboardingFixture(root, id, definition) {
 }
 
 function rustCargoToml(name) {
-  return `[package]\nname = "${name}"\nversion = "0.1.0"\nedition = "2021"\n\n[lib]\npath = "src/lib.rs"\n`;
+  return `[package]\nname = "${name}"\nversion = "0.2.0"\nedition = "2021"\n\n[lib]\npath = "src/lib.rs"\n`;
 }
 
 function sourceSafeOpcoreEnv() {
@@ -869,7 +869,7 @@ function opcoreVersionForBin(command) {
     }
     current = dirname(current);
   }
-  return "0.1.0";
+  return "0.2.0";
 }
 
 function opcoreGitignoreLineCount(repoRoot) {

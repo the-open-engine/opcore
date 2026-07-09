@@ -665,9 +665,9 @@ function minimalCutoverReceipt(repo, commandOverrides = {}) {
     packageNames,
     installedPackages: packageNames.map((packageName) => ({
         packageName,
-        version: "0.1.0",
+        version: "0.2.0",
         tarball: {
-          filename: `${packageName.replace("@the-open-engine/", "the-open-engine-").replace("/", "-")}-0.1.0.tgz`,
+          filename: `${packageName.replace("@the-open-engine/", "the-open-engine-").replace("/", "-")}-0.2.0.tgz`,
           sha256: "1".repeat(64)
         },
         installedManifest: {

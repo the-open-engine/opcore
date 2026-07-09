@@ -150,9 +150,9 @@ function resolveExistingGraphCoreArtifact(
 function unsupportedPlatformMessage(target: string): string {
   const supported = graphCoreSupportedTargets.join(", ");
   if (target.startsWith("win32-")) {
-    return `Unsupported graph-core platform ${target}. Opcore 0.1.0 supports ${supported}; Windows is not supported.`;
+    return `Unsupported graph-core platform ${target}. Opcore 0.2.0 supports ${supported}; Windows is not supported.`;
   }
-  return `Unsupported graph-core platform ${target}. Opcore 0.1.0 supports ${supported}.`;
+  return `Unsupported graph-core platform ${target}. Opcore 0.2.0 supports ${supported}.`;
 }
 
 export function providerFailureStatus(

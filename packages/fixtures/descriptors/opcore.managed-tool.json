@@ -5,12 +5,12 @@
     "name": "opcore",
     "releaseLine": "opcore",
     "packageName": "opcore",
-    "version": "0.1.0"
+    "version": "0.2.0"
   },
   "packageIdentity": {
     "packageName": "opcore",
     "artifactName": "opcore",
-    "version": "0.1.0"
+    "version": "0.2.0"
   },
   "entrypoints": [
     {

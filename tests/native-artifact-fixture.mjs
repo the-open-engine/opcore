@@ -35,7 +35,7 @@ export function withCompleteNativeArtifactFixtures(runWithArtifacts) {
           `${JSON.stringify(
             {
               artifactName: "opcore-graph-core",
-              artifactVersion: "0.1.0",
+              artifactVersion: "0.2.0",
               targetPlatform: target,
               binaryPath: binaryName,
               checksumPath: checksumName,

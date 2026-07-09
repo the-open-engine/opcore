@@ -1,6 +1,6 @@
 {
   "name": "@the-open-engine/opcore-validation-docs",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Internal Opcore documentation and context-health validation adapter.",
   "type": "module",
   "license": "MIT",
@@ -24,8 +24,8 @@
     "developer-tools"
   ],
   "dependencies": {
-    "@the-open-engine/opcore-contracts": "0.1.0",
-    "@the-open-engine/opcore-validation": "0.1.0"
+    "@the-open-engine/opcore-contracts": "0.2.0",
+    "@the-open-engine/opcore-validation": "0.2.0"
   },
   "engines": {
     "node": ">=22"

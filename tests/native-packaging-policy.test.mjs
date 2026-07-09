@@ -97,7 +97,7 @@ describe("native graph-core packaging policy", () => {
     assert.match(workflow, /branches: \[main\]/);
     assert.match(workflow, /id-token: write/);
     assert.match(workflow, /NPM_TAG: latest/);
-    assert.match(workflow, /OPCORE_CONFIRM_PUBLISH:\s*"0\.1\.0"/);
+    assert.match(workflow, /OPCORE_CONFIRM_PUBLISH:\s*"0\.2\.0"/);
     assert.match(workflow, /OPCORE_REQUIRE_ALL_NATIVE_PACKAGES:\s*"1"/);
     assert.match(workflow, /run-id: \$\{\{ github\.event\.workflow_run\.id \}\}/);
     for (const target of Object.keys(nativeTargets)) {

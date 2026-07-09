@@ -165,7 +165,7 @@ function buildResponse(repoRoot, changedFiles, requestId) {
 function testArtifact(temp, executablePath) {
   return {
     artifactName: "opcore-graph-core",
-    artifactVersion: "0.1.0",
+    artifactVersion: "0.2.0",
     targetPlatform: currentTarget,
     binaryPath: "opcore-graph-core",
     checksumPath: "opcore-graph-core.sha256",

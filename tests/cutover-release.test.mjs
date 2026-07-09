@@ -111,7 +111,7 @@ describe("cutover release receipt", () => {
         packageNames: releaseReceiptPackageNames,
         installedPackages: releaseReceiptPackageNames.map((packageName) => ({
             packageName,
-            version: "0.1.0",
+            version: "0.2.0",
             tarball: { filename: `${packageName}.tgz`, sha256: "b".repeat(64) },
             installedManifest: {
               path: `node_modules/${packageName}/package.json`,

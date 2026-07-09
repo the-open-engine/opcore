@@ -103,29 +103,14 @@ pub(super) fn clone_findings(
     let mut findings = Vec::new();
     for class in classes {
         let paths = distinct_paths(&class.occurrences);
-        if request.report_mode == CloneReportMode::Introduced
-            && !class
-                .occurrences
-                .iter()
-                .any(|occurrence| occurrence.introduced)
-        {
+        if introduced_class_is_unreported(class, request.report_mode) {
             continue;
         }
         for occurrence in &class.occurrences {
-            if !scoped_paths.is_empty() && !scoped_paths.contains(&occurrence.path) {
+            if !reported_occurrence(occurrence, request.report_mode, &scoped_paths) {
                 continue;
             }
-            if request.report_mode == CloneReportMode::Introduced && !occurrence.introduced {
-                continue;
-            }
-            let occurrence_partition = clone_partition_index(&request.partitions, &occurrence.path);
-            let Some(peer) = class.occurrences.iter().find(|peer| {
-                peer.path != occurrence.path
-                    && (request.partitions.is_empty()
-                        || occurrence_partition.is_some()
-                            && clone_partition_index(&request.partitions, &peer.path)
-                                == occurrence_partition)
-            }) else {
+            let Some(peer) = peer_occurrence(class, occurrence, request) else {
                 continue;
             };
             findings.push(CloneFinding {
@@ -153,6 +138,47 @@ pub(super) fn clone_findings(
             ))
     });
     findings
+}
+
+fn introduced_class_is_unreported(class: &CloneClass, report_mode: CloneReportMode) -> bool {
+    report_mode == CloneReportMode::Introduced
+        && !class
+            .occurrences
+            .iter()
+            .any(|occurrence| occurrence.introduced)
+}
+
+fn reported_occurrence(
+    occurrence: &CloneOccurrence,
+    report_mode: CloneReportMode,
+    scoped_paths: &BTreeSet<String>,
+) -> bool {
+    (scoped_paths.is_empty() || scoped_paths.contains(&occurrence.path))
+        && (report_mode != CloneReportMode::Introduced || occurrence.introduced)
+}
+
+fn peer_occurrence<'a>(
+    class: &'a CloneClass,
+    occurrence: &CloneOccurrence,
+    request: &CloneAnalysisRequest,
+) -> Option<&'a CloneOccurrence> {
+    let occurrence_partition = clone_partition_index(&request.partitions, &occurrence.path);
+    class
+        .occurrences
+        .iter()
+        .find(|peer| peer_is_reportable(peer, occurrence, occurrence_partition, request))
+}
+
+fn peer_is_reportable(
+    peer: &CloneOccurrence,
+    occurrence: &CloneOccurrence,
+    occurrence_partition: Option<usize>,
+    request: &CloneAnalysisRequest,
+) -> bool {
+    peer.path != occurrence.path
+        && (request.partitions.is_empty()
+            || occurrence_partition.is_some()
+                && clone_partition_index(&request.partitions, &peer.path) == occurrence_partition)
 }
 
 pub(super) fn validate_clone_pattern(pattern: &str, label: &str) -> Result<(), CloneError> {

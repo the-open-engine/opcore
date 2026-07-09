@@ -477,7 +477,7 @@ const rustCheckIds = [
       mkdirSync(join(temp, "src"), { recursive: true });
       writeFileSync(
         join(temp, "Cargo.toml"),
-        ['[package]', 'name = "staged-dirty"', 'version = "0.1.0"', 'edition = "2021"', ""].join("\n")
+        ['[package]', 'name = "staged-dirty"', 'version = "0.2.0"', 'edition = "2021"', ""].join("\n")
       );
       writeFileSync(join(temp, "src/lib.rs"), "mod other;\npub fn value() -> i32 { other::value() }\n");
       writeFileSync(join(temp, "src/other.rs"), "pub fn value() -> i32 { 1 }\n");
@@ -511,7 +511,7 @@ const rustCheckIds = [
       mkdirSync(join(temp, "src"), { recursive: true });
       writeFileSync(
         join(temp, "Cargo.toml"),
-        ['[package]', 'name = "import-context"', 'version = "0.1.0"', 'edition = "2021"', ""].join("\n")
+        ['[package]', 'name = "import-context"', 'version = "0.2.0"', 'edition = "2021"', ""].join("\n")
       );
       writeFileSync(join(temp, "src/lib.rs"), "pub mod store;\n");
       writeFileSync(join(temp, "src/store.rs"), "pub fn value() -> i32 { 1 }\n");

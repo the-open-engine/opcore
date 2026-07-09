@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "issue": "#29",
   "origin": "covibes-authored-release-proof",
-  "generatedAt": "2026-07-07T23:03:10.714Z",
-  "commitSha": "d2a430ae1b7f1ebcbf036628bc006955715c1793",
+  "generatedAt": "2026-07-09T19:55:10.363Z",
+  "commitSha": "1b782d7c86dae055a0225e0905101beafaaa2fce",
   "privateRepo": true,
   "packageNames": [
     "opcore"
@@ -21,10 +21,10 @@
     {
       "packageName": "opcore",
       "packageRoot": "packages/opcore",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "manifest": {
         "name": "opcore",
-        "version": "0.1.0",
+        "version": "0.2.0",
         "license": "MIT",
         "main": "dist/index.js",
         "types": "dist/index.d.ts",
@@ -37,24 +37,25 @@
           "opcore-asp-provider": "dist/asp-provider-bin.js"
         },
         "dependencies": {
-          "@the-open-engine/opcore-asp-provider": "0.1.0",
-          "@the-open-engine/opcore-edit": "0.1.0",
-          "@the-open-engine/opcore-contracts": "0.1.0",
-          "@the-open-engine/opcore-graph": "0.1.0",
-          "@the-open-engine/opcore-validation": "0.1.0",
-          "@the-open-engine/opcore-validation-clone": "0.1.0",
-          "@the-open-engine/opcore-validation-docs": "0.1.0",
-          "@the-open-engine/opcore-validation-python": "0.1.0",
-          "@the-open-engine/opcore-validation-rust": "0.1.0",
-          "@the-open-engine/opcore-validation-typescript": "0.1.0",
+          "@the-open-engine/opcore-asp-provider": "0.2.0",
+          "@the-open-engine/opcore-edit": "0.2.0",
+          "@the-open-engine/opcore-contracts": "0.2.0",
+          "@the-open-engine/opcore-graph": "0.2.0",
+          "@the-open-engine/opcore-validation": "0.2.0",
+          "@the-open-engine/opcore-validation-policy": "0.2.0",
+          "@the-open-engine/opcore-validation-clone": "0.2.0",
+          "@the-open-engine/opcore-validation-docs": "0.2.0",
+          "@the-open-engine/opcore-validation-python": "0.2.0",
+          "@the-open-engine/opcore-validation-rust": "0.2.0",
+          "@the-open-engine/opcore-validation-typescript": "0.2.0",
           "@typescript-eslint/typescript-estree": "^8.62.0",
           "ts-morph": "^28.0.0",
           "typescript": "^5.9.3"
         },
         "optionalDependencies": {
-          "@the-open-engine/opcore-graph-core-darwin-arm64": "0.1.0",
-          "@the-open-engine/opcore-graph-core-darwin-x64": "0.1.0",
-          "@the-open-engine/opcore-graph-core-linux-x64": "0.1.0"
+          "@the-open-engine/opcore-graph-core-darwin-arm64": "0.2.0",
+          "@the-open-engine/opcore-graph-core-darwin-x64": "0.2.0",
+          "@the-open-engine/opcore-graph-core-linux-x64": "0.2.0"
         },
         "bundledDependencies": [
           "@the-open-engine/opcore-asp-provider",
@@ -62,6 +63,7 @@
           "@the-open-engine/opcore-edit",
           "@the-open-engine/opcore-graph",
           "@the-open-engine/opcore-validation",
+          "@the-open-engine/opcore-validation-policy",
           "@the-open-engine/opcore-validation-clone",
           "@the-open-engine/opcore-validation-docs",
           "@the-open-engine/opcore-validation-python",
@@ -94,11 +96,11 @@
         ]
       },
       "tarball": {
-        "filename": "opcore-0.1.0.tgz",
-        "path": ".opcore/release/packages/opcore-0.1.0.tgz",
-        "sha256": "18ef2b5d69b0004c835e4a55fcaae5bddfb1bba1190a85c95f387bb0d4afe00a",
-        "integrity": "sha512-BQ77fnewrd12EOPqqUrQ4I26mOtJ8gRshU85eVHV87xY9g2D1e+4XnxuY0X/3H0BSLoK7SJHq2Zsbdopfw0HHQ==",
-        "shasum": "dade1564a26448a9fb5bf3be53718e7d22c15bd0"
+        "filename": "opcore-0.2.0.tgz",
+        "path": ".opcore/release/packages/opcore-0.2.0.tgz",
+        "sha256": "a5bc2d71695c2b3e8320f9dce88c7907d34e40af32eaa00793ae185386abd753",
+        "integrity": "sha512-RcRPMPp74AUeNtjN9z9AYCp7F3dGL5pLKKxu8/eesHfyt9fQHhUlWZc2PRD7t9q9ZC47mLNwbKuHt5uhGtdEhw==",
+        "shasum": "a715348b7197beb87b770fd26018b53db62ea9f7"
       },
       "files": [
         "README.md",
@@ -181,6 +183,9 @@
         "dist/json-output.d.ts",
         "dist/json-output.d.ts.map",
         "dist/json-output.js",
+        "dist/path-policy.d.ts",
+        "dist/path-policy.d.ts.map",
+        "dist/path-policy.js",
         "dist/plate.d.ts",
         "dist/plate.d.ts.map",
         "dist/plate.js",
@@ -190,6 +195,12 @@
         "dist/repo-check-packs.d.ts",
         "dist/repo-check-packs.d.ts.map",
         "dist/repo-check-packs.js",
+        "dist/repo-validation-config.d.ts",
+        "dist/repo-validation-config.d.ts.map",
+        "dist/repo-validation-config.js",
+        "dist/repo-validation-policy.d.ts",
+        "dist/repo-validation-policy.d.ts.map",
+        "dist/repo-validation-policy.js",
         "dist/reporting.d.ts",
         "dist/reporting.d.ts.map",
         "dist/reporting.js",
@@ -406,6 +417,26 @@
         "node_modules/@the-open-engine/opcore-validation-docs/dist/snapshot.d.ts.map",
         "node_modules/@the-open-engine/opcore-validation-docs/dist/snapshot.js",
         "node_modules/@the-open-engine/opcore-validation-docs/package.json",
+        "node_modules/@the-open-engine/opcore-validation-policy/README.md",
+        "node_modules/@the-open-engine/opcore-validation-policy/dist/check-packs.d.ts",
+        "node_modules/@the-open-engine/opcore-validation-policy/dist/check-packs.d.ts.map",
+        "node_modules/@the-open-engine/opcore-validation-policy/dist/check-packs.js",
+        "node_modules/@the-open-engine/opcore-validation-policy/dist/config.d.ts",
+        "node_modules/@the-open-engine/opcore-validation-policy/dist/config.d.ts.map",
+        "node_modules/@the-open-engine/opcore-validation-policy/dist/config.js",
+        "node_modules/@the-open-engine/opcore-validation-policy/dist/factory.d.ts",
+        "node_modules/@the-open-engine/opcore-validation-policy/dist/factory.d.ts.map",
+        "node_modules/@the-open-engine/opcore-validation-policy/dist/factory.js",
+        "node_modules/@the-open-engine/opcore-validation-policy/dist/index.d.ts",
+        "node_modules/@the-open-engine/opcore-validation-policy/dist/index.d.ts.map",
+        "node_modules/@the-open-engine/opcore-validation-policy/dist/index.js",
+        "node_modules/@the-open-engine/opcore-validation-policy/dist/path-policy.d.ts",
+        "node_modules/@the-open-engine/opcore-validation-policy/dist/path-policy.d.ts.map",
+        "node_modules/@the-open-engine/opcore-validation-policy/dist/path-policy.js",
+        "node_modules/@the-open-engine/opcore-validation-policy/dist/types.d.ts",
+        "node_modules/@the-open-engine/opcore-validation-policy/dist/types.d.ts.map",
+        "node_modules/@the-open-engine/opcore-validation-policy/dist/types.js",
+        "node_modules/@the-open-engine/opcore-validation-policy/package.json",
         "node_modules/@the-open-engine/opcore-validation-python/README.md",
         "node_modules/@the-open-engine/opcore-validation-python/dist/check-constants.d.ts",
         "node_modules/@the-open-engine/opcore-validation-python/dist/check-constants.d.ts.map",
@@ -466,6 +497,9 @@
         "node_modules/@the-open-engine/opcore-validation-rust/dist/check-ids.d.ts",
         "node_modules/@the-open-engine/opcore-validation-rust/dist/check-ids.d.ts.map",
         "node_modules/@the-open-engine/opcore-validation-rust/dist/check-ids.js",
+        "node_modules/@the-open-engine/opcore-validation-rust/dist/command-gate-check.d.ts",
+        "node_modules/@the-open-engine/opcore-validation-rust/dist/command-gate-check.d.ts.map",
+        "node_modules/@the-open-engine/opcore-validation-rust/dist/command-gate-check.js",
         "node_modules/@the-open-engine/opcore-validation-rust/dist/diagnostics.d.ts",
         "node_modules/@the-open-engine/opcore-validation-rust/dist/diagnostics.d.ts.map",
         "node_modules/@the-open-engine/opcore-validation-rust/dist/diagnostics.js",
@@ -525,6 +559,9 @@
         "node_modules/@the-open-engine/opcore-validation-typescript/dist/dead-code-check.d.ts",
         "node_modules/@the-open-engine/opcore-validation-typescript/dist/dead-code-check.d.ts.map",
         "node_modules/@the-open-engine/opcore-validation-typescript/dist/dead-code-check.js",
+        "node_modules/@the-open-engine/opcore-validation-typescript/dist/dead-code-entrypoints.d.ts",
+        "node_modules/@the-open-engine/opcore-validation-typescript/dist/dead-code-entrypoints.d.ts.map",
+        "node_modules/@the-open-engine/opcore-validation-typescript/dist/dead-code-entrypoints.js",
         "node_modules/@the-open-engine/opcore-validation-typescript/dist/diagnostics.d.ts",
         "node_modules/@the-open-engine/opcore-validation-typescript/dist/diagnostics.d.ts.map",
         "node_modules/@the-open-engine/opcore-validation-typescript/dist/diagnostics.js",
@@ -540,6 +577,9 @@
         "node_modules/@the-open-engine/opcore-validation-typescript/dist/import-graph-check.d.ts",
         "node_modules/@the-open-engine/opcore-validation-typescript/dist/import-graph-check.d.ts.map",
         "node_modules/@the-open-engine/opcore-validation-typescript/dist/import-graph-check.js",
+        "node_modules/@the-open-engine/opcore-validation-typescript/dist/import-layer-rules-check.d.ts",
+        "node_modules/@the-open-engine/opcore-validation-typescript/dist/import-layer-rules-check.d.ts.map",
+        "node_modules/@the-open-engine/opcore-validation-typescript/dist/import-layer-rules-check.js",
         "node_modules/@the-open-engine/opcore-validation-typescript/dist/index.d.ts",
         "node_modules/@the-open-engine/opcore-validation-typescript/dist/index.d.ts.map",
         "node_modules/@the-open-engine/opcore-validation-typescript/dist/index.js",
@@ -549,6 +589,12 @@
         "node_modules/@the-open-engine/opcore-validation-typescript/dist/lint-helpers.d.ts",
         "node_modules/@the-open-engine/opcore-validation-typescript/dist/lint-helpers.d.ts.map",
         "node_modules/@the-open-engine/opcore-validation-typescript/dist/lint-helpers.js",
+        "node_modules/@the-open-engine/opcore-validation-typescript/dist/lint-plugin-cache.d.ts",
+        "node_modules/@the-open-engine/opcore-validation-typescript/dist/lint-plugin-cache.d.ts.map",
+        "node_modules/@the-open-engine/opcore-validation-typescript/dist/lint-plugin-cache.js",
+        "node_modules/@the-open-engine/opcore-validation-typescript/dist/lint-plugin-check.d.ts",
+        "node_modules/@the-open-engine/opcore-validation-typescript/dist/lint-plugin-check.d.ts.map",
+        "node_modules/@the-open-engine/opcore-validation-typescript/dist/lint-plugin-check.js",
         "node_modules/@the-open-engine/opcore-validation-typescript/dist/lint-rules.d.ts",
         "node_modules/@the-open-engine/opcore-validation-typescript/dist/lint-rules.d.ts.map",
         "node_modules/@the-open-engine/opcore-validation-typescript/dist/lint-rules.js",
@@ -599,6 +645,9 @@
         "node_modules/@the-open-engine/opcore-validation/dist/status-payload.d.ts",
         "node_modules/@the-open-engine/opcore-validation/dist/status-payload.d.ts.map",
         "node_modules/@the-open-engine/opcore-validation/dist/status-payload.js",
+        "node_modules/@the-open-engine/opcore-validation/dist/utilities.d.ts",
+        "node_modules/@the-open-engine/opcore-validation/dist/utilities.d.ts.map",
+        "node_modules/@the-open-engine/opcore-validation/dist/utilities.js",
         "node_modules/@the-open-engine/opcore-validation/dist/workspace.d.ts",
         "node_modules/@the-open-engine/opcore-validation/dist/workspace.d.ts.map",
         "node_modules/@the-open-engine/opcore-validation/dist/workspace.js",
@@ -1110,7 +1159,7 @@
         "node_modules/typescript/package.json",
         "package.json"
       ],
-      "fileCount": 1008,
+      "fileCount": 1055,
       "expectedFiles": [
         "README.md",
         "dist/advanced/asp-warm/asp-serve-cli.d.ts",
@@ -1192,6 +1241,9 @@
         "dist/json-output.d.ts",
         "dist/json-output.d.ts.map",
         "dist/json-output.js",
+        "dist/path-policy.d.ts",
+        "dist/path-policy.d.ts.map",
+        "dist/path-policy.js",
         "dist/plate.d.ts",
         "dist/plate.d.ts.map",
         "dist/plate.js",
@@ -1201,6 +1253,12 @@
         "dist/repo-check-packs.d.ts",
         "dist/repo-check-packs.d.ts.map",
         "dist/repo-check-packs.js",
+        "dist/repo-validation-config.d.ts",
+        "dist/repo-validation-config.d.ts.map",
+        "dist/repo-validation-config.js",
+        "dist/repo-validation-policy.d.ts",
+        "dist/repo-validation-policy.d.ts.map",
+        "dist/repo-validation-policy.js",
         "dist/reporting.d.ts",
         "dist/reporting.d.ts.map",
         "dist/reporting.js",
@@ -1417,6 +1475,26 @@
         "node_modules/@the-open-engine/opcore-validation-docs/dist/snapshot.d.ts.map",
         "node_modules/@the-open-engine/opcore-validation-docs/dist/snapshot.js",
         "node_modules/@the-open-engine/opcore-validation-docs/package.json",
+        "node_modules/@the-open-engine/opcore-validation-policy/README.md",
+        "node_modules/@the-open-engine/opcore-validation-policy/dist/check-packs.d.ts",
+        "node_modules/@the-open-engine/opcore-validation-policy/dist/check-packs.d.ts.map",
+        "node_modules/@the-open-engine/opcore-validation-policy/dist/check-packs.js",
+        "node_modules/@the-open-engine/opcore-validation-policy/dist/config.d.ts",
+        "node_modules/@the-open-engine/opcore-validation-policy/dist/config.d.ts.map",
+        "node_modules/@the-open-engine/opcore-validation-policy/dist/config.js",
+        "node_modules/@the-open-engine/opcore-validation-policy/dist/factory.d.ts",
+        "node_modules/@the-open-engine/opcore-validation-policy/dist/factory.d.ts.map",
+        "node_modules/@the-open-engine/opcore-validation-policy/dist/factory.js",
+        "node_modules/@the-open-engine/opcore-validation-policy/dist/index.d.ts",
+        "node_modules/@the-open-engine/opcore-validation-policy/dist/index.d.ts.map",
+        "node_modules/@the-open-engine/opcore-validation-policy/dist/index.js",
+        "node_modules/@the-open-engine/opcore-validation-policy/dist/path-policy.d.ts",
+        "node_modules/@the-open-engine/opcore-validation-policy/dist/path-policy.d.ts.map",
+        "node_modules/@the-open-engine/opcore-validation-policy/dist/path-policy.js",
+        "node_modules/@the-open-engine/opcore-validation-policy/dist/types.d.ts",
+        "node_modules/@the-open-engine/opcore-validation-policy/dist/types.d.ts.map",
+        "node_modules/@the-open-engine/opcore-validation-policy/dist/types.js",
+        "node_modules/@the-open-engine/opcore-validation-policy/package.json",
         "node_modules/@the-open-engine/opcore-validation-python/README.md",
         "node_modules/@the-open-engine/opcore-validation-python/dist/check-constants.d.ts",
         "node_modules/@the-open-engine/opcore-validation-python/dist/check-constants.d.ts.map",
@@ -1477,6 +1555,9 @@
         "node_modules/@the-open-engine/opcore-validation-rust/dist/check-ids.d.ts",
         "node_modules/@the-open-engine/opcore-validation-rust/dist/check-ids.d.ts.map",
         "node_modules/@the-open-engine/opcore-validation-rust/dist/check-ids.js",
+        "node_modules/@the-open-engine/opcore-validation-rust/dist/command-gate-check.d.ts",
+        "node_modules/@the-open-engine/opcore-validation-rust/dist/command-gate-check.d.ts.map",
+        "node_modules/@the-open-engine/opcore-validation-rust/dist/command-gate-check.js",
         "node_modules/@the-open-engine/opcore-validation-rust/dist/diagnostics.d.ts",
         "node_modules/@the-open-engine/opcore-validation-rust/dist/diagnostics.d.ts.map",
         "node_modules/@the-open-engine/opcore-validation-rust/dist/diagnostics.js",
@@ -1536,6 +1617,9 @@
         "node_modules/@the-open-engine/opcore-validation-typescript/dist/dead-code-check.d.ts",
         "node_modules/@the-open-engine/opcore-validation-typescript/dist/dead-code-check.d.ts.map",
         "node_modules/@the-open-engine/opcore-validation-typescript/dist/dead-code-check.js",
+        "node_modules/@the-open-engine/opcore-validation-typescript/dist/dead-code-entrypoints.d.ts",
+        "node_modules/@the-open-engine/opcore-validation-typescript/dist/dead-code-entrypoints.d.ts.map",
+        "node_modules/@the-open-engine/opcore-validation-typescript/dist/dead-code-entrypoints.js",
         "node_modules/@the-open-engine/opcore-validation-typescript/dist/diagnostics.d.ts",
         "node_modules/@the-open-engine/opcore-validation-typescript/dist/diagnostics.d.ts.map",
         "node_modules/@the-open-engine/opcore-validation-typescript/dist/diagnostics.js",
@@ -1551,6 +1635,9 @@
         "node_modules/@the-open-engine/opcore-validation-typescript/dist/import-graph-check.d.ts",
         "node_modules/@the-open-engine/opcore-validation-typescript/dist/import-graph-check.d.ts.map",
         "node_modules/@the-open-engine/opcore-validation-typescript/dist/import-graph-check.js",
+        "node_modules/@the-open-engine/opcore-validation-typescript/dist/import-layer-rules-check.d.ts",
+        "node_modules/@the-open-engine/opcore-validation-typescript/dist/import-layer-rules-check.d.ts.map",
+        "node_modules/@the-open-engine/opcore-validation-typescript/dist/import-layer-rules-check.js",
         "node_modules/@the-open-engine/opcore-validation-typescript/dist/index.d.ts",
         "node_modules/@the-open-engine/opcore-validation-typescript/dist/index.d.ts.map",
         "node_modules/@the-open-engine/opcore-validation-typescript/dist/index.js",
@@ -1560,6 +1647,12 @@
         "node_modules/@the-open-engine/opcore-validation-typescript/dist/lint-helpers.d.ts",
         "node_modules/@the-open-engine/opcore-validation-typescript/dist/lint-helpers.d.ts.map",
         "node_modules/@the-open-engine/opcore-validation-typescript/dist/lint-helpers.js",
+        "node_modules/@the-open-engine/opcore-validation-typescript/dist/lint-plugin-cache.d.ts",
+        "node_modules/@the-open-engine/opcore-validation-typescript/dist/lint-plugin-cache.d.ts.map",
+        "node_modules/@the-open-engine/opcore-validation-typescript/dist/lint-plugin-cache.js",
+        "node_modules/@the-open-engine/opcore-validation-typescript/dist/lint-plugin-check.d.ts",
+        "node_modules/@the-open-engine/opcore-validation-typescript/dist/lint-plugin-check.d.ts.map",
+        "node_modules/@the-open-engine/opcore-validation-typescript/dist/lint-plugin-check.js",
         "node_modules/@the-open-engine/opcore-validation-typescript/dist/lint-rules.d.ts",
         "node_modules/@the-open-engine/opcore-validation-typescript/dist/lint-rules.d.ts.map",
         "node_modules/@the-open-engine/opcore-validation-typescript/dist/lint-rules.js",
@@ -1610,6 +1703,9 @@
         "node_modules/@the-open-engine/opcore-validation/dist/status-payload.d.ts",
         "node_modules/@the-open-engine/opcore-validation/dist/status-payload.d.ts.map",
         "node_modules/@the-open-engine/opcore-validation/dist/status-payload.js",
+        "node_modules/@the-open-engine/opcore-validation/dist/utilities.d.ts",
+        "node_modules/@the-open-engine/opcore-validation/dist/utilities.d.ts.map",
+        "node_modules/@the-open-engine/opcore-validation/dist/utilities.js",
         "node_modules/@the-open-engine/opcore-validation/dist/workspace.d.ts",
         "node_modules/@the-open-engine/opcore-validation/dist/workspace.d.ts.map",
         "node_modules/@the-open-engine/opcore-validation/dist/workspace.js",
@@ -2121,7 +2217,7 @@
         "node_modules/typescript/package.json",
         "package.json"
       ],
-      "expectedFileCount": 1008,
+      "expectedFileCount": 1055,
       "bins": {
         "opcore": "dist/index.js",
         "opcore-asp-provider": "dist/asp-provider-bin.js"
@@ -2222,19 +2318,19 @@
           "targetPlatform": "darwin-arm64",
           "metadata": {
             "artifactName": "opcore-graph-core",
-            "artifactVersion": "0.1.0",
+            "artifactVersion": "0.2.0",
             "targetPlatform": "darwin-arm64",
             "binaryPath": "opcore-graph-core",
             "checksumPath": "opcore-graph-core.sha256",
-            "checksumSha256": "7a362d98f710646a8b7b4425451361f13504f586a720b0e851dfda85821f0d93",
+            "checksumSha256": "c222610c492e628fa48ff50be22310e5bf8ebcd62bffbde1903d1fa91c45f6cb",
             "buildProfile": "release"
           },
           "binaryPath": "node_modules/@the-open-engine/opcore-graph-core-darwin-arm64/opcore-graph-core",
           "checksumPath": "node_modules/@the-open-engine/opcore-graph-core-darwin-arm64/opcore-graph-core.sha256",
           "metadataPath": "node_modules/@the-open-engine/opcore-graph-core-darwin-arm64/metadata.json",
-          "binarySha256": "7a362d98f710646a8b7b4425451361f13504f586a720b0e851dfda85821f0d93",
-          "checksumFileSha256": "5fe0896dccc3ea1d019c2ef99af8fae5af6e950a3777bc234e705b3c964c196f",
-          "metadataSha256": "a84ec9b019971d1db3192780378333fb9bdec246cd72546c059cb9de9439943a",
+          "binarySha256": "c222610c492e628fa48ff50be22310e5bf8ebcd62bffbde1903d1fa91c45f6cb",
+          "checksumFileSha256": "794844f23f2c3ddd415b3a58d07b41a6a1c4ad643be0b6ae2a6585d0e4e057fe",
+          "metadataSha256": "4f2817e526b57f3036a7595cbc2a8ad94836f32a87f315f866080b0d9855c266",
           "descriptorArtifactId": "graph-core-binary-darwin-arm64",
           "descriptorChecksumId": "graph-core-binary-sha256-darwin-arm64"
         },
@@ -2244,7 +2340,7 @@
           "targetPlatform": "darwin-x64",
           "metadata": {
             "artifactName": "opcore-graph-core",
-            "artifactVersion": "0.1.0",
+            "artifactVersion": "0.2.0",
             "targetPlatform": "darwin-x64",
             "binaryPath": "opcore-graph-core",
             "checksumPath": "opcore-graph-core.sha256",
@@ -2256,7 +2352,7 @@
           "metadataPath": "node_modules/@the-open-engine/opcore-graph-core-darwin-x64/metadata.json",
           "binarySha256": "1b72afa74d48b087c967cb01b39630ed3fa58b5a2895037a778eb5612ef73059",
           "checksumFileSha256": "78e1e2efd92e4c3f184b19263b8e8c161fda919c180638906808afdf3b2d312d",
-          "metadataSha256": "f01412291a3f314ab7087d474300065ce341a5de1d1b69757b409276196ba6e8",
+          "metadataSha256": "1892fae547da3aca3feb60bfba1be52b9dcfd4f5dfc9e4da0cb923cfd2a4792a",
           "descriptorArtifactId": "graph-core-binary-darwin-x64",
           "descriptorChecksumId": "graph-core-binary-sha256-darwin-x64"
         },
@@ -2266,7 +2362,7 @@
           "targetPlatform": "linux-x64",
           "metadata": {
             "artifactName": "opcore-graph-core",
-            "artifactVersion": "0.1.0",
+            "artifactVersion": "0.2.0",
             "targetPlatform": "linux-x64",
             "binaryPath": "opcore-graph-core",
             "checksumPath": "opcore-graph-core.sha256",
@@ -2278,7 +2374,7 @@
           "metadataPath": "node_modules/@the-open-engine/opcore-graph-core-linux-x64/metadata.json",
           "binarySha256": "70cb6d213d74594f337a67522c879b77767872dc4601063686f1abe70886127b",
           "checksumFileSha256": "c2910f2077d0e824fa838a3565114bab7c63910dcee51221e64d37c0aee20b19",
-          "metadataSha256": "83ac0f682f8d7ed3882fd3cd2c3cf2fcfda3437d11c3ffd89d4aa01779c1a5ad",
+          "metadataSha256": "d851e010080be2505824d89a49cbe2b1bd6709854d380bd3f39e8c58c2114d90",
           "descriptorArtifactId": "graph-core-binary-linux-x64",
           "descriptorChecksumId": "graph-core-binary-sha256-linux-x64"
         }
@@ -2288,7 +2384,7 @@
   "descriptor": {
     "path": "packages/opcore/dist/descriptors/opcore.managed-tool.json",
     "packageName": "opcore",
-    "checksumSha256": "f75e0da84bc807eb33e5c08d99cf0c51ab204b12298ddf4e8d03b6708e335be8",
+    "checksumSha256": "282c6a8f4f4adf097eacc40d818f32340acc0b6fb4b0e14845e3327525806d12",
     "descriptor": {
       "schemaVersion": 1,
       "descriptorKind": "aggregate_opcore",
@@ -2296,12 +2392,12 @@
         "name": "opcore",
         "releaseLine": "opcore",
         "packageName": "opcore",
-        "version": "0.1.0"
+        "version": "0.2.0"
       },
       "packageIdentity": {
         "packageName": "opcore",
         "artifactName": "opcore",
-        "version": "0.1.0"
+        "version": "0.2.0"
       },
       "entrypoints": [
         {
@@ -2683,6 +2779,7 @@
             "docs.code-blocks",
             "docs.rules-why",
             "docs.hub-coverage",
+            "docs.subtree-coverage",
             "clone.duplication"
           ]
         }
@@ -3017,7 +3114,7 @@
         "artifactRef": "graph-core-binary-darwin-arm64",
         "required": true,
         "packageFile": true,
-        "value": "7a362d98f710646a8b7b4425451361f13504f586a720b0e851dfda85821f0d93"
+        "value": "c222610c492e628fa48ff50be22310e5bf8ebcd62bffbde1903d1fa91c45f6cb"
       },
       {
         "id": "graph-core-binary-sha256-darwin-x64",
@@ -3048,19 +3145,19 @@
       "targetPlatform": "darwin-arm64",
       "metadata": {
         "artifactName": "opcore-graph-core",
-        "artifactVersion": "0.1.0",
+        "artifactVersion": "0.2.0",
         "targetPlatform": "darwin-arm64",
         "binaryPath": "opcore-graph-core",
         "checksumPath": "opcore-graph-core.sha256",
-        "checksumSha256": "7a362d98f710646a8b7b4425451361f13504f586a720b0e851dfda85821f0d93",
+        "checksumSha256": "c222610c492e628fa48ff50be22310e5bf8ebcd62bffbde1903d1fa91c45f6cb",
         "buildProfile": "release"
       },
       "binaryPath": "node_modules/@the-open-engine/opcore-graph-core-darwin-arm64/opcore-graph-core",
       "checksumPath": "node_modules/@the-open-engine/opcore-graph-core-darwin-arm64/opcore-graph-core.sha256",
       "metadataPath": "node_modules/@the-open-engine/opcore-graph-core-darwin-arm64/metadata.json",
-      "binarySha256": "7a362d98f710646a8b7b4425451361f13504f586a720b0e851dfda85821f0d93",
-      "checksumFileSha256": "5fe0896dccc3ea1d019c2ef99af8fae5af6e950a3777bc234e705b3c964c196f",
-      "metadataSha256": "a84ec9b019971d1db3192780378333fb9bdec246cd72546c059cb9de9439943a",
+      "binarySha256": "c222610c492e628fa48ff50be22310e5bf8ebcd62bffbde1903d1fa91c45f6cb",
+      "checksumFileSha256": "794844f23f2c3ddd415b3a58d07b41a6a1c4ad643be0b6ae2a6585d0e4e057fe",
+      "metadataSha256": "4f2817e526b57f3036a7595cbc2a8ad94836f32a87f315f866080b0d9855c266",
       "descriptorArtifactId": "graph-core-binary-darwin-arm64",
       "descriptorChecksumId": "graph-core-binary-sha256-darwin-arm64"
     },
@@ -3070,7 +3167,7 @@
       "targetPlatform": "darwin-x64",
       "metadata": {
         "artifactName": "opcore-graph-core",
-        "artifactVersion": "0.1.0",
+        "artifactVersion": "0.2.0",
         "targetPlatform": "darwin-x64",
         "binaryPath": "opcore-graph-core",
         "checksumPath": "opcore-graph-core.sha256",
@@ -3082,7 +3179,7 @@
       "metadataPath": "node_modules/@the-open-engine/opcore-graph-core-darwin-x64/metadata.json",
       "binarySha256": "1b72afa74d48b087c967cb01b39630ed3fa58b5a2895037a778eb5612ef73059",
       "checksumFileSha256": "78e1e2efd92e4c3f184b19263b8e8c161fda919c180638906808afdf3b2d312d",
-      "metadataSha256": "f01412291a3f314ab7087d474300065ce341a5de1d1b69757b409276196ba6e8",
+      "metadataSha256": "1892fae547da3aca3feb60bfba1be52b9dcfd4f5dfc9e4da0cb923cfd2a4792a",
       "descriptorArtifactId": "graph-core-binary-darwin-x64",
       "descriptorChecksumId": "graph-core-binary-sha256-darwin-x64"
     },
@@ -3092,7 +3189,7 @@
       "targetPlatform": "linux-x64",
       "metadata": {
         "artifactName": "opcore-graph-core",
-        "artifactVersion": "0.1.0",
+        "artifactVersion": "0.2.0",
         "targetPlatform": "linux-x64",
         "binaryPath": "opcore-graph-core",
         "checksumPath": "opcore-graph-core.sha256",
@@ -3104,16 +3201,16 @@
       "metadataPath": "node_modules/@the-open-engine/opcore-graph-core-linux-x64/metadata.json",
       "binarySha256": "70cb6d213d74594f337a67522c879b77767872dc4601063686f1abe70886127b",
       "checksumFileSha256": "c2910f2077d0e824fa838a3565114bab7c63910dcee51221e64d37c0aee20b19",
-      "metadataSha256": "83ac0f682f8d7ed3882fd3cd2c3cf2fcfda3437d11c3ffd89d4aa01779c1a5ad",
+      "metadataSha256": "d851e010080be2505824d89a49cbe2b1bd6709854d380bd3f39e8c58c2114d90",
       "descriptorArtifactId": "graph-core-binary-linux-x64",
       "descriptorChecksumId": "graph-core-binary-sha256-linux-x64"
     }
   ],
   "license": {
     "reportPath": "docs/release/license-report.md",
-    "reportSha256": "aaca97fbd7e61ac50129aa4c28768b7707001aada36e4bfa12518b86d45ca963",
+    "reportSha256": "f2d943a3e3c5caf7caf54988734554b9397aed2d7def5b08e4a9f11bdc8f433d",
     "productionDependencyCount": 118,
-    "bundledDependencyCount": 34,
+    "bundledDependencyCount": 35,
     "workspacePackageCount": 1,
     "unresolvedLicenseCount": 0,
     "packages": [
@@ -3945,91 +4042,98 @@
       },
       {
         "name": "@the-open-engine/opcore-asp-provider",
-        "version": "0.1.0",
+        "version": "0.2.0",
         "license": "MIT",
         "source": "packages/asp-provider/package.json",
         "bundled": true
       },
       {
         "name": "@the-open-engine/opcore-contracts",
-        "version": "0.1.0",
+        "version": "0.2.0",
         "license": "MIT",
         "source": "packages/contracts/package.json",
         "bundled": true
       },
       {
         "name": "@the-open-engine/opcore-edit",
-        "version": "0.1.0",
+        "version": "0.2.0",
         "license": "MIT",
         "source": "packages/edit/package.json",
         "bundled": true
       },
       {
         "name": "@the-open-engine/opcore-graph",
-        "version": "0.1.0",
+        "version": "0.2.0",
         "license": "MIT",
         "source": "packages/graph/package.json",
         "bundled": true
       },
       {
         "name": "@the-open-engine/opcore-graph-core-darwin-arm64",
-        "version": "0.1.0",
+        "version": "0.2.0",
         "license": "MIT",
         "source": "packages/opcore-graph-core-darwin-arm64/package.json",
         "bundled": true
       },
       {
         "name": "@the-open-engine/opcore-graph-core-darwin-x64",
-        "version": "0.1.0",
+        "version": "0.2.0",
         "license": "MIT",
         "source": "packages/opcore-graph-core-darwin-x64/package.json",
         "bundled": true
       },
       {
         "name": "@the-open-engine/opcore-graph-core-linux-x64",
-        "version": "0.1.0",
+        "version": "0.2.0",
         "license": "MIT",
         "source": "packages/opcore-graph-core-linux-x64/package.json",
         "bundled": true
       },
       {
         "name": "@the-open-engine/opcore-validation",
-        "version": "0.1.0",
+        "version": "0.2.0",
         "license": "MIT",
         "source": "packages/validation/package.json",
         "bundled": true
       },
       {
         "name": "@the-open-engine/opcore-validation-clone",
-        "version": "0.1.0",
+        "version": "0.2.0",
         "license": "MIT",
         "source": "packages/validation-clone/package.json",
         "bundled": true
       },
       {
         "name": "@the-open-engine/opcore-validation-docs",
-        "version": "0.1.0",
+        "version": "0.2.0",
         "license": "MIT",
         "source": "packages/validation-docs/package.json",
         "bundled": true
       },
       {
+        "name": "@the-open-engine/opcore-validation-policy",
+        "version": "0.2.0",
+        "license": "MIT",
+        "source": "packages/validation-policy/package.json",
+        "bundled": true
+      },
+      {
         "name": "@the-open-engine/opcore-validation-python",
-        "version": "0.1.0",
+        "version": "0.2.0",
         "license": "MIT",
         "source": "packages/validation-python/package.json",
         "bundled": true
       },
       {
         "name": "@the-open-engine/opcore-validation-rust",
-        "version": "0.1.0",
+        "version": "0.2.0",
         "license": "MIT",
         "source": "packages/validation-rust/package.json",
         "bundled": true
       },
       {
         "name": "@the-open-engine/opcore-validation-typescript",
-        "version": "0.1.0",
+        "version": "0.2.0",
         "license": "MIT",
         "source": "packages/validation-typescript/package.json",
         "bundled": true
@@ -4185,17 +4289,17 @@
   },
   "provenance": {
     "reportPath": "docs/release/provenance-receipts.md",
-    "reportSha256": "c3117649e9c98b7d7f4506e1fbbb30b28f83dad82c313709735d402104f282d3",
-    "scannedFileCount": 528,
-    "historyCommitCount": 239,
+    "reportSha256": "c13858047a9e80843b15bb89f0a1b97e6c3a5b83e0d3d6950da8c16623966f9c",
+    "scannedFileCount": 551,
+    "historyCommitCount": 248,
     "findingCount": 0,
     "findings": []
   },
   "secretHistory": {
     "allowlistPath": "docs/release/secret-scan-allowlist.json",
     "allowlistSha256": "7060c267c912e3156b87c646e3bc970eac1ac8bdd964cf0a794b83e6f1250614",
-    "currentTreeScannedFileCount": 525,
-    "gitHistoryScannedCommitCount": 239,
+    "currentTreeScannedFileCount": 548,
+    "gitHistoryScannedCommitCount": 248,
     "findingCount": 0,
     "findings": []
   },
@@ -4222,7 +4326,7 @@
       "status": "passed",
       "exitCode": 0,
       "path": "docs/release/license-report.md",
-      "checksumSha256": "aaca97fbd7e61ac50129aa4c28768b7707001aada36e4bfa12518b86d45ca963",
+      "checksumSha256": "f2d943a3e3c5caf7caf54988734554b9397aed2d7def5b08e4a9f11bdc8f433d",
       "summary": "118 production dependencies, 0 unresolved"
     },
     {
@@ -4235,8 +4339,8 @@
       "status": "passed",
       "exitCode": 0,
       "path": "docs/release/provenance-receipts.md",
-      "checksumSha256": "c3117649e9c98b7d7f4506e1fbbb30b28f83dad82c313709735d402104f282d3",
-      "summary": "528 files, 239 commits scanned"
+      "checksumSha256": "c13858047a9e80843b15bb89f0a1b97e6c3a5b83e0d3d6950da8c16623966f9c",
+      "summary": "551 files, 248 commits scanned"
     },
     {
       "id": "release-hygiene",
@@ -4247,7 +4351,7 @@
       "status": "passed",
       "exitCode": 0,
       "path": "docs/release/artifact-attestation.md",
-      "checksumSha256": "56dcec52a6f3f89e534306d6674d1ec8dad0d39b1fe35b0c977e0633f0cadd41",
+      "checksumSha256": "ae55ec7440ea15bc8477a81010381c8dcb8e540b2f4fdf276c5883acb76159e1",
       "summary": "release hygiene check passed"
     },
     {
@@ -4260,7 +4364,7 @@
       "status": "passed",
       "exitCode": 0,
       "path": "docs/release/graph-release-receipt.json",
-      "checksumSha256": "b440dc936876a4696152da6b915da6c7f8b1baa81e555a2d89020ef803ce3abb",
+      "checksumSha256": "016134bf577c850906fcf7d28307a501024b01679d2ef63ae451655a368e5949",
       "summary": "graph release receipt #17 validated as input evidence"
     },
     {
@@ -4274,12 +4378,12 @@
       "exitCode": 0,
       "path": "docs/release/secret-scan-allowlist.json",
       "checksumSha256": "7060c267c912e3156b87c646e3bc970eac1ac8bdd964cf0a794b83e6f1250614",
-      "summary": "525 files, 239 commits scanned"
+      "summary": "548 files, 248 commits scanned"
     }
   ],
   "graphReleaseReceipt": {
     "path": "docs/release/graph-release-receipt.json",
     "issue": "#17",
-    "checksumSha256": "b440dc936876a4696152da6b915da6c7f8b1baa81e555a2d89020ef803ce3abb"
+    "checksumSha256": "016134bf577c850906fcf7d28307a501024b01679d2ef63ae451655a368e5949"
   }
 }

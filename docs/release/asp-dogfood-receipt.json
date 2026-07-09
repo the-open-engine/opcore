@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "issue": "#120",
   "origin": "covibes-authored-asp-dogfood-proof",
-  "generatedAt": "2026-07-07T16:27:00.275Z",
-  "commitSha": "e50bb57eb9e478c64a2a3c449e518b600582b4e2",
+  "generatedAt": "2026-07-09T19:56:57.843Z",
+  "commitSha": "1b782d7c86dae055a0225e0905101beafaaa2fce",
   "privateRepo": true,
   "bootstrapSource": "local-sibling",
   "packageNames": [
@@ -12,14 +12,14 @@
   "installedPackages": [
     {
       "packageName": "opcore",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "tarball": {
-        "filename": "opcore-0.1.0.tgz",
-        "sha256": "b2545dfa9e7aea2e86cd3deaff77210ffb74f429b0c0e5a8ed648198c2a1d27f"
+        "filename": "opcore-0.2.0.tgz",
+        "sha256": "a5bc2d71695c2b3e8320f9dce88c7907d34e40af32eaa00793ae185386abd753"
       },
       "installedManifest": {
         "path": "node_modules/opcore/package.json",
-        "sha256": "6cbb44681e621fec71958914c2abe6b34c6172dcd13f3dd9c4e8abe12222a2e9",
+        "sha256": "5fab044eaea9e581534d0c30d86882872c24f6efcee65ea20e2654e61a78e052",
         "bins": {
           "opcore": "dist/index.js",
           "opcore-asp-provider": "dist/asp-provider-bin.js"
@@ -48,7 +48,7 @@
         },
         {
           "path": "node_modules/opcore/dist/advanced/asp-warm/asp-warm-lifecycle.js",
-          "sha256": "d0a9195e9e7d7d0225116ae1692aa1e756cfc297adeb17e01fdcaddddc49d32e"
+          "sha256": "754c6a2a096e729f90cb56c06b086f23197ba92fa8cc5298507f1c90289faae2"
         },
         {
           "path": "node_modules/opcore/dist/advanced/asp-warm/asp-warm-methods.d.ts",
@@ -60,7 +60,7 @@
         },
         {
           "path": "node_modules/opcore/dist/advanced/asp-warm/asp-warm-methods.js",
-          "sha256": "9482228ea3bb9410281850e5521e62ad4b1632bc8979b4a9b9ccfe839b5a3744"
+          "sha256": "a86ae0116daed35fe7a537a62a7c8475c667cfe846dd3939c971d30cf221b50b"
         },
         {
           "path": "node_modules/opcore/dist/advanced/asp-warm/asp-warm-server.d.ts",
@@ -76,7 +76,7 @@
         },
         {
           "path": "node_modules/opcore/dist/advanced/asp-warm/manifest.d.ts",
-          "sha256": "43626f902c7f958b00aa0a5cf65e0d2e2621d3598626278453a28f2ca7d08df1"
+          "sha256": "a9a31c180f24f602fcdf81cd3ea8a7203d6a8f4a2825047e4075c6e39558ab6f"
         },
         {
           "path": "node_modules/opcore/dist/advanced/asp-warm/manifest.d.ts.map",
@@ -84,7 +84,7 @@
         },
         {
           "path": "node_modules/opcore/dist/advanced/asp-warm/manifest.js",
-          "sha256": "8d97137ab55f15d133dfe449784267084f089828133d949f9651ad7772f13906"
+          "sha256": "54a831e3a7d2631410047d7d1f11ffef1a8714bd9f221d35a7c7e16641f6c228"
         },
         {
           "path": "node_modules/opcore/dist/advanced/asp-warm/warm-project-registry.d.ts",
@@ -196,15 +196,15 @@
         },
         {
           "path": "node_modules/opcore/dist/advanced/validation-composition.d.ts",
-          "sha256": "65ffe46711e5791462c209b54ea57daa472f6ff73cc5a0f76773a36199be16d7"
+          "sha256": "6bbc30379a53b3f430c2f093ebf43656675b0056d915474084473696abcfa55d"
         },
         {
           "path": "node_modules/opcore/dist/advanced/validation-composition.d.ts.map",
-          "sha256": "8aa337d1df45defc426215a926fdc24f93ae32f7b22c90e0ee5ab7698430054d"
+          "sha256": "704d4f05c65dbfe5e5cac484eec22168461d3765bbb2eb14de1ca1f7383f3647"
         },
         {
           "path": "node_modules/opcore/dist/advanced/validation-composition.js",
-          "sha256": "de711f03b81c728570296056f1df4a963ad2ffdcfead4bd8ca91624820c14388"
+          "sha256": "c32d9335a79d67102f1b4927a2bc9782f110f356bb56c64eb382814296d97909"
         },
         {
           "path": "node_modules/opcore/dist/agent-gate.d.ts",
@@ -236,11 +236,11 @@
         },
         {
           "path": "node_modules/opcore/dist/check.d.ts.map",
-          "sha256": "0d43acf3bcd2ee9c41edeb7713045229a3fadf53e1a1bde6b42e0b3318542f97"
+          "sha256": "490c38043bc463882d47b656fcff07b3c13381b04861f1a4539d7ba694c7779f"
         },
         {
           "path": "node_modules/opcore/dist/check.js",
-          "sha256": "9382000d995d1d4bf7ea8d65acc6d57d7b7a3690eed0b049d63c57c445590469"
+          "sha256": "6b60fd00f9c3b841934439620ac890c18a8f1373224bdea362c0cee6c1b7c176"
         },
         {
           "path": "node_modules/opcore/dist/clone-invoker.d.ts",
@@ -256,7 +256,7 @@
         },
         {
           "path": "node_modules/opcore/dist/descriptors/opcore.managed-tool.json",
-          "sha256": "f75e0da84bc807eb33e5c08d99cf0c51ab204b12298ddf4e8d03b6708e335be8"
+          "sha256": "282c6a8f4f4adf097eacc40d818f32340acc0b6fb4b0e14845e3327525806d12"
         },
         {
           "path": "node_modules/opcore/dist/doctor.d.ts",
@@ -264,11 +264,11 @@
         },
         {
           "path": "node_modules/opcore/dist/doctor.d.ts.map",
-          "sha256": "42b49d606b37bce66b57eb338c0fd9e844bf6682a155922af249fbf53d3f0777"
+          "sha256": "371928698ae373c30adbe5e0ff280e80554203a028cb432429e6289be87f0b28"
         },
         {
           "path": "node_modules/opcore/dist/doctor.js",
-          "sha256": "22742479d5e35d9b5a32370b39c33c6a965375af41e0e8c98de776457a259be7"
+          "sha256": "c6471b0399c50f9359441a5d6e188e89adb90b413c63e7426ec3d1de5083a09f"
         },
         {
           "path": "node_modules/opcore/dist/graph-provider-client.d.ts",
@@ -343,6 +343,18 @@
           "sha256": "b9142f8dcc7934d5d0cd45254e8bbb1444e686cc325ed11274fadcbe2107753a"
         },
         {
+          "path": "node_modules/opcore/dist/path-policy.d.ts",
+          "sha256": "0ae583a1826c73dc1454ed5c2ce0d5a158133f45c27611b77f97d8ff57178efd"
+        },
+        {
+          "path": "node_modules/opcore/dist/path-policy.d.ts.map",
+          "sha256": "0df7aea05dfa31d4ccba76860f0667bce2c227b2177f69aa2394249499cdfa3b"
+        },
+        {
+          "path": "node_modules/opcore/dist/path-policy.js",
+          "sha256": "44b1032577731a69552fdb38da6450f57459b7c4ae5948b8594b4daa705c342d"
+        },
+        {
           "path": "node_modules/opcore/dist/plate.d.ts",
           "sha256": "c6c0af708d0ca930712a8dbffaa93a91148fe0269351aaaa8915505801980dc8"
         },
@@ -368,15 +380,39 @@
         },
         {
           "path": "node_modules/opcore/dist/repo-check-packs.d.ts",
-          "sha256": "a1a0b32754b3540c121fc7576d8af410c47975824819845d4057917d6367e9af"
+          "sha256": "62a557280f675eadfc805fc5b3335a545fe47c17d9576a1a709dea70bc8adc21"
         },
         {
           "path": "node_modules/opcore/dist/repo-check-packs.d.ts.map",
-          "sha256": "bf0eef5ca1d0310f9ce6abc3801af4a38ecb1fc948c5cf72035c96f194b4801a"
+          "sha256": "23a7ae1116240a08446b2af8f38e84f061120a11de9a55696b574989c6f50358"
         },
         {
           "path": "node_modules/opcore/dist/repo-check-packs.js",
-          "sha256": "ded4dd060645da4df6b27ef9ea030834e75e2774b6b38adcc7b81c6a4bc2ebc2"
+          "sha256": "33afce6fad09386b0d8d4b197bb1283a628ed48c91ac1f0a27c102c1329c7970"
+        },
+        {
+          "path": "node_modules/opcore/dist/repo-validation-config.d.ts",
+          "sha256": "d88bf0e90d518b45cd36aac6084957035c869ce6c962d3b3bfbf479612bc11f5"
+        },
+        {
+          "path": "node_modules/opcore/dist/repo-validation-config.d.ts.map",
+          "sha256": "e74791d0d7a41bbc9840586c812e33d9b9014dbc7c91edbc7e83a5a1bbcce8c5"
+        },
+        {
+          "path": "node_modules/opcore/dist/repo-validation-config.js",
+          "sha256": "4aabb78217ddea07153ae18e47b8db0406504abfa4163a7a50b7bb475a6880b5"
+        },
+        {
+          "path": "node_modules/opcore/dist/repo-validation-policy.d.ts",
+          "sha256": "fb162b117de4d5a827ba1eb56bd518cdf9fd49c2dcafc232a8d1a634e98cad78"
+        },
+        {
+          "path": "node_modules/opcore/dist/repo-validation-policy.d.ts.map",
+          "sha256": "5e58f52cca307534138c84375ee0a076de4489a6dbf5c01641746d9d66e6ea21"
+        },
+        {
+          "path": "node_modules/opcore/dist/repo-validation-policy.js",
+          "sha256": "77e8e92458e7a034a83294f0547ea703c2791f09ed8f47ebe1f80350ada40c48"
         },
         {
           "path": "node_modules/opcore/dist/reporting.d.ts",
@@ -384,11 +420,11 @@
         },
         {
           "path": "node_modules/opcore/dist/reporting.d.ts.map",
-          "sha256": "d4094731557c97752b74ff2bae00d82add9144934d14170055ce309beda453b2"
+          "sha256": "97f88c34271c557b3bae8fc2938787e903f04142f6f99368e71d1dcb078356fb"
         },
         {
           "path": "node_modules/opcore/dist/reporting.js",
-          "sha256": "f62d934b9ec1a7e7830b738852299f9b1962ad0bc52060f426b7d11ec4ab4315"
+          "sha256": "ba177be4c0154c511b8c7583f6bde2560225732e01f470fb28934eab296aae58"
         },
         {
           "path": "node_modules/opcore/dist/router.d.ts",
@@ -412,7 +448,7 @@
         },
         {
           "path": "node_modules/opcore/dist/runtime-info.js",
-          "sha256": "644ccd41dcbd4eefd19e32a2218b3a0e53e9cc55743f92081a480963fe84758f"
+          "sha256": "6544ee4e7f4e21634e857d3787292fe1c464874a796ce078912974a34093601e"
         },
         {
           "path": "node_modules/opcore/dist/scan-presentation.d.ts",
@@ -432,11 +468,11 @@
         },
         {
           "path": "node_modules/opcore/dist/scan.d.ts.map",
-          "sha256": "5fab81a62f797fb71648bc5dabb22788367dc945af94a21096bd608549515907"
+          "sha256": "0f8bbab295c697937cb14c710fd8e2646125f66ddd5eadde7abdfe2af2eb1925"
         },
         {
           "path": "node_modules/opcore/dist/scan.js",
-          "sha256": "824e0548ab06c4a9c32fc37f3c84e9bff24a199f2245d571725ef99e6da18c98"
+          "sha256": "3c5645c4e787e2bec50c5df02c13d644fb4ae3b1cec2cc266a3e833c0174b747"
         },
         {
           "path": "node_modules/opcore/dist/serve-telemetry.d.ts",
@@ -464,15 +500,15 @@
         },
         {
           "path": "node_modules/opcore/dist/status.d.ts",
-          "sha256": "d0c40b140b2ec7fcaae8224e9e9e237914fb7ebd26b8902fde8230bca7fb915e"
+          "sha256": "630e572644b2ba0adcc7a686bffbace425edafbad65ead07b032c7de300a4138"
         },
         {
           "path": "node_modules/opcore/dist/status.d.ts.map",
-          "sha256": "9da3592c207a2f44948e1f030355ee6f4ee639bf8204f13196f695f26e6a37e9"
+          "sha256": "35c5f3632bab32a270f3fb320174687f5022521f5799182f4b9a2f372048b479"
         },
         {
           "path": "node_modules/opcore/dist/status.js",
-          "sha256": "e3d48e2fa9420002f1dd30e0073c1929a90ddb13fd53c24affd27cadc9d0b0d9"
+          "sha256": "24a720b005b89cb3874d3b263e470a7dae79a5f9df639002d71a046b01ccdf79"
         },
         {
           "path": "node_modules/opcore/dist/stream-output.d.ts",
@@ -496,7 +532,7 @@
         },
         {
           "path": "node_modules/opcore/dist/timing.js",
-          "sha256": "b5ab0efe4b55e50f9714e6c365ecb36aac9b0d29f7c3547b21e5f01cc8601500"
+          "sha256": "1dccdf3020bd780bd708bf7c9399d049fd108c6ee2313b464722b8481f0cb455"
         },
         {
           "path": "node_modules/opcore/dist/try.d.ts",
@@ -508,19 +544,19 @@
         },
         {
           "path": "node_modules/opcore/dist/try.js",
-          "sha256": "ed6433e6cdf58351cfee7af4db2e1a67bb245752e080edeaf25106c95060c3f9"
+          "sha256": "2637bbc01aa43a8c350825130b438c25ab8567e4f679dc9b6d03b19f0cf1fb3b"
         },
         {
           "path": "node_modules/opcore/dist/validation-composition.d.ts",
-          "sha256": "9cd5e23df57f80643311514e2a2c025acaf7a14a6bbd8a6e5d6820a201bfc789"
+          "sha256": "946b4e5eb0942b01d215d62ae37781cfdac2a654564f05b5833ac9f1330d1c19"
         },
         {
           "path": "node_modules/opcore/dist/validation-composition.d.ts.map",
-          "sha256": "6b9c614b90ef71053180d76fad29bee14309c09d524b87bf353a7231e67563fe"
+          "sha256": "11cdfe386566bda11ef511278e7a7a3f84b4612bb95a824b69137074d847d72d"
         },
         {
           "path": "node_modules/opcore/dist/validation-composition.js",
-          "sha256": "92897fe972a5235aa0a76d162579137d8318314518fb21c0d695ca2e5ca47b55"
+          "sha256": "c6b6742af803a6bef6d341d96c6834e92bbf5dbe0075b11a0f64dbcde663c60e"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-asp-provider/dist/digests.d.ts",
@@ -572,11 +608,11 @@
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-asp-provider/dist/manifests/asp-server.json",
-          "sha256": "c98fb05d65992b91b35af05fd7e3a092289d9556a77c103636315f5738ed8d8b"
+          "sha256": "d2bfbb77446043049298806ae25c323c0a6a25e88e19dee2ed916be87d5f5a21"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-asp-provider/dist/manifests/opcore-asp-provider.provisional.json",
-          "sha256": "de0463b2402f70253eb1eae4c05185f1f0493652409ae44d04b676ed4de4ce26"
+          "sha256": "14a16543f63db919a49fbdbc65838d7be31c7d5a4466260bfa738fd47bd4edad"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-asp-provider/dist/mapping.d.ts",
@@ -592,7 +628,7 @@
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-asp-provider/dist/protocol.d.ts",
-          "sha256": "b48aece5dbe1a0dce2f8cd426b0210100fe8adc8505a6a35a9d73b35430221f9"
+          "sha256": "1e5000f0f6e4c3e59ab5afc8ae9ef46254f40800146e9e373c344c348807cd16"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-asp-provider/dist/protocol.d.ts.map",
@@ -600,19 +636,19 @@
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-asp-provider/dist/protocol.js",
-          "sha256": "4d08d4ad7896c5273fa09a1d5867ecb49d91b70a8a75917adeb6227927675dd9"
+          "sha256": "2ceb72c6a3d6f5b9f56034d13f2f2e3320abdabc59c71a32d68f4e9e8444f2bb"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-asp-provider/dist/validation-composition.d.ts",
-          "sha256": "b15be0a65957df3b03c997e9a3c7ced98e1e497ef79cba6fb001c28f77465219"
+          "sha256": "dfb16a3ddcf5151528baa307e2a8dc99e38855a88441475c4f45c173261eaf4a"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-asp-provider/dist/validation-composition.d.ts.map",
-          "sha256": "e2c89f7e0f008f5f8b831d8734e9bd1cf30b3e9efd88cc9f0cd2ca2afbef7b60"
+          "sha256": "b4153ae4c4eddf4c3839b18d07ae3b046ed6109a4750bd1b099f82b61923110f"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-asp-provider/dist/validation-composition.js",
-          "sha256": "22982d75d5993b5bfaed2f37ad9adff731e881b14e49111e613974e95545963d"
+          "sha256": "9d6a9f87a17e277fa50e111847bcfc5a771b61ea570af9d1bf1e84f14a47a234"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-asp-provider/dist/workspace.d.ts",
@@ -628,7 +664,7 @@
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-asp-provider/package.json",
-          "sha256": "aa71f047a6bb225e7e79f4310d4f9506347edb1d4e8dfddbf6a3b04ae4a09148"
+          "sha256": "ba728204f8e89065d3b9abba93eeaba2f082a1f07264b9f44d8b5c45752e3f5d"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-asp-provider/README.md",
@@ -636,19 +672,19 @@
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-contracts/dist/index.d.ts",
-          "sha256": "136029e498ec9b604429d4100592aab20f048cc31bba302987b62c540093b816"
+          "sha256": "1ba55d9f57b0497441ff0d7f25ff152511b067d09d45c20e1439e3575b70588d"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-contracts/dist/index.d.ts.map",
-          "sha256": "ca74e8f65e1714f9a83405435a4f38e6e6071a694e3bd3f7d1b1fd8121a78328"
+          "sha256": "f83ea7cfa867c601f24eba2c35156f27eb41cc773dd5b7f4cf65840a300e65df"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-contracts/dist/index.js",
-          "sha256": "ece6a5d005a2c958de109050c93faf23da261e9b9af4f20161e3a68dfa18b58c"
+          "sha256": "daea1b815da9ceb5eaa920ee2e0458b14832f6e15d4c48ac0ec1764396dc35cf"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-contracts/package.json",
-          "sha256": "b63d2441ea204c2babd8732370f2199e0205c121653fb82b457da912ac200092"
+          "sha256": "e5134405c8d528576e2aa59b5d275ee98b7d0a46b03e0ecba23cef2a7dbb2965"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-contracts/README.md",
@@ -656,7 +692,7 @@
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-contracts/schemas/opcore-contracts.schema.json",
-          "sha256": "e1ac3ba862401a9246e3577f1fb9e3a29c7405c12e3be0d2f2f9cb6f6292ab9a"
+          "sha256": "d2671c5673015a044d52a5eafd6060e590ac99c2b5b3516eaf166841a7aa92ff"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-edit/dist/atomic-writer.d.ts",
@@ -812,7 +848,7 @@
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-edit/dist/path-policy.js",
-          "sha256": "87d2e2e5ec1f6f03cbd729d1242b726c7f65698bc6a7656cc5ea821e7e6ccb93"
+          "sha256": "230639081d9b2a4acf54f5e883f1f2dc8ec9fc330a57ba9189080959c075cf5b"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-edit/dist/planner.d.ts",
@@ -936,7 +972,7 @@
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-edit/package.json",
-          "sha256": "10d13e90763f81ced2c406dce18c1ca5657a2ce4f219b4830362ca66ed8ad932"
+          "sha256": "a18853317e723a5f985a6f102cfeb571840e751cbdba8671fba5a83e4cd18788"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-edit/README.md",
@@ -944,19 +980,19 @@
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-graph-core-darwin-arm64/metadata.json",
-          "sha256": "041becbac4eb6bf87bd4a5661248788f7734875348f41326d51c3621aaa95477"
+          "sha256": "4f2817e526b57f3036a7595cbc2a8ad94836f32a87f315f866080b0d9855c266"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-graph-core-darwin-arm64/opcore-graph-core",
-          "sha256": "b4cdc0d9fbef2f2c67dc849cb80309f6e6edb8ab933dc8d4fb89b279f4b252e7"
+          "sha256": "c222610c492e628fa48ff50be22310e5bf8ebcd62bffbde1903d1fa91c45f6cb"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-graph-core-darwin-arm64/opcore-graph-core.sha256",
-          "sha256": "87addced7ce9fa6cab167ecb559f2e0db763926576e260d3d8851cafd3a3c954"
+          "sha256": "794844f23f2c3ddd415b3a58d07b41a6a1c4ad643be0b6ae2a6585d0e4e057fe"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-graph-core-darwin-arm64/package.json",
-          "sha256": "81f9d6ad9ebdf61aeec7e49835b88079f04da69a3a2a1086661c6518567e7c80"
+          "sha256": "413b1b234d6ed3190302cc7852bcdc87c6e0bbc3320b37e3530b8db16ba3a9f7"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-graph-core-darwin-arm64/README.md",
@@ -964,7 +1000,7 @@
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-graph-core-darwin-x64/metadata.json",
-          "sha256": "f01412291a3f314ab7087d474300065ce341a5de1d1b69757b409276196ba6e8"
+          "sha256": "1892fae547da3aca3feb60bfba1be52b9dcfd4f5dfc9e4da0cb923cfd2a4792a"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-graph-core-darwin-x64/opcore-graph-core",
@@ -976,7 +1012,7 @@
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-graph-core-darwin-x64/package.json",
-          "sha256": "79c854a6618b15bd65718859b5a1235a1296cb1d0d32888da5fb96e59ab08e72"
+          "sha256": "11fed3cf21851828ffb752fb1c82014038278812f5aab76d097438bb65ce4ed7"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-graph-core-darwin-x64/README.md",
@@ -984,7 +1020,7 @@
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-graph-core-linux-x64/metadata.json",
-          "sha256": "83ac0f682f8d7ed3882fd3cd2c3cf2fcfda3437d11c3ffd89d4aa01779c1a5ad"
+          "sha256": "d851e010080be2505824d89a49cbe2b1bd6709854d380bd3f39e8c58c2114d90"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-graph-core-linux-x64/opcore-graph-core",
@@ -996,7 +1032,7 @@
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-graph-core-linux-x64/package.json",
-          "sha256": "ecb420c1b0bc20d4ea382395569e2d9cb34eda23cee69de8d3c63d219c2c73ff"
+          "sha256": "6ed19877da5a0147fabb063f8c1b295afae11aa6cc20f77d7dd51189c62c606c"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-graph-core-linux-x64/README.md",
@@ -1012,7 +1048,7 @@
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-graph/dist/artifact.js",
-          "sha256": "ca6cad950466359ef56015ed5a0cf14e1fd6a2e1ac30ea52ae1379457dfe4dbe"
+          "sha256": "f64ad1f3f71300e1be44e1ceae53d5c46e320b36c4a1b190afc4f63e4f1cd460"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-graph/dist/index.d.ts",
@@ -1048,7 +1084,7 @@
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-graph/dist/serve.js",
-          "sha256": "237058fca6d6481110cfcd199f5fd8e5d36b7e74ae30f054e298f0f112387406"
+          "sha256": "7027ed4c132b806daf8a75b9d9a831a0229ae7af8b15b057f32d5fe010a331d6"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-graph/dist/sidecar.d.ts",
@@ -1060,11 +1096,11 @@
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-graph/dist/sidecar.js",
-          "sha256": "6c55a55663fb30c9a868c5c1310db1effed390eda5fb17ef220b27e22d5cb586"
+          "sha256": "231f00b3d7318c99f5f42c8aa5ea9fd1770ded5bc95fc12dc189ccb51be5d93d"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-graph/package.json",
-          "sha256": "2728c52e0e0420b59f70fe012833a7f1022201df55ef7b9c6d95a9bf4a15d77e"
+          "sha256": "18db8e6a9dd9321c303aa97112fd04d188da49a6c11dc05a5b86c6d2f2120f50"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-graph/README.md",
@@ -1096,15 +1132,15 @@
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-clone/dist/clone-check.d.ts",
-          "sha256": "6030800d37baf36869e033ee3cabebd359012f32a5c728a2bddbe6b1421b20b4"
+          "sha256": "8bd7f42c96b282abd5fea2aa0953a984ffef2ac1c4fe3ce81ed79c78f0dc4473"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-clone/dist/clone-check.d.ts.map",
-          "sha256": "8ae2e0c707f5ef693c5f12d805abd7198e2da8852db2a672165b83542264fe45"
+          "sha256": "e0c16562b2e7473c54e5f670cc491b49dda68ae0e4a2d719715ead2495606545"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-clone/dist/clone-check.js",
-          "sha256": "e5e99b81a31edd637817a8e83d15c49ec4fecf82a311c7331b1e9084c3517d1f"
+          "sha256": "888bf572e64692e7e5bf138a982beb34d446c1286261d98f1d7b78ba36503bdf"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-clone/dist/index.d.ts",
@@ -1132,7 +1168,7 @@
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-clone/package.json",
-          "sha256": "24007b5507497d8ad3e2d51f204be036c7f249f372135755bd5782b10306b436"
+          "sha256": "9c30eb9ae94e778bd50991b21e4aff79aa19355e31e8da2c3539e040b23703b6"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-clone/README.md",
@@ -1152,27 +1188,27 @@
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-docs/dist/check-ids.d.ts",
-          "sha256": "bcd064dbcfff924467ff5caecb6d1e585d1a00ca9ea854890b6cce975cdc6d77"
+          "sha256": "d3d4cfb9e21854f83cf5501341d042348938938caaa2490002b9a08b69b92d17"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-docs/dist/check-ids.d.ts.map",
-          "sha256": "a3fb5b27c83e1f28c9886002cec279bd85c7c4d5bb7835c22be9095ada38755f"
+          "sha256": "6fc08e36001813cd234ff1ee3d220d3a1193f04b37fc7ee656aeadaf8270c61c"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-docs/dist/check-ids.js",
-          "sha256": "9a569fbf07443eae19456d16a456b4a973fb37e3645557156503cf7ddf8ff19a"
+          "sha256": "001dcdadc7b7a02ba0ce6d33bc24ca54fab179fec321c38e822e78d3ba8afc82"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-docs/dist/checks.d.ts",
-          "sha256": "6c6b64e1d9ff47df1dd71e047059832f2835ce7dbfd5ca3dcd988e881c6752f1"
+          "sha256": "a511b2478be75af4f247e207ef257e2462d35d6918040af8365cb81727bbc649"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-docs/dist/checks.d.ts.map",
-          "sha256": "872a1349c4bd0c20aa682afad86951c6631b97ce226d44e974dab9b9f2adebb0"
+          "sha256": "0327bcd93e1ed4423de0c0426831899da6eca3f2a79bb8fb1dac06f3f6815bc7"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-docs/dist/checks.js",
-          "sha256": "1a7c105bfa16b01b44ad2cd736734eec05a69002343ae9797498883743966fad"
+          "sha256": "c73c4811f7f89104e67de4e77317a7cc0bd3273f043a157cdc25d40b352804a8"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-docs/dist/diagnostics.d.ts",
@@ -1212,15 +1248,15 @@
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-docs/dist/index.d.ts",
-          "sha256": "4ce0a82e7ebd3b1243e7c0f68ec9e09ed3d9bc6a0f3187cb4cbbaceb70570657"
+          "sha256": "c6f2ff52b95724cdb4975e06b156436463cab1363874f45f3c8b2b25c6c86e8f"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-docs/dist/index.d.ts.map",
-          "sha256": "c5490cb711dc7b193caef83837855bf353ffcc2c89ad12f38f62c38fcbfe01d1"
+          "sha256": "113728a734d996a4829205a64f192c891e914d666e4ea13f4c080f3b8b99ce34"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-docs/dist/index.js",
-          "sha256": "52843a0983c7fa36e68dd44a6e273069c59ec5d7e2487e8e28927e5380e498cc"
+          "sha256": "537a67920f502236fdcca3dc23036257fdf66fab6652bcc42bba6efe77f22eee"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-docs/dist/snapshot.d.ts",
@@ -1236,11 +1272,91 @@
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-docs/package.json",
-          "sha256": "b6a444024c52977179719cb99873e0833ee14b9be4daf16a6565cc78ca8b0f6f"
+          "sha256": "a2ddbb4e695320847b766079999b400dc78bda0e6c86358114e266e2893c5ba9"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-docs/README.md",
           "sha256": "aa84da4bf681e832e457dc89ea35cb16ba3f5f922f6e852a5bb2b65f3afa0946"
+        },
+        {
+          "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-policy/dist/check-packs.d.ts",
+          "sha256": "e29ddfb7da3aca5642f73c676025c9fcc106d329f6d386a0f94702bdc2c344b0"
+        },
+        {
+          "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-policy/dist/check-packs.d.ts.map",
+          "sha256": "0f586adc0fb2ba321af5e7dcec56b3f8139741f94946b61fa631cbb172d7a8ec"
+        },
+        {
+          "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-policy/dist/check-packs.js",
+          "sha256": "b2179a51925db91851a925ef3a8c515a664425c6ee2ddb0f58009f02368ad163"
+        },
+        {
+          "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-policy/dist/config.d.ts",
+          "sha256": "1a854d537c8bda980e43284c00547f48cebd614ac769b29459d0110449e86bc4"
+        },
+        {
+          "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-policy/dist/config.d.ts.map",
+          "sha256": "29772ffdcd1ecf74cb62add861cde62395bcfa5449d68b4b59e25a2a4de93dc6"
+        },
+        {
+          "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-policy/dist/config.js",
+          "sha256": "462f6660b89b8746c43ef1febea9ca93d95c9ca2c107b5d7b37e079f8c57be95"
+        },
+        {
+          "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-policy/dist/factory.d.ts",
+          "sha256": "5233652fd7c9ac59a9ffdada309e76d451dd3a73d6dadf7dc53977596808120a"
+        },
+        {
+          "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-policy/dist/factory.d.ts.map",
+          "sha256": "56ffe581ff277dad5e1b3abe98c6fc9d80b54087c19b849d1a9fdfa7f4157376"
+        },
+        {
+          "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-policy/dist/factory.js",
+          "sha256": "ed5ef6e0e8ed52d9536456d74e22129c67dd591cab8a5f9c4eec62ed8dcae49e"
+        },
+        {
+          "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-policy/dist/index.d.ts",
+          "sha256": "a2add9ee008f3a81d78d3fbd0269adfd24efe6a0752ca4359903815c3c8c008f"
+        },
+        {
+          "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-policy/dist/index.d.ts.map",
+          "sha256": "fd937131b34c4a4038fa12c7dcdf8e870c39c10eaf41a7e0b381369cb3a46fe2"
+        },
+        {
+          "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-policy/dist/index.js",
+          "sha256": "ff3fdb0e446830373d060e9dd400d254e36209e44ce55907a31cd85249403981"
+        },
+        {
+          "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-policy/dist/path-policy.d.ts",
+          "sha256": "14b119e3f2066c0cb12c14f0293e4582e8c7ce9bf6d0bcb6901dc100e1a88f2d"
+        },
+        {
+          "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-policy/dist/path-policy.d.ts.map",
+          "sha256": "1066912a1a38ea4abf3715ab172b6683baddb2448240f1672700e7e847001e56"
+        },
+        {
+          "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-policy/dist/path-policy.js",
+          "sha256": "31484fff8c0f1fc4e93e210e81a0bec1f6b983979aad2c8407dccd8ad2e4f10c"
+        },
+        {
+          "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-policy/dist/types.d.ts",
+          "sha256": "4309bd29df742b2a421f7cd937afc5115cfe853ffc66c3899c5387209ed1d266"
+        },
+        {
+          "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-policy/dist/types.d.ts.map",
+          "sha256": "38a1dd507d017067ecc50f5ab2bafcf4f0d6bfa6f681aedd55fcc672cf42feb8"
+        },
+        {
+          "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-policy/dist/types.js",
+          "sha256": "4850509444a300178a86e5e55a7b2b8da1a9a9c90aa45dba17e64b1ca414ec23"
+        },
+        {
+          "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-policy/package.json",
+          "sha256": "e8993c4f7e5f348d285add17b4d6cb9e9479e8e67254151e4d2b88fcf4f083f7"
+        },
+        {
+          "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-policy/README.md",
+          "sha256": "b586e1798ab5f5246413792e789e9cb3d526a5381f69438227cb4d5f8c9c338d"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-python/dist/check-constants.d.ts",
@@ -1272,11 +1388,11 @@
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-python/dist/dead-code-check.d.ts.map",
-          "sha256": "141aad6483a3637446048dac7275dbff7cea67f9008b15526e52ad647b1be51d"
+          "sha256": "db554a4663b73e78d3baedbb7b1191e54f5294c973c855a255a6bcab4d53309e"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-python/dist/dead-code-check.js",
-          "sha256": "f41249c0b52bf8218ed22be30d91b4d4ba3a447287f7cefaa6e4b31927ace1e0"
+          "sha256": "6142775234a5e993b57330f1624ec54a1f9622c3b4838194ceb005db204b3712"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-python/dist/diagnostics.d.ts",
@@ -1412,7 +1528,7 @@
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-python/package.json",
-          "sha256": "447a8d064994d92439856b6c5c829d31a3beb1c0ed702b1ce0b436191e762fd4"
+          "sha256": "40518168600f66737d3aad515b563f646c52c33c9060eae37cc5c86c1518fe82"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-python/README.md",
@@ -1479,6 +1595,18 @@
           "sha256": "96c4e048a68d0d55585ec74a80607785cf437070a8d889255d257a254c89746f"
         },
         {
+          "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-rust/dist/command-gate-check.d.ts",
+          "sha256": "8876fa9e0765192b64b81a61f3d3f1e8cf765589a5e2ef0c4ea97bf8cc80f223"
+        },
+        {
+          "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-rust/dist/command-gate-check.d.ts.map",
+          "sha256": "33ad238523775058ebc13694f881a0a4df5077a73c3c32225003db0ff89d8d85"
+        },
+        {
+          "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-rust/dist/command-gate-check.js",
+          "sha256": "f77e1413c8dc5551e89df6bd15f886bb1ea3a262620a326bec7499bfd35282dc"
+        },
+        {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-rust/dist/diagnostics.d.ts",
           "sha256": "50982776c7be6cb986bc42971c256734b0c0301a4cd2c6e7ae95be04e10d722e"
         },
@@ -1496,11 +1624,11 @@
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-rust/dist/file-length-check.d.ts.map",
-          "sha256": "f8c786988170bdf8ffff16a29af7617f6ee819c32fe0519ee8be95d00cfdf340"
+          "sha256": "33094ed22e8439e32de809a39cc4947ca0b7f8922de194799f28b12cc36fe699"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-rust/dist/file-length-check.js",
-          "sha256": "252ce877ba830f2a1360e52b7155b035c6b4a6e3f7a8fd1dc32d179b02e06c5d"
+          "sha256": "2dc9eb95bbc78bd5f0fbdf8255905c0386069a678c3f083deed34141b9e46da3"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-rust/dist/fmt-check.d.ts",
@@ -1532,11 +1660,11 @@
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-rust/dist/graph-signals-check.d.ts.map",
-          "sha256": "10f21f6d3eb12f979c33a6da1ab7517412d9daba6e150b86628ea0759fdcee1b"
+          "sha256": "dbeb41b67d685ba60e8b30a9f1ca2f9f3ef7468392c7b30b70aa70c7f1269580"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-rust/dist/graph-signals-check.js",
-          "sha256": "30e20f385571b920a8385e65295ae58ae85c34693ad473c39ed63d40913581b1"
+          "sha256": "af366d581fee2a0a95dfeb23f02baedb6ad110540d228442c6f33dccb3f07c9e"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-rust/dist/import-graph-check.d.ts",
@@ -1552,15 +1680,15 @@
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-rust/dist/index.d.ts",
-          "sha256": "376d9e2bbe30372b660102b90dd443f58abbc405dd350ed2f342031afd74a5c4"
+          "sha256": "be1c11f08ca63a884c9e775cb3cfffe2a1efd044b1d95dc147bf12523acca8da"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-rust/dist/index.d.ts.map",
-          "sha256": "0c3b2b074c61add9cf64c938e2011f2bf93766083140a5452ad33e79491fd5a4"
+          "sha256": "72f88983fae9da9228e49b225fb5888240fafa4f729fb30257c9beee0dcdeea2"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-rust/dist/index.js",
-          "sha256": "f2d459250d6935eee29a1c1a0593aa76ae2a30ce9557aeccfb7eb1f1298b0189"
+          "sha256": "a5d65f6bdcbeb34640bf52e9d62bdc0d094259b3e496790f471a7aa68ec005a0"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-rust/dist/materialize.d.ts",
@@ -1648,7 +1776,7 @@
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-rust/package.json",
-          "sha256": "e7b511a8d4727fb2e7de516bb203e1f8d82cccce481225107262b5be0eb95250"
+          "sha256": "8bdb2eb2f1093771cd42f132451787b69418eaf43a60665a21a75b958d8d9b55"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-rust/README.md",
@@ -1668,15 +1796,15 @@
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-typescript/dist/check-ids.d.ts",
-          "sha256": "5a7c693b8dcc98d41a0670917ee3199dd30f62cfc96dd555f1d3cb2b2309dd35"
+          "sha256": "2aa46c2c75616b03275c0b21dc5acf067b7c31a011caeeab7927225b6f28b93d"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-typescript/dist/check-ids.d.ts.map",
-          "sha256": "9488ec056b2c96f93e33bee378871b231d6c26e8e3806f7d499521d7bec74462"
+          "sha256": "36c6faa2dcadc676c0a22fd6ce11d3efbdafd8c5efe647c405911db2a933af28"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-typescript/dist/check-ids.js",
-          "sha256": "8d300561b92c6dedf0e1e52433e69fa33773d6783206d323ae20555176366daa"
+          "sha256": "c01c2109f2073bfd00efcb0a38e5fcc7d110bf7f58fe50596d78816dff222901"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-typescript/dist/compiler-host.d.ts",
@@ -1696,35 +1824,47 @@
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-typescript/dist/compiler-options.d.ts.map",
-          "sha256": "67b4b4e715d9ad239fe5a375fecb39d60bf07b4b5f6869f8f65c0f8f7605072e"
+          "sha256": "4077e7d8803a73581e452cc1c85005cb25020a9f53845859d78004838af0b413"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-typescript/dist/compiler-options.js",
-          "sha256": "694052bdb5f12f2a32b07555a62a285abcd2758b9d80873c51e9ece6adeb543c"
+          "sha256": "54a52c5b5c8dd9fede4fc9a36a2a933f8daca64a0cc5af63b46b4db9e1e20978"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-typescript/dist/dead-code-check.d.ts",
-          "sha256": "34df57eb88a9380f3f2f34aa7dba98665d4bb12923ccb5ddddb4bbd7b7211b91"
+          "sha256": "33fc2715978e0f15ab0251b418494ce31b05e19dda00143c173e969ce9b5a0cb"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-typescript/dist/dead-code-check.d.ts.map",
-          "sha256": "0bc3c778aa2fa5088f71253c2d707cbc0f65cd3b5502b03643250d64a916348f"
+          "sha256": "3d9c85d9276ba3f0b6e56cdb01c735b658b5723be7a0780a427a1bd739c43be8"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-typescript/dist/dead-code-check.js",
-          "sha256": "5d4c8235bd3ce416f3af54d9010b60d3ed2c91300d47d13b5befeec20f0ee987"
+          "sha256": "28870cabe777f105bc611f28b111b6d3d5c7f550538082f9c6a5d7d0b3be14ae"
+        },
+        {
+          "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-typescript/dist/dead-code-entrypoints.d.ts",
+          "sha256": "23ee339b7302fab33763542f05d1caa63358f6b02c78e8cfe1567536461078ac"
+        },
+        {
+          "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-typescript/dist/dead-code-entrypoints.d.ts.map",
+          "sha256": "a6f55de1bf53c474c08789c874b24749f4726518547023637fc2dbf34e96f49d"
+        },
+        {
+          "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-typescript/dist/dead-code-entrypoints.js",
+          "sha256": "55b230dff5ee38450426b6e11755ba0d34b1c60c183c26f2b37969805de38084"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-typescript/dist/diagnostics.d.ts",
-          "sha256": "46f8f2fed34720816e65427a4eb813d1fc21bfd5bd4f204feaba07810b73e0e2"
+          "sha256": "ef83ab94080992c49539b3cacdd2a3966bdeb2b5472baef8803082b3ca6b86f1"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-typescript/dist/diagnostics.d.ts.map",
-          "sha256": "6521906d4c45bc4a7a0b2bab1abbaa715eb8c62ce8134cdffe4ff052080e3150"
+          "sha256": "217f3b5b219dc081e48473d72788191d3b15a6e7cc4154fb6f9d4f9b6052af6b"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-typescript/dist/diagnostics.js",
-          "sha256": "eda1b8bad349de63239ff1422fcf787f051650713a473e072dd5e415144d43c7"
+          "sha256": "98ac4ff44c05c2a247075ae5b110114c765e20f62a1838b2c8e8e3328f39fd21"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-typescript/dist/file-length-check.d.ts",
@@ -1732,11 +1872,11 @@
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-typescript/dist/file-length-check.d.ts.map",
-          "sha256": "696de20f2069abece81b159634d026136776061da78ef61917ca9e0df951acd1"
+          "sha256": "97849e31a8c0020554badeb6e4b343f87d087be4ff5b94cfb29251f57d0e6f22"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-typescript/dist/file-length-check.js",
-          "sha256": "b2208a8084c3388334625e90cfbbc324633b0c14975891ccca5b327447488fbe"
+          "sha256": "e5330c2c22cb32e47b92343652113386618ed1c9a4938ad87aaf8ea01d490544"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-typescript/dist/function-metrics-check.d.ts",
@@ -1744,11 +1884,11 @@
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-typescript/dist/function-metrics-check.d.ts.map",
-          "sha256": "57bb8270b94eaae7825b208e31115a0b61d1e28959d17880786ca23d66d83685"
+          "sha256": "b02196e3c945219a39ac8a01b944c9bced1b351e2b01c6f94eb2c3651ffa8592"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-typescript/dist/function-metrics-check.js",
-          "sha256": "c6c1e53245b6f669536a44aa109ca3aa1a8a69080913932fd49a45cba586c342"
+          "sha256": "6ea6ef1fe46e58b52a0b9ac30e448a66991754088addbebbadbfa031c463df8b"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-typescript/dist/graph-requirements.d.ts",
@@ -1775,16 +1915,28 @@
           "sha256": "3627de054d1610dcafc2ab7e9429bb14d9e7136dd53529a7f4e6ae186e71b34c"
         },
         {
+          "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-typescript/dist/import-layer-rules-check.d.ts",
+          "sha256": "4e0e2aa10e0c568398e44753db072801671fb49bc176d2c9fce3ab682a86a164"
+        },
+        {
+          "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-typescript/dist/import-layer-rules-check.d.ts.map",
+          "sha256": "5ebf209b7b9c6e54e29a5e545ed802210974d5d9116ecbaf923c098b3687cb73"
+        },
+        {
+          "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-typescript/dist/import-layer-rules-check.js",
+          "sha256": "13792cd5189b0cf1a67b4193394a5c5b59816f7b56cddf4fca8afcd65c85f6b8"
+        },
+        {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-typescript/dist/index.d.ts",
-          "sha256": "e4959392fe95cbd33f521fa1fc08b8420a54c3875d212f190782366a67552937"
+          "sha256": "db0b23dc543ebca015f2c52be2a2c12815223d566b9ee3d7b23b126b525fd6de"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-typescript/dist/index.d.ts.map",
-          "sha256": "5c1a7c80dc5f658b6acb560f403351b851687eafb930251f2bbb229583dfeecc"
+          "sha256": "5cd4984d479ce1abe2114523075bd29fd4fcd7399ba39ea3c3d8f60ba4250e29"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-typescript/dist/index.js",
-          "sha256": "8d5a18e35fe48f708604129e1abde42a459c87b8bf3595ff7405feac2e08fd2d"
+          "sha256": "dda4a8b23d2e92dc4a8671fab9e246dcffeaaa5b0d7450afa6864c3372475167"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-typescript/dist/lint-check.d.ts",
@@ -1809,6 +1961,30 @@
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-typescript/dist/lint-helpers.js",
           "sha256": "f3f62bb2de924ede116b592eccddbddc140122f1810c1423ce17b8e5a4b56811"
+        },
+        {
+          "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-typescript/dist/lint-plugin-cache.d.ts",
+          "sha256": "46a677ddaa4ddeda7a69f8c183e0ecabd83880353033e642e415623e16c5098e"
+        },
+        {
+          "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-typescript/dist/lint-plugin-cache.d.ts.map",
+          "sha256": "5bc9a67d30a9fcd10ac533ccf6722c7b292211df702879938ae37def8492b37a"
+        },
+        {
+          "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-typescript/dist/lint-plugin-cache.js",
+          "sha256": "c407b0c0ce2e74430af733c11282039686bc0fa7ecd5f748e4d374a4d81eaa8d"
+        },
+        {
+          "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-typescript/dist/lint-plugin-check.d.ts",
+          "sha256": "bd881453e9a01d7f178a3fb01c27cd6602baf8b4bc1e1cbd89958e5c27f99b3e"
+        },
+        {
+          "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-typescript/dist/lint-plugin-check.d.ts.map",
+          "sha256": "29842139b749e94bf71ed2a47339b24fe992966944b7783b183465526b6578b4"
+        },
+        {
+          "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-typescript/dist/lint-plugin-check.js",
+          "sha256": "9239964d57744798bbcbbf813ef705bbcda60c2b956d2956dff0074ec271b51d"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-typescript/dist/lint-rules.d.ts",
@@ -1844,7 +2020,7 @@
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-typescript/dist/source-files.js",
-          "sha256": "27bd830f1cf66522b4b10de74491c31ac1f5744331fbeca17aae1ebf405b81dd"
+          "sha256": "990cec3b38c30e75c3f63cbf0fbcf167d9d2a5aa90afc7c456a0a9fa18b6db44"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-typescript/dist/syntax-check.d.ts",
@@ -1872,7 +2048,7 @@
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-typescript/package.json",
-          "sha256": "4acfc3d0c857258bad6166df60f36c5d809fd718fb168cf4984fef142769ffeb"
+          "sha256": "ba5f1d71d79e96c0ddde98bb3f4fc9cb77ec8cf654efa1d8ba6f841ea5ad100e"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation-typescript/README.md",
@@ -1892,15 +2068,15 @@
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation/dist/command-adapter.d.ts",
-          "sha256": "287ccc11919ba73aa525c51fecaaacaec10677ef22c7484c12769a386d5a2aca"
+          "sha256": "f79f351dcbe889809ebecc53e63898081350efa710cdd2ee07be380e95377979"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation/dist/command-adapter.d.ts.map",
-          "sha256": "2207fc5f31259692da1db4176f7c1ce2791f515c20279e531d2a2f3c64d638e2"
+          "sha256": "29c5fac909e58105db3a1dbf9156294011b5e72d6df928455e75971d4a1750a3"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation/dist/command-adapter.js",
-          "sha256": "0ed5bab3585c892da04e1a85131a92239e99aca4458ef6ffaf60413ab9724563"
+          "sha256": "13b7537b92efced5a058b91e23069a9aa595e529859bd94b0d6cdee0dfbd1e62"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation/dist/command-options.d.ts",
@@ -1928,15 +2104,15 @@
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation/dist/index.d.ts",
-          "sha256": "ff858c85950d315eee07413a1c35067ceb77a3dbe89cb3a17abe0f7d533953fd"
+          "sha256": "1a0148eedba73edcad32445cc2d22cb30e57c30a48a25e8f9ad64e1613a67d94"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation/dist/index.d.ts.map",
-          "sha256": "6bf9cd92596a100e593db98746988c216a5aea8fed58659f56be30aded81f384"
+          "sha256": "5ecfdbf1f3811eef9485b295d320476060809711a19c88aa2326ba61b6b13d0a"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation/dist/index.js",
-          "sha256": "e4e3eac937dec9ad0fbf3714c38e5e004e9fcc2b49c51f911dfb8f0652311df6"
+          "sha256": "902c7971953585232247be2d7560990e82345b615305db7086931775ae34e86d"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation/dist/overlays.d.ts",
@@ -2011,6 +2187,18 @@
           "sha256": "9d11e728480eb95d9bc970ffae7aa484e5eeae40939c75673e9f5cd976b99f84"
         },
         {
+          "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation/dist/utilities.d.ts",
+          "sha256": "5d2bf6c64f2a6efc88d1a0076534904d1f920d246a44a4507459947d0d067ce3"
+        },
+        {
+          "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation/dist/utilities.d.ts.map",
+          "sha256": "6048459b07793d075ca1c5cc3c613615225ff02fe199540481bd3d9a6851299f"
+        },
+        {
+          "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation/dist/utilities.js",
+          "sha256": "467bf94310fcec8f768446b5bb040817a299eb6e02082f87dc5a84b4552bfa58"
+        },
+        {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation/dist/workspace.d.ts",
           "sha256": "17faf35a973b63133bf3ad577ebc27dbd72e2403334d8593e160c8008753fa37"
         },
@@ -2024,7 +2212,7 @@
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation/package.json",
-          "sha256": "bcf14f1be3dfe21a558a23a7ce013233b891210a8af81943cc215d9f508a1b95"
+          "sha256": "a1e4240c72670dc9504762f87efe5836b74203eca5999a29a2e0a0a84d70f483"
         },
         {
           "path": "node_modules/opcore/node_modules/@the-open-engine/opcore-validation/README.md",
@@ -4052,7 +4240,7 @@
         },
         {
           "path": "node_modules/opcore/package.json",
-          "sha256": "6cbb44681e621fec71958914c2abe6b34c6172dcd13f3dd9c4e8abe12222a2e9"
+          "sha256": "5fab044eaea9e581534d0c30d86882872c24f6efcee65ea20e2654e61a78e052"
         },
         {
           "path": "node_modules/opcore/README.md",
@@ -4069,7 +4257,7 @@
     "commitSha": "5217f1f0c7819c62fcca380a9a49de06d11fa829"
   },
   "aspHome": {
-    "path": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-home-ktyy75",
+    "path": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-nKYzZH/asp-home-lFfS9X",
     "temp": true,
     "isolated": true,
     "sharedStateMutated": false,
@@ -4077,7 +4265,7 @@
     "aceRuntimeBinExcluded": true
   },
   "hostFixture": {
-    "repo": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-host-fixture",
+    "repo": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-nKYzZH/asp-host-fixture",
     "temp": true,
     "sourceRepoMutated": false,
     "baselineCommitted": true,
@@ -4097,20 +4285,20 @@
     ],
     "entrypoint": {
       "transport": "stdio",
-      "bin": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/project/node_modules/.bin/opcore-asp-provider",
+      "bin": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-nKYzZH/project/node_modules/.bin/opcore-asp-provider",
       "args": [
         "--stdio"
       ]
     },
     "manifest": {
-      "manifestPath": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-server.opcore.json",
-      "manifestSha256": "7331d62055dc1384a10bfa90ffb06d280eb647c53af656007c279f0391291de2",
+      "manifestPath": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-nKYzZH/asp-server.opcore.json",
+      "manifestSha256": "c88fd2577027f0300e27b836eaf35a24d472dbb3267e0e00209a2dbf0a2b779d",
       "manifest": {
         "manifestVersion": "asp-server/0.1",
         "server": {
           "id": "opcore",
           "name": "Opcore",
-          "version": "0.1.0"
+          "version": "0.2.0"
         },
         "protocolVersions": [
           "asp/0.1"
@@ -4124,7 +4312,7 @@
         ],
         "entrypoint": {
           "transport": "stdio",
-          "bin": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/project/node_modules/.bin/opcore-asp-provider",
+          "bin": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-nKYzZH/project/node_modules/.bin/opcore-asp-provider",
           "args": [
             "--stdio"
           ]
@@ -4182,13 +4370,13 @@
       ],
       "status": "passed",
       "exitCode": 0,
-      "stdoutSha256": "0e062f30906c9f0b2f44466fda0361005ba13e0a6d2c1a5606f4f53d3b3f23ad",
+      "stdoutSha256": "a4e7606231e07526e34edfdd49c3e41763039ae665c8d3eae0f08fe2a26b438c",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "output": {
         "schemaVersion": 1,
         "manager": {
           "state": "unavailable",
-          "aspHome": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-home-ktyy75",
+          "aspHome": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-nKYzZH/asp-home-lFfS9X",
           "detail": "Manager daemon is not running."
         },
         "host": {
@@ -4328,12 +4516,12 @@
         "server",
         "add",
         "--manifest",
-        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-server.opcore.json",
+        "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-nKYzZH/asp-server.opcore.json",
         "--json"
       ],
       "status": "passed",
       "exitCode": 0,
-      "stdoutSha256": "f8a5b5b65062ac0f20bc549909358ce1362568c098c56e625fca6fe9db931ecc",
+      "stdoutSha256": "e3752a312c402a63e449cd37ce244766d5b0c9d4d0f977af4829d4e4f78d4e37",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "output": {
         "schemaVersion": 1,
@@ -4351,7 +4539,7 @@
           ],
           "source": {
             "kind": "manifest",
-            "manifestSource": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-server.opcore.json"
+            "manifestSource": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-nKYzZH/asp-server.opcore.json"
           },
           "install": {
             "state": "installed",
@@ -4405,8 +4593,8 @@
             "providerAutoLaunchForGates": false
           },
           "degraded": [],
-          "installedAt": "2026-07-07T16:26:58.798Z",
-          "manifestPath": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-home-ktyy75/servers/manifests/opcore/asp-server.json"
+          "installedAt": "2026-07-09T19:56:56.383Z",
+          "manifestPath": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-nKYzZH/asp-home-lFfS9X/servers/manifests/opcore/asp-server.json"
         }
       },
       "assertion": "asp-server-add completed through standalone ASP manager"
@@ -4422,7 +4610,7 @@
       ],
       "status": "passed",
       "exitCode": 0,
-      "stdoutSha256": "61c9d522765af451f851b11f757b7f889f8181bdae7316f433773fa1b9952e46",
+      "stdoutSha256": "fa787057275abd9cb173a4292889bfff2745c368fc9167c874b481b888be22a0",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "output": {
         "schemaVersion": 1,
@@ -4439,7 +4627,7 @@
           ],
           "source": {
             "kind": "manifest",
-            "manifestSource": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-server.opcore.json"
+            "manifestSource": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-nKYzZH/asp-server.opcore.json"
           },
           "install": {
             "state": "installed",
@@ -4493,8 +4681,8 @@
             "providerAutoLaunchForGates": false
           },
           "degraded": [],
-          "installedAt": "2026-07-07T16:26:58.798Z",
-          "manifestPath": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-home-ktyy75/servers/manifests/opcore/asp-server.json"
+          "installedAt": "2026-07-09T19:56:56.383Z",
+          "manifestPath": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-nKYzZH/asp-home-lFfS9X/servers/manifests/opcore/asp-server.json"
         },
         "authority": {
           "managerGrantsGateAuthority": false,
@@ -4508,7 +4696,7 @@
     }
   },
   "repoEnrollment": {
-    "repo": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-host-fixture",
+    "repo": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-nKYzZH/asp-host-fixture",
     "mode": "advisory",
     "repoAdd": {
       "id": "asp-repo-add",
@@ -4516,29 +4704,29 @@
         "asp",
         "repo",
         "add",
-        "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-host-fixture",
+        "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-nKYzZH/asp-host-fixture",
         "--json"
       ],
       "status": "passed",
       "exitCode": 0,
-      "stdoutSha256": "758cdddf83332258f344edd7a008f44fed5fb7874f575492a89705cd7983f8f5",
+      "stdoutSha256": "2fce97c9a9a730ba8eb5d32da148d947ded5046d435ad355d20e136a57d7e338",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "output": {
         "schemaVersion": 1,
         "action": "add",
         "repo": {
-          "path": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-host-fixture",
+          "path": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-nKYzZH/asp-host-fixture",
           "state": "ready",
           "enrolled": true,
           "identity": {
             "kind": "git",
-            "value": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-host-fixture:32e6519fd9e2c1d06b7cd3f549b7d0c704024f65"
+            "value": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-nKYzZH/asp-host-fixture:d827cc6cb5a1bbcbaaff485e10ad96ec64799f09"
           },
           "git": {
-            "topLevel": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-host-fixture",
+            "topLevel": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-nKYzZH/asp-host-fixture",
             "gitDir": ".git",
             "head": "main",
-            "commit": "32e6519fd9e2c1d06b7cd3f549b7d0c704024f65"
+            "commit": "d827cc6cb5a1bbcbaaff485e10ad96ec64799f09"
           },
           "enabledServerIds": [],
           "enabledServers": [],
@@ -4571,7 +4759,7 @@
             "ciEnforced": false,
             "providerAutoLaunchForGates": false
           },
-          "updatedAt": "2026-07-07T16:26:58.921Z"
+          "updatedAt": "2026-07-09T19:56:56.510Z"
         },
         "authority": {
           "managerGrantsGateAuthority": false,
@@ -4591,31 +4779,31 @@
         "enable",
         "opcore",
         "--repo",
-        "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-host-fixture",
+        "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-nKYzZH/asp-host-fixture",
         "--mode",
         "advisory",
         "--json"
       ],
       "status": "passed",
       "exitCode": 0,
-      "stdoutSha256": "ca1548becfe59bc24b3e3727be0add500b88d16bcc6ef42175ab1078071243a9",
+      "stdoutSha256": "ec8911f4820d519e1101d7741343adc2afdf348755c29948eb39272c56d5cfca",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "output": {
         "schemaVersion": 1,
         "action": "enable",
         "repo": {
-          "path": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-host-fixture",
+          "path": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-nKYzZH/asp-host-fixture",
           "state": "ready",
           "enrolled": true,
           "identity": {
             "kind": "git",
-            "value": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-host-fixture:32e6519fd9e2c1d06b7cd3f549b7d0c704024f65"
+            "value": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-nKYzZH/asp-host-fixture:d827cc6cb5a1bbcbaaff485e10ad96ec64799f09"
           },
           "git": {
-            "topLevel": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-host-fixture",
+            "topLevel": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-nKYzZH/asp-host-fixture",
             "gitDir": ".git",
             "head": "main",
-            "commit": "32e6519fd9e2c1d06b7cd3f549b7d0c704024f65"
+            "commit": "d827cc6cb5a1bbcbaaff485e10ad96ec64799f09"
           },
           "enabledServerIds": [
             "opcore"
@@ -4624,7 +4812,7 @@
             {
               "id": "opcore",
               "mode": "advisory",
-              "enabledAt": "2026-07-07T16:26:58.985Z"
+              "enabledAt": "2026-07-09T19:56:56.573Z"
             }
           ],
           "installedServers": [
@@ -4641,7 +4829,7 @@
               ],
               "source": {
                 "kind": "manifest",
-                "manifestSource": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-server.opcore.json"
+                "manifestSource": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-nKYzZH/asp-server.opcore.json"
               },
               "install": {
                 "state": "installed",
@@ -4695,8 +4883,8 @@
                 "providerAutoLaunchForGates": false
               },
               "degraded": [],
-              "installedAt": "2026-07-07T16:26:58.798Z",
-              "manifestPath": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-home-ktyy75/servers/manifests/opcore/asp-server.json"
+              "installedAt": "2026-07-09T19:56:56.383Z",
+              "manifestPath": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-nKYzZH/asp-home-lFfS9X/servers/manifests/opcore/asp-server.json"
             }
           ],
           "missingServerIds": [],
@@ -4727,7 +4915,7 @@
             "ciEnforced": false,
             "providerAutoLaunchForGates": false
           },
-          "updatedAt": "2026-07-07T16:26:58.986Z"
+          "updatedAt": "2026-07-09T19:56:56.574Z"
         },
         "authority": {
           "managerGrantsGateAuthority": false,
@@ -4745,29 +4933,29 @@
         "asp",
         "repo",
         "status",
-        "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-host-fixture",
+        "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-nKYzZH/asp-host-fixture",
         "--json"
       ],
       "status": "passed",
       "exitCode": 0,
-      "stdoutSha256": "7226cef51782dccae980ade006c4ee5278cf6da1e98714fbd9358c761c7fdcb2",
+      "stdoutSha256": "4fa08ab6c834917dbb2721c135d6c62c8bddf340b5bcbc1d3cff1dcd400b9aa3",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "output": {
         "schemaVersion": 1,
         "action": "status",
         "repo": {
-          "path": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-host-fixture",
+          "path": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-nKYzZH/asp-host-fixture",
           "state": "ready",
           "enrolled": true,
           "identity": {
             "kind": "git",
-            "value": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-host-fixture:32e6519fd9e2c1d06b7cd3f549b7d0c704024f65"
+            "value": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-nKYzZH/asp-host-fixture:d827cc6cb5a1bbcbaaff485e10ad96ec64799f09"
           },
           "git": {
-            "topLevel": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-host-fixture",
+            "topLevel": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-nKYzZH/asp-host-fixture",
             "gitDir": ".git",
             "head": "main",
-            "commit": "32e6519fd9e2c1d06b7cd3f549b7d0c704024f65"
+            "commit": "d827cc6cb5a1bbcbaaff485e10ad96ec64799f09"
           },
           "enabledServerIds": [
             "opcore"
@@ -4776,7 +4964,7 @@
             {
               "id": "opcore",
               "mode": "advisory",
-              "enabledAt": "2026-07-07T16:26:58.985Z"
+              "enabledAt": "2026-07-09T19:56:56.573Z"
             }
           ],
           "installedServers": [
@@ -4793,7 +4981,7 @@
               ],
               "source": {
                 "kind": "manifest",
-                "manifestSource": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-server.opcore.json"
+                "manifestSource": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-nKYzZH/asp-server.opcore.json"
               },
               "install": {
                 "state": "installed",
@@ -4847,8 +5035,8 @@
                 "providerAutoLaunchForGates": false
               },
               "degraded": [],
-              "installedAt": "2026-07-07T16:26:58.798Z",
-              "manifestPath": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-home-ktyy75/servers/manifests/opcore/asp-server.json"
+              "installedAt": "2026-07-09T19:56:56.383Z",
+              "manifestPath": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-nKYzZH/asp-home-lFfS9X/servers/manifests/opcore/asp-server.json"
             }
           ],
           "missingServerIds": [],
@@ -4879,7 +5067,7 @@
             "ciEnforced": false,
             "providerAutoLaunchForGates": false
           },
-          "updatedAt": "2026-07-07T16:26:58.986Z"
+          "updatedAt": "2026-07-09T19:56:56.574Z"
         },
         "authority": {
           "managerGrantsGateAuthority": false,
@@ -4899,7 +5087,7 @@
         "asp",
         "check",
         "--repo",
-        "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-host-fixture",
+        "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-nKYzZH/asp-host-fixture",
         "--changed",
         "--call-site",
         "interactive",
@@ -4907,28 +5095,28 @@
       ],
       "status": "passed",
       "exitCode": 0,
-      "stdoutSha256": "10256bde6e2dd228d9b7ffd2c629b0e2663740d093f4d73dd8c20b2f0b74a6bf",
+      "stdoutSha256": "af6fde151c4dea8f5df450f4ecd41e3d9cf5fea0b8e39bf38e5e5258bd1db7be",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "output": {
         "schemaVersion": 1,
         "command": "check",
-        "repo": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-host-fixture",
+        "repo": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-nKYzZH/asp-host-fixture",
         "scope": "changed",
         "baseRef": "HEAD",
         "callSite": "interactive",
         "repoEnrollment": {
-          "path": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-host-fixture",
+          "path": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-nKYzZH/asp-host-fixture",
           "state": "ready",
           "enrolled": true,
           "identity": {
             "kind": "git",
-            "value": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-host-fixture:32e6519fd9e2c1d06b7cd3f549b7d0c704024f65"
+            "value": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-nKYzZH/asp-host-fixture:d827cc6cb5a1bbcbaaff485e10ad96ec64799f09"
           },
           "git": {
-            "topLevel": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-host-fixture",
+            "topLevel": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-nKYzZH/asp-host-fixture",
             "gitDir": ".git",
             "head": "main",
-            "commit": "32e6519fd9e2c1d06b7cd3f549b7d0c704024f65"
+            "commit": "d827cc6cb5a1bbcbaaff485e10ad96ec64799f09"
           },
           "enabledServerIds": [
             "opcore"
@@ -4937,7 +5125,7 @@
             {
               "id": "opcore",
               "mode": "advisory",
-              "enabledAt": "2026-07-07T16:26:58.985Z"
+              "enabledAt": "2026-07-09T19:56:56.573Z"
             }
           ],
           "installedServers": [
@@ -4954,7 +5142,7 @@
               ],
               "source": {
                 "kind": "manifest",
-                "manifestSource": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-server.opcore.json"
+                "manifestSource": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-nKYzZH/asp-server.opcore.json"
               },
               "install": {
                 "state": "installed",
@@ -5008,8 +5196,8 @@
                 "providerAutoLaunchForGates": false
               },
               "degraded": [],
-              "installedAt": "2026-07-07T16:26:58.798Z",
-              "manifestPath": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-home-ktyy75/servers/manifests/opcore/asp-server.json"
+              "installedAt": "2026-07-09T19:56:56.383Z",
+              "manifestPath": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-nKYzZH/asp-home-lFfS9X/servers/manifests/opcore/asp-server.json"
             }
           ],
           "missingServerIds": [],
@@ -5040,12 +5228,12 @@
             "ciEnforced": false,
             "providerAutoLaunchForGates": false
           },
-          "updatedAt": "2026-07-07T16:26:58.986Z"
+          "updatedAt": "2026-07-09T19:56:56.574Z"
         },
         "changeset": {
           "baseline": {
             "rev": "tree:sha256:f5425825927b8ae60621322e6005e0abe76dfd1d9eeb3a759f268d3c25ddb2fa",
-            "stampedAt": "2026-07-07T16:26:59.139Z"
+            "stampedAt": "2026-07-09T19:56:56.734Z"
           },
           "changes": [
             {
@@ -5060,8 +5248,8 @@
           "pass": true,
           "decision": "allow",
           "callSite": "interactive",
-          "requestDigest": "sha256:f9b5d0b2fb78cd03b5707380ee9da171b1ffb52e2fcf2599b0f5882bdeaecc13",
-          "changesetDigest": "sha256:e5a1591194e167ff801a7f983ed82ba823e0f0f02359f92ac2bec3808030a9ab",
+          "requestDigest": "sha256:942f492b7879b8124f14c96c3cea60f872b84bb8e5d75b8dc74899ddba9bcb97",
+          "changesetDigest": "sha256:8782f9e81ad6b2a1d9029ff99768d8f8bdf9956329292a4348673bf40c680f23",
           "findings": [],
           "coverage": {
             "exhaustive": false,
@@ -5110,8 +5298,8 @@
             "transactionGuarantee": "none"
           },
           "receipt": {
-            "receiptId": "core-evaluate-1783441619629",
-            "issuedAt": "2026-07-07T16:26:59.629Z",
+            "receiptId": "core-evaluate-1783627017180",
+            "issuedAt": "2026-07-09T19:56:57.180Z",
             "kind": "evaluate",
             "host": {
               "name": "core-host",
@@ -5134,7 +5322,7 @@
             "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
             "baseline": {
               "rev": "tree:sha256:f5425825927b8ae60621322e6005e0abe76dfd1d9eeb3a759f268d3c25ddb2fa",
-              "stampedAt": "2026-07-07T16:26:59.139Z"
+              "stampedAt": "2026-07-09T19:56:56.734Z"
             },
             "validAsOf": {
               "rev": "tree:sha256:f5425825927b8ae60621322e6005e0abe76dfd1d9eeb3a759f268d3c25ddb2fa",
@@ -5182,9 +5370,9 @@
               "transactionGuarantee": "none"
             },
             "timing": {
-              "startedAt": "2026-07-07T16:26:59.154Z",
-              "endedAt": "2026-07-07T16:26:59.629Z",
-              "elapsedMs": 475
+              "startedAt": "2026-07-09T19:56:56.750Z",
+              "endedAt": "2026-07-09T19:56:57.180Z",
+              "elapsedMs": 430
             },
             "failures": [
               {
@@ -5200,13 +5388,13 @@
             "experimental": true,
             "trustArtifact": false,
             "callSite": "interactive",
-            "requestDigest": "sha256:f9b5d0b2fb78cd03b5707380ee9da171b1ffb52e2fcf2599b0f5882bdeaecc13",
-            "changesetDigest": "sha256:e5a1591194e167ff801a7f983ed82ba823e0f0f02359f92ac2bec3808030a9ab"
+            "requestDigest": "sha256:942f492b7879b8124f14c96c3cea60f872b84bb8e5d75b8dc74899ddba9bcb97",
+            "changesetDigest": "sha256:8782f9e81ad6b2a1d9029ff99768d8f8bdf9956329292a4348673bf40c680f23"
           }
         },
         "receipt": {
-          "receiptId": "core-evaluate-1783441619629",
-          "issuedAt": "2026-07-07T16:26:59.629Z",
+          "receiptId": "core-evaluate-1783627017180",
+          "issuedAt": "2026-07-09T19:56:57.180Z",
           "kind": "evaluate",
           "host": {
             "name": "core-host",
@@ -5229,7 +5417,7 @@
           "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
           "baseline": {
             "rev": "tree:sha256:f5425825927b8ae60621322e6005e0abe76dfd1d9eeb3a759f268d3c25ddb2fa",
-            "stampedAt": "2026-07-07T16:26:59.139Z"
+            "stampedAt": "2026-07-09T19:56:56.734Z"
           },
           "validAsOf": {
             "rev": "tree:sha256:f5425825927b8ae60621322e6005e0abe76dfd1d9eeb3a759f268d3c25ddb2fa",
@@ -5277,9 +5465,9 @@
             "transactionGuarantee": "none"
           },
           "timing": {
-            "startedAt": "2026-07-07T16:26:59.154Z",
-            "endedAt": "2026-07-07T16:26:59.629Z",
-            "elapsedMs": 475
+            "startedAt": "2026-07-09T19:56:56.750Z",
+            "endedAt": "2026-07-09T19:56:57.180Z",
+            "elapsedMs": 430
           },
           "failures": [
             {
@@ -5295,8 +5483,8 @@
           "experimental": true,
           "trustArtifact": false,
           "callSite": "interactive",
-          "requestDigest": "sha256:f9b5d0b2fb78cd03b5707380ee9da171b1ffb52e2fcf2599b0f5882bdeaecc13",
-          "changesetDigest": "sha256:e5a1591194e167ff801a7f983ed82ba823e0f0f02359f92ac2bec3808030a9ab"
+          "requestDigest": "sha256:942f492b7879b8124f14c96c3cea60f872b84bb8e5d75b8dc74899ddba9bcb97",
+          "changesetDigest": "sha256:8782f9e81ad6b2a1d9029ff99768d8f8bdf9956329292a4348673bf40c680f23"
         }
       },
       "assertion": "asp-check-changed completed through standalone ASP manager",
@@ -5304,8 +5492,8 @@
         "pass": true,
         "decision": "allow",
         "callSite": "interactive",
-        "requestDigest": "sha256:f9b5d0b2fb78cd03b5707380ee9da171b1ffb52e2fcf2599b0f5882bdeaecc13",
-        "changesetDigest": "sha256:e5a1591194e167ff801a7f983ed82ba823e0f0f02359f92ac2bec3808030a9ab",
+        "requestDigest": "sha256:942f492b7879b8124f14c96c3cea60f872b84bb8e5d75b8dc74899ddba9bcb97",
+        "changesetDigest": "sha256:8782f9e81ad6b2a1d9029ff99768d8f8bdf9956329292a4348673bf40c680f23",
         "findings": [],
         "coverage": {
           "exhaustive": false,
@@ -5354,8 +5542,8 @@
           "transactionGuarantee": "none"
         },
         "receipt": {
-          "receiptId": "core-evaluate-1783441619629",
-          "issuedAt": "2026-07-07T16:26:59.629Z",
+          "receiptId": "core-evaluate-1783627017180",
+          "issuedAt": "2026-07-09T19:56:57.180Z",
           "kind": "evaluate",
           "host": {
             "name": "core-host",
@@ -5378,7 +5566,7 @@
           "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
           "baseline": {
             "rev": "tree:sha256:f5425825927b8ae60621322e6005e0abe76dfd1d9eeb3a759f268d3c25ddb2fa",
-            "stampedAt": "2026-07-07T16:26:59.139Z"
+            "stampedAt": "2026-07-09T19:56:56.734Z"
           },
           "validAsOf": {
             "rev": "tree:sha256:f5425825927b8ae60621322e6005e0abe76dfd1d9eeb3a759f268d3c25ddb2fa",
@@ -5426,9 +5614,9 @@
             "transactionGuarantee": "none"
           },
           "timing": {
-            "startedAt": "2026-07-07T16:26:59.154Z",
-            "endedAt": "2026-07-07T16:26:59.629Z",
-            "elapsedMs": 475
+            "startedAt": "2026-07-09T19:56:56.750Z",
+            "endedAt": "2026-07-09T19:56:57.180Z",
+            "elapsedMs": 430
           },
           "failures": [
             {
@@ -5444,13 +5632,13 @@
           "experimental": true,
           "trustArtifact": false,
           "callSite": "interactive",
-          "requestDigest": "sha256:f9b5d0b2fb78cd03b5707380ee9da171b1ffb52e2fcf2599b0f5882bdeaecc13",
-          "changesetDigest": "sha256:e5a1591194e167ff801a7f983ed82ba823e0f0f02359f92ac2bec3808030a9ab"
+          "requestDigest": "sha256:942f492b7879b8124f14c96c3cea60f872b84bb8e5d75b8dc74899ddba9bcb97",
+          "changesetDigest": "sha256:8782f9e81ad6b2a1d9029ff99768d8f8bdf9956329292a4348673bf40c680f23"
         }
       },
       "receipt": {
-        "receiptId": "core-evaluate-1783441619629",
-        "issuedAt": "2026-07-07T16:26:59.629Z",
+        "receiptId": "core-evaluate-1783627017180",
+        "issuedAt": "2026-07-09T19:56:57.180Z",
         "kind": "evaluate",
         "host": {
           "name": "core-host",
@@ -5473,7 +5661,7 @@
         "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
         "baseline": {
           "rev": "tree:sha256:f5425825927b8ae60621322e6005e0abe76dfd1d9eeb3a759f268d3c25ddb2fa",
-          "stampedAt": "2026-07-07T16:26:59.139Z"
+          "stampedAt": "2026-07-09T19:56:56.734Z"
         },
         "validAsOf": {
           "rev": "tree:sha256:f5425825927b8ae60621322e6005e0abe76dfd1d9eeb3a759f268d3c25ddb2fa",
@@ -5521,9 +5709,9 @@
           "transactionGuarantee": "none"
         },
         "timing": {
-          "startedAt": "2026-07-07T16:26:59.154Z",
-          "endedAt": "2026-07-07T16:26:59.629Z",
-          "elapsedMs": 475
+          "startedAt": "2026-07-09T19:56:56.750Z",
+          "endedAt": "2026-07-09T19:56:57.180Z",
+          "elapsedMs": 430
         },
         "failures": [
           {
@@ -5539,8 +5727,8 @@
         "experimental": true,
         "trustArtifact": false,
         "callSite": "interactive",
-        "requestDigest": "sha256:f9b5d0b2fb78cd03b5707380ee9da171b1ffb52e2fcf2599b0f5882bdeaecc13",
-        "changesetDigest": "sha256:e5a1591194e167ff801a7f983ed82ba823e0f0f02359f92ac2bec3808030a9ab"
+        "requestDigest": "sha256:942f492b7879b8124f14c96c3cea60f872b84bb8e5d75b8dc74899ddba9bcb97",
+        "changesetDigest": "sha256:8782f9e81ad6b2a1d9029ff99768d8f8bdf9956329292a4348673bf40c680f23"
       },
       "assurance": {
         "mode": "gated",
@@ -5554,34 +5742,34 @@
         "ci",
         "verify",
         "--repo",
-        "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-host-fixture",
+        "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-nKYzZH/asp-host-fixture",
         "--changed-from",
         "main",
         "--json"
       ],
       "status": "failed",
       "exitCode": 1,
-      "stdoutSha256": "695c29055bf9e9acd393550b923ddc866825ae4ce04058f878f4910e38494fc1",
+      "stdoutSha256": "51af4f602b340e2ffc55a9ad13622a733e9d9c1a432eefcfd0860a73f10df3b2",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "output": {
         "schemaVersion": 1,
         "command": "ci.verify",
-        "repo": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-host-fixture",
+        "repo": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-nKYzZH/asp-host-fixture",
         "changedFrom": "main",
         "baseRef": "main",
         "repoEnrollment": {
-          "path": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-host-fixture",
+          "path": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-nKYzZH/asp-host-fixture",
           "state": "ready",
           "enrolled": true,
           "identity": {
             "kind": "git",
-            "value": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-host-fixture:32e6519fd9e2c1d06b7cd3f549b7d0c704024f65"
+            "value": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-nKYzZH/asp-host-fixture:d827cc6cb5a1bbcbaaff485e10ad96ec64799f09"
           },
           "git": {
-            "topLevel": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-host-fixture",
+            "topLevel": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-nKYzZH/asp-host-fixture",
             "gitDir": ".git",
             "head": "main",
-            "commit": "32e6519fd9e2c1d06b7cd3f549b7d0c704024f65"
+            "commit": "d827cc6cb5a1bbcbaaff485e10ad96ec64799f09"
           },
           "enabledServerIds": [
             "opcore"
@@ -5590,7 +5778,7 @@
             {
               "id": "opcore",
               "mode": "advisory",
-              "enabledAt": "2026-07-07T16:26:58.985Z"
+              "enabledAt": "2026-07-09T19:56:56.573Z"
             }
           ],
           "installedServers": [
@@ -5607,7 +5795,7 @@
               ],
               "source": {
                 "kind": "manifest",
-                "manifestSource": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-server.opcore.json"
+                "manifestSource": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-nKYzZH/asp-server.opcore.json"
               },
               "install": {
                 "state": "installed",
@@ -5661,8 +5849,8 @@
                 "providerAutoLaunchForGates": false
               },
               "degraded": [],
-              "installedAt": "2026-07-07T16:26:58.798Z",
-              "manifestPath": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-AAb8Uh/asp-home-ktyy75/servers/manifests/opcore/asp-server.json"
+              "installedAt": "2026-07-09T19:56:56.383Z",
+              "manifestPath": "/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-nKYzZH/asp-home-lFfS9X/servers/manifests/opcore/asp-server.json"
             }
           ],
           "missingServerIds": [],
@@ -5693,7 +5881,7 @@
             "ciEnforced": false,
             "providerAutoLaunchForGates": false
           },
-          "updatedAt": "2026-07-07T16:26:58.986Z"
+          "updatedAt": "2026-07-09T19:56:56.574Z"
         },
         "verified": false,
         "gatePassed": false,
@@ -5719,7 +5907,7 @@
         "changeset": {
           "baseline": {
             "rev": "tree:sha256:f5425825927b8ae60621322e6005e0abe76dfd1d9eeb3a759f268d3c25ddb2fa",
-            "stampedAt": "2026-07-07T16:26:59.734Z"
+            "stampedAt": "2026-07-09T19:56:57.292Z"
           },
           "changes": [
             {
@@ -5734,8 +5922,8 @@
           "pass": false,
           "decision": "indeterminate",
           "callSite": "gate",
-          "requestDigest": "sha256:87bb61986573d77ba6ba3d708e240c4498cbfbc95b327da70b5f790b0e3c9cad",
-          "changesetDigest": "sha256:1bde93ca542a56d3f58a5af6a5e474d344b199e424219633915725d2fd0c0def",
+          "requestDigest": "sha256:ae33a367762863512dc12337aad77c5b63416d85d90d22b11853c52ddfc6e40e",
+          "changesetDigest": "sha256:654472066a9c28a27feb48fe6ecb0c343d918caf74c4f19106b7a11babdddd7e",
           "findings": [],
           "coverage": {
             "exhaustive": false,
@@ -5765,8 +5953,8 @@
             "transactionGuarantee": "none"
           },
           "receipt": {
-            "receiptId": "core-evaluate-1783441619750",
-            "issuedAt": "2026-07-07T16:26:59.750Z",
+            "receiptId": "core-evaluate-1783627017307",
+            "issuedAt": "2026-07-09T19:56:57.307Z",
             "kind": "evaluate",
             "host": {
               "name": "core-host",
@@ -5778,7 +5966,7 @@
             "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
             "baseline": {
               "rev": "tree:sha256:f5425825927b8ae60621322e6005e0abe76dfd1d9eeb3a759f268d3c25ddb2fa",
-              "stampedAt": "2026-07-07T16:26:59.734Z"
+              "stampedAt": "2026-07-09T19:56:57.292Z"
             },
             "validAsOf": {
               "rev": "tree:sha256:f5425825927b8ae60621322e6005e0abe76dfd1d9eeb3a759f268d3c25ddb2fa"
@@ -5807,8 +5995,8 @@
               "transactionGuarantee": "none"
             },
             "timing": {
-              "startedAt": "2026-07-07T16:26:59.750Z",
-              "endedAt": "2026-07-07T16:26:59.750Z",
+              "startedAt": "2026-07-09T19:56:57.307Z",
+              "endedAt": "2026-07-09T19:56:57.307Z",
               "elapsedMs": 0
             },
             "failures": [
@@ -5823,13 +6011,13 @@
             "experimental": true,
             "trustArtifact": false,
             "callSite": "gate",
-            "requestDigest": "sha256:87bb61986573d77ba6ba3d708e240c4498cbfbc95b327da70b5f790b0e3c9cad",
-            "changesetDigest": "sha256:1bde93ca542a56d3f58a5af6a5e474d344b199e424219633915725d2fd0c0def"
+            "requestDigest": "sha256:ae33a367762863512dc12337aad77c5b63416d85d90d22b11853c52ddfc6e40e",
+            "changesetDigest": "sha256:654472066a9c28a27feb48fe6ecb0c343d918caf74c4f19106b7a11babdddd7e"
           }
         },
         "receipt": {
-          "receiptId": "core-evaluate-1783441619750",
-          "issuedAt": "2026-07-07T16:26:59.750Z",
+          "receiptId": "core-evaluate-1783627017307",
+          "issuedAt": "2026-07-09T19:56:57.307Z",
           "kind": "evaluate",
           "host": {
             "name": "core-host",
@@ -5841,7 +6029,7 @@
           "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
           "baseline": {
             "rev": "tree:sha256:f5425825927b8ae60621322e6005e0abe76dfd1d9eeb3a759f268d3c25ddb2fa",
-            "stampedAt": "2026-07-07T16:26:59.734Z"
+            "stampedAt": "2026-07-09T19:56:57.292Z"
           },
           "validAsOf": {
             "rev": "tree:sha256:f5425825927b8ae60621322e6005e0abe76dfd1d9eeb3a759f268d3c25ddb2fa"
@@ -5870,8 +6058,8 @@
             "transactionGuarantee": "none"
           },
           "timing": {
-            "startedAt": "2026-07-07T16:26:59.750Z",
-            "endedAt": "2026-07-07T16:26:59.750Z",
+            "startedAt": "2026-07-09T19:56:57.307Z",
+            "endedAt": "2026-07-09T19:56:57.307Z",
             "elapsedMs": 0
           },
           "failures": [
@@ -5886,8 +6074,8 @@
           "experimental": true,
           "trustArtifact": false,
           "callSite": "gate",
-          "requestDigest": "sha256:87bb61986573d77ba6ba3d708e240c4498cbfbc95b327da70b5f790b0e3c9cad",
-          "changesetDigest": "sha256:1bde93ca542a56d3f58a5af6a5e474d344b199e424219633915725d2fd0c0def"
+          "requestDigest": "sha256:ae33a367762863512dc12337aad77c5b63416d85d90d22b11853c52ddfc6e40e",
+          "changesetDigest": "sha256:654472066a9c28a27feb48fe6ecb0c343d918caf74c4f19106b7a11babdddd7e"
         }
       },
       "assertion": "ASP CI verifier output recorded as host-owned evidence, not old-tool replacement"
@@ -5901,14 +6089,14 @@
     ],
     "status": "passed",
     "exitCode": 0,
-    "stdoutSha256": "3d8dda76838df39f0f1be0c7692eff2bbee4749ced67841b4ba7cb073a842c85",
+    "stdoutSha256": "b2b6e27bea224a3e9a1b4f09a85eb797311d0b826401f62ce9cd9c7bb74064f2",
     "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "output": {
       "initialize": {
         "serverInfo": {
           "name": "opcore",
-          "version": "0.1.0",
-          "fingerprint": "sha256:e701c75b932d68a15dab2466c0a8e6a6358b5b7eb1fb1b0f332aea2c56884109"
+          "version": "0.2.0",
+          "fingerprint": "sha256:941b34ade8daf8e7e4370c2bb250f2cfb643ce99c1013ea36ce88c6bf4450d14"
         },
         "capabilityFamilies": [
           "check"
@@ -5952,7 +6140,8 @@
               "docs.content-quality",
               "docs.code-blocks",
               "docs.rules-why",
-              "docs.hub-coverage"
+              "docs.hub-coverage",
+              "docs.subtree-coverage"
             ],
             "manifest": [
               {
@@ -6490,6 +6679,18 @@
                   "package"
                 ],
                 "requiresGraph": true
+              },
+              {
+                "checkId": "docs.subtree-coverage",
+                "owner": "validation",
+                "adapter": "docs",
+                "defaultSeverity": "warning",
+                "supportedScopes": [
+                  "all",
+                  "repo",
+                  "package"
+                ],
+                "requiresGraph": false
               }
             ],
             "scopes": [
@@ -6512,7 +6713,7 @@
         "provenance": {
           "publisher": "the-open-engine",
           "packageName": "opcore",
-          "version": "0.1.0",
+          "version": "0.2.0",
           "source": "opcore-validation"
         }
       }
@@ -6600,14 +6801,14 @@
       },
       "provider": {
         "id": "opcore",
-        "version": "0.1.0",
-        "configDigest": "sha256:2fc344a45a63952674470b387aede9f248065a73825b72caa2807256a1957bfa",
+        "version": "0.2.0",
+        "configDigest": "sha256:8503233828df5dfc7ed43bf0f5a6f183e3285f925594f0187263ca6340b2e759",
         "capabilityVersion": "check/0.1",
-        "buildDigest": "sha256:e701c75b932d68a15dab2466c0a8e6a6358b5b7eb1fb1b0f332aea2c56884109",
+        "buildDigest": "sha256:941b34ade8daf8e7e4370c2bb250f2cfb643ce99c1013ea36ce88c6bf4450d14",
         "capabilityFamily": "check"
       },
       "timing": {
-        "durationMs": 314,
+        "durationMs": 302,
         "phases": [
           {
             "phase": "host_workspace_binding",
@@ -6619,11 +6820,11 @@
           },
           {
             "phase": "validation",
-            "durationMs": 313
+            "durationMs": 302
           },
           {
             "phase": "validation_typescript_syntax",
-            "durationMs": 119
+            "durationMs": 113
           }
         ],
         "processState": "cold"
@@ -6698,7 +6899,7 @@
       ],
       "status": "passed",
       "exitCode": 0,
-      "stdoutSha256": "fc1d6fa256243f30321886b929575a9375bcbb15b5c89ae83cc79bae7c257e86",
+      "stdoutSha256": "c841ab97cd599893cd51807789d41d37c67133d4abd1315aba222fca4c3beae8",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "assertion": "current-tools:validate-changed remains active",
       "retained": true
