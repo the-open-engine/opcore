@@ -292,62 +292,31 @@ fn ignored_directory(repo_root: &Path, entry: &DirEntry, ignore_matcher: &Ignore
     !relative_path.is_empty() && ignore_matcher.is_ignored(&relative_path, true)
 }
 
+const BUILT_IN_IGNORE_PATTERNS: &str = concat!(
+    "**/.git/**,node_modules/**,**/node_modules/**,.pnpm/**,**/.pnpm/**,vendor/**,**/vendor/**,",
+    "dist/**,**/dist/**,target/**,**/target/**,",
+    "**/.ace/**,**/.agents/**,**/.claude/**,**/.codex/**,**/.gemini/**,**/.lattice/**,**/.opencode/**,",
+    "**/.opcore/**,**/.rox-cache/**,.robustness-engine-cache/**,**/.robustness-engine-cache/**,",
+    ".venv/**,**/.venv/**,venv/**,**/venv/**,env/**,**/env/**,__pycache__/**,**/__pycache__/**,",
+    ".eggs/**,**/.eggs/**,build/**,**/build/**,.tox/**,**/.tox/**,.mypy_cache/**,**/.mypy_cache/**,",
+    ".pytest_cache/**,**/.pytest_cache/**,.ruff_cache/**,**/.ruff_cache/**,site-packages/**,**/site-packages/**,",
+    "*.egg-info/,*.egg-info/**,**/*.egg-info/,**/*.egg-info/**,",
+    "*.dist-info/,*.dist-info/**,**/*.dist-info/,**/*.dist-info/**",
+);
+
 fn ignore_matcher(repo_root: &Path) -> Result<IgnoreMatcher, GraphExtractionDiagnostic> {
+    let mut rules = Vec::new();
+    add_ignore_file(&mut rules, repo_root.join(".gitignore"));
+    add_ignore_file(&mut rules, repo_root.join(".code-review-graphignore"));
+    Ok(IgnoreMatcher {
+        built_in: built_in_ignore_set()?,
+        rules,
+    })
+}
+
+fn built_in_ignore_set() -> Result<GlobSet, GraphExtractionDiagnostic> {
     let mut builder = GlobSetBuilder::new();
-    for pattern in [
-        "**/.git/**",
-        "node_modules/**",
-        "**/node_modules/**",
-        ".pnpm/**",
-        "**/.pnpm/**",
-        "vendor/**",
-        "**/vendor/**",
-        "**/dist/**",
-        "**/target/**",
-        "**/.ace/**",
-        "**/.agents/**",
-        "**/.claude/**",
-        "**/.codex/**",
-        "**/.gemini/**",
-        "**/.lattice/**",
-        "**/.opencode/**",
-        "**/.opcore/**",
-        "**/.rox-cache/**",
-        ".robustness-engine-cache/**",
-        "**/.robustness-engine-cache/**",
-        ".venv/**",
-        "**/.venv/**",
-        "venv/**",
-        "**/venv/**",
-        "env/**",
-        "**/env/**",
-        "__pycache__/**",
-        "**/__pycache__/**",
-        ".eggs/**",
-        "**/.eggs/**",
-        "build/**",
-        "**/build/**",
-        ".tox/**",
-        "**/.tox/**",
-        ".mypy_cache/**",
-        "**/.mypy_cache/**",
-        ".pytest_cache/**",
-        "**/.pytest_cache/**",
-        ".ruff_cache/**",
-        "**/.ruff_cache/**",
-        "site-packages/**",
-        "**/site-packages/**",
-        "*.egg-info/",
-        "*.egg-info/**",
-        "**/*.egg-info/",
-        "**/*.egg-info/**",
-        "*.dist-info/",
-        "*.dist-info/**",
-        "**/*.dist-info/",
-        "**/*.dist-info/**",
-        "dist/**",
-        "target/**",
-    ] {
+    for pattern in BUILT_IN_IGNORE_PATTERNS.split(',') {
         let glob = Glob::new(pattern).map_err(|source| {
             error(
                 GraphExtractionDiagnosticCategory::IoError,
@@ -358,19 +327,13 @@ fn ignore_matcher(repo_root: &Path) -> Result<IgnoreMatcher, GraphExtractionDiag
         })?;
         builder.add(glob);
     }
-    let mut rules = Vec::new();
-    add_ignore_file(&mut rules, repo_root.join(".gitignore"));
-    add_ignore_file(&mut rules, repo_root.join(".code-review-graphignore"));
-    Ok(IgnoreMatcher {
-        built_in: builder.build().map_err(|source| {
-            error(
-                GraphExtractionDiagnosticCategory::IoError,
-                format!("invalid built-in ignore set: {source}"),
-                None,
-                None,
-            )
-        })?,
-        rules,
+    builder.build().map_err(|source| {
+        error(
+            GraphExtractionDiagnosticCategory::IoError,
+            format!("invalid built-in ignore set: {source}"),
+            None,
+            None,
+        )
     })
 }
 

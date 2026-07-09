@@ -4,7 +4,9 @@ import type {
   OpcoreMetricReport,
   OpcoreRepoStatePayload,
   ValidationRequest,
-  ValidationResult
+  ValidationResult,
+  ValidationResultManifest,
+  ValidationSkippedCheck
 } from "@the-open-engine/opcore-contracts";
 import { createCommandRouterResult } from "@the-open-engine/opcore-contracts";
 import {
@@ -13,11 +15,22 @@ import {
   type ValidationCheckDefinition,
   type ValidationWorkspace
 } from "@the-open-engine/opcore-validation";
+import {
+  CLONE_DUPLICATION_CHECK_ID,
+  validationCloneAdapterName
+} from "@the-open-engine/opcore-validation-clone";
 import { readdir, readFile } from "node:fs/promises";
 import { join, relative, resolve, sep } from "node:path";
 import { formatScanPlate } from "./plate.js";
 import { createOpcoreMetricReport, writeOpcoreMetricArtifacts } from "./reporting.js";
-import { activeValidationAdaptersForCoverage, failedValidationCheckIds } from "./scan-presentation.js";
+import {
+  activeValidationAdaptersForCoverage,
+  EXPLICIT_CLONE_VALIDATION_COMMAND,
+  failedValidationCheckIds,
+  SCAN_DIAGNOSTIC_PREVIEW_LIMIT,
+  scanDiagnosticPreviewNotice,
+  validationDiagnosticTotal
+} from "./scan-presentation.js";
 import { commonSkippedPathSegments, createRepoState, parseOpcoreRepoArgs, type RepoResolution, resolveRepo } from "./status.js";
 import {
   createOpcoreValidationGraphProviderClient,
@@ -67,6 +80,7 @@ export async function routeOpcoreScan(
   const analysis = await createOpcoreScanAnalysis(resolution.resolution);
   writeOpcoreMetricArtifacts(analysis.repoState.repo.root, analysis.metricReport);
   const fancy = presentation.stdoutIsTTY && !json;
+  const compactValidationResult = compactScanValidationResult(analysis.validationResult);
   const message = fancy
     ? formatScanPlate(analysis.repoState, analysis.validationResult, { color: presentation.color })
     : analysis.message;
@@ -79,7 +93,7 @@ export async function routeOpcoreScan(
     json,
     message,
     repoState: analysis.repoState,
-    validationResult: analysis.validationResult
+    validationResult: compactValidationResult
   });
 }
 
@@ -99,12 +113,15 @@ export async function createOpcoreScanAnalysis(resolution: RepoResolution): Prom
     },
     overlays: []
   };
-  const validationResult = await createValidationRunner({
-    workspace: createScanWorkspace(resolution),
-    checks: scanValidationChecks(repoState),
-    graphProviderClient: createOpcoreValidationGraphProviderClient(),
-    runtime: opcorePublicValidationRuntimePolicy
-  }).runValidation(validationRequest);
+  const validationResult = withScanSkippedChecks(
+    await createValidationRunner({
+      workspace: createScanWorkspace(resolution),
+      checks: scanValidationChecks(repoState),
+      graphProviderClient: createOpcoreValidationGraphProviderClient(),
+      runtime: opcorePublicValidationRuntimePolicy
+    }).runValidation(validationRequest),
+    repoState
+  );
   const metricReport = createOpcoreMetricReport({
     repoState,
     validationResult
@@ -119,7 +136,57 @@ export async function createOpcoreScanAnalysis(resolution: RepoResolution): Prom
 
 function scanValidationChecks(repoState: OpcoreRepoStatePayload): readonly ValidationCheckDefinition[] {
   const activeAdapters = activeValidationAdaptersForCoverage(repoState.coverage);
-  return defaultValidationChecks.filter((check) => activeAdapters.has(check.adapter));
+  return defaultValidationChecks.filter((check) => activeAdapters.has(check.adapter) && check.id !== CLONE_DUPLICATION_CHECK_ID);
+}
+
+export function compactScanValidationResult(
+  result: ValidationResult,
+  maxDiagnostics = SCAN_DIAGNOSTIC_PREVIEW_LIMIT
+): ValidationResult {
+  return {
+    ok: result.ok,
+    status: result.status,
+    diagnostics: result.diagnostics.slice(0, maxDiagnostics),
+    ...(result.graphStatus !== undefined ? { graphStatus: result.graphStatus } : {}),
+    ...(result.failure !== undefined ? { failure: result.failure } : {}),
+    ...(result.refusal !== undefined ? { refusal: result.refusal } : {}),
+    ...(result.manifest !== undefined ? { manifest: compactScanValidationManifest(result.manifest) } : {})
+  };
+}
+
+function compactScanValidationManifest(manifest: ValidationResultManifest): ValidationResultManifest {
+  const compact: ValidationResultManifest = {
+    schemaVersion: manifest.schemaVersion,
+    checks: [...manifest.checks],
+    generatedAt: manifest.generatedAt
+  };
+  if (manifest.durationMs !== undefined) compact.durationMs = manifest.durationMs;
+  if (manifest.runs !== undefined) compact.runs = [...manifest.runs];
+  if (manifest.skippedChecks !== undefined) compact.skippedChecks = [...manifest.skippedChecks];
+  return compact;
+}
+
+function withScanSkippedChecks(result: ValidationResult, repoState: OpcoreRepoStatePayload): ValidationResult {
+  const activeAdapters = activeValidationAdaptersForCoverage(repoState.coverage);
+  if (!activeAdapters.has(validationCloneAdapterName)) return result;
+  const skippedCheck: ValidationSkippedCheck = {
+    checkId: CLONE_DUPLICATION_CHECK_ID,
+    reason: "not_requested",
+    message: `Clone duplication is not run by product scan; run ${EXPLICIT_CLONE_VALIDATION_COMMAND} for clone diagnostics.`
+  };
+  return {
+    ...result,
+    manifest: {
+      ...result.manifest,
+      schemaVersion: result.manifest?.schemaVersion ?? 1,
+      checks: result.manifest?.checks ?? [],
+      generatedAt: result.manifest?.generatedAt ?? new Date().toISOString(),
+      skippedChecks: [
+        ...(result.manifest?.skippedChecks ?? []).filter((entry) => entry.checkId !== CLONE_DUPLICATION_CHECK_ID),
+        skippedCheck
+      ]
+    }
+  };
 }
 
 function createScanWorkspace(resolution: RepoResolution): ValidationWorkspace {
@@ -188,7 +255,8 @@ function formatScanMessage(repoState: OpcoreRepoStatePayload, validationResult: 
     ? "none"
     : repoState.validation.degradedToolchains.map((tool) => `${tool.adapter}:${tool.tool}`).join(", ");
   const failedChecks = failedValidationCheckIds(validationResult);
-  return [
+  const previewNotice = scanDiagnosticPreviewNotice(validationResult);
+  const lines = [
     "Coverage:",
     `  files=${repoState.coverage.totalFiles}`,
     `  graph-supported=${repoState.coverage.graph.supportedFiles}`,
@@ -198,13 +266,15 @@ function formatScanMessage(repoState: OpcoreRepoStatePayload, validationResult: 
     `  languages=${languages}`,
     `  degraded-validation-tools=${degradedValidationTools}`,
     "Findings:",
-    `  diagnostics=${validationResult.diagnostics.length}`,
+    `  diagnostics=${validationDiagnosticTotal(validationResult)}`,
     `  validation=${validationResult.status}`,
     `  failed-checks=${failedChecks.length === 0 ? "none" : failedChecks.join(", ")}`,
     `  activation=${repoState.activation.level}; ${repoState.activation.summary}`,
     "Next:",
     ...repoState.nextActions.slice(0, 2).map((action) => `  ${action}`)
-  ].join("\n");
+  ];
+  if (previewNotice !== undefined) lines.splice(lines.indexOf("Next:"), 0, `  ${previewNotice}`);
+  return lines.join("\n");
 }
 
 function resolveRepoPath(root: string, path: string): string {

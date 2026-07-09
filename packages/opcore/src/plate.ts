@@ -1,5 +1,13 @@
-import type { OpcoreRepoStatePayload, ValidationResult } from "@the-open-engine/opcore-contracts";
-import { failedValidationRuns } from "./scan-presentation.js";
+import type {
+  OpcoreRepoStatePayload,
+  ValidationCheckRunSummary,
+  ValidationResult
+} from "@the-open-engine/opcore-contracts";
+import {
+  failedValidationRuns,
+  scanDiagnosticPreviewNotice,
+  validationDiagnosticTotal
+} from "./scan-presentation.js";
 
 /**
  * Human, TTY-only "constraint plate" rendering for `opcore` scan and
@@ -103,23 +111,32 @@ export function formatScanPlate(
   validationResult: ValidationResult,
   options: { color: boolean }
 ): string {
-  const coverage = repoState.coverage;
-  const total = coverage.totalFiles;
-  const graphState = repoState.graph.state === "available" ? "graph fresh" : `graph ${repoState.graph.state}`;
   const runs = validationResult.manifest?.runs ?? [];
   const failed = failedValidationRuns(validationResult);
-
   const lines: string[] = [];
+
+  appendScanHeader(lines, repoState);
+  appendScanCoverage(lines, repoState);
+  appendScanFindings(lines, validationResult);
+  appendScanGate(lines, runs);
+  appendScanFooter(lines, repoState, validationResult, failed.length);
+  const plate = lines.join("\n");
+  return options.color ? colorize(plate) : plate;
+}
+
+function appendScanHeader(lines: string[], repoState: OpcoreRepoStatePayload): void {
+  const graphState = repoState.graph.state === "available" ? "graph fresh" : `graph ${repoState.graph.state}`;
   lines.push("  " + topBorder("OPCORE", "LAYER 02 · CONSTRAINTS"));
   lines.push("  " + midLine("◦ live    deterministic · local · read-only", "№ 001 · scan"));
   lines.push("  " + bottomBorder());
-  lines.push(`  ./${basename(repoState.repo.root)}   ·   ${total} files   ·   ${graphState}`);
+  lines.push(`  ./${basename(repoState.repo.root)}   ·   ${repoState.coverage.totalFiles} files   ·   ${graphState}`);
   lines.push("");
+}
 
-  // COVERAGE — before findings
+function appendScanCoverage(lines: string[], repoState: OpcoreRepoStatePayload): void {
+  const coverage = repoState.coverage;
   lines.push("  " + sectionRule("COVERAGE ── what this pass can actually hold"));
-  const languages = [...coverage.languages].sort((a, b) => b.files - a.files);
-  for (const entry of languages) {
+  for (const entry of [...coverage.languages].sort((a, b) => b.files - a.files)) {
     const tier = TIER[entry.language.toLowerCase()] ?? "";
     const note = tier === "experimental" ? "   degraded-honest" : "";
     lines.push(
@@ -128,12 +145,17 @@ export function formatScanPlate(
         padEnd(entry.language, 16) +
         padStart(`${entry.files} files`, 11) +
         "  " +
-        gauge(entry.files, total) +
+        gauge(entry.files, coverage.totalFiles) +
         "  " +
-        padStart(pct(entry.files, total), 4) +
+        padStart(pct(entry.files, coverage.totalFiles), 4) +
         note
     );
   }
+  appendUnsupportedCoverage(lines, repoState);
+}
+
+function appendUnsupportedCoverage(lines: string[], repoState: OpcoreRepoStatePayload): void {
+  const coverage = repoState.coverage;
   const unsupported = coverage.unsupported.stacks;
   if (unsupported.length > 0) {
     const census = unsupported.map((stack) => `${stack.language} ${stack.count}`).join(" · ");
@@ -148,37 +170,42 @@ export function formatScanPlate(
     `    graph-supported ${coverage.graph.supportedFiles}   ·   validation-supported ${coverage.validation.supportedFiles} (+${coverage.validation.retainedFiles} retained)   ·   degraded tools: ${degraded}`
   );
   lines.push("");
+}
 
-  // FINDINGS — after coverage
+function appendScanFindings(lines: string[], validationResult: ValidationResult): void {
   lines.push("  " + sectionRule("FINDINGS ── facts, not a score"));
-  const diagnostics = validationResult.diagnostics;
-  lines.push(`    ${diagnostics.length} diagnostics`);
-  const shown = diagnostics.slice(0, 6);
+  const diagnosticTotal = validationDiagnosticTotal(validationResult);
+  lines.push(`    ${diagnosticTotal} diagnostics`);
+  const shown = validationResult.diagnostics.slice(0, 6);
   shown.forEach((diagnostic, index) => {
-    const branch = index === shown.length - 1 && diagnostics.length <= 6 ? "└" : "├";
+    const branch = index === shown.length - 1 && diagnosticTotal <= shown.length ? "└" : "├";
     const tail = diagnostic.code ? diagnostic.code : diagnostic.message;
     lines.push(
       `      ${branch} ${padEnd(diagnostic.category, 18)} ${padEnd(diagnostic.path ?? "", 32)} ${truncate(tail, 22)}`
     );
   });
-  if (diagnostics.length > shown.length) {
-    lines.push(`      (+${diagnostics.length - shown.length} more)`);
-  }
+  if (diagnosticTotal > shown.length) lines.push(`      (+${diagnosticTotal - shown.length} more)`);
+  const previewNotice = scanDiagnosticPreviewNotice(validationResult);
+  if (previewNotice !== undefined) lines.push(`      ${previewNotice}`);
   lines.push("");
+}
 
-  // GATE — per-check verdicts
-  if (runs.length > 0) {
-    const cells = runs.map((run) => `${run.checkId} ${statusWord(run.status)}`);
-    lines.push("  GATE   " + wrapCells(cells, "         "));
-  }
+function appendScanGate(lines: string[], runs: readonly ValidationCheckRunSummary[]): void {
+  if (runs.length === 0) return;
+  const cells = runs.map((run) => `${run.checkId} ${statusWord(run.status)}`);
+  lines.push("  GATE   " + wrapCells(cells, "         "));
+}
 
+function appendScanFooter(
+  lines: string[],
+  repoState: OpcoreRepoStatePayload,
+  validationResult: ValidationResult,
+  failedChecks: number
+): void {
   lines.push("  " + footRule());
   const verdict = validationResult.status === "passed" ? "validation PASSED" : "validation FAILED";
-  lines.push(`  ${verdict} · ${failed.length} checks · activation ${repoState.activation.level}`);
+  lines.push(`  ${verdict} · ${failedChecks} checks · activation ${repoState.activation.level}`);
   lines.push(`  next  ${truncate(repoState.nextActions?.[0] ?? "opcore check --changed --json", 58)}`);
-
-  const plate = lines.join("\n");
-  return options.color ? colorize(plate) : plate;
 }
 
 export function formatCheckStamp(

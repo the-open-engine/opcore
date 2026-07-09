@@ -6,6 +6,7 @@ import type {
 
 export function commandRouterResultForJsonOutput(result: CommandRouterResult): CommandRouterResult {
   if (!result.json || result.validationResult?.manifest === undefined) return result;
+  if (isProductScanCommand(result.canonicalCommand)) return result;
   if (isValidationManifestCommand(result.canonicalCommand)) return result;
   return {
     ...result,
@@ -33,4 +34,8 @@ function compactValidationManifest(manifest: ValidationResultManifest): Validati
 
 function isValidationManifestCommand(canonicalCommand: readonly string[]): boolean {
   return canonicalCommand[0] === "opcore" && (canonicalCommand[1] === "check" || canonicalCommand[1] === "validate") && canonicalCommand[2] === "manifest";
+}
+
+function isProductScanCommand(canonicalCommand: readonly string[]): boolean {
+  return canonicalCommand[0] === "opcore" && canonicalCommand[1] === "scan";
 }

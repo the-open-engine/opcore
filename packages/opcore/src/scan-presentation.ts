@@ -20,6 +20,10 @@ const rustActiveValidationKinds = new Set([".rs", ".inc", "Cargo.toml"]);
 const pythonValidationKinds = new Set([".py", ".pyi"]);
 const cloneValidationKinds = new Set([".ts", ".tsx", ".js", ".jsx", ".py", ".pyi", ".rs"]);
 
+export const SCAN_DIAGNOSTIC_PREVIEW_LIMIT = 50;
+export const FULL_SCAN_VALIDATION_COMMAND = "opcore check --all --json";
+export const EXPLICIT_CLONE_VALIDATION_COMMAND = "opcore check --all --checks clone.duplication --json";
+
 export function failedValidationRuns(validationResult: ValidationResult): readonly ValidationCheckRunSummary[] {
   return (validationResult.manifest?.runs ?? []).filter((run) => isFailedValidationRunStatus(run.status));
 }
@@ -48,6 +52,18 @@ export function relevantDegradedToolchainsForCoverage(
 ): readonly DegradedToolchain[] {
   const activeAdapters = activeValidationAdaptersForCoverage(coverage);
   return toolchains.filter((tool) => activeAdapters.has(tool.adapter));
+}
+
+export function validationDiagnosticTotal(validationResult: ValidationResult): number {
+  const runs = validationResult.manifest?.runs ?? [];
+  if (runs.length === 0) return validationResult.diagnostics.length;
+  return runs.reduce((total, run) => total + (run.diagnosticCount ?? 0), 0);
+}
+
+export function scanDiagnosticPreviewNotice(validationResult: ValidationResult): string | undefined {
+  const total = validationDiagnosticTotal(validationResult);
+  if (total <= SCAN_DIAGNOSTIC_PREVIEW_LIMIT) return undefined;
+  return `showing first ${SCAN_DIAGNOSTIC_PREVIEW_LIMIT} diagnostics; run ${FULL_SCAN_VALIDATION_COMMAND} for full diagnostics`;
 }
 
 function hasAny(values: ReadonlySet<string>, candidates: ReadonlySet<string>): boolean {
