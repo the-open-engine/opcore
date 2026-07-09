@@ -18,10 +18,15 @@ export function pathPolicyIncludes(path: string, policy: OpcorePathPolicy | unde
 export function withFilteredFileView<T extends Pick<ValidationCheckContext, "fileView">>(context: T, policy: OpcorePathPolicy): T {
   const fileView = context.fileView;
   const filteredOverlays = fileView.overlays.filter((overlay) => pathPolicyIncludes(overlay.path, policy));
+  let filteredVisibleFilesPromise: Promise<readonly string[]> | undefined;
+  const listVisibleFiles = (): Promise<readonly string[]> => {
+    filteredVisibleFilesPromise ??= fileView.listVisibleFiles().then((paths) => paths.filter((path) => pathPolicyIncludes(path, policy)));
+    return filteredVisibleFilesPromise;
+  };
   const filteredFileView: ValidationFileView = {
     ...fileView,
     scopeFiles: fileView.scopeFiles.filter((path) => pathPolicyIncludes(path, policy)),
-    visibleFiles: fileView.visibleFiles.filter((path) => pathPolicyIncludes(path, policy)),
+    listVisibleFiles,
     overlays: filteredOverlays,
     readFile: (path, options) =>
       pathPolicyIncludes(path, policy) ? fileView.readFile(path, options) : Promise.resolve(missingRead(path, options?.state ?? "after")),

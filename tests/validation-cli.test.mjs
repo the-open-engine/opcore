@@ -521,10 +521,14 @@ describe("validation CLI", () => {
 
   it("filters validation file view collections through repo path policy", async () => {
     const { withFilteredFileView } = await import("../packages/opcore/dist/path-policy.js");
+    let listVisibleFileCalls = 0;
     const context = {
       fileView: {
         scopeFiles: ["packages/src/index.ts", "docs/notes.ts", "dist/index.js"],
-        visibleFiles: ["packages/src/index.ts", "scripts/build.mjs", "docs/notes.ts", ".ace/runtime.json"],
+        listVisibleFiles: async () => {
+          listVisibleFileCalls += 1;
+          return ["packages/src/index.ts", "scripts/build.mjs", "docs/notes.ts", ".ace/runtime.json"];
+        },
         overlays: [
           { path: "packages/src/index.ts", action: "write", content: "export const value = 1;\n" },
           { path: "docs/notes.ts", action: "write", content: "export const value = 2;\n" },
@@ -542,9 +546,12 @@ describe("validation CLI", () => {
       include: ["packages/", "scripts/"],
       exclude: ["dist/**", ".ace", ".agents"]
     });
+    assert.equal(listVisibleFileCalls, 0);
 
     assert.deepEqual(filtered.fileView.scopeFiles, ["packages/src/index.ts"]);
-    assert.deepEqual(filtered.fileView.visibleFiles, ["packages/src/index.ts", "scripts/build.mjs"]);
+    assert.deepEqual(await filtered.fileView.listVisibleFiles(), ["packages/src/index.ts", "scripts/build.mjs"]);
+    assert.deepEqual(await filtered.fileView.listVisibleFiles(), ["packages/src/index.ts", "scripts/build.mjs"]);
+    assert.equal(listVisibleFileCalls, 1);
     assert.deepEqual(filtered.fileView.overlays.map((overlay) => overlay.path), ["packages/src/index.ts"]);
     assert.equal(filtered.fileView.overlayFor("docs/notes.ts"), undefined);
     assert.equal(filtered.fileView.overlayFor("packages/src/index.ts")?.content, "export const value = 1;\n");
