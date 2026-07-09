@@ -20,6 +20,8 @@ const rustActiveValidationKinds = new Set([".rs", ".inc", "Cargo.toml"]);
 const pythonValidationKinds = new Set([".py", ".pyi"]);
 const cloneValidationKinds = new Set([".ts", ".tsx", ".js", ".jsx", ".py", ".pyi", ".rs"]);
 
+export const SCAN_DIAGNOSTIC_PREVIEW_LIMIT = 50;
+
 export function failedValidationRuns(validationResult: ValidationResult): readonly ValidationCheckRunSummary[] {
   return (validationResult.manifest?.runs ?? []).filter((run) => isFailedValidationRunStatus(run.status));
 }
@@ -48,6 +50,18 @@ export function relevantDegradedToolchainsForCoverage(
 ): readonly DegradedToolchain[] {
   const activeAdapters = activeValidationAdaptersForCoverage(coverage);
   return toolchains.filter((tool) => activeAdapters.has(tool.adapter));
+}
+
+export function validationDiagnosticTotal(validationResult: ValidationResult): number {
+  const runTotal = (validationResult.manifest?.runs ?? []).reduce(
+    (total, run) => total + (run.diagnosticCount ?? 0),
+    0
+  );
+  return Math.max(runTotal, validationResult.diagnostics.length);
+}
+
+export function isScanValidationResultTruncated(validationResult: ValidationResult): boolean {
+  return validationDiagnosticTotal(validationResult) > validationResult.diagnostics.length;
 }
 
 function hasAny(values: ReadonlySet<string>, candidates: ReadonlySet<string>): boolean {

@@ -52,7 +52,9 @@ describe("opcore public facade", () => {
       assert.equal(report.repo.root, realpathSync(fixtureRoot));
       assert.equal(Array.isArray(report.signals), true);
       assert.equal(Array.isArray(report.degradations), true);
-      assert.equal(readFileSync(join(fixtureRoot, ".opcore", "history.jsonl"), "utf8").trim().split(/\r?\n/).length >= 2, true);
+      const historyEntries = readFileSync(join(fixtureRoot, ".opcore", "history.jsonl"), "utf8").trim().split(/\r?\n/).map((line) => JSON.parse(line));
+      assert.equal(historyEntries.length >= 2, true);
+      assert.equal(historyEntries.some((entry) => JSON.stringify(entry).includes("\"validationResult\"")), false);
       assert.equal(readFileSync(join(fixtureRoot, ".opcore", "telemetry.jsonl"), "utf8").trim().split(/\r?\n/).length >= 2, true);
     });
   });
@@ -73,6 +75,62 @@ describe("opcore public facade", () => {
         JSON.stringify(result.validationResult.diagnostics, null, 2)
       );
       assert.equal(result.repoState.coverage.validation.supportedFiles, 1);
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("skips clone duplication in product scan while preserving explicit clone validation", async () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-scan-clone-skip-"));
+    try {
+      initGitFixture(temp);
+      writeFixtureFile(temp, "src/index.ts", "export const value = 1;\n");
+
+      const scan = parseJson(runOpcore(["--repo", temp, "--json"], temp, 0).stdout);
+      const scanChecks = scan.validationResult.manifest.checks;
+      const skippedChecks = scan.validationResult.manifest.skippedChecks ?? [];
+
+      assert.equal(scanChecks.includes("clone.duplication"), false);
+      assert.deepEqual(
+        skippedChecks.filter((entry) => entry.checkId === "clone.duplication").map((entry) => entry.reason),
+        ["not_requested"]
+      );
+      assert.match(
+        skippedChecks.find((entry) => entry.checkId === "clone.duplication")?.message ?? "",
+        /opcore check --all --checks clone\.duplication --json/
+      );
+
+      const explicit = await routeOpcoreCommand(["check", "all", "--repo", temp, "--checks", "clone.duplication", "--json"]);
+      assert.deepEqual(explicit.validationResult.manifest.checks, ["clone.duplication"]);
+      assert.equal(
+        (explicit.validationResult.manifest.skippedChecks ?? []).some(
+          (entry) => entry.checkId === "clone.duplication" && entry.reason === "not_requested"
+        ),
+        false
+      );
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("bounds scan JSON diagnostics while showing total and full-check guidance", () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-scan-diagnostic-preview-"));
+    try {
+      for (let index = 0; index < 60; index += 1) {
+        writeFixtureFile(temp, `src/broken-${index}.ts`, `export const broken${index} = ;\n`);
+      }
+
+      const json = parseJson(runOpcore(["--repo", temp, "--json"], temp, 0).stdout);
+      const embeddedCount = json.validationResult.diagnostics.length;
+      const totalCount = manifestDiagnosticTotal(json.validationResult);
+      assert.equal(embeddedCount <= 50, true);
+      assert.equal(totalCount > embeddedCount, true);
+      assert.match(json.message, /diagnostics=\d+/);
+      assert.match(json.message, /showing first 50 diagnostics; run opcore check --all --json for full diagnostics/);
+
+      const human = runOpcore(["--repo", temp], temp, 0);
+      assert.equal(human.stdout.indexOf("Coverage") < human.stdout.indexOf("Findings"), true);
+      assert.match(human.stdout, /showing first 50 diagnostics; run opcore check --all --json for full diagnostics/);
     } finally {
       rmSync(temp, { recursive: true, force: true });
     }
@@ -1859,10 +1917,12 @@ function run(command, args, cwd, expectedStatus, env = process.env) {
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"]
   });
-  assert.equal(result.status, expectedStatus, [
+  const expectedStatuses = Array.isArray(expectedStatus) ? expectedStatus : [expectedStatus];
+  assert.equal(expectedStatuses.includes(result.status), true, [
     `Command: ${command} ${args.join(" ")}`,
     `cwd: ${cwd}`,
     `status: ${result.status}`,
+    `expected status: ${expectedStatuses.join(", ")}`,
     `stdout:\n${result.stdout}`,
     `stderr:\n${result.stderr}`
   ].join("\n"));
@@ -1942,6 +2002,11 @@ function writeFixtureFile(root, path, content) {
 
 function parseJson(stdout) {
   return JSON.parse(stdout);
+}
+
+function manifestDiagnosticTotal(validationResult) {
+  const runTotal = (validationResult.manifest?.runs ?? []).reduce((total, run) => total + (run.diagnosticCount ?? 0), 0);
+  return Math.max(runTotal, validationResult.diagnostics.length);
 }
 
 function actionFor(result, path) {
