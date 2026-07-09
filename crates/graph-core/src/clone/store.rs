@@ -1,4 +1,5 @@
-use super::{CloneClass, CloneError, CloneSource, CLONE_PROTOCOL, CLONE_STORE_SCHEMA_VERSION};
+use super::analysis::{CloneClass, CloneSource};
+use super::{CloneError, CLONE_PROTOCOL, CLONE_STORE_SCHEMA_VERSION};
 use rusqlite::{params, Connection};
 use std::path::{Path, PathBuf};
 

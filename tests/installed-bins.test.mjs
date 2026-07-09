@@ -134,6 +134,7 @@ describe("installed package bins", () => {
           "docs.code-blocks",
           "docs.rules-why",
           "docs.hub-coverage",
+          "docs.subtree-coverage",
           "clone.duplication"
         ]
       );

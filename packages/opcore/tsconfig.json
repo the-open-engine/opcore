@@ -21,6 +21,9 @@
       "path": "../validation"
     },
     {
+      "path": "../validation-policy"
+    },
+    {
       "path": "../validation-clone"
     },
     {

@@ -1,5 +1,13 @@
-import type { GraphFactEdge, GraphFactNode, JsonValue, ValidationDiagnostic } from "@the-open-engine/opcore-contracts";
-import type { ValidationCheckDefinition } from "@the-open-engine/opcore-validation";
+import type { GraphFactNode, ValidationDiagnostic } from "@the-open-engine/opcore-contracts";
+import type { GraphFactExportMetadata, ValidationCheckDefinition } from "@the-open-engine/opcore-validation";
+import {
+  graphFactBooleanAttribute,
+  graphFactHasExportMetadata,
+  graphFactHasIncomingTargetEdge,
+  graphFactNodePath,
+  graphFactUnsupportedExportLabels,
+  graphFactUnsupportedFileExportMetadata
+} from "@the-open-engine/opcore-validation";
 import { PYTHON_DEAD_CODE_CHECK_ID } from "./check-ids.js";
 import { pythonCheckAdapter, pythonCheckOwner, supportedPythonValidationScopes } from "./check-constants.js";
 import { deadCodeGraphRequirements } from "./graph-requirements.js";
@@ -23,8 +31,8 @@ export function createDeadCodeCheck(): ValidationCheckDefinition {
       ]);
       const scopedPaths = new Set(sourceSet.rootPaths);
       const scopedSymbols = symbolFacts.nodes.filter((node) => isScopedSymbol(node, scopedPaths));
-      const unsupportedFileExports = fileNodes.flatMap(unsupportedFileExportMetadata);
-      if (!scopedSymbols.some(hasExportMetadata) && unsupportedFileExports.length === 0) {
+      const unsupportedFileExports = fileNodes.flatMap(graphFactUnsupportedFileExportMetadata);
+      if (!scopedSymbols.some(graphFactHasExportMetadata) && unsupportedFileExports.length === 0) {
         return {
           diagnostics: [
             {
@@ -68,11 +76,11 @@ export function createDeadCodeCheck(): ValidationCheckDefinition {
       }
       diagnostics.push(
         ...callCoveredExports
-          .filter((node) => !hasIncomingCall(node, calls, incomingCalls))
+          .filter((node) => !graphFactHasIncomingTargetEdge(node, calls, incomingCalls))
           .map((node): ValidationDiagnostic => ({
             category: "graph",
             severity: "warning",
-            path: symbolFilePath(node),
+            path: graphFactNodePath(node),
             code: "PY_DEAD_CODE_UNUSED_EXPORT",
             message: `Exported Python symbol has no incoming CALLS graph evidence: ${node.name ?? node.id}`
           }))
@@ -82,15 +90,9 @@ export function createDeadCodeCheck(): ValidationCheckDefinition {
   };
 }
 
-function hasIncomingCall(node: GraphFactNode, calls: readonly GraphFactEdge[], incomingCalls: ReadonlySet<string>): boolean {
-  if (incomingCalls.has(node.id)) return true;
-  const aliases = symbolAliases(node);
-  return calls.some((edge) => aliases.has(edge.to));
-}
-
 function isExportedSymbol(node: GraphFactNode): boolean {
   if (node.kind === "File" || node.kind === "file" || node.kind === "Module") return false;
-  return booleanAttribute(node, ["exported", "isExported", "public"]);
+  return graphFactBooleanAttribute(node, ["exported", "isExported", "public"]);
 }
 
 function hasCallUsageCoverage(node: GraphFactNode): boolean {
@@ -107,11 +109,8 @@ function unsupportedExportUsageDiagnostic(nodes: readonly GraphFactNode[]): Vali
   };
 }
 
-function unsupportedFileExportMetadataDiagnostic(exports: readonly FileExportMetadata[]): ValidationDiagnostic {
-  const labels = exports
-    .map((entry) => stringMetadata(entry, "exported") ?? stringMetadata(entry, "local") ?? stringMetadata(entry, "kind") ?? "unknown")
-    .slice(0, 5)
-    .join(", ");
+function unsupportedFileExportMetadataDiagnostic(exports: readonly GraphFactExportMetadata[]): ValidationDiagnostic {
+  const labels = graphFactUnsupportedExportLabels(exports);
   return {
     category: "graph",
     severity: "info",
@@ -120,64 +119,7 @@ function unsupportedFileExportMetadataDiagnostic(exports: readonly FileExportMet
   };
 }
 
-function hasExportMetadata(node: GraphFactNode): boolean {
-  return typeof node.attributes?.exported === "boolean";
-}
-
-type FileExportMetadata = { [key: string]: JsonValue };
-
-function unsupportedFileExportMetadata(node: GraphFactNode): readonly FileExportMetadata[] {
-  const exports = node.attributes?.exports;
-  if (!Array.isArray(exports)) return [];
-  return exports.filter(isUnsupportedFileExportMetadata);
-}
-
-function isUnsupportedFileExportMetadata(value: JsonValue): value is FileExportMetadata {
-  if (!isJsonObject(value)) return false;
-  return value.supportedSymbol === false;
-}
-
-function isJsonObject(value: JsonValue | undefined): value is { [key: string]: JsonValue } {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function stringMetadata(metadata: FileExportMetadata, key: string): string | undefined {
-  const value = metadata[key];
-  return typeof value === "string" && value.length > 0 ? value : undefined;
-}
-
 function isScopedSymbol(node: GraphFactNode, scopedPaths: ReadonlySet<string>): boolean {
-  const filePath = symbolFilePath(node);
+  const filePath = graphFactNodePath(node);
   return filePath !== undefined && scopedPaths.has(filePath);
-}
-
-function symbolAliases(node: GraphFactNode): ReadonlySet<string> {
-  const aliases = new Set([node.id]);
-  const stableId = stringAttribute(node, ["symbolId", "stableId", "qualifiedName"]);
-  if (stableId !== undefined) aliases.add(stableId);
-  return aliases;
-}
-
-function symbolFilePath(node: GraphFactNode): string | undefined {
-  if (node.path !== undefined) return node.path;
-  const path = stringAttribute(node, ["path", "file", "filePath", "sourcePath"]);
-  if (path !== undefined) return path;
-  const match = /^[^:]+:([^#]+)(?:#.*)?$/u.exec(node.id);
-  return match?.[1];
-}
-
-function booleanAttribute(node: GraphFactNode, keys: readonly string[]): boolean {
-  for (const key of keys) {
-    const value = node.attributes?.[key];
-    if (value === true || value === "true") return true;
-  }
-  return false;
-}
-
-function stringAttribute(node: GraphFactNode, keys: readonly string[]): string | undefined {
-  for (const key of keys) {
-    const value = node.attributes?.[key];
-    if (typeof value === "string" && value.length > 0) return value;
-  }
-  return undefined;
 }

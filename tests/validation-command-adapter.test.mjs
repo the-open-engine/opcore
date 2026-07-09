@@ -2,7 +2,7 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import {
   createCheckCommandAdapter,
@@ -63,6 +63,29 @@ describe("validation command adapters", () => {
     })(request(["manifest"], "validate"));
     assert.equal(validateManifest.status, "ok");
     assert.equal(validateManifest.message, "opcore validate manifest: validation check manifest ready.");
+  });
+
+  it("normalizes command-line repo roots before constructing checks and workspaces", async () => {
+    const observed = {
+      checksRepoRoot: undefined,
+      workspaceRepoRoot: undefined
+    };
+    const adapter = createCheckCommandAdapter({
+      checksFactory: (repoRoot) => {
+        observed.checksRepoRoot = repoRoot;
+        return [scopeCheck([])];
+      },
+      workspaceFactory: (repoRoot) => {
+        observed.workspaceRepoRoot = repoRoot;
+        return workspace();
+      }
+    });
+
+    const result = await adapter(request(["files", "--files", "src/index.ts", "--repo", "."]));
+
+    assert.equal(result.validationResult.status, "passed");
+    assert.equal(observed.checksRepoRoot, resolve("."));
+    assert.equal(observed.workspaceRepoRoot, resolve("."));
   });
 
   it("rejects manifest routes with execution-only flags", async () => {

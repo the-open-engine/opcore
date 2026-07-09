@@ -27,10 +27,10 @@ import {
   type ValidationGraphProviderClient,
   type ValidationWorkspace
 } from "@the-open-engine/opcore-validation";
-import { createDocsValidationChecks } from "@the-open-engine/opcore-validation-docs";
-import { createPythonValidationChecks } from "@the-open-engine/opcore-validation-python";
-import { createRustValidationChecks } from "@the-open-engine/opcore-validation-rust";
-import { createTypeScriptValidationChecks } from "@the-open-engine/opcore-validation-typescript";
+import {
+  createBuiltInValidationChecks,
+  validationChecksForRepoPolicy
+} from "@the-open-engine/opcore-validation-policy";
 import {
   graphProviderDetectChanges,
   graphProviderImpact,
@@ -40,12 +40,9 @@ import {
   graphProviderStatus
 } from "@the-open-engine/opcore-graph";
 
-export const defaultAspProviderValidationChecks = [
-  ...createTypeScriptValidationChecks(),
-  ...createRustValidationChecks(),
-  ...createPythonValidationChecks(),
-  ...createDocsValidationChecks()
-];
+const aspProviderPolicyOptions = { clone: false } as const;
+
+export const defaultAspProviderValidationChecks = createBuiltInValidationChecks(undefined, aspProviderPolicyOptions);
 
 export const defaultAspProviderValidationCheckIds = defaultAspProviderValidationChecks.map((check) => check.id);
 export const defaultAspProviderValidationManifest = createValidationCheckManifest(defaultAspProviderValidationChecks);
@@ -53,17 +50,27 @@ export const defaultAspProviderValidationManifest = createValidationCheckManifes
 export function createAspProviderValidationRunner(workspace: ValidationWorkspace): {
   runValidation(request: ValidationRequest): Promise<ValidationResult>;
 } {
-  return createValidationRunner({
-    workspace,
-    checks: defaultAspProviderValidationChecks,
-    graphProviderClient: createAspValidationGraphProviderClient()
-  });
+  return {
+    runValidation(request) {
+      return createValidationRunner({
+        workspace,
+        checks: validationChecksForAspRequest(request),
+        graphProviderClient: createAspValidationGraphProviderClient()
+      }).runValidation(request);
+    }
+  };
 }
 
 export function selectedValidationChecks(checkIds?: readonly string[]): readonly ValidationCheckDefinition[] {
   if (checkIds === undefined) return defaultAspProviderValidationChecks;
   const requested = new Set(checkIds);
   return defaultAspProviderValidationChecks.filter((check) => requested.has(check.id));
+}
+
+function validationChecksForAspRequest(request: ValidationRequest): readonly ValidationCheckDefinition[] {
+  const repoRoot = request.repo.repoRoot;
+  if (repoRoot === undefined) return defaultAspProviderValidationChecks;
+  return validationChecksForRepoPolicy(repoRoot, aspProviderPolicyOptions);
 }
 
 function createAspValidationGraphProviderClient(): ValidationGraphProviderClient {

@@ -9,9 +9,11 @@ import {
   createDocsLengthCheck,
   createDocsRulesWhyCheck,
   createDocsStalenessCheck,
+  createDocsSubtreeCoverageCheck,
   type CreateDocsValidationChecksOptions,
   type DocsHistoryOptions,
-  type DocsHubCoverageOptions
+  type DocsHubCoverageOptions,
+  type DocsSubtreeCoverageOptions
 } from "./checks.js";
 
 export {
@@ -23,6 +25,7 @@ export {
   DOCS_HUB_COVERAGE_CHECK_ID,
   DOCS_LENGTH_CHECK_ID,
   DOCS_RULES_WHY_CHECK_ID,
+  DOCS_SUBTREE_COVERAGE_CHECK_ID,
   DOCS_STALENESS_CHECK_ID,
   docsValidationCheckIds,
   type DocsValidationCheckId
@@ -38,9 +41,11 @@ export {
   createDocsLengthCheck,
   createDocsRulesWhyCheck,
   createDocsStalenessCheck,
+  createDocsSubtreeCoverageCheck,
   type CreateDocsValidationChecksOptions,
   type DocsHistoryOptions,
-  type DocsHubCoverageOptions
+  type DocsHubCoverageOptions,
+  type DocsSubtreeCoverageOptions
 } from "./checks.js";
 
 export function createDocsValidationChecks(
@@ -55,6 +60,7 @@ export function createDocsValidationChecks(
     createDocsContentQualityCheck(options),
     createDocsCodeBlocksCheck(options),
     createDocsRulesWhyCheck(options),
-    createDocsHubCoverageCheck(options)
+    createDocsHubCoverageCheck(options),
+    createDocsSubtreeCoverageCheck(options)
   ];
 }

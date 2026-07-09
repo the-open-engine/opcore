@@ -2811,6 +2811,19 @@ function validRouterManifest() {
   };
 }
 
+function validOpcoreValidationPolicySummary(overrides = {}) {
+  return {
+    path: ".opcore/config",
+    state: "loaded",
+    adapters: ["typescript", "rust"],
+    packs: [],
+    disabledChecks: [],
+    defaultChecks: ["typescript.syntax"],
+    configuredChecks: ["typescript.syntax", "typescript.types", "rust.source-hygiene"],
+    ...overrides
+  };
+}
+
 function validOpcoreRepoState() {
   return {
     schemaVersion: 1,
@@ -2862,6 +2875,7 @@ function validOpcoreRepoState() {
     validation: {
       ready: true,
       checkCount: 15,
+      policy: validOpcoreValidationPolicySummary(),
       adapters: [
         {
           adapter: "rust",
@@ -3094,7 +3108,8 @@ function validOpcoreMetricReport(overrides = {}) {
     validation: {
       status: "policy_failure",
       diagnosticCount: 2,
-      checkCount: 15
+      checkCount: 15,
+      policy: validOpcoreValidationPolicySummary()
     },
     signals: [
       {
@@ -3724,6 +3739,7 @@ function validOpcoreDoctor() {
       count: 1,
       ids: ["typescript.syntax"]
     },
+    policy: validOpcoreValidationPolicySummary(),
     graph: availableStatus,
     generatedState: {
       ignored: [".opcore/"],

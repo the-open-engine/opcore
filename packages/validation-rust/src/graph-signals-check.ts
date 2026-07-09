@@ -2,13 +2,19 @@ import type {
   GraphEdgeKind,
   GraphFactEdge,
   GraphFactNode,
-  JsonValue,
   ValidationDiagnostic
 } from "@the-open-engine/opcore-contracts";
 import type {
   ValidationCheckContext,
   ValidationCheckDefinition,
   ValidationGraphQueryRequirement
+} from "@the-open-engine/opcore-validation";
+import {
+  graphFactBooleanAttribute,
+  graphFactNodePath,
+  graphFactPathFromEndpoint,
+  graphFactStringAttribute,
+  graphFactSymbolAliasSet
 } from "@the-open-engine/opcore-validation";
 import { RUST_GRAPH_SIGNALS_CHECK_ID } from "./check-ids.js";
 import { rustCheckAdapter, rustCheckOwner, supportedRustValidationScopes } from "./check-constants.js";
@@ -120,7 +126,7 @@ function deadPublicExportDiagnostics(
       diagnostic({
         category: "graph",
         severity: "warning",
-        path: symbolFilePath(node),
+        path: graphFactNodePath(node),
         code: "RUST_GRAPH_DEAD_PUB_EXPORT",
         message: `Public Rust export has no incoming CALLS graph evidence: ${node.name ?? node.id}`
       })
@@ -137,7 +143,7 @@ function untestedSurfaceDiagnostics(
       diagnostic({
         category: "test",
         severity: "info",
-        path: symbolFilePath(node),
+        path: graphFactNodePath(node),
         code: "RUST_GRAPH_UNTESTED_SURFACE",
         message: `Public Rust surface has no TESTED_BY graph evidence: ${node.name ?? node.id}`
       })
@@ -153,24 +159,24 @@ function moduleSignalDiagnostics(
   const rustFilePaths = new Set(
     fileNodes
       .filter(isRustFileNode)
-      .map(symbolFilePath)
+      .map(graphFactNodePath)
       .filter((path): path is string => path !== undefined && scopedPaths.has(path))
   );
   const rootPaths = new Set(
     scopedSymbols
       .filter(isRustRootModule)
-      .map(symbolFilePath)
+      .map(graphFactNodePath)
       .filter((path): path is string => path !== undefined)
   );
   const importedTargets = new Set(
     importsFrom
-      .map((edge) => endpointFilePath(edge.to))
+      .map((edge) => graphFactPathFromEndpoint(edge.to))
       .filter((path): path is string => path !== undefined && scopedPaths.has(path))
   );
   const scopedFileEdges = importsFrom
     .map((edge) => {
-      const from = endpointFilePath(edge.from);
-      const to = endpointFilePath(edge.to);
+      const from = graphFactPathFromEndpoint(edge.from);
+      const to = graphFactPathFromEndpoint(edge.to);
       return from !== undefined && to !== undefined && scopedPaths.has(from) && scopedPaths.has(to) ? { from, to } : undefined;
     })
     .filter((edge): edge is { from: string; to: string } => edge !== undefined);
@@ -217,17 +223,17 @@ function edgeKindSupported(context: ValidationCheckContext, edgeKind: GraphEdgeK
 }
 
 function hasIncomingEdgeTarget(node: GraphFactNode, edges: readonly GraphFactEdge[]): boolean {
-  const aliases = symbolAliases(node);
+  const aliases = graphFactSymbolAliasSet(node);
   return edges.some((edge) => aliases.has(edge.to));
 }
 
 function hasTestedByEdge(node: GraphFactNode, edges: readonly GraphFactEdge[]): boolean {
-  const aliases = symbolAliases(node);
+  const aliases = graphFactSymbolAliasSet(node);
   return edges.some((edge) => aliases.has(edge.from));
 }
 
 function isScopedRustNode(node: GraphFactNode, scopedPaths: ReadonlySet<string>): boolean {
-  const path = symbolFilePath(node);
+  const path = graphFactNodePath(node);
   return path !== undefined && scopedPaths.has(path) && isRustGraphNode(node);
 }
 
@@ -237,64 +243,25 @@ function isRustFileNode(node: GraphFactNode): boolean {
 }
 
 function isRustGraphNode(node: GraphFactNode): boolean {
-  if (stringAttribute(node, ["language"]) === "rust") return true;
-  const path = symbolFilePath(node);
+  if (graphFactStringAttribute(node, ["language"]) === "rust") return true;
+  const path = graphFactNodePath(node);
   return path !== undefined && isRustSourcePath(path);
 }
 
 function isRustRootModule(node: GraphFactNode): boolean {
   if (node.kind !== "Module") return false;
-  return node.name === "crate" || stringAttribute(node, ["qualifiedName"]) === "crate";
+  return node.name === "crate" || graphFactStringAttribute(node, ["qualifiedName"]) === "crate";
 }
 
 function isPublicRustSurface(node: GraphFactNode): boolean {
   if (node.kind === "File" || node.kind === "file" || node.kind === "Module" || node.kind === "Impl" || node.kind === "Test") {
     return false;
   }
-  return booleanAttribute(node, ["exported", "isExported", "public"]);
+  return graphFactBooleanAttribute(node, ["exported", "isExported", "public"]);
 }
 
 function hasCallUsageCoverage(node: GraphFactNode): boolean {
   return node.kind === "Function" || node.kind === "Method" || node.kind === "Macro";
-}
-
-function symbolAliases(node: GraphFactNode): ReadonlySet<string> {
-  const aliases = new Set([node.id]);
-  const stableId = stringAttribute(node, ["symbolId", "stableId", "qualifiedName"]);
-  if (stableId !== undefined) aliases.add(stableId);
-  return aliases;
-}
-
-function symbolFilePath(node: GraphFactNode): string | undefined {
-  if (node.path !== undefined) return node.path;
-  const path = stringAttribute(node, ["path", "file", "filePath", "sourcePath"]);
-  if (path !== undefined) return path;
-  return endpointFilePath(node.id);
-}
-
-function endpointFilePath(endpoint: string): string | undefined {
-  const match = /^file:(.+)$/u.exec(endpoint) ?? /^[^:]+:([^#]+)(?:#.*)?$/u.exec(endpoint);
-  return match?.[1];
-}
-
-function booleanAttribute(node: GraphFactNode, keys: readonly string[]): boolean {
-  for (const key of keys) {
-    const value = node.attributes?.[key];
-    if (value === true || value === "true") return true;
-  }
-  return false;
-}
-
-function stringAttribute(node: GraphFactNode, keys: readonly string[]): string | undefined {
-  for (const key of keys) {
-    const value = node.attributes?.[key];
-    if (isStringValue(value)) return value;
-  }
-  return undefined;
-}
-
-function isStringValue(value: JsonValue | undefined): value is string {
-  return typeof value === "string" && value.length > 0;
 }
 
 function toFileNodeId(path: string): string {

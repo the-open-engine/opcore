@@ -32,6 +32,7 @@ import type { ValidationGraphProviderClient } from "./graph-client.js";
 import type { ValidationWorkspace } from "./scope.js";
 import type { ValidationRuntimePolicy } from "./registry.js";
 import { readFile } from "node:fs/promises";
+import { resolve } from "node:path";
 
 declare const process: {
   cwd(): string;
@@ -39,6 +40,7 @@ declare const process: {
 
 export interface ValidationCommandAdapterOptions {
   checks?: readonly ValidationCheckDefinition[];
+  checksFactory?: (repoRoot: string) => readonly ValidationCheckDefinition[];
   registry?: ValidationCheckRegistry;
   workspace?: ValidationWorkspace;
   workspaceFactory?: (repoRoot: string) => ValidationWorkspace;
@@ -53,7 +55,9 @@ export function createCheckCommandAdapter(options: ValidationCommandAdapterOptio
   return async (request) => {
     try {
       const parsed = parseCheckCommandOptions(request.args);
-      if (parsed.route === "manifest") return manifestCommandResult(request, registryChecks(options), "check manifest");
+      if (parsed.route === "manifest") {
+        return manifestCommandResult(request, registryChecks(options, repoRootForCommand(parsed, options)), "check manifest");
+      }
       const validationRequest = normalizeValidationRequest(
         {
           repo: {
@@ -87,7 +91,9 @@ export function createValidateCommandAdapter(options: ValidationCommandAdapterOp
   return async (request) => {
     try {
       const parsed = parseValidateCommandOptions(request.args);
-      if (parsed.route === "manifest") return manifestCommandResult(request, registryChecks(options), "validate manifest");
+      if (parsed.route === "manifest") {
+        return manifestCommandResult(request, registryChecks(options, repoRootForCommand(parsed, options)), "validate manifest");
+      }
       if (parsed.route === "pre-write") return preWriteValidationCommandResult(request, parsed, options);
       const payload = await readRequestPayload(parsed.requestFile);
       const validatedPayload = validateValidationRequestPayload(payload);
@@ -141,7 +147,7 @@ async function runRequest(
 ): Promise<ValidationResult> {
   const runnerOptions: CreateValidationRunnerOptions = {
     workspace: workspaceForRequest(request, parsed, options),
-    registry: registryForOptions(options),
+    registry: registryForOptions(options, repoRootForRequest(request, parsed, options)),
     graphProviderClient: options.graphProviderClient,
     clock: options.clock,
     runtime: options.runtime
@@ -214,7 +220,7 @@ function timeoutResult(request: ValidationRequest, options: ValidationCommandAda
     retryable: true
   };
   return aggregateValidationResults({
-    checks: request.checks ?? registryChecks(options).map((check) => check.id),
+    checks: request.checks ?? registryChecks(options, request.repo.repoRoot ?? defaultRepoRoot(options)).map((check) => check.id),
     generatedAt: commandIsoNow(options),
     durationMs: timeoutMs,
     status: "infrastructure_failure",
@@ -324,10 +330,16 @@ function validationCommandResult(
     owner: "validation",
     status: result.ok ? "ok" : "error",
     json: request.json,
-    message: result.ok ? "opcore validation complete." : result.failure?.message ?? result.refusal?.message ?? "opcore validation failed.",
+    message: validationResultMessage(result),
     validationResult: result,
     receipt
   });
+}
+
+function validationResultMessage(result: ValidationResult): string {
+  if (result.ok) return "opcore validation complete.";
+  if (result.failure?.category === "invalid_payload" && result.failure.cause !== undefined) return result.failure.cause;
+  return result.failure?.message ?? result.refusal?.message ?? "opcore validation failed.";
 }
 
 function manifestCommandResult(
@@ -368,12 +380,14 @@ function invalidPayloadResult(message: string): ValidationResult {
   });
 }
 
-function registryForOptions(options: ValidationCommandAdapterOptions): ValidationCheckRegistry {
-  return options.registry ?? createValidationCheckRegistry(options.checks ?? []);
+function registryForOptions(options: ValidationCommandAdapterOptions, repoRoot: string = defaultRepoRoot(options)): ValidationCheckRegistry {
+  if (options.registry !== undefined) return options.registry;
+  if (options.checksFactory !== undefined) return createValidationCheckRegistry(options.checksFactory(repoRoot));
+  return createValidationCheckRegistry(options.checks ?? []);
 }
 
-function registryChecks(options: ValidationCommandAdapterOptions): readonly ValidationCheckDefinition[] {
-  return registryForOptions(options).checks;
+function registryChecks(options: ValidationCommandAdapterOptions, repoRoot: string = defaultRepoRoot(options)): readonly ValidationCheckDefinition[] {
+  return registryForOptions(options, repoRoot).checks;
 }
 
 function applyValidateCommandOverrides(
@@ -420,7 +434,7 @@ function repoIdentityForOverride(repo: ValidationRequest["repo"], repoRoot: stri
   const { repoId: _repoId, ...rest } = repo;
   return {
     ...rest,
-    repoRoot
+    repoRoot: normalizeCommandRepoRoot(repoRoot)
   };
 }
 
@@ -436,17 +450,29 @@ function workspaceForRequest(
   options: ValidationCommandAdapterOptions
 ): ValidationWorkspace {
   if (options.workspace !== undefined) return options.workspace;
-  const repoRoot = parsed.repoRoot ?? request.repo.repoRoot ?? defaultRepoRoot(options);
+  const repoRoot = normalizeCommandRepoRoot(parsed.repoRoot ?? request.repo.repoRoot ?? defaultRepoRoot(options));
   const factory = options.workspaceFactory ?? ((root: string) => createNodeValidationWorkspace({ repoRoot: root }));
   return factory(repoRoot);
 }
 
 function repoRootForCommand(parsed: ParsedValidationCommandOptions, options: ValidationCommandAdapterOptions): string {
-  return parsed.repoRoot ?? defaultRepoRoot(options);
+  return normalizeCommandRepoRoot(parsed.repoRoot ?? defaultRepoRoot(options));
+}
+
+function repoRootForRequest(
+  request: ValidationRequest,
+  parsed: ParsedValidationCommandOptions,
+  options: ValidationCommandAdapterOptions
+): string {
+  return normalizeCommandRepoRoot(parsed.repoRoot ?? request.repo.repoRoot ?? defaultRepoRoot(options));
 }
 
 function defaultRepoRoot(options: ValidationCommandAdapterOptions): string {
-  return options.defaultRepoRoot ?? process.cwd();
+  return normalizeCommandRepoRoot(options.defaultRepoRoot ?? process.cwd());
+}
+
+function normalizeCommandRepoRoot(repoRoot: string): string {
+  return resolve(repoRoot);
 }
 
 function requireScope(parsed: ParsedValidationCommandOptions): ValidationRequest["scope"] {

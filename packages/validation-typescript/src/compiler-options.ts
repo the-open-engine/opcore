@@ -1,5 +1,11 @@
 import type { ValidationCheckContext } from "@the-open-engine/opcore-validation";
-import { normalizeValidationFileViewPath } from "@the-open-engine/opcore-validation";
+import {
+  joinRepoRelativePaths,
+  normalizeValidationFileViewPath,
+  repoPathGlobToRegex,
+  repoPathHasGlobSyntax,
+  uniqueSortedStrings
+} from "@the-open-engine/opcore-validation";
 import ts from "typescript";
 import { isTypeScriptSourcePath, readOptionalRepoFile } from "./source-files.js";
 
@@ -105,7 +111,7 @@ async function resolveTypeScriptCompilerProjectsUncached(
 
   return [...grouped.values()]
     .map((group): ResolvedTypeScriptCompilerProject => ({
-      rootPaths: uniqueSorted(group.rootPaths),
+      rootPaths: uniqueSortedStrings(group.rootPaths),
       supportPaths: group.config === undefined ? [] : ambientDeclarationPaths(context, group.config),
       ...(group.config?.path === undefined ? {} : { configPath: group.config.path }),
       options: group.config?.options ?? mergeCompilerOptions(),
@@ -190,7 +196,7 @@ function mergeCompilerOptions(...configOptions: readonly ts.CompilerOptions[]): 
 }
 
 function scopedTypeScriptPaths(context: ValidationCheckContext): readonly string[] {
-  return uniqueSorted(
+  return uniqueSortedStrings(
     [...context.fileView.scopeFiles, ...context.fileView.overlays.map((overlay) => overlay.path)]
       .map((path) => normalizeValidationFileViewPath(path))
       .filter(isTypeScriptSourcePath)
@@ -226,9 +232,7 @@ function mostSpecificConfig(configs: readonly ParsedTypeScriptConfig[]): ParsedT
 }
 
 function configIncludesPath(config: ParsedTypeScriptConfig, path: string): boolean {
-  if (config.files !== undefined) {
-    return config.files.map((file) => joinRepoPaths(config.basePath, file)).includes(path);
-  }
+  if (config.files !== undefined) return config.files.map((file) => joinRepoPaths(config.basePath, file)).includes(path);
   const includes = config.include ?? [];
   if (includes.length === 0) return isInsideConfigBase(config.basePath, path);
   if (config.exclude?.some((pattern) => matchesConfigPattern(config.basePath, pattern, path)) === true) return false;
@@ -256,39 +260,8 @@ function matchesConfigPattern(basePath: string, pattern: string, path: string): 
     const prefix = target.slice(0, -"/**".length);
     return path === prefix || path.startsWith(`${prefix}/`);
   }
-  if (!containsGlob(target)) return path === target || path.startsWith(`${target}/`);
-  return globPatternToRegex(target).test(path);
-}
-
-function containsGlob(pattern: string): boolean {
-  return pattern.includes("*") || pattern.includes("?") || pattern.includes("[");
-}
-
-function globPatternToRegex(pattern: string): RegExp {
-  let source = "^";
-  for (let index = 0; index < pattern.length; index += 1) {
-    const char = pattern[index];
-    const next = pattern[index + 1];
-    const afterNext = pattern[index + 2];
-    if (char === "*" && next === "*" && afterNext === "/") {
-      source += "(?:.*/)?";
-      index += 2;
-    } else if (char === "*" && next === "*") {
-      source += ".*";
-      index += 1;
-    } else if (char === "*") {
-      source += "[^/]*";
-    } else if (char === "?") {
-      source += "[^/]";
-    } else {
-      source += escapeRegex(char);
-    }
-  }
-  return new RegExp(`${source}(?:/.*)?$`);
-}
-
-function escapeRegex(value: string): string {
-  return value.replace(/[\\^$.*+?()[\]{}|]/g, "\\$&");
+  if (!repoPathHasGlobSyntax(target, true)) return path === target || path.startsWith(`${target}/`);
+  return repoPathGlobToRegex(target, { matchDescendants: true, optionalGlobstarSlash: true }).test(path);
 }
 
 function ancestorDirectories(path: string): readonly string[] {
@@ -320,7 +293,7 @@ function referencedConfigPaths(basePath: string, value: unknown): readonly strin
     const configPath = isTypeScriptConfigPath(joined) ? joined : joinRepoPaths(joined, "tsconfig.json");
     if (configPath !== undefined) paths.push(configPath);
   }
-  return uniqueSorted(paths);
+  return uniqueSortedStrings(paths);
 }
 
 function stringArray(value: unknown): readonly string[] | undefined {
@@ -328,20 +301,7 @@ function stringArray(value: unknown): readonly string[] | undefined {
 }
 
 function joinRepoPaths(basePath: string, path: string): string | undefined {
-  const parts: string[] = [];
-  for (const segment of [basePath, path]) {
-    if (segment.startsWith("/")) return undefined;
-    for (const part of segment.split("/")) {
-      if (part.length === 0 || part === ".") continue;
-      if (part === "..") {
-        if (parts.length === 0) return undefined;
-        parts.pop();
-        continue;
-      }
-      parts.push(part);
-    }
-  }
-  return parts.join("/");
+  return joinRepoRelativePaths([basePath, path], { emptyPath: "" });
 }
 
 function ambientDeclarationPaths(context: ValidationCheckContext, config: ParsedTypeScriptConfig): readonly string[] {
@@ -349,7 +309,7 @@ function ambientDeclarationPaths(context: ValidationCheckContext, config: Parsed
     .map((path) => normalizeValidationFileViewPath(path))
     .filter((path) => isAmbientDeclarationPath(path) && configIncludesPath(config, path));
   const repoAmbientPaths = ambientDeclarationPathsFromRepoRoot(context, config);
-  return uniqueSorted([...scopedAmbientPaths, ...repoAmbientPaths]);
+  return uniqueSortedStrings([...scopedAmbientPaths, ...repoAmbientPaths]);
 }
 
 function ambientDeclarationPathsFromRepoRoot(context: ValidationCheckContext, config: ParsedTypeScriptConfig): readonly string[] {
@@ -361,7 +321,7 @@ function ambientDeclarationPathsFromRepoRoot(context: ValidationCheckContext, co
     .map((path) => repoRelativePath(repoRoot, path))
     .filter((path): path is string => path !== undefined)
     .filter((path) => configIncludesPath(config, path));
-  return uniqueSorted(paths);
+  return uniqueSortedStrings(paths);
 }
 
 function normalizedRepoRoot(repoRoot: string | undefined): string | undefined {
@@ -379,8 +339,4 @@ function repoRelativePath(repoRoot: string, path: string): string | undefined {
 
 function isAmbientDeclarationPath(path: string): boolean {
   return path.endsWith(".d.ts");
-}
-
-function uniqueSorted(values: readonly string[]): readonly string[] {
-  return [...new Set(values)].sort();
 }

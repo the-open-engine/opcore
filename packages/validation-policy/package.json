@@ -1,0 +1,48 @@
+{
+  "name": "@the-open-engine/opcore-validation-policy",
+  "version": "0.1.0",
+  "description": "Shared Opcore repo validation policy composition.",
+  "type": "module",
+  "license": "MIT",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "keywords": [
+    "code-intelligence",
+    "coding-agents",
+    "static-analysis",
+    "typescript",
+    "cli",
+    "developer-tools"
+  ],
+  "dependencies": {
+    "@the-open-engine/opcore-contracts": "0.1.0",
+    "@the-open-engine/opcore-validation": "0.1.0",
+    "@the-open-engine/opcore-validation-clone": "0.1.0",
+    "@the-open-engine/opcore-validation-docs": "0.1.0",
+    "@the-open-engine/opcore-validation-python": "0.1.0",
+    "@the-open-engine/opcore-validation-rust": "0.1.0",
+    "@the-open-engine/opcore-validation-typescript": "0.1.0"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/the-open-engine/opcore.git",
+    "directory": "packages/validation-policy"
+  },
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "private": true
+}

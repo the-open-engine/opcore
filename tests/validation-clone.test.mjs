@@ -36,6 +36,31 @@ it("exports the clone duplication check with an injected native invoker", async 
   assertCloneDiagnosticResult(result);
 });
 
+it("passes clone policy fields into the native request", async () => {
+  const captured = {};
+  const checks = createCloneValidationChecks({
+    invoke: capturingCloneInvoker(captured),
+    windowSize: 8,
+    minLines: 6,
+    minTokens: 24,
+    threshold: 3,
+    partitions: [["server", "shared"], ["client"]],
+    exclude: ["docs/**", "dist"],
+    modes: ["staged", "changed", "files"]
+  });
+
+  const result = await runner(checks).runValidation(validationCloneRequest());
+
+  assert.equal(result.status, "policy_failure");
+  assert.equal(captured.request.windowSize, 8);
+  assert.equal(captured.request.minLines, 6);
+  assert.equal(captured.request.minTokens, 24);
+  assert.equal(captured.request.threshold, 3);
+  assert.deepEqual(captured.request.partitions, [["server", "shared"], ["client"]]);
+  assert.deepEqual(captured.request.exclude, ["docs/**", "dist"]);
+  assert.deepEqual(captured.request.modes, ["staged", "changed", "files"]);
+});
+
 function capturingCloneInvoker(captured) {
   return (request) => {
     captured.request = request;

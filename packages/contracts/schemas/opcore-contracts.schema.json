@@ -137,7 +137,18 @@
             "$ref": "#/$defs/RequiredContextDocPath"
           }
         },
+        "requireRoot": {
+          "type": "boolean"
+        },
         "minimumContentLength": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "maxLines": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "maxSectionLines": {
           "type": "integer",
           "minimum": 1
         }
@@ -2034,6 +2045,10 @@
             "$ref": "#/$defs/HypotheticalOverlay"
           }
         },
+        "windowSize": {
+          "type": "integer",
+          "minimum": 1
+        },
         "minLines": {
           "type": "integer",
           "minimum": 1
@@ -2041,6 +2056,35 @@
         "minTokens": {
           "type": "integer",
           "minimum": 1
+        },
+        "threshold": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "partitions": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "exclude": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "modes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
         }
       }
     },
@@ -5644,6 +5688,65 @@
         }
       }
     },
+    "OpcoreValidationPolicySummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "state",
+        "adapters",
+        "packs",
+        "disabledChecks",
+        "defaultChecks",
+        "configuredChecks"
+      ],
+      "properties": {
+        "path": {
+          "const": ".opcore/config"
+        },
+        "state": {
+          "enum": [
+            "missing",
+            "loaded"
+          ]
+        },
+        "adapters": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "packs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "disabledChecks": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "defaultChecks": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "configuredChecks": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
     "OpcoreRepoStatePayload": {
       "type": "object",
       "additionalProperties": false,
@@ -5909,6 +6012,7 @@
           "required": [
             "ready",
             "checkCount",
+            "policy",
             "adapters",
             "degradedToolchains"
           ],
@@ -5919,6 +6023,9 @@
             "checkCount": {
               "type": "integer",
               "minimum": 0
+            },
+            "policy": {
+              "$ref": "#/$defs/OpcoreValidationPolicySummary"
             },
             "adapters": {
               "type": "array",
@@ -6117,6 +6224,7 @@
         "repo",
         "config",
         "checks",
+        "policy",
         "graph",
         "generatedState",
         "nextActions"
@@ -6191,6 +6299,9 @@
               }
             }
           }
+        },
+        "policy": {
+          "$ref": "#/$defs/OpcoreValidationPolicySummary"
         },
         "graph": {
           "$ref": "#/$defs/GraphProviderStatus"
@@ -6498,6 +6609,9 @@
             "checkCount": {
               "type": "integer",
               "minimum": 0
+            },
+            "policy": {
+              "$ref": "#/$defs/OpcoreValidationPolicySummary"
             }
           }
         },

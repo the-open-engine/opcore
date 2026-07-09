@@ -13,6 +13,7 @@ import {
   DOCS_HUB_COVERAGE_CHECK_ID,
   DOCS_LENGTH_CHECK_ID,
   DOCS_RULES_WHY_CHECK_ID,
+  DOCS_SUBTREE_COVERAGE_CHECK_ID,
   DOCS_STALENESS_CHECK_ID,
   createDocsValidationChecks,
   docsValidationCheckIds,
@@ -40,7 +41,8 @@ const expectedDocsCheckIds = [
   DOCS_CONTENT_QUALITY_CHECK_ID,
   DOCS_CODE_BLOCKS_CHECK_ID,
   DOCS_RULES_WHY_CHECK_ID,
-  DOCS_HUB_COVERAGE_CHECK_ID
+  DOCS_HUB_COVERAGE_CHECK_ID,
+  DOCS_SUBTREE_COVERAGE_CHECK_ID
 ];
 
   it("exports stable docs check ids and definitions", () => {
@@ -135,6 +137,35 @@ const expectedDocsCheckIds = [
       ]
     );
     assert.equal(result.diagnostics.every((diagnostic) => ["AGENTS.md", "CLAUDE.md", "docs/guide.md"].includes(diagnostic.path)), true);
+  });
+
+  it("applies docs policy maximum line and section limits", async () => {
+    const result = await runner({
+      files: {
+        "AGENTS.md": ["# Guidance", "line one", "line two", "line three", "line four"].join("\n")
+      },
+      checks: createDocsValidationChecks({
+        policy: {
+          filenames: ["AGENTS.md"],
+          requiredPaths: ["."],
+          requireRoot: true,
+          minimumContentLength: 1,
+          maxLines: 3,
+          maxSectionLines: 2
+        }
+      })
+    }).runValidation(
+      request({
+        checks: [DOCS_LENGTH_CHECK_ID],
+        scope: { kind: "files", files: ["AGENTS.md"] }
+      })
+    );
+
+    assert.equal(result.status, "policy_failure");
+    assert.deepEqual(
+      result.diagnostics.map((diagnostic) => diagnostic.code).sort(),
+      ["DOCS_SECTION_TOO_LONG", "DOCS_TOO_LONG"]
+    );
   });
 
   it("reports stale committed docs and docs older than scoped implementation files", async () => {
@@ -340,6 +371,69 @@ const expectedDocsCheckIds = [
     assert.equal(result.status, "passed", JSON.stringify(result, null, 2));
     assert.deepEqual(result.diagnostics.map((diagnostic) => diagnostic.code), ["DOCS_HUB_UNDOCUMENTED"]);
     assert.match(result.diagnostics[0].message, /src\/hub\.ts/);
+  });
+
+  it("supports docs hub fan-out and explicit path mention policy", async () => {
+    const result = await runner({
+      files: {
+        "AGENTS.md": `${validGuidance("hub coverage")}\nThe hub.ts basename alone is not explicit enough.\n`
+      },
+      checks: createDocsValidationChecks({
+        hubCoverage: {
+          minFanIn: 99,
+          minFanOut: 2,
+          requireExplicitMention: true
+        }
+      }),
+      graphProviderClient: graphClient({
+        factQuery: (query) =>
+          availableFactResult(
+            query,
+            graphNodesForSelector(query, [
+              fileNode("src/hub.ts"),
+              fileNode("src/a.ts"),
+              fileNode("src/b.ts")
+            ]),
+            graphEdgesForSelector(query, [
+              { kind: "IMPORTS_FROM", from: "file:src/hub.ts", to: "file:src/a.ts" },
+              { kind: "IMPORTS_FROM", from: "file:src/hub.ts", to: "file:src/b.ts" }
+            ])
+          )
+      })
+    }).runValidation(
+      request({
+        checks: [DOCS_HUB_COVERAGE_CHECK_ID],
+        scope: { kind: "repo" }
+      })
+    );
+
+    assert.equal(result.status, "passed", JSON.stringify(result, null, 2));
+    assert.deepEqual(result.diagnostics.map((diagnostic) => diagnostic.code), ["DOCS_HUB_UNDOCUMENTED"]);
+    assert.match(result.diagnostics[0].message, /0 incoming and 2 outgoing/);
+  });
+
+  it("reports large source subtrees missing explicit docs coverage", async () => {
+    const result = await runner({
+      files: {
+        "AGENTS.md": validGuidance("subtree coverage"),
+        "src/a.ts": "export const a = 1;\nexport const b = 2;\n",
+        "src/b.ts": "export const c = 3;\nexport const d = 4;\n"
+      },
+      checks: createDocsValidationChecks({
+        subtreeCoverage: {
+          minLoc: 3
+        }
+      })
+    }).runValidation(
+      request({
+        checks: [DOCS_SUBTREE_COVERAGE_CHECK_ID],
+        scope: { kind: "repo" }
+      })
+    );
+
+    assert.equal(result.status, "passed", JSON.stringify(result, null, 2));
+    assert.deepEqual(result.diagnostics.map((diagnostic) => diagnostic.code), ["DOCS_SUBTREE_UNDOCUMENTED"]);
+    assert.equal(result.diagnostics[0].path, "src");
   });
 
   it("rejects repo-wide docs checks for scoped-only validation requests", async () => {

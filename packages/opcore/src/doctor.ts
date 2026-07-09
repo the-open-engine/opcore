@@ -3,7 +3,7 @@ import { createCommandRouterResult } from "@the-open-engine/opcore-contracts";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { readOpcoreRuntimeInfo } from "./runtime-info.js";
-import { resolveRepo } from "./status.js";
+import { resolveRepo, validationPolicySummary } from "./status.js";
 import { createDefaultValidationStatusPayload } from "./validation-composition.js";
 
 declare const process: {
@@ -60,6 +60,7 @@ export function routeOpcoreDoctor(argv: readonly string[], parsed: ParsedCommand
     graphMode: "optional"
   });
   const runtimeInfo = readOpcoreRuntimeInfo();
+  const policy = validationPolicySummary(resolution.resolution.root, validationStatus.adapterRegistry.checkIds);
   const opcoreDoctor: OpcoreDoctorPayload = {
     schemaVersion: 1,
     runtime: runtimeInfo,
@@ -72,6 +73,7 @@ export function routeOpcoreDoctor(argv: readonly string[], parsed: ParsedCommand
       count: validationStatus.adapterRegistry.checkIds.length,
       ids: validationStatus.adapterRegistry.checkIds
     },
+    policy,
     graph: validationStatus.graph.status,
     generatedState: {
       ignored: generatedStateIgnores,
@@ -139,6 +141,7 @@ function formatOpcoreDoctor(payload: OpcoreDoctorPayload): string {
     `Artifact: ${payload.runtime.artifactSource}`,
     `Config: ${payload.config.state} (${payload.config.path})`,
     `Checks: ${payload.checks.count}`,
+    `Policy: ${payload.policy.state}`,
     `Graph: ${payload.graph.state}`,
     `Generated state: ${payload.generatedState.ignored.join(", ")}`,
     "Next:",

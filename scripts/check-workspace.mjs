@@ -9,6 +9,7 @@ const packageTracks = [
   { dir: "graph", name: "@the-open-engine/opcore-graph" },
   { dir: "edit", name: "@the-open-engine/opcore-edit" },
   { dir: "validation", name: "@the-open-engine/opcore-validation" },
+  { dir: "validation-policy", name: "@the-open-engine/opcore-validation-policy" },
   { dir: "validation-clone", name: "@the-open-engine/opcore-validation-clone" },
   { dir: "validation-docs", name: "@the-open-engine/opcore-validation-docs" },
   { dir: "validation-python", name: "@the-open-engine/opcore-validation-python" },

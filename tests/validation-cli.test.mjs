@@ -52,7 +52,8 @@ const docsCheckIds = [
   "docs.content-quality",
   "docs.code-blocks",
   "docs.rules-why",
-  "docs.hub-coverage"
+  "docs.hub-coverage",
+  "docs.subtree-coverage"
 ];
 const cloneCheckIds = ["clone.duplication"];
 const typeScriptExecutableDefaultCheckIds = typeScriptCheckIds.filter((checkId) => checkId !== "typescript.lint");
@@ -71,6 +72,8 @@ describe("validation CLI", () => {
       assert.equal(result.status, "ok");
       assert.deepEqual(result.canonicalCommand, ["opcore", "status"]);
       assert.equal(result.repoState.validation.checkCount, defaultCheckIds.length);
+      assert.equal(result.repoState.validation.policy.state, "missing");
+      assert.deepEqual(result.repoState.validation.policy.configuredChecks, defaultCheckIds);
       assert.equal(Object.hasOwn(result, "validationResult"), false);
       assert.equal(Object.hasOwn(result, "validationStatus"), false);
       assertCommandTiming(result);
@@ -79,6 +82,44 @@ describe("validation CLI", () => {
       assert.deepEqual(compatible.canonicalCommand, ["opcore", "status"]);
       assert.equal(compatible.validationStatus.adapterRegistry.checkIds.length, defaultCheckIds.length);
       assert.equal(Object.hasOwn(compatible, "repoState"), false);
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("reports native validation policy readiness in status and doctor", async () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-validation-policy-status-"));
+    try {
+      mkdirSync(join(temp, "src"), { recursive: true });
+      mkdirSync(join(temp, "checks"), { recursive: true });
+      writeFileSync(join(temp, "src/index.ts"), "export const value = 1;\n");
+      writeCheckPack(temp, join(temp, "checks/policy.cjs"), "example.policy");
+      writeRepoConfigObject(temp, {
+        schemaVersion: 1,
+        kind: "opcore_init_config",
+        validation: {
+          checks: {
+            packs: ["./checks/policy.cjs"],
+            disabled: ["typescript.types"],
+            defaults: ["docs.existence"]
+          }
+        }
+      });
+
+      const status = await routeOpcoreCommand(["status", "--repo", temp, "--json"]);
+      assert.equal(status.status, "ok");
+      assert.equal(status.repoState.validation.policy.state, "loaded");
+      assert.deepEqual(status.repoState.validation.policy.adapters, []);
+      assert.deepEqual(status.repoState.validation.policy.packs, ["./checks/policy.cjs"]);
+      assert.deepEqual(status.repoState.validation.policy.disabledChecks, ["typescript.types"]);
+      assert.deepEqual(status.repoState.validation.policy.defaultChecks, ["docs.existence"]);
+      assert.equal(status.repoState.validation.policy.configuredChecks.includes("typescript.types"), false);
+      assert.equal(status.repoState.validation.policy.configuredChecks.includes("example.policy"), true);
+
+      const doctor = await routeOpcoreCommand(["doctor", "--repo", temp, "--json"]);
+      assert.equal(doctor.status, "ok");
+      assert.deepEqual(doctor.opcoreDoctor.policy, status.repoState.validation.policy);
+      assert.equal(doctor.opcoreDoctor.checks.ids.includes("example.policy"), true);
     } finally {
       rmSync(temp, { recursive: true, force: true });
     }
@@ -258,6 +299,811 @@ describe("validation CLI", () => {
       );
       assert.equal(result.validationResult.status, "policy_failure");
       assert.equal(result.validationResult.diagnostics[0].code, "example.policy");
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("normalizes repo validation config", async () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-validation-config-"));
+    try {
+      writeRepoConfigObject(temp, {
+        schemaVersion: 1,
+        kind: "opcore_init_config",
+        onboarding: {
+          scan: {
+            totalFiles: 1
+          }
+        },
+        validation: {
+          adapters: ["typescript", "rust", "docs", "clone"],
+          timeoutMs: 120000,
+          pathPolicy: {
+            include: ["packages/", "scripts/"],
+            exclude: ["dist/**", ".ace"]
+          },
+          checks: {
+            packs: ["./checks/policy.cjs"],
+            disabled: ["typescript.types"],
+            defaults: ["docs.existence", "docs.freshness"],
+            typescript: {
+              fileLength: {
+                maxFileLines: 600
+              },
+              functionMetrics: {
+                maxFunctionLines: 120,
+                maxComplexity: 10,
+                maxParams: 4
+              },
+              lint: {
+                repoPlugin: "./eslint-local-rules/index.js",
+                cacheDependencyGlobs: ["CLAUDE.md", "**/CLAUDE.md"]
+              },
+              importGraph: {
+                ignoreTypeOnlyImports: true,
+                layerRules: [
+                  {
+                    name: "no-client-to-server",
+                    from: "%/client/src/%",
+                    to: "%/server/%"
+                  }
+                ]
+              },
+              deadCode: {
+                entrypoints: ["scripts/build-package.mjs"]
+              }
+            },
+            rust: {
+              fileLength: {
+                maxFileLines: 500
+              },
+              functionMetrics: {
+                maxFunctionLines: 80,
+                maxComplexity: 10,
+                maxParams: 4
+              },
+              commandGates: [
+                {
+                  id: "rust-gate.test",
+                  command: "cargo",
+                  args: ["test"],
+                  cwd: ".",
+                  timeoutMs: 120000
+                }
+              ]
+            },
+            docs: {
+              enabled: {
+                existence: true,
+                freshness: true,
+                staleness: false,
+                length: true,
+                hubCoverage: true,
+                subtreeCoverage: true
+              },
+              policy: {
+                filenames: ["CLAUDE.md", "AGENTS.md"],
+                requiredPaths: ["."],
+                requireRoot: true,
+                minimumContentLength: 1,
+                maxLines: 220,
+                maxSectionLines: 80
+              },
+              history: {
+                maxStaleDays: 90
+              },
+              hubCoverage: {
+                minFanIn: 5,
+                minFanOut: 5,
+                requireExplicitMention: true
+              },
+              subtreeCoverage: {
+                minLoc: 20000
+              }
+            },
+            clone: {
+              windowSize: 16,
+              minLines: 16,
+              threshold: 5,
+              partitions: [["server", "shared"], ["client"], ["platform-cli"]],
+              exclude: ["docs/**"],
+              modes: ["staged", "changed", "files"]
+            }
+          }
+        }
+      });
+
+      const { readOpcoreRepoConfig } = await import("../packages/opcore/dist/repo-validation-config.js");
+      const config = readOpcoreRepoConfig(temp);
+
+      assert.deepEqual(config.validation.adapters, ["typescript", "rust", "docs", "clone"]);
+      assert.equal(config.validation.timeoutMs, 120000);
+      assert.deepEqual(config.validation.pathPolicy, {
+        include: ["packages/", "scripts/"],
+        exclude: ["dist/**", ".ace"]
+      });
+      assert.deepEqual(config.validation.checks.packs, ["./checks/policy.cjs"]);
+      assert.deepEqual(config.validation.checks.disabled, ["typescript.types"]);
+      assert.deepEqual(config.validation.checks.defaults, ["docs.existence", "docs.freshness"]);
+      assert.equal(config.validation.checks.typescript.fileLength.maxFileLines, 600);
+      assert.equal(config.validation.checks.typescript.functionMetrics.maxFunctionLines, 120);
+      assert.equal(config.validation.checks.typescript.importGraph.ignoreTypeOnlyImports, true);
+      assert.deepEqual(config.validation.checks.typescript.importGraph.layerRules, [
+        {
+          name: "no-client-to-server",
+          from: "%/client/src/%",
+          to: "%/server/%"
+        }
+      ]);
+      assert.deepEqual(config.validation.checks.typescript.deadCode.entrypoints, ["scripts/build-package.mjs"]);
+      assert.equal(config.validation.checks.rust.fileLength.maxFileLines, 500);
+      assert.equal(config.validation.checks.rust.commandGates[0].id, "rust-gate.test");
+      assert.equal(config.validation.checks.docs.policy.maxLines, 220);
+      assert.equal(config.validation.checks.docs.hubCoverage.minFanOut, 5);
+      assert.equal(config.validation.checks.docs.subtreeCoverage.minLoc, 20000);
+      assert.deepEqual(config.validation.checks.clone.partitions, [["server", "shared"], ["client"], ["platform-cli"]]);
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("normalizes native check pack config into repo validation config", async () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-validation-config-packs-"));
+    try {
+      writeRepoConfig(temp, ["./checks/policy.cjs"]);
+
+      const { readOpcoreRepoConfig } = await import("../packages/opcore/dist/repo-validation-config.js");
+      const config = readOpcoreRepoConfig(temp);
+
+      assert.deepEqual(config.validation.checks.packs, ["./checks/policy.cjs"]);
+      assert.deepEqual(config.validation.checks.disabled, []);
+      assert.deepEqual(config.validation.checks.defaults, []);
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects invalid repo validation config", async () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-validation-config-invalid-"));
+    try {
+      const { readOpcoreRepoConfig } = await import("../packages/opcore/dist/repo-validation-config.js");
+
+      writeRepoConfigObject(temp, {
+        schemaVersion: 1,
+        kind: "opcore_init_config",
+        validation: {
+          adapters: ["typescript", "unknown"]
+        }
+      });
+      assert.throws(() => readOpcoreRepoConfig(temp), /validation\.adapters\[1\]/);
+
+      writeRepoConfigObject(temp, {
+        schemaVersion: 1,
+        kind: "opcore_init_config",
+        validation: {
+          timeoutMs: 0
+        }
+      });
+      assert.throws(() => readOpcoreRepoConfig(temp), /validation\.timeoutMs/);
+
+      writeRepoConfigObject(temp, {
+        schemaVersion: 1,
+        kind: "opcore_init_config",
+        validation: {
+          checks: {
+            disabled: ["typescript.syntax", "  "]
+          }
+        }
+      });
+      assert.throws(() => readOpcoreRepoConfig(temp), /validation\.checks\.disabled\[1\]/);
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("applies repo path policy include and exclude patterns", async () => {
+    const { pathPolicyIncludes } = await import("../packages/opcore/dist/path-policy.js");
+    const policy = {
+      include: ["packages/", "scripts/"],
+      exclude: ["dist/**", ".ace", ".agents", "packages/generated/**"]
+    };
+
+    assert.equal(pathPolicyIncludes("packages/opcore/src/index.ts", policy), true);
+    assert.equal(pathPolicyIncludes("scripts/build.mjs", policy), true);
+    assert.equal(pathPolicyIncludes("docs/notes.ts", policy), false);
+    assert.equal(pathPolicyIncludes("dist/index.js", policy), false);
+    assert.equal(pathPolicyIncludes(".ace/runtime/tool.json", policy), false);
+    assert.equal(pathPolicyIncludes(".agents/skills/opcore/SKILL.md", policy), false);
+    assert.equal(pathPolicyIncludes("packages/generated/output.ts", policy), false);
+    assert.equal(pathPolicyIncludes("../outside.ts", policy), false);
+    assert.equal(pathPolicyIncludes("/tmp/outside.ts", policy), false);
+  });
+
+  it("filters validation file view collections through repo path policy", async () => {
+    const { withFilteredFileView } = await import("../packages/opcore/dist/path-policy.js");
+    const context = {
+      fileView: {
+        scopeFiles: ["packages/src/index.ts", "docs/notes.ts", "dist/index.js"],
+        visibleFiles: ["packages/src/index.ts", "scripts/build.mjs", "docs/notes.ts", ".ace/runtime.json"],
+        overlays: [
+          { path: "packages/src/index.ts", action: "write", content: "export const value = 1;\n" },
+          { path: "docs/notes.ts", action: "write", content: "export const value = 2;\n" },
+          { path: ".agents/skill.ts", action: "write", content: "export const value = 3;\n" }
+        ],
+        readAfter: async (path) => ({ status: "found", content: path, sourceMetadata: { source: "workspace" } }),
+        readBefore: async (path) => ({ status: "found", content: path, sourceMetadata: { source: "workspace" } }),
+        overlayFor(path) {
+          return this.overlays.find((overlay) => overlay.path === path);
+        }
+      }
+    };
+
+    const filtered = withFilteredFileView(context, {
+      include: ["packages/", "scripts/"],
+      exclude: ["dist/**", ".ace", ".agents"]
+    });
+
+    assert.deepEqual(filtered.fileView.scopeFiles, ["packages/src/index.ts"]);
+    assert.deepEqual(filtered.fileView.visibleFiles, ["packages/src/index.ts", "scripts/build.mjs"]);
+    assert.deepEqual(filtered.fileView.overlays.map((overlay) => overlay.path), ["packages/src/index.ts"]);
+    assert.equal(filtered.fileView.overlayFor("docs/notes.ts"), undefined);
+    assert.equal(filtered.fileView.overlayFor("packages/src/index.ts")?.content, "export const value = 1;\n");
+  });
+
+  it("honors repo configured built-in thresholds and disabled checks", () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-check-config-policy-"));
+    try {
+      mkdirSync(join(temp, "src"), { recursive: true });
+      writeFileSync(join(temp, "src/index.ts"), "const value: string = 1;\nexport { value };\nexport const extra = 2;\n");
+      writeRepoConfigObject(temp, {
+        schemaVersion: 1,
+        kind: "opcore_init_config",
+        validation: {
+          checks: {
+            disabled: ["typescript.types"],
+            typescript: {
+              fileLength: {
+                maxFileLines: 2
+              }
+            }
+          }
+        }
+      });
+
+      const result = JSON.parse(runRaw(["check", "files", "--files", "src/index.ts", "--repo", temp, "--json"], [1]).stdout);
+
+      assert.equal(result.validationResult.manifest.checks.includes("typescript.types"), false);
+      assert.equal(result.validationResult.diagnostics.some((diagnostic) => diagnostic.code === "TS2322"), false);
+      assert.deepEqual(
+        result.validationResult.diagnostics
+          .filter((diagnostic) => diagnostic.code === "TS_FILE_LINES")
+          .map((diagnostic) => diagnostic.message),
+        ["TypeScript file has 3 lines; max is 2."]
+      );
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("applies configured TypeScript dead-code entrypoints", () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-configured-typescript-entrypoints-"));
+    try {
+      mkdirSync(join(temp, "src"), { recursive: true });
+      writeFileSync(
+        join(temp, "tsconfig.json"),
+        `${JSON.stringify(
+          {
+            compilerOptions: {
+              target: "ES2022",
+              module: "ESNext",
+              moduleResolution: "Bundler",
+              strict: true
+            },
+            include: ["src/**/*.ts"]
+          },
+          null,
+          2
+        )}\n`
+      );
+      writeFileSync(join(temp, "src/main.ts"), "export function main() { return 1; }\nvoid main;\n");
+
+      const graphBuild = run(["graph", "build", "--repo", temp, "--json"]);
+      assert.equal(graphBuild.status, "ok");
+
+      const baseline = JSON.parse(
+        runRaw([
+          "check",
+          "files",
+          "--files",
+          "src/main.ts",
+          "--repo",
+          temp,
+          "--check",
+          "typescript.dead-code",
+          "--graph-mode",
+          "required",
+          "--json"
+        ]).stdout
+      );
+      assert.equal(
+        baseline.validationResult.diagnostics.some((diagnostic) => diagnostic.code === "TS_DEAD_CODE_UNUSED_FILE"),
+        true,
+        JSON.stringify(baseline.validationResult.diagnostics, null, 2)
+      );
+
+      writeRepoConfigObject(temp, {
+        schemaVersion: 1,
+        kind: "opcore_init_config",
+        validation: {
+          checks: {
+            typescript: {
+              deadCode: {
+                entrypoints: ["src/main.ts"]
+              }
+            }
+          }
+        }
+      });
+
+      const configured = JSON.parse(
+        runRaw([
+          "check",
+          "files",
+          "--files",
+          "src/main.ts",
+          "--repo",
+          temp,
+          "--check",
+          "typescript.dead-code",
+          "--graph-mode",
+          "required",
+          "--json"
+        ]).stdout
+      );
+
+      assert.equal(configured.validationResult.status, "passed", JSON.stringify(configured.validationResult, null, 2));
+      assert.equal(
+        configured.validationResult.diagnostics.some((diagnostic) => diagnostic.code === "TS_DEAD_CODE_UNUSED_FILE"),
+        false,
+        JSON.stringify(configured.validationResult.diagnostics, null, 2)
+      );
+      assert.equal(
+        configured.validationResult.diagnostics.some((diagnostic) => diagnostic.code === "TS_DEAD_CODE_UNUSED_EXPORT"),
+        false,
+        JSON.stringify(configured.validationResult.diagnostics, null, 2)
+      );
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("applies configured TypeScript repo lint plugin", () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-configured-typescript-lint-plugin-"));
+    try {
+      mkdirSync(join(temp, "src"), { recursive: true });
+      mkdirSync(join(temp, "eslint-local-rules"), { recursive: true });
+      writeFileSync(join(temp, "src/index.ts"), "const forbidden = 1;\nvoid forbidden;\n");
+      writeFileSync(
+        join(temp, "eslint-local-rules/index.cjs"),
+        `
+          module.exports = {
+            rules: {
+              "no-forbidden-ident": {
+                run({ traverse, report }) {
+                  traverse((node) => {
+                    if (node.type === "Identifier" && node.name === "forbidden") {
+                      report({ node, message: "Forbidden identifier is not allowed." });
+                    }
+                  });
+                }
+              }
+            }
+          };
+        `
+      );
+      writeFileSync(join(temp, "AGENTS.md"), "policy dependencies\n");
+      writeRepoConfigObject(temp, {
+        schemaVersion: 1,
+        kind: "opcore_init_config",
+        validation: {
+          checks: {
+            typescript: {
+              lint: {
+                repoPlugin: "./eslint-local-rules/index.cjs",
+                cacheDependencyGlobs: ["AGENTS.md", "eslint-local-rules/**/*.cjs"]
+              }
+            }
+          }
+        }
+      });
+
+      const result = JSON.parse(
+        runRaw([
+          "check",
+          "files",
+          "--files",
+          "src/index.ts",
+          "--repo",
+          temp,
+          "--check",
+          "typescript.lint-plugin",
+          "--json"
+        ], [1]).stdout
+      );
+
+      assert.equal(result.validationResult.status, "policy_failure", JSON.stringify(result.validationResult, null, 2));
+      assert.deepEqual(
+        result.validationResult.diagnostics.map((diagnostic) => [diagnostic.code, diagnostic.path, diagnostic.message]),
+        [
+          ["TS_LINT_PLUGIN_NO_FORBIDDEN_IDENT", "src/index.ts", "Forbidden identifier is not allowed."],
+          ["TS_LINT_PLUGIN_NO_FORBIDDEN_IDENT", "src/index.ts", "Forbidden identifier is not allowed."]
+        ]
+      );
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("uses repo validation policy for advanced check routes", () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-check-config-advanced-"));
+    try {
+      mkdirSync(join(temp, "src"), { recursive: true });
+      writeFileSync(join(temp, "src/index.ts"), "export const value = 1;\n");
+      initializeGitSnapshot(temp, ["src/index.ts"]);
+      writeRepoConfigObject(temp, {
+        schemaVersion: 1,
+        kind: "opcore_init_config",
+        validation: {
+          checks: {
+            disabled: ["typescript.types"],
+            defaults: ["docs.existence"]
+          }
+        }
+      });
+
+      const result = run(["check", "all", "--repo", temp, "--json"], [1]);
+
+      assert.equal(result.validationResult.manifest.checks.includes("typescript.types"), false);
+      assert.equal(result.validationResult.manifest.checks.includes("docs.existence"), true);
+      assert.equal(result.validationResult.diagnostics.some((diagnostic) => diagnostic.code === "DOCS_REQUIRED_CONTEXT_DOC_MISSING"), true);
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("uses repo validation policy for opcore scan", async () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-scan-config-policy-"));
+    try {
+      mkdirSync(join(temp, "src"), { recursive: true });
+      writeFileSync(join(temp, "src/index.ts"), "export const a = 1;\nexport const b = 2;\nexport const c = 3;\n");
+      writeRepoConfigObject(temp, {
+        schemaVersion: 1,
+        kind: "opcore_init_config",
+        validation: {
+          checks: {
+            typescript: {
+              fileLength: {
+                maxFileLines: 2
+              }
+            }
+          }
+        }
+      });
+
+      const result = await routeOpcoreCommand(["--repo", temp, "--json"]);
+
+      assert.equal(result.status, "ok");
+      assert.equal(
+        result.validationResult.diagnostics.some(
+          (diagnostic) => diagnostic.code === "TS_FILE_LINES" && diagnostic.message === "TypeScript file has 3 lines; max is 2."
+        ),
+        true,
+        JSON.stringify(result.validationResult.diagnostics, null, 2)
+      );
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("uses native disabled check ids without root-level checks translation", () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-native-disabled-checks-"));
+    try {
+      writeRepoConfigObject(temp, {
+        schemaVersion: 1,
+        kind: "opcore_init_config",
+        checks: {
+          semanticDiagnostics: false
+        },
+        validation: {
+          checks: {
+            disabled: [
+              "typescript.types",
+              "typescript.lint",
+              "typescript.dead-code",
+              "rust.dead-code",
+              "python.dead-code",
+              "typescript.import-graph",
+              "rust.import-graph",
+              "python.import-graph"
+            ]
+          }
+        }
+      });
+
+      const result = JSON.parse(runRaw(["check", "manifest", "--repo", temp, "--json"], [0]).stdout);
+      for (const checkId of [
+        "typescript.types",
+        "typescript.lint",
+        "typescript.dead-code",
+        "rust.dead-code",
+        "python.dead-code",
+        "typescript.import-graph",
+        "rust.import-graph",
+        "python.import-graph"
+      ]) {
+        assert.equal(result.validationResult.manifest.checks.includes(checkId), false, checkId);
+      }
+      assert.equal(result.validationResult.manifest.checks.includes("typescript.syntax"), true);
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("uses native docs enabled flags for default docs checks", () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-native-default-docs-checks-"));
+    try {
+      mkdirSync(join(temp, "src"), { recursive: true });
+      writeFileSync(join(temp, "src/index.ts"), "export const value = 1;\n");
+      initializeGitSnapshot(temp, ["src/index.ts"]);
+      writeRepoConfigObject(temp, {
+        schemaVersion: 1,
+        kind: "opcore_init_config",
+        checks: {
+          contextDocs: {
+            existence: false
+          }
+        },
+        validation: {
+          checks: {
+            docs: {
+              enabled: {
+                existence: true,
+                freshness: true,
+                staleness: false,
+                length: true
+              }
+            }
+          }
+        }
+      });
+
+      const result = run(["check", "all", "--repo", temp, "--json"], [1]);
+
+      assert.equal(result.validationResult.manifest.checks.includes("docs.existence"), true);
+      assert.equal(result.validationResult.manifest.checks.includes("docs.freshness"), true);
+      assert.equal(result.validationResult.manifest.checks.includes("docs.length"), true);
+      assert.equal(result.validationResult.manifest.checks.includes("docs.staleness"), false);
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects unknown check id configuration", () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-unknown-check-id-"));
+    try {
+      writeRepoConfigObject(temp, {
+        schemaVersion: 1,
+        kind: "opcore_init_config",
+        validation: {
+          checks: {
+            disabled: ["missing.check"]
+          }
+        }
+      });
+
+      const result = JSON.parse(runRaw(["check", "manifest", "--repo", temp, "--json"], [1]).stdout);
+
+      assert.equal(result.status, "error");
+      assert.equal(result.message, "Invalid Opcore config .opcore/config: unknown check id missing.check");
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("applies configured TypeScript thresholds", () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-configured-typescript-thresholds-"));
+    try {
+      mkdirSync(join(temp, "src"), { recursive: true });
+      writeFileSync(
+        join(temp, "src/metrics.ts"),
+        [
+          "export function configured(a: number, b: number) {",
+          "  if (a > b) {",
+          "    return a;",
+          "  }",
+          "  return b;",
+          "}"
+        ].join("\n") + "\n"
+      );
+      writeRepoConfigObject(temp, {
+        schemaVersion: 1,
+        kind: "opcore_init_config",
+        validation: {
+          checks: {
+            typescript: {
+              fileLength: {
+                maxFileLines: 2
+              },
+              functionMetrics: {
+                maxFunctionLines: 2,
+                maxComplexity: 1,
+                maxParams: 1
+              }
+            }
+          }
+        }
+      });
+
+      const result = JSON.parse(
+        runRaw([
+          "check",
+          "files",
+          "--files",
+          "src/metrics.ts",
+          "--repo",
+          temp,
+          "--checks",
+          "typescript.file-length,typescript.function-metrics",
+          "--json"
+        ], [1]).stdout
+      );
+
+      assert.deepEqual(
+        result.validationResult.diagnostics.map((diagnostic) => diagnostic.message).sort(),
+        [
+          "TypeScript file has 6 lines; max is 2.",
+          "TypeScript function configured has 2 parameters; max is 1.",
+          "TypeScript function configured has 6 lines; max is 2.",
+          "TypeScript function configured has cyclomatic complexity 2; max is 1."
+        ].sort()
+      );
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("applies configured Rust thresholds", () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-configured-rust-thresholds-"));
+    try {
+      mkdirSync(join(temp, "crates/app/src"), { recursive: true });
+      writeFileSync(join(temp, "Cargo.toml"), '[workspace]\nmembers = ["crates/app"]\nresolver = "2"\n');
+      writeFileSync(join(temp, "crates/app/Cargo.toml"), '[package]\nname = "app"\nversion = "0.1.0"\nedition = "2021"\n');
+      writeFileSync(
+        join(temp, "crates/app/src/lib.rs"),
+        "pub fn configured(a: i32, b: i32) -> i32 {\n  if a > b { a } else { b }\n}\n"
+      );
+      writeRepoConfigObject(temp, {
+        schemaVersion: 1,
+        kind: "opcore_init_config",
+        validation: {
+          checks: {
+            rust: {
+              fileLength: {
+                maxFileLines: 2
+              },
+              functionMetrics: {
+                maxFunctionLines: 5,
+                maxComplexity: 3,
+                maxParams: 4
+              }
+            }
+          }
+        }
+      });
+      const { env } = writeFakeRustToolchain(join(temp, "bin"), {
+        rustCodeAnalysis: {
+          stdout: JSON.stringify([
+            {
+              kind: "unit",
+              name: "crates/app/src/lib.rs",
+              start_line: 1,
+              end_line: 9,
+              metrics: {
+                cyclomatic: { sum: 7 },
+                nargs: { total: 5 },
+                loc: { sloc: 9 }
+              },
+              spaces: [
+                {
+                  kind: "function",
+                  name: "configured",
+                  start_line: 1,
+                  end_line: 9,
+                  metrics: {
+                    cyclomatic: { max: 7 },
+                    nargs: { functions_max: 5 },
+                    loc: { sloc: 9 }
+                  }
+                }
+              ]
+            }
+          ])
+        }
+      });
+
+      const result = JSON.parse(
+        runRaw([
+          "check",
+          "files",
+          "--files",
+          "crates/app/src/lib.rs",
+          "--repo",
+          temp,
+          "--checks",
+          "rust.file-length,rust.function-metrics",
+          "--json"
+        ], [1], { env }).stdout
+      );
+
+      assert.deepEqual(
+        result.validationResult.diagnostics.map((diagnostic) => diagnostic.message).sort(),
+        [
+          "Rust file has 3 lines; max is 2.",
+          "Rust function configured has 5 parameters; max is 4.",
+          "Rust function configured has 9 lines; max is 5.",
+          "Rust function configured has cyclomatic complexity 7; max is 3."
+        ].sort()
+      );
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("applies configured Rust command gates", () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-configured-rust-command-gates-"));
+    try {
+      mkdirSync(join(temp, "crates/app/src"), { recursive: true });
+      mkdirSync(join(temp, "scripts"), { recursive: true });
+      writeFileSync(join(temp, "crates/app/src/lib.rs"), "pub fn safe() {}\n");
+      const gateScript = join(temp, "scripts/gate.sh");
+      writeFileSync(gateScript, "#!/bin/sh\nprintf 'gate ok\\n'\n");
+      chmodAll([gateScript]);
+      writeRepoConfigObject(temp, {
+        schemaVersion: 1,
+        kind: "opcore_init_config",
+        validation: {
+          checks: {
+            rust: {
+              commandGates: [
+                {
+                  id: "rust-gate.local",
+                  command: "./scripts/gate.sh",
+                  cwd: ".",
+                  timeoutMs: 30000
+                }
+              ]
+            }
+          }
+        }
+      });
+
+      const result = JSON.parse(
+        runRaw([
+          "check",
+          "files",
+          "--files",
+          "crates/app/src/lib.rs",
+          "--repo",
+          temp,
+          "--check",
+          "rust-gate.local",
+          "--json"
+        ]).stdout
+      );
+
+      assert.equal(result.validationResult.status, "passed", JSON.stringify(result.validationResult, null, 2));
+      assert.deepEqual(result.validationResult.diagnostics, []);
+      assert.deepEqual(result.validationResult.manifest.checks, ["rust-gate.local"]);
     } finally {
       rmSync(temp, { recursive: true, force: true });
     }
@@ -553,14 +1399,20 @@ function validRequest(repoRootPath) {
 }
 
 function writeRepoConfig(repoRootPath, packs) {
+  writeRepoConfigObject(repoRootPath, {
+    schemaVersion: 1,
+    kind: "opcore_init_config",
+    validation: {
+      checks: { packs }
+    }
+  });
+}
+
+function writeRepoConfigObject(repoRootPath, config) {
   mkdirSync(join(repoRootPath, ".opcore"), { recursive: true });
   writeFileSync(
     join(repoRootPath, ".opcore/config"),
-    `${JSON.stringify({
-      schemaVersion: 1,
-      kind: "opcore_init_config",
-      checks: { packs }
-    })}\n`
+    `${JSON.stringify(config)}\n`
   );
 }
 

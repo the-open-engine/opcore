@@ -1,4 +1,5 @@
 import type { ValidationCheckDefinition, ValidationCheckResult } from "@the-open-engine/opcore-validation";
+import { countPhysicalLines } from "@the-open-engine/opcore-validation";
 import { RUST_FILE_LENGTH_CHECK_ID } from "./check-ids.js";
 import { defaultRustFileLengthThresholds, rustCheckAdapter, rustCheckOwner, supportedRustValidationScopes } from "./check-constants.js";
 import { diagnostic, sortDiagnostics } from "./diagnostics.js";
@@ -60,12 +61,4 @@ function normalizeThresholds(thresholds: RustFileLengthThresholds | undefined): 
     throw new Error("Rust file length maxFileLines must be a positive integer.");
   }
   return resolved;
-}
-
-function countPhysicalLines(content: string): number {
-  if (content.length === 0) return 0;
-  const normalized = content.replaceAll("\r\n", "\n").replaceAll("\r", "\n");
-  const withoutFinalNewline = normalized.endsWith("\n") ? normalized.slice(0, -1) : normalized;
-  if (withoutFinalNewline.length === 0) return 0;
-  return withoutFinalNewline.split("\n").length;
 }

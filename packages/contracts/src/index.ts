@@ -1069,8 +1069,13 @@ export interface CloneAnalysisRequest {
   reportMode: CloneReportMode;
   paths?: readonly string[];
   overlays: readonly HypotheticalOverlay[];
+  windowSize?: number;
   minLines?: number;
   minTokens?: number;
+  threshold?: number;
+  partitions?: readonly (readonly string[])[];
+  exclude?: readonly string[];
+  modes?: readonly string[];
 }
 
 export interface CloneFinding {
@@ -1182,12 +1187,16 @@ export interface ValidationResult {
 export interface RequiredContextDocPolicy {
   filenames: readonly string[];
   requiredPaths: readonly string[];
+  requireRoot?: boolean;
   minimumContentLength: number;
+  maxLines?: number;
+  maxSectionLines?: number;
 }
 
 export const requiredContextDocPolicy = {
   filenames: ["AGENTS.md", "CLAUDE.md"],
   requiredPaths: ["."],
+  requireRoot: true,
   minimumContentLength: 120
 } as const satisfies RequiredContextDocPolicy;
 
@@ -2111,6 +2120,7 @@ export interface OpcoreRepoStatePayload {
   validation: {
     ready: boolean;
     checkCount: number;
+    policy: OpcoreValidationPolicySummary;
     adapters: readonly {
       adapter: string;
       status: ValidationAdapterRuntimeState;
@@ -2136,6 +2146,16 @@ export interface OpcoreRepoStatePayload {
   warnings: readonly string[];
   blockers: readonly string[];
   nextActions: readonly string[];
+}
+
+export interface OpcoreValidationPolicySummary {
+  path: ".opcore/config";
+  state: "missing" | "loaded";
+  adapters: readonly string[];
+  packs: readonly string[];
+  disabledChecks: readonly string[];
+  defaultChecks: readonly string[];
+  configuredChecks: readonly string[];
 }
 
 export const opcoreRuntimeArtifactSources = ["source_checkout", "installed_package", "unknown"] as const;
@@ -2167,6 +2187,7 @@ export interface OpcoreDoctorPayload {
     count: number;
     ids: readonly string[];
   };
+  policy: OpcoreValidationPolicySummary;
   graph: GraphProviderStatus;
   generatedState: {
     ignored: readonly string[];
@@ -2330,6 +2351,7 @@ export interface OpcoreMetricReport {
     status?: ValidationResultStatus;
     diagnosticCount: number;
     checkCount: number;
+    policy?: OpcoreValidationPolicySummary;
   };
   signals: readonly OpcoreMetricSignal[];
   degradations: readonly OpcoreMetricDegradation[];
@@ -4325,6 +4347,7 @@ export function validateOpcoreRepoStatePayload(payload: OpcoreRepoStatePayload):
     throw new Error("Opcore repo state validation ready must be boolean");
   }
   validateNonNegativeInteger(payload.validation.checkCount, "Opcore repo state validation checkCount");
+  validateOpcoreValidationPolicySummary(payload.validation.policy, "Opcore repo state validation policy");
   if (!Array.isArray(payload.validation.adapters)) {
     throw new Error("Opcore repo state validation adapters must be an array");
   }
@@ -4369,6 +4392,27 @@ export function validateOpcoreRepoStatePayload(payload: OpcoreRepoStatePayload):
   validateStringArray(payload.blockers, "Opcore repo state blockers", { allowEmpty: true });
   validateStringArray(payload.nextActions, "Opcore repo state nextActions", { allowEmpty: false });
   return payload;
+}
+
+function validateOpcoreValidationPolicySummary(
+  summary: OpcoreValidationPolicySummary,
+  label: string
+): OpcoreValidationPolicySummary {
+  if (!summary || typeof summary !== "object") {
+    throw new Error(`${label} is required`);
+  }
+  if (summary.path !== ".opcore/config") {
+    throw new Error(`${label} path must be .opcore/config`);
+  }
+  if (!includesString(["missing", "loaded"] as const, summary.state)) {
+    throw new Error(`Unknown ${label} state: ${String(summary.state)}`);
+  }
+  validateStringArray(summary.adapters, `${label} adapters`, { allowEmpty: true });
+  validateStringArray(summary.packs, `${label} packs`, { allowEmpty: true });
+  validateStringArray(summary.disabledChecks, `${label} disabledChecks`, { allowEmpty: true });
+  validateStringArray(summary.defaultChecks, `${label} defaultChecks`, { allowEmpty: true });
+  validateStringArray(summary.configuredChecks, `${label} configuredChecks`, { allowEmpty: true });
+  return summary;
 }
 
 export function validateOpcoreRuntimeInfoPayload(payload: OpcoreRuntimeInfoPayload): OpcoreRuntimeInfoPayload {
@@ -4424,6 +4468,7 @@ export function validateOpcoreDoctorPayload(payload: OpcoreDoctorPayload): Opcor
   if (payload.checks.ids.length !== payload.checks.count) {
     throw new Error("Opcore doctor checks count must match ids length");
   }
+  validateOpcoreValidationPolicySummary(payload.policy, "Opcore doctor policy");
   validateProviderStatus(payload.graph);
   if (!payload.generatedState || typeof payload.generatedState !== "object") {
     throw new Error("Opcore doctor generatedState is required");
@@ -4861,6 +4906,9 @@ export function validateOpcoreMetricReport(report: OpcoreMetricReport): OpcoreMe
   }
   validateNonNegativeInteger(report.validation.diagnosticCount, "Opcore metric report diagnosticCount");
   validateNonNegativeInteger(report.validation.checkCount, "Opcore metric report checkCount");
+  if (report.validation.policy !== undefined) {
+    validateOpcoreValidationPolicySummary(report.validation.policy, "Opcore metric report validation policy");
+  }
   if (!Array.isArray(report.signals)) {
     throw new Error("Opcore metric report signals must be an array");
   }
@@ -6204,9 +6252,21 @@ export function validateCloneAnalysisRequest(request: CloneAnalysisRequest): Clo
   validateCloneReportMode(request.reportMode, "Clone analysis request reportMode");
   if (request.paths !== undefined) validateRepoRelativePaths(request.paths, "Clone analysis request paths");
   validateHypotheticalOverlays(request.overlays);
+  if (request.windowSize !== undefined) validatePositiveInteger(request.windowSize, "Clone analysis request windowSize");
   if (request.minLines !== undefined) validatePositiveInteger(request.minLines, "Clone analysis request minLines");
   if (request.minTokens !== undefined) validatePositiveInteger(request.minTokens, "Clone analysis request minTokens");
+  if (request.threshold !== undefined) validatePositiveInteger(request.threshold, "Clone analysis request threshold");
+  if (request.partitions !== undefined) validateCloneAnalysisPartitions(request.partitions);
+  if (request.exclude !== undefined) validateStringArray(request.exclude, "Clone analysis request exclude", { allowEmpty: true });
+  if (request.modes !== undefined) validateStringArray(request.modes, "Clone analysis request modes", { allowEmpty: true });
   return request;
+}
+
+function validateCloneAnalysisPartitions(partitions: readonly (readonly string[])[]): void {
+  if (!Array.isArray(partitions)) throw new Error("Clone analysis request partitions must be an array");
+  for (const [index, partition] of partitions.entries()) {
+    validateStringArray(partition, `Clone analysis request partitions[${index}]`, { allowEmpty: false });
+  }
 }
 
 export function validateCloneAnalysisResult(result: CloneAnalysisResult): CloneAnalysisResult {
@@ -6372,8 +6432,15 @@ export function validateRequiredContextDocPolicy(policy: RequiredContextDocPolic
   for (const filename of policy.filenames) validateContextDocFilename(filename);
   validateStringArray(policy.requiredPaths, "Required context doc policy requiredPaths", { allowEmpty: false });
   for (const path of policy.requiredPaths) validateContextDocRequiredPath(path);
+  if (policy.requireRoot !== undefined && typeof policy.requireRoot !== "boolean") {
+    throw new Error("Required context doc policy requireRoot must be boolean");
+  }
   if (!Number.isInteger(policy.minimumContentLength) || policy.minimumContentLength < 1) {
     throw new Error("Required context doc policy minimumContentLength must be a positive integer");
+  }
+  if (policy.maxLines !== undefined) validatePositiveInteger(policy.maxLines, "Required context doc policy maxLines");
+  if (policy.maxSectionLines !== undefined) {
+    validatePositiveInteger(policy.maxSectionLines, "Required context doc policy maxSectionLines");
   }
   return policy;
 }

@@ -18,6 +18,9 @@
       "path": "../validation"
     },
     {
+      "path": "../validation-policy"
+    },
+    {
       "path": "../validation-docs"
     },
     {

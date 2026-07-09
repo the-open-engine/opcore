@@ -10,6 +10,7 @@
     "packages/graph",
     "packages/edit",
     "packages/validation",
+    "packages/validation-policy",
     "packages/validation-clone",
     "packages/validation-docs",
     "packages/validation-python",

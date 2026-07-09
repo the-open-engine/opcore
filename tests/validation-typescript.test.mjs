@@ -11,7 +11,9 @@ import {
   TYPE_SCRIPT_FUNCTION_METRICS_CHECK_ID,
   TYPE_SCRIPT_FILE_LENGTH_CHECK_ID,
   TYPE_SCRIPT_IMPORT_GRAPH_CHECK_ID,
+  TYPE_SCRIPT_IMPORT_LAYER_RULES_CHECK_ID,
   TYPE_SCRIPT_LINT_CHECK_ID,
+  TYPE_SCRIPT_LINT_PLUGIN_CHECK_ID,
   TYPE_SCRIPT_RELEVANT_TESTS_CHECK_ID,
   TYPE_SCRIPT_SYNTAX_CHECK_ID,
   TYPE_SCRIPT_TYPES_CHECK_ID,
@@ -190,6 +192,97 @@ describe("validation-typescript adapter", () => {
 
     assert.equal(result.status, "policy_failure", JSON.stringify(result.diagnostics, null, 2));
     assert.deepEqual(result.diagnostics.map((diagnostic) => diagnostic.code), ["TS_LINT_NO_RAW_NETWORK_WITHOUT_TIMEOUT"]);
+  });
+
+  it("runs configured repo lint plugin rules", async () => {
+    const repo = mkdtempSync(join(tmpdir(), "opcore-typescript-lint-plugin-"));
+    try {
+      mkdirSync(join(repo, "eslint-local-rules"), { recursive: true });
+      writeFileSync(
+        join(repo, "eslint-local-rules/index.cjs"),
+        `
+          module.exports = {
+            rules: {
+              "no-forbidden-ident": {
+                run({ traverse, report }) {
+                  traverse((node) => {
+                    if (node.type === "Identifier" && node.name === "forbidden") {
+                      report({ node, message: "Forbidden identifier is not allowed." });
+                    }
+                  });
+                }
+              }
+            }
+          };
+        `
+      );
+      writeFileSync(join(repo, "CLAUDE.md"), "repo lint policy\n");
+
+      const result = await runner({
+        files: {
+          "src/index.ts": "const forbidden = 1;\nvoid forbidden;\n",
+          "src/ok.ts": "const allowed = 1;\nvoid allowed;\n"
+        },
+        checks: createTypeScriptValidationChecks({
+          lint: {
+            repoRoot: repo,
+            repoPlugin: "./eslint-local-rules/index.cjs",
+            cacheDependencyGlobs: ["CLAUDE.md", "eslint-local-rules/**/*.cjs"]
+          }
+        })
+      }).runValidation(
+        request({
+          repo: {
+            repoRoot: repo
+          },
+          checks: [TYPE_SCRIPT_LINT_PLUGIN_CHECK_ID],
+          scope: {
+            kind: "files",
+            files: ["src/index.ts", "src/ok.ts"]
+          }
+        })
+      );
+
+      assert.equal(result.status, "policy_failure", JSON.stringify(result.diagnostics, null, 2));
+      assert.deepEqual(
+        result.diagnostics.map((diagnostic) => [diagnostic.code, diagnostic.path, diagnostic.message]),
+        [
+          ["TS_LINT_PLUGIN_NO_FORBIDDEN_IDENT", "src/index.ts", "Forbidden identifier is not allowed."],
+          ["TS_LINT_PLUGIN_NO_FORBIDDEN_IDENT", "src/index.ts", "Forbidden identifier is not allowed."]
+        ]
+      );
+    } finally {
+      rmSync(repo, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects TypeScript repo lint plugin paths outside the repo", async () => {
+    const repo = mkdtempSync(join(tmpdir(), "opcore-typescript-lint-plugin-bad-path-"));
+    try {
+      const result = await runner({
+        files: {
+          "src/index.ts": "export const value = 1;\n"
+        },
+        checks: createTypeScriptValidationChecks({
+          lint: {
+            repoRoot: repo,
+            repoPlugin: "../outside.cjs"
+          }
+        })
+      }).runValidation(
+        request({
+          repo: {
+            repoRoot: repo
+          },
+          checks: [TYPE_SCRIPT_LINT_PLUGIN_CHECK_ID]
+        })
+      );
+
+      assert.equal(result.status, "unsupported_request");
+      assert.match(result.failure.cause, /repoPlugin must start with \.\/|parent traversal/);
+    } finally {
+      rmSync(repo, { recursive: true, force: true });
+    }
   });
 
   it("reports syntax diagnostics from overlay after-state content", async () => {
@@ -1119,6 +1212,93 @@ describe("validation-typescript adapter", () => {
     assert.deepEqual(result.diagnostics, []);
   });
 
+  it("reports configured TypeScript import layer rule violations", async () => {
+    const result = await runner({
+      checks: createTypeScriptValidationChecks({
+        importGraph: {
+          layerRules: [
+            {
+              name: "no-client-to-server",
+              from: "%/client/src/%",
+              to: "%/server/%"
+            }
+          ]
+        }
+      }),
+      files: {
+        "client/src/view.ts": "import { secret } from '../../server/secret';\nexport const value = secret;\n",
+        "server/secret.ts": "export const secret = 1;\n"
+      }
+    }).runValidation(
+      request({
+        checks: [TYPE_SCRIPT_IMPORT_LAYER_RULES_CHECK_ID],
+        scope: { kind: "files", files: ["client/src/view.ts"] }
+      })
+    );
+
+    assert.equal(result.status, "policy_failure");
+    assert.deepEqual(result.diagnostics.map((diagnostic) => diagnostic.code), ["TS_IMPORT_LAYER_RULE"]);
+    assert.match(result.diagnostics[0].message, /no-client-to-server/);
+  });
+
+  it("honors TypeScript import layer fromNot exemptions", async () => {
+    const result = await runner({
+      checks: createTypeScriptValidationChecks({
+        importGraph: {
+          layerRules: [
+            {
+              name: "no-client-to-server",
+              from: "%/client/src/%",
+              fromNot: ["%/client/src/allowed/%"],
+              to: "%/server/%"
+            }
+          ]
+        }
+      }),
+      files: {
+        "client/src/allowed/view.ts": "import { secret } from '../../../server/secret';\nexport const value = secret;\n",
+        "server/secret.ts": "export const secret = 1;\n"
+      }
+    }).runValidation(
+      request({
+        checks: [TYPE_SCRIPT_IMPORT_LAYER_RULES_CHECK_ID],
+        scope: { kind: "files", files: ["client/src/allowed/view.ts"] }
+      })
+    );
+
+    assert.equal(result.status, "passed");
+    assert.deepEqual(result.diagnostics, []);
+  });
+
+  it("ignores TypeScript type-only imports for layer rules when configured", async () => {
+    const result = await runner({
+      checks: createTypeScriptValidationChecks({
+        importGraph: {
+          ignoreTypeOnlyImports: true,
+          layerRules: [
+            {
+              name: "no-client-to-server-types",
+              from: "%/client/src/%",
+              to: "%/server/%"
+            }
+          ]
+        }
+      }),
+      files: {
+        "client/src/view.ts": "import type { Secret } from '../../server/secret';\nexport type View = Secret;\n",
+        "server/secret.ts": "export interface Secret { value: number }\n"
+      }
+    }).runValidation(
+      request({
+        checks: [TYPE_SCRIPT_IMPORT_LAYER_RULES_CHECK_ID],
+        scope: { kind: "files", files: ["client/src/view.ts"] }
+      })
+    );
+
+    assert.equal(result.status, "passed");
+    assert.deepEqual(result.diagnostics, []);
+  });
+
   it("fails closed for required graph provider failure states", async () => {
     for (const status of [
       graphFailure("required_missing", "provider_missing", "required"),
@@ -1360,6 +1540,102 @@ describe("validation-typescript adapter", () => {
 
     assert.equal(result.status, "passed");
     assert.deepEqual(result.diagnostics.map((diagnostic) => diagnostic.code), ["TS_DEAD_CODE_UNUSED_EXPORT"]);
+  });
+
+  it("treats configured TypeScript dead-code entrypoints as reachable roots", async () => {
+    const nodes = [
+      {
+        id: "file:src/main.ts",
+        kind: "File",
+        path: "src/main.ts",
+        attributes: {
+          language: "typescript"
+        }
+      },
+      {
+        id: "file:src/orphan.ts",
+        kind: "File",
+        path: "src/orphan.ts",
+        attributes: {
+          language: "typescript"
+        }
+      },
+      {
+        id: "function:src/main.ts#main",
+        kind: "Function",
+        path: "src/main.ts",
+        name: "main",
+        attributes: {
+          exported: true,
+          exportKind: "named",
+          exportName: "main"
+        }
+      },
+      {
+        id: "function:src/orphan.ts#orphan",
+        kind: "Function",
+        path: "src/orphan.ts",
+        name: "orphan",
+        attributes: {
+          exported: true,
+          exportKind: "named",
+          exportName: "orphan"
+        }
+      }
+    ];
+    const edges = [
+      {
+        kind: "CONTAINS",
+        from: "file:src/main.ts",
+        to: "function:src/main.ts#main"
+      },
+      {
+        kind: "CONTAINS",
+        from: "file:src/orphan.ts",
+        to: "function:src/orphan.ts#orphan"
+      }
+    ];
+
+    const result = await runner({
+      files: {
+        "src/main.ts": "export function main() { return 1; }\nvoid main;\n",
+        "src/orphan.ts": "export function orphan() { return 1; }\n"
+      },
+      checks: createTypeScriptValidationChecks({
+        deadCode: {
+          entrypoints: ["src/main.ts"]
+        }
+      }),
+      graphProviderClient: graphClient({
+        status: (validationRequest) => ({
+          ...availableStatus(validationRequest.graph.mode, validationRequest.repo),
+          handshake: graphHandshake()
+        }),
+        factQuery: (query) =>
+          availableFactResult(query, nodes, edges, {
+            edgeKinds: ["CALLS", "CONTAINS", "IMPORTS_FROM", "TESTED_BY"]
+          })
+      })
+    }).runValidation(
+      request({
+        checks: [TYPE_SCRIPT_DEAD_CODE_CHECK_ID],
+        scope: {
+          kind: "files",
+          files: ["src/main.ts", "src/orphan.ts"]
+        }
+      })
+    );
+
+    assert.equal(result.status, "passed");
+    assert.deepEqual(
+      result.diagnostics
+        .map((diagnostic) => [diagnostic.code, diagnostic.path, diagnostic.message])
+        .sort((left, right) => `${left[0]}\0${left[1]}\0${left[2]}`.localeCompare(`${right[0]}\0${right[1]}\0${right[2]}`)),
+      [
+        ["TS_DEAD_CODE_UNUSED_EXPORT", "src/orphan.ts", "Exported symbol has no incoming CALLS graph evidence: orphan"],
+        ["TS_DEAD_CODE_UNUSED_FILE", "src/orphan.ts", "Source file has no incoming IMPORTS_FROM graph evidence: src/orphan.ts"]
+      ].sort((left, right) => `${left[0]}\0${left[1]}\0${left[2]}`.localeCompare(`${right[0]}\0${right[1]}\0${right[2]}`))
+    );
   });
 
   it("reports unreferenced source files and unused exported types from graph facts", async () => {
@@ -2220,7 +2496,7 @@ describe("validation-typescript adapter", () => {
 function runner(options = {}) {
   return createValidationRunner({
     workspace: workspace(options),
-    checks: createTypeScriptValidationChecks(),
+    checks: options.checks ?? createTypeScriptValidationChecks(),
     graphProviderClient: options.graphProviderClient
   });
 }
