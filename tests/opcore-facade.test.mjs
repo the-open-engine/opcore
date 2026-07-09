@@ -78,7 +78,7 @@ describe("opcore public facade", () => {
     }
   });
 
-  it("keeps first-run scan focused on languages present in the repo", () => {
+  it("keeps first-run scan focused on languages present in the repo and skips clone by default", async () => {
     const temp = mkdtempSync(join(tmpdir(), "opcore-scan-ts-only-"));
     try {
       writeFixtureFile(temp, "src/index.ts", "export const value = 1;\n");
@@ -93,10 +93,58 @@ describe("opcore public facade", () => {
       const checks = result.validationResult.manifest.checks;
       assert.equal(checks.some((check) => check.startsWith("rust.")), false);
       assert.equal(checks.some((check) => check.startsWith("python.")), false);
+      assert.equal(checks.includes("clone.duplication"), false);
+      const cloneSkip = (result.validationResult.manifest.skippedChecks ?? []).find((skip) => skip.checkId === "clone.duplication");
+      assert.ok(cloneSkip);
+      assert.equal(cloneSkip.reason, "not_requested");
+      assert.match(cloneSkip.message, /opcore check --all --checks clone\.duplication --json/);
       assert.equal(result.repoState.validation.degradedToolchains.some((tool) => tool.adapter === "rust"), false);
       assert.equal(result.repoState.validation.degradedToolchains.some((tool) => tool.adapter === "python"), false);
       assert.equal(result.repoState.nextActions[0], `opcore graph build --repo ${realpathSync(temp)} --json`);
       assert.equal(existsSync(join(temp, ".lattice")), false);
+
+      initGitFixture(temp);
+      const explicitClone = await routeOpcoreCommand(
+        ["check", "--all", "--repo", temp, "--checks", "clone.duplication", "--json"],
+        "opcore"
+      );
+      assert.ok(explicitClone.validationResult);
+      assert.equal(explicitClone.validationResult.manifest.checks.includes("clone.duplication"), true);
+      const explicitCloneSkip = explicitClone.validationResult.manifest.skippedChecks?.find(
+        (skip) => skip.checkId === "clone.duplication"
+      );
+      if (explicitCloneSkip !== undefined) assert.notEqual(explicitCloneSkip.reason, "not_requested");
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("bounds product scan diagnostic previews and keeps full counts in manifests and init previews", async () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-scan-diagnostic-preview-"));
+    try {
+      writeInvalidTypeScriptDiagnosticFixture(temp, 60);
+
+      const result = await routeOpcoreCommand(["--repo", temp, "--json"], "opcore");
+      const manifestTotal = validationManifestDiagnosticTotal(result.validationResult.manifest);
+      assert.equal(result.validationResult.diagnostics.length, 50);
+      assert.equal(manifestTotal > result.validationResult.diagnostics.length, true);
+      assert.equal(Array.isArray(result.validationResult.manifest.runs), true);
+      assert.match(result.message, /showing first 50 diagnostics; run opcore check --all --json for full diagnostics/);
+      assert.deepEqual(readdirSync(join(temp, ".opcore")).sort(), ["history.jsonl", "report.json", "telemetry.jsonl"]);
+
+      const human = await routeOpcoreCommand(["--repo", temp], "opcore");
+      assert.equal(human.message.indexOf("Coverage") < human.message.indexOf("Findings"), true);
+      assert.match(human.message, /diagnostics=\d+/);
+      assert.match(human.message, /showing first 50 diagnostics; run opcore check --all --json for full diagnostics/);
+
+      const init = parseJson(runOpcore(["init", "--repo", temp, "--json"], temp, 0).stdout);
+      assert.equal(Object.hasOwn(init, "validationResult"), false);
+      assert.equal(init.opcoreInit.scan.diagnosticCount, manifestTotal);
+
+      const install = parseJson(runOpcore(["install", "--repo", temp, "--json"], temp, 0).stdout);
+      assert.equal(Object.hasOwn(install, "validationResult"), false);
+      assert.equal(install.opcoreInit.scan.diagnosticCount, manifestTotal);
+      assert.deepEqual(readdirSync(join(temp, ".opcore")).sort(), ["history.jsonl", "report.json", "telemetry.jsonl"]);
     } finally {
       rmSync(temp, { recursive: true, force: true });
     }
@@ -1940,8 +1988,18 @@ function writeFixtureFile(root, path, content) {
   writeFileSync(absolute, content);
 }
 
+function writeInvalidTypeScriptDiagnosticFixture(root, count) {
+  for (let index = 0; index < count; index += 1) {
+    writeFixtureFile(root, `src/file-${index}.ts`, `export const value${index}: number = ;\n`);
+  }
+}
+
 function parseJson(stdout) {
   return JSON.parse(stdout);
+}
+
+function validationManifestDiagnosticTotal(manifest) {
+  return (manifest.runs ?? []).reduce((total, run) => total + (run.diagnosticCount ?? 0), 0);
 }
 
 function actionFor(result, path) {
