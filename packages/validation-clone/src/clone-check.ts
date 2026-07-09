@@ -87,7 +87,8 @@ async function cloneAnalysisRequest(
   options: Pick<CreateCloneDuplicationCheckOptions, "windowSize" | "minLines" | "minTokens" | "threshold" | "partitions" | "exclude" | "modes">
 ): Promise<CloneAnalysisRequest> {
   const paths = [...cloneInputPaths(context)];
-  const overlays = await cloneOverlays(context, cloneOverlayPaths(context, paths));
+  const overlayPaths = await cloneOverlayPaths(context, paths);
+  const overlays = await cloneOverlays(context, overlayPaths);
   return {
     protocol: CLONE_PROTOCOL,
     ...(context.request.requestId !== undefined ? { requestId: context.request.requestId } : {}),

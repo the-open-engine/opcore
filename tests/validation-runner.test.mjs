@@ -463,6 +463,36 @@ describe("validation runner", () => {
     assert.equal(observed.content, "export const value = 'overlay';");
   });
 
+  it("does not list workspace files when a files-scoped check reads one explicit file", async () => {
+    let listFileCalls = 0;
+    let observed;
+    const workspace = {
+      ...testWorkspace(),
+      listFiles: () => {
+        listFileCalls += 1;
+        return {
+          files: ["src/index.ts", "src/other.ts"]
+        };
+      }
+    };
+    const result = await createValidationRunner({
+      workspace,
+      checks: [
+        check("types", {
+          run: async (context) => {
+            observed = await context.fileView.readAfter("src/index.ts");
+            return { diagnostics: [] };
+          }
+        })
+      ]
+    }).runValidation(request());
+
+    assert.equal(result.status, "passed");
+    assert.equal(observed.status, "found");
+    assert.equal(observed.content, "export const value = 'disk';");
+    assert.equal(listFileCalls, 0);
+  });
+
   it("passes a graph query session to graph-aware checks", async () => {
     let observedEdges;
     const result = await runner(
