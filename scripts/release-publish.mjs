@@ -56,11 +56,12 @@ function verifyNpmPublishReadiness() {
   if (hasTrustedPublishingContext()) {
     const missingPackages = publicPackages.filter((packageName) => !packageExists(packageName));
     if (missingPackages.length > 0) {
-      throw new Error(
+      warnTokenMetadata(
         [
-          "First npm publish requires NODE_AUTH_TOKEN/NPM_TOKEN because npm trusted publishing can only be configured after packages exist.",
-          `Missing packages: ${missingPackages.join(", ")}`
-        ].join("\n")
+          `npm registry preflight could not confirm existing package(s): ${missingPackages.join(", ")}`,
+          "first npm publish requires NODE_AUTH_TOKEN/NPM_TOKEN because npm trusted publishing can only be configured after packages exist",
+          "attempting GitHub Actions OIDC trusted publishing so npm returns the authoritative publish result"
+        ].join("; ")
       );
     }
     process.stdout.write("using GitHub Actions OIDC trusted publishing context\n");
