@@ -1,5 +1,6 @@
 import type { CommandAdapter, CommandGroupContract, CommandRouterResult, ParsedCommandArgv } from "@the-open-engine/opcore-contracts";
 import { createCommandRouterResult } from "@the-open-engine/opcore-contracts";
+import { resolve } from "node:path";
 import { formatCheckStamp } from "./plate.js";
 import { checkCommandAdapter, createOpcoreCheckCommandAdapter } from "./validation-composition.js";
 
@@ -61,11 +62,12 @@ export async function routeOpcoreCheck(
       message: `Unsupported opcore check route: ${firstRoute}`
     });
   }
-  const repoRoot = repoRootArg(args) ?? process.cwd();
+  const cwd = resolve(process.cwd());
+  const repoRoot = resolve(repoRootArg(args) ?? cwd);
   let adapter: CommandAdapter;
   try {
     adapter =
-      runtime.streamWriter === undefined && repoRoot === process.cwd()
+      runtime.streamWriter === undefined && repoRoot === cwd
         ? checkCommandAdapter
         : createOpcoreCheckCommandAdapter({
             streamWriter: runtime.streamWriter,

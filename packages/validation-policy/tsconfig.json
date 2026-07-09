@@ -1,0 +1,33 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src"
+  },
+  "include": [
+    "src/**/*.ts"
+  ],
+  "references": [
+    {
+      "path": "../contracts"
+    },
+    {
+      "path": "../validation"
+    },
+    {
+      "path": "../validation-clone"
+    },
+    {
+      "path": "../validation-docs"
+    },
+    {
+      "path": "../validation-python"
+    },
+    {
+      "path": "../validation-rust"
+    },
+    {
+      "path": "../validation-typescript"
+    }
+  ]
+}

@@ -14,11 +14,8 @@ import {
   type ValidationCommandAdapterOptions,
   type ValidationGraphProviderClient
 } from "@the-open-engine/opcore-validation";
-import { createCloneValidationChecks } from "@the-open-engine/opcore-validation-clone";
-import { createDocsValidationChecks } from "@the-open-engine/opcore-validation-docs";
 import { createPythonValidationAdapterStatus, createPythonValidationChecks } from "@the-open-engine/opcore-validation-python";
 import { createRustValidationAdapterStatus, createRustValidationChecks } from "@the-open-engine/opcore-validation-rust";
-import { createTypeScriptValidationChecks } from "@the-open-engine/opcore-validation-typescript";
 import {
   cliGraphDetectChanges,
   cliGraphFactQuery,
@@ -27,17 +24,11 @@ import {
   cliGraphReviewContext,
   cliGraphStatus
 } from "./graph-provider-client.js";
-import { invokeCloneAnalysis } from "../clone-invoker.js";
-import { validationChecksForRepo } from "../repo-check-packs.js";
+import {
+  defaultValidationChecks,
+  validationChecksForRepoPolicy
+} from "../repo-validation-policy.js";
 import { commonSkippedPathSegments } from "../source-policy.js";
-
-export const defaultValidationChecks = [
-  ...createTypeScriptValidationChecks(),
-  ...createRustValidationChecks(),
-  ...createPythonValidationChecks(),
-  ...createDocsValidationChecks(),
-  ...createCloneValidationChecks({ invoke: invokeCloneAnalysis })
-];
 
 export const checkCommandAdapter = createCliCheckCommandAdapter();
 export const validateCommandAdapter = createCliValidateCommandAdapter();
@@ -68,7 +59,7 @@ export const editValidationRunner = {
         repoRoot,
         skippedPathSegments: commonSkippedPathSegments
       }),
-      checks: validationChecksForRepo(repoRoot, defaultValidationChecks),
+      checks: validationChecksForRepoPolicy(repoRoot),
       graphProviderClient: createCliValidationGraphProviderClient()
     }).runValidation(request);
   }
@@ -84,7 +75,7 @@ export function createDefaultValidationStatusPayload(options: {
 }): ValidationStatusPayload {
   const graphMode = options.graphMode ?? "optional";
   return createValidationStatusPayload({
-    checks: validationChecksForRepo(options.repoRoot, defaultValidationChecks),
+    checks: validationChecksForRepoPolicy(options.repoRoot),
     adapters: [createRustValidationAdapterStatus(), createPythonValidationAdapterStatus()],
     graphMode,
     graphStatus: cliGraphStatus({ repoRoot: options.repoRoot }, graphMode)
@@ -93,7 +84,7 @@ export function createDefaultValidationStatusPayload(options: {
 
 function defaultValidationAdapterOptions(repoRoot = process.cwd()): ValidationCommandAdapterOptions {
   return {
-    checks: validationChecksForRepo(repoRoot, defaultValidationChecks),
+    checksFactory: validationChecksForRepoPolicy,
     graphProviderClient: createCliValidationGraphProviderClient(),
     defaultRepoRoot: repoRoot,
     workspaceFactory: (repoRoot) =>

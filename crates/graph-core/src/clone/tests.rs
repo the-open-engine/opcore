@@ -156,6 +156,64 @@ fn scoped_no_overlay_requests_are_ephemeral() -> TestResult {
     Ok(())
 }
 
+#[test]
+fn clone_exclude_patterns_remove_sources_from_analysis() -> TestResult {
+    let fixture = clone_fixture()?;
+    let duplicate = duplicate_block();
+    write_source(fixture.path(), "src/a.ts", &duplicate)?;
+    write_source(fixture.path(), "src/b.ts", &duplicate)?;
+    let mut clone_request = request(fixture.path(), CloneReportMode::All, Vec::new())?;
+    clone_request.exclude = vec!["src/b.ts".to_string()];
+
+    let result = analyze_clones(clone_request)?;
+
+    assert!(result.findings.is_empty());
+    Ok(())
+}
+
+#[test]
+fn clone_partitions_only_compare_paths_inside_same_group() -> TestResult {
+    let fixture = clone_fixture()?;
+    let duplicate = duplicate_block();
+    write_source(fixture.path(), "server/a.ts", &duplicate)?;
+    write_source(fixture.path(), "server/b.ts", &duplicate)?;
+    write_source(fixture.path(), "client/c.ts", &duplicate)?;
+    let mut clone_request = request(fixture.path(), CloneReportMode::All, Vec::new())?;
+    clone_request.partitions = vec![vec!["server".to_string()], vec!["client".to_string()]];
+
+    let result = analyze_clones(clone_request)?;
+
+    assert!(result
+        .findings
+        .iter()
+        .any(|finding| finding.path == "server/a.ts" && finding.peer_path == "server/b.ts"));
+    assert!(result
+        .findings
+        .iter()
+        .all(|finding| !finding.path.starts_with("client/")
+            && !finding.peer_path.starts_with("client/")));
+    Ok(())
+}
+
+#[test]
+fn clone_window_min_lines_and_threshold_suppress_short_or_small_blocks() -> TestResult {
+    let fixture = clone_fixture()?;
+    let duplicate = duplicate_block();
+    write_source(fixture.path(), "src/a.ts", &duplicate)?;
+    write_source(fixture.path(), "src/b.ts", &duplicate)?;
+
+    let mut short_window_request = request(fixture.path(), CloneReportMode::All, Vec::new())?;
+    short_window_request.window_size = Some(4);
+    short_window_request.min_lines = Some(6);
+    assert!(analyze_clones(short_window_request)?.findings.is_empty());
+
+    let mut high_threshold_request = request(fixture.path(), CloneReportMode::All, Vec::new())?;
+    high_threshold_request.min_tokens = None;
+    high_threshold_request.threshold = Some(999);
+    assert!(analyze_clones(high_threshold_request)?.findings.is_empty());
+    Ok(())
+}
+
 fn clone_fixture() -> Result<TempDir, std::io::Error> {
     let fixture = TempDir::new()?;
     fs::create_dir_all(fixture.path().join("src"))?;
@@ -206,8 +264,13 @@ fn request(
         report_mode,
         paths: Vec::new(),
         overlays,
+        window_size: None,
         min_lines: Some(5),
         min_tokens: Some(12),
+        threshold: None,
+        partitions: Vec::new(),
+        exclude: Vec::new(),
+        modes: Vec::new(),
     })
 }
 

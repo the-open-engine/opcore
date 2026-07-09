@@ -1,14 +1,12 @@
-use crate::extraction::{
-    discover_sources_for_options, normalize_repo_relative_path, ExtractionOptions, SourceLanguage,
-};
+use crate::extraction::normalize_repo_relative_path;
 use crate::protocol::RepoIdentity;
+use analysis::{clone_classes, clone_findings, clone_sources, validate_clone_pattern};
 use serde::{Deserialize, Serialize};
-use sha2::{Digest, Sha256};
-use std::collections::{BTreeMap, BTreeSet};
 use std::io::{self, Read};
 use std::path::{Path, PathBuf};
 use thiserror::Error;
 
+mod analysis;
 mod persistence;
 mod store;
 
@@ -49,9 +47,19 @@ pub struct CloneAnalysisRequest {
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub overlays: Vec<CloneOverlay>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub window_size: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub min_lines: Option<usize>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub min_tokens: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub threshold: Option<usize>,
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub partitions: Vec<Vec<String>>,
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub exclude: Vec<String>,
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub modes: Vec<String>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -118,30 +126,6 @@ pub struct CloneAnalysisSummary {
     pub overlay_count: usize,
 }
 
-#[derive(Debug, Clone)]
-struct CloneSource {
-    path: String,
-    language: String,
-    sha256: String,
-    content: String,
-    introduced: bool,
-}
-
-#[derive(Debug, Clone)]
-struct CloneOccurrence {
-    path: String,
-    introduced: bool,
-}
-
-#[derive(Debug, Clone)]
-struct CloneClass {
-    clone_class_id: String,
-    content_hash: String,
-    line_count: usize,
-    token_count: usize,
-    occurrences: Vec<CloneOccurrence>,
-}
-
 pub fn run_clone_cli(args: &[String]) -> Result<(), String> {
     if args.iter().any(|arg| arg == "--help" || arg == "-h") {
         println!("usage: opcore-graph-core clone < clone-request.json");
@@ -172,9 +156,13 @@ pub fn analyze_clones(request: CloneAnalysisRequest) -> Result<CloneAnalysisResu
         .ok_or(CloneError::MissingRepoRoot)?;
     let repo_root = PathBuf::from(repo_root).canonicalize()?;
     let min_lines = request.min_lines.unwrap_or(DEFAULT_MIN_LINES);
-    let min_tokens = request.min_tokens.unwrap_or(DEFAULT_MIN_TOKENS);
+    let window_size = request.window_size.unwrap_or(min_lines);
+    let min_tokens = request
+        .min_tokens
+        .or(request.threshold)
+        .unwrap_or(DEFAULT_MIN_TOKENS);
     let sources = clone_sources(&repo_root, &request)?;
-    let classes = clone_classes(&sources, min_lines, min_tokens);
+    let classes = clone_classes(&sources, window_size, min_lines, min_tokens);
     let findings = clone_findings(&classes, &request);
     let persisted = should_persist_clone_index(
         &repo_root,
@@ -226,6 +214,11 @@ fn validate_request(request: &CloneAnalysisRequest) -> Result<(), CloneError> {
     if request.repo.repo_root.as_deref().is_none_or(str::is_empty) {
         return Err(CloneError::MissingRepoRoot);
     }
+    if request.window_size == Some(0) {
+        return Err(CloneError::InvalidRequest(
+            "windowSize must be positive".to_string(),
+        ));
+    }
     if request.min_lines == Some(0) {
         return Err(CloneError::InvalidRequest(
             "minLines must be positive".to_string(),
@@ -236,220 +229,40 @@ fn validate_request(request: &CloneAnalysisRequest) -> Result<(), CloneError> {
             "minTokens must be positive".to_string(),
         ));
     }
+    if request.threshold == Some(0) {
+        return Err(CloneError::InvalidRequest(
+            "threshold must be positive".to_string(),
+        ));
+    }
     for path in &request.paths {
         normalize_repo_relative_path(path, "clone request path")
             .map_err(|message| CloneError::InvalidRequest(message.to_string()))?;
+    }
+    for (index, partition) in request.partitions.iter().enumerate() {
+        if partition.is_empty() {
+            return Err(CloneError::InvalidRequest(format!(
+                "partitions[{index}] must not be empty"
+            )));
+        }
+        for pattern in partition {
+            validate_clone_pattern(pattern, "clone partition pattern")?;
+        }
+    }
+    for pattern in &request.exclude {
+        validate_clone_pattern(pattern, "clone exclude pattern")?;
+    }
+    for mode in &request.modes {
+        if mode.is_empty() {
+            return Err(CloneError::InvalidRequest(
+                "clone mode must be non-empty".to_string(),
+            ));
+        }
     }
     for overlay in &request.overlays {
         normalize_repo_relative_path(overlay.path(), "clone overlay path")
             .map_err(|message| CloneError::InvalidRequest(message.to_string()))?;
     }
     Ok(())
-}
-
-fn clone_sources(
-    repo_root: &Path,
-    request: &CloneAnalysisRequest,
-) -> Result<Vec<CloneSource>, CloneError> {
-    let mut sources = discovered_clone_sources(repo_root)?;
-    apply_overlays(&mut sources, repo_root, &request.overlays)?;
-    sources.sort_by(|left, right| left.path.cmp(&right.path));
-    Ok(sources)
-}
-
-fn discovered_clone_sources(repo_root: &Path) -> Result<Vec<CloneSource>, CloneError> {
-    let discovery = discover_sources_for_options(&ExtractionOptions::new(repo_root));
-    let mut sources = Vec::new();
-    for source in discovery.sources {
-        let content = std::fs::read_to_string(&source.absolute_path)?;
-        sources.push(CloneSource {
-            path: source.relative_path,
-            language: source.language.as_str().to_string(),
-            sha256: source.sha256,
-            content,
-            introduced: false,
-        });
-    }
-    Ok(sources)
-}
-
-fn apply_overlays(
-    sources: &mut Vec<CloneSource>,
-    repo_root: &Path,
-    overlays: &[CloneOverlay],
-) -> Result<(), CloneError> {
-    for overlay in overlays {
-        let path = normalize_repo_relative_path(overlay.path(), "clone overlay path")
-            .map_err(|message| CloneError::InvalidRequest(message.to_string()))?;
-        sources.retain(|source| source.path != path);
-        if let CloneOverlay::Write { content, .. } = overlay {
-            if let Some(language) = SourceLanguage::from_path(Path::new(&path)) {
-                sources.push(CloneSource {
-                    path: path.clone(),
-                    language: language.as_str().to_string(),
-                    sha256: sha256_hex(content.as_bytes()),
-                    content: content.clone(),
-                    introduced: true,
-                });
-            }
-        }
-    }
-    sources
-        .retain(|source| repo_root.join(&source.path).starts_with(repo_root) || source.introduced);
-    Ok(())
-}
-
-fn clone_classes(sources: &[CloneSource], min_lines: usize, min_tokens: usize) -> Vec<CloneClass> {
-    let mut classes_by_hash: BTreeMap<String, CloneClass> = BTreeMap::new();
-    for source in sources {
-        let lines = normalized_code_lines(&source.content);
-        for window in lines.windows(min_lines) {
-            let block = window.join("\n");
-            let token_count = token_count(&block);
-            if token_count < min_tokens {
-                continue;
-            }
-            let content_hash = sha256_hex(block.as_bytes());
-            let Some(clone_id) = clone_class_id(&block) else {
-                continue;
-            };
-            let entry = classes_by_hash
-                .entry(content_hash.clone())
-                .or_insert(CloneClass {
-                    clone_class_id: clone_id,
-                    content_hash,
-                    line_count: window.len(),
-                    token_count,
-                    occurrences: Vec::new(),
-                });
-            if !entry
-                .occurrences
-                .iter()
-                .any(|occurrence| occurrence.path == source.path)
-            {
-                entry.occurrences.push(CloneOccurrence {
-                    path: source.path.clone(),
-                    introduced: source.introduced,
-                });
-            }
-        }
-    }
-    classes_by_hash
-        .into_values()
-        .filter(|class| distinct_paths(&class.occurrences).len() > 1)
-        .collect()
-}
-
-fn clone_findings(classes: &[CloneClass], request: &CloneAnalysisRequest) -> Vec<CloneFinding> {
-    let scoped_paths = request.paths.iter().cloned().collect::<BTreeSet<_>>();
-    let mut findings = Vec::new();
-    for class in classes {
-        let paths = distinct_paths(&class.occurrences);
-        if request.report_mode == CloneReportMode::Introduced
-            && !class
-                .occurrences
-                .iter()
-                .any(|occurrence| occurrence.introduced)
-        {
-            continue;
-        }
-        for occurrence in &class.occurrences {
-            if !scoped_paths.is_empty() && !scoped_paths.contains(&occurrence.path) {
-                continue;
-            }
-            if request.report_mode == CloneReportMode::Introduced && !occurrence.introduced {
-                continue;
-            }
-            let Some(peer) = class
-                .occurrences
-                .iter()
-                .find(|peer| peer.path != occurrence.path)
-            else {
-                continue;
-            };
-            findings.push(CloneFinding {
-                clone_class_id: class.clone_class_id.clone(),
-                content_hash: class.content_hash.clone(),
-                path: occurrence.path.clone(),
-                peer_path: peer.path.clone(),
-                paths: paths.iter().cloned().collect(),
-                line_count: class.line_count,
-                token_count: class.token_count,
-                introduced: occurrence.introduced,
-            });
-        }
-    }
-    findings.sort_by(|left, right| {
-        (
-            left.path.as_str(),
-            left.peer_path.as_str(),
-            left.clone_class_id.as_str(),
-        )
-            .cmp(&(
-                right.path.as_str(),
-                right.peer_path.as_str(),
-                right.clone_class_id.as_str(),
-            ))
-    });
-    findings
-}
-
-fn normalized_code_lines(content: &str) -> Vec<String> {
-    content.lines().filter_map(normalize_code_line).collect()
-}
-
-fn normalize_code_line(line: &str) -> Option<String> {
-    let trimmed = line.trim();
-    if trimmed.is_empty() || trimmed.starts_with("//") || trimmed.starts_with('#') {
-        return None;
-    }
-    let without_comment = strip_inline_comment(trimmed);
-    let normalized = without_comment
-        .split_whitespace()
-        .collect::<Vec<_>>()
-        .join(" ");
-    if normalized.is_empty() {
-        None
-    } else {
-        Some(normalized)
-    }
-}
-
-fn strip_inline_comment(line: &str) -> &str {
-    line.split_once("//")
-        .map(|(before, _comment)| before.trim_end())
-        .unwrap_or(line)
-}
-
-fn token_count(content: &str) -> usize {
-    content
-        .split(|character: char| !character.is_alphanumeric() && character != '_')
-        .filter(|token| !token.is_empty())
-        .count()
-}
-
-fn distinct_paths(occurrences: &[CloneOccurrence]) -> BTreeSet<String> {
-    occurrences
-        .iter()
-        .map(|occurrence| occurrence.path.clone())
-        .collect()
-}
-
-fn clone_class_id(content: &str) -> Option<String> {
-    digest_u64(content.as_bytes()).map(|value| format!("clone-{value:016x}"))
-}
-
-fn digest_u64(bytes: &[u8]) -> Option<u64> {
-    let digest: [u8; 32] = Sha256::digest(bytes).into();
-    let first = digest.first_chunk::<8>()?;
-    Some(u64::from_be_bytes(*first))
-}
-
-fn sha256_hex(bytes: &[u8]) -> String {
-    Sha256::digest(bytes)
-        .iter()
-        .map(|byte| format!("{byte:02x}"))
-        .collect::<String>()
 }
 
 fn repo_relative_display(repo_root: &Path, path: &Path) -> String {

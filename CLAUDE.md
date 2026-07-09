@@ -31,6 +31,7 @@ Opcore is the code-intelligence and robustness monorepo for graph context, edit 
 | Clone graph-core subcommand | `crates/graph-core/src/clone/mod.rs` |
 | Edit package track | @packages/edit/ |
 | Validation package track | @packages/validation/ |
+| Validation policy composition | @packages/validation-policy/ |
 | Validation file view | `packages/validation/src/overlays.ts` |
 | Validation graph client | `packages/validation/src/graph-client.ts` |
 | Rust validation adapter | @packages/validation-rust/ |
@@ -122,7 +123,8 @@ Opcore is the code-intelligence and robustness monorepo for graph context, edit 
 - ALWAYS emit boolean `attributes.exported` on supported TS/JS graph symbol nodes and file-node `attributes.exports[]` for default/re-export/barrel forms - WHY: dead-export metrics must distinguish unsupported export coverage from zero dead exports.
 - ALWAYS make validation checks read file content through `ValidationCheckContext.fileView` - WHY: validation overlays are hypothetical and checks must see the same before/after file state without mutating disk.
 - ALWAYS make validation checks consume GraphProvider facts through `ValidationCheckContext.graph` and injected `ValidationGraphProviderClient` sessions - WHY: validation must depend only on public contracts, not graph package internals, CLI execution, or store layouts.
-- Repo-owned validation extensions live in `.opcore/config` `checks.packs`, resolve from the target repo root, and must export current `ValidationCheckDefinition` objects; Opcore owns loading/registry validation, repos own policy content.
+- Native repo validation policy lives under `.opcore/config` `validation`; active checks, thresholds, path policy, docs policy, clone policy, TypeScript policy, Rust command gates, and check packs must be parsed and composed through `packages/validation-policy`.
+- Repo-owned validation extensions live in `.opcore/config` `validation.checks.packs`, resolve from the target repo root, and must export current `ValidationCheckDefinition` objects; Opcore owns loading/registry validation, repos own policy content.
 - ALWAYS keep `packages/asp-provider` as a provider-process facade over ASP Core check/evaluate only - WHY: ASP hosts own decisions, authority, gate semantics, workspace grants, and apply behavior.
 - ALWAYS keep warm ASP inspect/edit composition inside `packages/opcore/src/advanced/asp-warm/` and out of `packages/asp-provider` - WHY: only the advanced Opcore router may combine ASP JSON-RPC with ts-morph inspect/edit state, while the standalone provider must remain cold and check-only.
 - ALWAYS keep the Opcore product facade thin over public package adapters - WHY: `opcore` is first-run UX, not a second implementation of graph, validation, edit, ASP host authority, or old-tool behavior.

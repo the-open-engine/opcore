@@ -1,5 +1,6 @@
 import type { ValidationCheckDefinition } from "@the-open-engine/opcore-validation";
 import { createCargoCheck, createClippyCheck, createDeadCodeCheck, createRustdocCheck, type RustCommandCheckOptions } from "./cargo-check.js";
+import { createCommandGateChecks, type RustCommandGate } from "./command-gate-check.js";
 import { createFileLengthCheck, type RustFileLengthThresholds } from "./file-length-check.js";
 import { createFmtCheck } from "./fmt-check.js";
 import { createFunctionMetricsCheck, type RustFunctionMetricThresholds } from "./function-metrics-check.js";
@@ -24,6 +25,7 @@ export {
   type RustValidationCheckId
 } from "./check-ids.js";
 export { createFileLengthCheck, type RustFileLengthThresholds } from "./file-length-check.js";
+export { createCommandGateChecks, type RustCommandGate } from "./command-gate-check.js";
 export { createGraphSignalsCheck } from "./graph-signals-check.js";
 export { validationRustAdapterName } from "./check-constants.js";
 export {
@@ -38,6 +40,7 @@ export { createRustValidationAdapterStatus, probeRustToolchain } from "./toolcha
 export interface CreateRustValidationChecksOptions extends RustCommandCheckOptions {
   fileLength?: RustFileLengthThresholds;
   functionMetrics?: RustFunctionMetricThresholds;
+  commandGates?: readonly RustCommandGate[];
 }
 
 export function createRustValidationChecks(options: CreateRustValidationChecksOptions = {}): readonly ValidationCheckDefinition[] {
@@ -51,6 +54,7 @@ export function createRustValidationChecks(options: CreateRustValidationChecksOp
     createDeadCodeCheck(options),
     createGraphSignalsCheck(),
     createUnusedDepsCheck(options),
+    ...createCommandGateChecks(options),
     createFileLengthCheck({
       ...options,
       thresholds: options.fileLength

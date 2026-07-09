@@ -7,7 +7,7 @@ export function mapTypeScriptDiagnostics(
   diagnostics: readonly ts.Diagnostic[],
   repoRoot: string
 ): readonly ValidationDiagnostic[] {
-  return diagnostics.map((diagnostic) => mapTypeScriptDiagnostic(category, diagnostic, repoRoot)).sort(compareDiagnostics);
+  return sortValidationDiagnostics(diagnostics.map((diagnostic) => mapTypeScriptDiagnostic(category, diagnostic, repoRoot)));
 }
 
 export function mapTypeScriptDiagnostic(
@@ -26,6 +26,17 @@ export function mapTypeScriptDiagnostic(
     if (path !== undefined && path.length > 0) validationDiagnostic.path = path;
   }
   return validationDiagnostic;
+}
+
+export function sortValidationDiagnostics(diagnostics: readonly ValidationDiagnostic[]): readonly ValidationDiagnostic[] {
+  return [...diagnostics].sort(compareDiagnostics);
+}
+
+export function scriptKindForPath(path: string): ts.ScriptKind {
+  if (path.endsWith(".tsx")) return ts.ScriptKind.TSX;
+  if (path.endsWith(".jsx")) return ts.ScriptKind.JSX;
+  if (path.endsWith(".js")) return ts.ScriptKind.JS;
+  return ts.ScriptKind.TS;
 }
 
 function compareDiagnostics(left: ValidationDiagnostic, right: ValidationDiagnostic): number {

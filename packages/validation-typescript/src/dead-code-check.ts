@@ -1,7 +1,17 @@
-import type { GraphEdgeKind, GraphFactEdge, GraphFactNode, JsonValue, ValidationDiagnostic } from "@the-open-engine/opcore-contracts";
-import type { ValidationCheckDefinition } from "@the-open-engine/opcore-validation";
+import type { GraphEdgeKind, GraphFactEdge, GraphFactNode, ValidationDiagnostic } from "@the-open-engine/opcore-contracts";
+import type { GraphFactExportMetadata, ValidationCheckDefinition } from "@the-open-engine/opcore-validation";
+import {
+  graphFactBooleanAttribute,
+  graphFactHasExportMetadata,
+  graphFactHasIncomingTargetEdge,
+  graphFactNodePath,
+  graphFactSymbolAliasSet,
+  graphFactUnsupportedExportLabels,
+  graphFactUnsupportedFileExportMetadata
+} from "@the-open-engine/opcore-validation";
 import { TYPE_SCRIPT_DEAD_CODE_CHECK_ID } from "./check-ids.js";
 import { typeScriptCheckAdapter, typeScriptCheckOwner, supportedTypeScriptValidationScopes } from "./check-constants.js";
+import { deadCodeEntrypointReachability, type TypeScriptDeadCodeOptions } from "./dead-code-entrypoints.js";
 import { deadCodeGraphRequirements } from "./graph-requirements.js";
 import { materializeTypeScriptSources } from "./source-files.js";
 
@@ -10,7 +20,7 @@ const fileReachabilityEdgeKinds = ["CONTAINS", "IMPORTS_FROM"] as const satisfie
 const typeReferenceEdgeKinds = ["INHERITS", "IMPLEMENTS"] as const satisfies readonly GraphEdgeKind[];
 const deadCodeEdgeKinds = [...callEdgeKinds, ...fileReachabilityEdgeKinds, ...typeReferenceEdgeKinds] as const satisfies readonly GraphEdgeKind[];
 
-export function createDeadCodeCheck(): ValidationCheckDefinition {
+export function createDeadCodeCheck(options: TypeScriptDeadCodeOptions = {}): ValidationCheckDefinition {
   return {
     id: TYPE_SCRIPT_DEAD_CODE_CHECK_ID,
     owner: typeScriptCheckOwner,
@@ -32,11 +42,12 @@ export function createDeadCodeCheck(): ValidationCheckDefinition {
       const typeReferences = edges.filter((edge) => isTypeReferenceEdge(edge));
       const scopedPaths = new Set(sourceSet.rootPaths);
       const scopedSymbols = symbolFacts.nodes.filter((node) => isScopedSymbol(node, scopedPaths));
-      const unsupportedFileExports = fileNodes.flatMap(unsupportedFileExportMetadata);
+      const entrypointReachability = deadCodeEntrypointReachability(options, [...symbolFacts.nodes, ...fileNodes], edges);
+      const unsupportedFileExports = fileNodes.flatMap(graphFactUnsupportedFileExportMetadata);
       const filePathsWithUnsupportedExportMetadata = new Set(
         fileNodes
-          .filter((node) => unsupportedFileExportMetadata(node).length > 0)
-          .map(fileNodePath)
+          .filter((node) => graphFactUnsupportedFileExportMetadata(node).length > 0)
+          .map(graphFactNodePath)
           .filter(isDefined)
       );
       const handshakeEdgeKinds = context.graphStatus.state === "available" ? context.graphStatus.handshake?.edgeKinds : undefined;
@@ -44,9 +55,16 @@ export function createDeadCodeCheck(): ValidationCheckDefinition {
       const callUsageSupported = supportsAllEdgeKinds(handshakeEdgeKinds, callEdgeKinds);
       const typeReferenceSupported = supportsAnyEdgeKind(handshakeEdgeKinds, typeReferenceEdgeKinds);
       const unusedFiles = fileReachabilitySupported
-        ? unusedSourceFiles(fileNodes, scopedPaths, contains, importsFrom, filePathsWithUnsupportedExportMetadata)
+        ? unusedSourceFiles(
+            fileNodes,
+            scopedPaths,
+            contains,
+            importsFrom,
+            filePathsWithUnsupportedExportMetadata,
+            entrypointReachability.reachableFileAliases
+          )
         : [];
-      if (!scopedSymbols.some(hasExportMetadata) && unsupportedFileExports.length === 0 && unusedFiles.length === 0) {
+      if (!scopedSymbols.some(graphFactHasExportMetadata) && unsupportedFileExports.length === 0 && unusedFiles.length === 0) {
         return {
           diagnostics: [
             {
@@ -61,10 +79,18 @@ export function createDeadCodeCheck(): ValidationCheckDefinition {
 
       const exportedSymbols = scopedSymbols.filter(isExportedSymbol);
       const callCoveredExports = exportedSymbols.filter(hasCallUsageCoverage);
+      const callCoveredExportsRequiringCallUsage = callCoveredExports.filter(
+        (node) => !hasReachableSymbol(node, entrypointReachability.reachableSymbolAliases)
+      );
       const typeCoveredExports = exportedSymbols.filter(hasTypeUsageCoverage);
-      const unsupportedExports = exportedSymbols.filter((node) => !hasCallUsageCoverage(node) && !hasTypeUsageCoverage(node));
+      const unsupportedExports = exportedSymbols.filter(
+        (node) =>
+          !hasCallUsageCoverage(node) &&
+          !hasTypeUsageCoverage(node) &&
+          !hasReachableSymbol(node, entrypointReachability.reachableSymbolAliases)
+      );
       if (
-        callCoveredExports.length > 0 &&
+        callCoveredExportsRequiringCallUsage.length > 0 &&
         !callUsageSupported
       ) {
         return {
@@ -106,30 +132,29 @@ export function createDeadCodeCheck(): ValidationCheckDefinition {
       diagnostics.push(
         ...callCoveredExports
           .filter(() => callUsageSupported)
-          .filter((node) => !hasIncomingCall(node, calls, incomingCalls))
+          .filter((node) => !hasReachableSymbol(node, entrypointReachability.reachableSymbolAliases))
+          .filter((node) => !graphFactHasIncomingTargetEdge(node, calls, incomingCalls))
           .map((node): ValidationDiagnostic => ({
             category: "graph",
             severity: "warning",
-            path: symbolFilePath(node),
+            path: graphFactNodePath(node),
             code: "TS_DEAD_CODE_UNUSED_EXPORT",
             message: `Exported symbol has no incoming CALLS graph evidence: ${node.name ?? node.id}`
           }))
       );
-      diagnostics.push(...typeExportsBySupport.unused.map(unusedTypeExportDiagnostic));
+      diagnostics.push(
+        ...typeExportsBySupport.unused
+          .filter((node) => !hasReachableSymbol(node, entrypointReachability.reachableSymbolAliases))
+          .map(unusedTypeExportDiagnostic)
+      );
       return { diagnostics };
     }
   };
 }
 
-function hasIncomingCall(node: GraphFactNode, calls: readonly GraphFactEdge[], incomingCalls: ReadonlySet<string>): boolean {
-  if (incomingCalls.has(node.id)) return true;
-  const aliases = symbolAliases(node);
-  return calls.some((edge) => aliases.has(edge.to));
-}
-
 function isExportedSymbol(node: GraphFactNode): boolean {
   if (node.kind === "File" || node.kind === "file") return false;
-  return booleanAttribute(node, ["exported", "isExported", "export", "public"]);
+  return graphFactBooleanAttribute(node, ["exported", "isExported", "export", "public"]);
 }
 
 function hasCallUsageCoverage(node: GraphFactNode): boolean {
@@ -168,11 +193,8 @@ function unsupportedTypeReferenceDiagnostic(nodes: readonly GraphFactNode[]): Va
   };
 }
 
-function unsupportedFileExportMetadataDiagnostic(exports: readonly FileExportMetadata[]): ValidationDiagnostic {
-  const labels = exports
-    .map((entry) => stringMetadata(entry, "exported") ?? stringMetadata(entry, "local") ?? stringMetadata(entry, "kind") ?? "unknown")
-    .slice(0, 5)
-    .join(", ");
+function unsupportedFileExportMetadataDiagnostic(exports: readonly GraphFactExportMetadata[]): ValidationDiagnostic {
+  const labels = graphFactUnsupportedExportLabels(exports);
   return {
     category: "graph",
     severity: "info",
@@ -181,31 +203,29 @@ function unsupportedFileExportMetadataDiagnostic(exports: readonly FileExportMet
   };
 }
 
-function hasExportMetadata(node: GraphFactNode): boolean {
-  return typeof node.attributes?.exported === "boolean";
-}
-
 function unusedSourceFiles(
   fileNodes: readonly GraphFactNode[],
   scopedPaths: ReadonlySet<string>,
   contains: readonly GraphFactEdge[],
   importsFrom: readonly GraphFactEdge[],
-  filePathsWithUnsupportedExportMetadata: ReadonlySet<string>
+  filePathsWithUnsupportedExportMetadata: ReadonlySet<string>,
+  reachableFileAliases: ReadonlySet<string>
 ): readonly GraphFactNode[] {
   return fileNodes
     .filter((node) => {
-      const path = fileNodePath(node);
+      const path = graphFactNodePath(node);
       if (path === undefined || !scopedPaths.has(path)) return false;
+      if (hasReachableFile(path, node, reachableFileAliases)) return false;
       if (filePathsWithUnsupportedExportMetadata.has(path)) return false;
       if (!hasFileContainsEdge(path, node, contains)) return false;
       if (hasIncomingFileImport(path, node, importsFrom)) return false;
       return true;
     })
-    .sort((left, right) => (fileNodePath(left) ?? left.id).localeCompare(fileNodePath(right) ?? right.id));
+    .sort((left, right) => (graphFactNodePath(left) ?? left.id).localeCompare(graphFactNodePath(right) ?? right.id));
 }
 
 function unusedFileDiagnostic(node: GraphFactNode): ValidationDiagnostic {
-  const path = fileNodePath(node) ?? node.path ?? node.id;
+  const path = graphFactNodePath(node) ?? node.path ?? node.id;
   return {
     category: "graph",
     severity: "warning",
@@ -232,7 +252,7 @@ function partitionTypeExportsByReferenceSupport(
   const unsupported: GraphFactNode[] = [];
   for (const node of nodes) {
     if (hasIncomingTypeReference(node, typeReferences, incomingTypeReferences)) continue;
-    const path = symbolFilePath(node);
+    const path = graphFactNodePath(node);
     if (path !== undefined && fileReachabilitySupported && !hasIncomingFileImport(path, undefined, importsFrom)) {
       unused.push(node);
       continue;
@@ -249,41 +269,15 @@ function unusedTypeExportDiagnostic(node: GraphFactNode): ValidationDiagnostic {
   return {
     category: "graph",
     severity: "warning",
-    path: symbolFilePath(node),
+    path: graphFactNodePath(node),
     code: "TS_DEAD_CODE_UNUSED_EXPORT",
     message: `Exported type has no incoming graph reference evidence: ${node.name ?? node.id}`
   };
 }
 
-type FileExportMetadata = { [key: string]: JsonValue };
-
-function unsupportedFileExportMetadata(node: GraphFactNode): readonly FileExportMetadata[] {
-  const exports = node.attributes?.exports;
-  if (!Array.isArray(exports)) return [];
-  return exports.filter(isUnsupportedFileExportMetadata);
-}
-
-function isUnsupportedFileExportMetadata(value: JsonValue): value is FileExportMetadata {
-  if (!isJsonObject(value)) return false;
-  return value.supportedSymbol === false;
-}
-
-function isJsonObject(value: JsonValue | undefined): value is { [key: string]: JsonValue } {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function stringMetadata(metadata: FileExportMetadata, key: string): string | undefined {
-  const value = metadata[key];
-  return typeof value === "string" && value.length > 0 ? value : undefined;
-}
-
 function isScopedSymbol(node: GraphFactNode, scopedPaths: ReadonlySet<string>): boolean {
-  const filePath = symbolFilePath(node);
+  const filePath = graphFactNodePath(node);
   return filePath !== undefined && scopedPaths.has(filePath);
-}
-
-function fileNodePath(node: GraphFactNode): string | undefined {
-  return node.path ?? stringAttribute(node, ["path", "file", "filePath", "sourcePath"]);
 }
 
 function hasFileContainsEdge(path: string, node: GraphFactNode, contains: readonly GraphFactEdge[]): boolean {
@@ -302,11 +296,18 @@ function fileAliases(path: string, node: GraphFactNode | undefined): ReadonlySet
   return aliases;
 }
 
-function symbolAliases(node: GraphFactNode): ReadonlySet<string> {
-  const aliases = new Set([node.id]);
-  const stableId = stringAttribute(node, ["symbolId", "stableId", "qualifiedName"]);
-  if (stableId !== undefined) aliases.add(stableId);
-  return aliases;
+function hasReachableFile(path: string, node: GraphFactNode | undefined, reachableFileAliases: ReadonlySet<string>): boolean {
+  for (const alias of fileAliases(path, node)) {
+    if (reachableFileAliases.has(alias)) return true;
+  }
+  return false;
+}
+
+function hasReachableSymbol(node: GraphFactNode, reachableSymbolAliases: ReadonlySet<string>): boolean {
+  for (const alias of graphFactSymbolAliasSet(node)) {
+    if (reachableSymbolAliases.has(alias)) return true;
+  }
+  return false;
 }
 
 function hasIncomingTypeReference(
@@ -314,21 +315,11 @@ function hasIncomingTypeReference(
   typeReferences: readonly GraphFactEdge[],
   incomingTypeReferences: ReadonlySet<string>
 ): boolean {
-  if (incomingTypeReferences.has(node.id)) return true;
-  const aliases = symbolAliases(node);
-  return typeReferences.some((edge) => aliases.has(edge.to));
+  return graphFactHasIncomingTargetEdge(node, typeReferences, incomingTypeReferences);
 }
 
 function isTypeReferenceEdge(edge: GraphFactEdge): boolean {
   return (typeReferenceEdgeKinds as readonly string[]).includes(edge.kind);
-}
-
-function symbolFilePath(node: GraphFactNode): string | undefined {
-  if (node.path !== undefined) return node.path;
-  const path = stringAttribute(node, ["path", "file", "filePath", "sourcePath"]);
-  if (path !== undefined) return path;
-  const match = /^[^:]+:([^#]+)(?:#.*)?$/.exec(node.id);
-  return match?.[1];
 }
 
 function supportsAllEdgeKinds(handshakeEdgeKinds: readonly string[] | undefined, edgeKinds: readonly GraphEdgeKind[]): boolean {
@@ -349,27 +340,7 @@ function symbolLabels(nodes: readonly GraphFactNode[]): string {
 }
 
 function compareSymbols(left: GraphFactNode, right: GraphFactNode): number {
-  return `${symbolFilePath(left) ?? ""}\0${left.name ?? left.id}`.localeCompare(`${symbolFilePath(right) ?? ""}\0${right.name ?? right.id}`);
-}
-
-function booleanAttribute(node: GraphFactNode, keys: readonly string[]): boolean {
-  for (const key of keys) {
-    const value = node.attributes?.[key];
-    if (value === true || value === "true") return true;
-  }
-  return false;
-}
-
-function stringAttribute(node: GraphFactNode, keys: readonly string[]): string | undefined {
-  for (const key of keys) {
-    const value = node.attributes?.[key];
-    if (isStringValue(value)) return value;
-  }
-  return undefined;
-}
-
-function isStringValue(value: JsonValue | undefined): value is string {
-  return typeof value === "string" && value.length > 0;
+  return `${graphFactNodePath(left) ?? ""}\0${left.name ?? left.id}`.localeCompare(`${graphFactNodePath(right) ?? ""}\0${right.name ?? right.id}`);
 }
 
 function isDefined<T>(value: T | undefined): value is T {

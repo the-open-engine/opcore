@@ -10,7 +10,6 @@ import { createCommandRouterResult } from "@the-open-engine/opcore-contracts";
 import {
   createNodeValidationWorkspace,
   createValidationRunner,
-  type ValidationCheckDefinition,
   type ValidationWorkspace
 } from "@the-open-engine/opcore-validation";
 import { readdir, readFile } from "node:fs/promises";
@@ -21,9 +20,9 @@ import { activeValidationAdaptersForCoverage, failedValidationCheckIds } from ".
 import { commonSkippedPathSegments, createRepoState, parseOpcoreRepoArgs, type RepoResolution, resolveRepo } from "./status.js";
 import {
   createOpcoreValidationGraphProviderClient,
-  defaultValidationChecks,
   opcorePublicValidationRuntimePolicy
 } from "./validation-composition.js";
+import { validationChecksForRepoPolicyAndCoverage } from "./repo-validation-policy.js";
 
 const skippedPathSegments = new Set<string>(commonSkippedPathSegments);
 
@@ -117,9 +116,9 @@ export async function createOpcoreScanAnalysis(resolution: RepoResolution): Prom
   };
 }
 
-function scanValidationChecks(repoState: OpcoreRepoStatePayload): readonly ValidationCheckDefinition[] {
+function scanValidationChecks(repoState: OpcoreRepoStatePayload) {
   const activeAdapters = activeValidationAdaptersForCoverage(repoState.coverage);
-  return defaultValidationChecks.filter((check) => activeAdapters.has(check.adapter));
+  return validationChecksForRepoPolicyAndCoverage(repoState.repo.root, activeAdapters);
 }
 
 function createScanWorkspace(resolution: RepoResolution): ValidationWorkspace {

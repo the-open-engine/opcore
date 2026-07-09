@@ -1,5 +1,5 @@
 import type { ValidationCheckContext, ValidationFileView } from "@the-open-engine/opcore-validation";
-import { normalizeValidationFileViewPath } from "@the-open-engine/opcore-validation";
+import { joinRepoRelativePaths, normalizeValidationFileViewPath, uniqueSortedStrings } from "@the-open-engine/opcore-validation";
 import ts from "typescript";
 
 export const typeScriptSourceExtensions = [".ts", ".tsx", ".js", ".jsx", ".mts", ".cts"] as const;
@@ -73,15 +73,15 @@ async function materializeTypeScriptSourcesUncached(
   requestedRootPaths?: readonly string[],
   requestedSupportPaths: readonly string[] = []
 ): Promise<TypeScriptMaterializedSourceSet> {
-  const rootPaths = uniqueSorted(
+  const rootPaths = uniqueSortedStrings(
     (requestedRootPaths ?? [...context.fileView.scopeFiles, ...context.fileView.overlays.map((overlay) => overlay.path)])
       .map((path) => normalizeValidationFileViewPath(path))
       .filter(isTypeScriptSourcePath)
   );
-  const supportPaths = uniqueSorted(requestedSupportPaths.map((path) => normalizeValidationFileViewPath(path)));
+  const supportPaths = uniqueSortedStrings(requestedSupportPaths.map((path) => normalizeValidationFileViewPath(path)));
   const rootPathSet = new Set(rootPaths);
   const supportPathSet = new Set(supportPaths);
-  const initialPaths = uniqueSorted([...rootPaths, ...supportPaths].filter(isTypeScriptSourcePath));
+  const initialPaths = uniqueSortedStrings([...rootPaths, ...supportPaths].filter(isTypeScriptSourcePath));
   const materializedRootPaths: string[] = [];
   const materializedSupportPaths: string[] = [];
   const pending = [...initialPaths];
@@ -111,8 +111,8 @@ async function materializeTypeScriptSourcesUncached(
 
   const files = [...sourceFileByPath.values()].sort((left, right) => left.path.localeCompare(right.path));
   return {
-    rootPaths: uniqueSorted(materializedRootPaths),
-    supportPaths: uniqueSorted(materializedSupportPaths),
+    rootPaths: uniqueSortedStrings(materializedRootPaths),
+    supportPaths: uniqueSortedStrings(materializedSupportPaths),
     paths: files.map((file) => file.path),
     files,
     sourceFileByPath,
@@ -126,7 +126,7 @@ async function materializeTypeScriptSourcesUncached(
 
 function moduleImportSpecifiers(path: string, content: string): readonly string[] {
   const preprocessed = ts.preProcessFile(content, true, true);
-  return uniqueSorted(
+  return uniqueSortedStrings(
     [...preprocessed.importedFiles, ...preprocessed.referencedFiles]
       .map((entry) => entry.fileName)
       .filter((specifier) => isRelativeSpecifier(specifier) || isPathMappableSpecifier(specifier))
@@ -314,20 +314,7 @@ function compilerOptionBasePath(options: ts.CompilerOptions): string {
 }
 
 function joinRepoPaths(...paths: readonly string[]): string | undefined {
-  const normalized: string[] = [];
-  for (const path of paths) {
-    if (path.startsWith("/")) return undefined;
-    for (const part of path.split("/")) {
-      if (part.length === 0 || part === ".") continue;
-      if (part === "..") {
-        if (normalized.length === 0) return undefined;
-        normalized.pop();
-        continue;
-      }
-      normalized.push(part);
-    }
-  }
-  return normalized.length === 0 ? "." : normalized.join("/");
+  return joinRepoRelativePaths(paths);
 }
 
 function sourceMaterializationCacheKey(options: MaterializeTypeScriptSourceOptions): string {
@@ -336,13 +323,9 @@ function sourceMaterializationCacheKey(options: MaterializeTypeScriptSourceOptio
     baseUrl: compilerOptions.baseUrl,
     configFilePath: compilerOptions.configFilePath,
     paths: compilerOptions.paths,
-    rootPaths: options.rootPaths === undefined ? undefined : uniqueSorted(options.rootPaths),
-    supportPaths: options.supportPaths === undefined ? undefined : uniqueSorted(options.supportPaths)
+    rootPaths: options.rootPaths === undefined ? undefined : uniqueSortedStrings(options.rootPaths),
+    supportPaths: options.supportPaths === undefined ? undefined : uniqueSortedStrings(options.supportPaths)
   });
-}
-
-function uniqueSorted(values: readonly string[]): readonly string[] {
-  return [...new Set(values)].sort();
 }
 
 function unique(values: readonly string[]): readonly string[] {

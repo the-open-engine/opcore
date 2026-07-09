@@ -86,6 +86,105 @@ const rustCheckIds = [
     assert.equal(isRustAdapterOwnedPath("src/index.ts"), false);
   });
 
+  it("runs configured Rust command gates", async () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-validation-rust-command-gate-"));
+    try {
+      mkdirSync(join(temp, "scripts"), { recursive: true });
+      const gateScript = join(temp, "scripts/gate.sh");
+      writeFileSync(gateScript, "#!/bin/sh\nprintf 'gate ok\\n'\n");
+      chmodSync(gateScript, 0o755);
+
+      const result = await rustGraphRunner({
+        checks: createRustValidationChecks({
+          commandGates: [
+            {
+              id: "rust-gate.local",
+              command: "./scripts/gate.sh",
+              cwd: "."
+            }
+          ]
+        })
+      }).runValidation(
+        request({
+          repo: {
+            repoRoot: temp
+          },
+          checks: ["rust-gate.local"]
+        })
+      );
+
+      assert.equal(result.status, "passed", JSON.stringify(result, null, 2));
+      assert.deepEqual(result.diagnostics, []);
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("maps failing Rust command gates to policy diagnostics", async () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-validation-rust-command-gate-fail-"));
+    try {
+      mkdirSync(join(temp, "scripts"), { recursive: true });
+      const gateScript = join(temp, "scripts/gate.sh");
+      writeFileSync(gateScript, "#!/bin/sh\nprintf 'gate failed\\n' >&2\nexit 7\n");
+      chmodSync(gateScript, 0o755);
+
+      const result = await rustGraphRunner({
+        checks: createRustValidationChecks({
+          commandGates: [
+            {
+              id: "rust-gate.local",
+              command: "./scripts/gate.sh",
+              cwd: "."
+            }
+          ]
+        })
+      }).runValidation(
+        request({
+          repo: {
+            repoRoot: temp
+          },
+          checks: ["rust-gate.local"]
+        })
+      );
+
+      assert.equal(result.status, "policy_failure", JSON.stringify(result, null, 2));
+      assert.deepEqual(result.diagnostics.map((diagnostic) => diagnostic.code), ["RUST_COMMAND_GATE_FAILED"]);
+      assert.match(result.diagnostics[0].message, /rust-gate\.local failed/);
+      assert.match(result.diagnostics[0].message, /gate failed/);
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects Rust command gates outside the repo", async () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-validation-rust-command-gate-bad-"));
+    try {
+      const result = await rustGraphRunner({
+        checks: createRustValidationChecks({
+          commandGates: [
+            {
+              id: "rust-gate.bad",
+              command: "cargo",
+              cwd: "../outside"
+            }
+          ]
+        })
+      }).runValidation(
+        request({
+          repo: {
+            repoRoot: temp
+          },
+          checks: ["rust-gate.bad"]
+        })
+      );
+
+      assert.equal(result.status, "unsupported_request");
+      assert.match(result.failure.cause, /cwd must not contain parent traversal/);
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
   it("reports source-hygiene policy diagnostics from overlay after-state content", async () => {
     const result = await runner({
       files: {

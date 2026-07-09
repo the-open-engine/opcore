@@ -150,6 +150,31 @@ export {
   type ValidationWorkspaceReadFileResult
 } from "./scope.js";
 export {
+  countPhysicalLines,
+  errorMessage,
+  graphFactBooleanAttribute,
+  graphFactHasExportMetadata,
+  graphFactHasIncomingTargetEdge,
+  graphFactNodePath,
+  graphFactPathFromEndpoint,
+  graphFactStringAttribute,
+  graphFactSymbolAliases,
+  graphFactSymbolAliasSet,
+  graphFactUnsupportedExportLabels,
+  graphFactUnsupportedFileExportMetadata,
+  isPlainObject,
+  joinRepoRelativePaths,
+  normalizeLineEndings,
+  normalizeRepoRelativePath,
+  repoPathGlobToRegex,
+  repoPathHasGlobSyntax,
+  splitPhysicalLines,
+  uniqueSortedStrings,
+  type GraphFactExportMetadata,
+  type JoinRepoRelativePathsOptions,
+  type RepoPathGlobOptions
+} from "./utilities.js";
+export {
   createValidationRunner,
   type CreateValidationRunnerOptions,
   type ValidationCheckCompleteEvent,

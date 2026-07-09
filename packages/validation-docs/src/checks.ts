@@ -1,5 +1,6 @@
 import type { GraphFactEdge, GraphFactNode, RequiredContextDocPolicy, ValidationDiagnostic } from "@the-open-engine/opcore-contracts";
 import type { ValidationCheckContext, ValidationCheckDefinition, ValidationCheckResult } from "@the-open-engine/opcore-validation";
+import { countPhysicalLines, graphFactNodePath, graphFactPathFromEndpoint, splitPhysicalLines } from "@the-open-engine/opcore-validation";
 import {
   defaultDocsHistoryThresholds,
   defaultDocsHubCoverageThresholds,
@@ -18,6 +19,7 @@ import {
   DOCS_HUB_COVERAGE_CHECK_ID,
   DOCS_LENGTH_CHECK_ID,
   DOCS_RULES_WHY_CHECK_ID,
+  DOCS_SUBTREE_COVERAGE_CHECK_ID,
   DOCS_STALENESS_CHECK_ID
 } from "./check-ids.js";
 import { diagnostic, sortDiagnostics } from "./diagnostics.js";
@@ -38,11 +40,18 @@ export interface DocsHistoryOptions {
 
 export interface DocsHubCoverageOptions {
   minFanIn?: number;
+  minFanOut?: number;
+  requireExplicitMention?: boolean;
+}
+
+export interface DocsSubtreeCoverageOptions {
+  minLoc?: number;
 }
 
 export interface CreateDocsValidationChecksOptions extends DocsPolicyOptions {
   history?: DocsHistoryOptions;
   hubCoverage?: DocsHubCoverageOptions;
+  subtreeCoverage?: DocsSubtreeCoverageOptions;
 }
 
 type DocsCheckRunner = (context: ValidationCheckContext) => Promise<ValidationCheckResult> | ValidationCheckResult;
@@ -107,15 +116,7 @@ export function createDocsLengthCheck(options: DocsPolicyOptions = {}): Validati
     if (snapshot.docs.length === 0) return skippedDocsResult("No documentation files were selected.");
     return {
       diagnostics: sortDiagnostics(
-        snapshot.docs
-          .filter((doc) => doc.content.trim().length < snapshot.policy.minimumContentLength)
-          .map((doc) =>
-            diagnostic({
-              path: doc.path,
-              code: "DOCS_TOO_SHORT",
-              message: `Documentation content is shorter than the ${snapshot.policy.minimumContentLength}-character require-context-doc policy minimum.`
-            })
-          )
+        snapshot.docs.flatMap((doc) => lengthDiagnostics(doc, snapshot.policy))
       )
     };
   });
@@ -184,14 +185,16 @@ export function createDocsHubCoverageCheck(options: CreateDocsValidationChecksOp
         context.graph.importsFrom()
       ]);
       const hubs = hubPaths(nodeResult.nodes, importsFrom, snapshot.policy, options.hubCoverage);
-      const documentedHubs = hubs.filter((hub) => !docsMentionPath(snapshot.docs, hub.path));
+      const documentedHubs = hubs.filter((hub) =>
+        !docsMentionPath(snapshot.docs, hub.path, options.hubCoverage?.requireExplicitMention === true)
+      );
       return {
         diagnostics: documentedHubs.map((hub) =>
           diagnostic({
             severity: "warning",
             category: "graph",
             code: "DOCS_HUB_UNDOCUMENTED",
-            message: `Graph hub ${hub.path} has ${hub.fanIn} incoming IMPORTS_FROM edges but is not mentioned in discovered context docs.`
+            message: `Graph hub ${hub.path} has ${hub.fanIn} incoming and ${hub.fanOut} outgoing IMPORTS_FROM edges but is not mentioned in discovered context docs.`
           })
         )
       };
@@ -214,6 +217,30 @@ export function createDocsHubCoverageCheck(options: CreateDocsValidationChecksOp
       }
     ]
   };
+}
+
+export function createDocsSubtreeCoverageCheck(options: CreateDocsValidationChecksOptions = {}): ValidationCheckDefinition {
+  return docsCheck(DOCS_SUBTREE_COVERAGE_CHECK_ID, "warning", repoWideDocsValidationScopes, async (context) => {
+    const snapshot = await materializeDocsSnapshot(context, options);
+    if (snapshot.docs.length === 0) return skippedDocsResult("No documentation files were selected.");
+    const minLoc = options.subtreeCoverage?.minLoc ?? 10_000;
+    const subtrees = await sourceSubtreeLoc(context);
+    return {
+      diagnostics: sortDiagnostics(
+        [...subtrees]
+          .filter(([, loc]) => loc >= minLoc)
+          .filter(([subtree]) => !docsMentionPath(snapshot.docs, subtree, true))
+          .map(([subtree, loc]) =>
+            diagnostic({
+              severity: "warning",
+              path: subtree,
+              code: "DOCS_SUBTREE_UNDOCUMENTED",
+              message: `Source subtree ${subtree} has ${loc} lines but is not explicitly mentioned in discovered context docs.`
+            })
+          )
+      )
+    };
+  });
 }
 
 function docsCheck(
@@ -262,6 +289,43 @@ function skippedHistoryUnavailableResult(message: string): ValidationCheckResult
   return skippedDocsResult(message.startsWith("Git history is unavailable") ? message : `Git history is unavailable: ${message}`);
 }
 
+function lengthDiagnostics(doc: DocsDocument, policy: RequiredContextDocPolicy): readonly ValidationDiagnostic[] {
+  const diagnostics: ValidationDiagnostic[] = [];
+  if (doc.content.trim().length < policy.minimumContentLength) {
+    diagnostics.push(
+      diagnostic({
+        path: doc.path,
+        code: "DOCS_TOO_SHORT",
+        message: `Documentation content is shorter than the ${policy.minimumContentLength}-character require-context-doc policy minimum.`
+      })
+    );
+  }
+  const lines = splitPhysicalLines(doc.content);
+  const totalLines = countPhysicalLines(doc.content);
+  if (policy.maxLines !== undefined && totalLines > policy.maxLines) {
+    diagnostics.push(
+      diagnostic({
+        path: doc.path,
+        code: "DOCS_TOO_LONG",
+        message: `Documentation has ${totalLines} lines; max is ${policy.maxLines}.`
+      })
+    );
+  }
+  if (policy.maxSectionLines !== undefined) {
+    const section = longestSectionLineCount(lines);
+    if (section > policy.maxSectionLines) {
+      diagnostics.push(
+        diagnostic({
+          path: doc.path,
+          code: "DOCS_SECTION_TOO_LONG",
+          message: `Documentation section has ${section} lines; max is ${policy.maxSectionLines}.`
+        })
+      );
+    }
+  }
+  return diagnostics;
+}
+
 function historyNow(options: DocsHistoryOptions | undefined): Date {
   if (options?.now instanceof Date) return options.now;
   if (typeof options?.now === "string") return new Date(options.now);
@@ -277,6 +341,20 @@ function normalizedParagraphs(content: string): readonly string[] {
     .split(/\n\s*\n/u)
     .map((paragraph) => paragraph.replace(/\s+/gu, " ").trim())
     .filter((paragraph) => paragraph.length >= 80 && !paragraph.startsWith("```"));
+}
+
+function longestSectionLineCount(lines: readonly string[]): number {
+  let current = 0;
+  let longest = 0;
+  for (const line of lines) {
+    if (/^\s*#{1,6}\s+/u.test(line)) {
+      longest = Math.max(longest, current);
+      current = 1;
+      continue;
+    }
+    current += 1;
+  }
+  return Math.max(longest, current);
 }
 
 function contentQualityDiagnostics(doc: DocsDocument): readonly ValidationDiagnostic[] {
@@ -352,44 +430,64 @@ function hubPaths(
   edges: readonly GraphFactEdge[],
   policy: RequiredContextDocPolicy,
   options: DocsHubCoverageOptions | undefined
-): readonly { path: string; fanIn: number }[] {
+): readonly { path: string; fanIn: number; fanOut: number }[] {
   const nodePaths = new Set(nodes.map(nodePath).filter((path): path is string => path !== undefined && !isDocsPath(path, policy)));
   const incoming = new Map<string, number>();
+  const outgoing = new Map<string, number>();
   for (const edge of edges) {
     if (edge.kind !== "IMPORTS_FROM") continue;
+    const sourcePath = endpointPath(edge.from);
     const targetPath = endpointPath(edge.to);
-    if (targetPath === undefined || !nodePaths.has(targetPath)) continue;
-    incoming.set(targetPath, (incoming.get(targetPath) ?? 0) + 1);
+    if (sourcePath !== undefined && nodePaths.has(sourcePath)) {
+      outgoing.set(sourcePath, (outgoing.get(sourcePath) ?? 0) + 1);
+    }
+    if (targetPath !== undefined && nodePaths.has(targetPath)) {
+      incoming.set(targetPath, (incoming.get(targetPath) ?? 0) + 1);
+    }
   }
   const minFanIn = options?.minFanIn ?? defaultDocsHubCoverageThresholds.minFanIn;
-  return [...incoming]
-    .filter(([, fanIn]) => fanIn >= minFanIn)
-    .map(([path, fanIn]) => ({ path, fanIn }))
-    .sort((left, right) => right.fanIn - left.fanIn || left.path.localeCompare(right.path));
+  const minFanOut = options?.minFanOut;
+  return [...nodePaths]
+    .map((path) => ({ path, fanIn: incoming.get(path) ?? 0, fanOut: outgoing.get(path) ?? 0 }))
+    .filter((hub) => hub.fanIn >= minFanIn || (minFanOut !== undefined && hub.fanOut >= minFanOut))
+    .sort((left, right) => right.fanIn - left.fanIn || right.fanOut - left.fanOut || left.path.localeCompare(right.path));
 }
 
-function docsMentionPath(docs: readonly DocsDocument[], path: string): boolean {
+function docsMentionPath(docs: readonly DocsDocument[], path: string, requireExplicit = false): boolean {
   const basename = pathBasename(path).toLowerCase();
   const normalizedPath = path.toLowerCase();
   return docs.some((doc) => {
     const content = doc.content.toLowerCase();
-    return content.includes(normalizedPath) || content.includes(basename);
+    return content.includes(normalizedPath) || (!requireExplicit && content.includes(basename));
   });
 }
 
+async function sourceSubtreeLoc(context: ValidationCheckContext): Promise<ReadonlyMap<string, number>> {
+  const totals = new Map<string, number>();
+  for (const path of context.fileView.visibleFiles) {
+    if (isDocsPath(path) || !isSourceLikePath(path)) continue;
+    const result = await context.fileView.readAfter(path);
+    if (result.status !== "found") continue;
+    const subtree = firstPathSegment(path);
+    totals.set(subtree, (totals.get(subtree) ?? 0) + countPhysicalLines(result.content));
+  }
+  return totals;
+}
+
+function isSourceLikePath(path: string): boolean {
+  return /\.(?:[cm]?[jt]sx?|pyi?|rs|toml)$/iu.test(path);
+}
+
+function firstPathSegment(path: string): string {
+  return path.split("/")[0] ?? path;
+}
+
 function nodePath(node: GraphFactNode): string | undefined {
-  if (node.path !== undefined) return node.path;
-  return stringAttribute(node, "path") ?? endpointPath(node.id);
+  return graphFactNodePath(node);
 }
 
 function endpointPath(endpoint: string): string | undefined {
-  const match = /^file:(.+)$/u.exec(endpoint) ?? /^[^:]+:([^#]+)(?:#.*)?$/u.exec(endpoint);
-  return match?.[1];
-}
-
-function stringAttribute(node: GraphFactNode, key: string): string | undefined {
-  const value = node.attributes?.[key];
-  return typeof value === "string" ? value : undefined;
+  return graphFactPathFromEndpoint(endpoint);
 }
 
 function isMarkdownLike(path: string): boolean {

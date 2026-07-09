@@ -44,7 +44,8 @@ const allCheckIds = [
   "docs.content-quality",
   "docs.code-blocks",
   "docs.rules-why",
-  "docs.hub-coverage"
+  "docs.hub-coverage",
+  "docs.subtree-coverage"
 ];
 
 describe("Opcore ASP provider", () => {
@@ -190,6 +191,73 @@ describe("Opcore ASP provider", () => {
         );
         assert.equal(functionMetricDiagnostic?.source, "opcore");
         assert.equal(functionMetricDiagnostic?.code, "opcore/typescript.function-metrics/TS_FUNCTION_PARAMS");
+      } finally {
+        peer.close();
+      }
+    } finally {
+      rmSync(repo, { recursive: true, force: true });
+    }
+  });
+
+  it("honors repo validation policy thresholds during check evaluation", { timeout: 60000 }, async () => {
+    assert.equal(existsSync(providerBin), true, "run npm run build before asp-provider tests");
+    const repo = mkdtempSync(join(tmpdir(), "opcore-asp-provider-policy-"));
+    try {
+      writeFileSync(join(repo, "tsconfig.json"), "{}\n");
+      mkdirSync(join(repo, ".opcore"), { recursive: true });
+      mkdirSync(join(repo, "src"));
+      writeFileSync(
+        join(repo, ".opcore/config"),
+        `${JSON.stringify({
+          schemaVersion: 1,
+          kind: "opcore_init_config",
+          validation: {
+            checks: {
+              typescript: {
+                fileLength: {
+                  maxFileLines: 2
+                }
+              }
+            }
+          }
+        })}\n`
+      );
+      writeFileSync(join(repo, "src/length.ts"), "export const ok = 1;\n");
+
+      const host = createHostWorkspace({
+        "tsconfig.json": "{}\n",
+        "src/length.ts": "export const ok = 1;\n"
+      });
+      const peer = spawnProvider(host);
+      try {
+        await peer.request("initialize", {
+          protocolVersion: "asp/0.1",
+          host: { name: "fake-host", version: "0.1.0-test" },
+          hostCapabilities: { readBlob: true, listTree: true, putBlob: false },
+          workspace: { root: repo, baseline: host.baseline },
+          assuranceMode: "gated"
+        });
+        peer.notify("initialized", {
+          grantedPermissions: { read: ["**/*"], write: false, network: false },
+          baseline: host.baseline
+        });
+
+        const changeset = host.changeset([
+          host.modify("src/length.ts", "export const a = 1;\nexport const b = 2;\nexport const c = 3;\n")
+        ]);
+        const assessment = await peer.request("check/evaluate", {
+          callSite: "interactive",
+          changeset,
+          comparison: "all",
+          checks: ["typescript.file-length"]
+        });
+
+        const fileLengthDiagnostic = assessment.diagnostics.find((diagnostic) =>
+          diagnostic.code.includes("/TS_FILE_LINES")
+        );
+        assert.equal(fileLengthDiagnostic?.source, "opcore");
+        assert.equal(fileLengthDiagnostic?.code, "opcore/typescript.file-length/TS_FILE_LINES");
+        assert.equal(fileLengthDiagnostic?.message, "TypeScript file has 3 lines; max is 2.");
       } finally {
         peer.close();
       }

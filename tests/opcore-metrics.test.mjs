@@ -50,6 +50,7 @@ describe("Opcore metrics", () => {
     assert.equal(report.degradations.some((entry) => entry.id === "python.types.unavailable"), true);
     assert.equal(report.degradations.some((entry) => entry.id === "rust.tool.cargo.unavailable"), true);
     assert.equal(report.degradations.some((entry) => entry.id === "python.tool.mypy.unavailable" && entry.requiredTool === "mypy"), true);
+    assert.deepEqual(report.validation.policy.disabledChecks, ["typescript.types"]);
     assert.equal(JSON.stringify(report).includes("blendedScore"), false);
     assert.equal(Object.hasOwn(report, "score"), false);
   });
@@ -544,6 +545,15 @@ function repoState(overrides = {}) {
     validation: {
       ready: degradedToolchains.length === 0,
       checkCount: 15,
+      policy: {
+        path: ".opcore/config",
+        state: "loaded",
+        adapters: ["typescript", "rust", "python"],
+        packs: ["./checks/policy.cjs"],
+        disabledChecks: ["typescript.types"],
+        defaultChecks: ["docs.existence"],
+        configuredChecks: ["typescript.syntax", "rust.source-hygiene", "python.syntax"]
+      },
       adapters: [
         {
           adapter: "rust",

@@ -28,8 +28,13 @@ export interface CloneNativeInvoker {
 
 export interface CreateCloneDuplicationCheckOptions {
   invoke?: CloneNativeInvoker["invoke"];
+  windowSize?: number;
   minLines?: number;
   minTokens?: number;
+  threshold?: number;
+  partitions?: readonly (readonly string[])[];
+  exclude?: readonly string[];
+  modes?: readonly string[];
 }
 
 export function createCloneDuplicationCheck(
@@ -43,6 +48,13 @@ export function createCloneDuplicationCheck(
     supportedScopes: supportedCloneValidationScopes,
     requiresGraph: false,
     run: async (context) => {
+      if (options.modes !== undefined && !options.modes.includes(context.scope.kind)) {
+        return {
+          status: "skipped",
+          diagnostics: [],
+          failureMessage: `Clone duplication check is not enabled for ${context.scope.kind} scope.`
+        };
+      }
       const skipped = skippedCloneInputResult(context);
       if (skipped !== undefined) return skipped;
       return runCloneDuplicationCheck(context, options);
@@ -72,7 +84,7 @@ async function runCloneDuplicationCheck(
 
 async function cloneAnalysisRequest(
   context: ValidationCheckContext,
-  options: Pick<CreateCloneDuplicationCheckOptions, "minLines" | "minTokens">
+  options: Pick<CreateCloneDuplicationCheckOptions, "windowSize" | "minLines" | "minTokens" | "threshold" | "partitions" | "exclude" | "modes">
 ): Promise<CloneAnalysisRequest> {
   const paths = [...cloneInputPaths(context)];
   const overlays = await cloneOverlays(context, cloneOverlayPaths(context, paths));
@@ -84,8 +96,13 @@ async function cloneAnalysisRequest(
     reportMode: context.request.reportMode ?? "all",
     paths,
     overlays,
+    ...(options.windowSize !== undefined ? { windowSize: options.windowSize } : {}),
     ...(options.minLines !== undefined ? { minLines: options.minLines } : {}),
-    ...(options.minTokens !== undefined ? { minTokens: options.minTokens } : {})
+    ...(options.minTokens !== undefined ? { minTokens: options.minTokens } : {}),
+    ...(options.threshold !== undefined ? { threshold: options.threshold } : {}),
+    ...(options.partitions !== undefined ? { partitions: options.partitions } : {}),
+    ...(options.exclude !== undefined ? { exclude: options.exclude } : {}),
+    ...(options.modes !== undefined ? { modes: options.modes } : {})
   };
 }
 

@@ -8,6 +8,7 @@ import {
   typeScriptCheckOwner,
   supportedTypeScriptValidationScopes
 } from "./check-constants.js";
+import { scriptKindForPath, sortValidationDiagnostics } from "./diagnostics.js";
 import { materializeTypeScriptSources } from "./source-files.js";
 
 export interface TypeScriptFunctionMetricThresholds {
@@ -70,12 +71,12 @@ export function createFunctionMetricsCheck(
       for (const path of sourceSet.rootPaths) {
         const source = sourceSet.sourceFileByPath.get(path);
         if (source === undefined) continue;
-        const sourceFile = ts.createSourceFile(path, source.content, ts.ScriptTarget.Latest, true, scriptKind(path));
+        const sourceFile = ts.createSourceFile(path, source.content, ts.ScriptTarget.Latest, true, scriptKindForPath(path));
         for (const metric of collectFunctionMetrics(sourceFile, path)) {
           diagnostics.push(...metricDiagnostics(metric, thresholds));
         }
       }
-      return { diagnostics: sortDiagnostics(diagnostics) };
+      return { diagnostics: sortValidationDiagnostics(diagnostics) };
     }
   };
 }
@@ -191,21 +192,4 @@ function functionName(node: FunctionMetricNode, sourceFile: ts.SourceFile): stri
 
 function bindingName(name: ts.BindingName, sourceFile: ts.SourceFile): string {
   return ts.isIdentifier(name) ? name.text : name.getText(sourceFile);
-}
-
-function scriptKind(path: string): ts.ScriptKind {
-  if (path.endsWith(".tsx")) return ts.ScriptKind.TSX;
-  if (path.endsWith(".jsx")) return ts.ScriptKind.JSX;
-  if (path.endsWith(".js")) return ts.ScriptKind.JS;
-  return ts.ScriptKind.TS;
-}
-
-function sortDiagnostics(diagnostics: readonly ValidationDiagnostic[]): readonly ValidationDiagnostic[] {
-  return [...diagnostics].sort((left, right) =>
-    [
-      (left.path ?? "").localeCompare(right.path ?? ""),
-      (left.code ?? "").localeCompare(right.code ?? ""),
-      left.message.localeCompare(right.message)
-    ].find((comparison) => comparison !== 0) ?? 0
-  );
 }

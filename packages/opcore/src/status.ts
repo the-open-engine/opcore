@@ -2,6 +2,7 @@ import type {
   CommandRouterResult,
   GraphProviderStatus,
   OpcoreRepoStatePayload,
+  OpcoreValidationPolicySummary,
   ParsedCommandArgv,
   ValidationAdapterRuntimeStatus
 } from "@the-open-engine/opcore-contracts";
@@ -9,6 +10,7 @@ import { createCommandRouterResult } from "@the-open-engine/opcore-contracts";
 import { spawnSync } from "node:child_process";
 import { existsSync, readdirSync, realpathSync, statSync } from "node:fs";
 import { basename, extname, join, resolve, sep } from "node:path";
+import { readOpcoreRepoConfig } from "./repo-validation-config.js";
 import { relevantDegradedToolchainsForCoverage } from "./scan-presentation.js";
 import { commonSkippedPathSegments } from "./source-policy.js";
 import { createDefaultValidationStatusPayload } from "./validation-composition.js";
@@ -317,7 +319,8 @@ export function createRepoState(resolution: RepoResolution): OpcoreRepoStatePayl
   const census = readRepoCensus(resolution);
   const coverage = computeCoverage(census.files);
   const graphStatus = validationStatus.graph.status;
-  const validation = validationSummary(validationStatus, coverage);
+  const policy = validationPolicySummary(resolution.root, validationStatus.adapterRegistry.checkIds);
+  const validation = validationSummary(validationStatus, coverage, policy);
   const asp = discoverAspEnrollment(resolution.root);
   const warnings = statusWarnings({ coverage, validation, graphStatus, traversalFailures: census.traversalFailures });
   const blockers = statusBlockers(graphStatus, census.traversalFailures);
@@ -526,13 +529,15 @@ function computeCoverage(files: readonly string[]): OpcoreRepoStatePayload["cove
 
 function validationSummary(
   validationStatus: ReturnType<typeof createDefaultValidationStatusPayload>,
-  coverage: OpcoreRepoStatePayload["coverage"]
+  coverage: OpcoreRepoStatePayload["coverage"],
+  policy: OpcoreValidationPolicySummary
 ): OpcoreRepoStatePayload["validation"] {
   const adapters = validationStatus.adapterRegistry.adapters ?? [];
   const degraded = adapters.flatMap((adapter) => degradedToolchains(adapter));
   return {
     ready: validationStatus.ready,
     checkCount: validationStatus.adapterRegistry.checkIds.length,
+    policy,
     adapters: adapters.map((adapter) => ({
       adapter: adapter.adapter,
       status: adapter.status,
@@ -541,6 +546,23 @@ function validationSummary(
       missingTools: (adapter.toolchain ?? []).filter((tool) => !tool.available).map((tool) => tool.tool)
     })),
     degradedToolchains: relevantDegradedToolchainsForCoverage(coverage, degraded)
+  };
+}
+
+export function validationPolicySummary(
+  repoRoot: string,
+  configuredChecks: readonly string[]
+): OpcoreValidationPolicySummary {
+  const configFileExists = existsSync(join(repoRoot, ".opcore", "config"));
+  const config = readOpcoreRepoConfig(repoRoot);
+  return {
+    path: ".opcore/config",
+    state: configFileExists ? "loaded" : "missing",
+    adapters: [...(config.validation.adapters ?? [])],
+    packs: [...config.validation.checks.packs],
+    disabledChecks: [...config.validation.checks.disabled],
+    defaultChecks: [...config.validation.checks.defaults],
+    configuredChecks: [...configuredChecks]
   };
 }
 
