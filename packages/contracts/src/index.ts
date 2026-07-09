@@ -1061,6 +1061,9 @@ export type HypotheticalOverlay =
 export const cloneReportModes = ["all", "introduced"] as const;
 export type CloneReportMode = (typeof cloneReportModes)[number];
 
+export const cloneSourceReadModes = ["disk", "gitIndex", "gitTree"] as const;
+export type CloneSourceReadMode = (typeof cloneSourceReadModes)[number];
+
 export interface CloneAnalysisRequest {
   protocol: typeof CLONE_PROTOCOL;
   requestId?: string;
@@ -1068,6 +1071,9 @@ export interface CloneAnalysisRequest {
   repo: RepoIdentity;
   reportMode: CloneReportMode;
   paths?: readonly string[];
+  sourcePaths?: readonly string[];
+  sourceReadMode?: CloneSourceReadMode;
+  sourceTreeRef?: string;
   overlays: readonly HypotheticalOverlay[];
   windowSize?: number;
   minLines?: number;
@@ -6251,6 +6257,9 @@ export function validateCloneAnalysisRequest(request: CloneAnalysisRequest): Clo
   validateRepoIdentity(request.repo);
   validateCloneReportMode(request.reportMode, "Clone analysis request reportMode");
   if (request.paths !== undefined) validateRepoRelativePaths(request.paths, "Clone analysis request paths");
+  if (request.sourcePaths !== undefined) validateRepoRelativePaths(request.sourcePaths, "Clone analysis request sourcePaths");
+  if (request.sourceReadMode !== undefined) validateCloneSourceReadMode(request.sourceReadMode, "Clone analysis request sourceReadMode");
+  if (request.sourceTreeRef !== undefined) validateNonEmptyString(request.sourceTreeRef, "Clone analysis request sourceTreeRef");
   validateHypotheticalOverlays(request.overlays);
   if (request.windowSize !== undefined) validatePositiveInteger(request.windowSize, "Clone analysis request windowSize");
   if (request.minLines !== undefined) validatePositiveInteger(request.minLines, "Clone analysis request minLines");
@@ -6260,6 +6269,12 @@ export function validateCloneAnalysisRequest(request: CloneAnalysisRequest): Clo
   if (request.exclude !== undefined) validateStringArray(request.exclude, "Clone analysis request exclude", { allowEmpty: true });
   if (request.modes !== undefined) validateStringArray(request.modes, "Clone analysis request modes", { allowEmpty: true });
   return request;
+}
+
+function validateCloneSourceReadMode(value: unknown, label: string): asserts value is CloneSourceReadMode {
+  if (!cloneSourceReadModes.includes(value as CloneSourceReadMode)) {
+    throw new Error(`${label} must be one of ${cloneSourceReadModes.join(", ")}`);
+  }
 }
 
 function validateCloneAnalysisPartitions(partitions: readonly (readonly string[])[]): void {

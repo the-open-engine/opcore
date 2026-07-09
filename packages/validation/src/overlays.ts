@@ -81,6 +81,7 @@ export interface CreateValidationFileViewArgs {
 export interface ValidationFileView {
   readonly overlays: readonly ValidationOverlayEntry[];
   readonly scopeFiles: readonly string[];
+  readonly defaultReadState: ValidationFileReadState;
   listVisibleFiles: () => Promise<readonly string[]>;
   readFile: (path: string, options?: ValidationFileReadOptions) => Promise<ValidationFileReadResult>;
   readBefore: (path: string) => Promise<ValidationFileReadResult>;
@@ -162,6 +163,7 @@ export async function createValidationFileView(args: CreateValidationFileViewArg
   return {
     overlays,
     scopeFiles,
+    defaultReadState,
     listVisibleFiles,
     readFile: (path, options = {}) =>
       options.state === "before" || (options.state === undefined && defaultReadState === "before") ? readBefore(path) : readAfter(path),

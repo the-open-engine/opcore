@@ -104,12 +104,22 @@ describe("opcore public facade", () => {
       assert.equal(existsSync(join(temp, ".lattice")), false);
 
       initGitFixture(temp);
+      const duplicate = cloneDuplicateBlock();
+      writeFixtureFile(temp, "src/peer.ts", duplicate);
+      writeFixtureFile(temp, "src/clone.ts", duplicate);
       const explicitClone = await routeOpcoreCommand(
         ["check", "--all", "--repo", temp, "--checks", "clone.duplication", "--json"],
         "opcore"
       );
       assert.ok(explicitClone.validationResult);
       assert.equal(explicitClone.validationResult.manifest.checks.includes("clone.duplication"), true);
+      assert.equal(
+        explicitClone.validationResult.diagnostics.some(
+          (diagnostic) => diagnostic.code === "CLONE_DUPLICATE" && diagnostic.path === "src/clone.ts"
+        ),
+        true,
+        JSON.stringify(explicitClone.validationResult.diagnostics, null, 2)
+      );
       const explicitCloneSkip = explicitClone.validationResult.manifest.skippedChecks?.find(
         (skip) => skip.checkId === "clone.duplication"
       );
@@ -1980,6 +1990,20 @@ function runPendingInitChildUntilIdle(script, cwd) {
       });
     });
   });
+}
+
+function cloneDuplicateBlock() {
+  return [
+    "export function duplicated() {",
+    "  const one = 1;",
+    "  const two = 2;",
+    "  const three = 3;",
+    "  const four = one + two;",
+    "  const five = three + four;",
+    "  return five + four + three + two + one;",
+    "}",
+    ""
+  ].join("\n");
 }
 
 function writeFixtureFile(root, path, content) {
