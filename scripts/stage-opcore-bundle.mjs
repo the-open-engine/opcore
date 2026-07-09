@@ -76,7 +76,7 @@ function stagePackage(packageName, packageDir, opcoreNodeModulesDir, options = {
 function packFiles(packageName, packageDir, options = {}) {
   const source = options.disableLifecycleScripts ? scriptlessPackageCopy(packageDir) : undefined;
   try {
-    const result = spawnSync("npm", ["pack", "--dry-run", "--json", "--ignore-scripts"], {
+    const result = spawnSync("npm", ["pack", ".", "--dry-run", "--json", "--ignore-scripts"], {
       cwd: source?.packageDir ?? packageDir,
       encoding: "utf8",
       stdio: ["ignore", "pipe", "pipe"]
@@ -84,9 +84,19 @@ function packFiles(packageName, packageDir, options = {}) {
     if (result.status !== 0) {
       throw new Error(`npm pack --dry-run failed for bundled package ${packageName}:\n${result.stderr || result.stdout}`);
     }
-    const pack = JSON.parse(result.stdout)[0];
+    const parsed = JSON.parse(result.stdout);
+    if (parsed?.error) {
+      throw new Error(
+        `npm pack --dry-run returned an error for bundled package ${packageName}:\n${JSON.stringify(parsed.error, null, 2)}`
+      );
+    }
+    const pack = Array.isArray(parsed) ? parsed[0] : parsed;
     const files = pack?.files?.map((entry) => entry.path) ?? [];
-    if (files.length === 0) throw new Error(`npm pack --dry-run returned no files for bundled package ${packageName}`);
+    if (files.length === 0) {
+      throw new Error(
+        `npm pack --dry-run returned no files for bundled package ${packageName}:\nstdout:\n${result.stdout}\nstderr:\n${result.stderr}`
+      );
+    }
     return files;
   } finally {
     source?.cleanup();

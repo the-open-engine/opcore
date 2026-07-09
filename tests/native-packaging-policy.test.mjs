@@ -37,6 +37,7 @@ describe("native graph-core packaging policy", () => {
     assert.match(releasePublish, /hasTrustedPublishingContext\(\) && !hasTokenAuth\(\) && !options\.dryRun/);
 
     const stageBundle = readFileSync("scripts/stage-opcore-bundle.mjs", "utf8");
+    assert.match(stageBundle, /"pack", "\.", "--dry-run", "--json", "--ignore-scripts"/);
     assert.match(stageBundle, /disableLifecycleScripts: true/);
     assert.match(stageBundle, /delete manifest\.scripts/);
   });
