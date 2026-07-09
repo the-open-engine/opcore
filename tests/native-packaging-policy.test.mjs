@@ -100,6 +100,10 @@ describe("native graph-core packaging policy", () => {
     assert.match(workflow, /OPCORE_CONFIRM_PUBLISH:\s*"0\.2\.0"/);
     assert.match(workflow, /OPCORE_REQUIRE_ALL_NATIVE_PACKAGES:\s*"1"/);
     assert.match(workflow, /run-id: \$\{\{ github\.event\.workflow_run\.id \}\}/);
+    assert.match(
+      workflow,
+      /name: Build JS artifacts[\s\S]*node node_modules\/typescript\/bin\/tsc -b --pretty false && node scripts\/write-cli-descriptor\.mjs && node scripts\/write-asp-provider-manifest\.mjs/
+    );
     for (const target of Object.keys(nativeTargets)) {
       assert.match(workflow, new RegExp(`name: opcore-graph-core-${target}`));
       assert.match(workflow, new RegExp(`tar -xzf "\\$\\{RUNNER_TEMP\\}/opcore-graph-core-${target}/opcore-graph-core-${target}\\.tgz" -C packages/opcore-graph-core-${target}`));
