@@ -4,9 +4,11 @@ import type {
   OpcoreMetricReport,
   OpcoreRepoStatePayload,
   ValidationRequest,
-  ValidationResult
+  ValidationResult,
+  ValidationSkippedCheck
 } from "@the-open-engine/opcore-contracts";
 import { createCommandRouterResult } from "@the-open-engine/opcore-contracts";
+import { CLONE_DUPLICATION_CHECK_ID, validationCloneAdapterName } from "@the-open-engine/opcore-validation-clone";
 import {
   createNodeValidationWorkspace,
   createValidationRunner,
@@ -17,6 +19,12 @@ import { join, relative, resolve, sep } from "node:path";
 import { formatScanPlate } from "./plate.js";
 import { createOpcoreMetricReport, writeOpcoreMetricArtifacts } from "./reporting.js";
 import { activeValidationAdaptersForCoverage, failedValidationCheckIds } from "./scan-presentation.js";
+import {
+  compactScanValidationResult,
+  scanValidationDiagnosticTotal,
+  scanValidationDiagnosticsTruncated,
+  scanValidationTruncationMessage
+} from "./scan-validation-preview.js";
 import { commonSkippedPathSegments, createRepoState, parseOpcoreRepoArgs, type RepoResolution, resolveRepo } from "./status.js";
 import {
   createOpcoreValidationGraphProviderClient,
@@ -25,6 +33,7 @@ import {
 import { validationChecksForRepoPolicyAndCoverage } from "./repo-validation-policy.js";
 
 const skippedPathSegments = new Set<string>(commonSkippedPathSegments);
+const cloneDiagnosticsCommand = "opcore check --all --checks clone.duplication --json";
 
 export interface OpcoreScanAnalysis {
   repoState: OpcoreRepoStatePayload;
@@ -98,27 +107,61 @@ export async function createOpcoreScanAnalysis(resolution: RepoResolution): Prom
     },
     overlays: []
   };
+  const validationPlan = createScanValidationPlan(repoState);
   const validationResult = await createValidationRunner({
     workspace: createScanWorkspace(resolution),
-    checks: scanValidationChecks(repoState),
+    checks: validationPlan.checks,
     graphProviderClient: createOpcoreValidationGraphProviderClient(),
     runtime: opcorePublicValidationRuntimePolicy
   }).runValidation(validationRequest);
+  const mergedValidationResult = addScanSkippedChecks(validationResult, validationPlan.skippedChecks);
   const metricReport = createOpcoreMetricReport({
     repoState,
-    validationResult
+    validationResult: mergedValidationResult
   });
+  const compactValidationResult = compactScanValidationResult(mergedValidationResult);
   return {
-    message: formatScanMessage(repoState, validationResult),
+    message: formatScanMessage(repoState, compactValidationResult),
     repoState,
-    validationResult,
+    validationResult: compactValidationResult,
     metricReport
   };
 }
 
-function scanValidationChecks(repoState: OpcoreRepoStatePayload) {
-  const activeAdapters = activeValidationAdaptersForCoverage(repoState.coverage);
-  return validationChecksForRepoPolicyAndCoverage(repoState.repo.root, activeAdapters);
+function createScanValidationPlan(repoState: OpcoreRepoStatePayload): {
+  checks: ReturnType<typeof validationChecksForRepoPolicyAndCoverage>;
+  skippedChecks: readonly ValidationSkippedCheck[];
+} {
+  const activeAdapters = new Set(activeValidationAdaptersForCoverage(repoState.coverage));
+  const skippedChecks: ValidationSkippedCheck[] = [];
+  if (activeAdapters.delete(validationCloneAdapterName)) {
+    skippedChecks.push({
+      checkId: CLONE_DUPLICATION_CHECK_ID,
+      reason: "not_requested",
+      message: `Clone duplication is not run during product scan; run ${cloneDiagnosticsCommand} for full clone validation.`
+    });
+  }
+  return {
+    checks: validationChecksForRepoPolicyAndCoverage(repoState.repo.root, activeAdapters),
+    skippedChecks
+  };
+}
+
+function addScanSkippedChecks(result: ValidationResult, skippedChecks: readonly ValidationSkippedCheck[]): ValidationResult {
+  if (skippedChecks.length === 0) return result;
+  if (result.manifest === undefined) {
+    throw new Error("Scan validation result is missing a manifest for skipped check disclosure.");
+  }
+  const existing = result.manifest.skippedChecks ?? [];
+  const existingIds = new Set(existing.map((entry) => entry.checkId));
+  const mergedSkippedChecks = [...existing, ...skippedChecks.filter((entry) => !existingIds.has(entry.checkId))];
+  return {
+    ...result,
+    manifest: {
+      ...result.manifest,
+      skippedChecks: mergedSkippedChecks
+    }
+  };
 }
 
 function createScanWorkspace(resolution: RepoResolution): ValidationWorkspace {
@@ -187,6 +230,8 @@ function formatScanMessage(repoState: OpcoreRepoStatePayload, validationResult: 
     ? "none"
     : repoState.validation.degradedToolchains.map((tool) => `${tool.adapter}:${tool.tool}`).join(", ");
   const failedChecks = failedValidationCheckIds(validationResult);
+  const diagnosticTotal = scanValidationDiagnosticTotal(validationResult);
+  const truncationLines = scanValidationDiagnosticsTruncated(validationResult) ? [`  ${scanValidationTruncationMessage()}`] : [];
   return [
     "Coverage:",
     `  files=${repoState.coverage.totalFiles}`,
@@ -197,7 +242,8 @@ function formatScanMessage(repoState: OpcoreRepoStatePayload, validationResult: 
     `  languages=${languages}`,
     `  degraded-validation-tools=${degradedValidationTools}`,
     "Findings:",
-    `  diagnostics=${validationResult.diagnostics.length}`,
+    `  diagnostics=${diagnosticTotal}`,
+    ...truncationLines,
     `  validation=${validationResult.status}`,
     `  failed-checks=${failedChecks.length === 0 ? "none" : failedChecks.join(", ")}`,
     `  activation=${repoState.activation.level}; ${repoState.activation.summary}`,
