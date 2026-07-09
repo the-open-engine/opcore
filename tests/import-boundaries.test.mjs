@@ -8,6 +8,7 @@ const implementationPackages = new Set([
   "@the-open-engine/opcore-graph",
   "@the-open-engine/opcore-edit",
   "@the-open-engine/opcore-validation",
+  "@the-open-engine/opcore-validation-policy",
   "@the-open-engine/opcore-validation-clone",
   "@the-open-engine/opcore-validation-docs",
   "@the-open-engine/opcore-validation-python",
@@ -20,6 +21,7 @@ const packageNamesByDir = new Map([
   ["graph", "@the-open-engine/opcore-graph"],
   ["edit", "@the-open-engine/opcore-edit"],
   ["validation", "@the-open-engine/opcore-validation"],
+  ["validation-policy", "@the-open-engine/opcore-validation-policy"],
   ["validation-clone", "@the-open-engine/opcore-validation-clone"],
   ["validation-docs", "@the-open-engine/opcore-validation-docs"],
   ["validation-python", "@the-open-engine/opcore-validation-python"],
@@ -63,6 +65,7 @@ describe("package import boundaries", () => {
               "@the-open-engine/opcore-graph",
               "@the-open-engine/opcore-edit",
               "@the-open-engine/opcore-validation",
+              "@the-open-engine/opcore-validation-policy",
               "@the-open-engine/opcore-validation-clone",
               "@the-open-engine/opcore-validation-docs",
               "@the-open-engine/opcore-validation-python",
@@ -81,6 +84,7 @@ describe("package import boundaries", () => {
               "@the-open-engine/opcore-contracts",
               "@the-open-engine/opcore-graph",
               "@the-open-engine/opcore-validation",
+              "@the-open-engine/opcore-validation-policy",
               "@the-open-engine/opcore-validation-docs",
               "@the-open-engine/opcore-validation-python",
               "@the-open-engine/opcore-validation-rust",
@@ -92,6 +96,21 @@ describe("package import boundaries", () => {
         }
         if (["graph", "validation"].includes(packageDir)) {
           assert.equal(source, "@the-open-engine/opcore-contracts", `${file} imports ${source}`);
+        }
+        if (packageDir === "validation-policy") {
+          assert.equal(
+            [
+              "@the-open-engine/opcore-contracts",
+              "@the-open-engine/opcore-validation",
+              "@the-open-engine/opcore-validation-clone",
+              "@the-open-engine/opcore-validation-docs",
+              "@the-open-engine/opcore-validation-python",
+              "@the-open-engine/opcore-validation-rust",
+              "@the-open-engine/opcore-validation-typescript"
+            ].includes(source),
+            true,
+            `${file} imports ${source}`
+          );
         }
         if (packageDir === "edit") {
           assert.equal(["@the-open-engine/opcore-contracts", "ts-morph"].includes(source), true, `${file} imports ${source}`);
@@ -145,6 +164,7 @@ describe("package import boundaries", () => {
       "graph",
       "edit",
       "validation",
+      "validation-policy",
       "validation-clone",
       "validation-docs",
       "validation-python",
