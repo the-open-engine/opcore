@@ -157,6 +157,51 @@ fn scoped_no_overlay_requests_are_ephemeral() -> TestResult {
 }
 
 #[test]
+fn sparse_path_list_request_reports_committed_peer_and_applies_write_delete_overlays() -> TestResult
+{
+    let fixture = clone_fixture()?;
+    let duplicate = duplicate_block();
+    write_source(fixture.path(), "src/peer.ts", &duplicate)?;
+    write_source(fixture.path(), "src/deleted.ts", &duplicate)?;
+    init_git_snapshot(fixture.path(), &["src/peer.ts", "src/deleted.ts"])?;
+
+    let mut clone_request = request(
+        fixture.path(),
+        CloneReportMode::Introduced,
+        vec![
+            CloneOverlay::Write {
+                path: "src/new.ts".to_string(),
+                content: duplicate,
+                checksum_before: None,
+            },
+            CloneOverlay::Delete {
+                path: "src/deleted.ts".to_string(),
+                checksum_before: None,
+            },
+        ],
+    )?;
+    clone_request.paths = vec!["src/new.ts".to_string(), "src/deleted.ts".to_string()];
+    clone_request.source_paths = Some(vec![
+        "src/peer.ts".to_string(),
+        "src/deleted.ts".to_string(),
+        "src/new.ts".to_string(),
+    ]);
+
+    let result = analyze_clones(clone_request)?;
+
+    assert!(!result.persisted);
+    assert!(result.db_path.is_none());
+    assert!(result.findings.iter().any(|finding| {
+        finding.path == "src/new.ts" && finding.peer_path == "src/peer.ts" && finding.introduced
+    }));
+    assert!(result
+        .findings
+        .iter()
+        .all(|finding| finding.path != "src/deleted.ts" && finding.peer_path != "src/deleted.ts"));
+    Ok(())
+}
+
+#[test]
 fn clone_exclude_patterns_remove_sources_from_analysis() -> TestResult {
     let fixture = clone_fixture()?;
     let duplicate = duplicate_block();
@@ -263,6 +308,9 @@ fn request(
         },
         report_mode,
         paths: Vec::new(),
+        source_paths: None,
+        source_read_mode: None,
+        source_tree_ref: None,
         overlays,
         window_size: None,
         min_lines: Some(5),

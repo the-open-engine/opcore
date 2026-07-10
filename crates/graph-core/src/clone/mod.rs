@@ -44,6 +44,12 @@ pub struct CloneAnalysisRequest {
     pub report_mode: CloneReportMode,
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub paths: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub source_paths: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub source_read_mode: Option<CloneSourceReadMode>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub source_tree_ref: Option<String>,
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub overlays: Vec<CloneOverlay>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -67,6 +73,14 @@ pub struct CloneAnalysisRequest {
 pub enum CloneReportMode {
     All,
     Introduced,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum CloneSourceReadMode {
+    Disk,
+    GitIndex,
+    GitTree,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -207,6 +221,7 @@ fn validate_request(request: &CloneAnalysisRequest) -> Result<(), CloneError> {
     }
     validate_positive_options(request)?;
     validate_request_paths(request)?;
+    validate_source_read_mode(request)?;
     validate_modes(&request.modes)?;
     Ok(())
 }
@@ -246,6 +261,12 @@ fn validate_request_paths(request: &CloneAnalysisRequest) -> Result<(), CloneErr
         normalize_repo_relative_path(path, "clone request path")
             .map_err(|message| CloneError::InvalidRequest(message.to_string()))?;
     }
+    if let Some(paths) = &request.source_paths {
+        for path in paths {
+            normalize_repo_relative_path(path, "clone request source path")
+                .map_err(|message| CloneError::InvalidRequest(message.to_string()))?;
+        }
+    }
     for (index, partition) in request.partitions.iter().enumerate() {
         if partition.is_empty() {
             return Err(CloneError::InvalidRequest(format!(
@@ -262,6 +283,29 @@ fn validate_request_paths(request: &CloneAnalysisRequest) -> Result<(), CloneErr
     for overlay in &request.overlays {
         normalize_repo_relative_path(overlay.path(), "clone overlay path")
             .map_err(|message| CloneError::InvalidRequest(message.to_string()))?;
+    }
+    Ok(())
+}
+
+fn validate_source_read_mode(request: &CloneAnalysisRequest) -> Result<(), CloneError> {
+    match request
+        .source_read_mode
+        .unwrap_or(CloneSourceReadMode::Disk)
+    {
+        CloneSourceReadMode::GitTree => {
+            if request.source_tree_ref.as_deref().is_none_or(str::is_empty) {
+                return Err(CloneError::InvalidRequest(
+                    "sourceTreeRef is required when sourceReadMode is gitTree".to_string(),
+                ));
+            }
+        }
+        CloneSourceReadMode::Disk | CloneSourceReadMode::GitIndex => {
+            if request.source_tree_ref.is_some() {
+                return Err(CloneError::InvalidRequest(
+                    "sourceTreeRef is only valid when sourceReadMode is gitTree".to_string(),
+                ));
+            }
+        }
     }
     Ok(())
 }
