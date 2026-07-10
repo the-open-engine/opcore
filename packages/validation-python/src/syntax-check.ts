@@ -3,12 +3,41 @@ import type { ValidationCheckDefinition } from "@the-open-engine/opcore-validati
 import { PYTHON_SYNTAX_CHECK_ID } from "./check-ids.js";
 import { pythonCheckAdapter, pythonCheckOwner, supportedPythonValidationScopes } from "./check-constants.js";
 import { diagnostic, sortDiagnostics } from "./diagnostics.js";
+import { runTool } from "./process.js";
 import { readPythonAfterSources, skippedPythonInputResult } from "./source-files.js";
+import { pythonAvailable, type PythonValidationToolchainOptions } from "./toolchain.js";
 
 const compoundStatementPattern =
   /^(?:async\s+def|def|class|if|elif|else\b|for|while|try\b|except|finally\b|with|match|case)\b/u;
 
-export function createSyntaxCheck(): ValidationCheckDefinition {
+const PY_AST_CHECK_SCRIPT = `
+import ast
+import json
+import sys
+
+source = sys.stdin.read()
+try:
+    ast.parse(source)
+    print(json.dumps({"ok": True}))
+except SyntaxError as error:
+    print(json.dumps({
+        "ok": False,
+        "message": error.msg,
+        "line": error.lineno,
+        "column": error.offset
+    }))
+except (ValueError, RecursionError) as error:
+    print(json.dumps({
+        "ok": False,
+        "message": str(error),
+        "line": None,
+        "column": None
+    }))
+`;
+
+export interface PythonSyntaxCheckOptions extends PythonValidationToolchainOptions {}
+
+export function createSyntaxCheck(options: PythonSyntaxCheckOptions = {}): ValidationCheckDefinition {
   return {
     id: PYTHON_SYNTAX_CHECK_ID,
     owner: pythonCheckOwner,
@@ -18,16 +47,86 @@ export function createSyntaxCheck(): ValidationCheckDefinition {
     run: async (context) => {
       const skipped = skippedPythonInputResult(context);
       if (skipped !== undefined) return skipped;
+
+      const pythonCommand = options.pythonCommand ?? "python3";
+      const parserAvailable = pythonAvailable({ env: options.env, pythonCommand });
+      if (!parserAvailable) {
+        return {
+          status: "unsupported_request",
+          diagnostics: [
+            diagnostic({
+              category: "syntax",
+              severity: "info",
+              code: "PY_SYNTAX_PARSER_UNAVAILABLE",
+              message:
+                "Python syntax validation requires a Python interpreter (python3); none is available, so results are reported as unsupported instead of a false pass."
+            })
+          ]
+        };
+      }
+
       const diagnostics: ValidationDiagnostic[] = [];
       for (const source of await readPythonAfterSources(context)) {
-        diagnostics.push(...syntaxDiagnostics(source.path, source.content));
+        const parserDiagnostics = parseWithPython(source.path, source.content, pythonCommand, options.env);
+        diagnostics.push(...parserDiagnostics);
+        if (parserDiagnostics.length === 0) diagnostics.push(...heuristicSyntaxDiagnostics(source.path, source.content));
       }
       return { diagnostics: sortDiagnostics(diagnostics) };
     }
   };
 }
 
-function syntaxDiagnostics(path: string, content: string): readonly ValidationDiagnostic[] {
+function parseWithPython(
+  path: string,
+  content: string,
+  pythonCommand: string,
+  env: Record<string, string | undefined> | undefined
+): readonly ValidationDiagnostic[] {
+  const result = runTool(pythonCommand, ["-c", PY_AST_CHECK_SCRIPT], {
+    input: content,
+    env,
+    timeoutMs: 10000
+  });
+
+  let parsed: { ok: boolean; message?: string; line?: number | null; column?: number | null } | undefined;
+  try {
+    parsed = JSON.parse(result.stdout.trim());
+  } catch {
+    parsed = undefined;
+  }
+
+  if (parsed === undefined) {
+    return [
+      diagnostic({
+        category: "syntax",
+        path,
+        code: "PY_SYNTAX_PARSE_ERROR",
+        message: "Unable to parse Python source with the configured Python interpreter."
+      })
+    ];
+  }
+
+  if (parsed.ok) return [];
+
+  return [
+    diagnostic({
+      category: "syntax",
+      path,
+      code: "PY_SYNTAX_PARSE_ERROR",
+      message: buildParseErrorMessage(parsed)
+    })
+  ];
+}
+
+function buildParseErrorMessage(parsed: { message?: string; line?: number | null; column?: number | null }): string {
+  const reason = parsed.message ?? "invalid syntax";
+  if (parsed.line !== null && parsed.line !== undefined && parsed.column !== null && parsed.column !== undefined) {
+    return `${reason} (line ${parsed.line}, column ${parsed.column})`;
+  }
+  return reason;
+}
+
+function heuristicSyntaxDiagnostics(path: string, content: string): readonly ValidationDiagnostic[] {
   const diagnostics: ValidationDiagnostic[] = [];
   diagnostics.push(...missingColonDiagnostics(path, content));
   diagnostics.push(...delimiterDiagnostics(path, content));

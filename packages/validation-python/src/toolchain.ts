@@ -3,7 +3,7 @@ import type {
   ValidationAdapterRuntimeStatus,
   ValidationAdapterToolchainStatus
 } from "@the-open-engine/opcore-contracts";
-import { PYTHON_TYPES_CHECK_ID, pythonValidationCheckIds } from "./check-ids.js";
+import { PYTHON_SYNTAX_CHECK_ID, PYTHON_TYPES_CHECK_ID, pythonValidationCheckIds } from "./check-ids.js";
 import { validationPythonAdapterName } from "./check-constants.js";
 import { runTool } from "./process.js";
 
@@ -33,6 +33,7 @@ export function probePythonToolchain(
   options: PythonValidationToolchainOptions = {}
 ): readonly ValidationAdapterToolchainStatus[] {
   return [
+    probeTool("python", options.pythonCommand ?? "python3", ["--version"], options.env),
     probeTool("mypy", "mypy", ["--version"], options.env),
     probeTool("pyright", "pyright", ["--version"], options.env),
     probeTool("ruff", "ruff", ["--version"], options.env),
@@ -53,6 +54,15 @@ export function createPythonDegradedChecks(missing: ReadonlySet<string>): readon
       reason: "optional_tool_unavailable",
       requiredTool: "mypy or pyright",
       message: "Neither mypy nor pyright is available; Python type validation is reported as degraded instead of passing silently."
+    });
+  }
+  if (missing.has("python")) {
+    degraded.push({
+      checkId: PYTHON_SYNTAX_CHECK_ID,
+      status: "unsupported_request",
+      reason: "required_tool_unavailable",
+      requiredTool: "python3",
+      message: "No Python interpreter (python3) is available; python.syntax cannot be parser-validated, so results are reported as unsupported instead of a false pass."
     });
   }
   return degraded;
