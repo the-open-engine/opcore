@@ -54,6 +54,60 @@ describe("validation overlays", () => {
     assert.deepEqual(view.scopeFiles, ["src/index.ts", "src/unchanged.ts"]);
   });
 
+  it("keeps file reads lazy until visible files are requested", async () => {
+    let listFileCalls = 0;
+    const workspace = testWorkspace({
+      "src/scope.ts": "export const scope = true;",
+      "src/workspace.ts": "export const workspace = true;",
+      "src/delete.ts": "export const deleted = true;"
+    });
+    workspace.listFiles = () => {
+      listFileCalls += 1;
+      return {
+        files: ["src/workspace.ts", "src\\windows.ts", { path: "src/old-name.ts", toPath: "src/renamed.ts" }]
+      };
+    };
+
+    const view = await createValidationFileView({
+      request: request({
+        overlays: [
+          {
+            path: "src\\overlay.ts",
+            action: "write",
+            content: "export const overlay = true;"
+          },
+          {
+            path: "src/delete.ts",
+            action: "delete"
+          }
+        ]
+      }),
+      scope: scope(["src/scope.ts"]),
+      workspace
+    });
+
+    assert.equal((await view.readAfter("src/scope.ts")).status, "found");
+    assert.equal((await view.readBefore("src/scope.ts")).status, "found");
+    assert.equal((await view.readFile("src/scope.ts")).status, "found");
+    assert.equal(await view.exists("src/workspace.ts"), true);
+    assert.equal(view.hasOverlay("src/overlay.ts"), true);
+    assert.equal(view.overlayFor("src\\overlay.ts")?.action, "write");
+    assert.equal(listFileCalls, 0);
+
+    const visibleFiles = await view.listVisibleFiles();
+    assert.equal(listFileCalls, 1);
+    assert.deepEqual(visibleFiles, [
+      "src/delete.ts",
+      "src/overlay.ts",
+      "src/renamed.ts",
+      "src/scope.ts",
+      "src/windows.ts",
+      "src/workspace.ts"
+    ]);
+    assert.deepEqual(await view.listVisibleFiles(), visibleFiles);
+    assert.equal(listFileCalls, 1);
+  });
+
   it("distinguishes delete overlays from missing workspace files", async () => {
     const workspace = testWorkspace({
       "src/remove.ts": "export const remove = true;"

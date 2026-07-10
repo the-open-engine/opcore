@@ -39,6 +39,7 @@ import {
 } from "./install-wizard.js";
 import { createOpcoreScanAnalysis, type OpcoreScanAnalysis } from "./scan.js";
 import { failedValidationCheckIds } from "./scan-presentation.js";
+import { scanValidationDiagnosticTotal } from "./scan-validation-preview.js";
 import { commonSkippedPathSegments, resolveRepo, type RepoResolution } from "./status.js";
 
 declare const process: {
@@ -673,7 +674,7 @@ function createInitScanSummary(repoState: OpcoreRepoStatePayload, validationResu
     languages: repoState.coverage.languages,
     unsupportedStacks: repoState.coverage.unsupported.stacks,
     degradedRustTools: repoState.validation.degradedToolchains,
-    diagnosticCount: validationResult.diagnostics.length,
+    diagnosticCount: scanValidationDiagnosticTotal(validationResult),
     validationStatus: validationResult.status,
     failedChecks,
     graphState: repoState.graph.state,

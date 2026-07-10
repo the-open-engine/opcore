@@ -83,6 +83,9 @@ jobs:
           tar -xzf "${RUNNER_TEMP}/opcore-graph-core-darwin-x64/opcore-graph-core-darwin-x64.tgz" -C packages/opcore-graph-core-darwin-x64
           tar -xzf "${RUNNER_TEMP}/opcore-graph-core-linux-x64/opcore-graph-core-linux-x64.tgz" -C packages/opcore-graph-core-linux-x64
 
+      - name: Build JS artifacts
+        run: node node_modules/typescript/bin/tsc -b --pretty false && node scripts/write-cli-descriptor.mjs && node scripts/write-asp-provider-manifest.mjs
+
       - name: Publish dry-run
         if: github.event_name == 'workflow_dispatch'
         run: npm run release:publish -- --version "$RELEASE_VERSION" --tag "$NPM_TAG" --dry-run

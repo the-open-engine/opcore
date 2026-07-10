@@ -15,9 +15,10 @@ export function cloneInputPaths(context: ValidationCheckContext): readonly strin
   );
 }
 
-export function cloneOverlayPaths(context: ValidationCheckContext, paths: readonly string[]): readonly string[] {
+export async function cloneSourcePaths(context: ValidationCheckContext, paths: readonly string[]): Promise<readonly string[]> {
+  const visibleFiles = await context.fileView.listVisibleFiles();
   return uniqueSorted(
-    [...context.fileView.visibleFiles, ...paths]
+    [...visibleFiles, ...paths, ...context.fileView.overlays.map((overlay) => overlay.path)]
       .map((path) => normalizeValidationFileViewPath(path))
       .filter(isCloneSourcePath)
   );

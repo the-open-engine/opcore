@@ -464,7 +464,8 @@ function docsMentionPath(docs: readonly DocsDocument[], path: string, requireExp
 
 async function sourceSubtreeLoc(context: ValidationCheckContext): Promise<ReadonlyMap<string, number>> {
   const totals = new Map<string, number>();
-  for (const path of context.fileView.visibleFiles) {
+  const visibleFiles = await context.fileView.listVisibleFiles();
+  for (const path of visibleFiles) {
     if (isDocsPath(path) || !isSourceLikePath(path)) continue;
     const result = await context.fileView.readAfter(path);
     if (result.status !== "found") continue;

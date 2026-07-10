@@ -2,6 +2,7 @@ import type {
   CloneAnalysisRequest,
   CloneAnalysisResult,
   CloneFinding,
+  CloneSourceReadMode,
   HypotheticalOverlay,
   ValidationDiagnostic
 } from "@the-open-engine/opcore-contracts";
@@ -20,7 +21,7 @@ import {
   cloneCheckOwner,
   supportedCloneValidationScopes
 } from "./check-constants.js";
-import { cloneInputPaths, cloneOverlayPaths, skippedCloneInputResult } from "./source-files.js";
+import { cloneInputPaths, cloneSourcePaths, isCloneSourcePath, skippedCloneInputResult } from "./source-files.js";
 
 export interface CloneNativeInvoker {
   invoke: (request: CloneAnalysisRequest) => CloneAnalysisResult | Promise<CloneAnalysisResult>;
@@ -87,7 +88,8 @@ async function cloneAnalysisRequest(
   options: Pick<CreateCloneDuplicationCheckOptions, "windowSize" | "minLines" | "minTokens" | "threshold" | "partitions" | "exclude" | "modes">
 ): Promise<CloneAnalysisRequest> {
   const paths = [...cloneInputPaths(context)];
-  const overlays = await cloneOverlays(context, cloneOverlayPaths(context, paths));
+  const sourcePaths = await cloneSourcePaths(context, paths);
+  const overlays = cloneOverlays(context);
   return {
     protocol: CLONE_PROTOCOL,
     ...(context.request.requestId !== undefined ? { requestId: context.request.requestId } : {}),
@@ -95,6 +97,8 @@ async function cloneAnalysisRequest(
     repo: context.request.repo,
     reportMode: context.request.reportMode ?? "all",
     paths,
+    sourcePaths,
+    ...cloneSourceReadOptions(context),
     overlays,
     ...(options.windowSize !== undefined ? { windowSize: options.windowSize } : {}),
     ...(options.minLines !== undefined ? { minLines: options.minLines } : {}),
@@ -106,30 +110,39 @@ async function cloneAnalysisRequest(
   };
 }
 
-async function cloneOverlays(
-  context: ValidationCheckContext,
-  paths: readonly string[]
-): Promise<readonly HypotheticalOverlay[]> {
-  const overlays: HypotheticalOverlay[] = [];
-  for (const path of paths) {
-    const overlay = context.fileView.overlayFor(path);
-    const after = await context.fileView.readAfter(path);
-    if (after.status === "found") {
-      overlays.push({
-        path,
+function cloneOverlays(context: ValidationCheckContext): readonly HypotheticalOverlay[] {
+  return context.fileView.overlays.filter((overlay) => isCloneSourcePath(overlay.path)).map((overlay) => {
+    if (overlay.action === "write") {
+      if (overlay.content === undefined) {
+        throw new Error(`Clone write overlay is missing content for ${overlay.path}`);
+      }
+      return {
+        path: overlay.path,
         action: "write",
-        content: after.content,
-        ...(overlay?.checksumBefore !== undefined ? { checksumBefore: overlay.checksumBefore } : {})
-      });
-    } else {
-      overlays.push({
-        path,
-        action: "delete",
-        ...(overlay?.checksumBefore !== undefined ? { checksumBefore: overlay.checksumBefore } : {})
-      });
+        content: overlay.content,
+        ...(overlay.checksumBefore !== undefined ? { checksumBefore: overlay.checksumBefore } : {})
+      };
     }
+    return {
+      path: overlay.path,
+      action: "delete",
+      ...(overlay.checksumBefore !== undefined ? { checksumBefore: overlay.checksumBefore } : {})
+    };
+  });
+}
+
+function cloneSourceReadOptions(context: ValidationCheckContext): {
+  sourceReadMode?: CloneSourceReadMode;
+  sourceTreeRef?: string;
+} {
+  if (context.fileView.defaultReadState === "before" && context.scope.kind === "changed" && context.scope.baseRef !== undefined) {
+    return { sourceReadMode: "gitTree", sourceTreeRef: context.scope.baseRef };
   }
-  return overlays;
+  if (context.scope.kind === "staged") return { sourceReadMode: "gitIndex" };
+  if (context.scope.kind === "tree" && context.scope.treeRef !== undefined) {
+    return { sourceReadMode: "gitTree", sourceTreeRef: context.scope.treeRef };
+  }
+  return { sourceReadMode: "disk" };
 }
 
 function cloneFindingDiagnostic(finding: CloneFinding): ValidationDiagnostic {

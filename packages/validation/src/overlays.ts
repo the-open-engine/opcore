@@ -81,7 +81,8 @@ export interface CreateValidationFileViewArgs {
 export interface ValidationFileView {
   readonly overlays: readonly ValidationOverlayEntry[];
   readonly scopeFiles: readonly string[];
-  readonly visibleFiles: readonly string[];
+  readonly defaultReadState: ValidationFileReadState;
+  listVisibleFiles: () => Promise<readonly string[]>;
   readFile: (path: string, options?: ValidationFileReadOptions) => Promise<ValidationFileReadResult>;
   readBefore: (path: string) => Promise<ValidationFileReadResult>;
   readAfter: (path: string) => Promise<ValidationFileReadResult>;
@@ -134,8 +135,11 @@ export async function createValidationFileView(args: CreateValidationFileViewArg
   const overlayByPath = new Map(overlays.map((overlay) => [overlay.path, overlay]));
   const scopeFiles = uniqueSorted(args.scope.files.map(normalizeValidationFileViewPath));
   const defaultReadState = args.defaultReadState ?? "after";
-  const visibleFiles = await resolveVisibleFiles(args.workspace, args.scope, defaultReadState, scopeFiles, overlays);
-
+  let visibleFilesPromise: Promise<readonly string[]> | undefined;
+  const listVisibleFiles = (): Promise<readonly string[]> => {
+    visibleFilesPromise ??= resolveVisibleFiles(args.workspace, args.scope, defaultReadState, scopeFiles, overlays);
+    return visibleFilesPromise;
+  };
   const readBefore = (path: string): Promise<ValidationFileReadResult> =>
     readWorkspacePath(args.workspace, args.scope, normalizeValidationFileViewPath(path), "before");
   const readAfter = async (path: string): Promise<ValidationFileReadResult> => {
@@ -159,7 +163,8 @@ export async function createValidationFileView(args: CreateValidationFileViewArg
   return {
     overlays,
     scopeFiles,
-    visibleFiles,
+    defaultReadState,
+    listVisibleFiles,
     readFile: (path, options = {}) =>
       options.state === "before" || (options.state === undefined && defaultReadState === "before") ? readBefore(path) : readAfter(path),
     readBefore,

@@ -46,6 +46,22 @@ const passing = {
   manifest: { runs: [{ checkId: "typescript.syntax", status: "passed" }] }
 };
 
+const compactedScan = {
+  status: "failed",
+  diagnostics: Array.from({ length: 50 }, (_, index) => ({
+    category: "syntax",
+    message: `Syntax error ${index}`,
+    path: `src/file-${index}.ts`,
+    severity: "error",
+    code: "TS1005"
+  })),
+  manifest: {
+    runs: [
+      { checkId: "typescript.syntax", status: "policy_failure", diagnosticCount: 60 }
+    ]
+  }
+};
+
 describe("opcore constraint plate", () => {
   it("renders the scan plate coverage-before-findings without color when color is off", () => {
     const plate = formatScanPlate(repoState, failing, { color: false });
@@ -62,6 +78,14 @@ describe("opcore constraint plate", () => {
     // Alignment invariant: stripping ANSI leaves the same plain layout.
     const stripped = plate.replace(/\[[0-9;]*m/g, "");
     assert.equal(stripped, formatScanPlate(repoState, failing, { color: false }));
+  });
+
+  it("renders scan plates with total diagnostics and compact preview guidance", () => {
+    const plate = formatScanPlate(repoState, compactedScan, { color: false });
+    assert.equal(plate.indexOf("COVERAGE") < plate.indexOf("FINDINGS"), true);
+    assert.match(plate, /60 diagnostics/);
+    assert.match(plate, /\(\+44 more\)/);
+    assert.match(plate, /showing first 50 diagnostics; run opcore check --all --json for full diagnostics/);
   });
 
   it("stamps a blocked changed-file gate with exit 1", () => {

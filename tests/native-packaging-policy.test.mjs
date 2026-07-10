@@ -37,6 +37,7 @@ describe("native graph-core packaging policy", () => {
     assert.match(releasePublish, /hasTrustedPublishingContext\(\) && !hasTokenAuth\(\) && !options\.dryRun/);
 
     const stageBundle = readFileSync("scripts/stage-opcore-bundle.mjs", "utf8");
+    assert.match(stageBundle, /"pack", "\.", "--dry-run", "--json", "--ignore-scripts"/);
     assert.match(stageBundle, /disableLifecycleScripts: true/);
     assert.match(stageBundle, /delete manifest\.scripts/);
   });
@@ -100,6 +101,10 @@ describe("native graph-core packaging policy", () => {
     assert.match(workflow, /OPCORE_CONFIRM_PUBLISH:\s*"0\.2\.0"/);
     assert.match(workflow, /OPCORE_REQUIRE_ALL_NATIVE_PACKAGES:\s*"1"/);
     assert.match(workflow, /run-id: \$\{\{ github\.event\.workflow_run\.id \}\}/);
+    assert.match(
+      workflow,
+      /name: Build JS artifacts[\s\S]*node node_modules\/typescript\/bin\/tsc -b --pretty false && node scripts\/write-cli-descriptor\.mjs && node scripts\/write-asp-provider-manifest\.mjs/
+    );
     for (const target of Object.keys(nativeTargets)) {
       assert.match(workflow, new RegExp(`name: opcore-graph-core-${target}`));
       assert.match(workflow, new RegExp(`tar -xzf "\\$\\{RUNNER_TEMP\\}/opcore-graph-core-${target}/opcore-graph-core-${target}\\.tgz" -C packages/opcore-graph-core-${target}`));

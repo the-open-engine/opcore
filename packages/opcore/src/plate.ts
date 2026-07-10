@@ -1,5 +1,11 @@
 import type { OpcoreRepoStatePayload, ValidationResult } from "@the-open-engine/opcore-contracts";
 import { failedValidationRuns } from "./scan-presentation.js";
+import {
+  scanValidationDiagnosticTotal,
+  scanValidationDiagnosticsTruncated,
+  scanValidationPreviewCount,
+  scanValidationTruncationMessage
+} from "./scan-validation-preview.js";
 
 /**
  * Human, TTY-only "constraint plate" rendering for `opcore` scan and
@@ -152,7 +158,8 @@ export function formatScanPlate(
   // FINDINGS — after coverage
   lines.push("  " + sectionRule("FINDINGS ── facts, not a score"));
   const diagnostics = validationResult.diagnostics;
-  lines.push(`    ${diagnostics.length} diagnostics`);
+  const diagnosticTotal = scanValidationDiagnosticTotal(validationResult);
+  lines.push(`    ${diagnosticTotal} diagnostics`);
   const shown = diagnostics.slice(0, 6);
   shown.forEach((diagnostic, index) => {
     const branch = index === shown.length - 1 && diagnostics.length <= 6 ? "└" : "├";
@@ -161,8 +168,12 @@ export function formatScanPlate(
       `      ${branch} ${padEnd(diagnostic.category, 18)} ${padEnd(diagnostic.path ?? "", 32)} ${truncate(tail, 22)}`
     );
   });
-  if (diagnostics.length > shown.length) {
-    lines.push(`      (+${diagnostics.length - shown.length} more)`);
+  const previewCount = scanValidationPreviewCount(validationResult);
+  if (previewCount > shown.length) {
+    lines.push(`      (+${previewCount - shown.length} more)`);
+  }
+  if (scanValidationDiagnosticsTruncated(validationResult)) {
+    lines.push(`      ${scanValidationTruncationMessage()}`);
   }
   lines.push("");
 

@@ -2039,6 +2039,23 @@
             "$ref": "#/$defs/RepoRelativePath"
           }
         },
+        "sourcePaths": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RepoRelativePath"
+          }
+        },
+        "sourceReadMode": {
+          "enum": [
+            "disk",
+            "gitIndex",
+            "gitTree"
+          ]
+        },
+        "sourceTreeRef": {
+          "type": "string",
+          "minLength": 1
+        },
         "overlays": {
           "type": "array",
           "items": {
