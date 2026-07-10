@@ -78,9 +78,56 @@ describe("validation-python adapter", () => {
     assert.equal(result.status, "policy_failure");
     assert.deepEqual(
       result.diagnostics.map((diagnostic) => diagnostic.code),
-      ["PY_SYNTAX_MISSING_COLON", "PY_SYNTAX_UNCLOSED_DELIMITER"]
+      ["PY_SYNTAX_PARSE_ERROR"]
     );
     assert.equal(result.diagnostics[0].path, "pkg/app.py");
+  });
+
+  it("fails python.syntax for invalid Python grammar the heuristics miss", async () => {
+    const result = await runner({
+      files: {
+        "pkg/app.py": "x = 1 2\n"
+      }
+    }).runValidation(
+      request({
+        checks: [PYTHON_SYNTAX_CHECK_ID]
+      })
+    );
+
+    assert.equal(result.status, "policy_failure");
+    assert.deepEqual(result.diagnostics.map((diagnostic) => diagnostic.code), ["PY_SYNTAX_PARSE_ERROR"]);
+    assert.equal(result.diagnostics[0].path, "pkg/app.py");
+  });
+
+  it("reports python.syntax as unsupported when no Python interpreter is available", async () => {
+    const result = await runner({
+      files: {
+        "pkg/app.py": "x = 1 2\n"
+      },
+      checks: createPythonValidationChecks({ env: { PATH: "" } })
+    }).runValidation(
+      request({
+        checks: [PYTHON_SYNTAX_CHECK_ID]
+      })
+    );
+
+    assert.equal(result.status, "unsupported_request");
+    assert.deepEqual(result.diagnostics.map((diagnostic) => diagnostic.code), ["PY_SYNTAX_PARSER_UNAVAILABLE"]);
+  });
+
+  it("passes python.syntax for valid multi-line Python with no false positives", async () => {
+    const result = await runner({
+      files: {
+        "pkg/app.py": "def public_api():\n    if True:\n        return 1\n    return 0\n"
+      }
+    }).runValidation(
+      request({
+        checks: [PYTHON_SYNTAX_CHECK_ID]
+      })
+    );
+
+    assert.equal(result.status, "passed");
+    assert.deepEqual(result.diagnostics, []);
   });
 
   it("reports source-hygiene diagnostics from overlay after-state content", async () => {
@@ -272,7 +319,7 @@ describe("validation-python adapter", () => {
     assert.equal(result.status, "policy_failure");
     assert.deepEqual(
       result.diagnostics.map((diagnostic) => diagnostic.code).sort(),
-      ["PY_IMPORT_GRAPH_MISSING_EDGE", "PY_SOURCE_TYPE_IGNORE", "PY_SYNTAX_MISSING_COLON"]
+      ["PY_IMPORT_GRAPH_MISSING_EDGE", "PY_SOURCE_TYPE_IGNORE", "PY_SYNTAX_PARSE_ERROR"]
     );
   });
 

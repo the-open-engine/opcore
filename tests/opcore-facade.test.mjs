@@ -344,7 +344,7 @@ describe("opcore public facade", () => {
         })),
         []
       );
-      assert.deepEqual(degradedPythonTools, ["mypy", "pyright", "pytest", "ruff"]);
+      assert.deepEqual(degradedPythonTools, ["mypy", "pyright", "python", "pytest", "ruff"].sort());
     } finally {
       rmSync(temp, { recursive: true, force: true });
     }

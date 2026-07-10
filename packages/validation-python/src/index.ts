@@ -3,7 +3,7 @@ import { createDeadCodeCheck } from "./dead-code-check.js";
 import { createImportGraphCheck } from "./import-graph-check.js";
 import { createRelevantTestsCheck } from "./relevant-tests-check.js";
 import { createSourceHygieneCheck } from "./source-hygiene-check.js";
-import { createSyntaxCheck } from "./syntax-check.js";
+import { createSyntaxCheck, type PythonSyntaxCheckOptions } from "./syntax-check.js";
 import { createTypeCheck, type PythonTypeCheckOptions } from "./type-check.js";
 
 export {
@@ -19,15 +19,16 @@ export {
 export { validationPythonAdapterName } from "./check-constants.js";
 export { isPythonSourcePath } from "./source-files.js";
 export { createPythonValidationAdapterStatus, probePythonToolchain, type PythonValidationToolchainOptions } from "./toolchain.js";
+export { createSyntaxCheck, type PythonSyntaxCheckOptions } from "./syntax-check.js";
 export { createTypeCheck, type PythonTypeCheckOptions } from "./type-check.js";
 
-export interface CreatePythonValidationChecksOptions extends PythonTypeCheckOptions {}
+export interface CreatePythonValidationChecksOptions extends PythonTypeCheckOptions, PythonSyntaxCheckOptions {}
 
 export function createPythonValidationChecks(
   options: CreatePythonValidationChecksOptions = {}
 ): readonly ValidationCheckDefinition[] {
   return [
-    createSyntaxCheck(),
+    createSyntaxCheck(options),
     createSourceHygieneCheck(),
     createTypeCheck(options),
     createImportGraphCheck(),
