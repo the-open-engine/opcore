@@ -10,7 +10,7 @@ import {
   graphCoreSupportedTargets
 } from "./graph-native-targets.mjs";
 import { publicReleasePackageNames, releasePackageDirForName } from "./release-package-dirs.mjs";
-import { createStagedOpcorePackage } from "./stage-opcore-bundle.mjs";
+import { createStagedOpcorePackage, npmPackResultForPackage } from "./stage-opcore-bundle.mjs";
 
 const releaseVersion = "0.2.0";
 const publicPackages = publicReleasePackageNames;
@@ -87,7 +87,8 @@ function packWorkspace(packageName, destination) {
     const result = run("npm", ["pack", "--json", "--pack-destination", destination], {
       cwd: staged?.packageDir ?? releasePackageDirForName(packageName)
     });
-    const parsed = JSON.parse(result.stdout)[0];
+    const parsed = npmPackResultForPackage(JSON.parse(result.stdout), packageName);
+    if (!parsed) throw new Error(`${packageName} npm pack returned no package result:\n${result.stdout}`);
     if (parsed.version !== releaseVersion) throw new Error(`${packageName} packed version ${parsed.version}, expected ${releaseVersion}`);
     return join(destination, parsed.filename);
   } finally {
