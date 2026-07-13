@@ -7,6 +7,7 @@ import {
   bundledReleasePackageNames,
   publicReleasePackageNames
 } from "../scripts/release-package-dirs.mjs";
+import { npmPackResultForPackage } from "../scripts/stage-opcore-bundle.mjs";
 
 const nativeTargets = {
   "darwin-arm64": { os: "darwin", cpu: "arm64", rustTarget: "aarch64-apple-darwin" },
@@ -19,6 +20,18 @@ const nativePackageDir = (target) => `packages/opcore-graph-core-${target}`;
 const readJson = (path) => JSON.parse(readFileSync(path, "utf8"));
 
 describe("native graph-core packaging policy", () => {
+  it("accepts npm pack JSON from direct, array, and workspace-keyed output", () => {
+    const packageName = "@the-open-engine/opcore-asp-provider";
+    const expected = { name: packageName, files: [{ path: "package.json" }] };
+    assert.equal(npmPackResultForPackage(expected, packageName), expected);
+    assert.equal(npmPackResultForPackage([expected], packageName), expected);
+    assert.equal(npmPackResultForPackage({ [packageName]: expected }, packageName), expected);
+    assert.equal(
+      npmPackResultForPackage({ unrelated: { name: "unrelated", files: [] }, [packageName]: expected }, packageName),
+      expected
+    );
+  });
+
   it("keeps npm publishing strict single-package while bundling internal native artifacts", () => {
     assert.deepEqual(publicReleasePackageNames, ["opcore"]);
     for (const target of Object.keys(nativeTargets)) {
@@ -109,6 +122,9 @@ describe("native graph-core packaging policy", () => {
       assert.match(workflow, new RegExp(`name: opcore-graph-core-${target}`));
       assert.match(workflow, new RegExp(`tar -xzf "\\$\\{RUNNER_TEMP\\}/opcore-graph-core-${target}/opcore-graph-core-${target}\\.tgz" -C packages/opcore-graph-core-${target}`));
     }
+    assert.match(workflow, /release_notes="docs\/release\/v\$\{RELEASE_VERSION\}\.md"/);
+    assert.match(workflow, /--notes-file "\$release_notes"/);
+    assert.doesNotMatch(workflow, /Initial Opcore alpha release/);
   });
 
   it("fails aggregate release dry-run before packing when downloaded native binary mode is not executable", () => {

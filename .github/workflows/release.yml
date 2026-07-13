@@ -107,11 +107,16 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
+          release_notes="docs/release/v${RELEASE_VERSION}.md"
+          if [[ ! -f "$release_notes" ]]; then
+            echo "::error::Missing release notes: $release_notes"
+            exit 1
+          fi
           if gh release view "v${RELEASE_VERSION}" >/dev/null 2>&1; then
             echo "GitHub release v${RELEASE_VERSION} already exists."
           else
             gh release create "v${RELEASE_VERSION}" \
               --target "$RELEASE_SHA" \
               --title "Opcore ${RELEASE_VERSION}" \
-              --notes "Initial Opcore alpha release."
+              --notes-file "$release_notes"
           fi
