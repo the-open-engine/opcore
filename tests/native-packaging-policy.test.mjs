@@ -53,6 +53,10 @@ describe("native graph-core packaging policy", () => {
     assert.match(stageBundle, /"pack", "\.", "--dry-run", "--json", "--ignore-scripts"/);
     assert.match(stageBundle, /disableLifecycleScripts: true/);
     assert.match(stageBundle, /delete manifest\.scripts/);
+
+    const releaseDryRun = readFileSync("scripts/release-dry-run.mjs", "utf8");
+    assert.match(releaseDryRun, /npmPackResultForPackage\(JSON\.parse\(result\.stdout\), packageName\)/);
+    assert.doesNotMatch(releaseDryRun, /JSON\.parse\(result\.stdout\)\[0\]/);
   });
 
   it("encodes npm os/cpu support in each bundled native package manifest", () => {
