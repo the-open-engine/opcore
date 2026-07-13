@@ -1,10 +1,14 @@
-use super::{CloneAnalysisRequest, CloneError, CloneFinding, CloneOverlay, CloneReportMode};
+use super::{
+    CloneAnalysisRequest, CloneError, CloneFinding, CloneOverlay, CloneReportMode,
+    CloneSourceReadMode,
+};
 use crate::extraction::{
     discover_sources_for_options, normalize_repo_relative_path, ExtractionOptions, SourceLanguage,
 };
 use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
+use std::process::Command;
 
 #[derive(Debug, Clone)]
 pub(super) struct CloneSource {
@@ -34,7 +38,10 @@ pub(super) fn clone_sources(
     repo_root: &Path,
     request: &CloneAnalysisRequest,
 ) -> Result<Vec<CloneSource>, CloneError> {
-    let mut sources = discovered_clone_sources(repo_root)?;
+    let mut sources = match request.source_paths.as_deref() {
+        Some(paths) => sparse_clone_sources(repo_root, request, paths)?,
+        None => discovered_clone_sources(repo_root)?,
+    };
     apply_overlays(&mut sources, repo_root, &request.overlays)?;
     if !request.exclude.is_empty() {
         sources.retain(|source| {
@@ -201,6 +208,100 @@ fn discovered_clone_sources(repo_root: &Path) -> Result<Vec<CloneSource>, CloneE
         });
     }
     Ok(sources)
+}
+
+fn sparse_clone_sources(
+    repo_root: &Path,
+    request: &CloneAnalysisRequest,
+    paths: &[String],
+) -> Result<Vec<CloneSource>, CloneError> {
+    let mut sources = Vec::new();
+    let read_mode = request
+        .source_read_mode
+        .unwrap_or(CloneSourceReadMode::Disk);
+    let introduced_paths = request.paths.iter().cloned().collect::<BTreeSet<_>>();
+    for path in paths {
+        let path = normalize_repo_relative_path(path, "clone request source path")
+            .map_err(|message| CloneError::InvalidRequest(message.to_string()))?;
+        let Some(language) = SourceLanguage::from_path(Path::new(&path)) else {
+            continue;
+        };
+        let Some(content) = read_sparse_source(
+            repo_root,
+            &path,
+            read_mode,
+            request.source_tree_ref.as_deref(),
+        )?
+        else {
+            continue;
+        };
+        let introduced = introduced_paths.contains(&path);
+        sources.push(CloneSource {
+            path,
+            language: language.as_str().to_string(),
+            sha256: sha256_hex(content.as_bytes()),
+            content,
+            introduced,
+        });
+    }
+    Ok(sources)
+}
+
+fn read_sparse_source(
+    repo_root: &Path,
+    path: &str,
+    read_mode: CloneSourceReadMode,
+    source_tree_ref: Option<&str>,
+) -> Result<Option<String>, CloneError> {
+    match read_mode {
+        CloneSourceReadMode::Disk => read_disk_sparse_source(repo_root, path),
+        CloneSourceReadMode::GitIndex => read_git_sparse_source(repo_root, &format!(":{path}")),
+        CloneSourceReadMode::GitTree => {
+            let tree_ref = source_tree_ref.ok_or_else(|| {
+                CloneError::InvalidRequest(
+                    "sourceTreeRef is required when sourceReadMode is gitTree".to_string(),
+                )
+            })?;
+            read_git_sparse_source(repo_root, &format!("{tree_ref}:{path}"))
+        }
+    }
+}
+
+fn read_disk_sparse_source(repo_root: &Path, path: &str) -> Result<Option<String>, CloneError> {
+    match std::fs::read_to_string(repo_root.join(path)) {
+        Ok(content) => Ok(Some(content)),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(None),
+        Err(error) => Err(CloneError::Canonicalize(error)),
+    }
+}
+
+fn read_git_sparse_source(repo_root: &Path, spec: &str) -> Result<Option<String>, CloneError> {
+    let output = Command::new("git")
+        .arg("-C")
+        .arg(repo_root)
+        .arg("show")
+        .arg(spec)
+        .output()
+        .map_err(CloneError::Canonicalize)?;
+    if output.status.success() {
+        return Ok(Some(String::from_utf8_lossy(&output.stdout).into_owned()));
+    }
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    if missing_git_sparse_source(spec, &stderr) {
+        return Ok(None);
+    }
+    Err(CloneError::InvalidRequest(format!(
+        "clone sparse git source read failed for {spec}: {}",
+        stderr.trim()
+    )))
+}
+
+fn missing_git_sparse_source(spec: &str, stderr: &str) -> bool {
+    stderr.contains("exists on disk, but not in")
+        || stderr.contains("does not exist")
+        || stderr.contains("exists, but not")
+        || ((spec.starts_with("HEAD:") || spec.starts_with("@:"))
+            && stderr.contains("invalid object name"))
 }
 
 fn apply_overlays(

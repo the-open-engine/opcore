@@ -61,6 +61,70 @@ it("passes clone policy fields into the native request", async () => {
   assert.deepEqual(captured.request.modes, ["staged", "changed", "files"]);
 });
 
+it("sends committed clone inputs as paths without reading their after-state content", async () => {
+  const committedFiles = new Map([
+    ["src/a.ts", "export const a = 1;\n"],
+    ["src/b.ts", "export const b = 2;\n"],
+    ["src/c.ts", "export const c = 3;\n"]
+  ]);
+  let afterStateReads = 0;
+  const captured = {};
+  const result = await createValidationRunner({
+    workspace: {
+      readFile: (path, context) => {
+        if (context?.state === "after") afterStateReads += 1;
+        return committedFiles.has(path) ? { status: "found", content: committedFiles.get(path) } : { status: "missing" };
+      },
+      listFiles: () => ({ files: [...committedFiles.keys()] }),
+      listChangedFiles: () => ({ files: [...committedFiles.keys()] }),
+      listStagedFiles: () => ({ files: [...committedFiles.keys()] }),
+      listRepoFiles: () => ({ files: [...committedFiles.keys()] }),
+      listTreeFiles: () => ({ files: [...committedFiles.keys()] }),
+      listPackageFiles: (_name, root) => ({ files: [...committedFiles.keys()].filter((path) => path.startsWith(`${root}/`)) })
+    },
+    checks: createCloneValidationChecks({
+      invoke: capturingCloneInvoker(captured)
+    })
+  }).runValidation({
+    requestId: "validation-clone-sparse-committed-paths",
+    repo: {
+      repoId: "clone-test"
+    },
+    scope: {
+      kind: "files",
+      files: [...committedFiles.keys()]
+    },
+    graph: {
+      mode: "optional",
+      provider: "opcore-graph"
+    },
+    checks: [CLONE_DUPLICATION_CHECK_ID],
+    overlays: []
+  });
+
+  assert.equal(result.status, "passed");
+  assert.deepEqual(captured.request.paths, ["src/a.ts", "src/b.ts", "src/c.ts"]);
+  assert.deepEqual(captured.request.sourcePaths, ["src/a.ts", "src/b.ts", "src/c.ts"]);
+  assert.deepEqual(captured.request.overlays, []);
+  assert.equal(afterStateReads, 0);
+});
+
+it("sends only write and delete overlays alongside committed clone paths", async () => {
+  const captured = {};
+  const result = await runner(
+    createCloneValidationChecks({
+      invoke: capturingCloneInvoker(captured)
+    })
+  ).runValidation(validationCloneRequest());
+
+  assertCloneDiagnosticResult(result);
+  assertCapturedCloneRequest(captured.request);
+  assert.deepEqual(
+    captured.request.overlays.map((overlay) => Object.hasOwn(overlay, "content")),
+    [true, false]
+  );
+});
+
 function capturingCloneInvoker(captured) {
   return (request) => {
     captured.request = request;
@@ -111,7 +175,7 @@ function validationCloneRequest() {
     },
     scope: {
       kind: "files",
-      files: ["src/a.ts", "src/b.ts"]
+      files: ["src/a.ts", "src/b.ts", "src/deleted.ts"]
     },
     graph: {
       mode: "optional",
@@ -125,6 +189,11 @@ function validationCloneRequest() {
         action: "write",
         checksumBefore: calculateValidationFileChecksum("export const before = 1;\n"),
         content: "export const after = 1;\n"
+      },
+      {
+        path: "src/deleted.ts",
+        action: "delete",
+        checksumBefore: calculateValidationFileChecksum("export const deleted = 1;\n")
       }
     ]
   };
@@ -133,7 +202,8 @@ function validationCloneRequest() {
 function assertCapturedCloneRequest(request) {
   assert.equal(request.protocol, CLONE_PROTOCOL);
   assert.equal(request.reportMode, "introduced");
-  assert.deepEqual(request.paths, ["src/a.ts", "src/b.ts"]);
+  assert.deepEqual(request.paths, ["src/a.ts", "src/b.ts", "src/deleted.ts"]);
+  assert.deepEqual(request.sourcePaths, ["src/a.ts", "src/b.ts", "src/deleted.ts"]);
   assert.deepEqual(request.overlays, [
     {
       path: "src/a.ts",
@@ -142,9 +212,9 @@ function assertCapturedCloneRequest(request) {
       checksumBefore: calculateValidationFileChecksum("export const before = 1;\n")
     },
     {
-      path: "src/b.ts",
-      action: "write",
-      content: "export const peer = 1;\n"
+      path: "src/deleted.ts",
+      action: "delete",
+      checksumBefore: calculateValidationFileChecksum("export const deleted = 1;\n")
     }
   ]);
 }
@@ -222,6 +292,47 @@ it("validates changed-scope after-state clones without persisting dirty or untra
       scope: {
         kind: "changed",
         baseRef: baseCommit
+      },
+      graph: {
+        mode: "optional",
+        provider: "opcore-graph"
+      },
+      reportMode: "introduced",
+      checks: [CLONE_DUPLICATION_CHECK_ID],
+      overlays: []
+    });
+
+    assert.equal(result.status, "policy_failure", JSON.stringify(result, null, 2));
+    assert.ok(
+      result.diagnostics.some((diagnostic) => diagnostic.path === "src/changed.ts" && diagnostic.code === "CLONE_DUPLICATE"),
+      JSON.stringify(result.diagnostics, null, 2)
+    );
+    assert.equal(existsSync(join(temp, ".opcore/clone/clone.db")), false);
+  } finally {
+    rmSync(temp, { recursive: true, force: true });
+  }
+});
+
+it("validates changed-scope clone inputs in unborn Git repos", async () => {
+  const temp = mkdtempSync(join(tmpdir(), "opcore-validation-clone-unborn-"));
+  try {
+    mkdirSync(join(temp, "src"), { recursive: true });
+    const duplicateBlock = cloneDuplicateBlock();
+    writeFileSync(join(temp, "src/peer.ts"), duplicateBlock);
+    writeFileSync(join(temp, "src/changed.ts"), duplicateBlock);
+    git(temp, ["init", "-q"]);
+
+    const result = await createValidationRunner({
+      workspace: createNodeValidationWorkspace({ repoRoot: temp }),
+      checks: createCloneValidationChecks({ invoke: invokeCloneAnalysis })
+    }).runValidation({
+      requestId: "validation-clone-unborn-changed-after-state",
+      repo: {
+        repoRoot: temp
+      },
+      scope: {
+        kind: "changed",
+        baseRef: "HEAD"
       },
       graph: {
         mode: "optional",
@@ -343,7 +454,8 @@ it("validates tree after-state clones against tree peers instead of dirty disk p
 function runner(checks) {
   const files = new Map([
     ["src/a.ts", "export const before = 1;\n"],
-    ["src/b.ts", "export const peer = 1;\n"]
+    ["src/b.ts", "export const peer = 1;\n"],
+    ["src/deleted.ts", "export const deleted = 1;\n"]
   ]);
   return createValidationRunner({
     workspace: {
@@ -412,6 +524,9 @@ function capturedCloneRequestSummaries(requests) {
   return requests.map((request) => ({
     requestId: request.requestId,
     paths: request.paths,
+    sourcePaths: request.sourcePaths,
+    sourceReadMode: request.sourceReadMode,
+    sourceTreeRef: request.sourceTreeRef,
     overlays: request.overlays
   }));
 }
@@ -421,24 +536,18 @@ function expectedAfterStateCloneRequests() {
     {
       requestId: "validation-clone-staged-after-state",
       paths: ["src/staged.ts"],
-      overlays: [
-        {
-          path: "src/staged.ts",
-          action: "write",
-          content: "export const value = 'staged';\n"
-        }
-      ]
+      sourcePaths: ["src/staged.ts"],
+      sourceReadMode: "gitIndex",
+      sourceTreeRef: undefined,
+      overlays: []
     },
     {
       requestId: "validation-clone-tree-after-state",
       paths: ["src/tree.ts"],
-      overlays: [
-        {
-          path: "src/tree.ts",
-          action: "write",
-          content: "export const value = 'tree';\n"
-        }
-      ]
+      sourcePaths: ["src/tree.ts"],
+      sourceReadMode: "gitTree",
+      sourceTreeRef: "feature",
+      overlays: []
     }
   ];
 }

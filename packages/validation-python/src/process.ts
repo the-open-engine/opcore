@@ -12,6 +12,7 @@ export interface PythonToolRunOptions {
   cwd?: string;
   env?: Record<string, string | undefined>;
   timeoutMs?: number;
+  input?: string;
 }
 
 export function runTool(
@@ -23,8 +24,9 @@ export function runTool(
     cwd: options.cwd,
     env: options.env,
     encoding: "utf8",
-    stdio: ["ignore", "pipe", "pipe"],
-    timeout: options.timeoutMs ?? 10000
+    stdio: [options.input !== undefined ? "pipe" : "ignore", "pipe", "pipe"],
+    timeout: options.timeoutMs ?? 10000,
+    input: options.input
   });
   const failureMessage =
     result.error?.message ??

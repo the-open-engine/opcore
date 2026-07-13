@@ -90,7 +90,7 @@ function packFiles(packageName, packageDir, options = {}) {
         `npm pack --dry-run returned an error for bundled package ${packageName}:\n${JSON.stringify(parsed.error, null, 2)}`
       );
     }
-    const pack = Array.isArray(parsed) ? parsed[0] : parsed;
+    const pack = npmPackResultForPackage(parsed, packageName);
     const files = pack?.files?.map((entry) => entry.path) ?? [];
     if (files.length === 0) {
       throw new Error(
@@ -101,6 +101,15 @@ function packFiles(packageName, packageDir, options = {}) {
   } finally {
     source?.cleanup();
   }
+}
+
+export function npmPackResultForPackage(parsed, packageName) {
+  const candidates = Array.isArray(parsed)
+    ? parsed
+    : parsed?.files
+      ? [parsed]
+      : Object.values(parsed ?? {});
+  return candidates.find((candidate) => candidate?.name === packageName) ?? candidates[0];
 }
 
 function scriptlessPackageCopy(packageDir) {
