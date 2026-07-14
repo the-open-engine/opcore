@@ -1,5 +1,6 @@
 import type {
   ValidationCheckManifestEntry,
+  ValidationCheckOutcome,
   ValidationCheckRunStatus,
   ValidationDiagnostic,
   GraphProviderStatus,
@@ -32,6 +33,7 @@ export interface ValidationRuntimePolicy {
 export interface ValidationCheckResult {
   diagnostics?: readonly ValidationDiagnostic[];
   status?: ValidationCheckRunStatus;
+  outcome?: ValidationCheckOutcome;
   failureMessage?: string;
 }
 

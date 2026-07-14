@@ -1112,7 +1112,9 @@ function diagnosticEvidence(diagnostic: ValidationDiagnostic, checkId: string): 
       path: diagnostic.path,
       message: diagnostic.message,
       checkId,
-      ...(diagnostic.code ? { code: diagnostic.code } : {})
+      ...(diagnostic.code ? { code: diagnostic.code } : {}),
+      ...(diagnostic.line === undefined ? {} : { line: diagnostic.line }),
+      ...(diagnostic.column === undefined ? {} : { column: diagnostic.column })
     }
   ];
 }

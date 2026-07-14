@@ -184,6 +184,35 @@ describe("validation runner", () => {
     assert.equal(warning.ok, true);
   });
 
+  it("maps fine-grained check outcomes and sorts ranged diagnostics deterministically", async () => {
+    const findings = await runner([
+      check("python.syntax", {
+        run: () => ({
+          outcome: "findings",
+          diagnostics: [
+            { category: "syntax", severity: "error", code: "B", message: "later", path: "pkg/app.py", line: 4, column: 2 },
+            { category: "syntax", severity: "error", code: "A", message: "earlier", path: "pkg/app.py", line: 2, column: 8 }
+          ]
+        })
+      })
+    ]).runValidation(request({ checks: ["python.syntax"] }));
+    const timedOut = await runner([
+      check("python.syntax", {
+        run: () => ({
+          outcome: "timeout",
+          failureMessage: "compiler timed out",
+          diagnostics: []
+        })
+      })
+    ]).runValidation(request({ checks: ["python.syntax"] }));
+
+    assert.equal(findings.status, "policy_failure");
+    assert.equal(findings.manifest.runs[0].outcome, "findings");
+    assert.deepEqual(findings.diagnostics.map((entry) => entry.line), [2, 4]);
+    assert.equal(timedOut.status, "infrastructure_failure");
+    assert.equal(timedOut.manifest.runs[0].outcome, "timeout");
+  });
+
   it("stops running checks after the first policy failure when fail-fast is enabled", async () => {
     const observed = [];
     const result = await createValidationRunner({

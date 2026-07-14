@@ -355,6 +355,8 @@ function mapDiagnostic(diagnostic: ValidationDiagnostic, changesetDigest: string
   const code = `${source}/${checkId}/${sanitizeCode(diagnostic.code ?? diagnostic.category)}`;
   const location: JsonObject = {};
   if (diagnostic.path !== undefined) location.path = diagnostic.path;
+  const range = diagnosticRange(diagnostic);
+  if (range !== undefined) location.range = range;
   return {
     source,
     code,
@@ -366,6 +368,7 @@ function mapDiagnostic(diagnostic: ValidationDiagnostic, changesetDigest: string
       source,
       code,
       path: diagnostic.path,
+      range,
       severity: diagnostic.severity,
       message: diagnostic.message,
       changesetDigest
@@ -374,9 +377,26 @@ function mapDiagnostic(diagnostic: ValidationDiagnostic, changesetDigest: string
   };
 }
 
+function diagnosticRange(diagnostic: ValidationDiagnostic): JsonObject | undefined {
+  if (diagnostic.line === undefined) return undefined;
+  const start: JsonObject = { line: diagnostic.line };
+  if (diagnostic.column !== undefined) start.column = diagnostic.column;
+  const range: JsonObject = { start };
+  if (diagnostic.endLine !== undefined) {
+    const end: JsonObject = { line: diagnostic.endLine };
+    if (diagnostic.endColumn !== undefined) end.column = diagnostic.endColumn;
+    range.end = end;
+  }
+  return range;
+}
+
 function checkIdForDiagnostic(diagnostic: ValidationDiagnostic): string {
-  if (diagnostic.category === "syntax") return "typescript.syntax";
-  if (diagnostic.category === "types") return "typescript.types";
+  if (diagnostic.category === "syntax") return diagnostic.path?.endsWith(".py") || diagnostic.path?.endsWith(".pyi")
+    ? "python.syntax"
+    : "typescript.syntax";
+  if (diagnostic.category === "types") return diagnostic.path?.endsWith(".py") || diagnostic.path?.endsWith(".pyi")
+    ? "python.types"
+    : "typescript.types";
   if (diagnostic.category === "test") return "typescript.relevant-tests";
   if (diagnostic.category === "graph") return "typescript.import-graph";
   if (diagnostic.code === "TS_FILE_LINES") return "typescript.file-length";

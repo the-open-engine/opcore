@@ -1,5 +1,5 @@
 import type { ValidationCheckDefinition } from "@the-open-engine/opcore-validation";
-import type { ValidationDiagnostic } from "@the-open-engine/opcore-contracts";
+import type { ValidationCheckOutcome, ValidationDiagnostic } from "@the-open-engine/opcore-contracts";
 import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { mkdir, copyFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -43,7 +43,8 @@ export function createTypeCheck(options: PythonTypeCheckOptions = {}): Validatio
       const checker = selectTypeChecker({ ...options, repoRoot });
       if (checker === undefined) {
         return {
-          status: "unsupported_request",
+          outcome: "tool_unavailable",
+          failureMessage: "Neither mypy nor pyright is available.",
           diagnostics: [
             {
               category: "types",
@@ -60,13 +61,20 @@ export function createTypeCheck(options: PythonTypeCheckOptions = {}): Validatio
         const result = runTool(checker.command, checkerArgs(checker, sourceSet), {
           cwd: workspace.root,
           env: options.env,
-          timeoutMs: options.timeoutMs ?? 30000
+          timeoutMs: options.timeoutMs ?? 30000,
+          allowedExitCodes: [0, 1]
         });
-        if (result.failureMessage !== undefined || result.exitCode === null) {
-          return unsupportedToolFailure(checker, result.failureMessage ?? `${checker.tool} invocation failed`);
+        if (!result.ok) {
+          const outcome = result.termination === "timeout" ? "timeout" : "tool_failure";
+          return typeToolFailure(checker, outcome, result.failureMessage ?? `${checker.tool} invocation failed`);
+        }
+        const diagnostics = sortDiagnostics(parseTypeCheckerDiagnostics(checker, result.stdout, result.stderr, workspace.root));
+        if (result.exitCode !== 0 && diagnostics.length === 0) {
+          return typeToolFailure(checker, "tool_failure", `${checker.tool} exited ${result.exitCode} without parseable diagnostics`);
         }
         return {
-          diagnostics: sortDiagnostics(parseTypeCheckerDiagnostics(checker, result.stdout, result.stderr, workspace.root))
+          outcome: diagnostics.some((entry) => entry.severity === "error") ? "findings" : "passed",
+          diagnostics
         };
       } finally {
         workspace.cleanup();
@@ -129,15 +137,20 @@ function resolveRepoPath(root: string, path: string): string {
   return absolutePath;
 }
 
-function unsupportedToolFailure(checker: PythonToolResolution, message: string) {
+function typeToolFailure(
+  checker: PythonToolResolution,
+  outcome: Extract<ValidationCheckOutcome, "timeout" | "tool_failure">,
+  message: string
+) {
   return {
-    status: "unsupported_request" as const,
+    outcome,
+    failureMessage: message,
     diagnostics: [
       diagnostic({
-        category: "types",
-        severity: "info",
-        code: "PYTHON_TYPES_TOOL_FAILED",
-        message: `${checker.tool} could not run: ${message}`
+        category: "infrastructure",
+        code: outcome === "timeout" ? "PYTHON_TYPES_TOOL_TIMEOUT" : "PYTHON_TYPES_TOOL_FAILED",
+        message: `${checker.tool} could not run: ${message}`,
+        tool: checkerProvenance(checker)
       })
     ]
   };
@@ -152,13 +165,19 @@ function parseTypeCheckerDiagnostics(
   const text = [stdout, stderr].filter((part) => part.trim().length > 0).join("\n");
   const diagnostics: ValidationDiagnostic[] = [];
   for (const line of text.split(/\r?\n/u)) {
-    const parsed = checker.tool === "pyright" ? parsePyrightLine(line, workspaceRoot) : parseMypyLine(line, workspaceRoot);
+    const parsed = checker.tool === "pyright"
+      ? parsePyrightLine(line, workspaceRoot, checker)
+      : parseMypyLine(line, workspaceRoot, checker);
     if (parsed !== undefined) diagnostics.push(parsed);
   }
   return diagnostics;
 }
 
-function parseMypyLine(line: string, workspaceRoot: string): ValidationDiagnostic | undefined {
+function parseMypyLine(
+  line: string,
+  workspaceRoot: string,
+  checker: PythonToolResolution
+): ValidationDiagnostic | undefined {
   const match = /^(?<path>.+?):(?<line>\d+)(?::(?<column>\d+))?:\s+(?<severity>error|warning|note):\s+(?<message>.+?)(?:\s+\[(?<code>[^\]]+)\])?$/u.exec(line.trim());
   if (match?.groups === undefined) return undefined;
   const severity = match.groups.severity === "error" ? "error" : "warning";
@@ -168,11 +187,18 @@ function parseMypyLine(line: string, workspaceRoot: string): ValidationDiagnosti
     severity,
     path: repoRelativeDiagnosticPath(match.groups.path, workspaceRoot),
     code,
-    message: withLocation(match.groups.message, match.groups.line, match.groups.column)
+    message: match.groups.message,
+    line: parsePositiveInteger(match.groups.line),
+    column: parsePositiveInteger(match.groups.column),
+    tool: checkerProvenance(checker)
   });
 }
 
-function parsePyrightLine(line: string, workspaceRoot: string): ValidationDiagnostic | undefined {
+function parsePyrightLine(
+  line: string,
+  workspaceRoot: string,
+  checker: PythonToolResolution
+): ValidationDiagnostic | undefined {
   const match = /^\s*(?<path>.+?):(?<line>\d+):(?<column>\d+)\s+-\s+(?<severity>error|warning|information):\s+(?<message>.+?)(?:\s+\((?<code>[^)]+)\))?$/u.exec(line.trim());
   if (match?.groups === undefined) return undefined;
   const severity = match.groups.severity === "error" ? "error" : match.groups.severity === "warning" ? "warning" : "info";
@@ -182,7 +208,10 @@ function parsePyrightLine(line: string, workspaceRoot: string): ValidationDiagno
     severity,
     path: repoRelativeDiagnosticPath(match.groups.path, workspaceRoot),
     code,
-    message: withLocation(match.groups.message, match.groups.line, match.groups.column)
+    message: match.groups.message,
+    line: parsePositiveInteger(match.groups.line),
+    column: parsePositiveInteger(match.groups.column),
+    tool: checkerProvenance(checker)
   });
 }
 
@@ -192,11 +221,22 @@ function repoRelativeDiagnosticPath(path: string, workspaceRoot: string): string
   return relativePath.length > 0 && !relativePath.startsWith("..") ? relativePath : path.replaceAll("\\", "/");
 }
 
-function withLocation(message: string, line: string | undefined, column: string | undefined): string {
-  if (line === undefined) return message;
-  return column === undefined ? `${message} (line ${line})` : `${message} (line ${line}, column ${column})`;
-}
-
 function normalizeDiagnosticCode(code: string): string {
   return code.replace(/([a-z])([A-Z])/g, "$1_$2").replace(/[^A-Za-z0-9]+/g, "_").replace(/^_+|_+$/g, "").toUpperCase();
+}
+
+function parsePositiveInteger(value: string | undefined): number | undefined {
+  if (value === undefined) return undefined;
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
+}
+
+function checkerProvenance(checker: Pick<PythonToolResolution, "tool"> & Partial<PythonToolResolution>) {
+  return {
+    name: checker.tool,
+    command: checker.command ?? checker.tool,
+    ...(checker.version === undefined ? {} : { version: checker.version }),
+    ...(checker.source === undefined ? {} : { source: checker.source }),
+    ...(checker.cwd === undefined ? {} : { cwd: checker.cwd })
+  };
 }

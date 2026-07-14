@@ -52,6 +52,7 @@ import {
   requiredGraphNodeKinds,
   routeCommandAdapter,
   validationCheckRunStatuses,
+  validationCheckOutcomes,
   validationFailureCategories,
   validationResultStatuses,
   validationSkippedCheckReasons,
@@ -205,6 +206,15 @@ describe("Opcore shared contracts", () => {
       "provider_failure",
       "unsupported_request",
       "skipped"
+    ]);
+    assert.deepEqual(validationCheckOutcomes, [
+      "passed",
+      "findings",
+      "tool_unavailable",
+      "invalid_config",
+      "timeout",
+      "unsupported_target",
+      "tool_failure"
     ]);
     assert.deepEqual(validationSkippedCheckReasons, [
       "graph_unavailable",
@@ -879,6 +889,7 @@ describe("Opcore shared contracts", () => {
         {
           checkId: "types",
           status: "passed",
+          outcome: "passed",
           durationMs: 7,
           diagnosticCount: 1
         }
@@ -960,11 +971,23 @@ describe("Opcore shared contracts", () => {
           validValidationResult({
             manifest: {
               ...manifest,
-              runs: [{ ...manifest.runs[0], status: "infrastructure_failure", failureMessage: "" }]
+              runs: [{ ...manifest.runs[0], status: "infrastructure_failure", outcome: "tool_failure", failureMessage: "" }]
             }
           })
         ),
       /failureMessage/
+    );
+    assert.throws(
+      () =>
+        validateValidationResultPayload(
+          validValidationResult({
+            manifest: {
+              ...manifest,
+              runs: [{ ...manifest.runs[0], status: "passed", outcome: "findings" }]
+            }
+          })
+        ),
+      /outcome.*requires status/
     );
     assert.throws(
       () =>
@@ -982,6 +1005,54 @@ describe("Opcore shared contracts", () => {
           })
         ),
       /escape/
+    );
+  });
+
+  it("validates diagnostic ranges, tool provenance, and fine-grained outcomes", () => {
+    const diagnostic = {
+      category: "syntax",
+      severity: "error",
+      code: "PY_SYNTAX_ERROR",
+      message: "expected ':'",
+      path: "pkg/app.py",
+      line: 3,
+      column: 8,
+      endLine: 3,
+      endColumn: 9,
+      tool: {
+        name: "python",
+        command: "/repo/.venv/bin/python",
+        version: "3.12.13",
+        source: "repo-venv",
+        cwd: "/repo"
+      }
+    };
+    const result = validateValidationResultPayload(
+      validValidationResult({
+        status: "policy_failure",
+        diagnostics: [diagnostic],
+        failure: { category: "policy_failure", message: "finding" },
+        manifest: {
+          schemaVersion: GRAPH_SCHEMA_VERSION,
+          checks: ["python.syntax"],
+          generatedAt: "2026-07-14T00:00:00.000Z",
+          runs: [{ checkId: "python.syntax", status: "policy_failure", outcome: "findings", diagnosticCount: 1 }]
+        }
+      })
+    );
+    assert.equal(result.diagnostics[0].tool.command, "/repo/.venv/bin/python");
+    assert.equal(result.manifest.runs[0].outcome, "findings");
+    assert.throws(
+      () => validateValidationResultPayload(validValidationResult({ diagnostics: [{ ...diagnostic, line: 0 }] })),
+      /line/
+    );
+    assert.throws(
+      () => validateValidationResultPayload(validValidationResult({ diagnostics: [{ ...diagnostic, line: undefined }] })),
+      /requires line/
+    );
+    assert.throws(
+      () => validateValidationResultPayload(validValidationResult({ diagnostics: [{ ...diagnostic, tool: { name: "python", command: "" } }] })),
+      /tool command/
     );
   });
 

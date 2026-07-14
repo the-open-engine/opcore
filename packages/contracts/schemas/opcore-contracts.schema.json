@@ -2411,6 +2411,7 @@
           "type": "array",
           "items": {
             "type": "object",
+            "additionalProperties": false,
             "required": [
               "category",
               "message",
@@ -2447,8 +2448,83 @@
               "code": {
                 "type": "string",
                 "minLength": 1
+              },
+              "line": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "column": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "endLine": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "endColumn": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "tool": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "name",
+                  "command"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "command": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "version": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "source": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "cwd": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
               }
-            }
+            },
+            "allOf": [
+              {
+                "if": {
+                  "required": ["column"]
+                },
+                "then": {
+                  "required": ["line"]
+                }
+              },
+              {
+                "if": {
+                  "anyOf": [
+                    { "required": ["endLine"] },
+                    { "required": ["endColumn"] }
+                  ]
+                },
+                "then": {
+                  "required": ["line"]
+                }
+              },
+              {
+                "if": {
+                  "required": ["endColumn"]
+                },
+                "then": {
+                  "required": ["endLine"]
+                }
+              }
+            ]
           }
         },
         "graphStatus": {
@@ -2617,6 +2693,17 @@
                       "skipped"
                     ]
                   },
+                  "outcome": {
+                    "enum": [
+                      "passed",
+                      "findings",
+                      "tool_unavailable",
+                      "invalid_config",
+                      "timeout",
+                      "unsupported_target",
+                      "tool_failure"
+                    ]
+                  },
                   "durationMs": {
                     "type": "number",
                     "minimum": 0
@@ -2648,6 +2735,38 @@
                         "failureMessage"
                       ]
                     }
+                  },
+                  {
+                    "if": {
+                      "properties": { "outcome": { "const": "passed" } },
+                      "required": ["outcome"]
+                    },
+                    "then": { "properties": { "status": { "const": "passed" } } }
+                  },
+                  {
+                    "if": {
+                      "properties": { "outcome": { "const": "findings" } },
+                      "required": ["outcome"]
+                    },
+                    "then": { "properties": { "status": { "const": "policy_failure" } } }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "outcome": {
+                          "enum": ["tool_unavailable", "invalid_config", "unsupported_target"]
+                        }
+                      },
+                      "required": ["outcome"]
+                    },
+                    "then": { "properties": { "status": { "const": "unsupported_request" } } }
+                  },
+                  {
+                    "if": {
+                      "properties": { "outcome": { "enum": ["timeout", "tool_failure"] } },
+                      "required": ["outcome"]
+                    },
+                    "then": { "properties": { "status": { "const": "infrastructure_failure" } } }
                   }
                 ]
               }

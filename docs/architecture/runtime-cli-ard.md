@@ -122,6 +122,12 @@ Rust checks read candidate files through `ValidationCheckContext.fileView`. Chec
 
 `opcore status --json` and `opcore doctor --json` expose Rust adapter status, toolchain availability, degraded checks, retained compatibility notes, `currentUsage` metadata for Opcore/Orchestra/CoVibes/gateway consumers, and temporary workspace requirements so #21 can decide daemon/cache/check UX without rediscovering Rust coverage. Missing `cargo`, `rustfmt`, or `clippy` makes the Rust foundation unavailable; missing `rustdoc` is reported as degraded retained compatibility instead of disabling the core `rust.fmt`, `rust.cargo-check`, and `rust.clippy` foundation.
 
+## Python Syntax Validation
+
+#244 makes `python.syntax` compiler-truthful. The adapter resolves one concrete project interpreter once, retains its executable, working directory, version, resolution source, and declared-target compatibility, then invokes that exact executable with isolated no-bytecode flags. A versioned JSON stdin/stdout protocol compiles sorted `.py` and `.pyi` after-state content with `compile(..., "exec", dont_inherit=True)` without importing, executing, or materializing source files.
+
+Python syntax diagnostics carry normalized workspace-relative paths, stable compiler-error codes, 1-based ranges when supplied by the interpreter, and interpreter provenance. Validation run summaries preserve fine-grained `passed`, `findings`, `tool_unavailable`, `invalid_config`, `timeout`, `unsupported_target`, and `tool_failure` outcomes while retaining aggregate validation statuses. Protocol/schema mismatch, unknown nonzero exit, timeout, signal, spawn failure, and mismatched file/provenance output fail closed. Hand-written delimiter, quote, comment, or compound-header grammar checks must not override compiler success; any future supplemental Python policy requires a separate check ID and category.
+
 ## Clone Validation Adapter
 
 #151 adds `@the-open-engine/opcore-validation-clone` as the duplicate-code validation adapter package. The stable check id is `clone.duplication`; it requiresGraph:false, reads candidate after-state through `ValidationCheckContext.fileView.readAfter`, and emits line-free duplicate-code diagnostics with stable clone-class identity. The adapter receives its native invocation function from Opcore validation composition, so it does not import graph-core loaders, raw SQLite, graph internals, or the aggregate CLI.

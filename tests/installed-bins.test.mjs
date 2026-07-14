@@ -690,7 +690,7 @@ function assertFixtureInitHonesty(initPayload, fixture) {
     const python = initPayload.settings.languages.find((entry) => entry.language === "Python");
     assert.equal(python.validation, "degraded");
     assert.equal(python.state, "degraded");
-    assert.equal(initPayload.scan.diagnosticCount, 2);
+    assert.equal(initPayload.scan.diagnosticCount, 1, "valid .pyi declarations must not add syntax diagnostics");
   }
 }
 

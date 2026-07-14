@@ -112,6 +112,10 @@ function sortDiagnostics(diagnostics: readonly ValidationDiagnostic[]): readonly
   return [...diagnostics].sort((left, right) =>
     [
       (left.path ?? "").localeCompare(right.path ?? ""),
+      (left.line ?? 0) - (right.line ?? 0),
+      (left.column ?? 0) - (right.column ?? 0),
+      (left.endLine ?? 0) - (right.endLine ?? 0),
+      (left.endColumn ?? 0) - (right.endColumn ?? 0),
       left.category.localeCompare(right.category),
       left.severity.localeCompare(right.severity),
       (left.code ?? "").localeCompare(right.code ?? ""),
