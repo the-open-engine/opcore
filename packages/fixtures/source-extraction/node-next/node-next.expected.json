@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 1,
+  "fixture": "source-extraction-node-next",
+  "fileNodeIds": [
+    "file:src/alias-consumer.ts",
+    "file:src/alias/value.ts",
+    "file:src/common-dep.cts",
+    "file:src/common.cts",
+    "file:src/dep.ts",
+    "file:src/dynamic-target.ts",
+    "file:src/dynamic.ts",
+    "file:src/import-type.ts",
+    "file:src/main.ts",
+    "file:src/module-dep.mts",
+    "file:src/module.mts",
+    "file:src/nonliteral.ts",
+    "file:src/types.ts"
+  ],
+  "moduleEdgeTriples": [
+    [
+      "DEPENDS_ON",
+      "file:src/alias-consumer.ts",
+      "file:src/alias/value.ts"
+    ],
+    [
+      "DEPENDS_ON",
+      "file:src/common.cts",
+      "file:src/common-dep.cts"
+    ],
+    [
+      "DEPENDS_ON",
+      "file:src/dynamic.ts",
+      "file:src/dynamic-target.ts"
+    ],
+    [
+      "DEPENDS_ON",
+      "file:src/import-type.ts",
+      "file:src/types.ts"
+    ],
+    [
+      "DEPENDS_ON",
+      "file:src/main.ts",
+      "file:src/dep.ts"
+    ],
+    [
+      "DEPENDS_ON",
+      "file:src/module.mts",
+      "file:src/module-dep.mts"
+    ],
+    [
+      "IMPORTS_FROM",
+      "file:src/alias-consumer.ts",
+      "file:src/alias/value.ts"
+    ],
+    [
+      "IMPORTS_FROM",
+      "file:src/common.cts",
+      "file:src/common-dep.cts"
+    ],
+    [
+      "IMPORTS_FROM",
+      "file:src/dynamic.ts",
+      "file:src/dynamic-target.ts"
+    ],
+    [
+      "IMPORTS_FROM",
+      "file:src/import-type.ts",
+      "file:src/types.ts"
+    ],
+    [
+      "IMPORTS_FROM",
+      "file:src/main.ts",
+      "file:src/dep.ts"
+    ],
+    [
+      "IMPORTS_FROM",
+      "file:src/module.mts",
+      "file:src/module-dep.mts"
+    ]
+  ],
+  "diagnostics": []
+}

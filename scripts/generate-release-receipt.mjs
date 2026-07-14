@@ -119,6 +119,8 @@ function collectOnePackageEvidence(packageName, packlists, descriptor, stagedPac
   const packageSource = packageSourceFor(packageName, stagedPackages);
   const manifest = JSON.parse(readFileSync(join(packageSource.repoRoot, packageSource.packageRoot, "package.json"), "utf8"));
   if (manifest.name !== packageName) throw new Error(`${packageRoot}/package.json name mismatch: ${manifest.name}`);
+  const bins = manifest.bin ?? {};
+  validateNoOldPublicIdentity(packageName, manifest, bins);
   const pack = runJson("npm", ["pack", "--json", "--pack-destination", join(repoRoot, packDestination)], {
     cwd: packageSource.packageDir
   })[0];
@@ -137,8 +139,6 @@ function collectOnePackageEvidence(packageName, packlists, descriptor, stagedPac
   const tarballPath = `${packDestination}/${pack.filename}`;
   const tarballAbsolutePath = join(repoRoot, tarballPath);
   if (!existsSync(tarballAbsolutePath)) throw new Error(`npm pack did not write tarball: ${tarballPath}`);
-  const bins = manifest.bin ?? {};
-  validateNoOldPublicIdentity(packageName, manifest, bins);
   const nativeArtifacts = packageName === "opcore"
     ? collectNativeArtifacts(packageSource.repoRoot, packageSource.packageRoot, packageName, descriptor)
     : [];

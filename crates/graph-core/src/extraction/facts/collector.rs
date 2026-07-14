@@ -6,8 +6,9 @@ use crate::protocol::{GraphFactEdge, GraphFactNode};
 use oxc_ast::ast::{
     Argument, BindingPattern, CallExpression, Class, ExportAllDeclaration,
     ExportDefaultDeclaration, ExportDefaultDeclarationKind, ExportNamedDeclaration, Expression,
-    Function, ImportDeclaration, ImportDeclarationSpecifier, ModuleExportName, NewExpression,
-    TSInterfaceDeclaration, TSTypeAliasDeclaration, TSTypeName, VariableDeclaration,
+    Function, ImportDeclaration, ImportDeclarationSpecifier, ImportExpression, ModuleExportName,
+    NewExpression, TSImportType, TSInterfaceDeclaration, TSTypeAliasDeclaration, TSTypeName,
+    VariableDeclaration,
 };
 use oxc_ast_visit::{walk, Visit};
 use oxc_syntax::scope::ScopeFlags;
@@ -317,6 +318,24 @@ impl<'a> Visit<'a> for FileFactCollector {
         });
     }
 
+    fn visit_import_expression(&mut self, import: &ImportExpression<'a>) {
+        if let Expression::StringLiteral(source) = &import.source {
+            self.imports.push(ImportFact {
+                specifier: source.value.to_string(),
+                bindings: Vec::new(),
+            });
+        }
+        walk::walk_import_expression(self, import);
+    }
+
+    fn visit_ts_import_type(&mut self, import: &TSImportType<'a>) {
+        self.imports.push(ImportFact {
+            specifier: import.source.value.to_string(),
+            bindings: Vec::new(),
+        });
+        walk::walk_ts_import_type(self, import);
+    }
+
     fn visit_export_named_declaration(&mut self, export: &ExportNamedDeclaration<'a>) {
         let source = export
             .source
@@ -530,6 +549,7 @@ impl<'a> Visit<'a> for FileFactCollector {
 
     fn visit_ts_type_alias_declaration(&mut self, declaration: &TSTypeAliasDeclaration<'a>) {
         self.add_declaration("type", "Type", declaration.id.name.as_ref());
+        walk::walk_ts_type_alias_declaration(self, declaration);
     }
 
     fn visit_ts_interface_declaration(&mut self, declaration: &TSInterfaceDeclaration<'a>) {
@@ -543,10 +563,14 @@ impl<'a> Visit<'a> for FileFactCollector {
                 });
             }
         }
+        walk::walk_ts_interface_declaration(self, declaration);
     }
 
     fn visit_variable_declaration(&mut self, declaration: &VariableDeclaration<'a>) {
         for declarator in &declaration.declarations {
+            if let Some(type_annotation) = &declarator.type_annotation {
+                self.visit_ts_type_annotation(type_annotation);
+            }
             if let Some(name) = binding_name(&declarator.id) {
                 if self.current_context.is_none() {
                     let Some(init) = declarator.init.as_ref() else {

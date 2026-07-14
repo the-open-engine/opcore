@@ -5,9 +5,10 @@ import type {
 } from "@the-open-engine/opcore-contracts";
 import { PYTHON_SYNTAX_CHECK_ID, PYTHON_TYPES_CHECK_ID, pythonValidationCheckIds } from "./check-ids.js";
 import { validationPythonAdapterName } from "./check-constants.js";
-import { runTool } from "./process.js";
+import { resolvePythonTool, type PythonToolResolution } from "./toolchain-resolver.js";
 
 export interface PythonValidationToolchainOptions {
+  repoRoot?: string;
   env?: Record<string, string | undefined>;
   pythonCommand?: string;
 }
@@ -32,17 +33,25 @@ export function createPythonValidationAdapterStatus(
 export function probePythonToolchain(
   options: PythonValidationToolchainOptions = {}
 ): readonly ValidationAdapterToolchainStatus[] {
+  const resolverOptions = {
+    repoRoot: options.repoRoot ?? process.cwd(),
+    env: options.env,
+    pythonCommand: options.pythonCommand
+  };
   return [
-    probeTool("python", options.pythonCommand ?? "python3", ["--version"], options.env),
-    probeTool("mypy", "mypy", ["--version"], options.env),
-    probeTool("pyright", "pyright", ["--version"], options.env),
-    probeTool("ruff", "ruff", ["--version"], options.env),
-    probeTool("pytest", "pytest", ["--version"], options.env)
+    toToolchainStatus(resolvePythonTool("python", options.pythonCommand ?? "python3", ["--version"], resolverOptions)),
+    toToolchainStatus(resolvePythonTool("mypy", "mypy", ["--version"], resolverOptions)),
+    toToolchainStatus(resolvePythonTool("pyright", "pyright", ["--version"], resolverOptions)),
+    toToolchainStatus(resolvePythonTool("ruff", "ruff", ["--version"], resolverOptions)),
+    toToolchainStatus(resolvePythonTool("pytest", "pytest", ["--version"], resolverOptions))
   ];
 }
 
 export function pythonAvailable(options: PythonValidationToolchainOptions = {}): boolean {
-  return probeTool("python", options.pythonCommand ?? "python3", ["--version"], options.env).available;
+  return resolvePythonTool("python", options.pythonCommand ?? "python3", ["--version"], {
+    repoRoot: options.repoRoot ?? process.cwd(),
+    env: options.env
+  }).available;
 }
 
 export function createPythonDegradedChecks(missing: ReadonlySet<string>): readonly ValidationAdapterDegradedCheckStatus[] {
@@ -68,26 +77,15 @@ export function createPythonDegradedChecks(missing: ReadonlySet<string>): readon
   return degraded;
 }
 
-function probeTool(
-  tool: string,
-  command: string,
-  args: readonly string[],
-  env: Record<string, string | undefined> | undefined
-): ValidationAdapterToolchainStatus {
-  const result = runTool(command, args, { env });
-  if (result.ok) {
-    const version = (result.stdout || result.stderr).trim().split(/\r?\n/, 1)[0];
-    return {
-      tool,
-      available: true,
-      command: [command, ...args].join(" "),
-      ...(version.length > 0 ? { version } : {})
-    };
-  }
+function toToolchainStatus(resolution: PythonToolResolution): ValidationAdapterToolchainStatus {
   return {
-    tool,
-    available: false,
-    command: [command, ...args].join(" "),
-    failureMessage: result.failureMessage ?? `${tool} unavailable`
+    tool: resolution.tool,
+    available: resolution.available,
+    command: [resolution.command, ...resolution.args].join(" "),
+    cwd: resolution.cwd,
+    source: resolution.source,
+    ...(resolution.version !== undefined ? { version: resolution.version } : {}),
+    ...(resolution.configFile !== undefined ? { configFile: resolution.configFile } : {}),
+    ...(resolution.failureMessage !== undefined ? { failureMessage: resolution.failureMessage } : {})
   };
 }

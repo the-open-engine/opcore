@@ -1638,6 +1638,238 @@ describe("validation-typescript adapter", () => {
     );
   });
 
+  it("treats graph-backed and conventional TypeScript test files as automatic execution roots", async () => {
+    const nodes = [
+      fileNode("src/scenario.ts"),
+      fileNode("src/widget.part-2.test.ts"),
+      fileNode("src/scenario-helper.ts"),
+      fileNode("src/widget-helper.ts"),
+      fileNode("src/orphan.ts"),
+      {
+        id: "test:src/scenario.ts#runs scenario",
+        kind: "Test",
+        path: "src/scenario.ts",
+        name: "runs scenario"
+      },
+      exportedFunctionNode("src/scenario-helper.ts", "scenarioHelper"),
+      exportedFunctionNode("src/widget-helper.ts", "widgetHelper"),
+      exportedFunctionNode("src/orphan.ts", "orphan")
+    ];
+    const edges = [
+      containsEdge("src/scenario.ts", "test:src/scenario.ts#runs scenario"),
+      containsEdge("src/scenario-helper.ts", "function:src/scenario-helper.ts#scenarioHelper"),
+      containsEdge("src/widget-helper.ts", "function:src/widget-helper.ts#widgetHelper"),
+      containsEdge("src/orphan.ts", "function:src/orphan.ts#orphan"),
+      importEdge("src/scenario.ts", "src/scenario-helper.ts"),
+      importEdge("src/widget.part-2.test.ts", "src/widget-helper.ts")
+    ];
+    const files = {
+      "src/scenario.ts": "import { scenarioHelper } from './scenario-helper.js';\ntest('runs scenario', scenarioHelper);\n",
+      "src/widget.part-2.test.ts": "import { widgetHelper } from './widget-helper.js';\ntest('widget', widgetHelper);\n",
+      "src/scenario-helper.ts": "export function scenarioHelper() { return 1; }\n",
+      "src/widget-helper.ts": "export function widgetHelper() { return 2; }\n",
+      "src/orphan.ts": "export function orphan() { return 3; }\n"
+    };
+
+    const result = await runner({
+      files,
+      graphProviderClient: graphClient({
+        status: (validationRequest) => ({
+          ...availableStatus(validationRequest.graph.mode, validationRequest.repo),
+          handshake: graphHandshake()
+        }),
+        factQuery: (query) => availableFactResult(query, nodes, edges)
+      })
+    }).runValidation(
+      request({
+        checks: [TYPE_SCRIPT_DEAD_CODE_CHECK_ID],
+        scope: { kind: "files", files: Object.keys(files) }
+      })
+    );
+
+    assert.equal(result.status, "passed");
+    assert.deepEqual(
+      result.diagnostics.map((diagnostic) => [diagnostic.code, diagnostic.path]),
+      [
+        ["TS_DEAD_CODE_UNUSED_EXPORT", "src/orphan.ts"],
+        ["TS_DEAD_CODE_UNUSED_FILE", "src/orphan.ts"]
+      ]
+    );
+  });
+
+  it("maps proven package public and CLI outputs back to TypeScript source roots", async () => {
+    const nodes = [
+      fileNode("packages/app/src/index.ts"),
+      fileNode("packages/app/src/cli.ts"),
+      fileNode("packages/app/src/public.ts"),
+      fileNode("packages/app/src/orphan.ts"),
+      exportedFunctionNode("packages/app/src/index.ts", "main"),
+      exportedFunctionNode("packages/app/src/cli.ts", "runCli"),
+      exportedFunctionNode("packages/app/src/public.ts", "publicApi"),
+      exportedFunctionNode("packages/app/src/orphan.ts", "orphan")
+    ];
+    const edges = [
+      containsEdge("packages/app/src/index.ts", "function:packages/app/src/index.ts#main"),
+      containsEdge("packages/app/src/cli.ts", "function:packages/app/src/cli.ts#runCli"),
+      containsEdge("packages/app/src/public.ts", "function:packages/app/src/public.ts#publicApi"),
+      containsEdge("packages/app/src/orphan.ts", "function:packages/app/src/orphan.ts#orphan")
+    ];
+    const sourceFiles = {
+      "packages/app/src/index.ts": "export function main() { return 1; }\n",
+      "packages/app/src/cli.ts": "export function runCli() { return 2; }\n",
+      "packages/app/src/public.ts": "export function publicApi() { return 3; }\n",
+      "packages/app/src/orphan.ts": "export function orphan() { return 4; }\n"
+    };
+    const files = {
+      ...sourceFiles,
+      "packages/app/package.json": JSON.stringify({
+        main: "./dist/index.js",
+        exports: {
+          ".": { default: "./dist/index.js", types: "./dist/index.d.ts" },
+          "./public": "./src/public.ts"
+        },
+        bin: { app: "./dist/cli.js" }
+      }),
+      "packages/app/tsconfig.json": JSON.stringify({ compilerOptions: { rootDir: "src", outDir: "dist" } })
+    };
+
+    const result = await runner({
+      files,
+      graphProviderClient: graphClient({
+        status: (validationRequest) => ({
+          ...availableStatus(validationRequest.graph.mode, validationRequest.repo),
+          handshake: graphHandshake()
+        }),
+        factQuery: (query) => availableFactResult(query, nodes, edges)
+      })
+    }).runValidation(
+      request({
+        checks: [TYPE_SCRIPT_DEAD_CODE_CHECK_ID],
+        scope: { kind: "files", files: Object.keys(sourceFiles) }
+      })
+    );
+
+    assert.equal(result.status, "passed");
+    assert.deepEqual(
+      result.diagnostics.map((diagnostic) => [diagnostic.code, diagnostic.path]),
+      [
+        ["TS_DEAD_CODE_UNUSED_EXPORT", "packages/app/src/orphan.ts"],
+        ["TS_DEAD_CODE_UNUSED_FILE", "packages/app/src/orphan.ts"]
+      ]
+    );
+  });
+
+  it("keeps orphan warnings when package entrypoint metadata is malformed", async () => {
+    const path = "packages/app/src/orphan.ts";
+    const nodes = [fileNode(path), exportedFunctionNode(path, "orphan")];
+    const edges = [containsEdge(path, `function:${path}#orphan`)];
+    const result = await runner({
+      files: {
+        [path]: "export function orphan() { return 1; }\n",
+        "packages/app/package.json": "{ malformed",
+        "packages/app/tsconfig.json": JSON.stringify({ compilerOptions: { rootDir: "src", outDir: "dist" } })
+      },
+      graphProviderClient: graphClient({
+        status: (validationRequest) => ({
+          ...availableStatus(validationRequest.graph.mode, validationRequest.repo),
+          handshake: graphHandshake()
+        }),
+        factQuery: (query) => availableFactResult(query, nodes, edges)
+      })
+    }).runValidation(
+      request({ checks: [TYPE_SCRIPT_DEAD_CODE_CHECK_ID], scope: { kind: "files", files: [path] } })
+    );
+
+    assert.equal(result.status, "passed");
+    assert.deepEqual(
+      result.diagnostics.map((diagnostic) => diagnostic.code),
+      ["TS_DEAD_CODE_UNUSED_EXPORT", "TS_DEAD_CODE_UNUSED_FILE"]
+    );
+  });
+
+  it("keeps orphan warnings when a package output maps to ambiguous source files", async () => {
+    const paths = ["packages/app/src/index.ts", "packages/app/src/index.tsx"];
+    const nodes = paths.flatMap((path, index) => [fileNode(path), exportedFunctionNode(path, `entry${index}`)]);
+    const edges = paths.map((path, index) => containsEdge(path, `function:${path}#entry${index}`));
+    const result = await runner({
+      files: {
+        "packages/app/src/index.ts": "export function entry0() { return 1; }\n",
+        "packages/app/src/index.tsx": "export function entry1() { return 2; }\n",
+        "packages/app/package.json": JSON.stringify({ main: "./dist/index.js" }),
+        "packages/app/tsconfig.json": JSON.stringify({ compilerOptions: { rootDir: "src", outDir: "dist" } })
+      },
+      graphProviderClient: graphClient({
+        status: (validationRequest) => ({
+          ...availableStatus(validationRequest.graph.mode, validationRequest.repo),
+          handshake: graphHandshake()
+        }),
+        factQuery: (query) => availableFactResult(query, nodes, edges)
+      })
+    }).runValidation(
+      request({ checks: [TYPE_SCRIPT_DEAD_CODE_CHECK_ID], scope: { kind: "files", files: paths } })
+    );
+
+    assert.equal(result.status, "passed");
+    assert.deepEqual(
+      result.diagnostics.map((diagnostic) => [diagnostic.code, diagnostic.path]),
+      [
+        ["TS_DEAD_CODE_UNUSED_EXPORT", "packages/app/src/index.ts"],
+        ["TS_DEAD_CODE_UNUSED_FILE", "packages/app/src/index.ts"],
+        ["TS_DEAD_CODE_UNUSED_EXPORT", "packages/app/src/index.tsx"],
+        ["TS_DEAD_CODE_UNUSED_FILE", "packages/app/src/index.tsx"]
+      ]
+    );
+  });
+
+  it("does not cascade missing graph imports into dead-code findings for compiler-resolved targets", async () => {
+    const sourceFiles = {
+      "src/index.ts": "import { dependency } from './dependency.js';\nvoid dependency();\n",
+      "src/dependency.ts": "export function dependency() { return 1; }\n",
+      "src/orphan.ts": "export function orphan() { return 2; }\n"
+    };
+    const nodes = [
+      fileNode("src/index.ts"),
+      fileNode("src/dependency.ts"),
+      fileNode("src/orphan.ts"),
+      exportedFunctionNode("src/dependency.ts", "dependency"),
+      exportedFunctionNode("src/orphan.ts", "orphan")
+    ];
+    const edges = [
+      containsEdge("src/dependency.ts", "function:src/dependency.ts#dependency"),
+      containsEdge("src/orphan.ts", "function:src/orphan.ts#orphan")
+    ];
+    const result = await runner({
+      files: {
+        ...sourceFiles,
+        "package.json": JSON.stringify({ main: "./src/index.ts" })
+      },
+      graphProviderClient: graphClient({
+        status: (validationRequest) => ({
+          ...availableStatus(validationRequest.graph.mode, validationRequest.repo),
+          handshake: graphHandshake()
+        }),
+        factQuery: (query) => availableFactResult(query, nodes, edges)
+      })
+    }).runValidation(
+      request({
+        checks: [TYPE_SCRIPT_IMPORT_GRAPH_CHECK_ID, TYPE_SCRIPT_DEAD_CODE_CHECK_ID],
+        scope: { kind: "files", files: Object.keys(sourceFiles) }
+      })
+    );
+
+    assert.equal(result.status, "passed");
+    assert.equal(result.diagnostics.some((diagnostic) => diagnostic.path === "src/dependency.ts"), false);
+    assert.deepEqual(
+      result.diagnostics.map((diagnostic) => [diagnostic.code, diagnostic.path]),
+      [
+        ["TS_DEAD_CODE_UNSUPPORTED", undefined],
+        ["TS_IMPORT_GRAPH_MISSING_EDGE", "src/index.ts"],
+        ["TS_DEAD_CODE_UNUSED_EXPORT", "src/orphan.ts"],
+        ["TS_DEAD_CODE_UNUSED_FILE", "src/orphan.ts"]
+      ]
+    );
+  });
+
   it("reports unreferenced source files and unused exported types from graph facts", async () => {
     const nodes = [
       {
@@ -2688,6 +2920,37 @@ function availableFactResult(query, nodes, edges, metadataOverrides = {}) {
     nodes,
     edges
   };
+}
+
+function fileNode(path) {
+  return {
+    id: `file:${path}`,
+    kind: "File",
+    path,
+    attributes: { language: "typescript" }
+  };
+}
+
+function exportedFunctionNode(path, name) {
+  return {
+    id: `function:${path}#${name}`,
+    kind: "Function",
+    path,
+    name,
+    attributes: {
+      exported: true,
+      exportKind: "named",
+      exportName: name
+    }
+  };
+}
+
+function containsEdge(path, target) {
+  return { kind: "CONTAINS", from: `file:${path}`, to: target };
+}
+
+function importEdge(fromPath, toPath) {
+  return { kind: "IMPORTS_FROM", from: `file:${fromPath}`, to: `file:${toPath}` };
 }
 
 function freshness(overrides = {}) {

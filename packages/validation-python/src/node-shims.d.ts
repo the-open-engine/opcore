@@ -22,6 +22,7 @@ declare module "node:child_process" {
 }
 
 declare module "node:fs" {
+  export function existsSync(path: string): boolean;
   export function mkdirSync(path: string, options?: { recursive?: boolean }): void;
   export function mkdtempSync(prefix: string): string;
   export function rmSync(path: string, options?: { recursive?: boolean; force?: boolean }): void;
@@ -45,4 +46,5 @@ interface Buffer {
 
 declare const process: {
   env: Record<string, string | undefined>;
+  cwd(): string;
 };

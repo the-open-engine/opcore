@@ -50,7 +50,7 @@ describe("package import boundaries", () => {
   });
 
   it("keeps router and package adapter imports on public package boundaries", () => {
-    for (const file of sourceFiles("packages")) {
+    for (const file of packageSourceFiles()) {
       const packageDir = packageDirFor(file);
       for (const source of imports(file)) {
         if (source.startsWith(".")) {
@@ -217,6 +217,10 @@ describe("package import boundaries", () => {
     }
   });
 });
+
+function packageSourceFiles() {
+  return [...packageNamesByDir.keys()].flatMap((packageDir) => sourceFiles(`packages/${packageDir}/src`));
+}
 
 function sourceFiles(dir) {
   const entries = readdirSync(dir, { withFileTypes: true });

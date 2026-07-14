@@ -13,7 +13,7 @@ pub enum SourceLanguage {
 impl SourceLanguage {
     pub fn from_path(path: &Path) -> Option<Self> {
         match path.extension().and_then(|extension| extension.to_str()) {
-            Some("ts") => Some(Self::TypeScript),
+            Some("ts") | Some("mts") | Some("cts") => Some(Self::TypeScript),
             Some("tsx") => Some(Self::TypeScriptJsx),
             Some("js") => Some(Self::JavaScript),
             Some("jsx") => Some(Self::JavaScriptJsx),
@@ -38,9 +38,10 @@ impl SourceLanguage {
     pub fn unsupported_source_extension(path: &Path) -> Option<String> {
         let extension = path.extension()?.to_str()?;
         match extension {
-            "mjs" | "cjs" | "mts" | "cts" | "vue" | "svelte" | "go" | "java" | "rb" | "php"
-            | "swift" | "kt" | "kts" | "scala" | "lua" | "cs" | "c" | "cc" | "cpp" | "h"
-            | "hpp" => Some(extension.to_string()),
+            "mjs" | "cjs" | "vue" | "svelte" | "go" | "java" | "rb" | "php" | "swift" | "kt"
+            | "kts" | "scala" | "lua" | "cs" | "c" | "cc" | "cpp" | "h" | "hpp" => {
+                Some(extension.to_string())
+            }
             _ => None,
         }
     }

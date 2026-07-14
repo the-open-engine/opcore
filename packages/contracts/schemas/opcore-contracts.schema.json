@@ -3326,6 +3326,18 @@
                         "failureMessage": {
                           "type": "string",
                           "minLength": 1
+                        },
+                        "cwd": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "configFile": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "source": {
+                          "type": "string",
+                          "minLength": 1
                         }
                       }
                     }

@@ -76,7 +76,7 @@ export function createDefaultValidationStatusPayload(options: {
   const graphMode = options.graphMode ?? "optional";
   return createValidationStatusPayload({
     checks: validationChecksForRepoPolicy(options.repoRoot),
-    adapters: [createRustValidationAdapterStatus(), createPythonValidationAdapterStatus()],
+    adapters: [createRustValidationAdapterStatus(), createPythonValidationAdapterStatus({ repoRoot: options.repoRoot })],
     graphMode,
     graphStatus: cliGraphStatus({ repoRoot: options.repoRoot }, graphMode)
   });

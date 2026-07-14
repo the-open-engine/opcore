@@ -355,16 +355,51 @@ fn resolve_candidate(
 }
 
 fn resolution_candidates(path: &str) -> Vec<String> {
-    let mut candidates = vec![path.to_string()];
-    if Path::new(path).extension().is_none() {
-        for extension in [".ts", ".tsx", ".js", ".jsx"] {
-            candidates.push(format!("{path}{extension}"));
-        }
-        for extension in ["ts", "tsx", "js", "jsx"] {
-            candidates.push(format!("{path}/index.{extension}"));
+    let extension = Path::new(path).extension().and_then(|value| value.to_str());
+    match extension {
+        Some("js") => vec![
+            replace_extension(path, "ts"),
+            replace_extension(path, "tsx"),
+            replace_extension(path, "d.ts"),
+            path.to_string(),
+            replace_extension(path, "jsx"),
+        ],
+        Some("jsx") => vec![
+            replace_extension(path, "tsx"),
+            replace_extension(path, "ts"),
+            replace_extension(path, "d.ts"),
+            path.to_string(),
+            replace_extension(path, "js"),
+        ],
+        Some("mjs") => vec![
+            replace_extension(path, "mts"),
+            replace_extension(path, "d.mts"),
+            path.to_string(),
+        ],
+        Some("cjs") => vec![
+            replace_extension(path, "cts"),
+            replace_extension(path, "d.cts"),
+            path.to_string(),
+        ],
+        Some(_) => vec![path.to_string()],
+        None => {
+            let mut candidates = vec![path.to_string()];
+            for extension in ["ts", "tsx", "mts", "cts", "js", "jsx", "d.ts"] {
+                candidates.push(format!("{path}.{extension}"));
+            }
+            for extension in ["ts", "tsx", "mts", "cts", "js", "jsx", "d.ts"] {
+                candidates.push(format!("{path}/index.{extension}"));
+            }
+            candidates
         }
     }
-    candidates
+}
+
+fn replace_extension(path: &str, extension: &str) -> String {
+    Path::new(path)
+        .with_extension(extension)
+        .to_string_lossy()
+        .replace('\\', "/")
 }
 
 fn normalize_relative(path: &Path) -> Result<String, ()> {
