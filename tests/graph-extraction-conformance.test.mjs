@@ -12,6 +12,10 @@ const expected = JSON.parse(readFileSync(resolve(sourceFixtureRoot, "wave1.expec
 const pythonFixtureRoot = resolve(repoRoot, "../packages/fixtures/source-extraction/python");
 const pythonExpected = JSON.parse(readFileSync(resolve(pythonFixtureRoot, "python.expected.json"), "utf8"));
 const rustOnlyFixtureRoot = resolve(repoRoot, "../packages/fixtures/source-extraction/rust-only");
+const nodeNextFixtureRoot = resolve(repoRoot, "../packages/fixtures/source-extraction/node-next");
+const nodeNextExpected = JSON.parse(
+  readFileSync(resolve(nodeNextFixtureRoot, "node-next.expected.json"), "utf8")
+);
 
 describe("graph source extraction conformance", () => {
   it("extracts Wave 1 TS/JS/TSX/JSX facts through the GraphProvider wrapper", () => {
@@ -52,6 +56,30 @@ describe("graph source extraction conformance", () => {
       assert.deepEqual(nodeAttributes(result.nodes), pythonExpected.nodeAttributes);
       assert.deepEqual(fileExports(result.nodes), pythonExpected.fileExports);
       assert.deepEqual(result.diagnostics ?? [], pythonExpected.diagnostics);
+    });
+  });
+
+  it("resolves NodeNext source variants and literal module references", () => {
+    withFixtureCopy(nodeNextFixtureRoot, "node-next", (fixtureRoot) => {
+      assert.equal(graphProviderBuild({ repoRoot: fixtureRoot }).status.state, "available");
+      const result = graphProviderQuery({ repoRoot: fixtureRoot });
+      const fileNodeIds = result.nodes
+        .filter((node) => node.kind === "File")
+        .map((node) => node.id)
+        .sort();
+      const moduleEdges = edgeTriples(result.edges).filter(
+        ([kind]) => kind === "IMPORTS_FROM" || kind === "DEPENDS_ON"
+      );
+
+      assert.equal(result.status.state, "available");
+      assert.deepEqual(fileNodeIds, nodeNextExpected.fileNodeIds);
+      assert.deepEqual(moduleEdges, nodeNextExpected.moduleEdgeTriples.sort(compareTuple));
+      assert.deepEqual(result.diagnostics ?? [], nodeNextExpected.diagnostics);
+      assert.equal(
+        moduleEdges.some(([, from]) => from === "file:src/nonliteral.ts"),
+        false,
+        "a nonliteral dynamic import must not fabricate a module edge"
+      );
     });
   });
 
