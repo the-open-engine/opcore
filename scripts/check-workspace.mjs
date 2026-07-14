@@ -304,8 +304,8 @@ for (const rustCheck of ["cargo fmt --check", "cargo clippy --all-targets --all-
 }
 
 const zeroshot = readJson(".zeroshot/settings.json");
-if (zeroshot.github?.prBase !== "main" || zeroshot.worktree?.baseRef !== "origin/main") {
-  fail("Zeroshot must target the lattice main branch");
+if (zeroshot.github?.prBase !== "dev" || zeroshot.worktree?.baseRef !== "origin/dev") {
+  fail("Zeroshot feature runs must target the lattice dev branch");
 }
 if (!zeroshot.worktree?.setup?.includes("npm run setup")) fail("Zeroshot setup must generate current-tool wrappers");
 
