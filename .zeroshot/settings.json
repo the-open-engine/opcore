@@ -1,9 +1,9 @@
 {
   "github": {
-    "prBase": "main"
+    "prBase": "dev"
   },
   "worktree": {
-    "baseRef": "origin/main",
+    "baseRef": "origin/dev",
     "setup": [
       "npm run setup"
     ]
