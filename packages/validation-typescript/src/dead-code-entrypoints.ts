@@ -23,10 +23,11 @@ const symbolReachabilityEdgeKinds = new Set(["CALLS", "INHERITS", "IMPLEMENTS"])
 export function deadCodeEntrypointReachability(
   options: TypeScriptDeadCodeOptions | undefined,
   nodes: readonly GraphFactNode[],
-  edges: readonly GraphFactEdge[]
+  edges: readonly GraphFactEdge[],
+  automaticEntrypointPaths: readonly string[] = []
 ): TypeScriptDeadCodeEntrypointReachability {
   const entrypointPaths = uniqueSortedStrings(
-    (options?.entrypoints ?? [])
+    (options?.entrypoints ?? automaticEntrypointPaths)
       .map((entrypoint) => normalizeEntrypointPath(entrypoint))
       .filter((entrypoint): entrypoint is string => entrypoint !== undefined)
   );
@@ -39,7 +40,7 @@ export function deadCodeEntrypointReachability(
   const reachableSymbolAliases = collectReachableSymbols(fileReachability.pendingSymbols, symbolNodesByAlias, symbolReferences);
 
   return {
-    configured: entrypointPaths.length > 0,
+    configured: options?.entrypoints !== undefined,
     entrypointPaths,
     reachableFileAliases: fileReachability.reachableFileAliases,
     reachableSymbolAliases

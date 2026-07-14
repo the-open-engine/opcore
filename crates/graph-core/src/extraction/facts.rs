@@ -586,6 +586,8 @@ fn module_parts_for_path(path: &str) -> Vec<String> {
     let without_extension = path
         .strip_suffix(".py")
         .or_else(|| path.strip_suffix(".pyi"))
+        .or_else(|| path.strip_suffix(".mts"))
+        .or_else(|| path.strip_suffix(".cts"))
         .or_else(|| path.strip_suffix(".ts"))
         .or_else(|| path.strip_suffix(".tsx"))
         .or_else(|| path.strip_suffix(".js"))

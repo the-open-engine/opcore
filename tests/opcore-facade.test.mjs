@@ -257,6 +257,33 @@ describe("opcore public facade", () => {
     }
   });
 
+  it("reports TypeScript module formats as graph and validation supported", () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-typescript-module-status-"));
+    try {
+      writeFixtureFile(temp, "src/app.ts", "export const app = 1;\n");
+      writeFixtureFile(temp, "src/esm.mts", "export const esm = 1;\n");
+      writeFixtureFile(temp, "src/commonjs.cts", "export const commonjs = 1;\n");
+
+      const result = parseJson(runOpcore(["status", "--repo", temp, "--json"], temp, 0).stdout);
+      const coverage = result.repoState.coverage;
+
+      assert.deepEqual(coverage.languages, [
+        { language: "TypeScript", files: 3, graphSupported: true, validationSupported: true }
+      ]);
+      assert.equal(coverage.graph.supportedFiles, 3);
+      assert.deepEqual(Object.fromEntries(coverage.graph.extensions.map((entry) => [entry.extension, entry.count])), {
+        ".cts": 1,
+        ".mts": 1,
+        ".ts": 1
+      });
+      assert.equal(coverage.validation.supportedFiles, 3);
+      assert.equal(coverage.unsupported.totalFiles, 0);
+      assert.deepEqual(coverage.unsupported.stacks, []);
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
   it("hides ASP state from non-enrolled human status", () => {
     const temp = mkdtempSync(join(tmpdir(), "opcore-status-no-asp-"));
     try {
