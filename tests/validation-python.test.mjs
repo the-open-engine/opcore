@@ -71,6 +71,124 @@ describe("validation-python adapter", () => {
     assert.deepEqual(result.diagnostics.map((diagnostic) => diagnostic.code), ["PYTHON_TYPES_UNSUPPORTED"]);
   });
 
+  it("executes repo-local mypy and maps type diagnostics", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-types-mypy-"));
+    try {
+      writeToolShim(
+        repoRoot,
+        "mypy",
+        [
+          "#!/bin/sh",
+          "if [ \"$1\" = \"--version\" ]; then echo 'mypy 1.8.0'; exit 0; fi",
+          "while IFS= read -r line; do",
+          "  case \"$line\" in",
+          "    *\"'wrong'\"*) echo \"$1:1: error: Incompatible types in assignment (expression has type \\\"str\\\", variable has type \\\"int\\\")  [assignment]\"; exit 1 ;;",
+          "  esac",
+          "done < \"$1\"",
+          "exit 0",
+          ""
+        ].join("\n")
+      );
+
+      const result = await runner({
+        files: {
+          "pkg/app.py": "value: int = 'wrong'\n"
+        },
+        checks: createPythonValidationChecks({ env: { PATH: "" }, repoRoot })
+      }).runValidation(
+        request({
+          repo: { repoRoot },
+          checks: [PYTHON_TYPES_CHECK_ID]
+        })
+      );
+
+      assert.equal(result.status, "policy_failure");
+      assert.equal(result.diagnostics[0].path, "pkg/app.py");
+      assert.equal(result.diagnostics[0].category, "types");
+      assert.equal(result.diagnostics[0].code, "MYPY_ASSIGNMENT");
+      assert.match(result.diagnostics[0].message, /Incompatible types in assignment/);
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("checks overlay after-state content instead of the original Python file", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-types-overlay-"));
+    try {
+      writeToolShim(
+        repoRoot,
+        "mypy",
+        [
+          "#!/bin/sh",
+          "if [ \"$1\" = \"--version\" ]; then echo 'mypy 1.8.0'; exit 0; fi",
+          "while IFS= read -r line; do",
+          "  case \"$line\" in",
+          "    *\"'wrong'\"*) echo \"$1:1: error: overlay type failure  [assignment]\"; exit 1 ;;",
+          "  esac",
+          "done < \"$1\"",
+          "exit 0",
+          ""
+        ].join("\n")
+      );
+
+      const result = await runner({
+        files: {
+          "pkg/app.py": "value: int = 1\n"
+        },
+        checks: createPythonValidationChecks({ env: { PATH: "" }, repoRoot })
+      }).runValidation(
+        request({
+          repo: { repoRoot },
+          checks: [PYTHON_TYPES_CHECK_ID],
+          overlays: [{ path: "pkg/app.py", action: "write", content: "value: int = 'wrong'\n" }]
+        })
+      );
+
+      assert.equal(result.status, "policy_failure");
+      assert.deepEqual(result.diagnostics.map((diagnostic) => diagnostic.code), ["MYPY_ASSIGNMENT"]);
+      assert.match(result.diagnostics[0].message, /overlay type failure/);
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("prefers pyright when pyright project config is present", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-types-pyright-"));
+    try {
+      writeFileSync(join(repoRoot, "pyrightconfig.json"), "{}\n");
+      writeToolShim(repoRoot, "mypy", "#!/bin/sh\nif [ \"$1\" = \"--version\" ]; then echo 'mypy 1.8.0'; exit 0; fi\necho 'mypy should not run'; exit 1\n");
+      writeToolShim(
+        repoRoot,
+        "pyright",
+        [
+          "#!/bin/sh",
+          "if [ \"$1\" = \"--version\" ]; then echo 'pyright 1.1.0'; exit 0; fi",
+          "echo \"  $1:1:14 - error: Type \\\"Literal['wrong']\\\" is not assignable to declared type \\\"int\\\" (reportAssignmentType)\"",
+          "exit 1",
+          ""
+        ].join("\n")
+      );
+
+      const result = await runner({
+        files: {
+          "pkg/app.py": "value: int = 'wrong'\n"
+        },
+        checks: createPythonValidationChecks({ env: { PATH: "" }, repoRoot })
+      }).runValidation(
+        request({
+          repo: { repoRoot },
+          checks: [PYTHON_TYPES_CHECK_ID]
+        })
+      );
+
+      assert.equal(result.status, "policy_failure");
+      assert.equal(result.diagnostics[0].code, "PYRIGHT_REPORT_ASSIGNMENT_TYPE");
+      assert.equal(result.diagnostics[0].path, "pkg/app.py");
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
   it("reports syntax diagnostics from overlay after-state content", async () => {
     const result = await runner({
       files: {
@@ -480,6 +598,14 @@ function walkFiles(root) {
     else if (entry.isFile()) paths.push(path);
   }
   return paths.sort();
+}
+
+function writeToolShim(repoRoot, name, content) {
+  const bin = join(repoRoot, ".venv", "bin");
+  mkdirSync(bin, { recursive: true });
+  const shimPath = join(bin, name);
+  writeFileSync(shimPath, content);
+  chmodSync(shimPath, 0o755);
 }
 
 function graphClient(overrides = {}) {
