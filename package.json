@@ -54,6 +54,7 @@
     "ace:sync": "bash ./scripts/run-ace.sh sync",
     "ace:validate": "bash ./scripts/run-ace.sh validate",
     "setup": "npm ci && npm run setup:tools",
+    "setup:check-clean": "bash ./scripts/ci/check-setup-clean-worktree.sh",
     "setup:tools": "bash ./scripts/setup-current-tools.sh",
     "test": "node --test tests/*.test.mjs",
     "test:ci": "node scripts/run-test-ci.mjs",
