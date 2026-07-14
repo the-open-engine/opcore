@@ -16,7 +16,8 @@ export function createTypeCheck(options: PythonTypeCheckOptions = {}): Validatio
     run: async (context) => {
       const sourceSet = await materializePythonSources(context);
       if (sourceSet.files.length === 0) return { diagnostics: [] };
-      const toolchain = probePythonToolchain(options);
+      const repoRoot = context.request.repo.repoRoot ?? process.cwd();
+      const toolchain = probePythonToolchain({ ...options, repoRoot });
       const hasTypeChecker = toolchain.some((tool) => (tool.tool === "mypy" || tool.tool === "pyright") && tool.available);
       if (!hasTypeChecker) {
         return {

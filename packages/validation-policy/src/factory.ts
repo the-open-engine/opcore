@@ -51,7 +51,7 @@ export function createBuiltInValidationChecks(
       deadCode: checksConfig?.typescript?.deadCode
     }),
     ...createRustValidationChecks(rustValidationOptions(config)),
-    ...createPythonValidationChecks(),
+    ...createPythonValidationChecks(repoRoot !== undefined ? { repoRoot } : {}),
     ...createDocsValidationChecks(docsValidationOptions(checksConfig?.docs)),
     ...cloneChecks(checksConfig?.clone, options)
   ];
