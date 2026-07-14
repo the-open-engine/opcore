@@ -19,6 +19,13 @@ export {
 export { validationPythonAdapterName } from "./check-constants.js";
 export { isPythonSourcePath } from "./source-files.js";
 export { createPythonValidationAdapterStatus, probePythonToolchain, type PythonValidationToolchainOptions } from "./toolchain.js";
+export {
+  resolvePythonTool,
+  findPythonConfigFile,
+  type PythonToolResolution,
+  type PythonToolResolutionSource,
+  type PythonToolResolverOptions
+} from "./toolchain-resolver.js";
 export { createSyntaxCheck, type PythonSyntaxCheckOptions } from "./syntax-check.js";
 export { createTypeCheck, type PythonTypeCheckOptions } from "./type-check.js";
 

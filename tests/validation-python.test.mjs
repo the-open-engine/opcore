@@ -1,6 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { readdirSync, readFileSync } from "node:fs";
+import { chmodSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createValidationCheckRegistry, createValidationRunner } from "../packages/validation/dist/index.js";
@@ -13,6 +14,8 @@ import {
   PYTHON_TYPES_CHECK_ID,
   createPythonValidationAdapterStatus,
   createPythonValidationChecks,
+  findPythonConfigFile,
+  resolvePythonTool,
   validationPythonAdapterName
 } from "../packages/validation-python/dist/index.js";
 
@@ -43,10 +46,15 @@ describe("validation-python adapter", () => {
 
   it("reports missing Python type tooling as degraded instead of a silent pass", async () => {
     const env = { PATH: "" };
-    const status = createPythonValidationAdapterStatus({ env });
-    assert.equal(status.status, "degraded");
-    assert.equal(status.degradedChecks?.[0]?.checkId, PYTHON_TYPES_CHECK_ID);
-    assert.equal(status.degradedChecks?.[0]?.requiredTool, "mypy or pyright");
+    const isolatedRepoRoot = mkdtempSync(join(tmpdir(), "opcore-python-adapter-status-"));
+    try {
+      const status = createPythonValidationAdapterStatus({ env, repoRoot: isolatedRepoRoot });
+      assert.equal(status.status, "degraded");
+      assert.equal(status.degradedChecks?.[0]?.checkId, PYTHON_TYPES_CHECK_ID);
+      assert.equal(status.degradedChecks?.[0]?.requiredTool, "mypy or pyright");
+    } finally {
+      rmSync(isolatedRepoRoot, { recursive: true, force: true });
+    }
 
     const result = await runner({
       files: {
@@ -336,6 +344,81 @@ describe("validation-python adapter", () => {
 
     assert.equal(result.status, "unsupported_request");
     assert.deepEqual(result.diagnostics.map((diagnostic) => diagnostic.code), ["PYTHON_TYPES_UNSUPPORTED"]);
+  });
+});
+
+describe("python toolchain resolver", () => {
+  it("resolves an available tool from PATH when no repo-local venv exists", () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-resolver-path-"));
+    try {
+      const resolution = resolvePythonTool("python", "node", ["--version"], {
+        repoRoot,
+        env: { PATH: process.env.PATH }
+      });
+      assert.equal(resolution.available, true);
+      assert.equal(resolution.source, "path");
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("resolves a repo-local .venv/bin executable before falling back to PATH", () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-resolver-venv-"));
+    try {
+      const venvBin = join(repoRoot, ".venv", "bin");
+      mkdirSync(venvBin, { recursive: true });
+      const shimPath = join(venvBin, "mypy");
+      writeFileSync(shimPath, "#!/bin/sh\necho 'mypy 1.0.0 (compiled: yes)'\nexit 0\n");
+      chmodSync(shimPath, 0o755);
+
+      const resolution = resolvePythonTool("mypy", "mypy", ["--version"], {
+        repoRoot,
+        env: { PATH: "" }
+      });
+      assert.equal(resolution.available, true);
+      assert.equal(resolution.source, "repo-venv");
+      assert.ok(resolution.command.endsWith(join(".venv", "bin", "mypy")));
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("reports a missing tool as unavailable with a failure message", () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-resolver-missing-"));
+    try {
+      const resolution = resolvePythonTool("mypy", "mypy", ["--version"], {
+        repoRoot,
+        env: { PATH: "" }
+      });
+      assert.equal(resolution.available, false);
+      assert.equal(resolution.source, "path");
+      assert.ok(resolution.failureMessage);
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("prefers pyproject.toml when no tool-specific config exists", () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-resolver-config-"));
+    try {
+      writeFileSync(join(repoRoot, "pyproject.toml"), "[tool.mypy]\n");
+      const configFile = findPythonConfigFile(repoRoot, "mypy");
+      assert.equal(configFile, join(repoRoot, "pyproject.toml"));
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("prefers a tool-specific config file over pyproject.toml", () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-resolver-config-specific-"));
+    try {
+      writeFileSync(join(repoRoot, "pyproject.toml"), "[tool.mypy]\n");
+      writeFileSync(join(repoRoot, "mypy.ini"), "[mypy]\n");
+      const configFile = findPythonConfigFile(repoRoot, "mypy");
+      assert.equal(configFile, join(repoRoot, "mypy.ini"));
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
   });
 });
 

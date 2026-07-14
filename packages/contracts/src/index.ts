@@ -1256,6 +1256,9 @@ export interface ValidationAdapterToolchainStatus {
   command?: string;
   version?: string;
   failureMessage?: string;
+  cwd?: string;
+  configFile?: string;
+  source?: string;
 }
 
 export interface ValidationAdapterDegradedCheckStatus {
@@ -6619,6 +6622,11 @@ function validateValidationAdapterToolchainStatus(status: ValidationAdapterToolc
   if (status.failureMessage !== undefined) {
     validateNonEmptyString(status.failureMessage, "Validation adapter toolchain status failureMessage");
   }
+  if (status.cwd !== undefined) validateNonEmptyString(status.cwd, "Validation adapter toolchain status cwd");
+  if (status.configFile !== undefined) {
+    validateNonEmptyString(status.configFile, "Validation adapter toolchain status configFile");
+  }
+  if (status.source !== undefined) validateNonEmptyString(status.source, "Validation adapter toolchain status source");
   return status;
 }
 
