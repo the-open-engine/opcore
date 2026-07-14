@@ -29,6 +29,11 @@ declare module "node:fs" {
   export function writeFileSync(path: string, data: string): void;
 }
 
+declare module "node:fs/promises" {
+  export function copyFile(source: string, destination: string): Promise<void>;
+  export function mkdir(path: string, options?: { recursive?: boolean }): Promise<void>;
+}
+
 declare module "node:os" {
   export function tmpdir(): string;
 }
@@ -36,6 +41,9 @@ declare module "node:os" {
 declare module "node:path" {
   export function dirname(path: string): string;
   export function join(...paths: string[]): string;
+  export function relative(from: string, to: string): string;
+  export function resolve(...paths: string[]): string;
+  export const sep: string;
 }
 
 type BufferEncoding = "utf8";
