@@ -99,6 +99,7 @@ if docs_or_agent_only_changes "${changed_file_list}"; then
 fi
 
 run_step npm run setup:tools
+run_step npm run setup:check-clean
 snapshot_generated_artifacts
 run_step npm run ci
 restore_generated_artifacts

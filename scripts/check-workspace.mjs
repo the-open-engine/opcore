@@ -66,6 +66,7 @@ for (const scriptName of [
   "ci",
   "ci:local",
   "setup",
+  "setup:check-clean",
   "setup:tools",
   "verify",
   "test:ci",
@@ -454,6 +455,7 @@ function validateLocalCiEquivalent() {
   const localCi = readFileSync("scripts/ci/run-local-ci-equivalent.sh", "utf8");
   for (const token of [
     "npm run setup:tools",
+    "npm run setup:check-clean",
     "npm run ci",
     "npm run current-tools:validate-all",
     "npm run current-tools:validate-rust-graph"
