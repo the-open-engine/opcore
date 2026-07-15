@@ -20,8 +20,13 @@ export { validationPythonAdapterName } from "./check-constants.js";
 export { isPythonSourcePath } from "./source-files.js";
 export { createPythonValidationAdapterStatus, probePythonToolchain, type PythonValidationToolchainOptions } from "./toolchain.js";
 export {
+  resolvePythonInterpreter,
   resolvePythonTool,
   findPythonConfigFile,
+  type PythonInterpreterResolution,
+  type PythonInterpreterResolutionOutcome,
+  type ResolvedPythonInterpreter,
+  type UnresolvedPythonInterpreter,
   type PythonToolResolution,
   type PythonToolResolutionSource,
   type PythonToolResolverOptions

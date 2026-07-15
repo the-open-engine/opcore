@@ -1,0 +1,72 @@
+def decorator(value):
+    return value
+
+
+@decorator
+async def async_api(
+    value: int,
+) -> int:
+    async with (
+        value,
+    ):
+        return value
+
+
+class Example(
+    object,
+):
+    pass
+
+
+if (
+    True
+):
+    value = 1  # type: int
+elif (
+    False
+):
+    value = 2
+else:
+    value = 3
+
+for (
+    item
+) in (
+    [value]
+):
+    value = item
+
+while (
+    False
+):
+    break
+
+with (
+    open(__file__) as handle,
+):
+    text = handle.read()
+
+match (
+    value
+):
+    case (
+        1 | 2
+    ):
+        matched = True
+    case _:
+        matched = False
+
+values = [
+    item
+    for item in range(3)
+    if item > 0
+]
+nested = f"{f'{value}'}"
+continued = value + \
+    1
+first = 1; second = 2
+python_looking_text = """
+if True
+    this is not parsed as Python
+def incomplete(
+"""

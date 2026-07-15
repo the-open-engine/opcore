@@ -15,6 +15,8 @@ import {
   createPythonValidationAdapterStatus,
   createPythonValidationChecks,
   findPythonConfigFile,
+  isPythonSourcePath,
+  resolvePythonInterpreter,
   resolvePythonTool,
   validationPythonAdapterName
 } from "../packages/validation-python/dist/index.js";
@@ -23,6 +25,16 @@ const repoRoot = dirname(fileURLToPath(import.meta.url));
 const validationFixtureRoot = join(repoRoot, "../packages/fixtures/validation-python");
 
 describe("validation-python adapter", () => {
+  it("keeps compiler-truth fixture resources out of repository Python source discovery", () => {
+    const fixturePaths = walkFiles(join(validationFixtureRoot, "compiler-truth"));
+    assert.ok(fixturePaths.length > 0);
+    assert.ok(fixturePaths.every((path) => !isPythonSourcePath(path)));
+    assert.deepEqual(
+      Object.keys(fixtureFiles("compiler-truth")).sort(),
+      ["invalid/misplaced-future.py", "invalid/module-return.py", "pkg/valid.py", "pkg/valid.pyi"]
+    );
+  });
+
   it("exports stable Python check ids and definitions", () => {
     const checks = createPythonValidationChecks();
     const registry = createValidationCheckRegistry(checks);
@@ -107,6 +119,9 @@ describe("validation-python adapter", () => {
       assert.equal(result.diagnostics[0].category, "types");
       assert.equal(result.diagnostics[0].code, "MYPY_ASSIGNMENT");
       assert.match(result.diagnostics[0].message, /Incompatible types in assignment/);
+      assert.equal(result.diagnostics[0].line, 1);
+      assert.equal(result.diagnostics[0].tool.name, "mypy");
+      assert.equal(result.diagnostics[0].tool.command.endsWith(join(".venv", "bin", "mypy")), true);
     } finally {
       rmSync(repoRoot, { recursive: true, force: true });
     }
@@ -204,7 +219,7 @@ describe("validation-python adapter", () => {
     assert.equal(result.status, "policy_failure");
     assert.deepEqual(
       result.diagnostics.map((diagnostic) => diagnostic.code),
-      ["PY_SYNTAX_PARSE_ERROR"]
+      ["PY_SYNTAX_ERROR"]
     );
     assert.equal(result.diagnostics[0].path, "pkg/app.py");
   });
@@ -221,7 +236,7 @@ describe("validation-python adapter", () => {
     );
 
     assert.equal(result.status, "policy_failure");
-    assert.deepEqual(result.diagnostics.map((diagnostic) => diagnostic.code), ["PY_SYNTAX_PARSE_ERROR"]);
+    assert.deepEqual(result.diagnostics.map((diagnostic) => diagnostic.code), ["PY_SYNTAX_ERROR"]);
     assert.equal(result.diagnostics[0].path, "pkg/app.py");
   });
 
@@ -238,22 +253,235 @@ describe("validation-python adapter", () => {
     );
 
     assert.equal(result.status, "unsupported_request");
-    assert.deepEqual(result.diagnostics.map((diagnostic) => diagnostic.code), ["PY_SYNTAX_PARSER_UNAVAILABLE"]);
+    assert.deepEqual(result.diagnostics.map((diagnostic) => diagnostic.code), ["PY_SYNTAX_TOOL_UNAVAILABLE"]);
+    assert.equal(result.manifest.runs[0].outcome, "tool_unavailable");
   });
 
   it("passes python.syntax for valid multi-line Python with no false positives", async () => {
     const result = await runner({
-      files: {
-        "pkg/app.py": "def public_api():\n    if True:\n        return 1\n    return 0\n"
-      }
+      files: Object.fromEntries(
+        Object.entries(fixtureFiles("compiler-truth")).filter(([path]) => path.startsWith("pkg/"))
+      )
     }).runValidation(
       request({
-        checks: [PYTHON_SYNTAX_CHECK_ID]
+        checks: [PYTHON_SYNTAX_CHECK_ID],
+        scope: { kind: "files", files: ["pkg/valid.py", "pkg/valid.pyi"] }
       })
     );
 
     assert.equal(result.status, "passed");
     assert.deepEqual(result.diagnostics, []);
+  });
+
+  it("uses compile truth for control-flow and future-import failures ast.parse accepts", async () => {
+    const files = fixtureFiles("compiler-truth");
+    const result = await runner({
+      files: {
+        "invalid/misplaced-future.py": files["invalid/misplaced-future.py"],
+        "invalid/module-return.py": files["invalid/module-return.py"]
+      }
+    }).runValidation(
+      request({
+        checks: [PYTHON_SYNTAX_CHECK_ID],
+        scope: { kind: "files", files: ["invalid/module-return.py", "invalid/misplaced-future.py"] }
+      })
+    );
+
+    assert.equal(result.status, "policy_failure");
+    assert.equal(result.manifest.runs[0].outcome, "findings");
+    assert.deepEqual(result.diagnostics.map((entry) => entry.path), [
+      "invalid/misplaced-future.py",
+      "invalid/module-return.py"
+    ]);
+    assert.deepEqual(result.diagnostics.map((entry) => entry.code), ["PY_SYNTAX_ERROR", "PY_SYNTAX_ERROR"]);
+    assert.ok(result.diagnostics.every((entry) => entry.line >= 1 && entry.column >= 1));
+    assert.ok(result.diagnostics.every((entry) => entry.tool?.name === "python" && entry.tool.version));
+  });
+
+  it("normalizes indentation, null-byte, and unterminated compiler failures with ranges", async () => {
+    const result = await runner({
+      files: {
+        "pkg/a-indent.py": "if True:\npass\n",
+        "pkg/b-null.py": "value = 1\0\n",
+        "pkg/c-string.pyi": "value: str = 'unterminated\n"
+      }
+    }).runValidation(
+      request({
+        checks: [PYTHON_SYNTAX_CHECK_ID],
+        scope: { kind: "files", files: ["pkg/c-string.pyi", "pkg/b-null.py", "pkg/a-indent.py"] }
+      })
+    );
+
+    assert.deepEqual(result.diagnostics.map((entry) => entry.code), [
+      "PY_INDENTATION_ERROR",
+      "PY_NULL_BYTE",
+      "PY_SYNTAX_ERROR"
+    ]);
+    assert.equal(result.diagnostics[0].line, 2);
+    assert.equal(result.diagnostics[0].column, 1);
+    assert.equal(result.diagnostics[2].line, 1);
+    assert.equal(result.diagnostics[2].endLine, 1);
+  });
+
+  it("preserves exact overlay after-state semantics for corrected, new, and deleted Python files", async () => {
+    const corrected = await runner({ files: { "pkg/app.py": "return 1\n" } }).runValidation(
+      request({
+        overlays: [{ path: "pkg/app.py", action: "write", content: "value = 1\n" }]
+      })
+    );
+    const introduced = await runner({ files: { "pkg/app.py": "value = 1\n" } }).runValidation(
+      request({
+        scope: { kind: "files", files: ["pkg/app.py"] },
+        overlays: [
+          { path: "pkg/new.py", action: "write", content: "break\n" },
+          { path: "pkg/new.pyi", action: "write", content: "if True\n    ...\n" }
+        ]
+      })
+    );
+    const deleted = await runner({ files: { "pkg/app.py": "return 1\n", "pkg/valid.py": "value = 1\n" } }).runValidation(
+      request({
+        scope: { kind: "files", files: ["pkg/app.py", "pkg/valid.py"] },
+        overlays: [{ path: "pkg/app.py", action: "delete" }]
+      })
+    );
+
+    assert.equal(corrected.status, "passed");
+    assert.equal(deleted.status, "passed");
+    assert.equal(introduced.status, "policy_failure");
+    assert.deepEqual(introduced.diagnostics.map((entry) => entry.path), ["pkg/new.py", "pkg/new.pyi"]);
+  });
+
+  it("executes the exact interpreter selected by the project resolver", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-exact-interpreter-"));
+    try {
+      const shimPath = writePythonProtocolShim(repoRoot, [
+        `printf 'compiler' > '${join(repoRoot, "compiler-called")}'`,
+        protocolResponse("SHIM_PATH", [{ path: "pkg/app.py", status: "passed" }])
+      ]);
+      replaceShimPlaceholder(shimPath);
+      const result = await runner({
+        files: { "pkg/app.py": "value = 1\n" },
+        checks: createPythonValidationChecks({ repoRoot })
+      }).runValidation(request({ repo: { repoRoot } }));
+
+      assert.equal(result.status, "passed");
+      assert.equal(readFileSync(join(repoRoot, "compiler-called"), "utf8"), "compiler");
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("fails closed for nonzero, malformed, timeout, signal, and incomplete compiler protocol states", async () => {
+    const cases = [
+      {
+        name: "nonzero",
+        branch: [protocolResponse("SHIM_PATH", [{ path: "pkg/app.py", status: "passed" }]), "exit 7"],
+        outcome: "tool_failure"
+      },
+      { name: "malformed", branch: ["printf 'not-json\\n'"], outcome: "tool_failure" },
+      { name: "timeout", branch: ["/bin/sleep 1"], outcome: "timeout", timeoutMs: 20 },
+      { name: "signal", branch: ["kill -TERM $$"], outcome: "tool_failure" },
+      { name: "incomplete", branch: [protocolResponse("SHIM_PATH", [])], outcome: "tool_failure" }
+    ];
+    for (const testCase of cases) {
+      const repoRoot = mkdtempSync(join(tmpdir(), `opcore-python-protocol-${testCase.name}-`));
+      try {
+        const shimPath = writePythonProtocolShim(repoRoot, testCase.branch);
+        replaceShimPlaceholder(shimPath);
+        const result = await runner({
+          files: { "pkg/app.py": "value = 1\n" },
+          checks: createPythonValidationChecks({
+            repoRoot,
+            env: { PATH: "" },
+            timeoutMs: testCase.timeoutMs
+          })
+        }).runValidation(request({ repo: { repoRoot } }));
+        assert.equal(result.status, "infrastructure_failure", testCase.name);
+        assert.equal(result.manifest.runs[0].outcome, testCase.outcome, testCase.name);
+        assert.equal(result.diagnostics[0].category, "infrastructure", testCase.name);
+      } finally {
+        rmSync(repoRoot, { recursive: true, force: true });
+      }
+    }
+  });
+
+  it("normalizes compiler recursion and overflow protocol findings", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-compiler-limits-"));
+    try {
+      const shimPath = writePythonProtocolShim(repoRoot, [
+        protocolResponse("SHIM_PATH", [
+          { path: "pkg/a.py", status: "finding", error: { kind: "recursion_error", message: "recursion limit" } },
+          { path: "pkg/b.pyi", status: "finding", error: { kind: "overflow_error", message: "compiler overflow" } }
+        ])
+      ]);
+      replaceShimPlaceholder(shimPath);
+      const result = await runner({
+        files: { "pkg/a.py": "value = 1\n", "pkg/b.pyi": "value: int\n" },
+        checks: createPythonValidationChecks({ repoRoot, env: { PATH: "" } })
+      }).runValidation(
+        request({ repo: { repoRoot }, scope: { kind: "files", files: ["pkg/b.pyi", "pkg/a.py"] } })
+      );
+
+      assert.deepEqual(result.diagnostics.map((entry) => entry.code), [
+        "PY_COMPILER_RECURSION_ERROR",
+        "PY_COMPILER_OVERFLOW_ERROR"
+      ]);
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("reports invalid and incompatible declared target versions explicitly", async () => {
+    const resolved = resolvePythonInterpreter({ repoRoot: process.cwd() });
+    assert.equal(resolved.outcome, "resolved");
+    const [major, minor] = resolved.version.split(".").map(Number);
+    const incompatibleTarget = `${major}.${minor + 1}`;
+    const invalid = await runner({
+      checks: createPythonValidationChecks({ targetPythonVersion: "3.x" })
+    }).runValidation(request());
+    const unsupported = await runner({
+      checks: createPythonValidationChecks({ pythonCommand: resolved.command, targetPythonVersion: incompatibleTarget })
+    }).runValidation(request());
+
+    assert.equal(invalid.status, "unsupported_request");
+    assert.equal(invalid.manifest.runs[0].outcome, "invalid_config");
+    assert.equal(unsupported.status, "unsupported_request");
+    assert.equal(unsupported.manifest.runs[0].outcome, "unsupported_target");
+  });
+
+  it("accepts syntax available only in the selected newer interpreter", async (t) => {
+    const resolved = resolvePythonInterpreter({ repoRoot: process.cwd() });
+    assert.equal(resolved.outcome, "resolved");
+    const [major, minor] = resolved.version.split(".").map(Number);
+    if (major < 3 || (major === 3 && minor < 14)) {
+      t.skip(`selected Python ${resolved.version} does not support t-strings`);
+      return;
+    }
+    const result = await runner({
+      files: { "pkg/app.py": "value = t'hello'\n" },
+      checks: createPythonValidationChecks({
+        pythonCommand: resolved.command,
+        targetPythonVersion: `${major}.${minor}`
+      })
+    }).runValidation(request());
+    assert.equal(result.status, "passed");
+  });
+
+  it("fails python.types when a nonzero checker result contains no parseable diagnostics", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-types-malformed-"));
+    try {
+      writeToolShim(repoRoot, "mypy", "#!/bin/sh\nif [ \"$1\" = \"--version\" ]; then echo 'mypy 1.8.0'; exit 0; fi\necho 'unknown failure'\nexit 1\n");
+      const result = await runner({
+        files: { "pkg/app.py": "value: int = 1\n" },
+        checks: createPythonValidationChecks({ repoRoot, env: { PATH: "" } })
+      }).runValidation(request({ repo: { repoRoot }, checks: [PYTHON_TYPES_CHECK_ID] }));
+
+      assert.equal(result.status, "infrastructure_failure");
+      assert.equal(result.manifest.runs[0].outcome, "tool_failure");
+      assert.deepEqual(result.diagnostics.map((entry) => entry.code), ["PYTHON_TYPES_TOOL_FAILED"]);
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
   });
 
   it("reports source-hygiene diagnostics from overlay after-state content", async () => {
@@ -445,7 +673,7 @@ describe("validation-python adapter", () => {
     assert.equal(result.status, "policy_failure");
     assert.deepEqual(
       result.diagnostics.map((diagnostic) => diagnostic.code).sort(),
-      ["PY_IMPORT_GRAPH_MISSING_EDGE", "PY_SOURCE_TYPE_IGNORE", "PY_SYNTAX_PARSE_ERROR"]
+      ["PY_IMPORT_GRAPH_MISSING_EDGE", "PY_SOURCE_TYPE_IGNORE", "PY_SYNTAX_ERROR"]
     );
   });
 
@@ -585,7 +813,8 @@ function fixtureFiles(name) {
   const root = join(validationFixtureRoot, name);
   const entries = {};
   for (const path of walkFiles(root)) {
-    entries[relative(root, path).replaceAll("\\", "/")] = readFileSync(path, "utf8");
+    const fixturePath = relative(root, path).replaceAll("\\", "/");
+    entries[fixturePath.endsWith(".fixture") ? fixturePath.slice(0, -".fixture".length) : fixturePath] = readFileSync(path, "utf8");
   }
   return entries;
 }
@@ -606,6 +835,45 @@ function writeToolShim(repoRoot, name, content) {
   const shimPath = join(bin, name);
   writeFileSync(shimPath, content);
   chmodSync(shimPath, 0o755);
+}
+
+function writePythonProtocolShim(repoRoot, compilerBranch) {
+  const bin = join(repoRoot, ".venv", "bin");
+  mkdirSync(bin, { recursive: true });
+  const shimPath = join(bin, "python");
+  writeFileSync(
+    shimPath,
+    [
+      "#!/bin/sh",
+      "case \"$4\" in",
+      "  *opcore.python.interpreter.v1*)",
+      protocolResponse("SHIM_PATH", undefined),
+      "    ;;",
+      "  *opcore.python.compile.v1*)",
+      ...compilerBranch,
+      "    ;;",
+      "  *) exit 9 ;;",
+      "esac",
+      ""
+    ].join("\n")
+  );
+  chmodSync(shimPath, 0o755);
+  return shimPath;
+}
+
+function protocolResponse(executable, results) {
+  const payload = results === undefined
+    ? { protocol: "opcore.python.interpreter.v1", executable, version: "3.12.13" }
+    : {
+        protocol: "opcore.python.compile.v1",
+        interpreter: { executable, version: "3.12.13" },
+        results
+      };
+  return `printf '%s\\n' '${JSON.stringify(payload)}'`;
+}
+
+function replaceShimPlaceholder(shimPath) {
+  writeFileSync(shimPath, readFileSync(shimPath, "utf8").replaceAll("SHIM_PATH", shimPath));
 }
 
 function graphClient(overrides = {}) {

@@ -163,6 +163,17 @@ export const validationCheckRunStatuses = [
 ] as const;
 export type ValidationCheckRunStatus = (typeof validationCheckRunStatuses)[number];
 
+export const validationCheckOutcomes = [
+  "passed",
+  "findings",
+  "tool_unavailable",
+  "invalid_config",
+  "timeout",
+  "unsupported_target",
+  "tool_failure"
+] as const;
+export type ValidationCheckOutcome = (typeof validationCheckOutcomes)[number];
+
 export const validationSkippedCheckReasons = [
   "graph_unavailable",
   "unsupported_scope",
@@ -1145,6 +1156,19 @@ export interface ValidationDiagnostic {
   path?: string;
   severity: "info" | "warning" | "error";
   code?: string;
+  line?: number;
+  column?: number;
+  endLine?: number;
+  endColumn?: number;
+  tool?: ValidationDiagnosticToolProvenance;
+}
+
+export interface ValidationDiagnosticToolProvenance {
+  name: string;
+  command: string;
+  version?: string;
+  source?: string;
+  cwd?: string;
 }
 
 export interface ValidationCheckManifestEntry {
@@ -1159,6 +1183,7 @@ export interface ValidationCheckManifestEntry {
 export interface ValidationCheckRunSummary {
   checkId: string;
   status: ValidationCheckRunStatus;
+  outcome?: ValidationCheckOutcome;
   durationMs?: number;
   diagnosticCount?: number;
   failureMessage?: string;
@@ -6778,7 +6803,38 @@ function validateValidationDiagnostic(diagnostic: ValidationDiagnostic): Validat
     throw new Error(`Unknown validation diagnostic severity: ${String(diagnostic.severity)}`);
   }
   if (diagnostic.code !== undefined) validateNonEmptyString(diagnostic.code, "Validation diagnostic code");
+  validateValidationDiagnosticLocation(diagnostic);
+  if (diagnostic.tool !== undefined) validateValidationDiagnosticTool(diagnostic.tool);
   return diagnostic;
+}
+
+function validateValidationDiagnosticLocation(diagnostic: ValidationDiagnostic): void {
+  for (const field of ["line", "column", "endLine", "endColumn"] as const) {
+    if (diagnostic[field] !== undefined) validatePositiveInteger(diagnostic[field], `Validation diagnostic ${field}`);
+  }
+  if (diagnostic.column !== undefined && diagnostic.line === undefined) {
+    throw new Error("Validation diagnostic column requires line");
+  }
+  if ((diagnostic.endLine !== undefined || diagnostic.endColumn !== undefined) && diagnostic.line === undefined) {
+    throw new Error("Validation diagnostic end location requires line");
+  }
+  if (diagnostic.endColumn !== undefined && diagnostic.endLine === undefined) {
+    throw new Error("Validation diagnostic endColumn requires endLine");
+  }
+  if (diagnostic.line !== undefined && diagnostic.endLine !== undefined) {
+    const startsAfterEnd = diagnostic.endLine < diagnostic.line ||
+      (diagnostic.endLine === diagnostic.line && diagnostic.column !== undefined && diagnostic.endColumn !== undefined && diagnostic.endColumn < diagnostic.column);
+    if (startsAfterEnd) throw new Error("Validation diagnostic end location must not precede start location");
+  }
+}
+
+function validateValidationDiagnosticTool(tool: ValidationDiagnosticToolProvenance): void {
+  if (!tool || typeof tool !== "object") throw new Error("Validation diagnostic tool provenance is required");
+  validateNonEmptyString(tool.name, "Validation diagnostic tool name");
+  validateNonEmptyString(tool.command, "Validation diagnostic tool command");
+  if (tool.version !== undefined) validateNonEmptyString(tool.version, "Validation diagnostic tool version");
+  if (tool.source !== undefined) validateNonEmptyString(tool.source, "Validation diagnostic tool source");
+  if (tool.cwd !== undefined) validateNonEmptyString(tool.cwd, "Validation diagnostic tool cwd");
 }
 
 function validateValidationResultManifest(manifest: ValidationResultManifest): ValidationResultManifest {
@@ -6899,6 +6955,10 @@ function validateValidationCheckRunSummary(run: ValidationCheckRunSummary): Vali
   if (!includesString(validationCheckRunStatuses, run.status)) {
     throw new Error(`Unknown validation check run status: ${String(run.status)}`);
   }
+  if (run.outcome !== undefined && !includesString(validationCheckOutcomes, run.outcome)) {
+    throw new Error(`Unknown validation check outcome: ${String(run.outcome)}`);
+  }
+  validateValidationCheckOutcomeStatus(run);
   if (run.durationMs !== undefined) validateNonNegativeNumber(run.durationMs, "Validation check run summary durationMs");
   if (run.diagnosticCount !== undefined) validateNonNegativeInteger(run.diagnosticCount, "Validation check run summary diagnosticCount");
   if (run.failureMessage !== undefined) validateNonEmptyString(run.failureMessage, "Validation check run summary failureMessage");
@@ -6909,6 +6969,22 @@ function validateValidationCheckRunSummary(run: ValidationCheckRunSummary): Vali
     throw new Error("Validation check run summary failureMessage is required for failure statuses");
   }
   return run;
+}
+
+function validateValidationCheckOutcomeStatus(run: ValidationCheckRunSummary): void {
+  if (run.outcome === undefined) return;
+  const expectedStatus: Record<ValidationCheckOutcome, ValidationCheckRunStatus> = {
+    passed: "passed",
+    findings: "policy_failure",
+    tool_unavailable: "unsupported_request",
+    invalid_config: "unsupported_request",
+    timeout: "infrastructure_failure",
+    unsupported_target: "unsupported_request",
+    tool_failure: "infrastructure_failure"
+  };
+  if (run.status !== expectedStatus[run.outcome]) {
+    throw new Error(`Validation check outcome ${run.outcome} requires status ${expectedStatus[run.outcome]}`);
+  }
 }
 
 function validateValidationSkippedCheck(skippedCheck: ValidationSkippedCheck): ValidationSkippedCheck {

@@ -199,6 +199,49 @@ describe("Opcore ASP provider", () => {
     }
   });
 
+  it("propagates Python compiler ranges under the python.syntax rule", { timeout: 60000 }, async () => {
+    const repo = mkdtempSync(join(tmpdir(), "opcore-asp-provider-python-range-"));
+    try {
+      mkdirSync(join(repo, "pkg"));
+      writeFileSync(join(repo, "pkg/app.py"), "value = 1\n");
+      const host = createHostWorkspace({ "pkg/app.py": "value = 1\n" });
+      const peer = spawnProvider(host);
+      try {
+        await peer.request("initialize", {
+          protocolVersion: "asp/0.1",
+          host: { name: "fake-host", version: "0.2.0-test" },
+          hostCapabilities: { readBlob: true, listTree: true, putBlob: false },
+          workspace: { root: repo, baseline: host.baseline },
+          assuranceMode: "gated"
+        });
+        peer.notify("initialized", {
+          grantedPermissions: { read: ["**/*"], write: false, network: false },
+          baseline: host.baseline
+        });
+        const assessment = await peer.request("check/evaluate", {
+          callSite: "interactive",
+          changeset: host.changeset([host.modify("pkg/app.py", "if True\n    value = 1\n")]),
+          comparison: "all",
+          checks: ["python.syntax"]
+        });
+        const syntax = assessment.diagnostics.find((entry) => entry.code.includes("/PY_SYNTAX_ERROR"));
+        assert.equal(syntax?.code, "opcore/python.syntax/PY_SYNTAX_ERROR");
+        assert.deepEqual(syntax?.location, {
+          path: "pkg/app.py",
+          range: {
+            start: { line: 1, column: 8 },
+            end: { line: 1, column: 9 }
+          }
+        });
+        assert.equal(readFileSync(join(repo, "pkg/app.py"), "utf8"), "value = 1\n");
+      } finally {
+        peer.close();
+      }
+    } finally {
+      rmSync(repo, { recursive: true, force: true });
+    }
+  });
+
   it("honors repo validation policy thresholds during check evaluation", { timeout: 60000 }, async () => {
     assert.equal(existsSync(providerBin), true, "run npm run build before asp-provider tests");
     const repo = mkdtempSync(join(tmpdir(), "opcore-asp-provider-policy-"));

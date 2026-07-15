@@ -702,6 +702,7 @@ describe("Opcore JSON schema wire constraints", () => {
         {
           checkId: "types",
           status: "passed",
+          outcome: "passed",
           durationMs: 7,
           diagnosticCount: 0
         }
@@ -744,6 +745,49 @@ describe("Opcore JSON schema wire constraints", () => {
           }
         })
       ),
+      false
+    );
+    assert.equal(
+      isValidDefinition(
+        "ValidationResult",
+        validationResultWith({
+          manifest: {
+            ...manifest,
+            runs: [{ ...manifest.runs[0], outcome: "findings" }]
+          }
+        })
+      ),
+      false
+    );
+  });
+
+  it("validates ValidationResult diagnostic ranges and tool provenance", () => {
+    const diagnostic = {
+      category: "syntax",
+      message: "expected ':'",
+      severity: "error",
+      code: "PY_SYNTAX_ERROR",
+      path: "pkg/app.py",
+      line: 2,
+      column: 8,
+      endLine: 2,
+      endColumn: 9,
+      tool: {
+        name: "python",
+        command: "/repo/.venv/bin/python",
+        version: "3.12.13",
+        source: "repo-venv",
+        cwd: "/repo"
+      }
+    };
+    assert.equal(isValidDefinition("ValidationResult", validationResultWith({ diagnostics: [diagnostic] })), true);
+    assert.equal(isValidDefinition("ValidationResult", validationResultWith({ diagnostics: [{ ...diagnostic, line: 0 }] })), false);
+    assert.equal(
+      isValidDefinition("ValidationResult", validationResultWith({ diagnostics: [{ ...diagnostic, line: undefined }] })),
+      false
+    );
+    assert.equal(
+      isValidDefinition("ValidationResult", validationResultWith({ diagnostics: [{ ...diagnostic, tool: { name: "python", command: "" } }] })),
       false
     );
   });

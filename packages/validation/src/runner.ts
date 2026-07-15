@@ -1,5 +1,6 @@
 import type {
   GraphProviderStatus,
+  ValidationCheckOutcome,
   ValidationCheckRunStatus,
   ValidationCheckRunSummary,
   ValidationDiagnostic,
@@ -513,6 +514,7 @@ function introducedRun(run: ValidationCheckRunSummary, diagnostics: readonly Val
   const next: ValidationCheckRunSummary = {
     ...run,
     status,
+    ...(run.outcome === "findings" && status === "passed" ? { outcome: "passed" as const } : {}),
     diagnosticCount: diagnostics.length
   };
   if (status === "passed") delete next.failureMessage;
@@ -525,6 +527,10 @@ function diagnosticFingerprint(diagnostic: ValidationDiagnostic): string {
     path: diagnostic.path ?? "",
     severity: diagnostic.severity,
     code: diagnostic.code ?? "",
+    line: diagnostic.line ?? null,
+    column: diagnostic.column ?? null,
+    endLine: diagnostic.endLine ?? null,
+    endColumn: diagnostic.endColumn ?? null,
     message: stableDiagnosticMessage(diagnostic)
   });
 }
@@ -567,8 +573,7 @@ async function runSingleCheck(check: ValidationCheckDefinition, args: ExecuteChe
     const result = await check.run(checkContext(args));
     const normalized = normalizeCheckResult(result);
     const diagnostics = normalized.diagnostics ?? [];
-    const status =
-      normalized.status ??
+    const status = normalized.status ?? statusForOutcome(normalized.outcome) ??
       (diagnostics.some((diagnostic) => diagnostic.severity === "error") ? "policy_failure" : "passed");
     const failureStatus = failureStatusForCheckRun(status);
     const failureMessage =
@@ -580,6 +585,7 @@ async function runSingleCheck(check: ValidationCheckDefinition, args: ExecuteChe
       run: {
         checkId: check.id,
         status,
+        ...(normalized.outcome === undefined ? {} : { outcome: normalized.outcome }),
         durationMs: elapsed(checkStartedAt, args.clock.nowMs()),
         diagnosticCount: diagnostics.length,
         ...(failureMessage === undefined ? {} : { failureMessage })
@@ -802,12 +808,29 @@ async function resolveGraphSession(
 
 function normalizeCheckResult(result: ValidationCheckResult | readonly ValidationDiagnostic[] | void): ValidationCheckResult {
   if (result === undefined) return { diagnostics: [] };
-  if (Array.isArray(result)) return { diagnostics: result as readonly ValidationDiagnostic[] };
+  if (isValidationDiagnosticArray(result)) return { diagnostics: result };
   return {
-    diagnostics: (result as ValidationCheckResult).diagnostics ?? [],
-    status: (result as ValidationCheckResult).status,
-    failureMessage: (result as ValidationCheckResult).failureMessage
+    diagnostics: result.diagnostics ?? [],
+    status: result.status,
+    outcome: result.outcome,
+    failureMessage: result.failureMessage
   };
+}
+
+function isValidationDiagnosticArray(
+  result: ValidationCheckResult | readonly ValidationDiagnostic[]
+): result is readonly ValidationDiagnostic[] {
+  return Array.isArray(result);
+}
+
+function statusForOutcome(outcome: ValidationCheckOutcome | undefined): ValidationCheckRunStatus | undefined {
+  if (outcome === undefined) return undefined;
+  if (outcome === "passed") return "passed";
+  if (outcome === "findings") return "policy_failure";
+  if (outcome === "tool_unavailable" || outcome === "invalid_config" || outcome === "unsupported_target") {
+    return "unsupported_request";
+  }
+  return "infrastructure_failure";
 }
 
 function failureStatusForCheckRun(
