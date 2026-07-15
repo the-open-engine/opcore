@@ -361,7 +361,7 @@ describe("validation-python adapter", () => {
       replaceShimPlaceholder(shimPath);
       const result = await runner({
         files: { "pkg/app.py": "value = 1\n" },
-        checks: createPythonValidationChecks({ repoRoot, env: { PATH: "" } })
+        checks: createPythonValidationChecks({ repoRoot })
       }).runValidation(request({ repo: { repoRoot } }));
 
       assert.equal(result.status, "passed");
