@@ -21,6 +21,14 @@ declare module "node:child_process" {
   ): SpawnSyncReturns<string>;
 }
 
+declare module "node:crypto" {
+  interface Hash {
+    update(data: string, inputEncoding?: BufferEncoding): Hash;
+    digest(encoding: "hex"): string;
+  }
+  export function createHash(algorithm: string): Hash;
+}
+
 declare module "node:fs" {
   export function existsSync(path: string): boolean;
   export function realpathSync(path: string): string;
