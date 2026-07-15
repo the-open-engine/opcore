@@ -57,6 +57,7 @@ const bundledExternalRuntimePackages = [
   "path-browserify",
   "picomatch",
   "semver",
+  "smol-toml",
   "tinyglobby",
   "ts-api-utils",
   "ts-morph",

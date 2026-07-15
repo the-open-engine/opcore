@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { chmodSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -13,11 +13,13 @@ import {
   PYTHON_SYNTAX_CHECK_ID,
   PYTHON_TYPES_CHECK_ID,
   createPythonValidationAdapterStatus,
-  createPythonValidationChecks,
-  findPythonConfigFile,
+  createPythonValidationChecks as createCanonicalPythonValidationChecks,
+  createNodePythonProjectWorkspace,
+  createSyntaxCheck,
+  createTypeCheck,
   isPythonSourcePath,
-  resolvePythonInterpreter,
-  resolvePythonTool,
+  resolvePythonProjectContext,
+  resolvePythonProjectContexts,
   validationPythonAdapterName
 } from "../packages/validation-python/dist/index.js";
 
@@ -56,6 +58,46 @@ describe("validation-python adapter", () => {
     assert.equal(registry.byId.get(PYTHON_IMPORT_GRAPH_CHECK_ID)?.requiresGraph, true);
   });
 
+  it("fails syntax and type checks closed when no canonical context resolver is injected", async () => {
+    for (const check of [createSyntaxCheck(), createTypeCheck()]) {
+      const result = await runner({ files: { "app.py": "VALUE = 1\n" }, checks: [check] }).runValidation(request({
+        checks: [check.id],
+        scope: { kind: "files", files: ["app.py"] }
+      }));
+      assert.equal(result.status, "infrastructure_failure", check.id);
+      assert.match(result.diagnostics[0].message, /canonical python project context/i, check.id);
+    }
+  });
+
+  it("fails every target context closed before grouping targets by project", async () => {
+    const files = {
+      "pyproject.toml": "[project]\nname='fixture'\n",
+      "a.py": "VALUE = 1\n",
+      "z.py": "VALUE = 2\n"
+    };
+    for (const checkId of [PYTHON_SYNTAX_CHECK_ID, PYTHON_TYPES_CHECK_ID]) {
+      const result = await runner({
+        files,
+        checks: createPythonValidationChecks({
+          env: { PATH: "/fixture/bin" },
+          nodeWorkspace: projectWorkspace(files, () => true, new Set(["z.py"])),
+          processProbe: successfulProbe()
+        })
+      }).runValidation(request({
+        repo: { repoRoot: "/fixture" },
+        checks: [checkId],
+        scope: { kind: "files", files: ["a.py", "z.py"] }
+      }));
+
+      assert.notEqual(result.status, "passed", checkId);
+      assert.deepEqual(result.pythonProjectContexts.map((context) => [context.target, context.outcome]), [
+        ["a.py", "resolved"],
+        ["z.py", "ambiguous"]
+      ]);
+      assert.equal(result.diagnostics.some((diagnostic) => diagnostic.path === "z.py"), true, checkId);
+    }
+  });
+
   it("reports missing Python type tooling as degraded instead of a silent pass", async () => {
     const env = { PATH: "" };
     const isolatedRepoRoot = mkdtempSync(join(tmpdir(), "opcore-python-adapter-status-"));
@@ -80,12 +122,13 @@ describe("validation-python adapter", () => {
     );
 
     assert.equal(result.status, "unsupported_request");
-    assert.deepEqual(result.diagnostics.map((diagnostic) => diagnostic.code), ["PYTHON_TYPES_UNSUPPORTED"]);
+    assert.deepEqual(result.diagnostics.map((diagnostic) => diagnostic.code), ["PYTHON_TYPES_UNSUPPORTED", "PYTHON_CONTEXT_UNSUPPORTED"]);
   });
 
   it("executes repo-local mypy and maps type diagnostics", async () => {
     const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-types-mypy-"));
     try {
+      writePassingPythonProtocolShim(repoRoot);
       writeToolShim(
         repoRoot,
         "mypy",
@@ -127,9 +170,133 @@ describe("validation-python adapter", () => {
     }
   });
 
+  it("materializes absolute imports through the owning project's source roots", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-types-source-root-"));
+    try {
+      const projectRoot = join(repoRoot, "services/api");
+      mkdirSync(projectRoot, { recursive: true });
+      writePassingPythonProtocolShim(projectRoot);
+      writeToolShim(
+        projectRoot,
+        "mypy",
+        [
+          "#!/bin/sh",
+          "if [ \"$1\" = \"--version\" ]; then echo 'mypy 1.8.0'; exit 0; fi",
+          "if [ ! -f src/acme/dep.py ]; then echo 'dependency was not materialized' >&2; exit 9; fi",
+          "exit 0",
+          ""
+        ].join("\n")
+      );
+      const files = {
+        "services/api/pyproject.toml": "[project]\nname='api'\n[tool.mypy]\n",
+        "services/api/src/acme/app.py": "from acme import dep\nVALUE = dep.VALUE\n",
+        "services/api/src/acme/dep.py": "VALUE: int = 1\n"
+      };
+      const result = await runner({
+        files,
+        checks: createPythonValidationChecks({
+          repoRoot,
+          env: { PATH: "" },
+          nodeWorkspace: projectWorkspace(files, () => true)
+        })
+      }).runValidation(request({
+        repo: { repoRoot },
+        checks: [PYTHON_TYPES_CHECK_ID],
+        scope: { kind: "files", files: ["services/api/src/acme/app.py"] }
+      }));
+
+      assert.equal(result.status, "passed", JSON.stringify(result, null, 2));
+      assert.equal(result.pythonProjectContexts[0].projectRoot, "services/api");
+      assert.deepEqual(result.pythonProjectContexts[0].sourceRoots, ["services/api/src"]);
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("maps nested-project type diagnostics to repository-relative paths", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-types-nested-path-"));
+    try {
+      const projectRoot = join(repoRoot, "services/api");
+      mkdirSync(projectRoot, { recursive: true });
+      writePassingPythonProtocolShim(projectRoot);
+      writeToolShim(
+        projectRoot,
+        "mypy",
+        [
+          "#!/bin/sh",
+          "if [ \"$1\" = \"--version\" ]; then echo 'mypy 1.8.0'; exit 0; fi",
+          "echo \"$1:1: error: nested project type failure  [assignment]\"",
+          "exit 1",
+          ""
+        ].join("\n")
+      );
+      const files = {
+        "services/api/pyproject.toml": "[project]\nname='api'\n[tool.mypy]\n",
+        "services/api/src/acme/app.py": "value: int = 'wrong'\n"
+      };
+      const result = await runner({
+        files,
+        checks: createPythonValidationChecks({
+          repoRoot,
+          env: { PATH: "" },
+          nodeWorkspace: projectWorkspace(files, () => true)
+        })
+      }).runValidation(request({
+        repo: { repoRoot },
+        checks: [PYTHON_TYPES_CHECK_ID],
+        scope: { kind: "files", files: ["services/api/src/acme/app.py"] }
+      }));
+
+      assert.equal(result.status, "policy_failure");
+      assert.equal(result.pythonProjectContexts[0].projectRoot, "services/api");
+      assert.equal(result.diagnostics[0].path, "services/api/src/acme/app.py");
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("materializes root imports for flat targets in mixed flat/src projects", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-types-mixed-layout-"));
+    try {
+      writePassingPythonProtocolShim(repoRoot);
+      writeToolShim(
+        repoRoot,
+        "mypy",
+        [
+          "#!/bin/sh",
+          "if [ \"$1\" = \"--version\" ]; then echo 'mypy 1.8.0'; exit 0; fi",
+          "if [ ! -f helper.py ]; then echo 'root dependency was not materialized' >&2; exit 9; fi",
+          "exit 0",
+          ""
+        ].join("\n")
+      );
+      const files = {
+        "pyproject.toml": "[project]\nname='mixed'\n[tool.mypy]\n",
+        "script.py": "import helper\nVALUE = helper.VALUE\n",
+        "helper.py": "VALUE: int = 1\n",
+        "src/pkg/__init__.py": "VALUE = 2\n"
+      };
+      const result = await runner({
+        files,
+        checks: createPythonValidationChecks({ env: { PATH: "" }, repoRoot })
+      }).runValidation(request({
+        repo: { repoRoot },
+        checks: [PYTHON_TYPES_CHECK_ID],
+        scope: { kind: "files", files: ["script.py"] }
+      }));
+
+      assert.equal(result.status, "passed", JSON.stringify(result, null, 2));
+      assert.deepEqual(result.pythonProjectContexts[0].sourceRoots, ["."]);
+      assert.deepEqual(result.pythonProjectContexts[0].layout, { kinds: ["flat"], paths: ["."] });
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
   it("checks overlay after-state content instead of the original Python file", async () => {
     const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-types-overlay-"));
     try {
+      writePassingPythonProtocolShim(repoRoot);
       writeToolShim(
         repoRoot,
         "mypy",
@@ -170,6 +337,7 @@ describe("validation-python adapter", () => {
   it("prefers pyright when pyright project config is present", async () => {
     const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-types-pyright-"));
     try {
+      writePassingPythonProtocolShim(repoRoot);
       writeFileSync(join(repoRoot, "pyrightconfig.json"), "{}\n");
       writeToolShim(repoRoot, "mypy", "#!/bin/sh\nif [ \"$1\" = \"--version\" ]; then echo 'mypy 1.8.0'; exit 0; fi\necho 'mypy should not run'; exit 1\n");
       writeToolShim(
@@ -186,9 +354,14 @@ describe("validation-python adapter", () => {
 
       const result = await runner({
         files: {
-          "pkg/app.py": "value: int = 'wrong'\n"
+          "pkg/app.py": "value: int = 'wrong'\n",
+          "pyrightconfig.json": "{}\n"
         },
-        checks: createPythonValidationChecks({ env: { PATH: "" }, repoRoot })
+        checks: createPythonValidationChecks({
+          env: { PATH: "" },
+          repoRoot,
+          nodeWorkspace: createNodePythonProjectWorkspace(repoRoot)
+        })
       }).runValidation(
         request({
           repo: { repoRoot },
@@ -431,45 +604,10 @@ describe("validation-python adapter", () => {
     }
   });
 
-  it("reports invalid and incompatible declared target versions explicitly", async () => {
-    const resolved = resolvePythonInterpreter({ repoRoot: process.cwd() });
-    assert.equal(resolved.outcome, "resolved");
-    const [major, minor] = resolved.version.split(".").map(Number);
-    const incompatibleTarget = `${major}.${minor + 1}`;
-    const invalid = await runner({
-      checks: createPythonValidationChecks({ targetPythonVersion: "3.x" })
-    }).runValidation(request());
-    const unsupported = await runner({
-      checks: createPythonValidationChecks({ pythonCommand: resolved.command, targetPythonVersion: incompatibleTarget })
-    }).runValidation(request());
-
-    assert.equal(invalid.status, "unsupported_request");
-    assert.equal(invalid.manifest.runs[0].outcome, "invalid_config");
-    assert.equal(unsupported.status, "unsupported_request");
-    assert.equal(unsupported.manifest.runs[0].outcome, "unsupported_target");
-  });
-
-  it("accepts syntax available only in the selected newer interpreter", async (t) => {
-    const resolved = resolvePythonInterpreter({ repoRoot: process.cwd() });
-    assert.equal(resolved.outcome, "resolved");
-    const [major, minor] = resolved.version.split(".").map(Number);
-    if (major < 3 || (major === 3 && minor < 14)) {
-      t.skip(`selected Python ${resolved.version} does not support t-strings`);
-      return;
-    }
-    const result = await runner({
-      files: { "pkg/app.py": "value = t'hello'\n" },
-      checks: createPythonValidationChecks({
-        pythonCommand: resolved.command,
-        targetPythonVersion: `${major}.${minor}`
-      })
-    }).runValidation(request());
-    assert.equal(result.status, "passed");
-  });
-
   it("fails python.types when a nonzero checker result contains no parseable diagnostics", async () => {
     const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-types-malformed-"));
     try {
+      writePassingPythonProtocolShim(repoRoot);
       writeToolShim(repoRoot, "mypy", "#!/bin/sh\nif [ \"$1\" = \"--version\" ]; then echo 'mypy 1.8.0'; exit 0; fi\necho 'unknown failure'\nexit 1\n");
       const result = await runner({
         files: { "pkg/app.py": "value: int = 1\n" },
@@ -689,82 +827,857 @@ describe("validation-python adapter", () => {
     );
 
     assert.equal(result.status, "unsupported_request");
-    assert.deepEqual(result.diagnostics.map((diagnostic) => diagnostic.code), ["PYTHON_TYPES_UNSUPPORTED"]);
+    assert.deepEqual(result.diagnostics.map((diagnostic) => diagnostic.code), ["PYTHON_TYPES_UNSUPPORTED", "PYTHON_CONTEXT_UNSUPPORTED"]);
   });
 });
 
-describe("python toolchain resolver", () => {
-  it("resolves an available tool from PATH when no repo-local venv exists", () => {
-    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-resolver-path-"));
-    try {
-      const resolution = resolvePythonTool("python", "node", ["--version"], {
-        repoRoot,
-        env: { PATH: process.env.PATH }
+describe("Python project-context resolver", () => {
+  it("resolves nearest nested projects, layouts, managers, and stable fingerprints", async () => {
+    const files = {
+      "pyproject.toml": "[project]\nname='root'\nrequires-python='>=3.11'\n",
+      "src/root/__init__.py": "VALUE = 1\n",
+      "services/api/pyproject.toml": "[project]\nname='api'\nrequires-python='>=3.12'\n[tool.uv]\npackage=true\n",
+      "services/api/uv.lock": "version = 1\n",
+      "services/api/src/acme/app.py": "VALUE = 2\n"
+    };
+    const contexts = await resolvePythonProjectContexts({
+      repoRoot: "/fixture",
+      targets: ["src/root/__init__.py", "services/api/src/acme/app.py"],
+      workspace: projectWorkspace(files, (command) => !command.includes("/")),
+      processProbe: successfulProbe()
+    });
+
+    assert.deepEqual(contexts.map((context) => context.projectRoot), ["services/api", "."]);
+    const nested = contexts[0];
+    assert.deepEqual(nested.sourceRoots, ["services/api/src"]);
+    assert.deepEqual(nested.layout.kinds, ["namespace", "src"]);
+    assert.deepEqual(nested.managers.map((manager) => manager.kind), ["uv"]);
+    assert.equal(nested.outcome, "resolved");
+    assert.match(nested.projectKey, /^sha256:[a-f0-9]{64}$/);
+    assert.match(nested.contextFingerprint, /^sha256:[a-f0-9]{64}$/);
+  });
+
+  it("keeps fingerprints stable across equivalent checkout roots", async () => {
+    const files = {
+      "pyproject.toml": "[project]\nname='fixture'\n",
+      "app.py": "VALUE = 1\n"
+    };
+    const resolveAt = (repoRoot, mode) => resolvePythonProjectContext({
+      repoRoot,
+      target: "app.py",
+      workspace: projectWorkspace(files, () => true),
+      processProbe: successfulProbe(),
+      ...(mode === "active"
+        ? { env: { VIRTUAL_ENV: `${repoRoot}/.active`, PATH: "/usr/bin" } }
+        : {
+            env: { PATH: "/usr/bin" },
+            interpreterArgv: [`${repoRoot}/bin/python`, "-X", "dev"],
+            toolArgv: { mypy: [`${repoRoot}/bin/mypy`, `--config=${repoRoot}/mypy.ini`] }
+          })
+    });
+
+    for (const mode of ["active", "explicit"]) {
+      const [left, right] = await Promise.all([
+        resolveAt("/checkout-a", mode),
+        resolveAt("/checkout-b", mode)
+      ]);
+      assert.notEqual(left.interpreter?.executable, right.interpreter?.executable, mode);
+      assert.notEqual(left.interpreter?.cwd, right.interpreter?.cwd, mode);
+      assert.equal(left.projectKey, right.projectKey, mode);
+      assert.equal(left.contextFingerprint, right.contextFingerprint, mode);
+    }
+  });
+
+  it("resolves layout and source roots from the target in mixed flat/src projects", async () => {
+    const files = {
+      "pyproject.toml": "[project]\nname='mixed'\n",
+      "script.py": "VALUE = 1\n",
+      "helper.py": "VALUE = 2\n",
+      "src/pkg/__init__.py": "VALUE = 3\n"
+    };
+    const [flat, src] = await Promise.all([
+      resolvePythonProjectContext({
+        repoRoot: "/fixture",
+        target: "script.py",
+        workspace: projectWorkspace(files, () => true),
+        processProbe: successfulProbe()
+      }),
+      resolvePythonProjectContext({
+        repoRoot: "/fixture",
+        target: "src/pkg/__init__.py",
+        workspace: projectWorkspace(files, () => true),
+        processProbe: successfulProbe()
+      })
+    ]);
+
+    assert.deepEqual(flat.sourceRoots, ["."]);
+    assert.deepEqual(flat.layout, { kinds: ["flat"], paths: ["."] });
+    assert.deepEqual(src.sourceRoots, ["src"]);
+    assert.deepEqual(src.layout, { kinds: ["package", "src"], paths: ["src"] });
+  });
+
+  it("applies explicit, active, project-local, then PATH interpreter precedence", async () => {
+    const files = { "pyproject.toml": "[project]\nname='fixture'\n", "app.py": "VALUE = 1\n" };
+    const cases = [
+      {
+        source: "explicit_override",
+        options: { interpreterArgv: ["/explicit/python"] },
+        available: (command) => command === "/explicit/python" || !command.includes("/")
+      },
+      {
+        source: "active_environment",
+        options: { env: { VIRTUAL_ENV: "/fixture/.active", PATH: "/redacted" } },
+        available: (command) => command.startsWith("/fixture/.active/") || !command.includes("/")
+      },
+      {
+        source: "project_local_environment",
+        options: {},
+        available: (command) => command.startsWith("/fixture/.venv/") || !command.includes("/")
+      },
+      {
+        source: "path",
+        options: { env: { PATH: "/must-not-serialize" } },
+        available: (command) => !command.includes("/")
+      }
+    ];
+    for (const testCase of cases) {
+      const context = await resolvePythonProjectContext({
+        repoRoot: "/fixture",
+        target: "app.py",
+        workspace: projectWorkspace(files, testCase.available),
+        processProbe: successfulProbe(),
+        ...testCase.options
       });
-      assert.equal(resolution.available, true);
-      assert.equal(resolution.source, "path");
-    } finally {
-      rmSync(repoRoot, { recursive: true, force: true });
+      assert.equal(context.interpreter?.source, testCase.source);
+      assert.equal(JSON.stringify(context).includes("must-not-serialize"), false);
+      assert.equal(JSON.stringify(context).includes("/redacted"), false);
     }
+
+    const launcher = await resolvePythonProjectContext({
+      repoRoot: "/fixture",
+      target: "app.py",
+      interpreterArgv: ["uv", "run", "python"],
+      workspace: projectWorkspace(files, () => true),
+      processProbe: successfulProbe()
+    });
+    assert.equal(launcher.interpreter, undefined);
+    assert.equal(launcher.reasons.some((reason) => reason.code === "invalid_config" && reason.tool === "python"), true);
   });
 
-  it("resolves a repo-local .venv/bin executable before falling back to PATH", () => {
-    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-resolver-venv-"));
+  it("refuses shell and sync-capable manager overrides before executing a probe", async () => {
+    const isolatedRepoRoot = mkdtempSync(join(tmpdir(), "opcore-python-unsafe-override-"));
+    const marker = join(isolatedRepoRoot, "probe-side-effect");
     try {
-      const venvBin = join(repoRoot, ".venv", "bin");
-      mkdirSync(venvBin, { recursive: true });
-      const shimPath = join(venvBin, "mypy");
-      writeFileSync(shimPath, "#!/bin/sh\necho 'mypy 1.0.0 (compiled: yes)'\nexit 0\n");
-      chmodSync(shimPath, 0o755);
-
-      const resolution = resolvePythonTool("mypy", "mypy", ["--version"], {
-        repoRoot,
-        env: { PATH: "" }
+      writeFileSync(join(isolatedRepoRoot, "pyproject.toml"), "[project]\nname='fixture'\n");
+      writeFileSync(join(isolatedRepoRoot, "app.py"), "VALUE = 1\n");
+      const context = await resolvePythonProjectContext({
+        repoRoot: isolatedRepoRoot,
+        target: "app.py",
+        env: { PATH: "" },
+        interpreterArgv: ["/bin/sh", "-c", `printf side-effect > ${marker}`],
+        toolArgv: { mypy: ["uv", "run", "mypy"] },
+        workspace: createNodePythonProjectWorkspace(isolatedRepoRoot)
       });
-      assert.equal(resolution.available, true);
-      assert.equal(resolution.source, "repo-venv");
-      assert.ok(resolution.command.endsWith(join(".venv", "bin", "mypy")));
+
+      assert.equal(existsSync(marker), false);
+      assert.equal(context.interpreter, undefined);
+      assert.equal(context.tools.find((tool) => tool.tool === "mypy")?.available, false);
+      assert.equal(context.reasons.some((reason) => reason.code === "invalid_config" && reason.tool === "python"), true);
+      assert.equal(context.reasons.some((reason) => reason.code === "invalid_config" && reason.tool === "mypy"), true);
+      assert.notEqual(context.outcome, "resolved");
     } finally {
-      rmSync(repoRoot, { recursive: true, force: true });
+      rmSync(isolatedRepoRoot, { recursive: true, force: true });
     }
   });
 
-  it("reports a missing tool as unavailable with a failure message", () => {
-    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-resolver-missing-"));
-    try {
-      const resolution = resolvePythonTool("mypy", "mypy", ["--version"], {
-        repoRoot,
-        env: { PATH: "" }
+  it("accepts active environments only at the nearest project boundary", async () => {
+    const files = {
+      "pyproject.toml": "[project]\nname='root'\n",
+      "app.py": "ROOT = 1\n",
+      "services/api/pyproject.toml": "[project]\nname='api'\n[tool.uv]\npackage=true\n",
+      "services/api/uv.lock": "version = 1\n",
+      "services/api/app.py": "NESTED = 1\n"
+    };
+    for (const [variable, nestedSource] of [
+      ["VIRTUAL_ENV", "active_environment"],
+      ["UV_PROJECT_ENVIRONMENT", "manager_environment"]
+    ]) {
+      const environment = variable === "VIRTUAL_ENV" ? "/fixture/services/api/.venv" : "/fixture/services/api/.uv-active";
+      const contexts = await resolvePythonProjectContexts({
+        repoRoot: "/fixture",
+        targets: ["app.py", "services/api/app.py"],
+        env: { PATH: "/usr/bin", [variable]: environment },
+        workspace: projectWorkspace(files, (command) => command.startsWith(`${environment}/`) || !command.includes("/")),
+        processProbe: successfulProbe()
       });
-      assert.equal(resolution.available, false);
-      assert.equal(resolution.source, "path");
-      assert.ok(resolution.failureMessage);
-    } finally {
-      rmSync(repoRoot, { recursive: true, force: true });
+      const root = contexts.find((context) => context.target === "app.py");
+      const nested = contexts.find((context) => context.target === "services/api/app.py");
+      assert.equal(root?.interpreter?.source, "path", variable);
+      assert.equal(nested?.interpreter?.source, nestedSource, variable);
     }
   });
 
-  it("prefers pyproject.toml when no tool-specific config exists", () => {
-    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-resolver-config-"));
+  it("uses inherited active environments when no environment projection is injected", async () => {
+    const previous = process.env.VIRTUAL_ENV;
+    process.env.VIRTUAL_ENV = "/fixture/custom-env";
     try {
-      writeFileSync(join(repoRoot, "pyproject.toml"), "[tool.mypy]\n");
-      const configFile = findPythonConfigFile(repoRoot, "mypy");
-      assert.equal(configFile, join(repoRoot, "pyproject.toml"));
+      const context = await resolvePythonProjectContext({
+        repoRoot: "/fixture",
+        target: "app.py",
+        workspace: projectWorkspace(
+          { "pyproject.toml": "[project]\nname='fixture'\n", "app.py": "VALUE = 1\n" },
+          (command) => command.startsWith("/fixture/custom-env/") || !command.includes("/")
+        ),
+        processProbe: successfulProbe()
+      });
+      assert.equal(context.interpreter?.source, "active_environment");
+      assert.equal(context.interpreter?.executable, "/fixture/custom-env/bin/python");
     } finally {
-      rmSync(repoRoot, { recursive: true, force: true });
+      if (previous === undefined) delete process.env.VIRTUAL_ENV;
+      else process.env.VIRTUAL_ENV = previous;
     }
   });
 
-  it("prefers a tool-specific config file over pyproject.toml", () => {
-    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-resolver-config-specific-"));
+  it("discards failed PATH candidates after a later interpreter succeeds", async () => {
+    const baseProbe = successfulProbe();
+    const context = await resolvePythonProjectContext({
+      repoRoot: "/fixture",
+      target: "app.py",
+      env: { PATH: "/usr/bin" },
+      workspace: projectWorkspace(
+        { "pyproject.toml": "[project]\nname='fixture'\n", "app.py": "VALUE = 1\n" },
+        (command) => !command.includes("/")
+      ),
+      processProbe: {
+        ...baseProbe,
+        run(command, args, options) {
+          if (command === "python3") {
+            return probeResult(command, args, options, {
+              ok: false,
+              termination: "spawn_error",
+              exitCode: null,
+              failureMessage: "spawn python3 ENOENT"
+            });
+          }
+          return baseProbe.run(command, args, options);
+        }
+      }
+    });
+
+    assert.equal(context.interpreter?.executable, "/usr/bin/python");
+    assert.equal(context.outcome, "resolved");
+    assert.equal(context.reasons.some((reason) => reason.tool === "python"), false);
+  });
+
+  it("rejects symlinked PDM interpreter evidence before reading its content", async () => {
+    const files = {
+      "pyproject.toml": "[project]\nname='fixture'\n[tool.pdm]\ndistribution=true\n",
+      "pdm.lock": "version = '4.5'\n",
+      ".pdm-python": "/external/python\n",
+      "app.py": "VALUE = 1\n"
+    };
+    const context = await resolvePythonProjectContext({
+      repoRoot: "/fixture",
+      target: "app.py",
+      env: { PATH: "/usr/bin" },
+      workspace: projectWorkspace(files, (command) => !command.includes("/"), new Set([".pdm-python"])),
+      processProbe: successfulProbe()
+    });
+
+    assert.equal(context.outcome, "ambiguous");
+    assert.equal(context.interpreter?.source, "path");
+    assert.equal(
+      context.reasons.some((reason) => reason.code === "symlink_refused" && reason.path === ".pdm-python"),
+      true
+    );
+  });
+
+  it("honors an explicitly declared zero patch version", async () => {
+    const context = await resolvePythonProjectContext({
+      repoRoot: "/fixture",
+      target: "app.py",
+      env: { PATH: "/usr/bin" },
+      workspace: projectWorkspace({
+        "pyproject.toml": "[project]\nname='fixture'\nrequires-python='==3.12.0'\n",
+        "app.py": "VALUE = 1\n"
+      }, (command) => !command.includes("/")),
+      processProbe: successfulProbe("3.12.1")
+    });
+
+    assert.equal(context.outcome, "unsupported");
+    assert.equal(context.reasons.some((reason) => reason.code === "incompatible_interpreter"), true);
+  });
+
+  it("distinguishes exact release equality from explicit prefix wildcards", async () => {
+    const resolveConstraint = (requiresPython) => resolvePythonProjectContext({
+      repoRoot: "/fixture",
+      target: "app.py",
+      env: { PATH: "/usr/bin" },
+      workspace: projectWorkspace({
+        "pyproject.toml": `[project]\nname='fixture'\nrequires-python='${requiresPython}'\n`,
+        "app.py": "VALUE = 1\n"
+      }, (command) => !command.includes("/")),
+      processProbe: successfulProbe("3.11.9")
+    });
+
+    const [exactEqual, wildcardEqual, exactNotEqual, wildcardNotEqual] = await Promise.all([
+      resolveConstraint("==3.11"),
+      resolveConstraint("==3.11.*"),
+      resolveConstraint("!=3.11"),
+      resolveConstraint("!=3.11.*")
+    ]);
+    assert.equal(exactEqual.outcome, "unsupported");
+    assert.equal(wildcardEqual.outcome, "resolved");
+    assert.equal(exactNotEqual.outcome, "resolved");
+    assert.equal(wildcardNotEqual.outcome, "unsupported");
+  });
+
+  it("accepts standard multiline TOML and reports malformed TOML as invalid_config", async () => {
+    const valid = await resolvePythonProjectContext({
+      repoRoot: "/fixture",
+      target: "app.py",
+      workspace: projectWorkspace({
+        "pyproject.toml": [
+          "[project]",
+          "name = 'fixture'",
+          "requires-python = '>=3.12'",
+          "",
+          "[build-system]",
+          "requires = [",
+          "  'hatchling>=1',",
+          "  'hatch-vcs>=0.4',",
+          "]",
+          "build-backend = 'hatchling.build'",
+          ""
+        ].join("\n"),
+        "app.py": "VALUE = 1\n"
+      }, () => true),
+      processProbe: successfulProbe()
+    });
+    assert.equal(valid.reasons.some((reason) => reason.code === "invalid_config"), false);
+    assert.deepEqual(valid.buildSystem, {
+      configFile: "pyproject.toml",
+      backend: "hatchling.build",
+      requires: ["hatch-vcs>=0.4", "hatchling>=1"]
+    });
+    assert.deepEqual(valid.tools.find((tool) => tool.tool === "build")?.argv.slice(-2), ["-m", "build"]);
+
+    const malformed = await resolvePythonProjectContext({
+      repoRoot: "/fixture",
+      target: "app.py",
+      workspace: projectWorkspace({
+        "pyproject.toml": "[project\nname = 'fixture'\n",
+        "app.py": "VALUE = 1\n"
+      }, () => true),
+      processProbe: successfulProbe()
+    });
+    assert.equal(malformed.outcome, "degraded");
+    assert.deepEqual(
+      malformed.reasons.filter((reason) => reason.code === "invalid_config").map((reason) => reason.path),
+      ["pyproject.toml"]
+    );
+  });
+
+  it("reports malformed INI tool configuration as invalid_config", async () => {
+    const context = await resolvePythonProjectContext({
+      repoRoot: "/fixture",
+      target: "app.py",
+      env: { PATH: "/usr/bin" },
+      workspace: projectWorkspace({
+        "pyproject.toml": "[project]\nname='fixture'\n",
+        "mypy.ini": "[mypy\nstrict = true\n",
+        "app.py": "VALUE = 1\n"
+      }, (command) => !command.includes("/")),
+      processProbe: successfulProbe()
+    });
+
+    assert.equal(context.outcome, "degraded");
+    assert.equal(
+      context.reasons.some((reason) => reason.code === "invalid_config" && reason.path === "mypy.ini"),
+      true
+    );
+  });
+
+  it("reads Poetry target metadata from TOML AST and reports unavailable build tooling honestly", async () => {
+    const context = await resolvePythonProjectContext({
+      repoRoot: "/fixture",
+      target: "app.py",
+      workspace: projectWorkspace({
+        "pyproject.toml": [
+          "[tool.poetry]",
+          "name = 'fixture'",
+          "[tool.poetry.dependencies]",
+          "python = '>=3.13'",
+          "[build-system]",
+          "requires = ['poetry-core>=1']",
+          "build-backend = 'poetry.core.masonry.api'",
+          ""
+        ].join("\n"),
+        "app.py": "VALUE = 1\n"
+      }, () => true),
+      processProbe: buildUnavailableProbe()
+    });
+
+    assert.equal(context.targetRuntime.requiresPython, ">=3.13");
+    assert.deepEqual(context.buildSystem, {
+      configFile: "pyproject.toml",
+      backend: "poetry.core.masonry.api",
+      requires: ["poetry-core>=1"]
+    });
+    assert.equal(context.tools.find((tool) => tool.tool === "build")?.available, false);
+    assert.equal(context.reasons.some((reason) => reason.code === "tool_unavailable" && reason.tool === "build"), true);
+  });
+
+  it("resolves Windows environment-root python.exe after Scripts/python.exe", async () => {
+    const environmentRootPython = "C:\\fixture\\.venv\\python.exe";
+    const context = await resolvePythonProjectContext({
+      repoRoot: "C:\\fixture",
+      target: "app.py",
+      platform: "win32",
+      architecture: "x64",
+      workspace: projectWorkspace(
+        { "pyproject.toml": "[project]\nname='fixture'\nrequires-python='>=3.12'\n", "app.py": "VALUE = 1\n" },
+        (command) => command === environmentRootPython || /\\Scripts\\(?:mypy|pyright|ruff|pytest)\.exe$/u.test(command)
+      ),
+      processProbe: windowsProbe(environmentRootPython)
+    });
+
+    assert.equal(context.interpreter?.source, "project_local_environment");
+    assert.equal(context.interpreter?.executable, environmentRootPython);
+    assert.deepEqual(context.interpreter?.argv, [environmentRootPython]);
+    assert.equal(context.interpreter?.cwd, "C:\\fixture");
+    assert.equal(context.outcome, "resolved");
+  });
+
+  it("resolves Python tools from the selected UV manager environment before PATH", async () => {
+    const managerEnvironment = "/fixture/.uv-python";
+    const managerBin = `${managerEnvironment}/bin`;
+    const context = await resolvePythonProjectContext({
+      repoRoot: "/fixture",
+      target: "app.py",
+      env: { PATH: "/usr/bin", UV_PROJECT_ENVIRONMENT: managerEnvironment },
+      workspace: projectWorkspace(
+        {
+          "pyproject.toml": "[project]\nname='fixture'\nrequires-python='>=3.12'\n[tool.uv]\npackage=true\n",
+          "uv.lock": "version=1\n",
+          "app.py": "VALUE = 1\n"
+        },
+        (command) => command.startsWith(`${managerBin}/`) || !command.includes("/")
+      ),
+      processProbe: successfulProbe()
+    });
+
+    assert.equal(context.interpreter?.source, "manager_environment");
+    assert.deepEqual(
+      context.tools.filter((tool) => tool.tool !== "build").map((tool) => ({
+        tool: tool.tool,
+        source: tool.source,
+        executable: tool.executable
+      })),
+      ["mypy", "pyright", "pytest", "ruff"].map((tool) => ({
+        tool,
+        source: "manager_environment",
+        executable: `${managerBin}/${tool}`
+      }))
+    );
+    assert.equal(context.outcome, "resolved");
+  });
+
+  it("reports deterministic path, symlink, manager, platform, target, and probe failures", async () => {
+    const baseFiles = { "pyproject.toml": "[project]\nname='fixture'\nrequires-python='>=3.12'\n", "app.py": "VALUE = 1\n" };
+    for (const [mode, expected] of [
+      ["timeout", "probe_timeout"],
+      ["signal", "probe_signal"],
+      ["spawn", "probe_spawn_failure"],
+      ["exit", "probe_exit_failure"],
+      ["malformed", "malformed_probe_output"]
+    ]) {
+      const context = await resolvePythonProjectContext({
+        repoRoot: "/fixture",
+        target: "app.py",
+        interpreterArgv: ["/fixture/python"],
+        workspace: projectWorkspace(baseFiles, () => true),
+        processProbe: failingProbe(mode)
+      });
+      assert.equal(context.reasons.some((reason) => reason.code === expected), true, mode);
+      assert.notEqual(context.outcome, "resolved", mode);
+    }
+
+    const unsupportedPlatform = await resolvePythonProjectContext({
+      repoRoot: "/fixture",
+      target: "app.py",
+      platform: "aix",
+      workspace: projectWorkspace(baseFiles, () => true)
+    });
+    assert.equal(unsupportedPlatform.reasons[0].code, "unsupported_platform");
+
+    const unsupportedTarget = await resolvePythonProjectContext({
+      repoRoot: "/fixture",
+      target: "app.py",
+      workspace: projectWorkspace(
+        { ...baseFiles, "pyproject.toml": "[project]\nname='fixture'\nrequires-python='^3.12'\n" },
+        () => true
+      ),
+      processProbe: successfulProbe()
+    });
+    assert.equal(unsupportedTarget.reasons.some((reason) => reason.code === "unsupported_target"), true);
+
+    const ambiguous = await resolvePythonProjectContext({
+      repoRoot: "/fixture",
+      target: "app.py",
+      workspace: projectWorkspace({
+        ...baseFiles,
+        "uv.lock": "version=1\n",
+        "poetry.lock": "package=[]\n"
+      }, () => true, new Set(["app.py"])),
+      processProbe: successfulProbe()
+    });
+    assert.equal(ambiguous.outcome, "ambiguous");
+    assert.equal(ambiguous.reasons.some((reason) => reason.code === "conflicting_managers"), true);
+    assert.equal(ambiguous.reasons.some((reason) => reason.code === "symlink_refused"), true);
+
+    await assert.rejects(
+      resolvePythonProjectContext({
+        repoRoot: "/fixture",
+        target: "../escape.py",
+        workspace: projectWorkspace(baseFiles, () => true)
+      }),
+      (error) => error?.code === "path_refused"
+    );
+  });
+
+  it("fails closed when successful interpreter or tool probes return malformed versions", async () => {
+    const files = {
+      "pyproject.toml": "[project]\nname='fixture'\nrequires-python='>=3.12'\n",
+      "app.py": "VALUE = 1\n"
+    };
+    const malformedInterpreter = await resolvePythonProjectContext({
+      repoRoot: "/fixture",
+      target: "app.py",
+      workspace: projectWorkspace(files, () => true),
+      processProbe: successfulProbe("garbage")
+    });
+    assert.equal(malformedInterpreter.interpreter, undefined);
+    assert.equal(
+      malformedInterpreter.reasons.some((reason) => reason.code === "malformed_probe_output" && reason.tool === "python"),
+      true
+    );
+    assert.notEqual(malformedInterpreter.outcome, "resolved");
+
+    const probeWithoutAbi = successfulProbe();
+    const incompleteInterpreter = await resolvePythonProjectContext({
+      repoRoot: "/fixture",
+      target: "app.py",
+      workspace: projectWorkspace(files, () => true),
+      processProbe: {
+        ...probeWithoutAbi,
+        run(command, args, options) {
+          const script = args[args.indexOf("-c") + 1] ?? "";
+          if (!args.includes("-c") || script.includes("opcore.python.project-context.build.v1")) {
+            return probeWithoutAbi.run(command, args, options);
+          }
+          return probeResult(command, args, options, {
+            stdout: JSON.stringify({
+              protocol: "opcore.python.project-context.interpreter.v1",
+              executable: command.includes("/") ? command : `/usr/bin/${command}`,
+              version: "3.12.4",
+              implementation: "CPython",
+              platform: "linux",
+              architecture: "x86_64"
+            })
+          });
+        }
+      }
+    });
+    assert.equal(incompleteInterpreter.interpreter, undefined);
+    assert.equal(
+      incompleteInterpreter.reasons.some((reason) => reason.code === "malformed_probe_output" && reason.tool === "python"),
+      true
+    );
+    assert.notEqual(incompleteInterpreter.outcome, "resolved");
+
+    const validProbe = successfulProbe();
+    const malformedTools = await resolvePythonProjectContext({
+      repoRoot: "/fixture",
+      target: "app.py",
+      workspace: projectWorkspace(files, () => true),
+      processProbe: {
+        ...validProbe,
+        run(command, args, options) {
+          return args.includes("-c")
+            ? validProbe.run(command, args, options)
+            : probeResult(command, args, options, { stdout: "not-a-version" });
+        }
+      }
+    });
+    assert.equal(malformedTools.tools.every((tool) => !tool.available), true);
+    assert.deepEqual(
+      malformedTools.reasons.filter((reason) => reason.code === "malformed_probe_output").map((reason) => reason.tool).sort(),
+      ["mypy", "pyright", "pytest", "ruff"]
+    );
+    assert.notEqual(malformedTools.outcome, "resolved");
+
+    const malformedBuild = await resolvePythonProjectContext({
+      repoRoot: "/fixture",
+      target: "app.py",
+      workspace: projectWorkspace({
+        ...files,
+        "pyproject.toml": `${files["pyproject.toml"]}[build-system]\nrequires=['build']\nbuild-backend='example.backend'\n`
+      }, () => true),
+      processProbe: {
+        ...validProbe,
+        run(command, args, options) {
+          const script = args[args.indexOf("-c") + 1] ?? "";
+          return script.includes("opcore.python.project-context.build.v1")
+            ? probeResult(command, args, options, {
+                stdout: JSON.stringify({
+                  protocol: "opcore.python.project-context.build.v1",
+                  available: true,
+                  version: "not-a-version"
+                })
+              })
+            : validProbe.run(command, args, options);
+        }
+      }
+    });
+    assert.equal(malformedBuild.tools.find((tool) => tool.tool === "build")?.available, false);
+    assert.equal(
+      malformedBuild.reasons.some((reason) => reason.code === "malformed_probe_output" && reason.tool === "build"),
+      true
+    );
+    assert.notEqual(malformedBuild.outcome, "resolved");
+
+    const missingBuildVersion = await resolvePythonProjectContext({
+      repoRoot: "/fixture",
+      target: "app.py",
+      workspace: projectWorkspace({
+        ...files,
+        "pyproject.toml": `${files["pyproject.toml"]}[build-system]\nrequires=['build']\nbuild-backend='example.backend'\n`
+      }, () => true),
+      processProbe: {
+        ...validProbe,
+        run(command, args, options) {
+          const script = args[args.indexOf("-c") + 1] ?? "";
+          return script.includes("opcore.python.project-context.build.v1")
+            ? probeResult(command, args, options, {
+                stdout: JSON.stringify({
+                  protocol: "opcore.python.project-context.build.v1",
+                  available: true,
+                  version: null
+                })
+              })
+            : validProbe.run(command, args, options);
+        }
+      }
+    });
+    assert.equal(missingBuildVersion.tools.find((tool) => tool.tool === "build")?.available, false);
+    assert.equal(
+      missingBuildVersion.reasons.some((reason) => reason.code === "malformed_probe_output" && reason.tool === "build"),
+      true
+    );
+    assert.notEqual(missingBuildVersion.outcome, "resolved");
+  });
+
+  it("applies PEP 440 compatible-release precision consistently", async () => {
+    const compatible = await resolvePythonProjectContext({
+      repoRoot: "/fixture",
+      target: "app.py",
+      workspace: projectWorkspace({
+        "pyproject.toml": "[project]\nname='fixture'\nrequires-python='~=3.11'\n",
+        "pyrightconfig.json": JSON.stringify({ pythonVersion: "3.12" }),
+        "app.py": "VALUE = 1\n"
+      }, () => true),
+      processProbe: successfulProbe("3.12.4")
+    });
+    assert.equal(compatible.targetRuntime.conflicts.length, 0);
+    assert.equal(compatible.reasons.some((reason) => reason.code === "incompatible_interpreter"), false);
+    assert.equal(compatible.outcome, "resolved");
+
+    const incompatible = await resolvePythonProjectContext({
+      repoRoot: "/fixture",
+      target: "app.py",
+      workspace: projectWorkspace({
+        "pyproject.toml": "[project]\nname='fixture'\nrequires-python='~=3.11.0'\n",
+        "app.py": "VALUE = 1\n"
+      }, () => true),
+      processProbe: successfulProbe("3.12.4")
+    });
+    assert.equal(incompatible.reasons.some((reason) => reason.code === "incompatible_interpreter"), true);
+    assert.equal(incompatible.outcome, "unsupported");
+  });
+
+  it("does not treat prerelease interpreters as final PEP 440 releases", async () => {
+    const resolveWithConstraint = (requiresPython) => resolvePythonProjectContext({
+      repoRoot: "/fixture",
+      target: "app.py",
+      workspace: projectWorkspace({
+        "pyproject.toml": `[project]\nname='fixture'\nrequires-python='${requiresPython}'\n`,
+        "app.py": "VALUE = 1\n"
+      }, () => true),
+      processProbe: successfulProbe("3.13.0rc1")
+    });
+
+    const finalOnly = await resolveWithConstraint(">=3.13");
+    assert.equal(finalOnly.reasons.some((reason) => reason.code === "incompatible_interpreter"), true);
+    assert.equal(finalOnly.outcome, "unsupported");
+
+    const explicitPrerelease = await resolveWithConstraint(">=3.13rc1");
+    assert.equal(explicitPrerelease.reasons.some((reason) => reason.code === "incompatible_interpreter"), false);
+    assert.equal(explicitPrerelease.outcome, "resolved");
+
+    const laterPrerelease = await resolveWithConstraint(">=3.13rc2");
+    assert.equal(laterPrerelease.reasons.some((reason) => reason.code === "incompatible_interpreter"), true);
+    assert.equal(laterPrerelease.outcome, "unsupported");
+
+    const betaFloor = await resolveWithConstraint(">=3.13b1");
+    assert.equal(betaFloor.reasons.some((reason) => reason.code === "incompatible_interpreter"), false);
+    assert.equal(betaFloor.outcome, "resolved");
+  });
+
+  it("checks requires-python and configured target version independently", async () => {
+    const context = await resolvePythonProjectContext({
+      repoRoot: "/fixture",
+      target: "app.py",
+      workspace: projectWorkspace({
+        "pyproject.toml": "[project]\nname='fixture'\nrequires-python='>=3.10'\n",
+        "pyrightconfig.json": JSON.stringify({ pythonVersion: "3.12" }),
+        "app.py": "VALUE = 1\n"
+      }, () => true),
+      processProbe: successfulProbe("3.11.9")
+    });
+
+    assert.equal(context.targetRuntime.requiresPython, ">=3.10");
+    assert.equal(context.targetRuntime.version, "3.12");
+    assert.equal(context.reasons.some((reason) => reason.code === "incompatible_interpreter"), true);
+    assert.equal(context.outcome, "unsupported");
+  });
+
+  it("returns a typed ambiguous context for a target symlink escaping the repository", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-symlink-repo-"));
+    const externalRoot = mkdtempSync(join(tmpdir(), "opcore-python-symlink-external-"));
     try {
-      writeFileSync(join(repoRoot, "pyproject.toml"), "[tool.mypy]\n");
-      writeFileSync(join(repoRoot, "mypy.ini"), "[mypy]\n");
-      const configFile = findPythonConfigFile(repoRoot, "mypy");
-      assert.equal(configFile, join(repoRoot, "mypy.ini"));
+      writeFileSync(join(repoRoot, "pyproject.toml"), "[project]\nname='fixture'\n");
+      writeFileSync(join(externalRoot, "outside.py"), "VALUE = 1\n");
+      symlinkSync(join(externalRoot, "outside.py"), join(repoRoot, "app.py"));
+      const context = await resolvePythonProjectContext({
+        repoRoot,
+        target: "app.py",
+        workspace: createNodePythonProjectWorkspace(repoRoot),
+        processProbe: successfulProbe()
+      });
+      assert.equal(context.outcome, "ambiguous");
+      assert.equal(context.reasons.some((reason) => reason.code === "symlink_refused" && reason.path === "app.py"), true);
     } finally {
       rmSync(repoRoot, { recursive: true, force: true });
+      rmSync(externalRoot, { recursive: true, force: true });
     }
+  });
+
+  it("preserves baseline symlink refusal when the target has an after-state overlay", async () => {
+    const files = {
+      "pyproject.toml": "[project]\nname='fixture'\n",
+      "app.py": "VALUE = 1\n"
+    };
+    const result = await runner({
+      files,
+      checks: createPythonValidationChecks({
+        processProbe: successfulProbe(),
+        nodeWorkspace: projectWorkspace(files, () => true, new Set(["app.py"]))
+      })
+    }).runValidation(request({
+      repo: { repoRoot: "/fixture" },
+      checks: [PYTHON_SOURCE_HYGIENE_CHECK_ID],
+      scope: { kind: "files", files: ["app.py"] },
+      overlays: [{ path: "app.py", action: "write", content: "VALUE = 2\n" }]
+    }));
+
+    assert.equal(result.pythonProjectContexts[0].outcome, "ambiguous");
+    assert.equal(
+      result.pythonProjectContexts[0].reasons.some((reason) => reason.code === "symlink_refused" && reason.path === "app.py"),
+      true
+    );
+  });
+
+  it("bounds package ancestry at the owning project and source root", async () => {
+    const context = await resolvePythonProjectContext({
+      repoRoot: "/fixture",
+      target: "services/api/app.py",
+      workspace: projectWorkspace({
+        "pyproject.toml": "[project]\nname='root'\n",
+        "services/api/pyproject.toml": "[project]\nname='api'\n",
+        "services/api/app.py": "VALUE = 1\n"
+      }, () => true),
+      processProbe: successfulProbe()
+    });
+    assert.equal(context.projectRoot, "services/api");
+    assert.deepEqual(context.layout.kinds, ["flat"]);
+  });
+
+  it("matches overlay after-state identity with the equivalent materialized tree", async () => {
+    const before = {
+      "pyproject.toml": "[project]\nname='fixture'\nrequires-python='>=3.11'\n",
+      "app.py": "VALUE = 1\n"
+    };
+    const after = {
+      "pyproject.toml": "[project]\nname='fixture'\nrequires-python='>=3.12'\n[tool.uv]\npackage=true\n",
+      "app.py": "VALUE = 2\n"
+    };
+    const validationResult = await runner({
+      files: before,
+      checks: createPythonValidationChecks({ processProbe: successfulProbe() })
+    }).runValidation(request({
+      repo: { repoRoot: "/fixture" },
+      checks: [PYTHON_SOURCE_HYGIENE_CHECK_ID],
+      scope: { kind: "files", files: ["app.py"] },
+      overlays: [
+        { path: "pyproject.toml", action: "write", content: after["pyproject.toml"] },
+        { path: "app.py", action: "write", content: after["app.py"] }
+      ]
+    }));
+    const materialized = await resolvePythonProjectContext({
+      repoRoot: "/fixture",
+      target: "app.py",
+      workspace: projectWorkspace(after, (command) => !command.includes("/")),
+      processProbe: successfulProbe()
+    });
+
+    assert.equal(validationResult.pythonProjectContexts.length, 1);
+    assert.equal(validationResult.pythonProjectContexts[0].contextFingerprint, materialized.contextFingerprint);
+    assert.equal(validationResult.pythonProjectContexts[0].projectKey, materialized.projectKey);
+    assert.equal(validationResult.pythonProjectContexts[0].outcome, materialized.outcome);
+  });
+
+  it("removes deleted project markers from overlay discovery and matches materialized identity", async () => {
+    const before = {
+      "pyproject.toml": "[project]\nname='root'\n",
+      "services/api/pyproject.toml": "[project]\nname='api'\n",
+      "services/api/app.py": "VALUE = 1\n"
+    };
+    const result = await runner({
+      files: before,
+      checks: createPythonValidationChecks({
+        processProbe: successfulProbe(),
+        nodeWorkspace: projectWorkspace(before, (command) => !command.includes("/"))
+      })
+    }).runValidation(request({
+      repo: { repoRoot: "/fixture" },
+      checks: [PYTHON_SOURCE_HYGIENE_CHECK_ID],
+      scope: { kind: "files", files: ["services/api/app.py"] },
+      overlays: [{ path: "services/api/pyproject.toml", action: "delete" }]
+    }));
+    const materialized = await resolvePythonProjectContext({
+      repoRoot: "/fixture",
+      target: "services/api/app.py",
+      workspace: projectWorkspace({
+        "pyproject.toml": before["pyproject.toml"],
+        "services/api/app.py": before["services/api/app.py"]
+      }, (command) => !command.includes("/")),
+      processProbe: successfulProbe()
+    });
+    const overlay = result.pythonProjectContexts[0];
+    assert.equal(overlay.projectRoot, ".");
+    assert.equal(overlay.contextFingerprint, materialized.contextFingerprint, JSON.stringify({ overlay, materialized }, null, 2));
+    assert.equal(overlay.outcome, materialized.outcome);
   });
 });
 
@@ -774,6 +1687,129 @@ function runner(options = {}) {
     checks: options.checks ?? createPythonValidationChecks(),
     graphProviderClient: options.graphProviderClient
   });
+}
+
+function createPythonValidationChecks(options = {}) {
+  return createCanonicalPythonValidationChecks({
+    ...options,
+    nodeWorkspace: options.nodeWorkspace ?? canonicalTestPythonWorkspace()
+  });
+}
+
+function canonicalTestPythonWorkspace() {
+  return {
+    read: async () => undefined,
+    list: async () => [],
+    exists: async () => false,
+    realpath: async (path) => ({ path, symlink: false }),
+    executableExists: async () => false
+  };
+}
+
+function projectWorkspace(files, executableExists, symlinks = new Set()) {
+  const contents = new Map(Object.entries(files));
+  return {
+    read: async (path) => contents.get(path),
+    list: async () => [...contents.keys()].sort(),
+    exists: async (path) => contents.has(path),
+    realpath: async (path) => ({ path, symlink: symlinks.has(path) }),
+    executableExists: async (path) => executableExists(path)
+  };
+}
+
+function successfulProbe(version = "3.12.4") {
+  return {
+    resolveExecutable(command) {
+      return command.includes("/") ? command : `/usr/bin/${command}`;
+    },
+    run(command, args, options) {
+      const script = args[args.indexOf("-c") + 1] ?? "";
+      const build = script.includes("opcore.python.project-context.build.v1");
+      const interpreter = args.includes("-c") && !build;
+      return probeResult(command, args, options, {
+        stdout: build
+          ? JSON.stringify({ protocol: "opcore.python.project-context.build.v1", available: true, version: "1.2.2" })
+          : interpreter
+          ? JSON.stringify({
+              protocol: "opcore.python.project-context.interpreter.v1",
+              executable: command.includes("/") ? command : `/usr/bin/${command}`,
+              version,
+              implementation: "CPython",
+              platform: "linux",
+              architecture: "x86_64",
+              abi: "cpython-312",
+              soabi: "cpython-312-x86_64-linux-gnu"
+            })
+          : `${command} 1.0.0`
+      });
+    }
+  };
+}
+
+function buildUnavailableProbe() {
+  const base = successfulProbe();
+  return {
+    ...base,
+    run(command, args, options) {
+      const script = args[args.indexOf("-c") + 1] ?? "";
+      if (script.includes("opcore.python.project-context.build.v1")) {
+        return probeResult(command, args, options, {
+          stdout: JSON.stringify({ protocol: "opcore.python.project-context.build.v1", available: false, version: null })
+        });
+      }
+      return base.run(command, args, options);
+    }
+  };
+}
+
+function windowsProbe(interpreter) {
+  return {
+    run(command, args, options) {
+      return probeResult(command, args, options, {
+        stdout: args.includes("-c")
+          ? JSON.stringify({
+              protocol: "opcore.python.project-context.interpreter.v1",
+              executable: interpreter,
+              version: "3.12.4",
+              implementation: "CPython",
+              platform: "win32",
+              architecture: "AMD64",
+              abi: "cpython-312",
+              soabi: "cp312-win_amd64"
+            })
+          : `${command} 1.0.0`
+      });
+    }
+  };
+}
+
+function failingProbe(mode) {
+  return {
+    run(command, args, options) {
+      if (mode === "malformed") return probeResult(command, args, options, { stdout: "not-json" });
+      const base = probeResult(command, args, options, { ok: false });
+      if (mode === "timeout") return { ...base, termination: "timeout", exitCode: null, failureMessage: "timeout" };
+      if (mode === "signal") return { ...base, termination: "signal", exitCode: null, signal: "SIGTERM", failureMessage: "signal" };
+      if (mode === "spawn") return { ...base, termination: "spawn_error", exitCode: null, failureMessage: "permission denied" };
+      return { ...base, termination: "exited", exitCode: 9, failureMessage: "exit 9" };
+    }
+  };
+}
+
+function probeResult(command, args, options, overrides = {}) {
+  return {
+    command,
+    args,
+    cwd: options.cwd,
+    allowedExitCodes: [0],
+    exitCode: 0,
+    signal: null,
+    stdout: "",
+    stderr: "",
+    termination: "exited",
+    ok: true,
+    ...overrides
+  };
 }
 
 function request(overrides = {}) {
@@ -846,8 +1882,8 @@ function writePythonProtocolShim(repoRoot, compilerBranch) {
     [
       "#!/bin/sh",
       "case \"$4\" in",
-      "  *opcore.python.interpreter.v1*)",
-      protocolResponse("SHIM_PATH", undefined),
+      "  *opcore.python.project-context.interpreter.v1*)",
+      projectContextInterpreterResponse("SHIM_PATH"),
       "    ;;",
       "  *opcore.python.compile.v1*)",
       ...compilerBranch,
@@ -859,6 +1895,25 @@ function writePythonProtocolShim(repoRoot, compilerBranch) {
   );
   chmodSync(shimPath, 0o755);
   return shimPath;
+}
+
+function writePassingPythonProtocolShim(repoRoot) {
+  const shimPath = writePythonProtocolShim(repoRoot, [protocolResponse("SHIM_PATH", [{ path: "pkg/app.py", status: "passed" }])]);
+  replaceShimPlaceholder(shimPath);
+  return shimPath;
+}
+
+function projectContextInterpreterResponse(executable) {
+  return `printf '%s\\n' '${JSON.stringify({
+    protocol: "opcore.python.project-context.interpreter.v1",
+    executable,
+    version: "3.12.13",
+    implementation: "CPython",
+    platform: "darwin",
+    architecture: "arm64",
+    abi: "cpython-312",
+    soabi: "cpython-312-darwin"
+  })}'`;
 }
 
 function protocolResponse(executable, results) {

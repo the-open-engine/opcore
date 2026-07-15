@@ -40,7 +40,7 @@ for (const [lockPath, entry] of Object.entries(packages)) {
   if (!lockPath.startsWith("packages/")) continue;
   const bundled = entry.bundleDependencies ?? entry.bundledDependencies ?? [];
   for (const name of bundled) {
-    const runtimeEntry = bundledPackageMetadata(name);
+    const runtimeEntry = bundledPackageMetadata(name, lockPath);
     bundledRuntime.push({
       name,
       version: runtimeEntry.version,
@@ -142,8 +142,11 @@ function formatPackage(entry) {
   return `${entry.name}@${entry.version}`;
 }
 
-function bundledPackageMetadata(name) {
-  const runtimeEntry = packages[`node_modules/${name}`];
+function bundledPackageMetadata(name, ownerLockPath) {
+  const rootRuntimePath = `node_modules/${name}`;
+  const ownerRuntimePath = `${ownerLockPath}/node_modules/${name}`;
+  const runtimePath = packages[rootRuntimePath] === undefined ? ownerRuntimePath : rootRuntimePath;
+  const runtimeEntry = packages[runtimePath];
   if (!runtimeEntry) {
     return { version: "workspace-bundled", license: "UNKNOWN" };
   }
@@ -159,6 +162,6 @@ function bundledPackageMetadata(name) {
   return {
     version: runtimeEntry.version ?? "unknown",
     license: runtimeEntry.license ?? "UNKNOWN",
-    source: `node_modules/${name}`
+    source: runtimePath
   };
 }

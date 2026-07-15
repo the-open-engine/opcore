@@ -1,6 +1,7 @@
 import type {
   OpcoreRepoStatePayload,
   OpcoreValidationPolicySummary,
+  PythonProjectContext,
   ValidationAdapterRuntimeStatus
 } from "@the-open-engine/opcore-contracts";
 import { existsSync } from "node:fs";
@@ -12,7 +13,8 @@ import type { createDefaultValidationStatusPayload } from "./validation-composit
 export function validationSummary(
   validationStatus: ReturnType<typeof createDefaultValidationStatusPayload>,
   coverage: OpcoreRepoStatePayload["coverage"],
-  policy: OpcoreValidationPolicySummary
+  policy: OpcoreValidationPolicySummary,
+  pythonProjectContexts: readonly PythonProjectContext[] = []
 ): OpcoreRepoStatePayload["validation"] {
   const adapters = validationStatus.adapterRegistry.adapters ?? [];
   const degraded = adapters.flatMap((adapter) => degradedToolchains(adapter));
@@ -20,6 +22,7 @@ export function validationSummary(
     ready: validationStatus.ready,
     checkCount: validationStatus.adapterRegistry.checkIds.length,
     policy,
+    pythonProjectContexts,
     adapters: adapters.map((adapter) => ({
       adapter: adapter.adapter,
       status: adapter.status,

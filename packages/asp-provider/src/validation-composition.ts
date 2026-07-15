@@ -29,7 +29,7 @@ import {
 } from "@the-open-engine/opcore-validation";
 import {
   createBuiltInValidationChecks,
-  validationChecksForRepoPolicy
+  parseOpcoreRepoConfig
 } from "@the-open-engine/opcore-validation-policy";
 import {
   graphProviderDetectChanges,
@@ -39,6 +39,7 @@ import {
   graphProviderReviewContext,
   graphProviderStatus
 } from "@the-open-engine/opcore-graph";
+import type { PythonProjectWorkspace } from "@the-open-engine/opcore-validation-python";
 
 const aspProviderPolicyOptions = { clone: false } as const;
 
@@ -47,14 +48,15 @@ export const defaultAspProviderValidationChecks = createBuiltInValidationChecks(
 export const defaultAspProviderValidationCheckIds = defaultAspProviderValidationChecks.map((check) => check.id);
 export const defaultAspProviderValidationManifest = createValidationCheckManifest(defaultAspProviderValidationChecks);
 
-export function createAspProviderValidationRunner(workspace: ValidationWorkspace): {
+export function createAspProviderValidationRunner(workspace: ValidationWorkspace, pythonWorkspace: PythonProjectWorkspace): {
   runValidation(request: ValidationRequest): Promise<ValidationResult>;
 } {
   return {
-    runValidation(request) {
+    async runValidation(request) {
+      const config = await readHostConfig(workspace, request);
       return createValidationRunner({
         workspace,
-        checks: validationChecksForAspRequest(request),
+        checks: createBuiltInValidationChecks(config, { ...aspProviderPolicyOptions, pythonWorkspace }),
         graphProviderClient: createAspValidationGraphProviderClient()
       }).runValidation(request);
     }
@@ -67,10 +69,12 @@ export function selectedValidationChecks(checkIds?: readonly string[]): readonly
   return defaultAspProviderValidationChecks.filter((check) => requested.has(check.id));
 }
 
-function validationChecksForAspRequest(request: ValidationRequest): readonly ValidationCheckDefinition[] {
-  const repoRoot = request.repo.repoRoot;
-  if (repoRoot === undefined) return defaultAspProviderValidationChecks;
-  return validationChecksForRepoPolicy(repoRoot, aspProviderPolicyOptions);
+async function readHostConfig(workspace: ValidationWorkspace, request: ValidationRequest) {
+  const overlay = request.overlays.find((entry) => entry.path === ".opcore/config");
+  if (overlay?.action === "write") return parseOpcoreRepoConfig(overlay.content);
+  if (overlay?.action === "delete") return parseOpcoreRepoConfig(undefined);
+  const result = await workspace.readFile(".opcore/config");
+  return parseOpcoreRepoConfig(result.status === "found" ? result.content : undefined);
 }
 
 function createAspValidationGraphProviderClient(): ValidationGraphProviderClient {

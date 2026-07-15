@@ -1,0 +1,348 @@
+{
+  "schemaVersion": 1,
+  "rows": [
+    {
+      "id": "real-posix-flat-package",
+      "execution": "real",
+      "target": "flatpkg/__init__.py",
+      "expected": {
+        "target": "flatpkg/__init__.py",
+        "repositoryRoot": "<repo>",
+        "projectRoot": ".",
+        "projectBoundary": ".",
+        "sourceRoots": ["."],
+        "layout": { "kinds": ["flat", "package"], "paths": ["."] },
+        "evidence": [
+          { "path": "requirements.txt", "role": "boundary" },
+          { "path": "requirements.txt", "role": "requirements" }
+        ],
+        "targetRuntime": { "conflicts": [] },
+        "managers": [
+          { "kind": "pip", "configFiles": ["requirements.txt"], "lockFiles": [] }
+        ],
+        "interpreter": {
+          "executable": "<absolute>",
+          "argv": ["<absolute>"],
+          "cwd": "<repo>",
+          "source": "explicit_override",
+          "version": "<version>",
+          "implementation": "CPython",
+          "platform": "<host-platform>",
+          "architecture": "<host-architecture>"
+        },
+        "tools": [
+          { "tool": "mypy", "available": false, "executable": "/opcore-missing-tools/mypy", "argv": ["/opcore-missing-tools/mypy"], "cwd": "<repo>", "source": "explicit_override" },
+          { "tool": "pyright", "available": false, "executable": "/opcore-missing-tools/pyright", "argv": ["/opcore-missing-tools/pyright"], "cwd": "<repo>", "source": "explicit_override" },
+          { "tool": "pytest", "available": false, "executable": "/opcore-missing-tools/pytest", "argv": ["/opcore-missing-tools/pytest"], "cwd": "<repo>", "source": "explicit_override" },
+          { "tool": "ruff", "available": false, "executable": "/opcore-missing-tools/ruff", "argv": ["/opcore-missing-tools/ruff"], "cwd": "<repo>", "source": "explicit_override" }
+        ],
+        "projectKey": "<sha256>",
+        "contextFingerprint": "<sha256>",
+        "outcome": "degraded",
+        "reasons": [
+          { "code": "tool_unavailable", "tool": "mypy" },
+          { "code": "tool_unavailable", "tool": "pyright" },
+          { "code": "tool_unavailable", "tool": "pytest" },
+          { "code": "tool_unavailable", "tool": "ruff" }
+        ]
+      }
+    },
+    {
+      "id": "simulated-posix-nested-uv-namespace",
+      "execution": "simulated",
+      "platform": "linux",
+      "target": "services/api/src/acme/api.py",
+      "expected": {
+        "target": "services/api/src/acme/api.py",
+        "repositoryRoot": "/fixture",
+        "projectRoot": "services/api",
+        "projectBoundary": "services/api",
+        "sourceRoots": ["services/api/src"],
+        "layout": { "kinds": ["namespace", "src"], "paths": ["services/api/src"] },
+        "evidence": [
+          { "path": "services/api/mypy.ini", "role": "config" },
+          { "path": "services/api/pyproject.toml", "role": "boundary" },
+          { "path": "services/api/pyproject.toml", "role": "build" },
+          { "path": "services/api/pyrightconfig.json", "role": "config" },
+          { "path": "services/api/pytest.ini", "role": "config" },
+          { "path": "services/api/ruff.toml", "role": "config" },
+          { "path": "services/api/src", "role": "layout" },
+          { "path": "services/api/uv.lock", "role": "boundary" },
+          { "path": "services/api/uv.lock", "role": "lock" }
+        ],
+        "targetRuntime": { "requiresPython": ">=3.12", "conflicts": [] },
+        "managers": [
+          { "kind": "uv", "configFiles": ["services/api/pyproject.toml"], "lockFiles": ["services/api/uv.lock"] }
+        ],
+        "buildSystem": {
+          "configFile": "services/api/pyproject.toml",
+          "backend": "hatchling.build",
+          "requires": ["hatch-vcs>=0.4", "hatchling>=1"]
+        },
+        "interpreter": {
+          "executable": "/fixture/services/api/.venv/bin/python",
+          "argv": ["/fixture/services/api/.venv/bin/python"],
+          "cwd": "/fixture/services/api",
+          "source": "project_local_environment",
+          "version": "3.12.4",
+          "implementation": "CPython",
+          "platform": "linux",
+          "architecture": "x86_64",
+          "abi": "cpython-312",
+          "soabi": "cpython-312-x86_64-linux-gnu"
+        },
+        "tools": [
+          { "tool": "build", "available": true, "executable": "/fixture/services/api/.venv/bin/python", "argv": ["/fixture/services/api/.venv/bin/python", "-m", "build"], "cwd": "/fixture/services/api", "source": "project_local_environment", "version": "1.0.0", "configFile": "services/api/pyproject.toml" },
+          { "tool": "mypy", "available": true, "executable": "/fixture/services/api/.venv/bin/mypy", "argv": ["/fixture/services/api/.venv/bin/mypy"], "cwd": "/fixture/services/api", "source": "project_local_environment", "version": "1.0.0", "configFile": "services/api/mypy.ini" },
+          { "tool": "pyright", "available": true, "executable": "/fixture/services/api/.venv/bin/pyright", "argv": ["/fixture/services/api/.venv/bin/pyright"], "cwd": "/fixture/services/api", "source": "project_local_environment", "version": "1.0.0", "configFile": "services/api/pyrightconfig.json" },
+          { "tool": "pytest", "available": true, "executable": "/fixture/services/api/.venv/bin/pytest", "argv": ["/fixture/services/api/.venv/bin/pytest"], "cwd": "/fixture/services/api", "source": "project_local_environment", "version": "1.0.0", "configFile": "services/api/pytest.ini" },
+          { "tool": "ruff", "available": true, "executable": "/fixture/services/api/.venv/bin/ruff", "argv": ["/fixture/services/api/.venv/bin/ruff"], "cwd": "/fixture/services/api", "source": "project_local_environment", "version": "1.0.0", "configFile": "services/api/ruff.toml" }
+        ],
+        "projectKey": "<sha256>",
+        "contextFingerprint": "<sha256>",
+        "outcome": "resolved",
+        "reasons": []
+      }
+    },
+    {
+      "id": "simulated-posix-mixed-flat-src-root-target",
+      "execution": "simulated",
+      "platform": "linux",
+      "target": "services/mixed/script.py",
+      "expected": {
+        "target": "services/mixed/script.py",
+        "repositoryRoot": "/fixture",
+        "projectRoot": "services/mixed",
+        "projectBoundary": "services/mixed",
+        "sourceRoots": ["services/mixed"],
+        "layout": { "kinds": ["flat"], "paths": ["services/mixed"] },
+        "evidence": [
+          { "path": "services/mixed/pyproject.toml", "role": "boundary" },
+          { "path": "services/mixed/pyproject.toml", "role": "config" },
+          { "path": "services/mixed", "role": "layout" }
+        ],
+        "targetRuntime": { "requiresPython": ">=3.12", "conflicts": [] },
+        "managers": [],
+        "interpreter": {
+          "executable": "/fixture/services/mixed/.venv/bin/python",
+          "argv": ["/fixture/services/mixed/.venv/bin/python"],
+          "cwd": "/fixture/services/mixed",
+          "source": "project_local_environment",
+          "version": "3.12.4",
+          "implementation": "CPython",
+          "platform": "linux",
+          "architecture": "x86_64",
+          "abi": "cpython-312",
+          "soabi": "cpython-312-x86_64-linux-gnu"
+        },
+        "tools": [
+          { "tool": "mypy", "available": true, "executable": "/fixture/services/mixed/.venv/bin/mypy", "argv": ["/fixture/services/mixed/.venv/bin/mypy"], "cwd": "/fixture/services/mixed", "source": "project_local_environment", "version": "1.0.0" },
+          { "tool": "pyright", "available": true, "executable": "/fixture/services/mixed/.venv/bin/pyright", "argv": ["/fixture/services/mixed/.venv/bin/pyright"], "cwd": "/fixture/services/mixed", "source": "project_local_environment", "version": "1.0.0" },
+          { "tool": "pytest", "available": true, "executable": "/fixture/services/mixed/.venv/bin/pytest", "argv": ["/fixture/services/mixed/.venv/bin/pytest"], "cwd": "/fixture/services/mixed", "source": "project_local_environment", "version": "1.0.0" },
+          { "tool": "ruff", "available": true, "executable": "/fixture/services/mixed/.venv/bin/ruff", "argv": ["/fixture/services/mixed/.venv/bin/ruff"], "cwd": "/fixture/services/mixed", "source": "project_local_environment", "version": "1.0.0" }
+        ],
+        "projectKey": "<sha256>",
+        "contextFingerprint": "<sha256>",
+        "outcome": "resolved",
+        "reasons": []
+      }
+    },
+    {
+      "id": "simulated-posix-poetry-flat-package",
+      "execution": "simulated",
+      "platform": "linux",
+      "target": "services/poetry/pkg/__init__.py",
+      "expected": {
+        "target": "services/poetry/pkg/__init__.py",
+        "repositoryRoot": "/fixture",
+        "projectRoot": "services/poetry",
+        "projectBoundary": "services/poetry",
+        "sourceRoots": ["services/poetry"],
+        "layout": { "kinds": ["flat", "package"], "paths": ["services/poetry"] },
+        "evidence": [
+          { "path": "services/poetry/poetry.lock", "role": "boundary" },
+          { "path": "services/poetry/poetry.lock", "role": "lock" },
+          { "path": "services/poetry/pyproject.toml", "role": "boundary" },
+          { "path": "services/poetry/pyproject.toml", "role": "config" },
+          { "path": "services/poetry", "role": "layout" }
+        ],
+        "targetRuntime": { "requiresPython": ">=3.12", "conflicts": [] },
+        "managers": [
+          { "kind": "poetry", "configFiles": ["services/poetry/pyproject.toml"], "lockFiles": ["services/poetry/poetry.lock"] }
+        ],
+        "interpreter": { "executable": "/fixture/services/poetry/.venv/bin/python", "argv": ["/fixture/services/poetry/.venv/bin/python"], "cwd": "/fixture/services/poetry", "source": "project_local_environment", "version": "3.12.4", "implementation": "CPython", "platform": "linux", "architecture": "x86_64", "abi": "cpython-312", "soabi": "cpython-312-x86_64-linux-gnu" },
+        "tools": [
+          { "tool": "mypy", "available": true, "executable": "/fixture/services/poetry/.venv/bin/mypy", "argv": ["/fixture/services/poetry/.venv/bin/mypy"], "cwd": "/fixture/services/poetry", "source": "project_local_environment", "version": "1.0.0" },
+          { "tool": "pyright", "available": true, "executable": "/fixture/services/poetry/.venv/bin/pyright", "argv": ["/fixture/services/poetry/.venv/bin/pyright"], "cwd": "/fixture/services/poetry", "source": "project_local_environment", "version": "1.0.0" },
+          { "tool": "pytest", "available": true, "executable": "/fixture/services/poetry/.venv/bin/pytest", "argv": ["/fixture/services/poetry/.venv/bin/pytest"], "cwd": "/fixture/services/poetry", "source": "project_local_environment", "version": "1.0.0" },
+          { "tool": "ruff", "available": true, "executable": "/fixture/services/poetry/.venv/bin/ruff", "argv": ["/fixture/services/poetry/.venv/bin/ruff"], "cwd": "/fixture/services/poetry", "source": "project_local_environment", "version": "1.0.0" }
+        ],
+        "projectKey": "<sha256>", "contextFingerprint": "<sha256>", "outcome": "resolved", "reasons": []
+      }
+    },
+    {
+      "id": "simulated-posix-pdm-src-namespace",
+      "execution": "simulated",
+      "platform": "linux",
+      "target": "services/pdm/src/pdm_pkg/app.py",
+      "expected": {
+        "target": "services/pdm/src/pdm_pkg/app.py",
+        "repositoryRoot": "/fixture",
+        "projectRoot": "services/pdm",
+        "projectBoundary": "services/pdm",
+        "sourceRoots": ["services/pdm/src"],
+        "layout": { "kinds": ["namespace", "src"], "paths": ["services/pdm/src"] },
+        "evidence": [
+          { "path": "services/pdm/pdm.lock", "role": "boundary" },
+          { "path": "services/pdm/pdm.lock", "role": "lock" },
+          { "path": "services/pdm/pyproject.toml", "role": "boundary" },
+          { "path": "services/pdm/pyproject.toml", "role": "config" },
+          { "path": "services/pdm/src", "role": "layout" }
+        ],
+        "targetRuntime": { "requiresPython": ">=3.12", "conflicts": [] },
+        "managers": [
+          { "kind": "pdm", "configFiles": ["services/pdm/pyproject.toml"], "lockFiles": ["services/pdm/pdm.lock"] }
+        ],
+        "interpreter": { "executable": "/fixture/services/pdm/.venv/bin/python", "argv": ["/fixture/services/pdm/.venv/bin/python"], "cwd": "/fixture/services/pdm", "source": "project_local_environment", "version": "3.12.4", "implementation": "CPython", "platform": "linux", "architecture": "x86_64", "abi": "cpython-312", "soabi": "cpython-312-x86_64-linux-gnu" },
+        "tools": [
+          { "tool": "mypy", "available": true, "executable": "/fixture/services/pdm/.venv/bin/mypy", "argv": ["/fixture/services/pdm/.venv/bin/mypy"], "cwd": "/fixture/services/pdm", "source": "project_local_environment", "version": "1.0.0" },
+          { "tool": "pyright", "available": true, "executable": "/fixture/services/pdm/.venv/bin/pyright", "argv": ["/fixture/services/pdm/.venv/bin/pyright"], "cwd": "/fixture/services/pdm", "source": "project_local_environment", "version": "1.0.0" },
+          { "tool": "pytest", "available": true, "executable": "/fixture/services/pdm/.venv/bin/pytest", "argv": ["/fixture/services/pdm/.venv/bin/pytest"], "cwd": "/fixture/services/pdm", "source": "project_local_environment", "version": "1.0.0" },
+          { "tool": "ruff", "available": true, "executable": "/fixture/services/pdm/.venv/bin/ruff", "argv": ["/fixture/services/pdm/.venv/bin/ruff"], "cwd": "/fixture/services/pdm", "source": "project_local_environment", "version": "1.0.0" }
+        ],
+        "projectKey": "<sha256>", "contextFingerprint": "<sha256>", "outcome": "resolved", "reasons": []
+      }
+    },
+    {
+      "id": "simulated-windows-pipenv-stub-environment-root-python",
+      "execution": "simulated",
+      "platform": "win32",
+      "windowsInterpreterLayout": "environment-root",
+      "target": "services/stubs/src/sdk/__init__.pyi",
+      "expected": {
+        "target": "services/stubs/src/sdk/__init__.pyi",
+        "repositoryRoot": "C:\\fixture",
+        "projectRoot": "services/stubs",
+        "projectBoundary": "services/stubs",
+        "sourceRoots": ["services/stubs/src"],
+        "layout": { "kinds": ["package", "src", "stub"], "paths": ["services/stubs/src"] },
+        "evidence": [
+          { "path": "services/stubs/Pipfile.lock", "role": "boundary" },
+          { "path": "services/stubs/Pipfile.lock", "role": "lock" },
+          { "path": "services/stubs/Pipfile", "role": "boundary" },
+          { "path": "services/stubs/Pipfile", "role": "config" },
+          { "path": "services/stubs/src", "role": "layout" }
+        ],
+        "targetRuntime": { "version": "3.12", "conflicts": [] },
+        "managers": [
+          { "kind": "pipenv", "configFiles": ["services/stubs/Pipfile"], "lockFiles": ["services/stubs/Pipfile.lock"] }
+        ],
+        "interpreter": { "executable": "C:\\fixture\\services\\stubs\\.venv\\python.exe", "argv": ["C:\\fixture\\services\\stubs\\.venv\\python.exe"], "cwd": "C:\\fixture\\services\\stubs", "source": "project_local_environment", "version": "3.12.4", "implementation": "CPython", "platform": "win32", "architecture": "AMD64", "abi": "cpython-312", "soabi": "cp312-win_amd64" },
+        "tools": [
+          { "tool": "mypy", "available": true, "executable": "C:\\fixture\\services\\stubs\\.venv\\Scripts\\mypy.exe", "argv": ["C:\\fixture\\services\\stubs\\.venv\\Scripts\\mypy.exe"], "cwd": "C:\\fixture\\services\\stubs", "source": "project_local_environment", "version": "1.0.0" },
+          { "tool": "pyright", "available": true, "executable": "C:\\fixture\\services\\stubs\\.venv\\Scripts\\pyright.exe", "argv": ["C:\\fixture\\services\\stubs\\.venv\\Scripts\\pyright.exe"], "cwd": "C:\\fixture\\services\\stubs", "source": "project_local_environment", "version": "1.0.0" },
+          { "tool": "pytest", "available": true, "executable": "C:\\fixture\\services\\stubs\\.venv\\Scripts\\pytest.exe", "argv": ["C:\\fixture\\services\\stubs\\.venv\\Scripts\\pytest.exe"], "cwd": "C:\\fixture\\services\\stubs", "source": "project_local_environment", "version": "1.0.0" },
+          { "tool": "ruff", "available": true, "executable": "C:\\fixture\\services\\stubs\\.venv\\Scripts\\ruff.exe", "argv": ["C:\\fixture\\services\\stubs\\.venv\\Scripts\\ruff.exe"], "cwd": "C:\\fixture\\services\\stubs", "source": "project_local_environment", "version": "1.0.0" }
+        ],
+        "projectKey": "<sha256>", "contextFingerprint": "<sha256>", "outcome": "resolved", "reasons": []
+      }
+    },
+    {
+      "id": "simulated-posix-invalid-toml",
+      "execution": "simulated",
+      "platform": "linux",
+      "target": "services/invalid/app.py",
+      "expected": {
+        "target": "services/invalid/app.py",
+        "repositoryRoot": "/fixture",
+        "projectRoot": "services/invalid",
+        "projectBoundary": "services/invalid",
+        "sourceRoots": ["services/invalid"],
+        "layout": { "kinds": ["flat"], "paths": ["services/invalid"] },
+        "evidence": [
+          { "path": "services/invalid/pyproject.toml", "role": "boundary" },
+          { "path": "services/invalid/pyproject.toml", "role": "config" },
+          { "path": "services/invalid", "role": "layout" }
+        ],
+        "targetRuntime": { "conflicts": [] },
+        "managers": [],
+        "interpreter": { "executable": "/fixture/services/invalid/.venv/bin/python", "argv": ["/fixture/services/invalid/.venv/bin/python"], "cwd": "/fixture/services/invalid", "source": "project_local_environment", "version": "3.12.4" },
+        "tools": [
+          { "tool": "mypy", "available": true, "argv": ["/fixture/services/invalid/.venv/bin/mypy"], "cwd": "/fixture/services/invalid", "source": "project_local_environment" },
+          { "tool": "pyright", "available": true, "argv": ["/fixture/services/invalid/.venv/bin/pyright"], "cwd": "/fixture/services/invalid", "source": "project_local_environment" },
+          { "tool": "pytest", "available": true, "argv": ["/fixture/services/invalid/.venv/bin/pytest"], "cwd": "/fixture/services/invalid", "source": "project_local_environment" },
+          { "tool": "ruff", "available": true, "argv": ["/fixture/services/invalid/.venv/bin/ruff"], "cwd": "/fixture/services/invalid", "source": "project_local_environment" }
+        ],
+        "projectKey": "<sha256>", "contextFingerprint": "<sha256>", "outcome": "degraded",
+        "reasons": [{ "code": "invalid_config", "path": "services/invalid/pyproject.toml" }]
+      }
+    },
+    {
+      "id": "simulated-posix-conflicting-managers",
+      "execution": "simulated",
+      "platform": "linux",
+      "target": "services/conflict/app.py",
+      "expected": {
+        "target": "services/conflict/app.py",
+        "repositoryRoot": "/fixture",
+        "projectRoot": "services/conflict",
+        "projectBoundary": "services/conflict",
+        "sourceRoots": ["services/conflict"],
+        "layout": { "kinds": ["flat"], "paths": ["services/conflict"] },
+        "evidence": [
+          { "path": "services/conflict/poetry.lock", "role": "boundary" },
+          { "path": "services/conflict/poetry.lock", "role": "lock" },
+          { "path": "services/conflict/pyproject.toml", "role": "boundary" },
+          { "path": "services/conflict/pyproject.toml", "role": "config" },
+          { "path": "services/conflict/uv.lock", "role": "boundary" },
+          { "path": "services/conflict/uv.lock", "role": "lock" },
+          { "path": "services/conflict", "role": "layout" }
+        ],
+        "targetRuntime": { "requiresPython": ">=3.12", "conflicts": [] },
+        "managers": [
+          { "kind": "poetry", "configFiles": [], "lockFiles": ["services/conflict/poetry.lock"] },
+          { "kind": "uv", "configFiles": ["services/conflict/pyproject.toml"], "lockFiles": ["services/conflict/uv.lock"] }
+        ],
+        "interpreter": { "executable": "/fixture/services/conflict/.venv/bin/python", "argv": ["/fixture/services/conflict/.venv/bin/python"], "cwd": "/fixture/services/conflict", "source": "project_local_environment", "version": "3.12.4" },
+        "tools": [
+          { "tool": "mypy", "available": true, "argv": ["/fixture/services/conflict/.venv/bin/mypy"], "cwd": "/fixture/services/conflict", "source": "project_local_environment" },
+          { "tool": "pyright", "available": true, "argv": ["/fixture/services/conflict/.venv/bin/pyright"], "cwd": "/fixture/services/conflict", "source": "project_local_environment" },
+          { "tool": "pytest", "available": true, "argv": ["/fixture/services/conflict/.venv/bin/pytest"], "cwd": "/fixture/services/conflict", "source": "project_local_environment" },
+          { "tool": "ruff", "available": true, "argv": ["/fixture/services/conflict/.venv/bin/ruff"], "cwd": "/fixture/services/conflict", "source": "project_local_environment" }
+        ],
+        "projectKey": "<sha256>", "contextFingerprint": "<sha256>", "outcome": "ambiguous",
+        "reasons": [{ "code": "conflicting_managers" }]
+      }
+    },
+    {
+      "id": "simulated-posix-incompatible-interpreter",
+      "execution": "simulated",
+      "platform": "linux",
+      "target": "services/incompatible/app.py",
+      "expected": {
+        "target": "services/incompatible/app.py",
+        "repositoryRoot": "/fixture",
+        "projectRoot": "services/incompatible",
+        "projectBoundary": "services/incompatible",
+        "sourceRoots": ["services/incompatible"],
+        "layout": { "kinds": ["flat"], "paths": ["services/incompatible"] },
+        "evidence": [
+          { "path": "services/incompatible/pyproject.toml", "role": "boundary" },
+          { "path": "services/incompatible/pyproject.toml", "role": "config" },
+          { "path": "services/incompatible", "role": "layout" }
+        ],
+        "targetRuntime": { "requiresPython": ">=3.13", "conflicts": [] },
+        "managers": [],
+        "interpreter": { "executable": "/fixture/services/incompatible/.venv/bin/python", "argv": ["/fixture/services/incompatible/.venv/bin/python"], "cwd": "/fixture/services/incompatible", "source": "project_local_environment", "version": "3.12.4" },
+        "tools": [
+          { "tool": "mypy", "available": true, "argv": ["/fixture/services/incompatible/.venv/bin/mypy"], "cwd": "/fixture/services/incompatible", "source": "project_local_environment" },
+          { "tool": "pyright", "available": true, "argv": ["/fixture/services/incompatible/.venv/bin/pyright"], "cwd": "/fixture/services/incompatible", "source": "project_local_environment" },
+          { "tool": "pytest", "available": true, "argv": ["/fixture/services/incompatible/.venv/bin/pytest"], "cwd": "/fixture/services/incompatible", "source": "project_local_environment" },
+          { "tool": "ruff", "available": true, "argv": ["/fixture/services/incompatible/.venv/bin/ruff"], "cwd": "/fixture/services/incompatible", "source": "project_local_environment" }
+        ],
+        "projectKey": "<sha256>", "contextFingerprint": "<sha256>", "outcome": "unsupported",
+        "reasons": [{ "code": "incompatible_interpreter", "tool": "python" }]
+      }
+    }
+  ]
+}

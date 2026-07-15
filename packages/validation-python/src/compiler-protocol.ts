@@ -1,7 +1,6 @@
-import type { ValidationDiagnosticToolProvenance } from "@the-open-engine/opcore-contracts";
+import type { PythonInterpreterProvenance, ValidationDiagnosticToolProvenance } from "@the-open-engine/opcore-contracts";
 import { hasExactProtocolKeys, hasOnlyProtocolKeys, isProtocolRecord } from "./protocol-validation.js";
 import type { PythonMaterializedSourceFile } from "./source-files.js";
-import type { ResolvedPythonInterpreter } from "./toolchain-resolver.js";
 
 export const PYTHON_COMPILE_PROTOCOL = "opcore.python.compile.v1";
 
@@ -105,7 +104,7 @@ export function compilerRequest(files: readonly PythonMaterializedSourceFile[]):
 export function parseCompilerResponse(
   stdout: string,
   files: readonly PythonMaterializedSourceFile[],
-  interpreter: ResolvedPythonInterpreter
+  interpreter: PythonInterpreterProvenance
 ): PythonCompilerProtocolResult {
   const parsed = parseJsonObject(stdout);
   if (parsed === undefined || !hasExactProtocolKeys(parsed, ["protocol", "interpreter", "results"])) {
@@ -126,10 +125,10 @@ export function parseCompilerResponse(
   return { status: "parsed", findings };
 }
 
-export function compilerToolProvenance(interpreter: ResolvedPythonInterpreter): ValidationDiagnosticToolProvenance {
+export function compilerToolProvenance(interpreter: PythonInterpreterProvenance): ValidationDiagnosticToolProvenance {
   return {
     name: "python",
-    command: interpreter.command,
+    command: interpreter.argv.join(" "),
     version: interpreter.version,
     source: interpreter.source,
     cwd: interpreter.cwd
@@ -190,9 +189,9 @@ function validCompilerLocationShape(location: Omit<PythonCompilerFinding, "path"
   return true;
 }
 
-function validInterpreter(value: unknown, expected: ResolvedPythonInterpreter): boolean {
+function validInterpreter(value: unknown, expected: PythonInterpreterProvenance): boolean {
   return isProtocolRecord(value) && hasExactProtocolKeys(value, ["executable", "version"]) &&
-    value.executable === expected.command && value.version === expected.version;
+    value.executable === expected.executable && value.version === expected.version;
 }
 
 function parseJsonObject(stdout: string): Record<string, unknown> | undefined {

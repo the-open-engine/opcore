@@ -1,10 +1,12 @@
 import type { ValidationWorkspace, ValidationWorkspaceFileSet, ValidationWorkspaceReadFileResult } from "@the-open-engine/opcore-validation";
 import { calculateValidationFileChecksum } from "@the-open-engine/opcore-validation";
+import type { PythonProjectWorkspace } from "@the-open-engine/opcore-validation-python";
 import type { JsonRpcPeer } from "./json-rpc.js";
 import type { Baseline, ChangeSet, EncodedBlob, InitializedParams, InitializeParams, InlineBlob, JsonObject } from "./protocol.js";
 
 export type AspHostValidationWorkspace = {
   workspace: ValidationWorkspace;
+  pythonWorkspace: PythonProjectWorkspace;
   readBlobText(blobId: string): Promise<string>;
   readInlineOrBlobText(blob: string | InlineBlob | undefined, label: string): Promise<string>;
   checksumForBlob(blobId: string): Promise<string>;
@@ -76,6 +78,7 @@ export function createAspHostValidationWorkspace(
 
   const workspace: ValidationWorkspace = {
     readFile,
+    listFiles: async () => listRepoFiles(),
     listRepoFiles,
     listPackageFiles: async (_packageName, packageRoot) => {
       const files = await listRepoFiles();
@@ -88,8 +91,25 @@ export function createAspHostValidationWorkspace(
     }
   };
 
+  const pythonWorkspace: PythonProjectWorkspace = {
+    read: async (path) => {
+      const result = await readFile(path);
+      return result.status === "found" ? result.content : undefined;
+    },
+    list: async () => (await listTree()).filter(isFileLikeTreeEntry).map((entry) => entry.path).sort(),
+    exists: async (path) => (await readFile(path)).status === "found",
+    realpath: async (path) => {
+      let entry = entryByPath.get(path);
+      if (entry === undefined) entry = (await listTree([path])).find((candidate) => candidate.path === path);
+      if (entry === undefined || entry.kind === undefined) return { path, symlink: false, unavailable: true };
+      return entry.kind === "file" ? { path, symlink: false } : { path, symlink: true };
+    },
+    executableExists: async () => false
+  };
+
   return {
     workspace,
+    pythonWorkspace,
     readBlobText,
     readInlineOrBlobText: async (blob, label) => {
       if (typeof blob === "string") return readBlobText(blob);
@@ -110,12 +130,15 @@ function normalizeTreeEntry(value: unknown): TreeEntry | undefined {
   if (!value || typeof value !== "object") return undefined;
   const entry = value as { path?: unknown; blobId?: unknown; kind?: unknown };
   if (typeof entry.path !== "string" || typeof entry.blobId !== "string") return undefined;
-  if (entry.kind !== undefined && entry.kind !== "file") return undefined;
   return {
     path: entry.path,
     blobId: entry.blobId,
     kind: typeof entry.kind === "string" ? entry.kind : undefined
   };
+}
+
+function isFileLikeTreeEntry(entry: TreeEntry): boolean {
+  return entry.kind === undefined || entry.kind === "file" || entry.kind === "symlink";
 }
 
 function decodeBlob(blob: EncodedBlob): string {

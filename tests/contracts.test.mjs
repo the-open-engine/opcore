@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
   GRAPH_SCHEMA_VERSION,
+  PYTHON_PROJECT_CONTEXT_SCHEMA_ID,
   commandLatencyTelemetryArtifactPolicy,
   commandTimingDegradationReasons,
   commandTimingProcessStates,
@@ -100,6 +101,7 @@ import {
   validateRequiredContextDocPolicy,
   validateValidationRequestPayload,
   validatePreWriteValidationReceipt,
+  validatePythonProjectContext,
   validateValidationResultPayload,
   validateValidationStatusPayload
 } from "../packages/contracts/dist/index.js";
@@ -859,6 +861,88 @@ describe("Opcore shared contracts", () => {
         ),
       /must not include/
     );
+  });
+
+  it("validates canonical Python project contexts and rejects invalid outcomes and provenance", () => {
+    const context = validPythonProjectContext();
+    assert.equal(validatePythonProjectContext(context).schemaId, PYTHON_PROJECT_CONTEXT_SCHEMA_ID);
+    assert.equal(
+      validateValidationResultPayload(validValidationResult({ pythonProjectContexts: [context] })).pythonProjectContexts[0].projectRoot,
+      "services/api"
+    );
+    assert.throws(() => validatePythonProjectContext({ ...context, outcome: "ready" }), /outcome/);
+    assert.throws(
+      () => validatePythonProjectContext({ ...context, interpreter: { ...context.interpreter, source: "guessed" } }),
+      /source/
+    );
+    for (const field of ["implementation", "platform", "architecture", "abi", "soabi"]) {
+      assert.throws(
+        () => validatePythonProjectContext({ ...context, interpreter: { ...context.interpreter, [field]: 42 } }),
+        new RegExp(field)
+      );
+    }
+    for (const field of ["abi", "soabi"]) {
+      const interpreter = { ...context.interpreter };
+      delete interpreter[field];
+      assert.throws(() => validatePythonProjectContext({ ...context, interpreter }), new RegExp(field));
+    }
+    assert.throws(
+      () => validatePythonProjectContext({ ...context, buildSystem: { ...context.buildSystem, requires: [""] } }),
+      /buildSystem requires/
+    );
+    assert.throws(
+      () => validatePythonProjectContext({ ...context, interpreter: { ...context.interpreter, version: "garbage" } }),
+      /version/
+    );
+    assert.throws(
+      () => validatePythonProjectContext({
+        ...context,
+        tools: [{
+          tool: "mypy",
+          available: true,
+          executable: "/repo/.venv/bin/mypy",
+          argv: ["/repo/.venv/bin/mypy"],
+          cwd: "/repo",
+          source: "project_local_environment"
+        }]
+      }),
+      /version/
+    );
+    assert.throws(() => validatePythonProjectContext({ ...context, contextFingerprint: "secret" }), /fingerprint/i);
+  });
+
+  it("rejects schema-forbidden Python project-context properties recursively", () => {
+    const context = validPythonProjectContext();
+    const invalidContexts = [
+      { ...context, unexpected: true },
+      { ...context, layout: { ...context.layout, unexpected: true } },
+      { ...context, evidence: [{ ...context.evidence[0], unexpected: true }] },
+      { ...context, targetRuntime: { ...context.targetRuntime, unexpected: true } },
+      { ...context, managers: [{ ...context.managers[0], unexpected: true }] },
+      { ...context, buildSystem: { ...context.buildSystem, unexpected: true } },
+      { ...context, interpreter: { ...context.interpreter, unexpected: true } },
+      {
+        ...context,
+        tools: [{
+          tool: "mypy",
+          available: true,
+          executable: "/repo/services/api/.venv/bin/mypy",
+          argv: ["/repo/services/api/.venv/bin/mypy"],
+          cwd: "/repo/services/api",
+          source: "project_local_environment",
+          version: "1.8.0",
+          unexpected: true
+        }]
+      },
+      {
+        ...context,
+        outcome: "degraded",
+        reasons: [{ code: "tool_unavailable", tool: "mypy", message: "mypy is unavailable", unexpected: true }]
+      }
+    ];
+    for (const invalid of invalidContexts) {
+      assert.throws(() => validatePythonProjectContext(invalid), /unexpected|properties/i);
+    }
   });
 
   it("validates validation result manifest metadata", () => {
@@ -3559,6 +3643,12 @@ function validManagedToolDescriptor(overrides = {}) {
         graphModes: ["optional", "required"],
         hypothetical: true,
         statusSurfaces: ["status", "doctor"],
+        pythonProjectContext: {
+          schemaId: "opcore.python.project-context.v1",
+          outcomes: ["resolved", "degraded", "unsupported", "ambiguous"],
+          readOnly: true,
+          installs: false
+        },
         writeGate: {
           initScopes: ["repo", "global"],
           harnesses: ["claude-code", "codex"],
@@ -3617,6 +3707,45 @@ function validManagedToolDescriptor(overrides = {}) {
       }
     ],
     optionalSurfaces: expectedOptionalAnalysisSurfaces(),
+    ...overrides
+  };
+}
+
+function validPythonProjectContext(overrides = {}) {
+  return {
+    schemaId: "opcore.python.project-context.v1",
+    schemaVersion: 1,
+    target: "services/api/src/app.py",
+    repositoryRoot: "/repo",
+    projectRoot: "services/api",
+    projectBoundary: "services/api",
+    sourceRoots: ["services/api/src"],
+    layout: { kinds: ["src", "package"], paths: ["services/api/src"] },
+    evidence: [{ path: "services/api/pyproject.toml", role: "boundary" }],
+    targetRuntime: { requiresPython: ">=3.12", conflicts: [] },
+    managers: [{ kind: "uv", configFiles: ["services/api/pyproject.toml"], lockFiles: ["services/api/uv.lock"] }],
+    buildSystem: {
+      configFile: "services/api/pyproject.toml",
+      backend: "hatchling.build",
+      requires: ["hatchling>=1"]
+    },
+    interpreter: {
+      executable: "/repo/services/api/.venv/bin/python",
+      argv: ["/repo/services/api/.venv/bin/python"],
+      cwd: "/repo/services/api",
+      source: "project_local_environment",
+      version: "3.12.4",
+      implementation: "CPython",
+      platform: "linux",
+      architecture: "x86_64",
+      abi: "cpython-312",
+      soabi: "cpython-312-x86_64-linux-gnu"
+    },
+    tools: [],
+    projectKey: `sha256:${"1".repeat(64)}`,
+    contextFingerprint: `sha256:${"2".repeat(64)}`,
+    outcome: "resolved",
+    reasons: [],
     ...overrides
   };
 }

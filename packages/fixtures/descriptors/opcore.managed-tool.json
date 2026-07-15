@@ -334,6 +334,17 @@
         "status",
         "doctor"
       ],
+      "pythonProjectContext": {
+        "schemaId": "opcore.python.project-context.v1",
+        "outcomes": [
+          "resolved",
+          "degraded",
+          "unsupported",
+          "ambiguous"
+        ],
+        "readOnly": true,
+        "installs": false
+      },
       "writeGate": {
         "initScopes": [
           "repo",

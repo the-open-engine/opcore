@@ -8,6 +8,7 @@ import type {
   ValidationFailureCategory,
   ValidationRequest,
   ValidationResult,
+  PythonProjectContext,
   ValidationScopeKind,
   ValidationSkippedCheck
 } from "@the-open-engine/opcore-contracts";
@@ -93,6 +94,7 @@ interface CheckExecution {
   diagnostics: ValidationDiagnostic[];
   diagnosticsByCheck: Map<string, ValidationDiagnostic[]>;
   skippedChecks: ValidationSkippedCheck[];
+  pythonProjectContexts: PythonProjectContext[];
   failureResult?: ValidationResult;
 }
 
@@ -128,6 +130,7 @@ interface SingleCheckOutcome {
   failureMessage?: string;
   failureStatus?: Extract<ValidationCheckRunStatus, "infrastructure_failure" | "provider_failure" | "unsupported_request">;
   providerError?: ValidationGraphProviderError;
+  pythonProjectContexts: readonly PythonProjectContext[];
 }
 
 export function createValidationRunner(options: CreateValidationRunnerOptions): ValidationRunner {
@@ -240,7 +243,8 @@ async function runIntroducedValidationIncremental(args: PreparedValidationArgs):
     runs: [],
     diagnostics: [],
     diagnosticsByCheck: new Map(),
-    skippedChecks: []
+    skippedChecks: [],
+    pythonProjectContexts: []
   };
   const quietOptions = withoutCheckCompleteOptions(args.options);
   for (const check of args.selectedChecks) {
@@ -284,6 +288,7 @@ function mergeCheckExecution(target: CheckExecution, source: CheckExecution): vo
   target.runs.push(...source.runs);
   target.diagnostics.push(...source.diagnostics);
   target.skippedChecks.push(...source.skippedChecks);
+  mergePythonProjectContexts(target.pythonProjectContexts, source.pythonProjectContexts);
   for (const [checkId, diagnostics] of source.diagnosticsByCheck) {
     target.diagnosticsByCheck.set(checkId, diagnostics);
   }
@@ -386,7 +391,8 @@ async function executeSelectedChecks(args: ExecuteChecksArgs): Promise<CheckExec
     runs: [],
     diagnostics: [],
     diagnosticsByCheck: new Map(),
-    skippedChecks: []
+    skippedChecks: [],
+    pythonProjectContexts: []
   };
   for (const check of args.selectedChecks) {
     const skippedCheck = skippedGraphCheck(check, args.graph.status);
@@ -441,6 +447,7 @@ async function executeSelectedChecks(args: ExecuteChecksArgs): Promise<CheckExec
       continue;
     }
     if (outcome.run !== undefined) execution.runs.push(outcome.run);
+    mergePythonProjectContexts(execution.pythonProjectContexts, outcome.pythonProjectContexts);
     execution.diagnosticsByCheck.set(check.id, [...outcome.diagnostics]);
     execution.diagnostics.push(...outcome.diagnostics);
     await emitCheckComplete(args, outcomeCheckCompleteEvent(check, outcome));
@@ -500,6 +507,7 @@ function introducedExecution(before: CheckExecution, after: CheckExecution): Che
     diagnostics,
     diagnosticsByCheck,
     skippedChecks: after.skippedChecks,
+    pythonProjectContexts: after.pythonProjectContexts,
     failureResult: after.failureResult
   };
 }
@@ -580,6 +588,7 @@ async function runSingleCheck(check: ValidationCheckDefinition, args: ExecuteChe
       normalized.failureMessage ?? (failureStatus === undefined ? undefined : `Validation check returned ${status}`);
     return {
       diagnostics,
+      pythonProjectContexts: normalized.pythonProjectContexts ?? [],
       failureMessage,
       failureStatus,
       run: {
@@ -595,6 +604,7 @@ async function runSingleCheck(check: ValidationCheckDefinition, args: ExecuteChe
     if (error instanceof ValidationGraphProviderError) {
       return {
         diagnostics: [],
+        pythonProjectContexts: [],
         providerError: error,
         run: {
           checkId: check.id,
@@ -607,6 +617,7 @@ async function runSingleCheck(check: ValidationCheckDefinition, args: ExecuteChe
     }
     return {
       diagnostics: [],
+      pythonProjectContexts: [],
       failureMessage: errorMessage(error),
       failureStatus: "infrastructure_failure",
       run: {
@@ -662,6 +673,7 @@ function checkRunFailureResult(
     runs: execution.runs,
     skippedChecks: execution.skippedChecks,
     diagnostics: execution.diagnostics,
+    pythonProjectContexts: execution.pythonProjectContexts,
     generatedAt: args.clock.isoNow(),
     durationMs: elapsed(args.totalStartedAt, args.clock.nowMs()),
     graphStatus: args.graph.status,
@@ -684,6 +696,7 @@ function checkProviderFailureResult(
     runs: execution.runs,
     skippedChecks: execution.skippedChecks,
     diagnostics: execution.diagnostics,
+    pythonProjectContexts: execution.pythonProjectContexts,
     generatedAt: args.clock.isoNow(),
     durationMs: elapsed(args.totalStartedAt, args.clock.nowMs()),
     graphStatus: error.status,
@@ -706,6 +719,7 @@ function graphRequirementFailureResult(
     runs: execution.runs,
     skippedChecks: execution.skippedChecks,
     diagnostics: execution.diagnostics,
+    pythonProjectContexts: execution.pythonProjectContexts,
     generatedAt: args.clock.isoNow(),
     durationMs: elapsed(args.totalStartedAt, args.clock.nowMs()),
     graphStatus: args.graph.status,
@@ -729,6 +743,7 @@ function finalValidationResult(
     runs: execution.runs,
     skippedChecks: execution.skippedChecks,
     diagnostics: execution.diagnostics,
+    pythonProjectContexts: execution.pythonProjectContexts,
     generatedAt: clock.isoNow(),
     durationMs: elapsed(totalStartedAt, clock.nowMs()),
     graphStatus
@@ -813,8 +828,15 @@ function normalizeCheckResult(result: ValidationCheckResult | readonly Validatio
     diagnostics: result.diagnostics ?? [],
     status: result.status,
     outcome: result.outcome,
-    failureMessage: result.failureMessage
+    failureMessage: result.failureMessage,
+    pythonProjectContexts: result.pythonProjectContexts
   };
+}
+
+function mergePythonProjectContexts(target: PythonProjectContext[], source: readonly PythonProjectContext[]): void {
+  const byTarget = new Map(target.map((context) => [context.target, context]));
+  for (const context of source) byTarget.set(context.target, context);
+  target.splice(0, target.length, ...[...byTarget.values()].sort((left, right) => left.target.localeCompare(right.target)));
 }
 
 function isValidationDiagnosticArray(

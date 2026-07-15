@@ -155,6 +155,45 @@ function validationResultWith(overrides = {}) {
   };
 }
 
+function pythonProjectContextWith(overrides = {}) {
+  return {
+    schemaId: "opcore.python.project-context.v1",
+    schemaVersion: 1,
+    target: "services/api/src/app.py",
+    repositoryRoot: "/repo",
+    projectRoot: "services/api",
+    projectBoundary: "services/api",
+    sourceRoots: ["services/api/src"],
+    layout: { kinds: ["package", "src"], paths: ["services/api/src"] },
+    evidence: [{ path: "services/api/pyproject.toml", role: "boundary" }],
+    targetRuntime: { requiresPython: ">=3.12", conflicts: [] },
+    managers: [{ kind: "uv", configFiles: ["services/api/pyproject.toml"], lockFiles: ["services/api/uv.lock"] }],
+    buildSystem: {
+      configFile: "services/api/pyproject.toml",
+      backend: "hatchling.build",
+      requires: ["hatchling>=1"]
+    },
+    interpreter: {
+      executable: "/repo/services/api/.venv/bin/python",
+      argv: ["/repo/services/api/.venv/bin/python"],
+      cwd: "/repo/services/api",
+      source: "project_local_environment",
+      version: "3.12.4",
+      implementation: "CPython",
+      platform: "linux",
+      architecture: "x86_64",
+      abi: "cpython-312",
+      soabi: "cpython-312-x86_64-linux-gnu"
+    },
+    tools: [],
+    projectKey: `sha256:${"1".repeat(64)}`,
+    contextFingerprint: `sha256:${"2".repeat(64)}`,
+    outcome: "resolved",
+    reasons: [],
+    ...overrides
+  };
+}
+
 function preWriteValidationReceiptWith(overrides = {}) {
   return {
     schemaVersion: 1,
@@ -790,6 +829,39 @@ describe("Opcore JSON schema wire constraints", () => {
       isValidDefinition("ValidationResult", validationResultWith({ diagnostics: [{ ...diagnostic, tool: { name: "python", command: "" } }] })),
       false
     );
+  });
+
+  it("validates Python project-context wire identity and typed outcome vocabulary", () => {
+    const context = pythonProjectContextWith();
+    assert.equal(isValidDefinition("PythonProjectContext", context), true);
+    assert.equal(isValidDefinition("ValidationResult", validationResultWith({ pythonProjectContexts: [context] })), true);
+    assert.equal(isValidDefinition("PythonProjectContext", { ...context, schemaId: "python.context.v0" }), false);
+    assert.equal(isValidDefinition("PythonProjectContext", { ...context, outcome: "ready" }), false);
+    assert.equal(isValidDefinition("PythonProjectContext", { ...context, contextFingerprint: "secret" }), false);
+    assert.equal(isValidDefinition("PythonProjectContext", {
+      ...context,
+      interpreter: { ...context.interpreter, version: "garbage" }
+    }), false);
+    for (const field of ["abi", "soabi"]) {
+      const interpreter = { ...context.interpreter };
+      delete interpreter[field];
+      assert.equal(isValidDefinition("PythonProjectContext", { ...context, interpreter }), false, field);
+    }
+    assert.equal(isValidDefinition("PythonProjectContext", {
+      ...context,
+      tools: [{
+        tool: "mypy",
+        available: true,
+        executable: "/repo/.venv/bin/mypy",
+        argv: ["/repo/.venv/bin/mypy"],
+        cwd: "/repo",
+        source: "project_local_environment"
+      }]
+    }), false);
+    assert.equal(isValidDefinition("PythonProjectContext", {
+      ...context,
+      buildSystem: { ...context.buildSystem, requires: [""] }
+    }), false);
   });
 
   it("rejects absolute and parent-directory edit-change paths", () => {
@@ -3377,6 +3449,12 @@ function validManagedToolDescriptor(overrides = {}) {
         graphModes: ["optional", "required"],
         hypothetical: true,
         statusSurfaces: ["status", "doctor"],
+        pythonProjectContext: {
+          schemaId: "opcore.python.project-context.v1",
+          outcomes: ["resolved", "degraded", "unsupported", "ambiguous"],
+          readOnly: true,
+          installs: false
+        },
         writeGate: {
           initScopes: ["repo", "global"],
           harnesses: ["claude-code", "codex"],

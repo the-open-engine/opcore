@@ -76,6 +76,7 @@ export const bundledExternalRuntimePackageNames = Object.freeze([
   "path-browserify",
   "picomatch",
   "semver",
+  "smol-toml",
   "tinyglobby",
   "ts-api-utils",
   "ts-morph",

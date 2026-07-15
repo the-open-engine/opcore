@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { spawnSync } from "node:child_process";
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -24,9 +24,23 @@ export function stageOpcoreBundle(options = {}) {
   }
 
   for (const packageName of bundledExternalRuntimePackageNames) {
-    const packageDir = join(repoRoot, "node_modules", ...packageName.split("/"));
+    const packageDir = externalRuntimePackageDir(packageName);
     stagePackage(packageName, packageDir, opcoreNodeModulesDir, { disableLifecycleScripts: true });
   }
+}
+
+export function externalRuntimePackageDir(packageName) {
+  const suffix = ["node_modules", ...packageName.split("/")];
+  const candidates = [
+    join(repoRoot, ...suffix),
+    join(repoRoot, "packages", "opcore", ...suffix),
+    join(repoRoot, "packages", "validation-python", ...suffix)
+  ];
+  const packageDir = candidates.find((candidate) => existsSync(join(candidate, "package.json")));
+  if (packageDir === undefined) {
+    throw new Error(`Bundled external runtime package is not installed: ${packageName}`);
+  }
+  return packageDir;
 }
 
 export function clearOpcoreBundle(options = {}) {

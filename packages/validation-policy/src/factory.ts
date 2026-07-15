@@ -3,7 +3,7 @@ import type { ValidationCheckDefinition } from "@the-open-engine/opcore-validati
 import { createValidationCheckRegistry } from "@the-open-engine/opcore-validation";
 import { createCloneValidationChecks } from "@the-open-engine/opcore-validation-clone";
 import { createDocsValidationChecks, type CreateDocsValidationChecksOptions } from "@the-open-engine/opcore-validation-docs";
-import { createPythonValidationChecks } from "@the-open-engine/opcore-validation-python";
+import { createNodePythonProjectWorkspace, createPythonValidationChecks } from "@the-open-engine/opcore-validation-python";
 import { createRustValidationChecks } from "@the-open-engine/opcore-validation-rust";
 import { createTypeScriptValidationChecks } from "@the-open-engine/opcore-validation-typescript";
 import { readOpcoreRepoConfig } from "./config.js";
@@ -35,6 +35,7 @@ export function createBuiltInValidationChecks(
   repoRoot?: string
 ): readonly ValidationCheckDefinition[] {
   const checksConfig = config?.validation.checks;
+  const pythonWorkspace = options.pythonWorkspace ?? (repoRoot === undefined ? undefined : createNodePythonProjectWorkspace(repoRoot));
   return [
     ...createTypeScriptValidationChecks({
       fileLength: checksConfig?.typescript?.fileLength,
@@ -51,7 +52,12 @@ export function createBuiltInValidationChecks(
       deadCode: checksConfig?.typescript?.deadCode
     }),
     ...createRustValidationChecks(rustValidationOptions(config)),
-    ...createPythonValidationChecks(repoRoot !== undefined ? { repoRoot } : {}),
+    ...createPythonValidationChecks(
+      {
+        ...(options.pythonProjectContexts === undefined ? {} : { contexts: options.pythonProjectContexts }),
+        ...(pythonWorkspace === undefined ? {} : { nodeWorkspace: pythonWorkspace })
+      }
+    ),
     ...createDocsValidationChecks(docsValidationOptions(checksConfig?.docs)),
     ...cloneChecks(checksConfig?.clone, options)
   ];

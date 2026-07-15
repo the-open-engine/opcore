@@ -1,0 +1,3 @@
+import helper
+
+VALUE = helper.VALUE

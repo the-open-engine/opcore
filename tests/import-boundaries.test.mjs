@@ -129,7 +129,7 @@ describe("package import boundaries", () => {
         }
         if (packageDir === "validation-python") {
           assert.equal(
-            ["@the-open-engine/opcore-contracts", "@the-open-engine/opcore-validation"].includes(source),
+            ["@the-open-engine/opcore-contracts", "@the-open-engine/opcore-validation", "smol-toml"].includes(source),
             true,
             `${file} imports ${source}`
           );

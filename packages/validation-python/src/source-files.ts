@@ -1,5 +1,8 @@
+import type { PythonProjectContext } from "@the-open-engine/opcore-contracts";
 import type { ValidationCheckContext, ValidationCheckResult, ValidationFileView } from "@the-open-engine/opcore-validation";
 import { normalizeValidationFileViewPath } from "@the-open-engine/opcore-validation";
+import { resolvePythonProjectContexts, type ResolvePythonProjectContextsOptions } from "./project-context.js";
+import { createValidationFileViewPythonWorkspace, type PythonProjectWorkspace } from "./project-workspace.js";
 
 export const pythonSourceExtensions = [".py", ".pyi"] as const;
 
@@ -27,7 +30,45 @@ interface ParsedPythonImport {
   member?: string;
 }
 
-const sourceSetCache = new WeakMap<ValidationFileView, Promise<PythonMaterializedSourceSet>>();
+export type PythonProjectContextResolver = (context: ValidationCheckContext) => Promise<readonly PythonProjectContext[]>;
+
+export function createPythonProjectContextResolver(
+  options: Omit<ResolvePythonProjectContextsOptions, "repoRoot" | "targets" | "workspace"> & {
+    contexts?: readonly PythonProjectContext[];
+    nodeWorkspace?: PythonProjectWorkspace;
+  } = {}
+): PythonProjectContextResolver {
+  const cache = new WeakMap<ValidationFileView, Promise<readonly PythonProjectContext[]>>();
+  return (context) => {
+    const existing = cache.get(context.fileView);
+    if (existing !== undefined) return existing;
+    const targets = pythonInputSet(context);
+    const reusable = context.fileView.overlays.length === 0 && options.contexts !== undefined &&
+      targets.every((target) => options.contexts?.some((candidate) => candidate.target === target));
+    const promise = targets.length === 0
+      ? Promise.resolve([])
+      : reusable
+        ? Promise.resolve(options.contexts?.filter((candidate) => targets.includes(candidate.target)) ?? [])
+      : resolvePythonProjectContexts({
+          repoRoot: context.request.repo.repoRoot ?? process.cwd(),
+          targets,
+          workspace: createValidationFileViewPythonWorkspace(context.fileView, undefined, options.nodeWorkspace),
+          ...withoutContexts(options)
+        });
+    cache.set(context.fileView, promise);
+    return promise;
+  };
+}
+
+function withoutContexts(
+  options: Omit<ResolvePythonProjectContextsOptions, "repoRoot" | "targets" | "workspace"> & {
+    contexts?: readonly PythonProjectContext[];
+    nodeWorkspace?: PythonProjectWorkspace;
+  }
+): Omit<ResolvePythonProjectContextsOptions, "repoRoot" | "targets" | "workspace"> {
+  const { contexts: _contexts, nodeWorkspace: _nodeWorkspace, ...resolverOptions } = options;
+  return resolverOptions;
+}
 
 export function isPythonSourcePath(path: string): boolean {
   return pythonSourceExtensions.some((extension) => path.endsWith(extension));
@@ -63,15 +104,17 @@ export function skippedPythonInputResult(context: ValidationCheckContext): Valid
   };
 }
 
-export async function materializePythonSources(context: ValidationCheckContext): Promise<PythonMaterializedSourceSet> {
-  const cached = sourceSetCache.get(context.fileView);
-  if (cached !== undefined) return cached;
-  const promise = materializePythonSourcesUncached(context);
-  sourceSetCache.set(context.fileView, promise);
-  return promise;
+export async function materializePythonSources(
+  context: ValidationCheckContext,
+  projectContexts: readonly PythonProjectContext[] = []
+): Promise<PythonMaterializedSourceSet> {
+  return materializePythonSourcesUncached(context, projectContexts);
 }
 
-async function materializePythonSourcesUncached(context: ValidationCheckContext): Promise<PythonMaterializedSourceSet> {
+async function materializePythonSourcesUncached(
+  context: ValidationCheckContext,
+  projectContexts: readonly PythonProjectContext[]
+): Promise<PythonMaterializedSourceSet> {
   const initialPaths = pythonInputSet(context);
   const rootPaths: string[] = [];
   const pending = [...initialPaths];
@@ -91,7 +134,7 @@ async function materializePythonSourcesUncached(context: ValidationCheckContext)
     if (initialPaths.includes(path)) rootPaths.push(path);
 
     for (const parsedImport of parsePythonImports(result.content)) {
-      const resolvedPath = await resolvePythonImport(context, path, parsedImport);
+      const resolvedPath = await resolvePythonImport(context, path, parsedImport, projectContexts);
       if (resolvedPath === undefined) continue;
       repoImports.push({ fromPath: path, specifier: parsedImport.specifier, resolvedPath });
       if (!visited.has(resolvedPath) && !sourceFileByPath.has(resolvedPath)) pending.push(resolvedPath);
@@ -142,11 +185,14 @@ function parsePythonImports(content: string): readonly ParsedPythonImport[] {
 async function resolvePythonImport(
   context: ValidationCheckContext,
   fromPath: string,
-  parsedImport: ParsedPythonImport
+  parsedImport: ParsedPythonImport,
+  projectContexts: readonly PythonProjectContext[]
 ): Promise<string | undefined> {
-  const moduleBase = moduleBasePath(fromPath, parsedImport.specifier);
-  if (moduleBase === undefined) return undefined;
-  return resolveModulePath(context, moduleBase);
+  for (const moduleBase of moduleBasePaths(fromPath, parsedImport.specifier, projectContexts)) {
+    const resolved = await resolveModulePath(context, moduleBase);
+    if (resolved !== undefined) return resolved;
+  }
+  return undefined;
 }
 
 async function resolveModulePath(context: ValidationCheckContext, moduleBase: string): Promise<string | undefined> {
@@ -163,19 +209,37 @@ async function resolveModulePath(context: ValidationCheckContext, moduleBase: st
   return undefined;
 }
 
-function moduleBasePath(fromPath: string, specifier: string): string | undefined {
+function moduleBasePaths(
+  fromPath: string,
+  specifier: string,
+  projectContexts: readonly PythonProjectContext[]
+): readonly string[] {
   const leadingDots = /^\.*/u.exec(specifier)?.[0].length ?? 0;
   const moduleSpecifier = specifier.slice(leadingDots);
   const moduleParts = moduleSpecifier.length === 0 ? [] : moduleSpecifier.split(".");
-  if (leadingDots === 0) return moduleParts.join("/");
+  if (leadingDots === 0) {
+    const module = moduleParts.join("/");
+    const owning = owningContext(fromPath, projectContexts);
+    const roots = owning?.sourceRoots ?? ["."];
+    return roots.map((root) => root === "." ? module : `${root}/${module}`);
+  }
 
   const baseParts = fromPath.split("/");
   baseParts.pop();
   for (let index = 1; index < leadingDots; index += 1) {
-    if (baseParts.length === 0) return undefined;
+    if (baseParts.length === 0) return [];
     baseParts.pop();
   }
-  return [...baseParts, ...moduleParts].filter((part) => part.length > 0).join("/");
+  return [[...baseParts, ...moduleParts].filter((part) => part.length > 0).join("/")];
+}
+
+function owningContext(path: string, contexts: readonly PythonProjectContext[]): PythonProjectContext | undefined {
+  return [...contexts]
+    .filter((context) => context.target === path || context.projectRoot === "." || path.startsWith(`${context.projectRoot}/`))
+    .sort((left, right) => {
+      const exact = Number(right.target === path) - Number(left.target === path);
+      return exact !== 0 ? exact : right.projectRoot.length - left.projectRoot.length;
+    })[0];
 }
 
 function moduleCandidates(moduleBase: string): readonly string[] {

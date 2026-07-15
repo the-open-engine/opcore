@@ -3,9 +3,9 @@ import type { ValidationCheckDefinition } from "@the-open-engine/opcore-validati
 import { PYTHON_IMPORT_GRAPH_CHECK_ID } from "./check-ids.js";
 import { pythonCheckAdapter, pythonCheckOwner, supportedPythonValidationScopes } from "./check-constants.js";
 import { importGraphRequirements } from "./graph-requirements.js";
-import { materializePythonSources, toFileNodeId } from "./source-files.js";
+import { materializePythonSources, toFileNodeId, type PythonProjectContextResolver } from "./source-files.js";
 
-export function createImportGraphCheck(): ValidationCheckDefinition {
+export function createImportGraphCheck(resolveContexts?: PythonProjectContextResolver): ValidationCheckDefinition {
   return {
     id: PYTHON_IMPORT_GRAPH_CHECK_ID,
     owner: pythonCheckOwner,
@@ -15,7 +15,8 @@ export function createImportGraphCheck(): ValidationCheckDefinition {
     requiresGraph: true,
     graphRequirements: importGraphRequirements,
     run: async (context) => {
-      const [sourceSet, edges] = await Promise.all([materializePythonSources(context), context.graph.importsFrom()]);
+      const [contexts, edges] = await Promise.all([resolveContexts?.(context) ?? [], context.graph.importsFrom()]);
+      const sourceSet = await materializePythonSources(context, contexts);
       const diagnostics = sourceSet.repoImports
         .filter((repoImport) => !edges.some((edge) => matchesDirectedFileEdge(edge, repoImport.fromPath, repoImport.resolvedPath)))
         .map((repoImport): ValidationDiagnostic => ({

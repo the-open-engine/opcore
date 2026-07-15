@@ -16,6 +16,9 @@ export function compactScanValidationResult(
   if (result.graphStatus !== undefined) compact.graphStatus = result.graphStatus;
   if (result.failure !== undefined) compact.failure = result.failure;
   if (result.refusal !== undefined) compact.refusal = result.refusal;
+  if (result.pythonProjectContexts !== undefined) {
+    compact.pythonProjectContexts = [...result.pythonProjectContexts];
+  }
   if (result.manifest !== undefined) {
     compact.manifest = {
       schemaVersion: result.manifest.schemaVersion,

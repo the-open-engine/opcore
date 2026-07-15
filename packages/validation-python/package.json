@@ -25,7 +25,8 @@
   ],
   "dependencies": {
     "@the-open-engine/opcore-contracts": "0.2.0",
-    "@the-open-engine/opcore-validation": "0.2.0"
+    "@the-open-engine/opcore-validation": "0.2.0",
+    "smol-toml": "1.6.0"
   },
   "engines": {
     "node": ">=22"

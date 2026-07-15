@@ -4,6 +4,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { readOpcoreRuntimeInfo } from "./runtime-info.js";
 import { resolveRepo, validationPolicySummary } from "./status.js";
+import { createRepoState } from "./status-state.js";
 import { createDefaultValidationStatusPayload } from "./validation-composition.js";
 
 declare const process: {
@@ -17,7 +18,7 @@ const generatedStateIgnores = [
   ".robustness-engine-cache/"
 ];
 
-export function routeOpcoreDoctor(argv: readonly string[], parsed: ParsedCommandArgv): CommandRouterResult {
+export async function routeOpcoreDoctor(argv: readonly string[], parsed: ParsedCommandArgv): Promise<CommandRouterResult> {
   const rest = parsed.args.slice(1);
   if (rest.some((arg) => helpArgs.has(arg))) {
     return createCommandRouterResult({
@@ -55,9 +56,11 @@ export function routeOpcoreDoctor(argv: readonly string[], parsed: ParsedCommand
     });
   }
 
+  const repoState = await createRepoState(resolution.resolution);
   const validationStatus = createDefaultValidationStatusPayload({
     repoRoot: resolution.resolution.root,
-    graphMode: "optional"
+    graphMode: "optional",
+    pythonProjectContexts: repoState.validation.pythonProjectContexts
   });
   const runtimeInfo = readOpcoreRuntimeInfo();
   const policy = validationPolicySummary(resolution.resolution.root, validationStatus.adapterRegistry.checkIds);
