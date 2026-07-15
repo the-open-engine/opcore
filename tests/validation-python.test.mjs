@@ -334,7 +334,7 @@ describe("validation-python adapter", () => {
     }
   });
 
-  it("prefers pyright when pyright project config is present", async () => {
+  it("prefers configured pyright when its project config is present and mypy is available", async () => {
     const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-types-pyright-"));
     try {
       writePassingPythonProtocolShim(repoRoot);
@@ -360,7 +360,11 @@ describe("validation-python adapter", () => {
         checks: createPythonValidationChecks({
           env: { PATH: "" },
           repoRoot,
-          nodeWorkspace: createNodePythonProjectWorkspace(repoRoot)
+          nodeWorkspace: createNodePythonProjectWorkspace(repoRoot),
+          toolArgv: {
+            mypy: [join(repoRoot, ".venv", "bin", "mypy")],
+            pyright: [join(repoRoot, ".venv", "bin", "pyright")]
+          },
         })
       }).runValidation(
         request({
@@ -372,6 +376,95 @@ describe("validation-python adapter", () => {
       assert.equal(result.status, "policy_failure");
       assert.equal(result.diagnostics[0].code, "PYRIGHT_REPORT_ASSIGNMENT_TYPE");
       assert.equal(result.diagnostics[0].path, "pkg/app.py");
+      assert.equal(result.pythonProjectContexts[0].tools.find((tool) => tool.tool === "pyright")?.source, "explicit_override");
+      assert.equal(result.pythonProjectContexts[0].tools.find((tool) => tool.tool === "pyright")?.configFile, "pyrightconfig.json");
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("selects the type checker from overlay after-state config", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-types-overlay-config-"));
+    try {
+      writePassingPythonProtocolShim(repoRoot);
+      writeToolShim(repoRoot, "mypy", "#!/bin/sh\nif [ \"$1\" = \"--version\" ]; then echo 'mypy 1.8.0'; exit 0; fi\necho 'mypy should not run'; exit 1\n");
+      writeToolShim(
+        repoRoot,
+        "pyright",
+        [
+          "#!/bin/sh",
+          "if [ \"$1\" = \"--version\" ]; then echo 'pyright 1.1.0'; exit 0; fi",
+          "echo \"  $1:1:14 - error: overlay config selected Pyright (reportAssignmentType)\"",
+          "exit 1",
+          ""
+        ].join("\n")
+      );
+      const files = {
+        "mypy.ini": "[mypy]\nstrict = true\n",
+        "pkg/app.py": "value: int = 'wrong'\n"
+      };
+      const result = await runner({
+        files,
+        checks: createPythonValidationChecks({
+          env: { PATH: "" },
+          repoRoot,
+          nodeWorkspace: createNodePythonProjectWorkspace(repoRoot)
+        })
+      }).runValidation(request({
+        repo: { repoRoot },
+        checks: [PYTHON_TYPES_CHECK_ID],
+        overlays: [
+          { path: "mypy.ini", action: "delete" },
+          { path: "pyrightconfig.json", action: "write", content: "{}\n" }
+        ]
+      }));
+
+      assert.equal(result.status, "policy_failure");
+      assert.equal(result.diagnostics[0].code, "PYRIGHT_REPORT_ASSIGNMENT_TYPE");
+      assert.match(result.diagnostics[0].message, /overlay config selected Pyright/);
+      assert.equal(result.pythonProjectContexts[0].tools.find((tool) => tool.tool === "pyright")?.configFile, "pyrightconfig.json");
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("rewrites explicit checker config paths into the materialized after-state workspace", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-types-config-path-"));
+    try {
+      writePassingPythonProtocolShim(repoRoot);
+      writeFileSync(join(repoRoot, "mypy.ini"), "[mypy]\nmarker = before\n");
+      writeToolShim(
+        repoRoot,
+        "mypy",
+        [
+          "#!/bin/sh",
+          "if [ \"$3\" = \"--version\" ]; then echo 'mypy 1.8.0'; exit 0; fi",
+          "if [ \"$1\" != \"--config-file\" ] || [ \"$2\" != \"mypy.ini\" ]; then echo \"unexpected config path: $*\" >&2; exit 9; fi",
+          "/usr/bin/grep -q 'marker = after' \"$2\" || { echo 'overlay config was not materialized' >&2; exit 9; }",
+          "exit 0",
+          ""
+        ].join("\n")
+      );
+      const mypy = join(repoRoot, ".venv", "bin", "mypy");
+      const files = {
+        "mypy.ini": "[mypy]\nmarker = before\n",
+        "pkg/app.py": "value: int = 1\n"
+      };
+      const result = await runner({
+        files,
+        checks: createPythonValidationChecks({
+          env: { PATH: "" },
+          repoRoot,
+          nodeWorkspace: createNodePythonProjectWorkspace(repoRoot),
+          toolArgv: { mypy: [mypy, "--config-file", join(repoRoot, "mypy.ini")] }
+        })
+      }).runValidation(request({
+        repo: { repoRoot },
+        checks: [PYTHON_TYPES_CHECK_ID],
+        overlays: [{ path: "mypy.ini", action: "write", content: "[mypy]\nmarker = after\n" }]
+      }));
+
+      assert.equal(result.status, "passed", JSON.stringify(result, null, 2));
     } finally {
       rmSync(repoRoot, { recursive: true, force: true });
     }
@@ -1478,6 +1571,162 @@ describe("Python project-context resolver", () => {
     assert.notEqual(missingBuildVersion.outcome, "resolved");
   });
 
+  it("does not use provider-local executable paths when the injected workspace refuses them", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-host-workspace-"));
+    try {
+      const localPython = join(repoRoot, ".venv", "bin", "python");
+      mkdirSync(dirname(localPython), { recursive: true });
+      writeFileSync(localPython, "#!/bin/sh\nexit 0\n");
+      chmodSync(localPython, 0o755);
+      const files = {
+        "pyproject.toml": "[project]\nname='fixture'\n",
+        "app.py": "VALUE = 1\n"
+      };
+      const result = await runner({
+        files,
+        checks: createPythonValidationChecks({
+          nodeWorkspace: projectWorkspace(files, () => false),
+          processProbe: {
+            run() {
+              throw new Error("provider-local executable must not be probed");
+            }
+          }
+        })
+      }).runValidation(request({
+        repo: { repoRoot },
+        checks: [PYTHON_SOURCE_HYGIENE_CHECK_ID],
+        scope: { kind: "files", files: ["app.py"] }
+      }));
+
+      assert.equal(result.pythonProjectContexts[0].interpreter, undefined);
+      assert.equal(result.pythonProjectContexts[0].outcome, "unsupported");
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("refuses explicit interpreter paths outside the injected workspace trust boundary", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-explicit-host-path-"));
+    try {
+      const localPython = join(repoRoot, ".venv", "bin", "python");
+      mkdirSync(dirname(localPython), { recursive: true });
+      writeFileSync(localPython, "#!/bin/sh\nexit 0\n");
+      chmodSync(localPython, 0o755);
+      const result = await resolvePythonProjectContext({
+        repoRoot,
+        target: "app.py",
+        interpreterArgv: [localPython],
+        workspace: projectWorkspace({
+          "pyproject.toml": "[project]\nname='fixture'\n",
+          "app.py": "VALUE = 1\n"
+        }, () => false),
+        processProbe: {
+          run() {
+            throw new Error("refused explicit interpreter must not be probed");
+          }
+        }
+      });
+
+      assert.equal(result.interpreter, undefined);
+      assert.equal(result.reasons.some((reason) => reason.code === "interpreter_unavailable"), true);
+      assert.equal(result.outcome, "unsupported");
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("resolves each validation file view once across Python checks", async () => {
+    const files = {
+      "pyproject.toml": "[project]\nname='fixture'\n",
+      "app.py": "VALUE = 1\n"
+    };
+    const baseWorkspace = projectWorkspace(files, () => false);
+    let listCalls = 0;
+    const result = await runner({
+      files,
+      checks: createPythonValidationChecks({
+        nodeWorkspace: {
+          ...baseWorkspace,
+          list: async () => {
+            listCalls += 1;
+            return baseWorkspace.list();
+          }
+        }
+      })
+    }).runValidation(request({
+      repo: { repoRoot: "/fixture" },
+      checks: [PYTHON_SOURCE_HYGIENE_CHECK_ID, PYTHON_TYPES_CHECK_ID],
+      scope: { kind: "files", files: ["app.py"] }
+    }));
+
+    assert.equal(result.pythonProjectContexts.length, 1);
+    assert.equal(listCalls, 1);
+  });
+
+  it("resolves each current file view independently of earlier context evidence", async () => {
+    const originalFiles = {
+      "pyproject.toml": "[project]\nname='fixture'\nrequires-python='>=3.11'\n",
+      "app.py": "VALUE = 1\n"
+    };
+    const stale = await resolvePythonProjectContext({
+      repoRoot: "/fixture",
+      target: "app.py",
+      workspace: projectWorkspace(originalFiles, () => true),
+      processProbe: successfulProbe("3.12.4")
+    });
+    const currentFiles = {
+      ...originalFiles,
+      "pyproject.toml": "[project]\nname='fixture'\nrequires-python='>=3.13'\n"
+    };
+    const result = await runner({
+      files: currentFiles,
+      checks: createPythonValidationChecks({
+        nodeWorkspace: projectWorkspace(currentFiles, () => true),
+        processProbe: successfulProbe("3.12.4")
+      })
+    }).runValidation(request({
+      repo: { repoRoot: "/fixture" },
+      checks: [PYTHON_SOURCE_HYGIENE_CHECK_ID],
+      scope: { kind: "files", files: ["app.py"] }
+    }));
+
+    assert.equal(result.pythonProjectContexts[0].targetRuntime.requiresPython, ">=3.13");
+    assert.equal(result.pythonProjectContexts[0].outcome, "unsupported");
+    assert.notEqual(result.pythonProjectContexts[0].contextFingerprint, stale.contextFingerprint);
+  });
+
+  it("parses setup.cfg python_requires and major-only PEP 440 range bounds", async () => {
+    const files = {
+      "setup.cfg": "[metadata]\nname = fixture\npython_requires = >=99\n[options]\npython_requires = >=3.11,<4\n",
+      "app.py": "VALUE = 1\n"
+    };
+    const compatible = await resolvePythonProjectContext({
+      repoRoot: "/fixture",
+      target: "app.py",
+      workspace: projectWorkspace(files, () => true),
+      processProbe: successfulProbe("3.12.4")
+    });
+    const incompatible = await resolvePythonProjectContext({
+      repoRoot: "/fixture",
+      target: "app.py",
+      workspace: projectWorkspace(files, () => true),
+      processProbe: successfulProbe("4.0.0")
+    });
+    const belowFloor = await resolvePythonProjectContext({
+      repoRoot: "/fixture",
+      target: "app.py",
+      workspace: projectWorkspace(files, () => true),
+      processProbe: successfulProbe("3.10.14")
+    });
+
+    assert.equal(compatible.targetRuntime.requiresPython, ">=3.11,<4");
+    assert.equal(compatible.outcome, "resolved");
+    assert.equal(incompatible.outcome, "unsupported");
+    assert.equal(incompatible.reasons.some((reason) => reason.code === "incompatible_interpreter"), true);
+    assert.equal(belowFloor.outcome, "unsupported");
+    assert.equal(belowFloor.reasons.some((reason) => reason.code === "incompatible_interpreter"), true);
+  });
+
   it("applies PEP 440 compatible-release precision consistently", async () => {
     const compatible = await resolvePythonProjectContext({
       repoRoot: "/fixture",
@@ -1504,6 +1753,18 @@ describe("Python project-context resolver", () => {
     });
     assert.equal(incompatible.reasons.some((reason) => reason.code === "incompatible_interpreter"), true);
     assert.equal(incompatible.outcome, "unsupported");
+
+    const underspecified = await resolvePythonProjectContext({
+      repoRoot: "/fixture",
+      target: "app.py",
+      workspace: projectWorkspace({
+        "pyproject.toml": "[project]\nname='fixture'\nrequires-python='~=3'\n",
+        "app.py": "VALUE = 1\n"
+      }, () => true),
+      processProbe: successfulProbe("3.12.4")
+    });
+    assert.equal(underspecified.reasons.some((reason) => reason.code === "unsupported_target"), true);
+    assert.equal(underspecified.outcome, "unsupported");
   });
 
   it("does not treat prerelease interpreters as final PEP 440 releases", async () => {
@@ -1702,7 +1963,7 @@ function canonicalTestPythonWorkspace() {
     list: async () => [],
     exists: async () => false,
     realpath: async (path) => ({ path, symlink: false }),
-    executableExists: async () => false
+    executableExists: async (path) => !path.includes("/") && !path.includes("\\") || existsSync(path)
   };
 }
 

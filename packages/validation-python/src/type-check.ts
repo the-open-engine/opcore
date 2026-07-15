@@ -26,7 +26,7 @@ import {
 } from "./source-files.js";
 import type { PythonValidationToolchainOptions } from "./toolchain.js";
 
-export interface PythonTypeCheckOptions extends PythonValidationToolchainOptions {
+export interface PythonTypeCheckOptions extends Omit<PythonValidationToolchainOptions, "contexts"> {
   timeoutMs?: number;
 }
 
@@ -72,7 +72,7 @@ export function createTypeCheck(
         const workspace = await materializePythonTypeWorkspace(context, project, files);
         try {
           const args = [
-            ...checker.argv.slice(1),
+            ...materializedCheckerPrefix(checker, project.context.projectRoot),
             ...project.targets.map((path) => relativeProjectPath(path, project.context.projectRoot))
           ];
           const result = runTool(checker.executable, args, {
@@ -141,9 +141,8 @@ function isUnresolvedTypeContext(context: PythonProjectContext): boolean {
 function selectTypeChecker(context: PythonProjectContext): PythonProjectToolProvenance | undefined {
   const mypy = context.tools.find((tool) => tool.tool === "mypy" && tool.available);
   const pyright = context.tools.find((tool) => tool.tool === "pyright" && tool.available);
-  if (context.tools.some((tool) => tool.tool === "pyright" && tool.configFile?.endsWith("pyrightconfig.json"))) {
-    return pyright ?? mypy;
-  }
+  if (pyright?.configFile !== undefined) return pyright;
+  if (mypy?.configFile !== undefined) return mypy;
   return mypy ?? pyright;
 }
 
@@ -297,6 +296,27 @@ function parsePyrightLine(
     column: parsePositiveInteger(match.groups.column),
     tool: checkerProvenance(checker)
   });
+}
+
+function materializedCheckerPrefix(
+  checker: PythonProjectToolProvenance,
+  projectRoot: string
+): readonly string[] {
+  const prefix = [...checker.argv.slice(1)];
+  if (checker.configFile === undefined) return prefix;
+  const options = checker.tool === "mypy" ? ["--config", "--config-file"] : ["--project", "-p"];
+  const materializedConfig = relativeProjectPath(checker.configFile, projectRoot);
+  for (let index = 0; index < prefix.length; index += 1) {
+    const argument = prefix[index];
+    if (options.includes(argument)) {
+      prefix[index + 1] = materializedConfig;
+      index += 1;
+      continue;
+    }
+    const option = options.find((candidate) => argument.startsWith(`${candidate}=`));
+    if (option !== undefined) prefix[index] = `${option}=${materializedConfig}`;
+  }
+  return prefix;
 }
 
 function checkerProvenance(checker: PythonProjectToolProvenance) {

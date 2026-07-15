@@ -1,3 +1,5 @@
+import { access, realpath } from "node:fs/promises";
+import { resolve } from "node:path";
 import type { ValidationWorkspace, ValidationWorkspaceFileSet, ValidationWorkspaceReadFileResult } from "@the-open-engine/opcore-validation";
 import { calculateValidationFileChecksum } from "@the-open-engine/opcore-validation";
 import type { PythonProjectWorkspace } from "@the-open-engine/opcore-validation-python";
@@ -104,7 +106,7 @@ export function createAspHostValidationWorkspace(
       if (entry === undefined || entry.kind === undefined) return { path, symlink: false, unavailable: true };
       return entry.kind === "file" ? { path, symlink: false } : { path, symlink: true };
     },
-    executableExists: async () => false
+    executableExists: async (path) => providerExecutableExists(initialize, path)
   };
 
   return {
@@ -124,6 +126,20 @@ export function createAspHostValidationWorkspace(
 function readGlobs(initialized: InitializedParams): readonly string[] {
   const read = initialized.grantedPermissions?.read;
   return Array.isArray(read) ? [...read] : ["**/*"];
+}
+
+async function providerExecutableExists(initialize: InitializeParams, path: string): Promise<boolean> {
+  const root = initialize.workspace?.root;
+  if (root === undefined) return false;
+  try {
+    const [hostRoot, providerCwd] = await Promise.all([realpath(resolve(root)), realpath(process.cwd())]);
+    if (hostRoot !== providerCwd) return false;
+    if (!path.includes("/") && !path.includes("\\")) return true;
+    await access(path);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function normalizeTreeEntry(value: unknown): TreeEntry | undefined {

@@ -53,10 +53,7 @@ export function createBuiltInValidationChecks(
     }),
     ...createRustValidationChecks(rustValidationOptions(config)),
     ...createPythonValidationChecks(
-      {
-        ...(options.pythonProjectContexts === undefined ? {} : { contexts: options.pythonProjectContexts }),
-        ...(pythonWorkspace === undefined ? {} : { nodeWorkspace: pythonWorkspace })
-      }
+      pythonWorkspace === undefined ? {} : { nodeWorkspace: pythonWorkspace }
     ),
     ...createDocsValidationChecks(docsValidationOptions(checksConfig?.docs)),
     ...cloneChecks(checksConfig?.clone, options)

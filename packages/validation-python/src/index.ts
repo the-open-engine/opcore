@@ -42,7 +42,6 @@ export function createPythonValidationChecks(
   options: CreatePythonValidationChecksOptions = {}
 ): readonly ValidationCheckDefinition[] {
   const resolveContexts = createPythonProjectContextResolver({
-    ...(options.contexts === undefined ? {} : { contexts: options.contexts }),
     ...(options.nodeWorkspace === undefined ? {} : { nodeWorkspace: options.nodeWorkspace }),
     ...(options.env === undefined ? {} : { env: options.env }),
     ...(options.interpreterArgv === undefined ? {} : { interpreterArgv: options.interpreterArgv }),

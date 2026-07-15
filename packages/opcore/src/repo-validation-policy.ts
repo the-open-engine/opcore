@@ -4,7 +4,6 @@ import {
   validationChecksForRepoPolicyAndCoverage as validationChecksForSharedRepoPolicyAndCoverage
 } from "@the-open-engine/opcore-validation-policy";
 import { invokeCloneAnalysis } from "./clone-invoker.js";
-import type { PythonProjectContext } from "@the-open-engine/opcore-contracts";
 import { createNodePythonProjectWorkspace } from "@the-open-engine/opcore-validation-python";
 
 const opcoreValidationPolicyOptions = {
@@ -22,14 +21,9 @@ export function validationChecksForRepoPolicy(repoRoot: string) {
   });
 }
 
-export function validationChecksForRepoPolicyAndCoverage(
-  repoRoot: string,
-  adapters: ReadonlySet<string>,
-  pythonProjectContexts?: readonly PythonProjectContext[]
-) {
+export function validationChecksForRepoPolicyAndCoverage(repoRoot: string, adapters: ReadonlySet<string>) {
   return validationChecksForSharedRepoPolicyAndCoverage(repoRoot, adapters, {
     ...opcoreValidationPolicyOptions,
-    pythonWorkspace: createNodePythonProjectWorkspace(repoRoot),
-    ...(pythonProjectContexts === undefined ? {} : { pythonProjectContexts })
+    pythonWorkspace: createNodePythonProjectWorkspace(repoRoot)
   });
 }

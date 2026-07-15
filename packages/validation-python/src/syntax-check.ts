@@ -21,7 +21,7 @@ import { runTool } from "./process.js";
 import { readPythonAfterSources, skippedPythonInputResult, type PythonProjectContextResolver } from "./source-files.js";
 import { type PythonValidationToolchainOptions } from "./toolchain.js";
 
-export interface PythonSyntaxCheckOptions extends PythonValidationToolchainOptions {
+export interface PythonSyntaxCheckOptions extends Omit<PythonValidationToolchainOptions, "contexts"> {
   timeoutMs?: number;
 }
 

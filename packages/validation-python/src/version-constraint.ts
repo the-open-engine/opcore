@@ -47,23 +47,24 @@ export function pythonVersionSatisfiesConstraint(version: string, constraint: st
 }
 
 function parseConstraintClause(value: string): ParsedPythonConstraintClause | undefined {
-  const match = /^(?<operator>===|==|!=|>=|<=|>|<|~=)?\s*(?<version>\d+(?:\.\d+){1,2}(?:(?:a|b|rc)\d+)?)(?<wildcard>\.\*)?$/u.exec(value);
+  const match = /^(?<operator>===|==|!=|>=|<=|>|<|~=)?\s*(?<version>\d+(?:\.\d+){0,2}(?:(?:a|b|rc)\d+)?)(?<wildcard>\.\*)?$/u.exec(value);
   if (match?.groups === undefined) return undefined;
   const parsed = parsePythonVersion(match.groups.version);
   if (parsed === undefined) return undefined;
   const operator = (match.groups.operator ?? "==") as ParsedPythonConstraintClause["operator"];
   const wildcard = match.groups.wildcard !== undefined;
   if (wildcard && operator !== "==" && operator !== "!=") return undefined;
+  if (operator === "~=" && parsed.precision < 2) return undefined;
   return { ...parsed, operator, wildcard };
 }
 
 function parsePythonVersion(value: string): ParsedPythonVersion | undefined {
-  const match = /^(?<major>\d+)\.(?<minor>\d+)(?:\.(?<patch>\d+))?(?:(?<prereleaseKind>a|b|rc)(?<prereleaseNumber>\d+))?(?:\+[A-Za-z0-9]+(?:[._-][A-Za-z0-9]+)*)?$/u.exec(value.trim());
+  const match = /^(?<major>\d+)(?:\.(?<minor>\d+))?(?:\.(?<patch>\d+))?(?:(?<prereleaseKind>a|b|rc)(?<prereleaseNumber>\d+))?(?:\+[A-Za-z0-9]+(?:[._-][A-Za-z0-9]+)*)?$/u.exec(value.trim());
   if (match?.groups === undefined) return undefined;
   const prereleaseKind = match.groups.prereleaseKind as ParsedPythonPrerelease["kind"] | undefined;
   return {
-    release: [Number(match.groups.major), Number(match.groups.minor), Number(match.groups.patch ?? 0)],
-    precision: match.groups.patch === undefined ? 2 : 3,
+    release: [Number(match.groups.major), Number(match.groups.minor ?? 0), Number(match.groups.patch ?? 0)],
+    precision: match.groups.minor === undefined ? 1 : match.groups.patch === undefined ? 2 : 3,
     ...(prereleaseKind === undefined
       ? {}
       : { prerelease: { kind: prereleaseKind, number: Number(match.groups.prereleaseNumber) } })

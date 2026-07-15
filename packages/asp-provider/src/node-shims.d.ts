@@ -13,6 +13,8 @@ declare module "node:fs" {
 }
 
 declare module "node:fs/promises" {
+  export function access(path: string): Promise<void>;
+  export function realpath(path: string): Promise<string>;
   export function readFile(path: string, encoding: "utf8"): Promise<string>;
   export function chmod(path: string, mode: number): Promise<void>;
   export function mkdir(path: string, options: { recursive: true }): Promise<void>;

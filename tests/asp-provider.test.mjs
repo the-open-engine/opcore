@@ -2,7 +2,7 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { spawn, spawnSync } from "node:child_process";
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -232,7 +232,7 @@ describe("Opcore ASP provider", () => {
     }
   });
 
-  it("propagates Python compiler ranges under the python.syntax rule", { timeout: 60000 }, async () => {
+  it("reports Python compiler unavailability without executing the provider process PATH", { timeout: 60000 }, async () => {
     const repo = mkdtempSync(join(tmpdir(), "opcore-asp-provider-python-range-"));
     try {
       mkdirSync(join(repo, "pkg"));
@@ -257,15 +257,13 @@ describe("Opcore ASP provider", () => {
           comparison: "all",
           checks: ["python.syntax"]
         });
-        const syntax = assessment.diagnostics.find((entry) => entry.code.includes("/PY_SYNTAX_ERROR"));
-        assert.equal(syntax?.code, "opcore/python.syntax/PY_SYNTAX_ERROR");
-        assert.deepEqual(syntax?.location, {
-          path: "pkg/app.py",
-          range: {
-            start: { line: 1, column: 8 },
-            end: { line: 1, column: 9 }
-          }
-        });
+        const unavailable = assessment.diagnostics.find((entry) => entry.code.includes("/PY_SYNTAX_TOOL_UNAVAILABLE"));
+        assert.equal(unavailable?.code, "opcore/opcore.infrastructure/PY_SYNTAX_TOOL_UNAVAILABLE");
+        assert.deepEqual(unavailable?.location, { path: "pkg/app.py" });
+        assert.equal(
+          assessment.coverage.degraded.some((entry) => entry.requirement === "python.syntax"),
+          true
+        );
         assert.equal(readFileSync(join(repo, "pkg/app.py"), "utf8"), "value = 1\n");
       } finally {
         peer.close();
@@ -348,6 +346,11 @@ describe("Opcore ASP provider", () => {
     const repo = mkdtempSync(join(tmpdir(), "opcore-asp-provider-python-context-"));
     try {
       mkdirSync(join(repo, "services", "api", "src"), { recursive: true });
+      const providerLocalPythonMarker = join(repo, "provider-local-python-ran");
+      const providerLocalPython = join(repo, "services", "api", ".venv", "bin", "python");
+      mkdirSync(dirname(providerLocalPython), { recursive: true });
+      writeFileSync(providerLocalPython, `#!/bin/sh\n: > ${JSON.stringify(providerLocalPythonMarker)}\nexit 1\n`);
+      chmodSync(providerLocalPython, 0o755);
       writeFileSync(
         join(repo, "services", "api", "pyproject.toml"),
         "[project]\nname='disk-must-not-win'\nrequires-python='>=99'\n"
@@ -387,8 +390,14 @@ describe("Opcore ASP provider", () => {
         assert.equal(contextEvidence.data.projectRoot, "services/api");
         assert.match(contextEvidence.data.projectKey, /^sha256:[a-f0-9]{64}$/);
         assert.match(contextEvidence.data.contextFingerprint, /^sha256:[a-f0-9]{64}$/);
-        assert.notEqual(contextEvidence.data.outcome, "unsupported");
+        assert.equal(contextEvidence.data.outcome, "unsupported");
+        assert.equal(
+          contextEvidence.data.reasons.some((reason) => reason.code === "tool_unavailable"),
+          true,
+          JSON.stringify(contextEvidence.data.reasons)
+        );
         assert.equal(JSON.stringify(contextEvidence).includes("disk-must-not-win"), false);
+        assert.equal(existsSync(providerLocalPythonMarker), false, "ASP provider must not execute package-local host paths");
       } finally {
         peer.close();
       }

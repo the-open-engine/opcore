@@ -1,5 +1,4 @@
 import type { ValidationCheckDefinition } from "@the-open-engine/opcore-validation";
-import type { PythonProjectContext } from "@the-open-engine/opcore-contracts";
 import type { PythonProjectWorkspace } from "@the-open-engine/opcore-validation-python";
 import type { CloneNativeInvoker } from "@the-open-engine/opcore-validation-clone";
 
@@ -114,7 +113,6 @@ export interface OpcoreCheckPack {
 }
 
 export interface OpcoreRepoValidationPolicyOptions {
-  pythonProjectContexts?: readonly PythonProjectContext[];
   pythonWorkspace?: PythonProjectWorkspace;
   clone?: false | {
     invoke?: CloneNativeInvoker["invoke"];

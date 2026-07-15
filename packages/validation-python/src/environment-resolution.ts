@@ -9,7 +9,7 @@ import type {
   PythonProjectToolProvenance
 } from "@the-open-engine/opcore-contracts";
 import { existsSync } from "node:fs";
-import { delimiter, isAbsolute, resolve } from "node:path";
+import { delimiter, dirname, isAbsolute, resolve } from "node:path";
 import { runTool, type PythonToolRunOptions, type PythonToolRunResult } from "./process.js";
 import type { PythonProjectWorkspace } from "./project-workspace.js";
 import { isSupportedPythonVersionConstraint, pythonVersionSatisfiesConstraint } from "./version-constraint.js";
@@ -52,6 +52,13 @@ interface ManagerExecutableCandidates {
   interpreters: readonly ExecutableCandidate[];
   tools: Readonly<Partial<Record<PythonProjectToolKind, readonly ExecutableCandidate[]>>>;
 }
+
+const toolConfigOptions: Readonly<Record<Exclude<PythonProjectToolKind, "build">, readonly string[]>> = {
+  mypy: ["--config", "--config-file"],
+  pyright: ["--project", "-p"],
+  ruff: ["--config"],
+  pytest: ["--config-file", "-c"]
+};
 
 const interpreterProbeScript = [
   "import json, platform, sys, sysconfig",
@@ -395,7 +402,7 @@ function interpreterCandidates(
   reasons: PythonProjectContextReason[]
 ): readonly ExecutableCandidate[] {
   if (options.interpreterArgv !== undefined) {
-    const override = validateOverride(options.interpreterArgv, "interpreter", reasons);
+    const override = validateOverride(options.interpreterArgv, "interpreter", reasons, options);
     return override === undefined ? [] : [override];
   }
   const candidates: ExecutableCandidate[] = [];
@@ -426,7 +433,7 @@ function toolCandidates(
 ): readonly ExecutableCandidate[] {
   const override = options.toolArgv?.[tool];
   if (override !== undefined) {
-    const candidate = validateOverride(override, tool, reasons);
+    const candidate = validateOverride(override, tool, reasons, options);
     return candidate === undefined ? [] : [candidate];
   }
   const candidates: ExecutableCandidate[] = [];
@@ -612,12 +619,13 @@ function firstVersion(stdout: string, stderr: string): string | undefined {
 function validateOverride(
   argv: readonly string[],
   label: "interpreter" | PythonProjectToolKind,
-  reasons: PythonProjectContextReason[]
+  reasons: PythonProjectContextReason[],
+  options?: PythonProjectEnvironmentOptions
 ): ExecutableCandidate | undefined {
   if (!Array.isArray(argv) || argv.length === 0 || argv.some((entry) => typeof entry !== "string" || entry.length === 0)) {
     throw new Error(`Python ${label} argv override must be a non-empty string array`);
   }
-  if (!safeOverrideArgv(argv, label)) {
+  if (!safeOverrideArgv(argv, label, options)) {
     reasons.push({
       code: "invalid_config",
       tool: label === "interpreter" ? "python" : label,
@@ -637,7 +645,11 @@ function activeEnvironmentCompatible(environment: string, options: PythonProject
   return relativeEnvironment.length > 0 && !relativeEnvironment.includes("/");
 }
 
-function safeOverrideArgv(argv: readonly string[], label: "interpreter" | PythonProjectToolKind): boolean {
+function safeOverrideArgv(
+  argv: readonly string[],
+  label: "interpreter" | PythonProjectToolKind,
+  options?: PythonProjectEnvironmentOptions
+): boolean {
   const executable = executableBasename(argv[0]);
   const prefix = argv.slice(1);
   if (label === "interpreter") {
@@ -645,7 +657,8 @@ function safeOverrideArgv(argv: readonly string[], label: "interpreter" | Python
     return safePythonOptionPrefix(prefix);
   }
   if (label === "build" || executable !== label && executable !== `${label}.exe`) return false;
-  return safeToolOptionPrefix(label, prefix);
+  return safeToolOptionPrefix(label, prefix) &&
+    (prefix.length === 0 || options !== undefined && safeToolConfigPaths(label, prefix, options));
 }
 
 function executableBasename(command: string): string {
@@ -669,13 +682,7 @@ function safePythonOptionPrefix(args: readonly string[]): boolean {
 }
 
 function safeToolOptionPrefix(tool: Exclude<PythonProjectToolKind, "build">, args: readonly string[]): boolean {
-  const valuedOptions: Readonly<Record<Exclude<PythonProjectToolKind, "build">, readonly string[]>> = {
-    mypy: ["--config", "--config-file"],
-    pyright: ["--project", "-p"],
-    ruff: ["--config"],
-    pytest: ["--config-file", "-c"]
-  };
-  const options = valuedOptions[tool];
+  const options = toolConfigOptions[tool];
   for (let index = 0; index < args.length; index += 1) {
     const argument = args[index];
     const exact = options.find((option) => argument === option);
@@ -690,6 +697,38 @@ function safeToolOptionPrefix(tool: Exclude<PythonProjectToolKind, "build">, arg
   }
   return true;
 }
+
+function safeToolConfigPaths(
+  tool: Exclude<PythonProjectToolKind, "build">,
+  args: readonly string[],
+  options: PythonProjectEnvironmentOptions
+): boolean {
+  const configFile = options.toolConfigs[tool];
+  if (configFile === undefined) return false;
+  const expected = canonicalPath(options.repoRoot, configFile, options.platform);
+  const expectedDirectory = options.platform === "win32" ? windowsDirname(expected) : normalizePath(dirname(expected));
+  const optionNames = toolConfigOptions[tool];
+  for (let index = 0; index < args.length; index += 1) {
+    const argument = args[index];
+    const exact = optionNames.find((option) => argument === option);
+    const value = exact === undefined
+      ? optionNames.map((option) => argument.startsWith(`${option}=`) ? argument.slice(option.length + 1) : undefined)
+          .find((candidate) => candidate !== undefined)
+      : args[index += 1];
+    if (value === undefined) return false;
+    const actual = canonicalPath(projectCwd(options), value, options.platform);
+    if (actual !== expected && (tool !== "pyright" || actual !== expectedDirectory)) return false;
+  }
+  return true;
+}
+
+
+function canonicalPath(root: string, path: string, platform: string | undefined): string {
+  const resolved = platform === "win32" ? resolveWindowsPath(root, path) : resolve(root, path);
+  const normalized = normalizePath(resolved);
+  return platform === "win32" ? normalized.toLowerCase() : normalized;
+}
+
 
 function environmentExecutable(environment: string, tool: string, platform: string | undefined): string {
   const suffix = platform === "win32" ? `Scripts/${tool}.exe` : `bin/${tool}`;
@@ -727,6 +766,36 @@ function absoluteProjectPath(options: PythonProjectEnvironmentOptions, suffix: s
 
 function projectCwd(options: PythonProjectEnvironmentOptions): string {
   return options.projectRoot === "." ? options.repoRoot : joinAbsolute(options.repoRoot, options.projectRoot, options.platform);
+}
+
+function resolveWindowsPath(root: string, path: string): string {
+  const normalizedPath = path.replaceAll("\\", "/");
+  const normalizedRoot = root.replaceAll("\\", "/").replace(/\/+$/u, "");
+  const absolute = /^[A-Za-z]:\//u.test(normalizedPath) || normalizedPath.startsWith("//");
+  const combined = absolute ? normalizedPath : `${normalizedRoot}/${normalizedPath}`;
+  const drive = combined.match(/^[A-Za-z]:/u)?.[0] ?? "";
+  const unc = drive.length === 0 && combined.startsWith("//");
+  const rooted = drive.length > 0 || unc || combined.startsWith("/");
+  const body = drive.length > 0 ? combined.slice(drive.length) : unc ? combined.slice(2) : combined;
+  const segments: string[] = [];
+  for (const segment of body.split("/")) {
+    if (segment.length === 0 || segment === ".") continue;
+    if (segment === "..") {
+      if (segments.length > 0) segments.pop();
+      continue;
+    }
+    segments.push(segment);
+  }
+  const prefix = drive.length > 0 ? `${drive}/` : unc ? "//" : rooted ? "/" : "";
+  return `${prefix}${segments.join("/")}`;
+}
+
+function windowsDirname(path: string): string {
+  const normalized = normalizePath(path);
+  const separator = normalized.lastIndexOf("/");
+  if (separator < 0) return ".";
+  if (separator === 2 && /^[A-Za-z]:\//u.test(normalized)) return normalized.slice(0, 3);
+  return separator === 0 ? "/" : normalized.slice(0, separator);
 }
 
 function joinAbsolute(root: string, suffix: string, platform: string | undefined): string {

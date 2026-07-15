@@ -34,7 +34,6 @@ export type PythonProjectContextResolver = (context: ValidationCheckContext) => 
 
 export function createPythonProjectContextResolver(
   options: Omit<ResolvePythonProjectContextsOptions, "repoRoot" | "targets" | "workspace"> & {
-    contexts?: readonly PythonProjectContext[];
     nodeWorkspace?: PythonProjectWorkspace;
   } = {}
 ): PythonProjectContextResolver {
@@ -43,30 +42,25 @@ export function createPythonProjectContextResolver(
     const existing = cache.get(context.fileView);
     if (existing !== undefined) return existing;
     const targets = pythonInputSet(context);
-    const reusable = context.fileView.overlays.length === 0 && options.contexts !== undefined &&
-      targets.every((target) => options.contexts?.some((candidate) => candidate.target === target));
     const promise = targets.length === 0
       ? Promise.resolve([])
-      : reusable
-        ? Promise.resolve(options.contexts?.filter((candidate) => targets.includes(candidate.target)) ?? [])
       : resolvePythonProjectContexts({
           repoRoot: context.request.repo.repoRoot ?? process.cwd(),
           targets,
           workspace: createValidationFileViewPythonWorkspace(context.fileView, undefined, options.nodeWorkspace),
-          ...withoutContexts(options)
+          ...withoutNodeWorkspace(options)
         });
     cache.set(context.fileView, promise);
     return promise;
   };
 }
 
-function withoutContexts(
+function withoutNodeWorkspace(
   options: Omit<ResolvePythonProjectContextsOptions, "repoRoot" | "targets" | "workspace"> & {
-    contexts?: readonly PythonProjectContext[];
     nodeWorkspace?: PythonProjectWorkspace;
   }
 ): Omit<ResolvePythonProjectContextsOptions, "repoRoot" | "targets" | "workspace"> {
-  const { contexts: _contexts, nodeWorkspace: _nodeWorkspace, ...resolverOptions } = options;
+  const { nodeWorkspace: _nodeWorkspace, ...resolverOptions } = options;
   return resolverOptions;
 }
 

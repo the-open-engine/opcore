@@ -142,11 +142,7 @@ function createScanValidationPlan(repoState: OpcoreRepoStatePayload): {
     });
   }
   return {
-    checks: validationChecksForRepoPolicyAndCoverage(
-      repoState.repo.root,
-      activeAdapters,
-      repoState.validation.pythonProjectContexts
-    ),
+    checks: validationChecksForRepoPolicyAndCoverage(repoState.repo.root, activeAdapters),
     skippedChecks
   };
 }

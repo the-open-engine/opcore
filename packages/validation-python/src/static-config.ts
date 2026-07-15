@@ -134,7 +134,8 @@ function targetEvidence(
     const document = tomlDocuments.get(path);
     const requires = stringAt(document, ["project", "requires-python"]) ??
       stringAt(document, ["tool", "poetry", "dependencies", "python"]) ??
-      valueForNonTomlConfig(path, content, "requires-python");
+      valueForNonTomlConfig(path, content, "requires-python") ??
+      valueForNonTomlConfig(path, content, "python_requires");
     if (requires !== undefined) declarations.push({ source: path, kind: "requires", value: requires });
     const version = stringAt(document, ["tool", "pyright", "pythonVersion"]) ??
       stringAt(document, ["requires", "python_version"]) ??
@@ -262,8 +263,11 @@ function directChildren(root: string, files: readonly string[]): readonly string
 
 function valueForKey(content: string, key: string): string | undefined {
   const escaped = key.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
-  const match = new RegExp(`^\\s*["']?${escaped}["']?\\s*(?:=|:)\\s*["']([^"']+)["']`, "mu").exec(content);
-  return match?.[1]?.trim();
+  const match = new RegExp(
+    `^\\s*["']?${escaped}["']?\\s*(?:=|:)\\s*(?:"([^"]+)"|'([^']+)'|([^#;\\r\\n]+))`,
+    "mu"
+  ).exec(content);
+  return (match?.[1] ?? match?.[2] ?? match?.[3])?.trim();
 }
 
 function constraintAllowsVersion(constraint: string, version: string): boolean {
@@ -280,7 +284,29 @@ function valueForNonTomlConfig(path: string, content: string, key: string): stri
       return undefined;
     }
   }
+  if (basename(path) === "setup.cfg" && key === "python_requires") {
+    return valueForIniOption(content, "options", key);
+  }
   return valueForKey(content, key);
+}
+
+function valueForIniOption(content: string, expectedSection: string, key: string): string | undefined {
+  let section: string | undefined;
+  for (const rawLine of content.replace(/^\uFEFF/u, "").split(/\r?\n/u)) {
+    const trimmed = rawLine.trim();
+    const sectionMatch = /^\[([^\[\]]+)\](?:\s*[#;].*)?$/u.exec(trimmed);
+    if (sectionMatch !== null) {
+      section = sectionMatch[1].trim().toLowerCase();
+      continue;
+    }
+    if (section !== expectedSection || /^\s/u.test(rawLine)) continue;
+    const delimiterIndex = firstIniDelimiter(rawLine);
+    if (delimiterIndex <= 0 || rawLine.slice(0, delimiterIndex).trim().toLowerCase() !== key.toLowerCase()) continue;
+    const value = rawLine.slice(delimiterIndex + 1).trim();
+    const match = /^(?:"([^"]*)"|'([^']*)'|([^#;]*))/u.exec(value);
+    return (match?.[1] ?? match?.[2] ?? match?.[3])?.trim();
+  }
+  return undefined;
 }
 
 type TomlTable = Record<string, unknown>;

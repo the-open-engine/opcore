@@ -20,9 +20,10 @@ export interface PythonProjectWorkspace {
 
 export function createValidationFileViewPythonWorkspace(
   fileView: ValidationFileView,
-  executableExists: PythonProjectWorkspace["executableExists"] = nodeExecutableExists,
+  executableExists?: PythonProjectWorkspace["executableExists"],
   fullWorkspace?: PythonProjectWorkspace
 ): PythonProjectWorkspace {
+  const executableAvailable = executableExists ?? fullWorkspace?.executableExists ?? nodeExecutableExists;
   return {
     read: async (path) => {
       const result = await fileView.readAfter(validateRepoRelativePath(path));
@@ -49,7 +50,7 @@ export function createValidationFileViewPythonWorkspace(
       if (baseline.unavailable && await fullWorkspace.exists(normalized)) return baseline;
       return { path: normalized, symlink: false };
     },
-    executableExists
+    executableExists: executableAvailable
   };
 }
 
