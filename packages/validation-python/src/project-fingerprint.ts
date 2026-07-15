@@ -43,7 +43,12 @@ function normalizeFingerprintValue(value: unknown, repoRoot: string, platform: s
 
 function normalizeRoot(repoRoot: string, platform: string): string {
   const normalized = normalizeSeparators(repoRoot, platform);
-  return normalized.length > 1 ? normalized.replace(/\/+$/u, "") : normalized;
+  if (normalized.length > 1) {
+    let end = normalized.length;
+    while (end > 1 && normalized.charCodeAt(end - 1) === 47) end -= 1;
+    return end === normalized.length ? normalized : normalized.slice(0, end);
+  }
+  return normalized;
 }
 
 function replaceRepoRoot(value: string, repoRoot: string, platform: string): string {

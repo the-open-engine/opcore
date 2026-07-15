@@ -6744,7 +6744,7 @@ function validatePythonExecutableProvenance(value: PythonProjectExecutableProven
   if (!includesString(pythonProjectExecutableSources, value.source)) throw new Error(`Unknown ${label} source: ${String(value.source)}`);
   if (value.version !== undefined) {
     validateNonEmptyString(value.version, `${label} version`);
-    if (!/^\d+(?:\.\d+)+(?:[-+._A-Za-z0-9]*)?$/u.test(value.version)) {
+    if (!/^[0-9]+\.[0-9][-+._A-Za-z0-9]*$/u.test(value.version)) {
       throw new Error(`${label} version must be exact version provenance`);
     }
   }
