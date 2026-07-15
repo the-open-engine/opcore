@@ -31,7 +31,7 @@ describe("installed package bins", () => {
       const project = join(temp, "project");
       mkdirSync(project);
       run("npm", ["init", "-y"], { cwd: project });
-      run("npm", ["install", "--ignore-scripts", ...tarballs], { cwd: project });
+      run("npm", ["install", "--ignore-scripts", "--no-audit", "--no-fund", ...tarballs], { cwd: project });
       mkdirSync(join(project, "services", "api", "src"), { recursive: true });
       writeFileSync(join(project, "pyproject.toml"), "[project]\nname='root-fixture'\nrequires-python='>=3.8'\n");
       writeFileSync(join(project, "root.py"), "ROOT = 1\n");
