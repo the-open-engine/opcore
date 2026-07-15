@@ -1329,16 +1329,15 @@ describe("opcore public facade", () => {
           assert.match(result.opcoreInit.settings.languages[0].notes.join(" "), /pyproject\.toml/);
           assert.match(result.opcoreInit.settings.languages[0].notes.join(" "), /requirements\.txt/);
           assert.match(result.opcoreInit.settings.languages[0].notes.join(" "), /uv\.lock/);
-          assert.match(result.opcoreInit.settings.languages[0].notes.join(" "), /\.venv/);
           assert.deepEqual(
             result.opcoreInit.settings.python.dependencyManagers.map((entry) => [entry.kind, entry.path]),
             [
-              ["pyproject", "pyproject.toml"],
               ["requirements", "requirements.txt"],
               ["uv", "uv.lock"]
             ]
           );
-          assert.deepEqual(result.opcoreInit.settings.python.virtualEnvironments, [{ kind: "venv", path: ".venv" }]);
+          assert.deepEqual(result.opcoreInit.settings.python.virtualEnvironments, []);
+          assert.equal(result.opcoreInit.settings.python.contexts[0].outcome, "ambiguous");
         }
         if (fixture.name === "mixed-cargo-lock-only") {
           const rust = result.opcoreInit.settings.languages.find((entry) => entry.language === "Rust");

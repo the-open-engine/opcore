@@ -140,6 +140,12 @@ export function createOpcoreManagedToolDescriptor(options: OpcoreManagedToolDesc
         graphModes: graphProviderModes,
         hypothetical: true,
         statusSurfaces: ["status", "doctor"],
+        pythonProjectContext: {
+          schemaId: "opcore.python.project-context.v1",
+          outcomes: ["resolved", "degraded", "unsupported", "ambiguous"],
+          readOnly: true,
+          installs: false
+        },
         writeGate: {
           initScopes: ["repo", "global"],
           harnesses: ["claude-code", "codex"],

@@ -68,6 +68,12 @@ export type OpcoreAspProviderManifest = {
   protocolVersion: string;
   capabilityFamilies: readonly ["check"];
   checks: readonly string[];
+  pythonProjectContext: {
+    schemaId: "opcore.python.project-context.v1";
+    outcomes: readonly ["resolved", "degraded", "unsupported", "ambiguous"];
+    readOnly: true;
+    installs: false;
+  };
   executable: {
     packageName: string;
     bin: "opcore-asp-provider";
@@ -102,6 +108,12 @@ export function createOpcoreAspProviderManifest(options: { packageRoot?: string;
     protocolVersion: ASP_PROTOCOL_VERSION,
     capabilityFamilies: ["check"],
     checks: defaultAspProviderValidationCheckIds,
+    pythonProjectContext: {
+      schemaId: "opcore.python.project-context.v1",
+      outcomes: ["resolved", "degraded", "unsupported", "ambiguous"],
+      readOnly: true,
+      installs: false
+    },
     executable: {
       packageName: OPCORE_PROVIDER_PACKAGE,
       bin: "opcore-asp-provider",

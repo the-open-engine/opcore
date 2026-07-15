@@ -92,7 +92,7 @@ export async function routeOpcoreScan(
 }
 
 export async function createOpcoreScanAnalysis(resolution: RepoResolution): Promise<OpcoreScanAnalysis> {
-  const repoState = createRepoState(resolution);
+  const repoState = await createRepoState(resolution);
   const graphMode: GraphProviderMode = repoState.graph.state === "available" ? "required" : "optional";
   const validationRequest: ValidationRequest = {
     repo: {

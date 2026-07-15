@@ -61,7 +61,13 @@ export function initializeResult(params: InitializeParams): JsonObject {
         manifest: defaultAspProviderValidationManifest,
         scopes: ["changeset", "paths"],
         comparisons: [supportedComparison],
-        fixes: false
+        fixes: false,
+        pythonProjectContext: {
+          schemaId: "opcore.python.project-context.v1",
+          outcomes: ["resolved", "degraded", "unsupported", "ambiguous"],
+          readOnly: true,
+          installs: false
+        }
       }
     },
     requestedPermissions: {
@@ -119,7 +125,7 @@ export async function evaluateChangeset(
       };
     });
     validationResult = await timing.timeAsync("validation", () =>
-      createAspProviderValidationRunner(workspace.workspace).runValidation(request)
+      createAspProviderValidationRunner(workspace.workspace, workspace.pythonWorkspace).runValidation(request)
     );
   } catch (error) {
     const validationFailure = errorAssessment({
@@ -429,6 +435,19 @@ function validationCoverageDegradations(result: ValidationResult, selectedIds: r
 } {
   const degraded: ProviderCoverageDegradation[] = [];
   const unsupported: ProviderCoverageDegradation[] = [];
+  for (const context of result.pythonProjectContexts ?? []) {
+    if (context.outcome === "resolved") continue;
+    const reason = context.outcome === "unsupported" ? "unsupported" : "unavailable";
+    const entry = {
+      source: providerSource,
+      reason,
+      requirement: `python-project-context:${context.target}`,
+      detail: context.reasons.map((item) => `${item.code}: ${item.message}`).join("; ") ||
+        `Python project context ${context.outcome}`
+    };
+    degraded.push(entry);
+    if (reason === "unsupported") unsupported.push(entry);
+  }
   for (const skipped of result.manifest?.skippedChecks ?? []) {
     const entry = {
       source: providerSource,
@@ -538,13 +557,53 @@ function validationEvidence(result: ValidationResult): JsonObject[] {
     data.refusalCategory = result.refusal.category;
     data.refusalMessage = result.refusal.message;
   }
-  return [
+  const evidence: JsonObject[] = [
     {
       kind: "message",
       message: "Opcore validation result mapped to ASP Core check assessment.",
       data
     }
   ];
+  for (const context of result.pythonProjectContexts ?? []) {
+    evidence.push({
+      kind: "python_project_context",
+      message: `Canonical Python project context for ${context.target}.`,
+      data: {
+        schemaId: context.schemaId,
+        target: context.target,
+        projectRoot: context.projectRoot,
+        projectKey: context.projectKey,
+        contextFingerprint: context.contextFingerprint,
+        outcome: context.outcome,
+        interpreter: context.interpreter === undefined
+          ? null
+          : {
+              executable: context.interpreter.executable,
+              argv: [...context.interpreter.argv],
+              cwd: context.interpreter.cwd,
+              source: context.interpreter.source,
+              ...(context.interpreter.version === undefined ? {} : { version: context.interpreter.version }),
+              ...(context.interpreter.implementation === undefined ? {} : { implementation: context.interpreter.implementation }),
+              ...(context.interpreter.platform === undefined ? {} : { platform: context.interpreter.platform }),
+              ...(context.interpreter.architecture === undefined ? {} : { architecture: context.interpreter.architecture }),
+              ...(context.interpreter.abi === undefined ? {} : { abi: context.interpreter.abi }),
+              ...(context.interpreter.soabi === undefined ? {} : { soabi: context.interpreter.soabi })
+            },
+        tools: context.tools.map((tool) => ({
+          tool: tool.tool,
+          available: tool.available,
+          executable: tool.executable,
+          argv: [...tool.argv],
+          cwd: tool.cwd,
+          source: tool.source,
+          ...(tool.configFile === undefined ? {} : { configFile: tool.configFile }),
+          ...(tool.version === undefined ? {} : { version: tool.version })
+        })),
+        reasons: context.reasons.map((reason) => ({ code: reason.code, message: reason.message }))
+      }
+    });
+  }
+  return evidence;
 }
 
 function providerMetadata(): Assessment["provider"] {

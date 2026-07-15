@@ -1,0 +1,6 @@
+[project]
+name = "fixture-pdm"
+requires-python = ">=3.12"
+
+[tool.pdm]
+distribution = true

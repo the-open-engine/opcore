@@ -1,0 +1,6 @@
+[project]
+name = "fixture-conflict"
+requires-python = ">=3.12"
+
+[tool.uv]
+package = true

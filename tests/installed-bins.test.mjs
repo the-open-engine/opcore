@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
@@ -23,7 +23,7 @@ const currentNativePackage = graphCoreNativePackageNamesByTarget[currentTarget];
 const packageNames = ["opcore"];
 
 describe("installed package bins", () => {
-  it("installs the packed Opcore package and exposes only canonical Opcore bins", { timeout: 120000 }, () => {
+  it("installs the packed Opcore package and exposes only canonical Opcore bins", { timeout: 120000 }, async () => {
     assert.ok(currentNativePackage, `unsupported local graph-core target ${currentTarget}`);
     const temp = mkdtempSync(join(tmpdir(), "lattice-installed-bins-"));
     try {
@@ -31,7 +31,16 @@ describe("installed package bins", () => {
       const project = join(temp, "project");
       mkdirSync(project);
       run("npm", ["init", "-y"], { cwd: project });
-      run("npm", ["install", "--ignore-scripts", ...tarballs], { cwd: project });
+      run("npm", ["install", "--ignore-scripts", "--no-audit", "--no-fund", ...tarballs], { cwd: project });
+      mkdirSync(join(project, "services", "api", "src"), { recursive: true });
+      writeFileSync(join(project, "pyproject.toml"), "[project]\nname='root-fixture'\nrequires-python='>=3.8'\n");
+      writeFileSync(join(project, "root.py"), "ROOT = 1\n");
+      writeFileSync(
+        join(project, "services", "api", "pyproject.toml"),
+        "[project]\nname='api-fixture'\nrequires-python='>=3.8'\n[tool.uv]\npackage=true\n"
+      );
+      writeFileSync(join(project, "services", "api", "uv.lock"), "version=1\n");
+      writeFileSync(join(project, "services", "api", "src", "app.py"), "VALUE = 1\n");
 
       assert.equal(existsSync(binPath(project, "opcore")), true);
       assert.equal(existsSync(binPath(project, "opcore-asp-provider")), true);
@@ -43,15 +52,46 @@ describe("installed package bins", () => {
       assert.deepEqual(opcoreStatus.canonicalCommand, ["opcore", "status"]);
       assert.equal(Object.hasOwn(opcoreStatus, "repoState"), true);
       assert.equal(Object.hasOwn(opcoreStatus, "validationResult"), false);
+      const nestedStatusContext = pythonContextFor(opcoreStatus.repoState.validation.pythonProjectContexts, "services/api/src/app.py");
+      assert.equal(nestedStatusContext.projectRoot, "services/api");
+      assert.deepEqual(nestedStatusContext.managers.map((manager) => manager.kind), ["uv"]);
+      const aspContext = await evaluateInstalledAspPythonContext(project);
+      assert.deepEqual(pythonContextIdentity(aspContext), pythonContextIdentity(nestedStatusContext));
       const opcoreScan = assertSmoke(project, ["--json"], 0, "opcore");
       assert.deepEqual(opcoreScan.canonicalCommand, ["opcore", "scan"]);
       assert.equal(Object.hasOwn(opcoreScan, "validationResult"), true);
+      assert.deepEqual(
+        pythonContextIdentity(pythonContextFor(opcoreScan.validationResult.pythonProjectContexts, "services/api/src/app.py")),
+        pythonContextIdentity(nestedStatusContext)
+      );
+      const metricReport = JSON.parse(readFileSync(join(project, ".opcore", "report.json"), "utf8"));
+      assert.deepEqual(
+        pythonContextIdentity(pythonContextFor(metricReport.validation.pythonProjectContexts, "services/api/src/app.py")),
+        pythonContextIdentity(nestedStatusContext)
+      );
+      const opcoreCheck = assertSmoke(project, [
+        "check",
+        "files",
+        "--files",
+        "root.py,services/api/src/app.py",
+        "--checks",
+        "python.source-hygiene",
+        "--json"
+      ], 0, "opcore");
+      assert.deepEqual(
+        pythonContextIdentity(pythonContextFor(opcoreCheck.validationResult.pythonProjectContexts, "services/api/src/app.py")),
+        pythonContextIdentity(nestedStatusContext)
+      );
       const opcoreInit = assertSmoke(project, ["install", "--json"], 0, "opcore");
       assert.deepEqual(opcoreInit.canonicalCommand, ["opcore", "install"]);
       assert.equal(opcoreInit.opcoreInit.mode, "plan");
       assert.equal(Object.hasOwn(opcoreInit.opcoreInit, "scan"), true);
       assert.equal(Array.isArray(opcoreInit.opcoreInit.settings.languages), true);
       assert.equal(opcoreInit.opcoreInit.timings.scanMs >= 0, true);
+      assert.deepEqual(
+        pythonContextIdentity(pythonContextFor(opcoreInit.opcoreInit.settings.python.contexts, "services/api/src/app.py")),
+        pythonContextIdentity(nestedStatusContext)
+      );
       assert.equal(existsSync(join(project, ".opcore", "config")), false);
       assert.equal(existsSync(join(project, "AGENTS.md")), false);
       const opcoreMeasure = assertSmoke(project, ["measure", "--json"], 0, "opcore");
@@ -420,6 +460,12 @@ function assertManagedDescriptor(project) {
     /(^|[\\/"'\s])\.ace(?:[\\/"'\s]|$)|LATTICE_CURRENT_TOOLS_DIR|\/Users\/tom|(^|[\\/\s])(?:lattice|crg|cix|rox)(?:$|[\\/\s])/i
   );
   const descriptor = validateManagedToolDescriptor(JSON.parse(descriptorText));
+  assert.deepEqual(descriptor.capabilities.validation.pythonProjectContext, {
+    schemaId: "opcore.python.project-context.v1",
+    outcomes: ["resolved", "degraded", "unsupported", "ambiguous"],
+    readOnly: true,
+    installs: false
+  });
   assert.deepEqual(
     descriptor.commandGroups.map((group) => group.name),
     ["graph", "inspect", "edit", "check", "validate", "status", "doctor"]
@@ -441,6 +487,24 @@ function assertManagedDescriptor(project) {
     const expectedPath = join(packageRoot, reference.path);
     assert.equal(existsSync(expectedPath), true, `${reference.packageName}:${reference.path}`);
   }
+}
+
+function pythonContextFor(contexts, target) {
+  const context = contexts?.find((candidate) => candidate.target === target);
+  assert.ok(context, `missing Python project context for ${target}`);
+  return context;
+}
+
+function pythonContextIdentity(context) {
+  return {
+    target: context.target,
+    projectRoot: context.projectRoot,
+    projectKey: context.projectKey,
+    contextFingerprint: context.contextFingerprint,
+    outcome: context.outcome,
+    interpreter: context.interpreter?.argv ?? null,
+    tools: context.tools.map((tool) => ({ tool: tool.tool, argv: tool.argv, source: tool.source, available: tool.available }))
+  };
 }
 
 function assertSmoke(project, args, expectedExitCode, bin = "opcore") {
@@ -538,6 +602,172 @@ function assertAspProviderInitializeSmoke(project) {
   assert.equal(response.result.serverInfo.name, "opcore");
   assert.deepEqual(response.result.capabilityFamilies, ["check"]);
   assert.deepEqual(response.result.requestedPermissions, { read: ["**/*"], write: false, network: false });
+}
+
+async function evaluateInstalledAspPythonContext(project) {
+  const files = {
+    "pyproject.toml": readFileSync(join(project, "pyproject.toml"), "utf8"),
+    "root.py": readFileSync(join(project, "root.py"), "utf8"),
+    "services/api/pyproject.toml": readFileSync(join(project, "services/api/pyproject.toml"), "utf8"),
+    "services/api/uv.lock": readFileSync(join(project, "services/api/uv.lock"), "utf8"),
+    "services/api/src/app.py": readFileSync(join(project, "services/api/src/app.py"), "utf8")
+  };
+  const host = createInstalledAspHost(files);
+  const child = spawn(binPath(project, "opcore-asp-provider"), ["--stdio"], {
+    cwd: project,
+    stdio: ["pipe", "pipe", "pipe"]
+  });
+  const peer = new InstalledAspPeer(child, host).start();
+  try {
+    const initialize = await peer.request("initialize", {
+      protocolVersion: "asp/0.1",
+      host: { name: "installed-bin-context", version: "0.1.0-test" },
+      hostCapabilities: { readBlob: true, listTree: true, putBlob: false },
+      workspace: { root: realpathSync(project), baseline: host.baseline },
+      assuranceMode: "gated"
+    });
+    peer.notify("initialized", {
+      grantedPermissions: initialize.requestedPermissions,
+      baseline: host.baseline
+    });
+    const assessment = await peer.request("check/evaluate", {
+      callSite: "interactive",
+      changeset: host.changeset([
+        host.modify("services/api/src/app.py", files["services/api/src/app.py"])
+      ]),
+      comparison: "all",
+      checks: ["python.source-hygiene"]
+    });
+    const evidence = assessment.evidence?.find((entry) =>
+      entry.kind === "python_project_context" && entry.data?.target === "services/api/src/app.py"
+    );
+    assert.ok(evidence, JSON.stringify(assessment, null, 2));
+    return evidence.data;
+  } finally {
+    peer.close();
+  }
+}
+
+class InstalledAspPeer {
+  constructor(child, host) {
+    this.child = child;
+    this.host = host;
+    this.nextId = 1;
+    this.pending = new Map();
+    this.buffer = "";
+    this.stderr = "";
+  }
+
+  start() {
+    this.child.stdout.setEncoding("utf8");
+    this.child.stderr.setEncoding("utf8");
+    this.child.stdout.on("data", (chunk) => this.onData(chunk));
+    this.child.stderr.on("data", (chunk) => { this.stderr += chunk; });
+    this.child.on("exit", (code, signal) => {
+      const error = new Error(`installed ASP provider exited code=${code} signal=${signal}\nstderr:\n${this.stderr}`);
+      for (const pending of this.pending.values()) pending.reject(error);
+      this.pending.clear();
+    });
+    return this;
+  }
+
+  request(method, params = {}, timeoutMs = 30000) {
+    const id = this.nextId++;
+    this.write({ jsonrpc: "2.0", id, method, params });
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        this.pending.delete(id);
+        reject(new Error(`installed ASP request timed out: ${method}\nstderr:\n${this.stderr}`));
+      }, timeoutMs);
+      this.pending.set(id, {
+        resolve(value) { clearTimeout(timer); resolve(value); },
+        reject(error) { clearTimeout(timer); reject(error); }
+      });
+    });
+  }
+
+  notify(method, params = {}) {
+    this.write({ jsonrpc: "2.0", method, params });
+  }
+
+  close() {
+    this.child.kill();
+  }
+
+  onData(chunk) {
+    this.buffer += chunk;
+    while (this.buffer.includes("\n")) {
+      const index = this.buffer.indexOf("\n");
+      const line = this.buffer.slice(0, index).trim();
+      this.buffer = this.buffer.slice(index + 1);
+      if (line.length > 0) this.handleMessage(JSON.parse(line));
+    }
+  }
+
+  handleMessage(message) {
+    if (Object.hasOwn(message, "id") && !message.method && (Object.hasOwn(message, "result") || Object.hasOwn(message, "error"))) {
+      const pending = this.pending.get(message.id);
+      if (!pending) return;
+      this.pending.delete(message.id);
+      if (message.error) {
+        const error = new Error(message.error.message);
+        error.rpc = message.error;
+        pending.reject(error);
+      } else {
+        pending.resolve(message.result);
+      }
+      return;
+    }
+    if (message.method === "workspace/listTree") {
+      this.write({ jsonrpc: "2.0", id: message.id, result: this.host.listTree(message.params) });
+      return;
+    }
+    if (message.method === "workspace/readBlob") {
+      this.write({ jsonrpc: "2.0", id: message.id, result: this.host.readBlob(message.params) });
+      return;
+    }
+    this.write({ jsonrpc: "2.0", id: message.id, error: { code: -32601, message: "method-not-found" } });
+  }
+
+  write(message) {
+    this.child.stdin.write(`${JSON.stringify(message)}\n`);
+  }
+}
+
+function createInstalledAspHost(files) {
+  const baseline = { rev: "tree:installed-python-context", stampedAt: "2026-07-15T00:00:00.000Z" };
+  const blobs = new Map();
+  const entries = Object.entries(files).map(([path, content]) => {
+    const blobId = installedBlobId(content);
+    blobs.set(blobId, content);
+    return { path, blobId, kind: "file" };
+  });
+  const entryByPath = new Map(entries.map((entry) => [entry.path, entry]));
+  return {
+    baseline,
+    changeset: (changes) => ({ baseline, changes }),
+    modify(path, content) {
+      return {
+        kind: "modify",
+        path,
+        before: entryByPath.get(path).blobId,
+        after: { encoding: "utf-8", bytes: content }
+      };
+    },
+    listTree(params = {}) {
+      const paths = new Set(Array.isArray(params.paths) ? params.paths : []);
+      return { entries: entries.filter((entry) => paths.size === 0 || paths.has(entry.path)), truncated: false };
+    },
+    readBlob(params = {}) {
+      return {
+        blobs: (params.blobs ?? []).map((id) => ({ id, encoding: "utf-8", bytes: blobs.get(id) }))
+      };
+    }
+  };
+}
+
+function installedBlobId(content) {
+  return `blob:sha256:${createHash("sha256").update(content, "utf8").digest("hex")}`;
 }
 
 function binPath(project, bin) {

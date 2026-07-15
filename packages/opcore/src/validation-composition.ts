@@ -1,6 +1,7 @@
 import type {
   CommandAdapter,
   GraphProviderMode,
+  PythonProjectContext,
   ValidationRequest,
   ValidationResult,
   ValidationStatusPayload
@@ -67,11 +68,18 @@ export const opcoreValidationRunner = {
 export function createDefaultValidationStatusPayload(options: {
   repoRoot: string;
   graphMode?: GraphProviderMode;
+  pythonProjectContexts?: readonly PythonProjectContext[];
 }): ValidationStatusPayload {
   const graphMode = options.graphMode ?? "optional";
   return createValidationStatusPayload({
     checks: validationChecksForRepoPolicy(options.repoRoot),
-    adapters: [createRustValidationAdapterStatus(), createPythonValidationAdapterStatus({ repoRoot: options.repoRoot })],
+    adapters: [
+      createRustValidationAdapterStatus(),
+      createPythonValidationAdapterStatus({
+        repoRoot: options.repoRoot,
+        contexts: options.pythonProjectContexts
+      })
+    ],
     graphMode,
     graphStatus: opcoreGraphStatus({ repoRoot: options.repoRoot }, graphMode)
   });

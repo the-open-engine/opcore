@@ -1,7 +1,9 @@
 import type {
   ValidationCheckOutcome,
   ValidationDiagnostic,
-  ValidationDiagnosticToolProvenance
+  ValidationDiagnosticToolProvenance,
+  PythonInterpreterProvenance,
+  PythonProjectContext
 } from "@the-open-engine/opcore-contracts";
 import type { ValidationCheckDefinition, ValidationCheckResult } from "@the-open-engine/opcore-validation";
 import { PYTHON_SYNTAX_CHECK_ID } from "./check-ids.js";
@@ -16,19 +18,17 @@ import {
 } from "./compiler-protocol.js";
 import { diagnostic, sortDiagnostics } from "./diagnostics.js";
 import { runTool } from "./process.js";
-import { readPythonAfterSources, skippedPythonInputResult } from "./source-files.js";
+import { readPythonAfterSources, skippedPythonInputResult, type PythonProjectContextResolver } from "./source-files.js";
 import { type PythonValidationToolchainOptions } from "./toolchain.js";
-import {
-  resolvePythonInterpreter,
-  type PythonInterpreterResolution,
-  type ResolvedPythonInterpreter
-} from "./toolchain-resolver.js";
 
-export interface PythonSyntaxCheckOptions extends PythonValidationToolchainOptions {
+export interface PythonSyntaxCheckOptions extends Omit<PythonValidationToolchainOptions, "contexts"> {
   timeoutMs?: number;
 }
 
-export function createSyntaxCheck(options: PythonSyntaxCheckOptions = {}): ValidationCheckDefinition {
+export function createSyntaxCheck(
+  options: PythonSyntaxCheckOptions = {},
+  resolveContexts?: PythonProjectContextResolver
+): ValidationCheckDefinition {
   return {
     id: PYTHON_SYNTAX_CHECK_ID,
     owner: pythonCheckOwner,
@@ -39,27 +39,57 @@ export function createSyntaxCheck(options: PythonSyntaxCheckOptions = {}): Valid
       const skipped = skippedPythonInputResult(context);
       if (skipped !== undefined) return skipped;
 
-      const repoRoot = options.repoRoot ?? context.request.repo.repoRoot ?? process.cwd();
-      const interpreter = resolvePythonInterpreter({
-        repoRoot,
-        env: options.env,
-        pythonCommand: options.pythonCommand,
-        targetPythonVersion: options.targetPythonVersion
-      });
-      if (!interpreter.available) return resolutionFailure(interpreter);
-
       const sources = await readPythonAfterSources(context);
-      return compileSources(interpreter, sources, options);
+      if (resolveContexts === undefined) return missingContextResult(sources.map((source) => source.path));
+      const resolvedContexts = await resolveContexts(context);
+      const missing = sources.map((source) => source.path).filter((path) => !resolvedContexts.some((candidate) => candidate.target === path));
+      if (resolvedContexts.length === 0 || missing.length > 0) return missingContextResult(missing);
+      const unresolved = resolvedContexts.find((candidate) => candidate.interpreter === undefined || hasInterpreterFailure(candidate));
+      if (unresolved !== undefined) return resolutionFailure(unresolved);
+      const contexts = groupProjectContexts(resolvedContexts);
+      const diagnostics: ValidationDiagnostic[] = [];
+      for (const project of contexts) {
+        if (project.interpreter === undefined) return resolutionFailure(project);
+        const selected = sources.filter((source) => project.targets.includes(source.path));
+        const result = await compileSources(project.interpreter, selected, options);
+        diagnostics.push(...(result.diagnostics ?? []));
+        if (result.outcome !== "passed" && result.outcome !== "findings") return result;
+      }
+      return { outcome: diagnostics.length === 0 ? "passed" : "findings", diagnostics: sortDiagnostics(diagnostics) };
     }
   };
 }
 
+function missingContextResult(missing: readonly string[]): ValidationCheckResult {
+  const suffix = missing.length === 0 ? "" : `: ${missing.join(", ")}`;
+  const message = `Canonical Python project context resolution returned no context for selected source${suffix}`;
+  return {
+    outcome: "tool_failure",
+    failureMessage: message,
+    diagnostics: [diagnostic({ category: "infrastructure", code: "PY_SYNTAX_CONTEXT_MISSING", message })]
+  };
+}
+
+type PythonSyntaxProjectGroup = PythonProjectContext & { targets: readonly string[] };
+
+function groupProjectContexts(contexts: readonly PythonProjectContext[]): readonly PythonSyntaxProjectGroup[] {
+  const groups = new Map<string, { context: PythonProjectContext; targets: string[] }>();
+  for (const context of contexts) {
+    const group = groups.get(context.projectKey) ?? { context, targets: [] };
+    group.targets.push(context.target);
+    groups.set(context.projectKey, group);
+  }
+  return [...groups.values()]
+    .map(({ context, targets }) => ({ ...context, targets: [...new Set(targets)].sort() }))
+    .sort((left, right) => left.projectRoot.localeCompare(right.projectRoot));
+}
+
 async function compileSources(
-  interpreter: ResolvedPythonInterpreter,
+  interpreter: PythonInterpreterProvenance,
   sources: Awaited<ReturnType<typeof readPythonAfterSources>>,
   options: PythonSyntaxCheckOptions
 ): Promise<ValidationCheckResult> {
-  const result = runTool(interpreter.command, ["-I", "-B", "-c", pythonCompileScript], {
+  const result = runTool(interpreter.executable, [...interpreter.argv.slice(1), "-I", "-B", "-c", pythonCompileScript], {
     cwd: interpreter.cwd,
     env: options.env,
     timeoutMs: options.timeoutMs ?? 10000,
@@ -80,20 +110,27 @@ async function compileSources(
   };
 }
 
-function resolutionFailure(interpreter: Exclude<PythonInterpreterResolution, ResolvedPythonInterpreter>): ValidationCheckResult {
-  const outcome = interpreter.outcome;
+function resolutionFailure(context: PythonProjectContext): ValidationCheckResult {
+  const primary = context.reasons.find((reason) => reason.tool === "python") ?? context.reasons[0];
+  const outcome = primary?.code === "probe_timeout" ? "timeout" :
+    primary?.code === "invalid_config" || context.outcome === "ambiguous" ? "invalid_config" :
+    primary?.code === "incompatible_interpreter" || primary?.code === "unsupported_target" || primary?.code === "unsupported_platform"
+      ? "unsupported_target" :
+      primary?.code === "interpreter_unavailable" || primary?.code === "tool_unavailable" ? "tool_unavailable" : "tool_failure";
+  const message = primary?.message ?? `Python project context is unresolved for ${context.target}`;
   const code = resolutionFailureCode(outcome);
   const unsupported = outcome === "tool_unavailable" || outcome === "invalid_config" || outcome === "unsupported_target";
   return {
     outcome,
-    failureMessage: interpreter.failureMessage,
+    failureMessage: message,
     diagnostics: [
       diagnostic({
         category: "infrastructure",
         severity: unsupported ? "info" : "error",
         code,
-        message: interpreter.failureMessage,
-        tool: unresolvedToolProvenance(interpreter)
+        message,
+        path: context.target,
+        ...(context.interpreter === undefined ? {} : { tool: compilerToolProvenance(context.interpreter) })
       })
     ]
   };
@@ -118,7 +155,7 @@ function checkFailure(
   };
 }
 
-function findingDiagnostic(finding: PythonCompilerFinding, interpreter: ResolvedPythonInterpreter): ValidationDiagnostic {
+function findingDiagnostic(finding: PythonCompilerFinding, interpreter: PythonInterpreterProvenance): ValidationDiagnostic {
   return diagnostic({
     category: "syntax",
     path: finding.path,
@@ -144,7 +181,7 @@ function compilerFindingCode(kind: PythonCompilerErrorKind): string {
   return codes[kind];
 }
 
-function resolutionFailureCode(outcome: Exclude<PythonInterpreterResolution["outcome"], "resolved">): string {
+function resolutionFailureCode(outcome: Exclude<ValidationCheckOutcome, "passed" | "findings">): string {
   const codes = {
     tool_unavailable: "PY_SYNTAX_TOOL_UNAVAILABLE",
     invalid_config: "PY_SYNTAX_INVALID_CONFIG",
@@ -155,12 +192,8 @@ function resolutionFailureCode(outcome: Exclude<PythonInterpreterResolution["out
   return codes[outcome];
 }
 
-function unresolvedToolProvenance(interpreter: Exclude<PythonInterpreterResolution, ResolvedPythonInterpreter>) {
-  return {
-    name: "python",
-    command: interpreter.command,
-    ...(interpreter.version === undefined ? {} : { version: interpreter.version }),
-    source: interpreter.source,
-    cwd: interpreter.cwd
-  };
+function hasInterpreterFailure(context: PythonProjectContext): boolean {
+  return context.outcome === "ambiguous" || context.outcome === "unsupported" || context.reasons.some((reason) => reason.tool === "python" ||
+    reason.code === "invalid_config" ||
+    ["incompatible_interpreter", "unsupported_target", "unsupported_platform", "symlink_refused", "path_refused", "ambiguous_path"].includes(reason.code));
 }

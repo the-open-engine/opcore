@@ -283,7 +283,9 @@ export function createOpcoreMetricReport(input: CreateOpcoreMetricReportInput): 
       ...(validationResult?.status ? { status: validationResult.status } : {}),
       diagnosticCount: validationResult?.diagnostics.length ?? 0,
       checkCount: validationResult?.manifest?.checks.length ?? input.repoState.validation.checkCount,
-      policy: input.repoState.validation.policy
+      policy: input.repoState.validation.policy,
+      pythonProjectContexts:
+        validationResult?.pythonProjectContexts ?? input.repoState.validation.pythonProjectContexts ?? []
     },
     signals: sortSignals(signals),
     degradations: sortDegradations(degradations),

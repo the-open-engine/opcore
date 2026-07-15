@@ -143,12 +143,12 @@ async function routeLattice(
   });
 }
 
-function routeRuntimeCommand(
+async function routeRuntimeCommand(
   argv: readonly string[],
   parsed: ParsedCommandArgv,
   command: RuntimeCommand,
   rest: readonly string[]
-): CommandRouterResult {
+): Promise<CommandRouterResult> {
   if (command === "doctor") {
     return routeOpcoreDoctor(argv, { args: [command, ...rest], json: parsed.json });
   }
