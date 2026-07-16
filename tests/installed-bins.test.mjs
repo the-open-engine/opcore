@@ -513,7 +513,13 @@ function assertSmoke(project, args, expectedExitCode, bin = "opcore") {
 
 function assertCliJson(command, args, expectedExitCode, cwd, options = {}) {
   const startedAt = performance.now();
-  const result = run(command, args, { cwd, env: options.env, expectedStatus: expectedExitCode });
+  // Installed-artifact checks must not inherit development-only tools from the
+  // monorepo's node_modules/.bin through the test runner PATH.
+  const result = run(command, args, {
+    cwd,
+    env: options.env ?? sourceSafeOpcoreEnv(),
+    expectedStatus: expectedExitCode
+  });
   const durationMs = nonNegativeDuration(performance.now() - startedAt);
   assert.doesNotMatch(result.stdout, onboardingForbiddenOutput);
   assert.doesNotMatch(result.stderr, onboardingForbiddenOutput);
@@ -588,6 +594,7 @@ function assertAspProviderInitializeSmoke(project) {
   };
   const result = spawnSync(binPath(project, "opcore-asp-provider"), ["--stdio"], {
     cwd: project,
+    env: sourceSafeOpcoreEnv(),
     input: `${JSON.stringify(request)}\n`,
     encoding: "utf8",
     stdio: ["pipe", "pipe", "pipe"]
@@ -615,6 +622,7 @@ async function evaluateInstalledAspPythonContext(project) {
   const host = createInstalledAspHost(files);
   const child = spawn(binPath(project, "opcore-asp-provider"), ["--stdio"], {
     cwd: project,
+    env: sourceSafeOpcoreEnv(),
     stdio: ["pipe", "pipe", "pipe"]
   });
   const peer = new InstalledAspPeer(child, host).start();

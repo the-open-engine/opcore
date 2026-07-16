@@ -1,53 +1,51 @@
 import type { GraphEdgeKind } from "@the-open-engine/opcore-contracts";
 import type { ValidationCheckContext, ValidationGraphQueryRequirement } from "@the-open-engine/opcore-validation";
-import { materializePythonSources, toFileNodeId } from "./source-files.js";
+import { toFileNodeId, type PythonSourceRootResolver, type PythonSourceSetResolver } from "./source-files.js";
 
-export async function importGraphRequirements(
-  context: ValidationCheckContext
-): Promise<readonly ValidationGraphQueryRequirement[]> {
-  return edgeAndScopedFileRequirements(context, ["IMPORTS_FROM"]);
+export function createImportGraphRequirements(resolveSources: PythonSourceSetResolver) {
+  return async (context: ValidationCheckContext): Promise<readonly ValidationGraphQueryRequirement[]> =>
+    edgeAndScopedFileRequirements(context, ["IMPORTS_FROM"], (await resolveSources(context)).rootPaths);
 }
 
-export async function deadCodeGraphRequirements(
-  context: ValidationCheckContext
-): Promise<readonly ValidationGraphQueryRequirement[]> {
-  const sourceSet = await materializePythonSources(context);
-  return [
-    {
-      operation: "factQuery",
-      selector: {
-        kind: "edges",
-        edgeKinds: ["CALLS"]
+export function createDeadCodeGraphRequirements(resolveRoots: PythonSourceRootResolver) {
+  return async (context: ValidationCheckContext): Promise<readonly ValidationGraphQueryRequirement[]> => {
+    const rootPaths = await resolveRoots(context);
+    return [
+      {
+        operation: "factQuery",
+        selector: {
+          kind: "edges",
+          edgeKinds: ["CALLS"]
+        }
+      },
+      {
+        operation: "factQuery",
+        selector: {
+          kind: "nodes",
+          nodeKinds: ["File", "file"],
+          ids: rootPaths.map(toFileNodeId)
+        }
+      },
+      {
+        operation: "factQuery",
+        selector: {
+          kind: "symbols"
+        }
       }
-    },
-    {
-      operation: "factQuery",
-      selector: {
-        kind: "nodes",
-        nodeKinds: ["File", "file"],
-        ids: sourceSet.rootPaths.map(toFileNodeId)
-      }
-    },
-    {
-      operation: "factQuery",
-      selector: {
-        kind: "symbols"
-      }
-    }
-  ];
+    ];
+  };
 }
 
-export async function relevantTestsGraphRequirements(
-  context: ValidationCheckContext
-): Promise<readonly ValidationGraphQueryRequirement[]> {
-  return edgeAndScopedFileRequirements(context, ["TESTED_BY"]);
+export function createRelevantTestsGraphRequirements(resolveRoots: PythonSourceRootResolver) {
+  return async (context: ValidationCheckContext): Promise<readonly ValidationGraphQueryRequirement[]> =>
+    edgeAndScopedFileRequirements(context, ["TESTED_BY"], await resolveRoots(context));
 }
 
 async function edgeAndScopedFileRequirements(
   context: ValidationCheckContext,
-  edgeKinds: readonly GraphEdgeKind[]
+  edgeKinds: readonly GraphEdgeKind[],
+  rootPaths: readonly string[]
 ): Promise<readonly ValidationGraphQueryRequirement[]> {
-  const sourceSet = await materializePythonSources(context);
   return [
     {
       operation: "factQuery",
@@ -61,7 +59,7 @@ async function edgeAndScopedFileRequirements(
       selector: {
         kind: "nodes",
         nodeKinds: ["File", "file"],
-        ids: sourceSet.rootPaths.map(toFileNodeId)
+        ids: rootPaths.map(toFileNodeId)
       }
     }
   ];

@@ -3,7 +3,7 @@ import type {
   PythonProjectFileEvidence,
   PythonProjectLayoutEvidence
 } from "@the-open-engine/opcore-contracts";
-import { pythonBoundaryFileNames } from "./static-config.js";
+import { pythonBoundaryFileNames } from "./project-config-files.js";
 import type { PythonProjectWorkspace } from "./project-workspace.js";
 
 export interface PythonProjectDiscovery {

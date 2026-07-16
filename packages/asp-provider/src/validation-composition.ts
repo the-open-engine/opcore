@@ -37,11 +37,12 @@ import {
   graphProviderNamedQuery,
   graphProviderQuery,
   graphProviderReviewContext,
-  graphProviderStatus
+  graphProviderStatus,
+  graphPythonImportAnalyzer
 } from "@the-open-engine/opcore-graph";
 import type { PythonProjectWorkspace } from "@the-open-engine/opcore-validation-python";
 
-const aspProviderPolicyOptions = { clone: false } as const;
+const aspProviderPolicyOptions = { clone: false, pythonImportAnalyzer: graphPythonImportAnalyzer } as const;
 
 export const defaultAspProviderValidationChecks = createBuiltInValidationChecks(undefined, aspProviderPolicyOptions);
 

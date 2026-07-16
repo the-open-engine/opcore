@@ -10,10 +10,10 @@ import {
 } from "@the-open-engine/opcore-validation";
 import { PYTHON_DEAD_CODE_CHECK_ID } from "./check-ids.js";
 import { pythonCheckAdapter, pythonCheckOwner, supportedPythonValidationScopes } from "./check-constants.js";
-import { deadCodeGraphRequirements } from "./graph-requirements.js";
-import { materializePythonSources } from "./source-files.js";
+import { createDeadCodeGraphRequirements } from "./graph-requirements.js";
+import type { PythonSourceRootResolver } from "./source-files.js";
 
-export function createDeadCodeCheck(): ValidationCheckDefinition {
+export function createDeadCodeCheck(resolveRoots: PythonSourceRootResolver): ValidationCheckDefinition {
   return {
     id: PYTHON_DEAD_CODE_CHECK_ID,
     owner: pythonCheckOwner,
@@ -21,15 +21,15 @@ export function createDeadCodeCheck(): ValidationCheckDefinition {
     defaultSeverity: "warning",
     supportedScopes: supportedPythonValidationScopes,
     requiresGraph: true,
-    graphRequirements: deadCodeGraphRequirements,
+    graphRequirements: createDeadCodeGraphRequirements(resolveRoots),
     run: async (context) => {
-      const sourceSet = await materializePythonSources(context);
+      const rootPaths = await resolveRoots(context);
       const [symbolFacts, calls, fileNodes] = await Promise.all([
         context.graph.facts({ kind: "symbols" }),
         context.graph.calls(),
-        context.graph.fileNodes(sourceSet.rootPaths)
+        context.graph.fileNodes(rootPaths)
       ]);
-      const scopedPaths = new Set(sourceSet.rootPaths);
+      const scopedPaths = new Set(rootPaths);
       const scopedSymbols = symbolFacts.nodes.filter((node) => isScopedSymbol(node, scopedPaths));
       const unsupportedFileExports = fileNodes.flatMap(graphFactUnsupportedFileExportMetadata);
       if (!scopedSymbols.some(graphFactHasExportMetadata) && unsupportedFileExports.length === 0) {

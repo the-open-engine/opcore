@@ -1,6 +1,9 @@
+import sys
+
 from .base import BaseModel
 from .helpers import build_name
-from .missing import MissingLocal
+if sys.version_info < (0, 0):
+    from .missing import MissingLocal
 
 _private = 1
 __all__ = ["PublicModel", "make_model"]

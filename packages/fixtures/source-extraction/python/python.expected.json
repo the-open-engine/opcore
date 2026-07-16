@@ -20,13 +20,31 @@
     "class:src/pkg/base.py#BaseModel",
     "class:src/pkg/models.py#PublicModel",
     "class:tests/test_models.py#TestPublicModel",
+    "file:src/cases/alias_case.py",
+    "file:src/cases/conditional_case.py",
+    "file:src/cases/docstring_case.py",
+    "file:src/cases/multiline_case.py",
+    "file:src/cases/namespace_case.py",
+    "file:src/cases/package_case.py",
+    "file:src/cases/star_case.py",
+    "file:src/cases/stub_case.py",
+    "file:src/cases/submodule_case.py",
+    "file:src/namespace_pkg/tool.py",
     "file:src/pkg/__init__.py",
+    "file:src/pkg/alias_target.py",
     "file:src/pkg/async_tools.py",
     "file:src/pkg/base.py",
     "file:src/pkg/broken.py",
+    "file:src/pkg/conditional_target.py",
+    "file:src/pkg/ghost.py",
     "file:src/pkg/helpers.py",
     "file:src/pkg/models.py",
+    "file:src/pkg/multiline.py",
+    "file:src/pkg/relative_case.py",
+    "file:src/pkg/relative_target.py",
+    "file:src/pkg/star_target.py",
     "file:src/pkg/stubs.pyi",
+    "file:src/pkg/submodule.py",
     "file:src/pkg/uses_stub.py",
     "file:tests/test_models.py",
     "function:src/pkg/async_tools.py#load_name",
@@ -41,17 +59,52 @@
     "function:src/pkg/uses_stub.py#call_stub",
     "function:tests/test_models.py#TestPublicModel.test_render",
     "function:tests/test_models.py#test_make_model",
+    "module:src/cases/alias_case.py#src.cases.alias_case",
+    "module:src/cases/conditional_case.py#src.cases.conditional_case",
+    "module:src/cases/docstring_case.py#src.cases.docstring_case",
+    "module:src/cases/multiline_case.py#src.cases.multiline_case",
+    "module:src/cases/namespace_case.py#src.cases.namespace_case",
+    "module:src/cases/package_case.py#src.cases.package_case",
+    "module:src/cases/star_case.py#src.cases.star_case",
+    "module:src/cases/stub_case.py#src.cases.stub_case",
+    "module:src/cases/submodule_case.py#src.cases.submodule_case",
+    "module:src/namespace_pkg/tool.py#src.namespace_pkg.tool",
     "module:src/pkg/__init__.py#src.pkg",
+    "module:src/pkg/alias_target.py#src.pkg.alias_target",
     "module:src/pkg/async_tools.py#src.pkg.async_tools",
     "module:src/pkg/base.py#src.pkg.base",
     "module:src/pkg/broken.py#src.pkg.broken",
+    "module:src/pkg/conditional_target.py#src.pkg.conditional_target",
+    "module:src/pkg/ghost.py#src.pkg.ghost",
     "module:src/pkg/helpers.py#src.pkg.helpers",
     "module:src/pkg/models.py#src.pkg.models",
+    "module:src/pkg/multiline.py#src.pkg.multiline",
+    "module:src/pkg/relative_case.py#src.pkg.relative_case",
+    "module:src/pkg/relative_target.py#src.pkg.relative_target",
+    "module:src/pkg/star_target.py#src.pkg.star_target",
     "module:src/pkg/stubs.pyi#src.pkg.stubs",
+    "module:src/pkg/submodule.py#src.pkg.submodule",
     "module:src/pkg/uses_stub.py#src.pkg.uses_stub",
     "module:tests/test_models.py#tests.test_models",
+    "variable:src/cases/alias_case.py#VALUE",
+    "variable:src/cases/conditional_case.py#VALUE",
+    "variable:src/cases/docstring_case.py#VALUE",
+    "variable:src/cases/multiline_case.py#VALUE",
+    "variable:src/cases/namespace_case.py#VALUE",
+    "variable:src/cases/package_case.py#VALUE",
+    "variable:src/cases/stub_case.py#VALUE",
+    "variable:src/cases/submodule_case.py#VALUE",
+    "variable:src/namespace_pkg/tool.py#VALUE",
     "variable:src/pkg/__init__.py#PACKAGE_VALUE",
-    "variable:src/pkg/models.py#_private"
+    "variable:src/pkg/alias_target.py#VALUE",
+    "variable:src/pkg/conditional_target.py#VALUE",
+    "variable:src/pkg/ghost.py#VALUE",
+    "variable:src/pkg/models.py#_private",
+    "variable:src/pkg/multiline.py#VALUE",
+    "variable:src/pkg/relative_case.py#VALUE",
+    "variable:src/pkg/relative_target.py#VALUE",
+    "variable:src/pkg/star_target.py#STAR_VALUE",
+    "variable:src/pkg/submodule.py#VALUE"
   ],
   "edgeTriples": [
     [
@@ -106,6 +159,11 @@
     ],
     [
       "CALLS",
+      "variable:src/cases/stub_case.py#VALUE",
+      "function:src/pkg/stubs.pyi#stubbed"
+    ],
+    [
+      "CALLS",
       "variable:src/pkg/__init__.py#PACKAGE_VALUE",
       "class:src/pkg/models.py#PublicModel"
     ],
@@ -126,8 +184,63 @@
     ],
     [
       "CONTAINS",
+      "file:src/cases/alias_case.py",
+      "module:src/cases/alias_case.py#src.cases.alias_case"
+    ],
+    [
+      "CONTAINS",
+      "file:src/cases/conditional_case.py",
+      "module:src/cases/conditional_case.py#src.cases.conditional_case"
+    ],
+    [
+      "CONTAINS",
+      "file:src/cases/docstring_case.py",
+      "module:src/cases/docstring_case.py#src.cases.docstring_case"
+    ],
+    [
+      "CONTAINS",
+      "file:src/cases/multiline_case.py",
+      "module:src/cases/multiline_case.py#src.cases.multiline_case"
+    ],
+    [
+      "CONTAINS",
+      "file:src/cases/namespace_case.py",
+      "module:src/cases/namespace_case.py#src.cases.namespace_case"
+    ],
+    [
+      "CONTAINS",
+      "file:src/cases/package_case.py",
+      "module:src/cases/package_case.py#src.cases.package_case"
+    ],
+    [
+      "CONTAINS",
+      "file:src/cases/star_case.py",
+      "module:src/cases/star_case.py#src.cases.star_case"
+    ],
+    [
+      "CONTAINS",
+      "file:src/cases/stub_case.py",
+      "module:src/cases/stub_case.py#src.cases.stub_case"
+    ],
+    [
+      "CONTAINS",
+      "file:src/cases/submodule_case.py",
+      "module:src/cases/submodule_case.py#src.cases.submodule_case"
+    ],
+    [
+      "CONTAINS",
+      "file:src/namespace_pkg/tool.py",
+      "module:src/namespace_pkg/tool.py#src.namespace_pkg.tool"
+    ],
+    [
+      "CONTAINS",
       "file:src/pkg/__init__.py",
       "module:src/pkg/__init__.py#src.pkg"
+    ],
+    [
+      "CONTAINS",
+      "file:src/pkg/alias_target.py",
+      "module:src/pkg/alias_target.py#src.pkg.alias_target"
     ],
     [
       "CONTAINS",
@@ -146,6 +259,16 @@
     ],
     [
       "CONTAINS",
+      "file:src/pkg/conditional_target.py",
+      "module:src/pkg/conditional_target.py#src.pkg.conditional_target"
+    ],
+    [
+      "CONTAINS",
+      "file:src/pkg/ghost.py",
+      "module:src/pkg/ghost.py#src.pkg.ghost"
+    ],
+    [
+      "CONTAINS",
       "file:src/pkg/helpers.py",
       "module:src/pkg/helpers.py#src.pkg.helpers"
     ],
@@ -156,8 +279,33 @@
     ],
     [
       "CONTAINS",
+      "file:src/pkg/multiline.py",
+      "module:src/pkg/multiline.py#src.pkg.multiline"
+    ],
+    [
+      "CONTAINS",
+      "file:src/pkg/relative_case.py",
+      "module:src/pkg/relative_case.py#src.pkg.relative_case"
+    ],
+    [
+      "CONTAINS",
+      "file:src/pkg/relative_target.py",
+      "module:src/pkg/relative_target.py#src.pkg.relative_target"
+    ],
+    [
+      "CONTAINS",
+      "file:src/pkg/star_target.py",
+      "module:src/pkg/star_target.py#src.pkg.star_target"
+    ],
+    [
+      "CONTAINS",
       "file:src/pkg/stubs.pyi",
       "module:src/pkg/stubs.pyi#src.pkg.stubs"
+    ],
+    [
+      "CONTAINS",
+      "file:src/pkg/submodule.py",
+      "module:src/pkg/submodule.py#src.pkg.submodule"
     ],
     [
       "CONTAINS",
@@ -176,8 +324,58 @@
     ],
     [
       "CONTAINS",
+      "module:src/cases/alias_case.py#src.cases.alias_case",
+      "variable:src/cases/alias_case.py#VALUE"
+    ],
+    [
+      "CONTAINS",
+      "module:src/cases/conditional_case.py#src.cases.conditional_case",
+      "variable:src/cases/conditional_case.py#VALUE"
+    ],
+    [
+      "CONTAINS",
+      "module:src/cases/docstring_case.py#src.cases.docstring_case",
+      "variable:src/cases/docstring_case.py#VALUE"
+    ],
+    [
+      "CONTAINS",
+      "module:src/cases/multiline_case.py#src.cases.multiline_case",
+      "variable:src/cases/multiline_case.py#VALUE"
+    ],
+    [
+      "CONTAINS",
+      "module:src/cases/namespace_case.py#src.cases.namespace_case",
+      "variable:src/cases/namespace_case.py#VALUE"
+    ],
+    [
+      "CONTAINS",
+      "module:src/cases/package_case.py#src.cases.package_case",
+      "variable:src/cases/package_case.py#VALUE"
+    ],
+    [
+      "CONTAINS",
+      "module:src/cases/stub_case.py#src.cases.stub_case",
+      "variable:src/cases/stub_case.py#VALUE"
+    ],
+    [
+      "CONTAINS",
+      "module:src/cases/submodule_case.py#src.cases.submodule_case",
+      "variable:src/cases/submodule_case.py#VALUE"
+    ],
+    [
+      "CONTAINS",
+      "module:src/namespace_pkg/tool.py#src.namespace_pkg.tool",
+      "variable:src/namespace_pkg/tool.py#VALUE"
+    ],
+    [
+      "CONTAINS",
       "module:src/pkg/__init__.py#src.pkg",
       "variable:src/pkg/__init__.py#PACKAGE_VALUE"
+    ],
+    [
+      "CONTAINS",
+      "module:src/pkg/alias_target.py#src.pkg.alias_target",
+      "variable:src/pkg/alias_target.py#VALUE"
     ],
     [
       "CONTAINS",
@@ -193,6 +391,16 @@
       "CONTAINS",
       "module:src/pkg/base.py#src.pkg.base",
       "class:src/pkg/base.py#BaseModel"
+    ],
+    [
+      "CONTAINS",
+      "module:src/pkg/conditional_target.py#src.pkg.conditional_target",
+      "variable:src/pkg/conditional_target.py#VALUE"
+    ],
+    [
+      "CONTAINS",
+      "module:src/pkg/ghost.py#src.pkg.ghost",
+      "variable:src/pkg/ghost.py#VALUE"
     ],
     [
       "CONTAINS",
@@ -221,8 +429,33 @@
     ],
     [
       "CONTAINS",
+      "module:src/pkg/multiline.py#src.pkg.multiline",
+      "variable:src/pkg/multiline.py#VALUE"
+    ],
+    [
+      "CONTAINS",
+      "module:src/pkg/relative_case.py#src.pkg.relative_case",
+      "variable:src/pkg/relative_case.py#VALUE"
+    ],
+    [
+      "CONTAINS",
+      "module:src/pkg/relative_target.py#src.pkg.relative_target",
+      "variable:src/pkg/relative_target.py#VALUE"
+    ],
+    [
+      "CONTAINS",
+      "module:src/pkg/star_target.py#src.pkg.star_target",
+      "variable:src/pkg/star_target.py#STAR_VALUE"
+    ],
+    [
+      "CONTAINS",
       "module:src/pkg/stubs.pyi#src.pkg.stubs",
       "function:src/pkg/stubs.pyi#stubbed"
+    ],
+    [
+      "CONTAINS",
+      "module:src/pkg/submodule.py#src.pkg.submodule",
+      "variable:src/pkg/submodule.py#VALUE"
     ],
     [
       "CONTAINS",
@@ -241,6 +474,56 @@
     ],
     [
       "DEPENDS_ON",
+      "file:src/cases/alias_case.py",
+      "file:src/pkg/alias_target.py"
+    ],
+    [
+      "DEPENDS_ON",
+      "file:src/cases/conditional_case.py",
+      "file:src/pkg/conditional_target.py"
+    ],
+    [
+      "DEPENDS_ON",
+      "file:src/cases/docstring_case.py",
+      "file:src/pkg/__init__.py"
+    ],
+    [
+      "DEPENDS_ON",
+      "file:src/cases/multiline_case.py",
+      "file:src/pkg/multiline.py"
+    ],
+    [
+      "DEPENDS_ON",
+      "file:src/cases/multiline_case.py",
+      "file:src/pkg/relative_target.py"
+    ],
+    [
+      "DEPENDS_ON",
+      "file:src/cases/namespace_case.py",
+      "file:src/namespace_pkg/tool.py"
+    ],
+    [
+      "DEPENDS_ON",
+      "file:src/cases/package_case.py",
+      "file:src/pkg/__init__.py"
+    ],
+    [
+      "DEPENDS_ON",
+      "file:src/cases/star_case.py",
+      "file:src/pkg/star_target.py"
+    ],
+    [
+      "DEPENDS_ON",
+      "file:src/cases/stub_case.py",
+      "file:src/pkg/stubs.pyi"
+    ],
+    [
+      "DEPENDS_ON",
+      "file:src/cases/submodule_case.py",
+      "file:src/pkg/submodule.py"
+    ],
+    [
+      "DEPENDS_ON",
       "file:src/pkg/__init__.py",
       "file:src/pkg/models.py"
     ],
@@ -258,6 +541,11 @@
       "DEPENDS_ON",
       "file:src/pkg/models.py",
       "file:src/pkg/helpers.py"
+    ],
+    [
+      "DEPENDS_ON",
+      "file:src/pkg/relative_case.py",
+      "file:src/pkg/relative_target.py"
     ],
     [
       "DEPENDS_ON",
@@ -276,6 +564,56 @@
     ],
     [
       "IMPORTS_FROM",
+      "file:src/cases/alias_case.py",
+      "file:src/pkg/alias_target.py"
+    ],
+    [
+      "IMPORTS_FROM",
+      "file:src/cases/conditional_case.py",
+      "file:src/pkg/conditional_target.py"
+    ],
+    [
+      "IMPORTS_FROM",
+      "file:src/cases/docstring_case.py",
+      "file:src/pkg/__init__.py"
+    ],
+    [
+      "IMPORTS_FROM",
+      "file:src/cases/multiline_case.py",
+      "file:src/pkg/multiline.py"
+    ],
+    [
+      "IMPORTS_FROM",
+      "file:src/cases/multiline_case.py",
+      "file:src/pkg/relative_target.py"
+    ],
+    [
+      "IMPORTS_FROM",
+      "file:src/cases/namespace_case.py",
+      "file:src/namespace_pkg/tool.py"
+    ],
+    [
+      "IMPORTS_FROM",
+      "file:src/cases/package_case.py",
+      "file:src/pkg/__init__.py"
+    ],
+    [
+      "IMPORTS_FROM",
+      "file:src/cases/star_case.py",
+      "file:src/pkg/star_target.py"
+    ],
+    [
+      "IMPORTS_FROM",
+      "file:src/cases/stub_case.py",
+      "file:src/pkg/stubs.pyi"
+    ],
+    [
+      "IMPORTS_FROM",
+      "file:src/cases/submodule_case.py",
+      "file:src/pkg/submodule.py"
+    ],
+    [
+      "IMPORTS_FROM",
       "file:src/pkg/__init__.py",
       "file:src/pkg/models.py"
     ],
@@ -293,6 +631,11 @@
       "IMPORTS_FROM",
       "file:src/pkg/models.py",
       "file:src/pkg/helpers.py"
+    ],
+    [
+      "IMPORTS_FROM",
+      "file:src/pkg/relative_case.py",
+      "file:src/pkg/relative_target.py"
     ],
     [
       "IMPORTS_FROM",
@@ -329,6 +672,80 @@
       "function:src/pkg/models.py#make_model",
       "function:tests/test_models.py#test_make_model"
     ]
+  ],
+  "pythonImportEdges": [
+    {
+      "fromPath": "src/cases/alias_case.py",
+      "toPath": "src/pkg/alias_target.py"
+    },
+    {
+      "fromPath": "src/cases/conditional_case.py",
+      "toPath": "src/pkg/conditional_target.py"
+    },
+    {
+      "fromPath": "src/cases/docstring_case.py",
+      "toPath": "src/pkg/__init__.py"
+    },
+    {
+      "fromPath": "src/cases/multiline_case.py",
+      "toPath": "src/pkg/multiline.py"
+    },
+    {
+      "fromPath": "src/cases/multiline_case.py",
+      "toPath": "src/pkg/relative_target.py"
+    },
+    {
+      "fromPath": "src/cases/namespace_case.py",
+      "toPath": "src/namespace_pkg/tool.py"
+    },
+    {
+      "fromPath": "src/cases/package_case.py",
+      "toPath": "src/pkg/__init__.py"
+    },
+    {
+      "fromPath": "src/cases/star_case.py",
+      "toPath": "src/pkg/star_target.py"
+    },
+    {
+      "fromPath": "src/cases/stub_case.py",
+      "toPath": "src/pkg/stubs.pyi"
+    },
+    {
+      "fromPath": "src/cases/submodule_case.py",
+      "toPath": "src/pkg/submodule.py"
+    },
+    {
+      "fromPath": "src/pkg/__init__.py",
+      "toPath": "src/pkg/models.py"
+    },
+    {
+      "fromPath": "src/pkg/async_tools.py",
+      "toPath": "src/pkg/helpers.py"
+    },
+    {
+      "fromPath": "src/pkg/models.py",
+      "toPath": "src/pkg/base.py"
+    },
+    {
+      "fromPath": "src/pkg/models.py",
+      "toPath": "src/pkg/helpers.py"
+    },
+    {
+      "fromPath": "src/pkg/relative_case.py",
+      "toPath": "src/pkg/relative_target.py"
+    },
+    {
+      "fromPath": "src/pkg/uses_stub.py",
+      "toPath": "src/pkg/stubs.pyi"
+    },
+    {
+      "fromPath": "tests/test_models.py",
+      "toPath": "src/pkg/__init__.py"
+    },
+    {
+      "fromPath": "tests/test_models.py",
+      "toPath": "src/pkg/models.py"
+    }
   ],
   "nodeAttributes": {
     "class:src/pkg/base.py#BaseModel": {
@@ -457,8 +874,41 @@
       "exported": false,
       "isTest": true
     },
+    "module:src/cases/alias_case.py#src.cases.alias_case": {
+      "dottedName": "src.cases.alias_case"
+    },
+    "module:src/cases/conditional_case.py#src.cases.conditional_case": {
+      "dottedName": "src.cases.conditional_case"
+    },
+    "module:src/cases/docstring_case.py#src.cases.docstring_case": {
+      "dottedName": "src.cases.docstring_case"
+    },
+    "module:src/cases/multiline_case.py#src.cases.multiline_case": {
+      "dottedName": "src.cases.multiline_case"
+    },
+    "module:src/cases/namespace_case.py#src.cases.namespace_case": {
+      "dottedName": "src.cases.namespace_case"
+    },
+    "module:src/cases/package_case.py#src.cases.package_case": {
+      "dottedName": "src.cases.package_case"
+    },
+    "module:src/cases/star_case.py#src.cases.star_case": {
+      "dottedName": "src.cases.star_case"
+    },
+    "module:src/cases/stub_case.py#src.cases.stub_case": {
+      "dottedName": "src.cases.stub_case"
+    },
+    "module:src/cases/submodule_case.py#src.cases.submodule_case": {
+      "dottedName": "src.cases.submodule_case"
+    },
+    "module:src/namespace_pkg/tool.py#src.namespace_pkg.tool": {
+      "dottedName": "src.namespace_pkg.tool"
+    },
     "module:src/pkg/__init__.py#src.pkg": {
       "dottedName": "src.pkg"
+    },
+    "module:src/pkg/alias_target.py#src.pkg.alias_target": {
+      "dottedName": "src.pkg.alias_target"
     },
     "module:src/pkg/async_tools.py#src.pkg.async_tools": {
       "dottedName": "src.pkg.async_tools"
@@ -469,14 +919,35 @@
     "module:src/pkg/broken.py#src.pkg.broken": {
       "dottedName": "src.pkg.broken"
     },
+    "module:src/pkg/conditional_target.py#src.pkg.conditional_target": {
+      "dottedName": "src.pkg.conditional_target"
+    },
+    "module:src/pkg/ghost.py#src.pkg.ghost": {
+      "dottedName": "src.pkg.ghost"
+    },
     "module:src/pkg/helpers.py#src.pkg.helpers": {
       "dottedName": "src.pkg.helpers"
     },
     "module:src/pkg/models.py#src.pkg.models": {
       "dottedName": "src.pkg.models"
     },
+    "module:src/pkg/multiline.py#src.pkg.multiline": {
+      "dottedName": "src.pkg.multiline"
+    },
+    "module:src/pkg/relative_case.py#src.pkg.relative_case": {
+      "dottedName": "src.pkg.relative_case"
+    },
+    "module:src/pkg/relative_target.py#src.pkg.relative_target": {
+      "dottedName": "src.pkg.relative_target"
+    },
+    "module:src/pkg/star_target.py#src.pkg.star_target": {
+      "dottedName": "src.pkg.star_target"
+    },
     "module:src/pkg/stubs.pyi#src.pkg.stubs": {
       "dottedName": "src.pkg.stubs"
+    },
+    "module:src/pkg/submodule.py#src.pkg.submodule": {
+      "dottedName": "src.pkg.submodule"
     },
     "module:src/pkg/uses_stub.py#src.pkg.uses_stub": {
       "dottedName": "src.pkg.uses_stub"
@@ -484,18 +955,210 @@
     "module:tests/test_models.py#tests.test_models": {
       "dottedName": "tests.test_models"
     },
+    "variable:src/cases/alias_case.py#VALUE": {
+      "exportKind": "named",
+      "exportName": "VALUE",
+      "exportPolicy": "underscore_convention",
+      "exported": true
+    },
+    "variable:src/cases/conditional_case.py#VALUE": {
+      "exportKind": "named",
+      "exportName": "VALUE",
+      "exportPolicy": "underscore_convention",
+      "exported": true
+    },
+    "variable:src/cases/docstring_case.py#VALUE": {
+      "exportKind": "named",
+      "exportName": "VALUE",
+      "exportPolicy": "underscore_convention",
+      "exported": true
+    },
+    "variable:src/cases/multiline_case.py#VALUE": {
+      "exportKind": "named",
+      "exportName": "VALUE",
+      "exportPolicy": "underscore_convention",
+      "exported": true
+    },
+    "variable:src/cases/namespace_case.py#VALUE": {
+      "exportKind": "named",
+      "exportName": "VALUE",
+      "exportPolicy": "underscore_convention",
+      "exported": true
+    },
+    "variable:src/cases/package_case.py#VALUE": {
+      "exportKind": "named",
+      "exportName": "VALUE",
+      "exportPolicy": "underscore_convention",
+      "exported": true
+    },
+    "variable:src/cases/stub_case.py#VALUE": {
+      "exportKind": "named",
+      "exportName": "VALUE",
+      "exportPolicy": "underscore_convention",
+      "exported": true
+    },
+    "variable:src/cases/submodule_case.py#VALUE": {
+      "exportKind": "named",
+      "exportName": "VALUE",
+      "exportPolicy": "underscore_convention",
+      "exported": true
+    },
+    "variable:src/namespace_pkg/tool.py#VALUE": {
+      "exportKind": "named",
+      "exportName": "VALUE",
+      "exportPolicy": "underscore_convention",
+      "exported": true
+    },
     "variable:src/pkg/__init__.py#PACKAGE_VALUE": {
       "exportKind": "named",
       "exportName": "PACKAGE_VALUE",
       "exportPolicy": "__all__",
       "exported": true
     },
+    "variable:src/pkg/alias_target.py#VALUE": {
+      "exportKind": "named",
+      "exportName": "VALUE",
+      "exportPolicy": "underscore_convention",
+      "exported": true
+    },
+    "variable:src/pkg/conditional_target.py#VALUE": {
+      "exportKind": "named",
+      "exportName": "VALUE",
+      "exportPolicy": "underscore_convention",
+      "exported": true
+    },
+    "variable:src/pkg/ghost.py#VALUE": {
+      "exportKind": "named",
+      "exportName": "VALUE",
+      "exportPolicy": "underscore_convention",
+      "exported": true
+    },
     "variable:src/pkg/models.py#_private": {
       "exportPolicy": "__all__",
       "exported": false
+    },
+    "variable:src/pkg/multiline.py#VALUE": {
+      "exportKind": "named",
+      "exportName": "VALUE",
+      "exportPolicy": "underscore_convention",
+      "exported": true
+    },
+    "variable:src/pkg/relative_case.py#VALUE": {
+      "exportKind": "named",
+      "exportName": "VALUE",
+      "exportPolicy": "underscore_convention",
+      "exported": true
+    },
+    "variable:src/pkg/relative_target.py#VALUE": {
+      "exportKind": "named",
+      "exportName": "VALUE",
+      "exportPolicy": "underscore_convention",
+      "exported": true
+    },
+    "variable:src/pkg/star_target.py#STAR_VALUE": {
+      "exportKind": "named",
+      "exportName": "STAR_VALUE",
+      "exportPolicy": "underscore_convention",
+      "exported": true
+    },
+    "variable:src/pkg/submodule.py#VALUE": {
+      "exportKind": "named",
+      "exportName": "VALUE",
+      "exportPolicy": "underscore_convention",
+      "exported": true
     }
   },
   "fileExports": {
+    "file:src/cases/alias_case.py": [
+      {
+        "exported": "VALUE",
+        "kind": "named",
+        "local": "VALUE",
+        "policy": "underscore_convention",
+        "source": null,
+        "supportedSymbol": true
+      }
+    ],
+    "file:src/cases/conditional_case.py": [
+      {
+        "exported": "VALUE",
+        "kind": "named",
+        "local": "VALUE",
+        "policy": "underscore_convention",
+        "source": null,
+        "supportedSymbol": true
+      }
+    ],
+    "file:src/cases/docstring_case.py": [
+      {
+        "exported": "VALUE",
+        "kind": "named",
+        "local": "VALUE",
+        "policy": "underscore_convention",
+        "source": null,
+        "supportedSymbol": true
+      }
+    ],
+    "file:src/cases/multiline_case.py": [
+      {
+        "exported": "VALUE",
+        "kind": "named",
+        "local": "VALUE",
+        "policy": "underscore_convention",
+        "source": null,
+        "supportedSymbol": true
+      }
+    ],
+    "file:src/cases/namespace_case.py": [
+      {
+        "exported": "VALUE",
+        "kind": "named",
+        "local": "VALUE",
+        "policy": "underscore_convention",
+        "source": null,
+        "supportedSymbol": true
+      }
+    ],
+    "file:src/cases/package_case.py": [
+      {
+        "exported": "VALUE",
+        "kind": "named",
+        "local": "VALUE",
+        "policy": "underscore_convention",
+        "source": null,
+        "supportedSymbol": true
+      }
+    ],
+    "file:src/cases/stub_case.py": [
+      {
+        "exported": "VALUE",
+        "kind": "named",
+        "local": "VALUE",
+        "policy": "underscore_convention",
+        "source": null,
+        "supportedSymbol": true
+      }
+    ],
+    "file:src/cases/submodule_case.py": [
+      {
+        "exported": "VALUE",
+        "kind": "named",
+        "local": "VALUE",
+        "policy": "underscore_convention",
+        "source": null,
+        "supportedSymbol": true
+      }
+    ],
+    "file:src/namespace_pkg/tool.py": [
+      {
+        "exported": "VALUE",
+        "kind": "named",
+        "local": "VALUE",
+        "policy": "underscore_convention",
+        "source": null,
+        "supportedSymbol": true
+      }
+    ],
     "file:src/pkg/__init__.py": [
       {
         "exported": "PACKAGE_VALUE",
@@ -512,6 +1175,16 @@
         "policy": "__all__",
         "source": null,
         "supportedSymbol": false
+      }
+    ],
+    "file:src/pkg/alias_target.py": [
+      {
+        "exported": "VALUE",
+        "kind": "named",
+        "local": "VALUE",
+        "policy": "underscore_convention",
+        "source": null,
+        "supportedSymbol": true
       }
     ],
     "file:src/pkg/async_tools.py": [
@@ -537,6 +1210,26 @@
         "exported": "BaseModel",
         "kind": "named",
         "local": "BaseModel",
+        "policy": "underscore_convention",
+        "source": null,
+        "supportedSymbol": true
+      }
+    ],
+    "file:src/pkg/conditional_target.py": [
+      {
+        "exported": "VALUE",
+        "kind": "named",
+        "local": "VALUE",
+        "policy": "underscore_convention",
+        "source": null,
+        "supportedSymbol": true
+      }
+    ],
+    "file:src/pkg/ghost.py": [
+      {
+        "exported": "VALUE",
+        "kind": "named",
+        "local": "VALUE",
         "policy": "underscore_convention",
         "source": null,
         "supportedSymbol": true
@@ -570,11 +1263,61 @@
         "supportedSymbol": true
       }
     ],
+    "file:src/pkg/multiline.py": [
+      {
+        "exported": "VALUE",
+        "kind": "named",
+        "local": "VALUE",
+        "policy": "underscore_convention",
+        "source": null,
+        "supportedSymbol": true
+      }
+    ],
+    "file:src/pkg/relative_case.py": [
+      {
+        "exported": "VALUE",
+        "kind": "named",
+        "local": "VALUE",
+        "policy": "underscore_convention",
+        "source": null,
+        "supportedSymbol": true
+      }
+    ],
+    "file:src/pkg/relative_target.py": [
+      {
+        "exported": "VALUE",
+        "kind": "named",
+        "local": "VALUE",
+        "policy": "underscore_convention",
+        "source": null,
+        "supportedSymbol": true
+      }
+    ],
+    "file:src/pkg/star_target.py": [
+      {
+        "exported": "STAR_VALUE",
+        "kind": "named",
+        "local": "STAR_VALUE",
+        "policy": "underscore_convention",
+        "source": null,
+        "supportedSymbol": true
+      }
+    ],
     "file:src/pkg/stubs.pyi": [
       {
         "exported": "stubbed",
         "kind": "named",
         "local": "stubbed",
+        "policy": "underscore_convention",
+        "source": null,
+        "supportedSymbol": true
+      }
+    ],
+    "file:src/pkg/submodule.py": [
+      {
+        "exported": "VALUE",
+        "kind": "named",
+        "local": "VALUE",
         "policy": "underscore_convention",
         "source": null,
         "supportedSymbol": true

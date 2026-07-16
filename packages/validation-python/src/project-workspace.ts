@@ -3,6 +3,7 @@ import { realpathSync } from "node:fs";
 import { relative, resolve, sep } from "node:path";
 import { validateRepoRelativePath } from "@the-open-engine/opcore-contracts";
 import type { ValidationFileView } from "@the-open-engine/opcore-validation";
+import { isRelevantPythonConfig } from "./project-config-files.js";
 
 export interface PythonProjectWorkspaceRealpath {
   path: string;
@@ -30,12 +31,24 @@ export function createValidationFileViewPythonWorkspace(
       return result.status === "found" ? result.content : undefined;
     },
     list: async () => {
-      const candidates = [...new Set([
-        ...await fileView.listVisibleFiles(),
-        ...(fullWorkspace === undefined ? [] : await fullWorkspace.list())
-      ])].sort();
+      const fileViewPaths = await fileView.listVisibleFiles();
+      const fullWorkspacePaths = fullWorkspace === undefined ? [] : await fullWorkspace.list();
+      const fileViewPathSet = new Set(fileViewPaths);
+      const fullWorkspacePathSet = new Set(fullWorkspacePaths);
+      const candidates = [...new Set([...fileViewPaths, ...fullWorkspacePaths])]
+        .filter(isPythonProjectWorkspaceInput)
+        .sort();
       const visible: string[] = [];
       for (const path of candidates) {
+        if (fileView.defaultReadState === "after") {
+          const overlay = fileView.overlayFor(path);
+          if (overlay?.action === "delete") continue;
+          if (overlay?.action === "write"
+            || (fileViewPathSet.has(path) && (fullWorkspace === undefined || fullWorkspacePathSet.has(path)))) {
+            visible.push(path);
+            continue;
+          }
+        }
         if (await fileView.exists(path)) visible.push(path);
       }
       return visible;
@@ -52,6 +65,9 @@ export function createValidationFileViewPythonWorkspace(
     },
     executableExists: executableAvailable
   };
+}
+function isPythonProjectWorkspaceInput(path: string): boolean {
+  return /\.pyi?$/u.test(path) || isRelevantPythonConfig(path);
 }
 
 export function createNodePythonProjectWorkspace(repoRoot: string): PythonProjectWorkspace {

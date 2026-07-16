@@ -40,6 +40,7 @@ export function createSyntaxCheck(
       if (skipped !== undefined) return skipped;
 
       const sources = await readPythonAfterSources(context);
+      if (sources.length === 0) return { diagnostics: [] };
       if (resolveContexts === undefined) return missingContextResult(sources.map((source) => source.path));
       const resolvedContexts = await resolveContexts(context);
       const missing = sources.map((source) => source.path).filter((path) => !resolvedContexts.some((candidate) => candidate.target === path));

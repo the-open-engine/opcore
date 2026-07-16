@@ -3,10 +3,12 @@ import {
   validationChecksForRepoPolicy as validationChecksForSharedRepoPolicy,
   validationChecksForRepoPolicyAndCoverage as validationChecksForSharedRepoPolicyAndCoverage
 } from "@the-open-engine/opcore-validation-policy";
+import { graphPythonImportAnalyzer } from "@the-open-engine/opcore-graph";
 import { invokeCloneAnalysis } from "./clone-invoker.js";
 import { createNodePythonProjectWorkspace } from "@the-open-engine/opcore-validation-python";
 
 const opcoreValidationPolicyOptions = {
+  pythonImportAnalyzer: graphPythonImportAnalyzer,
   clone: {
     invoke: invokeCloneAnalysis
   }

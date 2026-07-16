@@ -5,12 +5,10 @@ import type {
   PythonProjectTarget
 } from "@the-open-engine/opcore-contracts";
 import { parse as parseToml } from "smol-toml";
+import { isRelevantPythonConfig } from "./project-config-files.js";
 import type { PythonProjectWorkspace } from "./project-workspace.js";
 import { pythonVersionSatisfiesConstraint } from "./version-constraint.js";
 
-export const pythonBoundaryFileNames = [
-  "pyproject.toml", "Pipfile", "Pipfile.lock", "poetry.lock", "pdm.lock", "uv.lock", "setup.cfg", "setup.py"
-] as const;
 
 export const pythonToolConfigPrecedence = {
   pyright: ["pyrightconfig.json", "pyproject.toml"],
@@ -204,12 +202,6 @@ function selectConfig(
   return name === undefined ? undefined : joinRoot(projectRoot, name);
 }
 
-function isRelevantPythonConfig(path: string): boolean {
-  const name = basename(path);
-  return pythonBoundaryFileNames.includes(name as (typeof pythonBoundaryFileNames)[number]) ||
-    /^requirements.*\.txt$/u.test(name) ||
-    ["pyrightconfig.json", "ruff.toml", ".ruff.toml", "mypy.ini", ".mypy.ini", "pytest.ini", "tox.ini"].includes(name);
-}
 
 function isTomlConfig(path: string): boolean {
   return path.endsWith(".toml") || ["Pipfile", "poetry.lock", "pdm.lock", "uv.lock"].includes(basename(path));

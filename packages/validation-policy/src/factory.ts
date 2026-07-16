@@ -52,9 +52,10 @@ export function createBuiltInValidationChecks(
       deadCode: checksConfig?.typescript?.deadCode
     }),
     ...createRustValidationChecks(rustValidationOptions(config)),
-    ...createPythonValidationChecks(
-      pythonWorkspace === undefined ? {} : { nodeWorkspace: pythonWorkspace }
-    ),
+    ...createPythonValidationChecks({
+      ...(pythonWorkspace === undefined ? {} : { nodeWorkspace: pythonWorkspace }),
+      ...(options.pythonImportAnalyzer === undefined ? {} : { importAnalyzer: options.pythonImportAnalyzer })
+    }),
     ...createDocsValidationChecks(docsValidationOptions(checksConfig?.docs)),
     ...cloneChecks(checksConfig?.clone, options)
   ];
@@ -80,11 +81,12 @@ function validationChecksForRepoConfig(
   const adapters = config.validation.adapters === undefined ? undefined : new Set<string>(config.validation.adapters);
   const disabled = new Set(configuredDisabled);
   const defaults = new Set(configuredDefaults);
+  const filteredContexts = new WeakMap<object, Parameters<ValidationCheckDefinition["run"]>[0]>();
   const checks = available
     .filter((check) => adapters === undefined || adapters.has(check.adapter))
     .filter((check) => !disabled.has(check.id))
     .map((check) => applyDefaultScopePolicy(check, defaults))
-    .map((check) => applyPathPolicy(check, config.validation.pathPolicy));
+    .map((check) => applyPathPolicy(check, config.validation.pathPolicy, filteredContexts));
   createValidationCheckRegistry(checks);
   return checks;
 }
@@ -151,13 +153,21 @@ function applyDefaultScopePolicy(check: ValidationCheckDefinition, defaults: Rea
 
 function applyPathPolicy(
   check: ValidationCheckDefinition,
-  pathPolicy: OpcorePathPolicy | undefined
+  pathPolicy: OpcorePathPolicy | undefined,
+  filteredContexts: WeakMap<object, Parameters<ValidationCheckDefinition["run"]>[0]>
 ): ValidationCheckDefinition {
   if (pathPolicy === undefined) return check;
-  const run: ValidationCheckDefinition["run"] = (context) => check.run(withFilteredFileView(context, pathPolicy));
+  const filteredContext = (context: Parameters<ValidationCheckDefinition["run"]>[0]) => {
+    const existing = filteredContexts.get(context.fileView);
+    if (existing !== undefined) return existing;
+    const filtered = withFilteredFileView(context, pathPolicy);
+    filteredContexts.set(context.fileView, filtered);
+    return filtered;
+  };
+  const run: ValidationCheckDefinition["run"] = (context) => check.run(filteredContext(context));
   if (check.graphRequirements === undefined) return { ...check, run };
   const graphRequirements: NonNullable<ValidationCheckDefinition["graphRequirements"]> = (context) =>
-    check.graphRequirements?.(withFilteredFileView(context, pathPolicy)) ?? [];
+    check.graphRequirements?.(filteredContext(context)) ?? [];
   return { ...check, graphRequirements, run };
 }
 
