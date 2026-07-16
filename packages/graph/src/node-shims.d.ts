@@ -62,6 +62,7 @@ declare module "node:crypto" {
 declare module "node:fs" {
   export function closeSync(fd: number): void;
   export function existsSync(path: string): boolean;
+  export const mkdirSync: (path: string, options?: { recursive?: boolean }) => void;
   export function mkdtempSync(prefix: string): string;
   export function openSync(path: string, flags: string): number;
   export function readFileSync(path: string): Uint8Array;
@@ -69,6 +70,7 @@ declare module "node:fs" {
   export function readSync(fd: number, buffer: Uint8Array, offset: number, length: number, position: number): number;
   export function rmSync(path: string, options?: { recursive?: boolean; force?: boolean }): void;
   export function statSync(path: string): { size: number; isFile: () => boolean };
+  export const writeFileSync: (path: string, content: string) => void;
 }
 
 declare module "node:os" {

@@ -5,8 +5,9 @@ import { createImportGraphCheck } from "./import-graph-check.js";
 import { createRelevantTestsCheck } from "./relevant-tests-check.js";
 import { createSourceHygieneCheck } from "./source-hygiene-check.js";
 import { createSyntaxCheck, type PythonSyntaxCheckOptions } from "./syntax-check.js";
-import { createPythonProjectContextResolver, pythonInputSet } from "./source-files.js";
+import { createPythonProjectContextResolver, createPythonSourceRootResolver, createPythonSourceSetResolver, pythonInputSet } from "./source-files.js";
 import { createTypeCheck, type PythonTypeCheckOptions } from "./type-check.js";
+import type { PythonImportAnalyzer } from "./import-analysis.js";
 
 export {
   PYTHON_DEAD_CODE_CHECK_ID,
@@ -20,6 +21,7 @@ export {
 } from "./check-ids.js";
 export { validationPythonAdapterName } from "./check-constants.js";
 export { isPythonSourcePath } from "./source-files.js";
+export type { PythonImportAnalyzer, PythonImportEdge, PythonImportSourceFile } from "./import-analysis.js";
 export {
   resolvePythonProjectContext,
   resolvePythonProjectContexts,
@@ -36,7 +38,9 @@ export { createPythonValidationAdapterStatus, type PythonValidationToolchainOpti
 export { createSyntaxCheck, type PythonSyntaxCheckOptions } from "./syntax-check.js";
 export { createTypeCheck, type PythonTypeCheckOptions } from "./type-check.js";
 
-export interface CreatePythonValidationChecksOptions extends PythonTypeCheckOptions, PythonSyntaxCheckOptions {}
+export interface CreatePythonValidationChecksOptions extends PythonTypeCheckOptions, PythonSyntaxCheckOptions {
+  importAnalyzer?: PythonImportAnalyzer;
+}
 
 export function createPythonValidationChecks(
   options: CreatePythonValidationChecksOptions = {}
@@ -51,13 +55,15 @@ export function createPythonValidationChecks(
     ...(options.processProbe === undefined ? {} : { processProbe: options.processProbe }),
     ...(options.timeoutMs === undefined ? {} : { timeoutMs: options.timeoutMs })
   });
+  const resolveSources = createPythonSourceSetResolver(options.importAnalyzer, resolveContexts);
+  const resolveRoots = createPythonSourceRootResolver();
   return [
     createSyntaxCheck(options, resolveContexts),
     createSourceHygieneCheck(),
-    createTypeCheck(options, resolveContexts),
-    createImportGraphCheck(resolveContexts),
-    createDeadCodeCheck(),
-    createRelevantTestsCheck()
+    createTypeCheck(options, resolveContexts, resolveSources),
+    createImportGraphCheck(resolveSources),
+    createDeadCodeCheck(resolveRoots),
+    createRelevantTestsCheck(resolveRoots)
   ].map((check) => withPythonProjectContexts(check, resolveContexts));
 }
 

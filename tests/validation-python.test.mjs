@@ -15,6 +15,7 @@ import {
   createPythonValidationAdapterStatus,
   createPythonValidationChecks as createCanonicalPythonValidationChecks,
   createNodePythonProjectWorkspace,
+  createValidationFileViewPythonWorkspace,
   createSyntaxCheck,
   createTypeCheck,
   isPythonSourcePath,
@@ -25,6 +26,10 @@ import {
 
 const repoRoot = dirname(fileURLToPath(import.meta.url));
 const validationFixtureRoot = join(repoRoot, "../packages/fixtures/validation-python");
+const sourceExtractionPythonFixtureRoot = join(repoRoot, "../packages/fixtures/source-extraction/python");
+const sourceExtractionPythonExpected = JSON.parse(
+  readFileSync(join(sourceExtractionPythonFixtureRoot, "python.expected.json"), "utf8")
+);
 
 describe("validation-python adapter", () => {
   it("keeps compiler-truth fixture resources out of repository Python source discovery", () => {
@@ -170,7 +175,7 @@ describe("validation-python adapter", () => {
     }
   });
 
-  it("materializes absolute imports through the owning project's source roots", async () => {
+  it("materializes canonical transitive imports through the owning project's source roots", async () => {
     const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-types-source-root-"));
     try {
       const projectRoot = join(repoRoot, "services/api");
@@ -182,27 +187,50 @@ describe("validation-python adapter", () => {
         [
           "#!/bin/sh",
           "if [ \"$1\" = \"--version\" ]; then echo 'mypy 1.8.0'; exit 0; fi",
-          "if [ ! -f src/acme/dep.py ]; then echo 'dependency was not materialized' >&2; exit 9; fi",
+          "if [ -f ../__init__.py ] || [ -f ../leak.py ]; then echo 'initializer ascent escaped the source root' >&2; exit 9; fi",
+          "if [ ! -f src/acme/__init__.py ]; then echo 'package initializer was not materialized' >&2; exit 9; fi",
+          "if [ ! -f src/acme/models.py ]; then echo 'initializer dependency was not materialized' >&2; exit 9; fi",
+          "if [ ! -f src/acme/mid.py ]; then echo 'direct dependency was not materialized' >&2; exit 9; fi",
+          "if [ ! -f src/acme/dep.py ]; then echo 'transitive dependency was not materialized' >&2; exit 9; fi",
+          "if [ ! -f ../../libs/shared/src/shared/__init__.py ]; then echo 'cross-project initializer was not materialized' >&2; exit 9; fi",
+          "if [ ! -f ../../libs/shared/src/shared/bootstrap.py ]; then echo 'cross-project initializer dependency was not materialized' >&2; exit 9; fi",
           "exit 0",
           ""
         ].join("\n")
       );
       const files = {
+        "services/__init__.py": "from . import leak\n",
+        "services/leak.py": "VALUE = 'outside source root'\n",
+        "libs/shared/pyproject.toml": "[project]\nname='shared'\n",
+        "libs/shared/src/shared/__init__.py": "from . import bootstrap\n",
+        "libs/shared/src/shared/bootstrap.py": "READY = True\n",
+        "libs/shared/src/shared/models.py": "class SharedModel: pass\n",
         "services/api/pyproject.toml": "[project]\nname='api'\n[tool.mypy]\n",
-        "services/api/src/acme/app.py": "from acme import dep\nVALUE = dep.VALUE\n",
-        "services/api/src/acme/dep.py": "VALUE: int = 1\n"
+        "services/api/src/acme/__init__.py": "from .models import Model\n",
+        "services/api/src/acme/ns/app.py": "from acme import (\n    mid,\n)\nfrom shared import models as shared_models\nVALUE = mid.VALUE\n",
+        "services/api/src/acme/mid.py": "from acme import dep\nVALUE = dep.VALUE\n",
+        "services/api/src/acme/dep.py": "VALUE: int = 1\n",
+        "services/api/src/acme/models.py": "class Model: pass\n"
       };
       const result = await runner({
         files,
         checks: createPythonValidationChecks({
           repoRoot,
           env: { PATH: "" },
+          importAnalyzer: fixedImportAnalyzer([
+            { fromPath: "services/__init__.py", toPath: "services/leak.py" },
+            { fromPath: "services/api/src/acme/ns/app.py", toPath: "services/api/src/acme/mid.py" },
+            { fromPath: "services/api/src/acme/ns/app.py", toPath: "libs/shared/src/shared/models.py" },
+            { fromPath: "services/api/src/acme/mid.py", toPath: "services/api/src/acme/dep.py" },
+            { fromPath: "services/api/src/acme/__init__.py", toPath: "services/api/src/acme/models.py" },
+            { fromPath: "libs/shared/src/shared/__init__.py", toPath: "libs/shared/src/shared/bootstrap.py" },
+          ]),
           nodeWorkspace: projectWorkspace(files, () => true)
         })
       }).runValidation(request({
         repo: { repoRoot },
         checks: [PYTHON_TYPES_CHECK_ID],
-        scope: { kind: "files", files: ["services/api/src/acme/app.py"] }
+        scope: { kind: "files", files: ["services/api/src/acme/ns/app.py"] }
       }));
 
       assert.equal(result.status, "passed", JSON.stringify(result, null, 2));
@@ -278,7 +306,11 @@ describe("validation-python adapter", () => {
       };
       const result = await runner({
         files,
-        checks: createPythonValidationChecks({ env: { PATH: "" }, repoRoot })
+        checks: createPythonValidationChecks({
+          env: { PATH: "" },
+          repoRoot,
+          importAnalyzer: fixedImportAnalyzer([{ fromPath: "script.py", toPath: "helper.py" }])
+        })
       }).runValidation(request({
         repo: { repoRoot },
         checks: [PYTHON_TYPES_CHECK_ID],
@@ -535,7 +567,7 @@ describe("validation-python adapter", () => {
       })
     );
 
-    assert.equal(result.status, "passed");
+    assert.equal(result.status, "passed", JSON.stringify(result, null, 2));
     assert.deepEqual(result.diagnostics, []);
   });
 
@@ -746,6 +778,9 @@ describe("validation-python adapter", () => {
         "pkg/app.py": "from .dep import value\nresult = value\n",
         "pkg/dep.py": "value = 1\n"
       },
+      checks: createPythonValidationChecks({
+        importAnalyzer: fixedImportAnalyzer([{ fromPath: "pkg/app.py", toPath: "pkg/dep.py" }])
+      }),
       graphProviderClient: graphClient({
         factQuery: (query) => availableFactResult(query, [], [])
       })
@@ -759,6 +794,230 @@ describe("validation-python adapter", () => {
     assert.equal(result.status, "passed");
     assert.deepEqual(result.diagnostics.map((diagnostic) => diagnostic.code), ["PY_IMPORT_GRAPH_MISSING_EDGE"]);
     assert.match(result.diagnostics[0].message, /pkg\/app\.py -> pkg\/dep\.py/);
+  });
+
+  it("uses one canonical analyzer pass over the complete after-state for import graph validation", async () => {
+    const analysisCalls = [];
+    const importAnalyzer = {
+      async analyze(files) {
+        analysisCalls.push(files);
+        return [{ fromPath: "pkg/app.py", toPath: "pkg/new.py" }];
+      }
+    };
+    const graphEdges = [
+      { kind: "IMPORTS_FROM", from: "file:pkg/app.py", to: "file:pkg/new.py" }
+    ];
+    const result = await runner({
+      files: {
+        "pkg/__init__.py": "",
+        "pkg/app.py": "from pkg import old\n",
+        "pkg/old.py": "OLD = True\n"
+      },
+      checks: createPythonValidationChecks({ importAnalyzer }),
+      graphProviderClient: graphClient({
+        factQuery: (query) => availableFactResult(query, [], graphEdges)
+      })
+    }).runValidation(request({
+      checks: [PYTHON_IMPORT_GRAPH_CHECK_ID],
+      scope: { kind: "files", files: ["pkg/app.py"] },
+      overlays: [{
+        path: "pkg/app.py",
+        action: "write",
+        content: "from pkg import (\n    new,\n)\n"
+      }, {
+        path: "pkg/new.py",
+        action: "write",
+        content: "NEW = True\n"
+      }]
+    }));
+
+    assert.equal(result.status, "passed", JSON.stringify(result, null, 2));
+    assert.deepEqual(result.diagnostics, []);
+    assert.equal(analysisCalls.length, 1);
+    assert.deepEqual(analysisCalls[0].map((file) => file.path), [
+      "pkg/__init__.py",
+      "pkg/app.py",
+      "pkg/new.py",
+      "pkg/old.py"
+    ]);
+    assert.equal(analysisCalls[0].find((file) => file.path === "pkg/app.py").content, "from pkg import (\n    new,\n)\n");
+  });
+
+  it("fails import graph validation closed when the canonical analyzer is missing", async () => {
+    const checks = createCanonicalPythonValidationChecks({
+      nodeWorkspace: canonicalTestPythonWorkspace()
+    });
+    const result = await runner({
+      files: { "pkg/app.py": "VALUE = 1\n" },
+      checks,
+      graphProviderClient: graphClient()
+    }).runValidation(request({
+      checks: [PYTHON_IMPORT_GRAPH_CHECK_ID],
+      scope: { kind: "files", files: ["pkg/app.py"] }
+    }));
+
+    assert.equal(result.status, "infrastructure_failure");
+    assert.match(JSON.stringify(result), /python import analyzer/i);
+  });
+
+  it("runs graph-only dead-code and relevant-test checks without an import analyzer", async () => {
+    const checks = createCanonicalPythonValidationChecks({
+      nodeWorkspace: canonicalTestPythonWorkspace()
+    });
+    const result = await runner({
+      files: { "pkg/app.py": "VALUE = 1\n" },
+      checks,
+      graphProviderClient: graphClient()
+    }).runValidation(request({
+      checks: [PYTHON_DEAD_CODE_CHECK_ID, PYTHON_RELEVANT_TESTS_CHECK_ID],
+      scope: { kind: "files", files: ["pkg/app.py"] }
+    }));
+
+    assert.equal(result.status, "passed", JSON.stringify(result, null, 2));
+    assert.deepEqual(result.diagnostics.map((diagnostic) => diagnostic.code).sort(), [
+      "PY_DEAD_CODE_UNSUPPORTED",
+      "PY_RELEVANT_TESTS_ABSENT"
+    ]);
+  });
+
+  it("fails import-dependent validation closed for throwing and malformed analyzers", async (testContext) => {
+    const cases = [
+      {
+        name: "throwing",
+        analyzer: { analyze: async () => { throw new Error("native analysis failed"); } },
+        message: /native analysis failed/i
+      },
+      {
+        name: "non-array",
+        analyzer: { analyze: async () => ({ edges: [] }) },
+        message: /expected an array/i
+      },
+      {
+        name: "outside after-state",
+        analyzer: fixedImportAnalyzer([{ fromPath: "pkg/app.py", toPath: "pkg/missing.py" }]),
+        message: /outside the supplied after-state/i
+      }
+    ];
+
+    for (const testCase of cases) {
+      await testContext.test(testCase.name, async () => {
+        const result = await runner({
+          files: { "pkg/app.py": "VALUE = 1\n" },
+          checks: createPythonValidationChecks({ importAnalyzer: testCase.analyzer }),
+          graphProviderClient: graphClient()
+        }).runValidation(request({
+          checks: [PYTHON_IMPORT_GRAPH_CHECK_ID],
+          scope: { kind: "files", files: ["pkg/app.py"] }
+        }));
+
+        assert.equal(result.status, "infrastructure_failure");
+        assert.match(result.failure.cause, testCase.message);
+      });
+    }
+  });
+
+  it("excludes deleted Python files from canonical after-state analysis", async () => {
+    const calls = [];
+    const result = await runner({
+      files: {
+        "pkg/app.py": "from .dep import VALUE\n",
+        "pkg/dep.py": "VALUE = 1\n"
+      },
+      checks: createPythonValidationChecks({
+        importAnalyzer: {
+          async analyze(files) {
+            calls.push(files);
+            return [];
+          }
+        }
+      }),
+      graphProviderClient: graphClient()
+    }).runValidation(request({
+      checks: [PYTHON_IMPORT_GRAPH_CHECK_ID],
+      scope: { kind: "files", files: ["pkg/app.py"] },
+      overlays: [{ path: "pkg/dep.py", action: "delete" }]
+    }));
+
+    assert.equal(result.status, "passed");
+    assert.deepEqual(calls[0].map((file) => file.path), ["pkg/app.py"]);
+    assert.deepEqual(result.diagnostics, []);
+  });
+
+  it("skips deleted scoped Python targets before project or type-tool resolution", async () => {
+    const result = await runner({
+      files: { "pkg/app.py": "VALUE = 1\n" },
+      checks: createPythonValidationChecks({ importAnalyzer: fixedImportAnalyzer([]) })
+    }).runValidation(request({
+      checks: [PYTHON_SYNTAX_CHECK_ID, PYTHON_TYPES_CHECK_ID],
+      scope: { kind: "files", files: ["pkg/app.py"] },
+      overlays: [{ path: "pkg/app.py", action: "delete" }]
+    }));
+
+    assert.equal(result.status, "passed", JSON.stringify(result, null, 2));
+    assert.deepEqual(result.pythonProjectContexts, []);
+  });
+
+  it("shares one canonical source resolver across graph-dependent Python checks", async () => {
+    let analysisCalls = 0;
+    const checks = createPythonValidationChecks({
+      importAnalyzer: {
+        async analyze() {
+          analysisCalls += 1;
+          return [];
+        }
+      }
+    });
+    const result = await runner({
+      files: { "pkg/app.py": "VALUE = 1\n" },
+      checks,
+      graphProviderClient: graphClient()
+    }).runValidation(request({
+      checks: [PYTHON_IMPORT_GRAPH_CHECK_ID, PYTHON_DEAD_CODE_CHECK_ID, PYTHON_RELEVANT_TESTS_CHECK_ID],
+      scope: { kind: "files", files: ["pkg/app.py"] }
+    }));
+
+    assert.equal(result.status, "passed");
+    assert.equal(analysisCalls, 1);
+  });
+
+  it("consumes the shared canonical Python import edge matrix and reports only a genuinely omitted edge", async () => {
+    const files = fixtureFilesAt(sourceExtractionPythonFixtureRoot);
+    const expectedEdges = sourceExtractionPythonExpected.pythonImportEdges;
+    const graphEdges = expectedEdges.map(({ fromPath, toPath }) => ({
+      kind: "IMPORTS_FROM",
+      from: `file:${fromPath}`,
+      to: `file:${toPath}`
+    }));
+    const scopeFiles = [...new Set(expectedEdges.map((edge) => edge.fromPath))].sort();
+    const checks = createPythonValidationChecks({ importAnalyzer: fixedImportAnalyzer(expectedEdges) });
+    const complete = await runner({
+      files,
+      checks,
+      graphProviderClient: graphClient({
+        factQuery: (query) => availableFactResult(query, [], graphEdges)
+      })
+    }).runValidation(request({ checks: [PYTHON_IMPORT_GRAPH_CHECK_ID], scope: { kind: "files", files: scopeFiles } }));
+
+    assert.equal(complete.status, "passed");
+    assert.deepEqual(complete.diagnostics, []);
+
+    const omitted = expectedEdges.find((edge) => edge.fromPath === "src/cases/alias_case.py");
+    assert.ok(omitted);
+    const incomplete = await runner({
+      files,
+      checks,
+      graphProviderClient: graphClient({
+        factQuery: (query) => availableFactResult(
+          query,
+          [],
+          graphEdges.filter((edge) => edge.from !== `file:${omitted.fromPath}` || edge.to !== `file:${omitted.toPath}`)
+        )
+      })
+    }).runValidation(request({ checks: [PYTHON_IMPORT_GRAPH_CHECK_ID], scope: { kind: "files", files: scopeFiles } }));
+
+    assert.deepEqual(incomplete.diagnostics.map((diagnostic) => diagnostic.code), ["PY_IMPORT_GRAPH_MISSING_EDGE"]);
+    assert.equal(incomplete.diagnostics[0].path, omitted.fromPath);
+    assert.match(incomplete.diagnostics[0].message, new RegExp(`${omitted.fromPath} -> ${omitted.toPath}`));
   });
 
   it("reports exported callable Python symbols without incoming CALLS as unused exports", async () => {
@@ -891,6 +1150,9 @@ describe("validation-python adapter", () => {
   it("reports syntax, hygiene, and import graph diagnostics from failing Python validation fixture", async () => {
     const result = await runner({
       files: fixtureFiles("failing"),
+      checks: createPythonValidationChecks({
+        importAnalyzer: fixedImportAnalyzer([{ fromPath: "pkg/app.py", toPath: "pkg/dep.py" }])
+      }),
       graphProviderClient: graphClient({
         factQuery: (query) => availableFactResult(query, [], [])
       })
@@ -925,6 +1187,72 @@ describe("validation-python adapter", () => {
 });
 
 describe("Python project-context resolver", () => {
+  it("filters non-Python paths without reading file contents from matching after-state indexes", async () => {
+    const indexedPaths = ["large-native-binary", "pkg/app.py", "pyproject.toml"];
+    const workspace = createValidationFileViewPythonWorkspace({
+      overlays: [],
+      scopeFiles: ["pkg/app.py"],
+      defaultReadState: "after",
+      listVisibleFiles: async () => indexedPaths,
+      readFile: async () => { throw new Error("unexpected file content read"); },
+      readBefore: async () => { throw new Error("unexpected file content read"); },
+      readAfter: async () => { throw new Error("unexpected file content read"); },
+      exists: async () => { throw new Error("unexpected file content read"); },
+      hasOverlay: () => false,
+      overlayFor: () => undefined
+    }, undefined, {
+      read: async () => undefined,
+      list: async () => indexedPaths,
+      exists: async () => true,
+      realpath: async (path) => ({ path, symlink: false }),
+      executableExists: async () => true
+    });
+
+    assert.deepEqual(await workspace.list(), ["pkg/app.py", "pyproject.toml"]);
+  });
+
+  it("keeps before-state project boundaries independent of current files and overlays", async () => {
+    const before = new Map([
+      ["pyproject.toml", "[project]\nname='root'\n"],
+      ["services/api/app.py", "VALUE = 1\n"]
+    ]);
+    const current = {
+      "services/api/pyproject.toml": "[project]\nname='api'\n",
+      "services/api/app.py": "VALUE = 2\n",
+      "large-native-binary": "not Python project evidence",
+    };
+    const overlays = [
+      { path: "pyproject.toml", action: "delete" },
+      { path: "services/api/pyproject.toml", action: "write", content: current["services/api/pyproject.toml"] }
+    ];
+    const readBefore = async (path) =>
+      before.has(path) ? { status: "found", content: before.get(path) } : { status: "missing" };
+    const workspace = createValidationFileViewPythonWorkspace({
+      overlays,
+      scopeFiles: ["services/api/app.py"],
+      defaultReadState: "before",
+      listVisibleFiles: async () => [...new Set([...before.keys(), ...Object.keys(current)])].sort(),
+      readFile: readBefore,
+      readBefore,
+      readAfter: readBefore,
+      exists: async (path) => {
+        if (path === "large-native-binary") throw new Error("irrelevant binary existence was probed");
+        return before.has(path);
+      },
+      hasOverlay: (path) => overlays.some((overlay) => overlay.path === path),
+      overlayFor: (path) => overlays.find((overlay) => overlay.path === path)
+    }, undefined, projectWorkspace(current, () => true));
+
+    assert.deepEqual(await workspace.list(), [...before.keys()].sort());
+    const context = await resolvePythonProjectContext({
+      repoRoot: "/fixture",
+      target: "services/api/app.py",
+      workspace,
+      processProbe: successfulProbe()
+    });
+    assert.equal(context.projectRoot, ".");
+  });
+
   it("resolves nearest nested projects, layouts, managers, and stable fingerprints", async () => {
     const files = {
       "pyproject.toml": "[project]\nname='root'\nrequires-python='>=3.11'\n",
@@ -1953,6 +2281,7 @@ function runner(options = {}) {
 function createPythonValidationChecks(options = {}) {
   return createCanonicalPythonValidationChecks({
     ...options,
+    importAnalyzer: options.importAnalyzer ?? { analyze: async () => [] },
     nodeWorkspace: options.nodeWorkspace ?? canonicalTestPythonWorkspace()
   });
 }
@@ -1976,6 +2305,10 @@ function projectWorkspace(files, executableExists, symlinks = new Set()) {
     realpath: async (path) => ({ path, symlink: symlinks.has(path) }),
     executableExists: async (path) => executableExists(path)
   };
+}
+
+function fixedImportAnalyzer(edges) {
+  return { analyze: async () => edges };
 }
 
 function successfulProbe(version = "3.12.4") {
@@ -2097,6 +2430,7 @@ function workspace(options = {}) {
   const files = new Map(Object.entries(options.files ?? { "pkg/app.py": "value = 1\n" }));
   return {
     readFile: (path) => (files.has(path) ? { status: "found", content: files.get(path) } : { status: "missing" }),
+    listFiles: () => ({ files: [...files.keys()] }),
     listChangedFiles: () => ({ files: [...files.keys()] }),
     listStagedFiles: () => ({ files: [...files.keys()] }),
     listRepoFiles: () => ({ files: [...files.keys()] }),
@@ -2108,6 +2442,10 @@ function workspace(options = {}) {
 
 function fixtureFiles(name) {
   const root = join(validationFixtureRoot, name);
+  return fixtureFilesAt(root);
+}
+
+function fixtureFilesAt(root) {
   const entries = {};
   for (const path of walkFiles(root)) {
     const fixturePath = relative(root, path).replaceAll("\\", "/");

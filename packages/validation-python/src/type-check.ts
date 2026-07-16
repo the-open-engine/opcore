@@ -18,11 +18,11 @@ import { pythonCheckAdapter, pythonCheckOwner, supportedPythonValidationScopes }
 import { diagnostic, sortDiagnostics } from "./diagnostics.js";
 import { runTool } from "./process.js";
 import {
-  materializePythonSources,
   pythonInputSet,
   skippedPythonInputResult,
   type PythonMaterializedSourceFile,
-  type PythonProjectContextResolver
+  type PythonProjectContextResolver,
+  type PythonSourceSetResolver
 } from "./source-files.js";
 import type { PythonValidationToolchainOptions } from "./toolchain.js";
 
@@ -43,7 +43,8 @@ interface PythonProjectGroup {
 
 export function createTypeCheck(
   options: PythonTypeCheckOptions = {},
-  resolveContexts?: PythonProjectContextResolver
+  resolveContexts?: PythonProjectContextResolver,
+  resolveSources?: PythonSourceSetResolver
 ): ValidationCheckDefinition {
   return {
     id: PYTHON_TYPES_CHECK_ID,
@@ -55,11 +56,13 @@ export function createTypeCheck(
       const skipped = skippedPythonInputResult(context);
       if (skipped !== undefined) return skipped;
       if (resolveContexts === undefined) return missingContextResult(pythonInputSet(context));
+      if (resolveSources === undefined) throw new Error("A shared Python source-set resolver is required for Python type validation");
+      const sourceSet = await resolveSources(context);
+      if (sourceSet.rootPaths.length === 0) return { diagnostics: [] };
       const resolvedContexts = await resolveContexts(context);
-      const selectedTargets = pythonInputSet(context);
+      const selectedTargets = sourceSet.rootPaths;
       const missing = selectedTargets.filter((path) => !resolvedContexts.some((candidate) => candidate.target === path));
       if (resolvedContexts.length === 0 || missing.length > 0) return missingContextResult(missing);
-      const sourceSet = await materializePythonSources(context, resolvedContexts);
       if (sourceSet.files.length === 0) return { diagnostics: [] };
       const unresolved = resolvedContexts.find(isUnresolvedTypeContext);
       if (unresolved !== undefined) return unresolvedProjectResult(unresolved);
@@ -68,8 +71,7 @@ export function createTypeCheck(
       for (const project of projects) {
         const checker = selectTypeChecker(project.context);
         if (checker === undefined) return missingTypeChecker(project.context);
-        const files = sourceSet.files.filter((file) => owningProject(file.path, projects)?.context.projectKey === project.context.projectKey);
-        const workspace = await materializePythonTypeWorkspace(context, project, files);
+        const workspace = await materializePythonTypeWorkspace(context, project, sourceSet.files);
         try {
           const args = [
             ...materializedCheckerPrefix(checker, project.context.projectRoot),
@@ -349,11 +351,6 @@ function relativeProjectPath(path: string, projectRoot: string): string {
   return projectRoot === "." ? path : path.slice(`${projectRoot}/`.length);
 }
 
-function owningProject(path: string, projects: readonly PythonProjectGroup[]): PythonProjectGroup | undefined {
-  return [...projects]
-    .filter((project) => project.context.projectRoot === "." || path.startsWith(`${project.context.projectRoot}/`))
-    .sort((left, right) => right.context.projectRoot.length - left.context.projectRoot.length)[0];
-}
 
 function isConfigPath(path: string): boolean {
   return /(?:\.toml|\.ini|\.cfg|\.lock|Pipfile|requirements.*\.txt)$/u.test(path);

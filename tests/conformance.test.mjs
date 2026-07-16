@@ -366,6 +366,22 @@ describe("conformance fixture metadata", () => {
     assert.deepEqual(sourceExtraction.nodeKinds, ["File", "Module", "Class", "Function", "Variable"]);
     assert.ok(sourceExtraction.edgeKinds.includes("TESTED_BY"));
     assert.deepEqual(sourceExtraction.diagnostics, ["parse_error", "unresolved_import"]);
+    assert.deepEqual(sourceExtraction.importResolution, {
+      owner: "graph-core",
+      expectedEdgeField: "pythonImportEdges",
+      cases: [
+        "multiline-parenthesized",
+        "alias",
+        "conditional",
+        "submodule",
+        "star",
+        "relative",
+        "package-initializer",
+        "stub",
+        "namespace",
+        "src-layout"
+      ]
+    });
   });
 
   it("describes Python validation fixture metadata for #22", () => {

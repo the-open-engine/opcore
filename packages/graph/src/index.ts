@@ -20,6 +20,11 @@ import type {
 } from "@the-open-engine/opcore-contracts";
 import { createCommandRouterResult, graphNamedQueryKinds } from "@the-open-engine/opcore-contracts";
 import { providerFailureStatus } from "./artifact.js";
+import {
+  analyzePythonImportsWithGraph,
+  type PythonImportAnalysisEdge,
+  type PythonImportAnalysisFile
+} from "./python-import-analysis.js";
 import { graphServeRouterResult, isServeTransportArgv, runGraphServeCli } from "./serve.js";
 import { invokeGraphCoreSidecar } from "./sidecar.js";
 
@@ -41,9 +46,21 @@ export {
 export { invokeGraphCoreSidecar } from "./sidecar.js";
 export { graphServeRouterResult, isServeTransportArgv, runGraphServeCli } from "./serve.js";
 export type { GraphServeFrameTimingEvent, GraphServeTelemetry } from "./serve.js";
+export type { PythonImportAnalysisEdge, PythonImportAnalysisFile } from "./python-import-analysis.js";
 
 export const graphProviderName = "opcore-graph";
 export const graphProviderSchemaVersion = 1;
+
+export function analyzePythonImports(
+  files: readonly PythonImportAnalysisFile[]
+): Promise<readonly PythonImportAnalysisEdge[]> {
+  return analyzePythonImportsWithGraph(files, {
+    build: (repo) => graphProviderBuild(repo),
+    query: (repo) => graphProviderQuery(repo, { kind: "edges", edgeKinds: ["IMPORTS_FROM"] })
+  });
+}
+
+export const graphPythonImportAnalyzer = { analyze: analyzePythonImports } as const;
 
 export function graphProviderStatus(
   repo: RepoIdentity | string = { repoRoot: process.cwd() },
