@@ -1,8 +1,6 @@
 import type { GraphFactEdge, GraphFactQueryResult, GraphPipelineResult, RepoIdentity } from "@the-open-engine/opcore-contracts";
 import { validateRepoRelativePath } from "@the-open-engine/opcore-contracts";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { createEphemeralGraphSnapshotWithOperations } from "./ephemeral-snapshot.js";
 
 export interface PythonImportAnalysisFile {
   path: string;
@@ -24,19 +22,30 @@ export async function analyzePythonImportsWithGraph(
   graph: PythonImportAnalysisGraph
 ): Promise<readonly PythonImportAnalysisEdge[]> {
   const normalizedFiles = normalizeSuppliedFiles(files);
-  const tempRoot = mkdtempSync(join(tmpdir(), "opcore-python-import-analysis-"));
-  const repoRoot = join(tempRoot, "repo");
+  const fileByPath = new Map(normalizedFiles.map((file) => [file.path, file]));
+  const snapshot = await createEphemeralGraphSnapshotWithOperations({
+    logicalRepo: { repoRoot: "." },
+    sourceUniverse: { paths: normalizedFiles.map((file) => file.path), complete: true },
+    readFile: (path) => {
+      const file = fileByPath.get(path);
+      return file === undefined ? { status: "missing" } : { status: "found", content: file.content };
+    }
+  }, {
+    build: graph.build,
+    factQuery: (repo) => graph.query(repo)
+  });
   try {
-    mkdirSync(repoRoot, { recursive: true });
-    for (const file of normalizedFiles) writeSuppliedFile(repoRoot, file);
-    const repo = { repoRoot };
-    const build = graph.build(repo);
-    if (build.status.state !== "available") throw graphAnalysisFailure("build", build.status);
-    const query = graph.query(repo);
+    const query = snapshot.factQuery({
+      requestId: "python-import-analysis",
+      repo: { repoRoot: "." },
+      schemaVersion: 1,
+      mode: "required",
+      selector: { kind: "edges", edgeKinds: ["IMPORTS_FROM"] }
+    });
     if (query.status.state !== "available" || !("edges" in query)) throw graphAnalysisFailure("query", query.status);
     return importEdges(query.edges, new Set(normalizedFiles.map((file) => file.path)));
   } finally {
-    rmSync(tempRoot, { recursive: true, force: true });
+    snapshot.dispose();
   }
 }
 
@@ -56,16 +65,6 @@ function normalizeSuppliedFiles(files: readonly PythonImportAnalysisFile[]): rea
     byPath.set(path, { path, content: candidate.content });
   }
   return [...byPath.values()].sort((left, right) => left.path.localeCompare(right.path));
-}
-
-function writeSuppliedFile(repoRoot: string, file: PythonImportAnalysisFile): void {
-  const absolutePath = resolveRepoPath(repoRoot, file.path);
-  mkdirSync(dirname(absolutePath), { recursive: true });
-  writeFileSync(absolutePath, file.content);
-}
-
-function resolveRepoPath(repoRoot: string, path: string): string {
-  return resolve(repoRoot, validateRepoRelativePath(path));
 }
 
 function importEdges(

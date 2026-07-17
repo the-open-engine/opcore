@@ -27,6 +27,11 @@ import {
 } from "./python-import-analysis.js";
 import { graphServeRouterResult, isServeTransportArgv, runGraphServeCli } from "./serve.js";
 import { invokeGraphCoreSidecar } from "./sidecar.js";
+import {
+  createEphemeralGraphSnapshotWithOperations,
+  type CreateEphemeralGraphSnapshotOptions,
+  type EphemeralGraphSnapshot
+} from "./ephemeral-snapshot.js";
 
 declare const process: {
   argv: string[];
@@ -47,6 +52,13 @@ export { invokeGraphCoreSidecar } from "./sidecar.js";
 export { graphServeRouterResult, isServeTransportArgv, runGraphServeCli } from "./serve.js";
 export type { GraphServeFrameTimingEvent, GraphServeTelemetry } from "./serve.js";
 export type { PythonImportAnalysisEdge, PythonImportAnalysisFile } from "./python-import-analysis.js";
+export type {
+  CreateEphemeralGraphSnapshotOptions,
+  EphemeralGraphSnapshot,
+  EphemeralGraphSnapshotLimits,
+  EphemeralGraphSourceReadResult,
+  EphemeralGraphSourceUniverse
+} from "./ephemeral-snapshot.js";
 
 export const graphProviderName = "opcore-graph";
 export const graphProviderSchemaVersion = 1;
@@ -61,6 +73,19 @@ export function analyzePythonImports(
 }
 
 export const graphPythonImportAnalyzer = { analyze: analyzePythonImports } as const;
+
+export function createEphemeralGraphSnapshot(
+  options: CreateEphemeralGraphSnapshotOptions
+): Promise<EphemeralGraphSnapshot> {
+  return createEphemeralGraphSnapshotWithOperations(options, {
+    build: (repo) => graphProviderBuild(repo),
+    factQuery: (repo, request) => graphProviderQuery(repo, request.selector),
+    namedQuery: (repo, request) => graphProviderNamedQuery(repo, request),
+    impact: (repo, request) => graphProviderImpact(repo, request),
+    reviewContext: (repo, request) => graphProviderReviewContext(repo, request),
+    detectChanges: (repo, request) => graphProviderDetectChanges(repo, request)
+  });
+}
 
 export function graphProviderStatus(
   repo: RepoIdentity | string = { repoRoot: process.cwd() },

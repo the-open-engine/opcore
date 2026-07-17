@@ -19,6 +19,7 @@ export interface ValidationWorkspaceFile {
 export interface ValidationWorkspaceFileSet {
   files: readonly (string | ValidationWorkspaceFile)[];
   unavailable?: boolean;
+  truncated?: boolean;
   message?: string;
   cause?: string;
 }

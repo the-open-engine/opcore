@@ -83,12 +83,27 @@ export interface ValidationFileView {
   readonly scopeFiles: readonly string[];
   readonly defaultReadState: ValidationFileReadState;
   listVisibleFiles: () => Promise<readonly string[]>;
+  listVisibleFileUniverse: () => Promise<ValidationVisibleFileUniverse>;
+  listCompleteVisibleFiles: () => Promise<readonly string[]>;
   readFile: (path: string, options?: ValidationFileReadOptions) => Promise<ValidationFileReadResult>;
   readBefore: (path: string) => Promise<ValidationFileReadResult>;
   readAfter: (path: string) => Promise<ValidationFileReadResult>;
   exists: (path: string, options?: ValidationFileExistsOptions) => Promise<boolean>;
   hasOverlay: (path: string) => boolean;
   overlayFor: (path: string) => ValidationOverlayEntry | undefined;
+}
+
+export interface ValidationVisibleFileUniverse {
+  files: readonly string[];
+  complete: boolean;
+  message?: string;
+}
+
+export class ValidationFileUniverseError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ValidationFileUniverseError";
+  }
 }
 
 export class ValidationOverlayConflictError extends Error {
@@ -135,10 +150,18 @@ export async function createValidationFileView(args: CreateValidationFileViewArg
   const overlayByPath = new Map(overlays.map((overlay) => [overlay.path, overlay]));
   const scopeFiles = uniqueSorted(args.scope.files.map(normalizeValidationFileViewPath));
   const defaultReadState = args.defaultReadState ?? "after";
-  let visibleFilesPromise: Promise<readonly string[]> | undefined;
+  let visibleFileUniversePromise: Promise<ValidationVisibleFileUniverse> | undefined;
+  const listVisibleFileUniverse = (): Promise<ValidationVisibleFileUniverse> => {
+    visibleFileUniversePromise ??= resolveVisibleFileUniverse(args.workspace, args.scope, defaultReadState, scopeFiles, overlays);
+    return visibleFileUniversePromise;
+  };
   const listVisibleFiles = (): Promise<readonly string[]> => {
-    visibleFilesPromise ??= resolveVisibleFiles(args.workspace, args.scope, defaultReadState, scopeFiles, overlays);
-    return visibleFilesPromise;
+    return listVisibleFileUniverse().then((universe) => universe.files);
+  };
+  const listCompleteVisibleFiles = async (): Promise<readonly string[]> => {
+    const universe = await listVisibleFileUniverse();
+    if (!universe.complete) throw new ValidationFileUniverseError(universe.message ?? "Complete validation file listing is unavailable");
+    return universe.files;
   };
   const readBefore = (path: string): Promise<ValidationFileReadResult> =>
     readWorkspacePath(args.workspace, args.scope, normalizeValidationFileViewPath(path), "before");
@@ -165,6 +188,8 @@ export async function createValidationFileView(args: CreateValidationFileViewArg
     scopeFiles,
     defaultReadState,
     listVisibleFiles,
+    listVisibleFileUniverse,
+    listCompleteVisibleFiles,
     readFile: (path, options = {}) =>
       options.state === "before" || (options.state === undefined && defaultReadState === "before") ? readBefore(path) : readAfter(path),
     readBefore,
@@ -293,18 +318,31 @@ function validateWorkspaceReader(workspace: ValidationWorkspace): void {
   }
 }
 
-async function resolveVisibleFiles(
+async function resolveVisibleFileUniverse(
   workspace: ValidationWorkspace,
   scope: ResolvedValidationScope,
   state: ValidationFileReadState,
   scopeFiles: readonly string[],
   overlays: readonly ValidationOverlayEntry[]
-): Promise<readonly string[]> {
+): Promise<ValidationVisibleFileUniverse> {
   const overlayFiles = overlays.map((overlay) => overlay.path);
-  if (workspace.listFiles === undefined) return uniqueSorted([...scopeFiles, ...overlayFiles]);
+  const fallbackFiles = uniqueSorted([...scopeFiles, ...overlayFiles]);
+  if (workspace.listFiles === undefined) {
+    return { files: fallbackFiles, complete: false, message: "Validation workspace cannot list the complete visible file universe" };
+  }
   const fileSet = await workspace.listFiles({ scope, state });
-  if (fileSet.unavailable) return uniqueSorted([...scopeFiles, ...overlayFiles]);
-  return uniqueSorted([...fileSetPaths(fileSet), ...scopeFiles, ...overlayFiles]);
+  if (fileSet.unavailable) {
+    return {
+      files: fallbackFiles,
+      complete: false,
+      message: fileSet.message ?? "Validation workspace file listing is unavailable"
+    };
+  }
+  const files = uniqueSorted([...fileSetPaths(fileSet), ...scopeFiles, ...overlayFiles]);
+  if (fileSet.truncated) {
+    return { files, complete: false, message: fileSet.message ?? "Validation workspace file listing was truncated" };
+  }
+  return { files, complete: true };
 }
 
 function fileSetPaths(fileSet: ValidationWorkspaceFileSet): readonly string[] {

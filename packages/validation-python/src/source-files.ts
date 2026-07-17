@@ -2,6 +2,7 @@ import type { PythonProjectContext } from "@the-open-engine/opcore-contracts";
 import type { ValidationCheckContext, ValidationCheckResult, ValidationFileView } from "@the-open-engine/opcore-validation";
 import { normalizeValidationFileViewPath } from "@the-open-engine/opcore-validation";
 import {
+  pythonImportEdgesFromGraph,
   requirePythonImportAnalyzer,
   validatePythonImportEdges,
   type PythonImportAnalyzer,
@@ -173,13 +174,16 @@ async function materializePythonSourcesUncached(
   const rootPaths = pythonInputSet(context).filter((path) => allSourceByPath.has(path));
   if (rootPaths.length === 0) return emptySourceSet();
 
-  const analyzer = requirePythonImportAnalyzer(importAnalyzer);
   const repoImports = validatePythonImportEdges(
-    await analyzer.analyze(allSources),
+    context.graph?.identity.kind === "exact"
+      ? pythonImportEdgesFromGraph(await context.graph.importsFrom(), new Set(allSourceByPath.keys()))
+      : await requirePythonImportAnalyzer(importAnalyzer).analyze(allSources),
     new Set(allSourceByPath.keys())
   );
   const selectedPaths = await expandSourceClosure(context, rootPaths, repoImports, allSourceByPath, resolveContexts);
-  const files = selectedPaths.map((path) => allSourceByPath.get(path)).filter(isDefined);
+  const files = selectedPaths
+    .map((path) => allSourceByPath.get(path))
+    .filter((file): file is PythonMaterializedSourceFile => file !== undefined);
   const sourceFileByPath = new Map(files.map((file) => [file.path, file]));
   const selectedPathSet = new Set(selectedPaths);
   return {
@@ -288,10 +292,6 @@ function emptySourceSet(): PythonMaterializedSourceSet {
     sourceFileByPath: new Map(),
     repoImports: []
   };
-}
-
-function isDefined<T>(value: T | undefined): value is T {
-  return value !== undefined;
 }
 
 export function uniqueSorted(values: readonly string[]): readonly string[] {

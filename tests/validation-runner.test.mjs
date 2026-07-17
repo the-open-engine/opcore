@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { createValidationRunner } from "../packages/validation/dist/index.js";
+import { createValidationGraphQuerySession, createValidationRunner } from "../packages/validation/dist/index.js";
 
 describe("validation runner", () => {
   it("returns invalid_payload for malformed requests without throwing validator errors", async () => {
@@ -760,6 +760,101 @@ describe("validation runner", () => {
     assert.equal(required.status, "provider_failure");
     assert.equal(required.graphStatus.state, "schema_mismatch");
     assert.equal(required.failure.cause, "schema_mismatch");
+  });
+
+  it("builds and disposes one exact graph session per introduced file-view state and shares it across checks", async () => {
+    const factoryStates = [];
+    const disposedStates = [];
+    const observations = [];
+    const exactFactory = async (args) => {
+      factoryStates.push(args.identity.state);
+      const session = await createValidationGraphQuerySession({
+        ...args,
+        status: availableStatus(args.request.graph.mode, args.request.repo),
+        client: graphClient()
+      });
+      return { ...session, dispose: () => disposedStates.push(args.identity.state) };
+    };
+    const checks = ["graph.first", "graph.second"].map((id) => check(id, {
+      requiresGraph: true,
+      run: (context) => {
+        observations.push(`${id}:${context.graph.identity.state}`);
+        return { diagnostics: [] };
+      }
+    }));
+
+    const result = await runner(checks, { graphSessionFactory: exactFactory, onCheckComplete: () => {} }).runValidation(request({
+      checks: undefined,
+      reportMode: "introduced",
+      overlays: [{ path: "src/index.ts", action: "write", content: "export const value = 'after';" }]
+    }));
+
+    assert.equal(result.status, "passed");
+    assert.deepEqual(factoryStates, ["before", "after"]);
+    assert.deepEqual(observations, [
+      "graph.first:before",
+      "graph.first:after",
+      "graph.second:before",
+      "graph.second:after"
+    ]);
+    assert.deepEqual(disposedStates, ["after", "before"]);
+  });
+
+  it("uses separate exact graph sessions for introduced file-view states without overlays", async () => {
+    const identities = [];
+    const result = await runner([
+      check("graph.required", { requiresGraph: true })
+    ], {
+      graphSessionFactory: async (args) => {
+        identities.push(args.identity);
+        return createValidationGraphQuerySession({
+          ...args,
+          status: availableStatus(args.request.graph.mode, args.request.repo),
+          client: graphClient()
+        });
+      }
+    }).runValidation(request({
+      checks: ["graph.required"],
+      reportMode: "introduced"
+    }));
+
+    assert.equal(result.status, "passed");
+    assert.deepEqual(identities, [
+      { kind: "exact", state: "before" },
+      { kind: "exact", state: "after" }
+    ]);
+  });
+
+  it("fails closed for exact-state graph query errors even when persistent graph mode is optional", async () => {
+    let disposed = 0;
+    const result = await runner([
+      check("graph.optional", {
+        graphUsage: "optional",
+        run: async (context) => {
+          await context.graph.facts({ kind: "nodes" });
+        }
+      }),
+      check("syntax")
+    ], {
+      graphSessionFactory: async (args) => {
+        const session = await createValidationGraphQuerySession({
+          ...args,
+          status: availableStatus("optional", args.request.repo),
+          client: graphClient({
+            factQuery: () => ({ status: graphFailure("error", "query_failed", "optional") })
+          })
+        });
+        return { ...session, dispose: () => { disposed += 1; } };
+      }
+    }).runValidation(request({
+      checks: undefined,
+      overlays: [{ path: "src/index.ts", action: "write", content: "export const value = 'after';" }]
+    }));
+
+    assert.equal(result.status, "provider_failure");
+    assert.equal(result.ok, false);
+    assert.equal(result.failure.category, "provider_failure");
+    assert.equal(disposed, 1);
   });
 });
 

@@ -86,6 +86,8 @@ export {
 } from "./request.js";
 export {
   createValidationGraphQuerySession,
+  createStateAwareValidationGraphSessionFactory,
+  createValidationExactGraphSnapshotFactory,
   resolveValidationGraphProviderStatus,
   ValidationGraphProviderError,
   ValidationGraphRequirementError,
@@ -104,7 +106,12 @@ export {
   type ValidationGraphQuerySession,
   type ValidationGraphReviewContextInput,
   type ValidationGraphReviewContextRequirement,
-  type ValidationGraphSessionFactory
+  type ValidationGraphSessionFactory,
+  type ValidationGraphSessionIdentity,
+  type ValidationExactGraphSnapshot,
+  type ValidationExactGraphSnapshotFactory,
+  type ValidationEphemeralGraphSnapshot,
+  type ValidationEphemeralGraphSnapshotProvider
 } from "./graph-client.js";
 export {
   createValidationCheckManifest,
@@ -121,6 +128,7 @@ export {
 } from "./registry.js";
 export {
   ValidationOverlayConflictError,
+  ValidationFileUniverseError,
   calculateValidationFileChecksum,
   createValidationFileView,
   findValidationOverlayEntry,
@@ -137,6 +145,7 @@ export {
   type ValidationFileReadStatus,
   type ValidationFileSourceMetadata,
   type ValidationFileView,
+  type ValidationVisibleFileUniverse,
   type ValidationOverlayEntry
 } from "./overlays.js";
 export {

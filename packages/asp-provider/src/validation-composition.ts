@@ -23,6 +23,8 @@ import { GRAPH_SCHEMA_VERSION, validateProviderStatus } from "@the-open-engine/o
 import {
   createValidationCheckManifest,
   createValidationRunner,
+  createStateAwareValidationGraphSessionFactory,
+  createValidationExactGraphSnapshotFactory,
   type ValidationCheckDefinition,
   type ValidationGraphProviderClient,
   type ValidationWorkspace
@@ -38,6 +40,7 @@ import {
   graphProviderQuery,
   graphProviderReviewContext,
   graphProviderStatus,
+  createEphemeralGraphSnapshot,
   graphPythonImportAnalyzer
 } from "@the-open-engine/opcore-graph";
 import type { PythonProjectWorkspace } from "@the-open-engine/opcore-validation-python";
@@ -55,10 +58,15 @@ export function createAspProviderValidationRunner(workspace: ValidationWorkspace
   return {
     async runValidation(request) {
       const config = await readHostConfig(workspace, request);
+      const graphProviderClient = createAspValidationGraphProviderClient();
       return createValidationRunner({
         workspace,
         checks: createBuiltInValidationChecks(config, { ...aspProviderPolicyOptions, pythonWorkspace }),
-        graphProviderClient: createAspValidationGraphProviderClient()
+        graphProviderClient,
+        graphSessionFactory: createStateAwareValidationGraphSessionFactory({
+          persistentClient: graphProviderClient,
+          exactSnapshotFactory: createValidationExactGraphSnapshotFactory(createEphemeralGraphSnapshot)
+        })
       }).runValidation(request);
     }
   };

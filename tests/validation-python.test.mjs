@@ -4,7 +4,7 @@ import { chmodSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSyn
 import { tmpdir } from "node:os";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
-import { createValidationCheckRegistry, createValidationRunner } from "../packages/validation/dist/index.js";
+import { createValidationCheckRegistry, createValidationGraphQuerySession, createValidationRunner } from "../packages/validation/dist/index.js";
 import {
   PYTHON_DEAD_CODE_CHECK_ID,
   PYTHON_IMPORT_GRAPH_CHECK_ID,
@@ -796,7 +796,7 @@ describe("validation-python adapter", () => {
     assert.match(result.diagnostics[0].message, /pkg\/app\.py -> pkg\/dep\.py/);
   });
 
-  it("uses one canonical analyzer pass over the complete after-state for import graph validation", async () => {
+  it("reuses the exact after-state graph session instead of a second analyzer pass", async () => {
     const analysisCalls = [];
     const importAnalyzer = {
       async analyze(files) {
@@ -807,6 +807,9 @@ describe("validation-python adapter", () => {
     const graphEdges = [
       { kind: "IMPORTS_FROM", from: "file:pkg/app.py", to: "file:pkg/new.py" }
     ];
+    const client = graphClient({
+      factQuery: (query) => availableFactResult(query, [], graphEdges)
+    });
     const result = await runner({
       files: {
         "pkg/__init__.py": "",
@@ -814,9 +817,8 @@ describe("validation-python adapter", () => {
         "pkg/old.py": "OLD = True\n"
       },
       checks: createPythonValidationChecks({ importAnalyzer }),
-      graphProviderClient: graphClient({
-        factQuery: (query) => availableFactResult(query, [], graphEdges)
-      })
+      graphProviderClient: client,
+      graphSessionFactory: exactGraphSessionFactory(client)
     }).runValidation(request({
       checks: [PYTHON_IMPORT_GRAPH_CHECK_ID],
       scope: { kind: "files", files: ["pkg/app.py"] },
@@ -833,24 +835,19 @@ describe("validation-python adapter", () => {
 
     assert.equal(result.status, "passed", JSON.stringify(result, null, 2));
     assert.deepEqual(result.diagnostics, []);
-    assert.equal(analysisCalls.length, 1);
-    assert.deepEqual(analysisCalls[0].map((file) => file.path), [
-      "pkg/__init__.py",
-      "pkg/app.py",
-      "pkg/new.py",
-      "pkg/old.py"
-    ]);
-    assert.equal(analysisCalls[0].find((file) => file.path === "pkg/app.py").content, "from pkg import (\n    new,\n)\n");
+    assert.equal(analysisCalls.length, 0);
   });
 
   it("fails import graph validation closed when the canonical analyzer is missing", async () => {
     const checks = createCanonicalPythonValidationChecks({
       nodeWorkspace: canonicalTestPythonWorkspace()
     });
+    const client = graphClient();
     const result = await runner({
       files: { "pkg/app.py": "VALUE = 1\n" },
       checks,
-      graphProviderClient: graphClient()
+      graphProviderClient: client,
+      graphSessionFactory: exactGraphSessionFactory(client)
     }).runValidation(request({
       checks: [PYTHON_IMPORT_GRAPH_CHECK_ID],
       scope: { kind: "files", files: ["pkg/app.py"] }
@@ -918,6 +915,7 @@ describe("validation-python adapter", () => {
 
   it("excludes deleted Python files from canonical after-state analysis", async () => {
     const calls = [];
+    const client = graphClient();
     const result = await runner({
       files: {
         "pkg/app.py": "from .dep import VALUE\n",
@@ -931,7 +929,8 @@ describe("validation-python adapter", () => {
           }
         }
       }),
-      graphProviderClient: graphClient()
+      graphProviderClient: client,
+      graphSessionFactory: exactGraphSessionFactory(client)
     }).runValidation(request({
       checks: [PYTHON_IMPORT_GRAPH_CHECK_ID],
       scope: { kind: "files", files: ["pkg/app.py"] },
@@ -939,7 +938,7 @@ describe("validation-python adapter", () => {
     }));
 
     assert.equal(result.status, "passed");
-    assert.deepEqual(calls[0].map((file) => file.path), ["pkg/app.py"]);
+    assert.equal(calls.length, 0);
     assert.deepEqual(result.diagnostics, []);
   });
 
@@ -2274,7 +2273,16 @@ function runner(options = {}) {
   return createValidationRunner({
     workspace: workspace(options),
     checks: options.checks ?? createPythonValidationChecks(),
-    graphProviderClient: options.graphProviderClient
+    graphProviderClient: options.graphProviderClient,
+    graphSessionFactory: options.graphSessionFactory
+  });
+}
+
+function exactGraphSessionFactory(client) {
+  return (args) => createValidationGraphQuerySession({
+    ...args,
+    client,
+    status: availableStatus(args.request.graph.mode, args.request.repo)
   });
 }
 

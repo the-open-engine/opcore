@@ -108,6 +108,22 @@ describe("validation overlays", () => {
     assert.equal(listFileCalls, 1);
   });
 
+  it("preserves unavailable and truncated full-listing evidence for exact snapshots", async () => {
+    for (const fileSet of [
+      { files: ["src/index.ts"], unavailable: true, message: "host listing unavailable" },
+      { files: ["src/index.ts"], truncated: true, message: "host listing truncated" }
+    ]) {
+      const workspace = testWorkspace();
+      workspace.listFiles = () => fileSet;
+      const view = await createValidationFileView({ request: request(), scope: scope(["src/index.ts"]), workspace });
+      const universe = await view.listVisibleFileUniverse();
+
+      assert.equal(universe.complete, false);
+      assert.match(universe.message, /host listing/);
+      await assert.rejects(view.listCompleteVisibleFiles(), /host listing/);
+    }
+  });
+
   it("distinguishes delete overlays from missing workspace files", async () => {
     const workspace = testWorkspace({
       "src/remove.ts": "export const remove = true;"

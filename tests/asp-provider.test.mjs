@@ -50,6 +50,27 @@ const allCheckIds = [
 ];
 
 describe("Opcore ASP provider", () => {
+  it("preserves host listTree truncation for exact-state validation", async () => {
+    const baseline = { rev: "tree:truncated", stampedAt: "2026-07-16T00:00:00.000Z" };
+    const host = createAspHostValidationWorkspace(
+      { request: async () => ({ entries: [{ path: "src/app.ts", blobId: "blob:app", kind: "file" }], truncated: true }) },
+      { workspace: { baseline } },
+      { baseline, grantedPermissions: { read: ["**/*"], write: false, network: false } },
+      { baseline, changes: [] }
+    );
+
+    const listing = await host.workspace.listFiles({
+      scope: { kind: "files", files: ["src/app.ts"], workspaceFiles: [{ path: "src/app.ts" }] },
+      state: "after"
+    });
+    assert.equal(listing.truncated, true);
+    assert.match(listing.message, /truncated/);
+
+    const packageListing = await host.workspace.listPackageFiles("app", "src");
+    assert.equal(packageListing.truncated, true);
+    assert.match(packageListing.message, /truncated/);
+  });
+
   it("requires positive host file-kind evidence before treating realpaths as safe", async () => {
     const baseline = { rev: "tree:realpath-evidence", stampedAt: "2026-07-15T00:00:00.000Z" };
     const workspaceFor = (entries) => createAspHostValidationWorkspace(
@@ -157,7 +178,7 @@ describe("Opcore ASP provider", () => {
         assert.ok(assessment.diagnostics.every((diagnostic) => diagnostic.code.startsWith(`${diagnostic.source}/`)));
         assert.ok(assessment.diagnostics.every((diagnostic) => diagnostic.fingerprint.startsWith("sha256:")));
         assert.ok(assessment.coverage.degraded.some((entry) => entry.reason === "unsupported" && /comparison/.test(entry.requirement)));
-        assert.ok(assessment.coverage.degraded.some((entry) => entry.reason === "unavailable" && entry.requirement === "typescript.import-graph"));
+        assert.ok(!assessment.coverage.degraded.some((entry) => entry.reason === "unavailable" && entry.requirement === "typescript.import-graph"));
         assert.equal(assessment.coverage.exhaustive, false);
         assertCommandTiming(assessment.timing, {
           expectedPhases: [

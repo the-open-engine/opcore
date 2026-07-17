@@ -41,6 +41,7 @@ import {
   validateRepoRelativePath
 } from "@the-open-engine/opcore-contracts";
 import { defaultValidationGraphProvider, missingGraphStatus } from "./request.js";
+import type { ValidationFileView } from "./overlays.js";
 
 type MaybePromise<T> = T | Promise<T>;
 
@@ -129,8 +130,10 @@ export interface ValidationGraphFactView {
 }
 
 export interface ValidationGraphQuerySession extends ValidationGraphFactView {
+  readonly identity: ValidationGraphSessionIdentity;
   readonly status: GraphProviderStatus;
   readonly queryCapable: boolean;
+  dispose: () => MaybePromise<void>;
   preload: (requirements: readonly ValidationGraphQueryRequirement[]) => Promise<void>;
   facts: (selector: GraphFactQuerySelector) => Promise<GraphFactQueryAvailableResult>;
   namedQuery: (query: ValidationGraphNamedQueryInput) => Promise<GraphNamedQueryAvailableResult>;
@@ -140,15 +143,111 @@ export interface ValidationGraphQuerySession extends ValidationGraphFactView {
   factView: () => ValidationGraphFactView;
 }
 
+export type ValidationGraphSessionIdentity =
+  | { kind: "persistent" }
+  | { kind: "exact"; state: "before" | "after" };
+
 export interface CreateValidationGraphQuerySessionArgs {
   request: ValidationRequest;
   client?: ValidationGraphProviderClient;
   status?: GraphProviderStatus;
+  fileView?: ValidationFileView;
+  identity?: ValidationGraphSessionIdentity;
 }
 
 export type ValidationGraphSessionFactory = (
   args: CreateValidationGraphQuerySessionArgs
 ) => MaybePromise<ValidationGraphQuerySession>;
+
+export interface ValidationExactGraphSnapshot {
+  status: GraphProviderStatus;
+  client: ValidationGraphProviderClient;
+  dispose: () => MaybePromise<void>;
+}
+
+export type ValidationExactGraphSnapshotFactory = (args: {
+  request: ValidationRequest;
+  fileView: ValidationFileView;
+  state: "before" | "after";
+}) => MaybePromise<ValidationExactGraphSnapshot>;
+
+export interface ValidationEphemeralGraphSnapshot {
+  status: (mode: ValidationRequest["graph"]["mode"]) => GraphProviderStatus;
+  factQuery: ValidationGraphProviderClient["factQuery"];
+  namedQuery: ValidationGraphProviderClient["namedQuery"];
+  impact: ValidationGraphProviderClient["impact"];
+  reviewContext: ValidationGraphProviderClient["reviewContext"];
+  detectChanges: ValidationGraphProviderClient["detectChanges"];
+  dispose: () => MaybePromise<void>;
+}
+
+export type ValidationEphemeralGraphSnapshotProvider = (args: {
+  logicalRepo: RepoIdentity;
+  sourceUniverse: { paths: readonly string[]; complete: boolean; message?: string };
+  readFile: (path: string) => MaybePromise<{ status: "found" | "missing" | "deleted"; content?: string }>;
+}) => MaybePromise<ValidationEphemeralGraphSnapshot>;
+
+export function createValidationExactGraphSnapshotFactory(
+  provider: ValidationEphemeralGraphSnapshotProvider
+): ValidationExactGraphSnapshotFactory {
+  return async ({ request, fileView }) => {
+    const universe = await fileView.listVisibleFileUniverse();
+    const snapshot = await provider({
+      logicalRepo: request.repo,
+      sourceUniverse: { paths: universe.files, complete: universe.complete, message: universe.message },
+      readFile: (path) => fileView.readFile(path)
+    });
+    const client: ValidationGraphProviderClient = {
+      status: (candidate) => snapshot.status(candidate.graph.mode),
+      factQuery: snapshot.factQuery,
+      namedQuery: snapshot.namedQuery,
+      impact: snapshot.impact,
+      reviewContext: snapshot.reviewContext,
+      detectChanges: snapshot.detectChanges
+    };
+    return {
+      status: snapshot.status(request.graph.mode),
+      client,
+      dispose: snapshot.dispose
+    };
+  };
+}
+
+export function createStateAwareValidationGraphSessionFactory(options: {
+  persistentClient?: ValidationGraphProviderClient;
+  exactSnapshotFactory: ValidationExactGraphSnapshotFactory;
+}): ValidationGraphSessionFactory {
+  return async (args) => {
+    if (args.identity?.kind !== "exact") {
+      return createValidationGraphQuerySession({ ...args, client: args.client ?? options.persistentClient });
+    }
+    if (args.fileView === undefined) throw new Error("Exact validation graph session requires its ValidationFileView");
+    const snapshot = await options.exactSnapshotFactory({
+      request: args.request,
+      fileView: args.fileView,
+      state: args.identity.state
+    });
+    try {
+      const session = await createValidationGraphQuerySession({
+        ...args,
+        client: snapshot.client,
+        status: snapshot.status
+      });
+      let disposed = false;
+      return {
+        ...session,
+        dispose: async () => {
+          if (disposed) return;
+          disposed = true;
+          await snapshot.dispose();
+        }
+      };
+    } catch (error) {
+      await snapshot.dispose();
+      throw error;
+    }
+  };
+}
 
 export class ValidationGraphProviderError extends Error {
   readonly operation: ValidationGraphOperation;
@@ -376,8 +475,10 @@ export async function createValidationGraphQuerySession(
   }
 
   return {
+    identity: args.identity ?? { kind: "persistent" },
     status,
     queryCapable,
+    dispose: () => {},
     preload,
     facts,
     namedQuery,

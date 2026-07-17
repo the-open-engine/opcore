@@ -13,6 +13,7 @@ export function createImportGraphCheck(): ValidationCheckDefinition {
     defaultSeverity: "warning",
     supportedScopes: supportedTypeScriptValidationScopes,
     requiresGraph: false,
+    graphUsage: "optional",
     run: async (context) => {
       const sourceSet = await materializeTypeScriptSources(context);
       const diagnostics = [
@@ -33,7 +34,11 @@ async function retainedMissingEdgeDiagnostics(
   try {
     edges = await context.graph.importsFrom();
   } catch (error) {
-    if (error instanceof ValidationGraphProviderError && context.request.graph.mode !== "required") return [];
+    if (
+      error instanceof ValidationGraphProviderError &&
+      context.request.graph.mode !== "required" &&
+      context.graph.identity.kind !== "exact"
+    ) return [];
     throw error;
   }
   return relativeImports

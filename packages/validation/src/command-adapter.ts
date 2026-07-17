@@ -28,7 +28,7 @@ import {
   type ValidationClock
 } from "./runner.js";
 import { createNodeValidationWorkspace } from "./workspace.js";
-import type { ValidationGraphProviderClient } from "./graph-client.js";
+import type { ValidationGraphProviderClient, ValidationGraphSessionFactory } from "./graph-client.js";
 import type { ValidationWorkspace } from "./scope.js";
 import type { ValidationRuntimePolicy } from "./registry.js";
 import { readFile } from "node:fs/promises";
@@ -45,6 +45,7 @@ export interface ValidationCommandAdapterOptions {
   workspace?: ValidationWorkspace;
   workspaceFactory?: (repoRoot: string) => ValidationWorkspace;
   graphProviderClient?: ValidationGraphProviderClient;
+  graphSessionFactory?: ValidationGraphSessionFactory;
   clock?: ValidationClock;
   defaultRepoRoot?: string;
   runtime?: ValidationRuntimePolicy;
@@ -149,6 +150,7 @@ async function runRequest(
     workspace: workspaceForRequest(request, parsed, options),
     registry: registryForOptions(options, repoRootForRequest(request, parsed, options)),
     graphProviderClient: options.graphProviderClient,
+    graphSessionFactory: options.graphSessionFactory,
     clock: options.clock,
     runtime: options.runtime
   };
