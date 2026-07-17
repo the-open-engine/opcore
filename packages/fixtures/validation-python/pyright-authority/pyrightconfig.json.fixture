@@ -1,0 +1,14 @@
+{
+  // Pyright JSONC and recursive extends are part of the authority proof.
+  "extends": "configs/base.json",
+  "include": ["src"],
+  "exclude": ["src/excluded"],
+  "ignore": ["src/ignored"],
+  "extraPaths": ["shared"],
+  "stubPath": "stubs",
+  "pythonVersion": "PYTHON_VERSION",
+  "pythonPlatform": "PYTHON_PLATFORM",
+  "executionEnvironments": [
+    { "root": "src", "extraPaths": ["shared"] }
+  ],
+}
