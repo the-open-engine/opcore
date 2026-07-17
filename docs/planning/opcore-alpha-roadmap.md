@@ -68,7 +68,7 @@ Ship only signals the engine can defend:
 - Rust oversized files.
 - Rust module cycles, orphans, and unresolved module evidence.
 - Rust cargo, fmt, clippy, rustdoc, and optional-tool evidence when available, with honest degraded status when tools are missing.
-- Python `.py`/`.pyi` graph-backed structure, untested modules, dead exports, syntax, source-hygiene, import graph, relevant-test signals, and configured-authority `python.types`; mypy runs per project, while Pyright and missing/conflicting authority remain degraded until the sequential authority work completes.
+- Python `.py`/`.pyi` graph-backed structure, untested modules, dead exports, syntax, source-hygiene, import graph, relevant-test signals, and configured-authority `python.types`; exactly one mypy or Pyright authority runs per project, while absent/conflicting/unavailable authority remains degraded. Python readiness and parity remain gated on later release evidence.
 - Unsupported language census with no fake findings.
 
 Do not ship headline claims for generic complexity, TS complexity, Python code analysis, Go/Java analysis, security, cross-repo percentiles, automatic fixes, or old-tool replacement.

@@ -45,6 +45,7 @@
     "provenance:check": "node scripts/check-provenance.mjs",
     "python:resolver-matrix": "node scripts/check-python-resolver-matrix.mjs",
     "python:mypy-authority-proof": "node scripts/check-python-mypy-authority.mjs",
+    "python:pyright-authority-proof": "node scripts/check-python-pyright-authority.mjs",
     "release:hygiene": "node scripts/check-release-hygiene.mjs",
     "rust:check": "npm run rust:fmt && npm run rust:clippy && npm run rust:test",
     "rust:clippy": "cargo clippy --all-targets --all-features -- -D warnings",

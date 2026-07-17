@@ -52,6 +52,7 @@ const bundledExternalRuntimePackages = [
   "debug",
   "eslint-visitor-keys",
   "fdir",
+  "jsonc-parser",
   "minimatch",
   "ms",
   "path-browserify",

@@ -445,6 +445,112 @@ describe("Opcore ASP provider", () => {
     }
   });
 
+  it("preserves selected Pyright capability receipts without ASP-side tool fallback", { timeout: 60000 }, async () => {
+    const repo = mkdtempSync(join(tmpdir(), "opcore-asp-provider-pyright-"));
+    try {
+      const bin = join(repo, "services/api/.venv/bin");
+      mkdirSync(bin, { recursive: true });
+      const pythonPath = join(bin, "python");
+      const pythonScript = [
+        "#!/bin/sh",
+        "case \"$4\" in",
+        "  *opcore.python.project-context.interpreter.v1*)",
+        `    printf '%s\\n' '${JSON.stringify({
+          protocol: "opcore.python.project-context.interpreter.v1",
+          executable: pythonPath,
+          version: "3.12.13",
+          implementation: "CPython",
+          platform: "darwin",
+          architecture: "arm64",
+          abi: "cpython-312",
+          soabi: "cpython-312-darwin"
+        })}'`,
+        "    ;;",
+        "  *) exit 9 ;;",
+        "esac",
+        ""
+      ].join("\n");
+      const pyrightPath = join(bin, "pyright");
+      const pyrightPayload = {
+        version: "1.1.411",
+        time: "0",
+        generalDiagnostics: [{
+          file: "src/app.py",
+          severity: "warning",
+          message: "Unused import",
+          rule: "reportUnusedImport",
+          range: { start: { line: 0, character: 0 }, end: { line: 0, character: 1 } }
+        }],
+        summary: { filesAnalyzed: 1, errorCount: 0, warningCount: 1, informationCount: 0, timeInSec: 0 }
+      };
+      const pyrightScript = [
+        "#!/bin/sh",
+        "if [ \"$1\" = \"--version\" ]; then echo 'pyright 1.1.411'; exit 0; fi",
+        `printf '%s\\n' '${JSON.stringify(pyrightPayload)}'`,
+        "exit 0",
+        ""
+      ].join("\n");
+      writeFileSync(pythonPath, pythonScript);
+      writeFileSync(pyrightPath, pyrightScript);
+      chmodSync(pythonPath, 0o755);
+      chmodSync(pyrightPath, 0o755);
+
+      const host = createHostWorkspace({
+        "services/api/pyproject.toml": "[project]\nname='api'\nrequires-python='>=3.8'\n",
+        "services/api/pyrightconfig.json": JSON.stringify({
+          include: ["src/**/*.py"],
+          exclude: ["**/__pycache__"],
+          ignore: ["generated/**"],
+          extraPaths: [".", "src"],
+          stubPath: "stubs",
+          executionEnvironments: [{ root: "src", extraPaths: [".", "stubs"] }]
+        }) + "\n",
+        "services/api/src/app.py": "import unused\n",
+        "services/api/stubs/external/__init__.pyi": "VALUE: int\n",
+        "services/api/.venv/bin/python": pythonScript,
+        "services/api/.venv/bin/pyright": pyrightScript
+      });
+      const peer = spawnProvider(host);
+      try {
+        await peer.request("initialize", {
+          protocolVersion: "asp/0.1",
+          host: { name: "fake-host", version: "0.1.0-test" },
+          hostCapabilities: { readBlob: true, listTree: true, putBlob: false },
+          workspace: { root: repo, baseline: host.baseline },
+          assuranceMode: "gated"
+        });
+        peer.notify("initialized", {
+          grantedPermissions: { read: ["**/*"], write: false, network: false },
+          baseline: host.baseline
+        });
+        const assessment = await peer.request("check/evaluate", {
+          callSite: "interactive",
+          changeset: host.changeset([host.modify("services/api/src/app.py", "import unused\nVALUE = 1\n")]),
+          comparison: "all",
+          checks: ["python.types"]
+        }, 30000);
+        const evidence = assessment.evidence.find((entry) => entry.kind === "python_validation_capability_run");
+        assert.equal(evidence.data.checker, "pyright", JSON.stringify(assessment, null, 2));
+        assert.equal(evidence.data.status, "unsupported_target", JSON.stringify(assessment, null, 2));
+        assert.equal(assessment.diagnostics.some((entry) => /configured path realpath|invalid config/i.test(entry.message)), false);
+        assert.equal(evidence.data.tool.name, "pyright");
+        assert.equal(evidence.data.tool.configFile, "services/api/pyrightconfig.json");
+        assert.equal(Object.hasOwn(evidence.data, "execution"), false);
+        assert.deepEqual({
+          diagnostics: evidence.data.diagnosticCount,
+          errors: evidence.data.errorCount,
+          warnings: evidence.data.warningCount,
+          notes: evidence.data.noteCount
+        }, { diagnostics: 1, errors: 0, warnings: 0, notes: 1 });
+        assertNoForbiddenKeys(assessment);
+      } finally {
+        peer.close();
+      }
+    } finally {
+      rmSync(repo, { recursive: true, force: true });
+    }
+  });
+
   it("ships a provisional install manifest without authority semantics", () => {
     const manifestPath = join(repoRoot, "packages/asp-provider/dist/manifests/opcore-asp-provider.provisional.json");
     assert.equal(existsSync(manifestPath), true, "run npm run build before asp-provider tests");

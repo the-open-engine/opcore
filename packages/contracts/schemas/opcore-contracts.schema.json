@@ -2682,10 +2682,7 @@
           "if": { "properties": { "status": { "const": "passed" } }, "required": ["status"] },
           "then": {
             "properties": {
-              "diagnosticCount": { "const": 0 },
               "errorCount": { "const": 0 },
-              "warningCount": { "const": 0 },
-              "noteCount": { "const": 0 },
               "execution": {
                 "properties": { "termination": { "const": "exited" }, "exitCode": { "const": 0 } },
                 "required": ["termination", "exitCode"]

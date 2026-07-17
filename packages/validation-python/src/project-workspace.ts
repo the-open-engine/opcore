@@ -43,8 +43,7 @@ export function createValidationFileViewPythonWorkspace(
         if (fileView.defaultReadState === "after") {
           const overlay = fileView.overlayFor(path);
           if (overlay?.action === "delete") continue;
-          if (overlay?.action === "write"
-            || (fileViewPathSet.has(path) && (fullWorkspace === undefined || fullWorkspacePathSet.has(path)))) {
+          if (overlay?.action === "write" || fileViewPathSet.has(path) || fullWorkspacePathSet.has(path)) {
             visible.push(path);
             continue;
           }
@@ -55,6 +54,11 @@ export function createValidationFileViewPythonWorkspace(
     },
     exists: (path) => fileView.exists(validateRepoRelativePath(path)),
     realpath: async (path) => {
+      if (path === ".") {
+        return fullWorkspace === undefined
+          ? { path: ".", symlink: false, unavailable: true }
+          : fullWorkspace.realpath(path);
+      }
       const normalized = validateRepoRelativePath(path);
       if (fullWorkspace === undefined) return { path: normalized, symlink: false, unavailable: true };
       const baseline = await fullWorkspace.realpath(normalized);
@@ -97,6 +101,7 @@ export function createNodePythonProjectWorkspace(repoRoot: string): PythonProjec
       }
     },
     realpath: async (path) => {
+      if (path === ".") return { path: ".", symlink: false };
       const normalized = validateRepoRelativePath(path);
       const absolute = resolveRepoPath(canonicalRoot, normalized);
       try {

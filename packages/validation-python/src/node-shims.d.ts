@@ -121,6 +121,7 @@ declare namespace NodeJS {
 
 declare const process: {
   env: Record<string, string | undefined>;
+  execPath: string;
   cwd(): string;
   kill(pid: number, signal?: string): boolean;
   platform: string;

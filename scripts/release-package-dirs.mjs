@@ -71,6 +71,7 @@ export const bundledExternalRuntimePackageNames = Object.freeze([
   "debug",
   "eslint-visitor-keys",
   "fdir",
+  "jsonc-parser",
   "minimatch",
   "ms",
   "path-browserify",

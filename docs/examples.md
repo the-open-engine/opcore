@@ -92,7 +92,7 @@ For Python-only validation in the same scan, check, measure loop:
 opcore check --changed --checks python.syntax,python.source-hygiene --json
 ```
 
-`python.types` is configured-authority evidence. Configured mypy runs per project; configured Pyright is deferred until #257; absent, conflicting, or unavailable authority is degraded instead of inventing a finding.
+`python.types` is configured-authority evidence. Exactly one configured mypy or Pyright runs per project; absent, conflicting, or unavailable authority is degraded instead of inventing a finding.
 
 ## Read Deltas
 

@@ -1010,15 +1010,14 @@ function addValidationDegradations(
       });
     }
     if (isPythonTypeAvailabilityDiagnostic(diagnostic)) {
-      const deferred = diagnostic.code === "PYTHON_TYPES_PYRIGHT_UNSUPPORTED";
       degradations.push({
-        id: deferred ? "python.types.deferred" : "python.types.unavailable",
-        title: deferred ? "Python type metric deferred" : "Python type metric unavailable",
+        id: "python.types.unavailable",
+        title: "Python type metric unavailable",
         source: "validation_diagnostic",
         severity: "warning",
         message: diagnostic.message,
         checkId: pythonTypesCheckId,
-        requiredTool: deferred ? "pyright" : "configured Python type authority"
+        requiredTool: "configured Python type authority"
       });
     }
   }
@@ -1152,7 +1151,6 @@ function isPythonTypeSignalDiagnostic(diagnostic: ValidationDiagnostic): boolean
 
 function isPythonTypeAvailabilityDiagnostic(diagnostic: ValidationDiagnostic): boolean {
   return diagnostic.code === "PYTHON_TYPES_UNSUPPORTED_TARGET" ||
-    diagnostic.code === "PYTHON_TYPES_PYRIGHT_UNSUPPORTED" ||
     diagnostic.code === "PYTHON_TYPES_TOOL_UNAVAILABLE";
 }
 

@@ -220,7 +220,7 @@ export interface SyntheticFixtureMetadata {
   };
   validationPython?: {
     fixtureRoot: string;
-    scenarios: readonly ("clean" | "failing" | "degraded-tools" | "mypy-authority")[];
+    scenarios: readonly ("clean" | "failing" | "degraded-tools" | "mypy-authority" | "pyright-authority")[];
     checks: readonly string[];
     degradedTools: readonly string[];
   };
@@ -602,7 +602,7 @@ export const conformanceFixtureMetadata = [
     status: "validation_python",
     validationPython: {
       fixtureRoot: "packages/fixtures/validation-python",
-      scenarios: ["clean", "failing", "degraded-tools", "mypy-authority"],
+      scenarios: ["clean", "failing", "degraded-tools", "mypy-authority", "pyright-authority"],
       checks: [
         "python.syntax",
         "python.source-hygiene",

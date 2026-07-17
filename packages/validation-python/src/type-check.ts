@@ -19,6 +19,8 @@ import { pythonCheckAdapter, pythonCheckOwner, supportedPythonValidationScopes }
 import { diagnostic, sortDiagnostics } from "./diagnostics.js";
 import { runMypyCapability } from "./mypy-runner.js";
 import { resolveMypyConfigSemantics, type MypyConfigSemantics } from "./mypy-config.js";
+import { resolvePyrightConfigSemantics, type PyrightConfigSemantics } from "./pyright-config.js";
+import { runPyrightCapability } from "./pyright-runner.js";
 import {
   pythonInputSet,
   skippedPythonInputResult,
@@ -72,14 +74,18 @@ export function createTypeCheck(
       if (sourceSet.rootPaths.length === 0) {
         return { status: "skipped", diagnostics: [], failureMessage: "No Python after-state source files were selected." };
       }
-      const contexts = await resolveContexts(validation, sourceSet.paths);
+      // Pyright selects files from configuration rather than only the import closure.
+      // Resolve every visible source so parent projects cannot materialize sources
+      // owned by another project that has its own authority run in this request.
+      const contexts = await resolveContexts(validation, sourceSet.allPaths);
       const contextByTarget = new Map(contexts.map((context) => [context.target, context]));
       const missing = sourceSet.rootPaths.filter((path) => !contextByTarget.has(path));
       if (missing.length > 0) return missingContextResult(missing);
       const projects = groupProjectContexts(sourceSet.rootPaths, contextByTarget);
+      const activeProjectKeys = new Set(projects.map((project) => project.context.projectKey));
       const attempts: ProjectAttempt[] = [];
       for (const project of projects) {
-        attempts.push(await attemptProject(validation, project, sourceSet, options));
+        attempts.push(await attemptProject(validation, project, sourceSet, contextByTarget, activeProjectKeys, options));
       }
       const diagnostics = sortDiagnostics(attempts.flatMap((attempt) => attempt.diagnostics));
       const runs = attempts.flatMap((attempt) => attempt.run === undefined ? [] : [attempt.run]);
@@ -153,36 +159,84 @@ async function attemptProject(
   validation: ValidationCheckContext,
   project: PythonProjectGroup,
   sourceSet: PythonMaterializedSourceSet,
+  contextByTarget: ReadonlyMap<string, PythonProjectContext>,
+  activeProjectKeys: ReadonlySet<string>,
   options: PythonTypeCheckOptions
 ): Promise<ProjectAttempt> {
   const selection = selectPythonTypeAuthority(project.context, options.checker);
-  const semantics = await selectedMypySemantics(validation, project, selection);
-  const sourcePaths = projectSourcePaths({
-    basePaths: project.targets,
-    availablePaths: sourceSet.allPaths,
-    edges: sourceSet.allRepoImports,
-    additionalRoots: semantics.pluginPaths,
-    projectRoot: project.context.projectRoot
+  const mypySemantics = await selectedMypySemantics(validation, project, selection);
+  const pyrightSemantics = await selectedPyrightSemantics(validation, project, selection, options);
+  const eligiblePaths = sourceSet.allPaths.filter((path) => {
+    const projectKey = contextByTarget.get(path)?.projectKey;
+    if (projectKey === project.context.projectKey || projectKey === undefined) return true;
+    return selection.authority === "pyright" ? false : !activeProjectKeys.has(projectKey);
   });
+  const eligiblePathSet = new Set(eligiblePaths);
+  const sourcePaths = selection.authority === "pyright"
+    ? pyrightProjectSourcePaths(eligiblePaths, project.context.projectRoot, pyrightSemantics.moduleSearchRoots)
+    : projectSourcePaths({
+      basePaths: project.targets,
+      availablePaths: eligiblePaths,
+      edges: sourceSet.allRepoImports.filter((edge) => eligiblePathSet.has(edge.fromPath) && eligiblePathSet.has(edge.toPath)),
+      additionalRoots: mypySemantics.pluginPaths.filter((path) => eligiblePathSet.has(path)),
+      projectRoot: project.context.projectRoot
+    });
+  const pyrightIsolationFailures = selection.authority === "pyright"
+    ? await pyrightSourceIsolationFailures(sourcePaths, options)
+    : [];
   const preparation = await preparePythonTypeCapability({
     fileView: validation.fileView,
     project: project.context,
     targets: project.targets,
     sourcePaths,
-    configPaths: selection.configPaths,
-    moduleSearchRoots: semantics.moduleSearchRoots
+    configPaths: selection.authority === "pyright" ? pyrightSemantics.configPaths : selection.configPaths,
+    moduleSearchRoots: selection.authority === "pyright" ? pyrightSemantics.moduleSearchRoots : mypySemantics.moduleSearchRoots
   });
-  const blocked = blockedProjectAttempt(project, preparation, selection, semantics.invalidConfigMessages);
+  const blocked = blockedProjectAttempt(project, preparation, selection, [
+    ...mypySemantics.invalidConfigMessages,
+    ...pyrightSemantics.invalidConfigMessages,
+    ...pyrightIsolationFailures
+  ]);
   if (blocked !== undefined) return blocked;
-  if (selection.tool === undefined) throw new Error("Selected mypy authority omitted canonical tool provenance");
-  const executed = await runMypyCapability({
+  if (selection.tool === undefined || selection.authority === undefined) {
+    throw new Error("Selected Python type authority omitted canonical tool provenance");
+  }
+  const shared = {
     preparation,
     checker: selection.tool,
     authoritySource: selection.source ?? "project_config",
     ...(options.env === undefined ? {} : { env: options.env }),
     timeoutMs: options.timeoutMs ?? 30000
-  });
+  };
+  const executed = selection.authority === "pyright"
+    ? await runPyrightCapability(shared)
+    : await runMypyCapability(shared);
   return { ...executed, outcome: executed.run.status };
+}
+
+async function pyrightSourceIsolationFailures(
+  paths: readonly string[],
+  options: PythonTypeCheckOptions
+): Promise<readonly string[]> {
+  if (options.nodeWorkspace === undefined) return [];
+  const failures: string[] = [];
+  for (const path of paths) {
+    const resolved = await options.nodeWorkspace.realpath(path);
+    if (resolved.unavailable) failures.push(`${path}: Pyright source realpath evidence is unavailable`);
+    else if (resolved.symlink || resolved.path !== path) failures.push(`${path}: Symlinked or escaping Pyright source is refused`);
+  }
+  return failures;
+}
+
+function pyrightProjectSourcePaths(
+  availablePaths: readonly string[],
+  projectRoot: string,
+  roots: readonly string[]
+): readonly string[] {
+  const effectiveRoots = uniqueSorted([projectRoot, ...roots]);
+  return availablePaths.filter((path) => effectiveRoots.some((root) =>
+    root === "." || path === root || path.startsWith(`${root}/`)
+  )).sort();
 }
 
 async function selectedMypySemantics(
@@ -194,6 +248,18 @@ async function selectedMypySemantics(
     return { pluginPaths: [], moduleSearchRoots: project.context.sourceRoots, invalidConfigMessages: [] };
   }
   return resolveMypyConfigSemantics(validation.fileView, project.context, selection.configPaths);
+}
+
+async function selectedPyrightSemantics(
+  validation: ValidationCheckContext,
+  project: PythonProjectGroup,
+  selection: PythonTypeAuthoritySelection,
+  options: PythonTypeCheckOptions
+): Promise<PyrightConfigSemantics> {
+  if (selection.status !== "selected" || selection.authority !== "pyright") {
+    return { configPaths: [], moduleSearchRoots: project.context.sourceRoots, invalidConfigMessages: [] };
+  }
+  return resolvePyrightConfigSemantics(validation.fileView, project.context, selection.configPaths, options.nodeWorkspace);
 }
 
 function blockedProjectAttempt(
@@ -229,12 +295,8 @@ function blockedProjectAttempt(
       code: "PYTHON_TYPES_UNSUPPORTED_TARGET"
     });
   }
-  if (selection.authority === "pyright") {
-    const message = `Pyright authority for ${project.context.projectRoot} is deliberately unsupported until the Pyright authority slice`;
-    return nonExecutableAttempt(preparation, selection, { status: "unsupported_target", message, code: "PYTHON_TYPES_PYRIGHT_UNSUPPORTED" });
-  }
   if (selection.tool === undefined || !selection.tool.available) {
-    const message = `Selected mypy authority is unavailable for ${project.context.projectRoot}`;
+    const message = `Selected ${selection.authority ?? "Python type"} authority is unavailable for ${project.context.projectRoot}`;
     return nonExecutableAttempt(preparation, selection, { status: "tool_unavailable", message, code: "PYTHON_TYPES_TOOL_UNAVAILABLE" });
   }
   return undefined;
@@ -337,6 +399,10 @@ function aggregateOutcome(outcomes: readonly ValidationCheckOutcome[]): Validati
     "invalid_config", "timeout", "tool_failure", "tool_unavailable", "unsupported_target", "findings", "passed"
   ];
   return priority.find((candidate) => outcomes.includes(candidate)) ?? "passed";
+}
+
+function uniqueSorted(values: readonly string[]): readonly string[] {
+  return [...new Set(values)].sort();
 }
 
 function missingContextResult(missing: readonly string[]): ValidationCheckResult {

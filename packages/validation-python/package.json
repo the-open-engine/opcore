@@ -26,6 +26,7 @@
   "dependencies": {
     "@the-open-engine/opcore-contracts": "0.2.0",
     "@the-open-engine/opcore-validation": "0.2.0",
+    "jsonc-parser": "3.3.1",
     "smol-toml": "1.6.0"
   },
   "engines": {

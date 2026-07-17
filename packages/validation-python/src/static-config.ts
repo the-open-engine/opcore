@@ -5,8 +5,10 @@ import type {
   PythonProjectTarget
 } from "@the-open-engine/opcore-contracts";
 import { parse as parseToml } from "smol-toml";
+import { parse as parseJsonc, type ParseError } from "jsonc-parser";
 import { isRelevantPythonConfig } from "./project-config-files.js";
 import type { PythonProjectWorkspace } from "./project-workspace.js";
+import { parsePyrightConfig, resolveConfiguredPath } from "./pyright-config.js";
 import { pythonVersionSatisfiesConstraint } from "./version-constraint.js";
 import { parsePythonIni, pythonIniHasSection, pythonIniValue, type PythonIniDocument } from "./ini-config.js";
 import { mypyConfigSafetyFailures, mypyPathValidationFailures } from "./mypy-config-values.js";
@@ -43,6 +45,7 @@ export async function readPythonStaticProjectConfig(
   const direct = directChildren(projectRoot, visibleFiles);
   const relevant = direct.filter(isRelevantPythonConfig);
   const contents = new Map<string, string>();
+  const jsonDocuments = new Map<string, TomlTable>();
   const tomlDocuments = new Map<string, TomlTable>();
   const iniDocuments = new Map<string, PythonIniDocument>();
   const reasons: PythonProjectContextReason[] = [];
@@ -61,8 +64,13 @@ export async function readPythonStaticProjectConfig(
     contents.set(path, value);
     if (path.endsWith(".json") || basename(path) === "Pipfile.lock") {
       try {
-        const parsed = JSON.parse(value) as unknown;
+        const errors: ParseError[] = [];
+        const parsed = basename(path) === "pyrightconfig.json"
+          ? parseJsonc(value, errors, { allowTrailingComma: true, disallowComments: false }) as unknown
+          : JSON.parse(value) as unknown;
+        if (errors.length > 0) throw new Error("JSONC parse failure");
         if (!isTable(parsed)) throw new Error("JSON config root must be an object");
+        jsonDocuments.set(path, parsed);
       } catch {
         reasons.push({ code: "invalid_config", path, message: `Python project config is malformed: ${path}` });
       }
@@ -96,8 +104,11 @@ export async function readPythonStaticProjectConfig(
       message: `Conflicting Python dependency managers at ${projectRoot}: ${managers.map((entry) => entry.kind).join(", ")}`
     });
   }
-  const target = targetEvidence(projectRoot, contents, tomlDocuments, reasons);
   const toolConfigs = selectToolConfigs({ projectRoot, direct, contents, tomlDocuments, iniDocuments }, reasons);
+  const pyrightTarget = toolConfigs.pyright === undefined
+    ? undefined
+    : await readSelectedPyrightTarget(workspace, toolConfigs.pyright, contents, reasons);
+  const target = targetEvidence(projectRoot, contents, tomlDocuments, pyrightTarget, toolConfigs.pyright, reasons);
   const pyproject = joinRoot(projectRoot, "pyproject.toml");
   const buildSystem = parseBuildSystem(pyproject, tomlDocuments.get(pyproject));
   return { contents, managers, target, toolConfigs, ...(buildSystem === undefined ? {} : { buildSystem }), reasons };
@@ -135,6 +146,8 @@ function targetEvidence(
   projectRoot: string,
   contents: ReadonlyMap<string, string>,
   tomlDocuments: ReadonlyMap<string, TomlTable>,
+  pyrightTarget: TomlTable | undefined,
+  selectedPyrightConfig: string | undefined,
   reasons: PythonProjectContextReason[]
 ): PythonProjectTarget {
   const declarations: { source: string; kind: "requires" | "version" | "platform" | "implementation"; value: string }[] = [];
@@ -145,16 +158,21 @@ function targetEvidence(
       valueForNonTomlConfig(path, content, "requires-python") ??
       valueForNonTomlConfig(path, content, "python_requires");
     if (requires !== undefined) declarations.push({ source: path, kind: "requires", value: requires });
-    const version = stringAt(document, ["tool", "pyright", "pythonVersion"]) ??
-      stringAt(document, ["requires", "python_version"]) ??
-      valueForNonTomlConfig(path, content, "pythonVersion") ?? valueForNonTomlConfig(path, content, "python_version");
+    const version = stringAt(document, ["requires", "python_version"]) ??
+      valueForNonTomlConfig(path, content, "python_version");
     if (version !== undefined) declarations.push({ source: path, kind: "version", value: version });
-    const platform = stringAt(document, ["tool", "pyright", "pythonPlatform"]) ??
-      valueForNonTomlConfig(path, content, "pythonPlatform") ?? valueForNonTomlConfig(path, content, "platform");
+    const platform = valueForNonTomlConfig(path, content, "platform");
     if (platform !== undefined) declarations.push({ source: path, kind: "platform", value: platform });
-    const implementation = stringAt(document, ["tool", "pyright", "pythonImplementation"]) ??
-      valueForNonTomlConfig(path, content, "pythonImplementation");
-    if (implementation !== undefined) declarations.push({ source: path, kind: "implementation", value: implementation });
+  }
+  for (const [kind, key] of [
+    ["version", "pythonVersion"],
+    ["platform", "pythonPlatform"],
+    ["implementation", "pythonImplementation"]
+  ] as const) {
+    const value = stringAt(pyrightTarget, [key]);
+    if (value !== undefined && selectedPyrightConfig !== undefined) {
+      declarations.push({ source: selectedPyrightConfig, kind, value });
+    }
   }
   const conflicts: string[] = [];
   for (const kind of ["requires", "version", "platform", "implementation"] as const) {
@@ -180,6 +198,98 @@ function targetEvidence(
     ...(implementation === undefined ? {} : { implementation }),
     conflicts
   };
+}
+
+async function readSelectedPyrightTarget(
+  workspace: PythonProjectWorkspace,
+  selectedConfig: string,
+  contents: Map<string, string>,
+  reasons: PythonProjectContextReason[]
+): Promise<TomlTable | undefined> {
+  const documents: { path: string; value: TomlTable }[] = [];
+  await readSelectedPyrightConfigClosure(workspace, selectedConfig, contents, documents, reasons, new Set(), []);
+  if (documents.length === 0) return undefined;
+  const inherited: TomlTable = {};
+  for (const document of [...documents].reverse()) {
+    for (const key of ["pythonVersion", "pythonPlatform", "pythonImplementation"] as const) {
+      const value = document.value[key];
+      if (typeof value === "string" && value.trim().length > 0) inherited[key] = value.trim();
+    }
+  }
+  return Object.keys(inherited).length === 0 ? undefined : inherited;
+}
+
+async function readSelectedPyrightConfigClosure(
+  workspace: PythonProjectWorkspace,
+  path: string,
+  contents: Map<string, string>,
+  documents: { path: string; value: TomlTable }[],
+  reasons: PythonProjectContextReason[],
+  visited: Set<string>,
+  stack: readonly string[]
+): Promise<void> {
+  if (stack.includes(path)) {
+    reasons.push({
+      code: "invalid_config",
+      path,
+      tool: "pyright",
+      message: `Invalid Pyright configuration: ${path} has an extends cycle: ${[...stack, path].join(" -> ")}`
+    });
+    return;
+  }
+  if (visited.has(path)) return;
+  visited.add(path);
+  const resolved = await workspace.realpath(path);
+  if (resolved.unavailable) {
+    reasons.push({ code: "ambiguous_path", path, message: `Python config realpath evidence is unavailable: ${path}` });
+    return;
+  }
+  if (resolved.symlink || resolved.path !== path) {
+    reasons.push({ code: "symlink_refused", path, message: `Symlinked Python config path is ambiguous: ${path}` });
+    return;
+  }
+  const content = contents.get(path) ?? await workspace.read(path);
+  if (content === undefined) {
+    reasons.push({
+      code: "invalid_config",
+      path,
+      tool: "pyright",
+      message: `Invalid Pyright configuration: ${path} is missing from the selected project`
+    });
+    return;
+  }
+  contents.set(path, content);
+  const parsed = parsePyrightConfig(path, content);
+  if (typeof parsed === "string") {
+    reasons.push({ code: "invalid_config", path, tool: "pyright", message: `Invalid Pyright configuration: ${parsed}` });
+    return;
+  }
+  documents.push({ path, value: parsed });
+  if (typeof parsed.extends !== "string" || parsed.extends.trim().length === 0) {
+    if (parsed.extends !== undefined) {
+      reasons.push({
+        code: "invalid_config",
+        path,
+        tool: "pyright",
+        message: "Invalid Pyright configuration: Pyright extends must be a non-empty repo-relative path"
+      });
+    }
+    return;
+  }
+  const extended = resolveConfiguredPath(path, parsed.extends, "extends");
+  if (typeof extended === "string") {
+    reasons.push({ code: "invalid_config", path, tool: "pyright", message: `Invalid Pyright configuration: ${extended}` });
+    return;
+  }
+  await readSelectedPyrightConfigClosure(
+    workspace,
+    extended.path,
+    contents,
+    documents,
+    reasons,
+    visited,
+    [...stack, path]
+  );
 }
 
 function parseBuildSystem(path: string, document: TomlTable | undefined): PythonStaticProjectConfig["buildSystem"] {

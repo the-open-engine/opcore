@@ -193,15 +193,35 @@ describe("opcore public facade", () => {
       warningCount: 0,
       noteCount: 0
     };
+    const pyrightRun = {
+      ...run,
+      projectKey: `sha256:${"4".repeat(64)}`,
+      contextFingerprint: `sha256:${"5".repeat(64)}`,
+      selectedConfigPaths: ["pyrightconfig.json"],
+      afterStateManifestFingerprint: `sha256:${"6".repeat(64)}`,
+      authority: "pyright",
+      tool: {
+        name: "pyright",
+        executable: "external:pyright",
+        argv: ["external:pyright", "--outputjson", "--project", "pyrightconfig.json"],
+        cwd: ".",
+        source: "project_local_environment",
+        version: "1.1.411",
+        configFile: "pyrightconfig.json"
+      },
+      diagnosticCount: 2,
+      warningCount: 1,
+      noteCount: 1
+    };
     const compact = compactScanValidationResult({
       ok: true,
       status: "passed",
       diagnostics: [{ category: "types", severity: "warning", message: "preview" }],
-      pythonCapabilityRuns: [run]
+      pythonCapabilityRuns: [run, pyrightRun]
     }, 0);
 
     assert.deepEqual(compact.diagnostics, []);
-    assert.deepEqual(compact.pythonCapabilityRuns, [run]);
+    assert.deepEqual(compact.pythonCapabilityRuns, [run, pyrightRun]);
     assert.equal(JSON.stringify(compact.pythonCapabilityRuns).includes("source text"), false);
     assert.throws(() => compactScanValidationResult({
       ok: true,

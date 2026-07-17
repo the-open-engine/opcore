@@ -68,11 +68,9 @@ function pythonTypeGap(context: PythonProjectContext): readonly PythonTypeGap[] 
   if (selection.status === "unsupported_target") {
     return [{ projectRoot: context.projectRoot, reason: selection.message ?? "Python type authority is not configured", requiredTool: "configured Python type authority" }];
   }
-  if (selection.authority === "pyright") {
-    return [{ projectRoot: context.projectRoot, reason: "Configured Pyright authority is deferred until #257", requiredTool: "pyright", followUpIssue: "#257" }];
-  }
   if (selection.tool === undefined || !selection.tool.available) {
-    return [{ projectRoot: context.projectRoot, reason: "Configured mypy authority is unavailable", requiredTool: "mypy" }];
+    const authority = selection.authority ?? "Python type";
+    return [{ projectRoot: context.projectRoot, reason: `Configured ${authority} authority is unavailable`, requiredTool: authority }];
   }
   return [];
 }
