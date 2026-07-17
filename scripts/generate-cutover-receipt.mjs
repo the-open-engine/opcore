@@ -490,8 +490,10 @@ function runPythonToolDegradationNegativeChecks(tempRoot, opcoreBin, env, comman
     throw new Error("python-types-degraded-no-tools did not return unsupported_request validation evidence");
   }
   const diagnosticCodes = parsed.validationResult.diagnostics?.map((diagnostic) => diagnostic.code) ?? [];
-  if (!diagnosticCodes.includes("PYTHON_TYPES_UNSUPPORTED")) {
-    throw new Error("python-types-degraded-no-tools did not report PYTHON_TYPES_UNSUPPORTED");
+  if (!diagnosticCodes.includes("PYTHON_TYPES_UNSUPPORTED_TARGET")) {
+    throw new Error(
+      `python-types-degraded-no-tools did not report PYTHON_TYPES_UNSUPPORTED_TARGET: ${diagnosticCodes.join(", ")}`
+    );
   }
   const sourceHygieneResult = run(opcoreBin, ["check", "files", "src/acme/app.py", "--checks", "python.source-hygiene", "--json"], {
     cwd: degradedProject,
@@ -949,8 +951,8 @@ function assertPythonCommandPayload(id, parsed) {
       throw new Error("opcore-python-scan must return repoState and validationResult");
     }
     assertPythonRepoState(id, parsed.repoState);
-    if (!text.includes("PYTHON_TYPES_UNSUPPORTED")) {
-      throw new Error("opcore-python-scan must record degraded Python type-tool evidence");
+    if (!text.includes("PYTHON_TYPES_UNSUPPORTED_TARGET")) {
+      throw new Error("opcore-python-scan must record missing Python type-authority evidence");
     }
   }
   if (id === "opcore-python-status") {

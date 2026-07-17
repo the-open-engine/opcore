@@ -8,7 +8,11 @@ import type {
   ValidationRequest,
   ValidationResult
 } from "@the-open-engine/opcore-contracts";
-import { validateCommandTiming, validateRepoRelativePath } from "@the-open-engine/opcore-contracts";
+import {
+  validateCommandTiming,
+  validatePythonValidationCapabilityRun,
+  validateRepoRelativePath
+} from "@the-open-engine/opcore-contracts";
 import type { JsonRpcPeer } from "./json-rpc.js";
 import { changesetDigest as computeChangesetDigest, diagnosticFingerprint, digestJson } from "./digests.js";
 import type {
@@ -600,6 +604,44 @@ function validationEvidence(result: ValidationResult): JsonObject[] {
           ...(tool.version === undefined ? {} : { version: tool.version })
         })),
         reasons: context.reasons.map((reason) => ({ code: reason.code, message: reason.message }))
+      }
+    });
+  }
+  for (const run of result.pythonCapabilityRuns ?? []) {
+    validatePythonValidationCapabilityRun(run);
+    evidence.push({
+      kind: "python_validation_capability_run",
+      message: `Python ${run.capability} capability evidence for ${run.projectRoot}.`,
+      data: {
+        schemaId: run.schemaId,
+        schemaVersion: run.schemaVersion,
+        capability: run.capability,
+        checkId: run.checkId,
+        projectKey: run.projectKey,
+        contextFingerprint: run.contextFingerprint,
+        projectRoot: run.projectRoot,
+        targets: [...run.targets],
+        selectedSourcePaths: [...run.selectedSourcePaths],
+        selectedConfigPaths: [...run.selectedConfigPaths],
+        afterStateManifestFingerprint: run.afterStateManifestFingerprint,
+        ...(run.authority === undefined ? {} : { checker: run.authority }),
+        ...(run.authoritySource === undefined ? {} : { checkerSource: run.authoritySource }),
+        status: run.status,
+        durationMs: run.durationMs,
+        diagnosticCount: run.diagnosticCount,
+        errorCount: run.errorCount,
+        warningCount: run.warningCount,
+        noteCount: run.noteCount,
+        ...(run.tool === undefined ? {} : { tool: {
+          name: run.tool.name,
+          executable: run.tool.executable,
+          argv: [...run.tool.argv],
+          cwd: run.tool.cwd,
+          source: run.tool.source,
+          ...(run.tool.version === undefined ? {} : { version: run.tool.version }),
+          ...(run.tool.configFile === undefined ? {} : { configFile: run.tool.configFile })
+        } }),
+        ...(run.execution === undefined ? {} : { execution: { ...run.execution } })
       }
     });
   }

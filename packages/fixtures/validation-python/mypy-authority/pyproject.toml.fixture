@@ -1,0 +1,12 @@
+[project]
+name = "opcore-mypy-authority-fixture"
+version = "0.0.0"
+requires-python = ">=3.11"
+
+[tool.mypy]
+strict = true
+plugins = ["acme.mypy_plugin"]
+mypy_path = ["src", "stubs"]
+namespace_packages = true
+explicit_package_bases = true
+show_error_codes = true

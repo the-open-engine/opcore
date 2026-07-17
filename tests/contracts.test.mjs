@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import {
   GRAPH_SCHEMA_VERSION,
   PYTHON_PROJECT_CONTEXT_SCHEMA_ID,
+  PYTHON_VALIDATION_CAPABILITY_RUN_SCHEMA_ID,
   commandLatencyTelemetryArtifactPolicy,
   commandTimingDegradationReasons,
   commandTimingProcessStates,
@@ -102,6 +103,7 @@ import {
   validateValidationRequestPayload,
   validatePreWriteValidationReceipt,
   validatePythonProjectContext,
+  validatePythonValidationCapabilityRun,
   validateValidationResultPayload,
   validateValidationStatusPayload
 } from "../packages/contracts/dist/index.js";
@@ -909,6 +911,74 @@ describe("Opcore shared contracts", () => {
       /version/
     );
     assert.throws(() => validatePythonProjectContext({ ...context, contextFingerprint: "secret" }), /fingerprint/i);
+  });
+
+  it("validates source-free Python capability runs and rejects malformed evidence", () => {
+    const run = validPythonCapabilityRun();
+    assert.equal(validatePythonValidationCapabilityRun(run).schemaId, PYTHON_VALIDATION_CAPABILITY_RUN_SCHEMA_ID);
+    assert.equal(
+      validateValidationResultPayload(validValidationResult({ pythonCapabilityRuns: [run] })).pythonCapabilityRuns[0].status,
+      "passed"
+    );
+    const executedInvalidConfig = {
+      ...run,
+      status: "invalid_config",
+      diagnosticCount: 1,
+      errorCount: 1,
+      execution: { termination: "exited", exitCode: 0, failureSummary: "mypy rejected selected configuration: mypy.ini" }
+    };
+    assert.equal(validatePythonValidationCapabilityRun(executedInvalidConfig).status, "invalid_config");
+    assert.throws(() => validatePythonValidationCapabilityRun({
+      ...run,
+      tool: {
+        ...run.tool,
+        executable: "/var/folders/private/opcore-python-types-workspace-secret/bin/mypy",
+        argv: ["/var/folders/private/opcore-python-types-workspace-secret/bin/mypy", "--output=json", "src/app.py"]
+      }
+    }), /portable executable/);
+    assert.throws(() => validatePythonValidationCapabilityRun({
+      ...run,
+      tool: { ...run.tool, argv: [run.tool.executable, "--cache-dir=/tmp/secret", "src/app.py"] }
+    }), /portable argv/);
+    const authorityConflict = { ...run, status: "invalid_config", diagnosticCount: 1, noteCount: 1 };
+    delete authorityConflict.authority;
+    delete authorityConflict.authoritySource;
+    delete authorityConflict.tool;
+    delete authorityConflict.execution;
+    assert.equal(validatePythonValidationCapabilityRun(authorityConflict).status, "invalid_config");
+    assert.throws(() => validatePythonValidationCapabilityRun({ ...run, authority: "pytest" }), /authority/);
+    assert.throws(() => validatePythonValidationCapabilityRun({ ...run, targets: ["z.py", "a.py"] }), /sorted/);
+    assert.throws(() => validatePythonValidationCapabilityRun({ ...run, afterStateManifestFingerprint: "secret" }), /sha256/);
+    assert.throws(() => validatePythonValidationCapabilityRun({ ...run, content: "source text" }), /unexpected properties/);
+    assert.throws(() => validatePythonValidationCapabilityRun({
+      ...run,
+      tool: { ...run.tool, name: "pyright" }
+    }), /match authority/);
+    assert.throws(() => validatePythonValidationCapabilityRun({
+      ...run,
+      tool: { ...run.tool, version: "latest" }
+    }), /exact version/);
+    assert.throws(() => validatePythonValidationCapabilityRun({
+      ...run,
+      status: "timeout",
+      execution: { termination: "signal", signal: "SIGTERM", failureSummary: "terminated" }
+    }), /timeout failure evidence/);
+    assert.throws(() => validatePythonValidationCapabilityRun({
+      ...run,
+      status: "tool_failure",
+      execution: { termination: "exited", exitCode: 2 }
+    }), /failure evidence/);
+    assert.throws(() => validatePythonValidationCapabilityRun({
+      ...executedInvalidConfig,
+      execution: { termination: "exited", exitCode: 0 }
+    }), /invalid-config.*failure evidence/i);
+    assert.throws(() => validatePythonValidationCapabilityRun({
+      ...run,
+      status: "findings",
+      diagnosticCount: 1,
+      errorCount: 1,
+      execution: { termination: "exited", exitCode: 0 }
+    }), /exit 1/);
   });
 
   it("rejects schema-forbidden Python project-context properties recursively", () => {
@@ -3746,6 +3816,41 @@ function validPythonProjectContext(overrides = {}) {
     contextFingerprint: `sha256:${"2".repeat(64)}`,
     outcome: "resolved",
     reasons: [],
+    ...overrides
+  };
+}
+
+function validPythonCapabilityRun(overrides = {}) {
+  return {
+    schemaId: "opcore.python.validation-capability-run",
+    schemaVersion: 1,
+    capability: "types",
+    checkId: "python.types",
+    projectKey: `sha256:${"1".repeat(64)}`,
+    contextFingerprint: `sha256:${"2".repeat(64)}`,
+    projectRoot: "services/api",
+    targets: ["services/api/src/app.py"],
+    selectedSourcePaths: ["services/api/src/app.py"],
+    selectedConfigPaths: ["services/api/pyproject.toml"],
+    afterStateManifestFingerprint: `sha256:${"3".repeat(64)}`,
+    authority: "mypy",
+    authoritySource: "project_config",
+    status: "passed",
+    tool: {
+      name: "mypy",
+      executable: "repo:services/api/.venv/bin/mypy",
+      argv: ["repo:services/api/.venv/bin/mypy", "--output=json", "src/app.py"],
+      cwd: "services/api",
+      source: "project_local_environment",
+      version: "2.3.0",
+      configFile: "services/api/pyproject.toml"
+    },
+    execution: { termination: "exited", exitCode: 0 },
+    durationMs: 12,
+    diagnosticCount: 0,
+    errorCount: 0,
+    warningCount: 0,
+    noteCount: 0,
     ...overrides
   };
 }

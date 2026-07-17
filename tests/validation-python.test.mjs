@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { chmodSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, relative } from "node:path";
+import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 import { createValidationCheckRegistry, createValidationGraphQuerySession, createValidationRunner } from "../packages/validation/dist/index.js";
 import {
@@ -23,6 +24,7 @@ import {
   resolvePythonProjectContexts,
   validationPythonAdapterName
 } from "../packages/validation-python/dist/index.js";
+import { runTool } from "../packages/validation-python/dist/process.js";
 
 const repoRoot = dirname(fileURLToPath(import.meta.url));
 const validationFixtureRoot = join(repoRoot, "../packages/fixtures/validation-python");
@@ -99,7 +101,7 @@ describe("validation-python adapter", () => {
         ["a.py", "resolved"],
         ["z.py", "ambiguous"]
       ]);
-      assert.equal(result.diagnostics.some((diagnostic) => diagnostic.path === "z.py"), true, checkId);
+      assert.equal(result.diagnostics.some((diagnostic) => diagnostic.path === "z.py"), true, `${checkId}: ${JSON.stringify(result)}`);
     }
   });
 
@@ -110,7 +112,7 @@ describe("validation-python adapter", () => {
       const status = createPythonValidationAdapterStatus({ env, repoRoot: isolatedRepoRoot });
       assert.equal(status.status, "degraded");
       assert.equal(status.degradedChecks?.[0]?.checkId, PYTHON_TYPES_CHECK_ID);
-      assert.equal(status.degradedChecks?.[0]?.requiredTool, "mypy or pyright");
+      assert.equal(status.degradedChecks?.[0]?.requiredTool, "configured Python type authority");
     } finally {
       rmSync(isolatedRepoRoot, { recursive: true, force: true });
     }
@@ -127,7 +129,8 @@ describe("validation-python adapter", () => {
     );
 
     assert.equal(result.status, "unsupported_request");
-    assert.deepEqual(result.diagnostics.map((diagnostic) => diagnostic.code), ["PYTHON_TYPES_UNSUPPORTED", "PYTHON_CONTEXT_UNSUPPORTED"]);
+    assert.deepEqual(result.diagnostics.map((diagnostic) => diagnostic.code), ["PYTHON_TYPES_UNSUPPORTED_TARGET"]);
+    assert.equal(result.pythonCapabilityRuns[0].status, "unsupported_target");
   });
 
   it("executes repo-local mypy and maps type diagnostics", async () => {
@@ -140,12 +143,8 @@ describe("validation-python adapter", () => {
         [
           "#!/bin/sh",
           "if [ \"$1\" = \"--version\" ]; then echo 'mypy 1.8.0'; exit 0; fi",
-          "while IFS= read -r line; do",
-          "  case \"$line\" in",
-          "    *\"'wrong'\"*) echo \"$1:1: error: Incompatible types in assignment (expression has type \\\"str\\\", variable has type \\\"int\\\")  [assignment]\"; exit 1 ;;",
-          "  esac",
-          "done < \"$1\"",
-          "exit 0",
+          "echo '{\"file\":\"pkg/app.py\",\"line\":1,\"column\":0,\"message\":\"Incompatible types in assignment\",\"hint\":null,\"code\":\"assignment\",\"severity\":\"error\"}'",
+          "exit 1",
           ""
         ].join("\n")
       );
@@ -154,7 +153,7 @@ describe("validation-python adapter", () => {
         files: {
           "pkg/app.py": "value: int = 'wrong'\n"
         },
-        checks: createPythonValidationChecks({ env: { PATH: "" }, repoRoot })
+        checks: createPythonValidationChecks({ env: { PATH: "" }, repoRoot, checker: "mypy" })
       }).runValidation(
         request({
           repo: { repoRoot },
@@ -169,7 +168,16 @@ describe("validation-python adapter", () => {
       assert.match(result.diagnostics[0].message, /Incompatible types in assignment/);
       assert.equal(result.diagnostics[0].line, 1);
       assert.equal(result.diagnostics[0].tool.name, "mypy");
-      assert.equal(result.diagnostics[0].tool.command.endsWith(join(".venv", "bin", "mypy")), true);
+      assert.equal(result.diagnostics[0].tool.command.startsWith("repo:.venv/bin/mypy"), true);
+      assert.equal(result.pythonCapabilityRuns[0].tool.executable, "repo:.venv/bin/mypy");
+      assert.equal(result.pythonCapabilityRuns[0].tool.argv[0], "repo:.venv/bin/mypy");
+      assert.equal(result.pythonCapabilityRuns[0].tool.cwd, ".");
+      assert.equal(result.pythonCapabilityRuns[0].tool.source, "project_local_environment");
+      assert.equal(result.pythonCapabilityRuns[0].tool.version, "1.8.0");
+      assert.match(result.pythonCapabilityRuns[0].projectKey, /^sha256:[a-f0-9]{64}$/u);
+      assert.match(result.pythonCapabilityRuns[0].contextFingerprint, /^sha256:[a-f0-9]{64}$/u);
+      assert.match(result.pythonCapabilityRuns[0].afterStateManifestFingerprint, /^sha256:[a-f0-9]{64}$/u);
+      assert.equal(JSON.stringify(result.pythonCapabilityRuns).includes(repoRoot), false);
     } finally {
       rmSync(repoRoot, { recursive: true, force: true });
     }
@@ -241,6 +249,54 @@ describe("validation-python adapter", () => {
     }
   });
 
+  it("materializes multiline-configured plugins and their graph-owned transitive imports", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-types-plugin-closure-"));
+    try {
+      writePassingPythonProtocolShim(repoRoot);
+      writeToolShim(repoRoot, "mypy", [
+        "#!/bin/sh",
+        "if [ \"$1\" = \"--version\" ]; then echo 'mypy 2.3.0'; exit 0; fi",
+        "if [ ! -f src/acme/plugin.py ]; then echo 'plugin missing' >&2; exit 91; fi",
+        "if [ ! -f src/acme/plugin_helper.py ]; then echo 'plugin helper missing' >&2; exit 92; fi",
+        "case \"$PYTHONPATH\" in *\"$PWD/src\"*) ;; *) echo 'source root absent from isolated PYTHONPATH' >&2; exit 93;; esac",
+        "exit 0",
+        ""
+      ].join("\n"));
+      const files = {
+        "mypy.ini": "[mypy]\nplugins =\n    acme.plugin\nmypy_path =\n    src\n",
+        "src/acme/__init__.py": "",
+        "src/acme/app.py": "VALUE: int = 1\n",
+        "src/acme/plugin.py": "from acme import plugin_helper\n",
+        "src/acme/plugin_helper.py": "READY = True\n"
+      };
+      const result = await runner({
+        files,
+        checks: createPythonValidationChecks({
+          repoRoot,
+          env: { PATH: "" },
+          importAnalyzer: fixedImportAnalyzer([
+            { fromPath: "src/acme/plugin.py", toPath: "src/acme/plugin_helper.py" }
+          ]),
+          nodeWorkspace: projectWorkspace(files, () => true)
+        })
+      }).runValidation(request({
+        repo: { repoRoot },
+        checks: [PYTHON_TYPES_CHECK_ID],
+        scope: { kind: "files", files: ["src/acme/app.py"] }
+      }));
+
+      assert.equal(result.status, "passed", JSON.stringify(result, null, 2));
+      assert.deepEqual(result.pythonCapabilityRuns[0].selectedSourcePaths, [
+        "src/acme/__init__.py",
+        "src/acme/app.py",
+        "src/acme/plugin.py",
+        "src/acme/plugin_helper.py"
+      ]);
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
   it("maps nested-project type diagnostics to repository-relative paths", async () => {
     const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-types-nested-path-"));
     try {
@@ -253,7 +309,7 @@ describe("validation-python adapter", () => {
         [
           "#!/bin/sh",
           "if [ \"$1\" = \"--version\" ]; then echo 'mypy 1.8.0'; exit 0; fi",
-          "echo \"$1:1: error: nested project type failure  [assignment]\"",
+          "echo '{\"file\":\"src/acme/app.py\",\"line\":1,\"column\":0,\"message\":\"nested project type failure\",\"hint\":null,\"code\":\"assignment\",\"severity\":\"error\"}'",
           "exit 1",
           ""
         ].join("\n")
@@ -335,11 +391,11 @@ describe("validation-python adapter", () => {
         [
           "#!/bin/sh",
           "if [ \"$1\" = \"--version\" ]; then echo 'mypy 1.8.0'; exit 0; fi",
-          "while IFS= read -r line; do",
-          "  case \"$line\" in",
-          "    *\"'wrong'\"*) echo \"$1:1: error: overlay type failure  [assignment]\"; exit 1 ;;",
-          "  esac",
-          "done < \"$1\"",
+          "for arg in \"$@\"; do target=\"$arg\"; done",
+          "if /usr/bin/grep -q \"'wrong'\" \"$target\"; then",
+          "  echo '{\"file\":\"pkg/app.py\",\"line\":1,\"column\":0,\"message\":\"overlay type failure\",\"hint\":null,\"code\":\"assignment\",\"severity\":\"error\"}'",
+          "  exit 1",
+          "fi",
           "exit 0",
           ""
         ].join("\n")
@@ -349,7 +405,7 @@ describe("validation-python adapter", () => {
         files: {
           "pkg/app.py": "value: int = 1\n"
         },
-        checks: createPythonValidationChecks({ env: { PATH: "" }, repoRoot })
+        checks: createPythonValidationChecks({ env: { PATH: "" }, repoRoot, checker: "mypy" })
       }).runValidation(
         request({
           repo: { repoRoot },
@@ -366,7 +422,7 @@ describe("validation-python adapter", () => {
     }
   });
 
-  it("prefers configured pyright when its project config is present and mypy is available", async () => {
+  it("reports configured pyright as unsupported without checker execution", async () => {
     const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-types-pyright-"));
     try {
       writePassingPythonProtocolShim(repoRoot);
@@ -405,9 +461,10 @@ describe("validation-python adapter", () => {
         })
       );
 
-      assert.equal(result.status, "policy_failure");
-      assert.equal(result.diagnostics[0].code, "PYRIGHT_REPORT_ASSIGNMENT_TYPE");
+      assert.equal(result.status, "unsupported_request");
+      assert.equal(result.diagnostics[0].code, "PYTHON_TYPES_PYRIGHT_UNSUPPORTED");
       assert.equal(result.diagnostics[0].path, "pkg/app.py");
+      assert.equal(result.pythonCapabilityRuns[0].status, "unsupported_target");
       assert.equal(result.pythonProjectContexts[0].tools.find((tool) => tool.tool === "pyright")?.source, "explicit_override");
       assert.equal(result.pythonProjectContexts[0].tools.find((tool) => tool.tool === "pyright")?.configFile, "pyrightconfig.json");
     } finally {
@@ -440,7 +497,7 @@ describe("validation-python adapter", () => {
         checks: createPythonValidationChecks({
           env: { PATH: "" },
           repoRoot,
-          nodeWorkspace: createNodePythonProjectWorkspace(repoRoot)
+          nodeWorkspace: projectWorkspace(files, () => true)
         })
       }).runValidation(request({
         repo: { repoRoot },
@@ -451,10 +508,440 @@ describe("validation-python adapter", () => {
         ]
       }));
 
-      assert.equal(result.status, "policy_failure");
-      assert.equal(result.diagnostics[0].code, "PYRIGHT_REPORT_ASSIGNMENT_TYPE");
-      assert.match(result.diagnostics[0].message, /overlay config selected Pyright/);
+      assert.equal(result.status, "unsupported_request");
+      assert.equal(result.diagnostics[0].code, "PYTHON_TYPES_PYRIGHT_UNSUPPORTED");
+      assert.equal(result.pythonCapabilityRuns[0].authority, "pyright");
       assert.equal(result.pythonProjectContexts[0].tools.find((tool) => tool.tool === "pyright")?.configFile, "pyrightconfig.json");
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("does not select type authority from installed-tool availability", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-types-no-authority-"));
+    try {
+      writePassingPythonProtocolShim(repoRoot);
+      writeToolShim(repoRoot, "mypy", "#!/bin/sh\nif [ \"$1\" = \"--version\" ]; then echo 'mypy 2.3.0'; exit 0; fi\nexit 99\n");
+      const result = await runner({
+        files: { "pkg/app.py": "value: int = 1\n" },
+        checks: createPythonValidationChecks({ repoRoot, env: { PATH: "" } })
+      }).runValidation(request({ repo: { repoRoot }, checks: [PYTHON_TYPES_CHECK_ID] }));
+
+      assert.equal(result.status, "unsupported_request");
+      assert.equal(result.pythonCapabilityRuns[0].status, "unsupported_target");
+      assert.equal(result.diagnostics[0].code, "PYTHON_TYPES_UNSUPPORTED_TARGET");
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("does not treat packaging-only setup.cfg or tox.ini as mypy authority", async () => {
+    const files = {
+      "setup.cfg": "[metadata]\nname = fixture\n[options]\npackages = find:\n",
+      "tox.ini": "[tox]\nenvlist = py312\n[testenv]\ncommands = pytest\n",
+      "pkg/app.py": "value: int = 1\n"
+    };
+    const result = await runner({
+      files,
+      checks: createPythonValidationChecks({
+        env: { PATH: "/fixture/bin" },
+        nodeWorkspace: projectWorkspace(files, () => true),
+        processProbe: successfulProbe()
+      })
+    }).runValidation(request({
+      repo: { repoRoot: "/fixture" },
+      checks: [PYTHON_TYPES_CHECK_ID]
+    }));
+
+    assert.equal(result.status, "unsupported_request", JSON.stringify(result, null, 2));
+    assert.equal(result.pythonCapabilityRuns[0].status, "unsupported_target");
+    assert.equal(result.pythonProjectContexts[0].tools.find((tool) => tool.tool === "mypy")?.configFile, undefined);
+    const status = createPythonValidationAdapterStatus({ contexts: result.pythonProjectContexts });
+    assert.equal(status.status, "degraded");
+    assert.equal(status.degradedChecks.find((check) => check.checkId === PYTHON_TYPES_CHECK_ID)?.requiredTool, "configured Python type authority");
+  });
+
+  it("uses documented mypy config precedence without reading lower-priority output or plugin settings", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-types-config-precedence-"));
+    const hostRoot = mkdtempSync(join(tmpdir(), "opcore-python-types-config-precedence-host-"));
+    try {
+      writePassingPythonProtocolShim(repoRoot);
+      const executed = join(repoRoot, "mypy-executed");
+      const outputVictim = join(hostRoot, "output-victim.xml");
+      const pluginMarker = join(hostRoot, "plugin-executed");
+      const hostPlugin = join(hostRoot, "host-plugin.py");
+      writeFileSync(outputVictim, "UNCHANGED\n");
+      writeFileSync(hostPlugin, `from pathlib import Path\nPath(${JSON.stringify(pluginMarker)}).write_text('executed')\n`);
+      writeToolShim(repoRoot, "mypy", [
+        "#!/bin/sh",
+        "if [ \"$1\" = \"--version\" ]; then echo 'mypy 2.3.0'; exit 0; fi",
+        "config=",
+        "while [ \"$#\" -gt 0 ]; do",
+        "  if [ \"$1\" = \"--config-file\" ]; then shift; config=$1; fi",
+        "  shift",
+        "done",
+        "if [ \"$config\" != \"mypy.ini\" ]; then exit 97; fi",
+        `/usr/bin/touch ${JSON.stringify(executed)}`,
+        "exit 0",
+        ""
+      ].join("\n"));
+      const files = {
+        "mypy.ini": "[mypy]\nstrict = true\n",
+        ".mypy.ini": "[mypy\nmalformed = ignored\n",
+        "pyproject.toml": [
+          "[project]",
+          "name = 'fixture'",
+          "[tool.mypy]",
+          `junit_xml = ${JSON.stringify(outputVictim)}`,
+          `plugins = [${JSON.stringify(hostPlugin)}]`,
+          ""
+        ].join("\n"),
+        "setup.cfg": `[mypy]\npython_executable = ${hostPlugin}\n`,
+        "tox.ini": `[mypy]\ncache_dir = ${hostRoot}\n`,
+        "pkg/app.py": "value: int = 1\n"
+      };
+      const result = await runner({
+        files,
+        checks: createPythonValidationChecks({
+          repoRoot,
+          env: { PATH: "" },
+          nodeWorkspace: createNodePythonProjectWorkspace(repoRoot)
+        })
+      }).runValidation(request({ repo: { repoRoot }, checks: [PYTHON_TYPES_CHECK_ID] }));
+
+      assert.equal(result.status, "passed", JSON.stringify(result, null, 2));
+      assert.deepEqual(result.pythonCapabilityRuns[0].selectedConfigPaths, ["mypy.ini"]);
+      assert.equal(result.pythonCapabilityRuns[0].tool.configFile, "mypy.ini");
+      assert.equal(result.pythonProjectContexts[0].tools.find((tool) => tool.tool === "mypy")?.configFile, "mypy.ini");
+      assert.equal(result.pythonProjectContexts[0].reasons.some((reason) => reason.code === "invalid_config"), false);
+      assert.equal(existsSync(executed), true);
+      assert.equal(readFileSync(outputVictim, "utf8"), "UNCHANGED\n");
+      assert.equal(existsSync(pluginMarker), false);
+      assert.equal(JSON.stringify(result.pythonCapabilityRuns).includes(hostRoot), false);
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+      rmSync(hostRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("fails a dedicated mypy config without a mypy section closed", async () => {
+    const files = {
+      "mypy.ini": "[metadata]\nname = not-mypy\n",
+      "pkg/app.py": "value: int = 1\n"
+    };
+    const result = await runner({
+      files,
+      checks: createPythonValidationChecks({
+        env: { PATH: "/fixture/bin" },
+        nodeWorkspace: projectWorkspace(files, () => true),
+        processProbe: successfulProbe()
+      })
+    }).runValidation(request({ repo: { repoRoot: "/fixture" }, checks: [PYTHON_TYPES_CHECK_ID] }));
+
+    assert.equal(result.status, "unsupported_request", JSON.stringify(result, null, 2));
+    assert.equal(result.pythonCapabilityRuns[0].status, "invalid_config");
+    assert.deepEqual(result.pythonCapabilityRuns[0].selectedConfigPaths, ["mypy.ini"]);
+  });
+
+  it("classifies mypy semantic config rejection as invalid_config", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-types-invalid-mypy-config-"));
+    try {
+      writePassingPythonProtocolShim(repoRoot);
+      writeToolShim(repoRoot, "mypy", [
+        "#!/bin/sh",
+        "if [ \"$1\" = \"--version\" ]; then echo 'mypy 2.3.0'; exit 0; fi",
+        "echo \"mypy.ini: [mypy]: strict: Not a boolean: garbage\" >&2",
+        "exit 0",
+        ""
+      ].join("\n"));
+      const files = {
+        "mypy.ini": "[mypy]\nstrict = garbage\n",
+        "pkg/app.py": "value: int = 1\n"
+      };
+      const result = await runner({
+        files,
+        checks: createPythonValidationChecks({
+          repoRoot,
+          env: { PATH: "" },
+          nodeWorkspace: createNodePythonProjectWorkspace(repoRoot)
+        })
+      }).runValidation(request({ repo: { repoRoot }, checks: [PYTHON_TYPES_CHECK_ID] }));
+
+      assert.equal(result.status, "unsupported_request", JSON.stringify(result, null, 2));
+      assert.equal(result.pythonCapabilityRuns[0].status, "invalid_config", JSON.stringify(result, null, 2));
+      assert.equal(result.pythonCapabilityRuns[0].execution.termination, "exited");
+      assert.equal(result.pythonCapabilityRuns[0].execution.exitCode, 0);
+      assert.equal(result.diagnostics[0].code, "PYTHON_TYPES_INVALID_CONFIG");
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("classifies complete JSON mypy config diagnostics as invalid_config", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-types-json-mypy-config-"));
+    try {
+      writePassingPythonProtocolShim(repoRoot);
+      writeToolShim(repoRoot, "mypy", [
+        "#!/bin/sh",
+        "if [ \"$1\" = \"--version\" ]; then echo 'mypy 2.3.0'; exit 0; fi",
+        "printf '%s\\n' '{\"file\":\"mypy.ini\",\"line\":2,\"column\":0,\"end_line\":2,\"end_column\":1,\"message\":\"strict is not a boolean\",\"hint\":null,\"code\":\"misc\",\"severity\":\"error\"}' >&2",
+        "exit 2",
+        ""
+      ].join("\n"));
+      const files = {
+        "mypy.ini": "[mypy]\nstrict = garbage\n",
+        "pkg/app.py": "value: int = 1\n"
+      };
+      const result = await runner({
+        files,
+        checks: createPythonValidationChecks({
+          repoRoot,
+          env: { PATH: "" },
+          nodeWorkspace: createNodePythonProjectWorkspace(repoRoot)
+        })
+      }).runValidation(request({ repo: { repoRoot }, checks: [PYTHON_TYPES_CHECK_ID] }));
+
+      assert.equal(result.status, "unsupported_request", JSON.stringify(result, null, 2));
+      assert.equal(result.pythonCapabilityRuns[0].status, "invalid_config");
+      assert.equal(result.pythonCapabilityRuns[0].execution.exitCode, 2);
+      assert.equal(result.diagnostics[0].code, "PYTHON_TYPES_INVALID_CONFIG");
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("classifies an invalid mypy python_version before unsupported target policy", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-types-invalid-mypy-version-"));
+    try {
+      writePassingPythonProtocolShim(repoRoot);
+      const executed = join(repoRoot, "mypy-executed");
+      writeToolShim(repoRoot, "mypy", [
+        "#!/bin/sh",
+        "if [ \"$1\" = \"--version\" ]; then echo 'mypy 2.3.0'; exit 0; fi",
+        `/usr/bin/touch ${JSON.stringify(executed)}`,
+        "exit 99",
+        ""
+      ].join("\n"));
+      const files = {
+        "mypy.ini": "[mypy]\npython_version = garbage\n",
+        "pkg/app.py": "value: int = 1\n"
+      };
+      const result = await runner({
+        files,
+        checks: createPythonValidationChecks({
+          repoRoot,
+          env: { PATH: "" },
+          nodeWorkspace: createNodePythonProjectWorkspace(repoRoot)
+        })
+      }).runValidation(request({ repo: { repoRoot }, checks: [PYTHON_TYPES_CHECK_ID] }));
+
+      assert.equal(result.status, "unsupported_request", JSON.stringify(result, null, 2));
+      assert.equal(result.pythonCapabilityRuns[0].status, "invalid_config");
+      assert.equal(result.pythonCapabilityRuns[0].execution, undefined);
+      assert.equal(result.diagnostics[0].code, "PYTHON_TYPES_INVALID_CONFIG");
+      assert.equal(existsSync(executed), false);
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("runs configured mypy without falling back to an installed pyright", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-types-configured-mypy-"));
+    try {
+      writePassingPythonProtocolShim(repoRoot);
+      const mypyExecuted = join(repoRoot, "mypy-executed");
+      const pyrightExecuted = join(repoRoot, "pyright-executed");
+      writeToolShim(repoRoot, "mypy", [
+        "#!/bin/sh",
+        "if [ \"$1\" = \"--version\" ]; then echo 'mypy 2.3.0'; exit 0; fi",
+        `/usr/bin/touch ${JSON.stringify(mypyExecuted)}`,
+        "exit 0",
+        ""
+      ].join("\n"));
+      writeToolShim(repoRoot, "pyright", [
+        "#!/bin/sh",
+        "if [ \"$1\" = \"--version\" ]; then echo 'pyright 1.1.0'; exit 0; fi",
+        `/usr/bin/touch ${JSON.stringify(pyrightExecuted)}`,
+        "exit 99",
+        ""
+      ].join("\n"));
+      const files = {
+        "mypy.ini": "[mypy]\nstrict = true\n",
+        "pkg/app.py": "value: int = 1\n"
+      };
+      const result = await runner({
+        files,
+        checks: createPythonValidationChecks({
+          checker: "mypy",
+          repoRoot,
+          env: { PATH: "" },
+          nodeWorkspace: createNodePythonProjectWorkspace(repoRoot)
+        })
+      }).runValidation(request({ repo: { repoRoot }, checks: [PYTHON_TYPES_CHECK_ID] }));
+
+      assert.equal(result.status, "passed", JSON.stringify(result, null, 2));
+      assert.equal(result.pythonCapabilityRuns[0].authority, "mypy");
+      assert.equal(result.pythonCapabilityRuns[0].authoritySource, "explicit");
+      assert.equal(existsSync(mypyExecuted), true);
+      assert.equal(existsSync(pyrightExecuted), false);
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("reports configured mypy unavailable without falling back to installed pyright", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-types-mypy-unavailable-"));
+    try {
+      writePassingPythonProtocolShim(repoRoot);
+      const pyrightExecuted = join(repoRoot, "pyright-executed");
+      writeToolShim(repoRoot, "pyright", [
+        "#!/bin/sh",
+        "if [ \"$1\" = \"--version\" ]; then echo 'pyright 1.1.0'; exit 0; fi",
+        `/usr/bin/touch ${JSON.stringify(pyrightExecuted)}`,
+        "exit 99",
+        ""
+      ].join("\n"));
+      const files = {
+        "mypy.ini": "[mypy]\nstrict = true\n",
+        "pkg/app.py": "value: int = 1\n"
+      };
+      const result = await runner({
+        files,
+        checks: createPythonValidationChecks({
+          repoRoot,
+          env: { PATH: "" },
+          nodeWorkspace: createNodePythonProjectWorkspace(repoRoot)
+        })
+      }).runValidation(request({ repo: { repoRoot }, checks: [PYTHON_TYPES_CHECK_ID] }));
+
+      assert.equal(result.status, "unsupported_request");
+      assert.equal(result.pythonCapabilityRuns[0].status, "tool_unavailable");
+      assert.equal(result.pythonCapabilityRuns[0].authority, "mypy");
+      assert.equal(existsSync(pyrightExecuted), false);
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("fails explicit and configured authority conflicts without checker execution", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-types-explicit-conflict-"));
+    try {
+      writePassingPythonProtocolShim(repoRoot);
+      const mypyExecuted = join(repoRoot, "mypy-executed");
+      writeToolShim(repoRoot, "mypy", [
+        "#!/bin/sh",
+        "if [ \"$1\" = \"--version\" ]; then echo 'mypy 2.3.0'; exit 0; fi",
+        `/usr/bin/touch ${JSON.stringify(mypyExecuted)}`,
+        "exit 99",
+        ""
+      ].join("\n"));
+      const files = {
+        "mypy.ini": "[mypy]\nstrict = true\n",
+        "pkg/app.py": "value: int = 1\n"
+      };
+      const result = await runner({
+        files,
+        checks: createPythonValidationChecks({
+          checker: "pyright",
+          repoRoot,
+          env: { PATH: "" },
+          nodeWorkspace: createNodePythonProjectWorkspace(repoRoot)
+        })
+      }).runValidation(request({ repo: { repoRoot }, checks: [PYTHON_TYPES_CHECK_ID] }));
+
+      assert.equal(result.status, "unsupported_request");
+      assert.equal(result.pythonCapabilityRuns[0].status, "invalid_config");
+      assert.equal(result.pythonCapabilityRuns[0].authority, undefined);
+      assert.equal(result.pythonCapabilityRuns[0].authoritySource, undefined);
+      assert.equal(result.pythonCapabilityRuns[0].tool, undefined);
+      assert.equal(existsSync(mypyExecuted), false);
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("fails conflicting checker authority closed without executing either checker", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-types-conflict-"));
+    try {
+      writePassingPythonProtocolShim(repoRoot);
+      for (const tool of ["mypy", "pyright"]) {
+        writeToolShim(repoRoot, tool, [
+          "#!/bin/sh",
+          `if [ \"$1\" = \"--version\" ]; then echo '${tool} 2.3.0'; exit 0; fi`,
+          `/usr/bin/touch ${JSON.stringify(join(repoRoot, `${tool}-executed`))}`,
+          "exit 99",
+          ""
+        ].join("\n"));
+      }
+      const files = {
+        "mypy.ini": "[mypy]\nstrict = true\n",
+        "pyrightconfig.json": "{}\n",
+        "pkg/app.py": "value: int = 1\n"
+      };
+      const result = await runner({
+        files,
+        checks: createPythonValidationChecks({
+          repoRoot,
+          env: { PATH: "" },
+          nodeWorkspace: createNodePythonProjectWorkspace(repoRoot)
+        })
+      }).runValidation(request({ repo: { repoRoot }, checks: [PYTHON_TYPES_CHECK_ID] }));
+
+      assert.equal(result.status, "unsupported_request");
+      assert.equal(result.pythonCapabilityRuns[0].status, "invalid_config");
+      assert.deepEqual(result.pythonCapabilityRuns[0].selectedConfigPaths, ["mypy.ini", "pyrightconfig.json"]);
+      assert.equal(result.pythonCapabilityRuns[0].authority, undefined);
+      assert.equal(result.pythonCapabilityRuns[0].authoritySource, undefined);
+      assert.equal(result.pythonCapabilityRuns[0].tool, undefined);
+      assert.match(result.pythonCapabilityRuns[0].projectKey, /^sha256:[a-f0-9]{64}$/u);
+      assert.match(result.pythonCapabilityRuns[0].contextFingerprint, /^sha256:[a-f0-9]{64}$/u);
+      assert.match(result.pythonCapabilityRuns[0].afterStateManifestFingerprint, /^sha256:[a-f0-9]{64}$/u);
+      assert.equal(result.pythonCapabilityRuns[0].projectRoot, ".");
+      assert.equal(existsSync(join(repoRoot, "mypy-executed")), false);
+      assert.equal(existsSync(join(repoRoot, "pyright-executed")), false);
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("retains separate mypy capability evidence and diagnostics for two projects", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-types-projects-"));
+    try {
+      const files = {};
+      for (const project of ["a", "b"]) {
+        const projectRoot = join(repoRoot, project);
+        mkdirSync(projectRoot, { recursive: true });
+        writePassingPythonProtocolShim(projectRoot);
+        writeToolShim(projectRoot, "mypy", [
+          "#!/bin/sh",
+          "if [ \"$1\" = \"--version\" ]; then echo 'mypy 2.3.0'; exit 0; fi",
+          `echo '{\"file\":\"app.py\",\"line\":1,\"column\":0,\"end_line\":1,\"end_column\":5,\"message\":\"${project} failure\",\"hint\":null,\"code\":\"assignment\",\"severity\":\"error\"}'`,
+          "exit 1",
+          ""
+        ].join("\n"));
+        files[`${project}/pyproject.toml`] = `[project]\nname='${project}'\n[tool.mypy]\nstrict=true\n`;
+        files[`${project}/app.py`] = "value: int = 'wrong'\n";
+      }
+      const result = await runner({
+        files,
+        checks: createPythonValidationChecks({
+          repoRoot,
+          env: { PATH: "" },
+          nodeWorkspace: projectWorkspace(files, () => true)
+        })
+      }).runValidation(request({
+        repo: { repoRoot },
+        checks: [PYTHON_TYPES_CHECK_ID],
+        scope: { kind: "files", files: ["b/app.py", "a/app.py"] }
+      }));
+
+      assert.equal(result.status, "policy_failure", JSON.stringify(result, null, 2));
+      assert.deepEqual(result.pythonCapabilityRuns.map((run) => run.projectRoot).sort(), ["a", "b"]);
+      assert.deepEqual(result.diagnostics.map((entry) => entry.path), ["a/app.py", "b/app.py"]);
+      assert.deepEqual(
+        result.pythonCapabilityRuns.map((run) => [run.projectRoot, run.selectedSourcePaths]).sort(),
+        [["a", ["a/app.py"]], ["b", ["b/app.py"]]]
+      );
     } finally {
       rmSync(repoRoot, { recursive: true, force: true });
     }
@@ -499,6 +986,208 @@ describe("validation-python adapter", () => {
       assert.equal(result.status, "passed", JSON.stringify(result, null, 2));
     } finally {
       rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("isolates explicit mypy from poisoned host environment and global config discovery", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-types-host-isolation-"));
+    const poisonHome = mkdtempSync(join(tmpdir(), "opcore-python-types-poison-home-"));
+    try {
+      mkdirSync(join(poisonHome, ".config", "mypy"), { recursive: true });
+      const poisonConfig = join(poisonHome, ".config", "mypy", "config");
+      writeFileSync(poisonConfig, "[mypy]\nplugins = outside.plugin\n");
+      writePassingPythonProtocolShim(repoRoot);
+      const mypy = join(repoRoot, ".venv", "bin", "mypy");
+      writeToolShim(repoRoot, "mypy", [
+        "#!/bin/sh",
+        `if [ \"$HOME\" = ${JSON.stringify(poisonHome)} ] || [ \"$XDG_CONFIG_HOME\" = ${JSON.stringify(poisonHome)} ]; then exit 9; fi`,
+        "if [ \"$MYPYPATH\" = poison ] || [ \"$PYTHONPATH\" = poison ] || [ \"$MYPY_CACHE_DIR\" = poison ]; then exit 9; fi",
+        "config=",
+        "while [ \"$#\" -gt 0 ]; do",
+        "  case \"$1\" in",
+        "    --config-file) shift; config=$1 ;;",
+        "    --config-file=*) config=${1#--config-file=} ;;",
+        "  esac",
+        "  shift",
+        "done",
+        "if [ -z \"$config\" ] || [ ! -f \"$config\" ]; then exit 9; fi",
+        "/usr/bin/grep -q '^\\[mypy\\]' \"$config\" || exit 9",
+        "exit 0",
+        ""
+      ].join("\n"));
+      const files = { "pkg/app.py": "value: int = 1\n" };
+      const result = await runner({
+        files,
+        checks: createPythonValidationChecks({
+          checker: "mypy",
+          repoRoot,
+          env: {
+            PATH: "",
+            HOME: poisonHome,
+            XDG_CONFIG_HOME: poisonHome,
+            MYPYPATH: "poison",
+            PYTHONPATH: "poison",
+            MYPY_CACHE_DIR: "poison"
+          },
+          nodeWorkspace: projectWorkspace(files, () => true),
+          processProbe: successfulProbe(),
+          toolArgv: { mypy: [mypy] }
+        })
+      }).runValidation(request({ repo: { repoRoot }, checks: [PYTHON_TYPES_CHECK_ID] }));
+
+      assert.equal(result.status, "passed", JSON.stringify(result, null, 2));
+      assert.deepEqual(result.pythonCapabilityRuns[0].selectedConfigPaths, []);
+      assert.equal(result.pythonCapabilityRuns[0].tool.configFile, undefined);
+      assert.equal(result.pythonCapabilityRuns[0].tool.argv.some((argument) => argument.startsWith("--config-file")), true);
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+      rmSync(poisonHome, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects absolute mypy_path before execution and cannot read an overlay-deleted poisoned worktree source", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-types-mypy-path-escape-"));
+    try {
+      writePassingPythonProtocolShim(repoRoot);
+      const executed = join(repoRoot, "mypy-executed");
+      writeToolShim(repoRoot, "mypy", [
+        "#!/bin/sh",
+        "if [ \"$1\" = \"--version\" ]; then echo 'mypy 2.3.0'; exit 0; fi",
+        `/usr/bin/touch ${JSON.stringify(executed)}`,
+        "exit 0",
+        ""
+      ].join("\n"));
+      mkdirSync(join(repoRoot, "poison"), { recursive: true });
+      writeFileSync(join(repoRoot, "poison", "dependency.py"), "VALUE: str = 'host-only'\n");
+      const files = {
+        "mypy.ini": `[mypy]\nmypy_path = ${join(repoRoot, "poison")}\n`,
+        "pkg/app.py": "from dependency import VALUE\nvalue: str = VALUE\n",
+        "poison/dependency.py": "VALUE: str = 'after-state'\n"
+      };
+      const result = await runner({
+        files,
+        checks: createPythonValidationChecks({
+          repoRoot,
+          env: { PATH: "" },
+          nodeWorkspace: createNodePythonProjectWorkspace(repoRoot)
+        })
+      }).runValidation(request({
+        repo: { repoRoot },
+        checks: [PYTHON_TYPES_CHECK_ID],
+        overlays: [{ path: "poison/dependency.py", action: "delete" }]
+      }));
+
+      assert.equal(result.status, "unsupported_request", JSON.stringify(result, null, 2));
+      assert.equal(result.pythonCapabilityRuns[0].status, "invalid_config");
+      assert.equal(result.pythonCapabilityRuns[0].execution, undefined);
+      assert.match(result.diagnostics[0].message, /mypy_path.*absolute/i);
+      assert.equal(existsSync(executed), false);
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects every configured mypy output path before execution and preserves source files", async () => {
+    for (const [option, value] of [
+      ["junit_xml", "source"],
+      ["html_report", "source"],
+      ["timing_stats", "source"],
+      ["line_checking_stats", "source"],
+      ["cache_dir", "source"],
+      ["cache_map", "source"],
+      ["mypyc_annotation_file", "source"]
+    ]) {
+      const isolatedRepoRoot = mkdtempSync(join(tmpdir(), `opcore-python-types-${option}-`));
+      try {
+        writePassingPythonProtocolShim(isolatedRepoRoot);
+        const sourcePath = join(isolatedRepoRoot, "pkg", "app.py");
+        const executed = join(isolatedRepoRoot, "mypy-executed");
+        mkdirSync(dirname(sourcePath), { recursive: true });
+        writeFileSync(sourcePath, "value: int = 1\n");
+        writeToolShim(isolatedRepoRoot, "mypy", [
+          "#!/bin/sh",
+          "if [ \"$1\" = \"--version\" ]; then echo 'mypy 2.3.0'; exit 0; fi",
+          `/usr/bin/touch ${JSON.stringify(executed)}`,
+          `/usr/bin/printf 'MUTATED\\n' > ${JSON.stringify(sourcePath)}`,
+          "exit 0",
+          ""
+        ].join("\n"));
+        const configuredValue = value === "source" ? sourcePath : value;
+        const files = {
+          "mypy.ini": `[mypy]\n${option} = ${configuredValue}\n`,
+          "pkg/app.py": "value: int = 1\n"
+        };
+        const result = await runner({
+          files,
+          checks: createPythonValidationChecks({
+            repoRoot: isolatedRepoRoot,
+            env: { PATH: "" },
+            nodeWorkspace: createNodePythonProjectWorkspace(isolatedRepoRoot)
+          })
+        }).runValidation(request({ repo: { repoRoot: isolatedRepoRoot }, checks: [PYTHON_TYPES_CHECK_ID] }));
+
+        assert.equal(result.status, "unsupported_request", `${option}: ${JSON.stringify(result, null, 2)}`);
+        assert.equal(result.pythonCapabilityRuns[0].status, "invalid_config", option);
+        assert.equal(result.pythonCapabilityRuns[0].execution, undefined, option);
+        assert.match(result.diagnostics[0].message, new RegExp(option, "i"), option);
+        assert.equal(existsSync(executed), false, option);
+        assert.equal(readFileSync(sourcePath, "utf8"), "value: int = 1\n", option);
+        assert.equal(JSON.stringify(result.diagnostics).includes(sourcePath), false, option);
+        assert.equal(JSON.stringify(result.pythonCapabilityRuns).includes(sourcePath), false, option);
+      } finally {
+        rmSync(isolatedRepoRoot, { recursive: true, force: true });
+      }
+    }
+  });
+
+  it("rejects mypy config paths that can read or execute outside the exact after-state", async () => {
+    for (const option of [
+      "plugins",
+      "custom_typeshed_dir",
+      "python_executable",
+      "quickstart_file",
+      "custom_typing_module",
+      "shadow_file"
+    ]) {
+      const isolatedRepoRoot = mkdtempSync(join(tmpdir(), `opcore-python-types-${option}-escape-`));
+      const hostRoot = mkdtempSync(join(tmpdir(), `opcore-python-types-${option}-host-`));
+      try {
+        writePassingPythonProtocolShim(isolatedRepoRoot);
+        const executed = join(isolatedRepoRoot, "mypy-executed");
+        const hostPath = join(hostRoot, option === "plugins" ? "host_plugin.py" : "host-input");
+        writeFileSync(hostPath, option === "plugins" ? "raise RuntimeError('host plugin executed')\n" : "host-only\n");
+        writeToolShim(isolatedRepoRoot, "mypy", [
+          "#!/bin/sh",
+          "if [ \"$1\" = \"--version\" ]; then echo 'mypy 2.3.0'; exit 0; fi",
+          `/usr/bin/touch ${JSON.stringify(executed)}`,
+          "exit 0",
+          ""
+        ].join("\n"));
+        const configuredValue = option === "custom_typing_module" ? "host_typing" : hostPath;
+        const files = {
+          "mypy.ini": `[mypy]\n${option} = ${configuredValue}\n`,
+          "pkg/app.py": "value: int = 1\n"
+        };
+        const result = await runner({
+          files,
+          checks: createPythonValidationChecks({
+            repoRoot: isolatedRepoRoot,
+            env: { PATH: "" },
+            nodeWorkspace: createNodePythonProjectWorkspace(isolatedRepoRoot)
+          })
+        }).runValidation(request({ repo: { repoRoot: isolatedRepoRoot }, checks: [PYTHON_TYPES_CHECK_ID] }));
+
+        assert.equal(result.status, "unsupported_request", `${option}: ${JSON.stringify(result, null, 2)}`);
+        assert.equal(result.pythonCapabilityRuns[0].status, "invalid_config", option);
+        assert.equal(result.pythonCapabilityRuns[0].execution, undefined, option);
+        assert.match(result.diagnostics[0].message, new RegExp(option, "i"), option);
+        assert.equal(existsSync(executed), false, option);
+        assert.equal(JSON.stringify(result.diagnostics).includes(hostRoot), false, option);
+        assert.equal(JSON.stringify(result.pythonCapabilityRuns).includes(hostRoot), false, option);
+      } finally {
+        rmSync(isolatedRepoRoot, { recursive: true, force: true });
+        rmSync(hostRoot, { recursive: true, force: true });
+      }
     }
   });
 
@@ -694,7 +1383,7 @@ describe("validation-python adapter", () => {
             timeoutMs: testCase.timeoutMs
           })
         }).runValidation(request({ repo: { repoRoot } }));
-        assert.equal(result.status, "infrastructure_failure", testCase.name);
+        assert.equal(result.status, "infrastructure_failure", `${testCase.name}: ${JSON.stringify(result, null, 2)}`);
         assert.equal(result.manifest.runs[0].outcome, testCase.outcome, testCase.name);
         assert.equal(result.diagnostics[0].category, "infrastructure", testCase.name);
       } finally {
@@ -715,7 +1404,7 @@ describe("validation-python adapter", () => {
       replaceShimPlaceholder(shimPath);
       const result = await runner({
         files: { "pkg/a.py": "value = 1\n", "pkg/b.pyi": "value: int\n" },
-        checks: createPythonValidationChecks({ repoRoot, env: { PATH: "" } })
+        checks: createPythonValidationChecks({ repoRoot, env: { PATH: "" }, checker: "mypy" })
       }).runValidation(
         request({ repo: { repoRoot }, scope: { kind: "files", files: ["pkg/b.pyi", "pkg/a.py"] } })
       );
@@ -736,12 +1425,177 @@ describe("validation-python adapter", () => {
       writeToolShim(repoRoot, "mypy", "#!/bin/sh\nif [ \"$1\" = \"--version\" ]; then echo 'mypy 1.8.0'; exit 0; fi\necho 'unknown failure'\nexit 1\n");
       const result = await runner({
         files: { "pkg/app.py": "value: int = 1\n" },
-        checks: createPythonValidationChecks({ repoRoot, env: { PATH: "" } })
+        checks: createPythonValidationChecks({ repoRoot, env: { PATH: "" }, checker: "mypy" })
       }).runValidation(request({ repo: { repoRoot }, checks: [PYTHON_TYPES_CHECK_ID] }));
 
       assert.equal(result.status, "infrastructure_failure");
       assert.equal(result.manifest.runs[0].outcome, "tool_failure");
       assert.deepEqual(result.diagnostics.map((entry) => entry.code), ["PYTHON_TYPES_TOOL_FAILED"]);
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("fails mypy machine-protocol, timeout, signal, spawn, and exit errors closed and cleans workspaces", async () => {
+    const cases = [
+      { name: "malformed", body: "printf '{not-json\\n'; exit 1", status: "tool_failure", termination: "exited" },
+      {
+        name: "partial",
+        body: "printf '%s\\n' '{\"file\":\"pkg/app.py\",\"line\":1,\"column\":0,\"message\":\"finding\",\"code\":\"assignment\",\"severity\":\"error\"}' '{not-json'; exit 1",
+        status: "tool_failure",
+        termination: "exited"
+      },
+      {
+        name: "unknown-severity",
+        body: "printf '%s\\n' '{\"file\":\"pkg/app.py\",\"line\":1,\"column\":0,\"message\":\"finding\",\"code\":\"assignment\",\"severity\":\"fatal\"}'; exit 1",
+        status: "tool_failure",
+        termination: "exited"
+      },
+      {
+        name: "reversed-same-line-range",
+        body: "printf '%s\\n' '{\"file\":\"pkg/app.py\",\"line\":1,\"column\":5,\"end_line\":1,\"end_column\":1,\"message\":\"bad range\",\"code\":\"assignment\",\"severity\":\"error\"}'; exit 1",
+        status: "tool_failure",
+        termination: "exited"
+      },
+      {
+        name: "partial-config-stderr",
+        body: "printf '%s\\n' '{\"file\":\"mypy.ini\"}' >&2; exit 2",
+        status: "tool_failure",
+        termination: "exited"
+      },
+      {
+        name: "unrelated-config-stderr",
+        body: "printf '%s\\n' 'mypy.ini: unrelated process failure' >&2; exit 2",
+        status: "tool_failure",
+        termination: "exited"
+      },
+      { name: "empty-findings", body: "exit 1", status: "tool_failure", termination: "exited" },
+      { name: "unexpected-exit", body: "exit 2", status: "tool_failure", termination: "exited" },
+      { name: "timeout", body: "/bin/sleep 1", status: "timeout", termination: "timeout", timeoutMs: 20 },
+      { name: "signal", body: "kill -TERM $$", status: "tool_failure", termination: "signal" }
+    ];
+    for (const testCase of cases) {
+      const repoRoot = mkdtempSync(join(tmpdir(), `opcore-python-mypy-${testCase.name}-`));
+      try {
+        writePassingPythonProtocolShim(repoRoot);
+        writeToolShim(repoRoot, "mypy", [
+          "#!/bin/sh",
+          "if [ \"$1\" = \"--version\" ]; then echo 'mypy 2.3.0'; exit 0; fi",
+          testCase.body,
+          ""
+        ].join("\n"));
+        const files = {
+          "mypy.ini": "[mypy]\nstrict = true\n",
+          "pkg/app.py": "value: int = 1\n"
+        };
+        const before = materializedMypyWorkspaces();
+        const result = await runner({
+          files,
+          checks: createPythonValidationChecks({
+            repoRoot,
+            env: { PATH: "" },
+            timeoutMs: testCase.timeoutMs,
+            processProbe: successfulProbe(),
+            nodeWorkspace: createNodePythonProjectWorkspace(repoRoot)
+          })
+        }).runValidation(request({ repo: { repoRoot }, checks: [PYTHON_TYPES_CHECK_ID] }));
+
+        assert.equal(result.status, "infrastructure_failure", `${testCase.name}: ${JSON.stringify(result, null, 2)}`);
+        const capabilityRun = result.pythonCapabilityRuns[0];
+        assert.equal(capabilityRun.status, testCase.status, testCase.name);
+        assert.equal(capabilityRun.execution.termination, testCase.termination, testCase.name);
+        assert.match(capabilityRun.projectKey, /^sha256:[a-f0-9]{64}$/u, testCase.name);
+        assert.match(capabilityRun.contextFingerprint, /^sha256:[a-f0-9]{64}$/u, testCase.name);
+        assert.match(capabilityRun.afterStateManifestFingerprint, /^sha256:[a-f0-9]{64}$/u, testCase.name);
+        assert.equal(capabilityRun.projectRoot, ".", testCase.name);
+        assert.deepEqual(capabilityRun.targets, ["pkg/app.py"], testCase.name);
+        assert.deepEqual(capabilityRun.selectedConfigPaths, ["mypy.ini"], testCase.name);
+        assert.equal(JSON.stringify(result.pythonCapabilityRuns).includes(repoRoot), false, testCase.name);
+        assert.deepEqual(materializedMypyWorkspaces(), before, testCase.name);
+      } finally {
+        rmSync(repoRoot, { recursive: true, force: true });
+      }
+    }
+
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-mypy-spawn-"));
+    try {
+      writePassingPythonProtocolShim(repoRoot);
+      writeToolShim(repoRoot, "mypy", [
+        "#!/bin/sh",
+        "if [ \"$1\" = \"--version\" ]; then /bin/rm -- \"$0\"; echo 'mypy 2.3.0'; exit 0; fi",
+        "exit 0",
+        ""
+      ].join("\n"));
+      const files = {
+        "mypy.ini": "[mypy]\nstrict = true\n",
+        "pkg/app.py": "value: int = 1\n"
+      };
+      const before = materializedMypyWorkspaces();
+      const result = await runner({
+        files,
+        checks: createPythonValidationChecks({
+          repoRoot,
+          env: { PATH: "" },
+          nodeWorkspace: createNodePythonProjectWorkspace(repoRoot)
+        })
+      }).runValidation(request({ repo: { repoRoot }, checks: [PYTHON_TYPES_CHECK_ID] }));
+
+      assert.equal(result.status, "infrastructure_failure");
+      assert.equal(result.pythonCapabilityRuns[0].status, "tool_failure");
+      assert.equal(result.pythonCapabilityRuns[0].execution.termination, "spawn_error");
+      assert.equal(JSON.stringify(result.pythonCapabilityRuns).includes(repoRoot), false);
+      assert.deepEqual(materializedMypyWorkspaces(), before);
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("fails closed and terminates the tool when requested stdin cannot be written", async () => {
+    const startedAt = Date.now();
+    const result = await runTool("/bin/sh", ["-c", "exec 0<&-; /bin/sleep 5"], {
+      input: "x".repeat(8 * 1024 * 1024),
+      timeoutMs: 10_000
+    });
+
+    assert.equal(result.ok, false, JSON.stringify(result));
+    assert.equal(result.termination, "spawn_error");
+    assert.match(result.failureMessage, /stdin write failed/i);
+    assert.ok(Date.now() - startedAt < 2_000, "stdin failure did not terminate the process tree promptly");
+  });
+
+  it("kills mypy descendants when the authority process times out", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-mypy-descendant-timeout-"));
+    try {
+      writePassingPythonProtocolShim(repoRoot);
+      const pidFile = join(repoRoot, "descendant.pid");
+      writeToolShim(repoRoot, "mypy", [
+        "#!/bin/sh",
+        "if [ \"$1\" = \"--version\" ]; then echo 'mypy 2.3.0'; exit 0; fi",
+        "/bin/sleep 30 &",
+        `echo $! > ${JSON.stringify(pidFile)}`,
+        "/bin/sleep 30",
+        ""
+      ].join("\n"));
+      const files = {
+        "mypy.ini": "[mypy]\nstrict = true\n",
+        "pkg/app.py": "value: int = 1\n"
+      };
+      const result = await runner({
+        files,
+        checks: createPythonValidationChecks({
+          repoRoot,
+          env: { PATH: "" },
+          // The process-heavy CI suite can delay shim startup; keep headroom below the 30s child sleep.
+          timeoutMs: 2_000,
+          nodeWorkspace: createNodePythonProjectWorkspace(repoRoot),
+          processProbe: successfulProbe(),
+          toolArgv: { mypy: [join(repoRoot, ".venv", "bin", "mypy")] }
+        })
+      }).runValidation(request({ repo: { repoRoot }, checks: [PYTHON_TYPES_CHECK_ID] }));
+
+      assert.equal(result.pythonCapabilityRuns[0].status, "timeout");
+      const descendantPid = Number(readFileSync(pidFile, "utf8").trim());
+      assert.equal(await processExited(descendantPid), true, `descendant ${descendantPid} survived timeout`);
     } finally {
       rmSync(repoRoot, { recursive: true, force: true });
     }
@@ -1181,7 +2035,8 @@ describe("validation-python adapter", () => {
     );
 
     assert.equal(result.status, "unsupported_request");
-    assert.deepEqual(result.diagnostics.map((diagnostic) => diagnostic.code), ["PYTHON_TYPES_UNSUPPORTED", "PYTHON_CONTEXT_UNSUPPORTED"]);
+    assert.deepEqual(result.diagnostics.map((diagnostic) => diagnostic.code), ["PYTHON_TYPES_UNSUPPORTED_TARGET"]);
+    assert.equal(result.pythonCapabilityRuns[0].status, "unsupported_target");
   });
 });
 
@@ -2470,6 +3325,23 @@ function walkFiles(root) {
     else if (entry.isFile()) paths.push(path);
   }
   return paths.sort();
+}
+
+async function processExited(pid) {
+  for (let attempt = 0; attempt < 100; attempt += 1) {
+    try {
+      process.kill(pid, 0);
+    } catch (error) {
+      if (error?.code === "ESRCH") return true;
+      throw error;
+    }
+    await delay(10);
+  }
+  return false;
+}
+
+function materializedMypyWorkspaces() {
+  return readdirSync(tmpdir()).filter((entry) => entry.startsWith("opcore-python-types-workspace-")).sort();
 }
 
 function writeToolShim(repoRoot, name, content) {

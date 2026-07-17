@@ -79,7 +79,7 @@ Approved repo install writes additive `.opcore/config`, one delimited guidance b
 
 ## Coverage
 
-Opcore is deep for TypeScript/JavaScript graph-backed signals and useful for Rust validation signals. Python is experimental and degraded-honest: `.py`/`.pyi` graph-backed structure, untested modules, dead exports, syntax, and source-hygiene are reported when available; `python.types` depends on mypy or pyright and reports missing tools as degraded. Other non-TS/JS/Rust/Python languages are counted and reported as unsupported; they do not get fake findings or fake ratings.
+Opcore is deep for TypeScript/JavaScript graph-backed signals and useful for Rust validation signals. Python is experimental and degraded-honest: `.py`/`.pyi` graph-backed structure, untested modules, dead exports, syntax, and source-hygiene are reported when available; `python.types` runs configured mypy authority per project, reports configured Pyright as deferred until #257, and degrades when authority is absent, conflicting, or unavailable. Other non-TS/JS/Rust/Python languages are counted and reported as unsupported; they do not get fake findings or fake ratings.
 
 ## Demo Loop
 

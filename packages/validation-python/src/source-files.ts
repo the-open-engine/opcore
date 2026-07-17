@@ -6,30 +6,28 @@ import {
   requirePythonImportAnalyzer,
   validatePythonImportEdges,
   type PythonImportAnalyzer,
-  type PythonImportEdge,
-  type PythonImportSourceFile
+  type PythonImportEdge
 } from "./import-analysis.js";
 import { resolvePythonProjectContexts, type ResolvePythonProjectContextsOptions } from "./project-context.js";
 import { createValidationFileViewPythonWorkspace, type PythonProjectWorkspace } from "./project-workspace.js";
+import { expandPythonSourceClosure } from "./source-closure.js";
+import type {
+  PythonMaterializedSourceFile,
+  PythonMaterializedSourceSet,
+  PythonProjectContextResolver,
+  PythonSourceRootResolver,
+  PythonSourceSetResolver
+} from "./source-types.js";
 
 export const pythonSourceExtensions = [".py", ".pyi"] as const;
 
-export type PythonMaterializedSourceFile = PythonImportSourceFile;
-
-export interface PythonMaterializedSourceSet {
-  rootPaths: readonly string[];
-  paths: readonly string[];
-  files: readonly PythonMaterializedSourceFile[];
-  sourceFileByPath: ReadonlyMap<string, PythonMaterializedSourceFile>;
-  repoImports: readonly PythonImportEdge[];
-}
-
-export type PythonProjectContextResolver = (
-  context: ValidationCheckContext,
-  targets?: readonly string[]
-) => Promise<readonly PythonProjectContext[]>;
-export type PythonSourceRootResolver = (context: ValidationCheckContext) => Promise<readonly string[]>;
-export type PythonSourceSetResolver = (context: ValidationCheckContext) => Promise<PythonMaterializedSourceSet>;
+export type {
+  PythonMaterializedSourceFile,
+  PythonMaterializedSourceSet,
+  PythonProjectContextResolver,
+  PythonSourceRootResolver,
+  PythonSourceSetResolver
+} from "./source-types.js";
 
 export function createPythonProjectContextResolver(
   options: Omit<ResolvePythonProjectContextsOptions, "repoRoot" | "targets" | "workspace"> & {
@@ -180,7 +178,13 @@ async function materializePythonSourcesUncached(
       : await requirePythonImportAnalyzer(importAnalyzer).analyze(allSources),
     new Set(allSourceByPath.keys())
   );
-  const selectedPaths = await expandSourceClosure(context, rootPaths, repoImports, allSourceByPath, resolveContexts);
+  const selectedPaths = await expandPythonSourceClosure({
+    context,
+    rootPaths,
+    edges: repoImports,
+    sourceByPath: allSourceByPath,
+    resolveContexts
+  });
   const files = selectedPaths
     .map((path) => allSourceByPath.get(path))
     .filter((file): file is PythonMaterializedSourceFile => file !== undefined);
@@ -189,108 +193,23 @@ async function materializePythonSourcesUncached(
   return {
     rootPaths,
     paths: selectedPaths,
+    allPaths: [...allSourceByPath.keys()].sort(),
     files,
     sourceFileByPath,
-    repoImports: repoImports.filter((edge) => selectedPathSet.has(edge.fromPath) && selectedPathSet.has(edge.toPath))
+    repoImports: repoImports.filter((edge) => selectedPathSet.has(edge.fromPath) && selectedPathSet.has(edge.toPath)),
+    allRepoImports: repoImports
   };
-}
-
-async function expandSourceClosure(
-  context: ValidationCheckContext,
-  rootPaths: readonly string[],
-  edges: readonly PythonImportEdge[],
-  sourceByPath: ReadonlyMap<string, PythonMaterializedSourceFile>,
-  resolveContexts: PythonProjectContextResolver
-): Promise<readonly string[]> {
-  const projectContexts = new Map<string, PythonProjectContext>();
-  let selected = transitiveSourcePaths(rootPaths, edges);
-  while (true) {
-    const unresolvedTargets = selected.filter((path) => !projectContexts.has(path));
-    if (unresolvedTargets.length > 0) {
-      for (const projectContext of await resolveContexts(context, unresolvedTargets)) {
-        projectContexts.set(projectContext.target, projectContext);
-      }
-    }
-    const expanded = transitiveSourcePaths(
-      includePackageInitializers(selected, sourceByPath, [...projectContexts.values()]),
-      edges
-    );
-    if (expanded.length === selected.length && expanded.every((path, index) => path === selected[index])) return expanded;
-    selected = expanded;
-  }
-}
-
-function includePackageInitializers(
-  selectedPaths: readonly string[],
-  sourceByPath: ReadonlyMap<string, PythonMaterializedSourceFile>,
-  projectContexts: readonly PythonProjectContext[]
-): readonly string[] {
-  const expanded = new Set(selectedPaths);
-  for (const path of selectedPaths) {
-    const sourceRoot = owningSourceRoot(path, projectContexts);
-    if (sourceRoot === undefined) continue;
-    let directory = path.slice(0, path.lastIndexOf("/"));
-    while (directory.length > 0 && directory !== sourceRoot && pathWithinRoot(directory, sourceRoot)) {
-      const initializers = [`${directory}/__init__.py`, `${directory}/__init__.pyi`]
-        .filter((candidate) => sourceByPath.has(candidate));
-      if (initializers.length === 0) {
-        const separator = directory.lastIndexOf("/");
-        if (separator < 0) break;
-        directory = directory.slice(0, separator);
-        continue;
-      }
-      // Package markers are structural type-checker inputs, not import expectations.
-      for (const initializer of initializers) expanded.add(initializer);
-      const separator = directory.lastIndexOf("/");
-      if (separator < 0) break;
-      directory = directory.slice(0, separator);
-    }
-  }
-  return [...expanded].sort();
-}
-function owningSourceRoot(path: string, projectContexts: readonly PythonProjectContext[]): string | undefined {
-  return projectContexts
-    .flatMap((projectContext) => projectContext.sourceRoots)
-    .filter((sourceRoot) => pathWithinRoot(path, sourceRoot))
-    .sort((left, right) => right.length - left.length || left.localeCompare(right))[0];
-}
-
-function pathWithinRoot(path: string, root: string): boolean {
-  return root === "." || path === root || path.startsWith(`${root}/`);
-}
-
-
-function transitiveSourcePaths(
-  rootPaths: readonly string[],
-  edges: readonly PythonImportEdge[]
-): readonly string[] {
-  const outgoing = new Map<string, string[]>();
-  for (const edge of edges) {
-    const targets = outgoing.get(edge.fromPath) ?? [];
-    targets.push(edge.toPath);
-    outgoing.set(edge.fromPath, targets);
-  }
-  const selected = new Set(rootPaths);
-  const pending = [...rootPaths];
-  while (pending.length > 0) {
-    const path = pending.shift();
-    if (path === undefined) continue;
-    for (const target of outgoing.get(path) ?? []) {
-      if (selected.has(target)) continue;
-      selected.add(target);
-      pending.push(target);
-    }
-  }
-  return [...selected].sort();
 }
 
 function emptySourceSet(): PythonMaterializedSourceSet {
   return {
     rootPaths: [],
     paths: [],
+    allPaths: [],
     files: [],
     sourceFileByPath: new Map(),
-    repoImports: []
+    repoImports: [],
+    allRepoImports: []
   };
 }
 

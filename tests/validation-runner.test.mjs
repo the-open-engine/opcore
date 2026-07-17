@@ -328,6 +328,48 @@ describe("validation runner", () => {
     assert.equal(result.manifest.runs[0].diagnosticCount, 1);
   });
 
+  it("preserves Python capability runs in results, completion events, and introduced after-state", async () => {
+    const events = [];
+    const current = await createValidationRunner({
+      workspace: testWorkspace(),
+      onCheckComplete: (event) => events.push(event),
+      checks: [check("python.types", { run: async () => ({ diagnostics: [], pythonCapabilityRuns: [pythonCapabilityRun("a")] }) })]
+    }).runValidation(request({ checks: ["python.types"] }));
+    assert.equal(current.pythonCapabilityRuns[0].afterStateManifestFingerprint, `sha256:${"a".repeat(64)}`);
+    assert.deepEqual(events[0].pythonCapabilityRuns, current.pythonCapabilityRuns);
+
+    const introduced = await runner([check("python.types", {
+      run: async (context) => ({
+        diagnostics: [],
+        pythonCapabilityRuns: [pythonCapabilityRun(context.fileView.hasOverlay("src/index.ts") ? "b" : "a")]
+      })
+    })]).runValidation(request({
+      checks: ["python.types"],
+      reportMode: "introduced",
+      overlays: [{ path: "src/index.ts", action: "write", content: "export const value = 'introduced';" }]
+    }));
+    assert.equal(introduced.pythonCapabilityRuns.length, 1);
+    assert.equal(introduced.pythonCapabilityRuns[0].afterStateManifestFingerprint, `sha256:${"b".repeat(64)}`);
+
+    const baselineUnavailable = await runner([check("python.types", {
+      run: async (context) => context.fileView.hasOverlay("src/index.ts")
+        ? { diagnostics: [], pythonCapabilityRuns: [pythonCapabilityRun("b")] }
+        : {
+            outcome: "tool_unavailable",
+            failureMessage: "baseline mypy unavailable",
+            diagnostics: [],
+            pythonCapabilityRuns: [unsupportedPythonCapabilityRun("a")]
+          }
+    })]).runValidation(request({
+      checks: ["python.types"],
+      reportMode: "introduced",
+      overlays: [{ path: "src/index.ts", action: "write", content: "export const value = 'introduced';" }]
+    }));
+    assert.equal(baselineUnavailable.status, "unsupported_request");
+    assert.equal(baselineUnavailable.pythonCapabilityRuns[0].status, "passed");
+    assert.equal(baselineUnavailable.pythonCapabilityRuns[0].afterStateManifestFingerprint, `sha256:${"b".repeat(64)}`);
+  });
+
   it("fail-fast in introduced report mode stops only after an introduced policy failure", async () => {
     const observed = [];
     const events = [];
@@ -1047,4 +1089,44 @@ function sequenceClock(values, iso) {
     },
     isoNow: () => iso
   };
+}
+
+function pythonCapabilityRun(fingerprintCharacter) {
+  return {
+    schemaId: "opcore.python.validation-capability-run",
+    schemaVersion: 1,
+    capability: "types",
+    checkId: "python.types",
+    projectKey: `sha256:${"1".repeat(64)}`,
+    contextFingerprint: `sha256:${"2".repeat(64)}`,
+    projectRoot: ".",
+    targets: ["pkg/app.py"],
+    selectedSourcePaths: ["pkg/app.py"],
+    selectedConfigPaths: [],
+    afterStateManifestFingerprint: `sha256:${fingerprintCharacter.repeat(64)}`,
+    authority: "mypy",
+    authoritySource: "explicit",
+    status: "passed",
+    tool: {
+      name: "mypy",
+      executable: "external:mypy",
+      argv: ["external:mypy", "--output=json", "pkg/app.py"],
+      cwd: ".",
+      source: "explicit_override",
+      version: "2.3.0"
+    },
+    execution: { termination: "exited", exitCode: 0 },
+    durationMs: 1,
+    diagnosticCount: 0,
+    errorCount: 0,
+    warningCount: 0,
+    noteCount: 0
+  };
+}
+
+function unsupportedPythonCapabilityRun(fingerprintCharacter) {
+  const run = pythonCapabilityRun(fingerprintCharacter);
+  delete run.execution;
+  run.status = "tool_unavailable";
+  return run;
 }

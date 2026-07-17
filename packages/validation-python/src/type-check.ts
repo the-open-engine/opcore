@@ -1,6 +1,11 @@
 import type {
   PythonProjectContext,
   PythonProjectToolProvenance,
+  PythonValidationAuthority,
+  PythonValidationAuthoritySource,
+  PythonValidationCapabilityRun,
+  PythonValidationCapabilityRunStatus,
+  PythonValidationCapabilityToolProvenance,
   ValidationCheckOutcome,
   ValidationDiagnostic
 } from "@the-open-engine/opcore-contracts";
@@ -9,36 +14,42 @@ import type {
   ValidationCheckDefinition,
   ValidationCheckResult
 } from "@the-open-engine/opcore-validation";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { mkdir } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { dirname, join, relative, resolve, sep } from "node:path";
 import { PYTHON_TYPES_CHECK_ID } from "./check-ids.js";
 import { pythonCheckAdapter, pythonCheckOwner, supportedPythonValidationScopes } from "./check-constants.js";
 import { diagnostic, sortDiagnostics } from "./diagnostics.js";
-import { runTool } from "./process.js";
+import { runMypyCapability } from "./mypy-runner.js";
+import { resolveMypyConfigSemantics, type MypyConfigSemantics } from "./mypy-config.js";
 import {
   pythonInputSet,
   skippedPythonInputResult,
-  type PythonMaterializedSourceFile,
+  type PythonMaterializedSourceSet,
   type PythonProjectContextResolver,
   type PythonSourceSetResolver
 } from "./source-files.js";
+import { selectPythonTypeAuthority, type PythonTypeAuthoritySelection } from "./type-authority.js";
+import {
+  createPythonTypeCapabilityRun,
+  portablePythonValidationTool,
+  preparePythonTypeCapability,
+  type PythonTypeCapabilityPreparation
+} from "./type-capability-run.js";
 import type { PythonValidationToolchainOptions } from "./toolchain.js";
 
 export interface PythonTypeCheckOptions extends Omit<PythonValidationToolchainOptions, "contexts"> {
   timeoutMs?: number;
-}
-
-interface MaterializedPythonTypeWorkspace {
-  root: string;
-  projectCwd: string;
-  cleanup(): void;
+  checker?: PythonValidationAuthority;
 }
 
 interface PythonProjectGroup {
   context: PythonProjectContext;
   targets: readonly string[];
+}
+
+interface ProjectAttempt {
+  run?: PythonValidationCapabilityRun;
+  diagnostics: readonly ValidationDiagnostic[];
+  outcome: ValidationCheckOutcome;
+  failureMessage?: string;
 }
 
 export function createTypeCheck(
@@ -52,60 +63,280 @@ export function createTypeCheck(
     adapter: pythonCheckAdapter,
     defaultSeverity: "warning",
     supportedScopes: supportedPythonValidationScopes,
-    run: async (context) => {
-      const skipped = skippedPythonInputResult(context);
+    run: async (validation) => {
+      const skipped = skippedPythonInputResult(validation);
       if (skipped !== undefined) return skipped;
-      if (resolveContexts === undefined) return missingContextResult(pythonInputSet(context));
+      if (resolveContexts === undefined) return missingContextResult(pythonInputSet(validation));
       if (resolveSources === undefined) throw new Error("A shared Python source-set resolver is required for Python type validation");
-      const sourceSet = await resolveSources(context);
-      if (sourceSet.rootPaths.length === 0) return { diagnostics: [] };
-      const resolvedContexts = await resolveContexts(context);
-      const selectedTargets = sourceSet.rootPaths;
-      const missing = selectedTargets.filter((path) => !resolvedContexts.some((candidate) => candidate.target === path));
-      if (resolvedContexts.length === 0 || missing.length > 0) return missingContextResult(missing);
-      if (sourceSet.files.length === 0) return { diagnostics: [] };
-      const unresolved = resolvedContexts.find(isUnresolvedTypeContext);
-      if (unresolved !== undefined) return unresolvedProjectResult(unresolved);
-      const projects = groupProjectContexts(resolvedContexts);
-      const diagnostics: ValidationDiagnostic[] = [];
-      for (const project of projects) {
-        const checker = selectTypeChecker(project.context);
-        if (checker === undefined) return missingTypeChecker(project.context);
-        const workspace = await materializePythonTypeWorkspace(context, project, sourceSet.files);
-        try {
-          const args = [
-            ...materializedCheckerPrefix(checker, project.context.projectRoot),
-            ...project.targets.map((path) => relativeProjectPath(path, project.context.projectRoot))
-          ];
-          const result = runTool(checker.executable, args, {
-            cwd: workspace.projectCwd,
-            env: options.env,
-            timeoutMs: options.timeoutMs ?? 30000,
-            allowedExitCodes: [0, 1]
-          });
-          if (!result.ok) {
-            const outcome = result.termination === "timeout" ? "timeout" : "tool_failure";
-            return typeToolFailure(checker, outcome, result.failureMessage ?? `${checker.tool} invocation failed`);
-          }
-          const parsed = parseTypeCheckerDiagnostics(
-            checker,
-            result.stdout,
-            result.stderr,
-            workspace.projectCwd,
-            workspace.root
-          );
-          diagnostics.push(...parsed);
-          if (result.exitCode !== 0 && parsed.length === 0) {
-            return typeToolFailure(checker, "tool_failure", `${checker.tool} exited ${result.exitCode} without parseable diagnostics`);
-          }
-        } finally {
-          workspace.cleanup();
-        }
+      const sourceSet = await resolveSources(validation);
+      if (sourceSet.rootPaths.length === 0) {
+        return { status: "skipped", diagnostics: [], failureMessage: "No Python after-state source files were selected." };
       }
-      const sorted = sortDiagnostics(diagnostics);
-      return { outcome: sorted.some((entry) => entry.severity === "error") ? "findings" : "passed", diagnostics: sorted };
+      const contexts = await resolveContexts(validation, sourceSet.paths);
+      const contextByTarget = new Map(contexts.map((context) => [context.target, context]));
+      const missing = sourceSet.rootPaths.filter((path) => !contextByTarget.has(path));
+      if (missing.length > 0) return missingContextResult(missing);
+      const projects = groupProjectContexts(sourceSet.rootPaths, contextByTarget);
+      const attempts: ProjectAttempt[] = [];
+      for (const project of projects) {
+        attempts.push(await attemptProject(validation, project, sourceSet, options));
+      }
+      const diagnostics = sortDiagnostics(attempts.flatMap((attempt) => attempt.diagnostics));
+      const runs = attempts.flatMap((attempt) => attempt.run === undefined ? [] : [attempt.run]);
+      const outcome = aggregateOutcome(attempts.map((attempt) => attempt.outcome));
+      return {
+        outcome,
+        diagnostics,
+        pythonCapabilityRuns: runs,
+        ...(outcome === "passed" || outcome === "findings" ? {} : {
+          failureMessage: attempts.find((attempt) => attempt.outcome === outcome)?.failureMessage ??
+            `Python type authority failed with ${outcome}`
+        })
+      };
     }
   };
+}
+
+function projectSourcePaths(args: {
+  basePaths: readonly string[];
+  availablePaths: readonly string[];
+  edges: readonly { fromPath: string; toPath: string }[];
+  additionalRoots: readonly string[];
+  projectRoot: string;
+}): readonly string[] {
+  const outgoing = new Map<string, string[]>();
+  for (const edge of args.edges) {
+    const values = outgoing.get(edge.fromPath) ?? [];
+    values.push(edge.toPath);
+    outgoing.set(edge.fromPath, values);
+  }
+  const selected = new Set([...args.basePaths, ...args.additionalRoots]);
+  const pending = [...selected];
+  const initializers = args.availablePaths.filter((path) => /(?:^|\/)__init__\.pyi?$/u.test(path));
+  while (pending.length > 0) {
+    const path = pending.shift();
+    if (path === undefined) continue;
+    for (const dependency of outgoing.get(path) ?? []) {
+      if (selected.has(dependency)) continue;
+      selected.add(dependency);
+      pending.push(dependency);
+    }
+    for (const initializer of initializersForPath(path, initializers, args.projectRoot)) {
+      if (selected.has(initializer)) continue;
+      selected.add(initializer);
+      pending.push(initializer);
+    }
+  }
+  return [...selected].sort();
+}
+
+function initializersForPath(
+  path: string,
+  initializers: readonly string[],
+  projectRoot: string
+): readonly string[] {
+  const sourceRoot = inferredSourceRoot(path, projectRoot);
+  return initializers.filter((initializer) => {
+    const directory = initializer.slice(0, initializer.lastIndexOf("/"));
+    return directory.length > 0 && directory !== sourceRoot &&
+      (sourceRoot === "." || directory.startsWith(`${sourceRoot}/`)) && path.startsWith(`${directory}/`);
+  });
+}
+
+function inferredSourceRoot(path: string, projectRoot: string): string {
+  const src = /^(.*?\bsrc)(?:\/|$)/u.exec(path)?.[1];
+  if (src !== undefined) return src;
+  return projectRoot;
+}
+
+async function attemptProject(
+  validation: ValidationCheckContext,
+  project: PythonProjectGroup,
+  sourceSet: PythonMaterializedSourceSet,
+  options: PythonTypeCheckOptions
+): Promise<ProjectAttempt> {
+  const selection = selectPythonTypeAuthority(project.context, options.checker);
+  const semantics = await selectedMypySemantics(validation, project, selection);
+  const sourcePaths = projectSourcePaths({
+    basePaths: project.targets,
+    availablePaths: sourceSet.allPaths,
+    edges: sourceSet.allRepoImports,
+    additionalRoots: semantics.pluginPaths,
+    projectRoot: project.context.projectRoot
+  });
+  const preparation = await preparePythonTypeCapability({
+    fileView: validation.fileView,
+    project: project.context,
+    targets: project.targets,
+    sourcePaths,
+    configPaths: selection.configPaths,
+    moduleSearchRoots: semantics.moduleSearchRoots
+  });
+  const blocked = blockedProjectAttempt(project, preparation, selection, semantics.invalidConfigMessages);
+  if (blocked !== undefined) return blocked;
+  if (selection.tool === undefined) throw new Error("Selected mypy authority omitted canonical tool provenance");
+  const executed = await runMypyCapability({
+    preparation,
+    checker: selection.tool,
+    authoritySource: selection.source ?? "project_config",
+    ...(options.env === undefined ? {} : { env: options.env }),
+    timeoutMs: options.timeoutMs ?? 30000
+  });
+  return { ...executed, outcome: executed.run.status };
+}
+
+async function selectedMypySemantics(
+  validation: ValidationCheckContext,
+  project: PythonProjectGroup,
+  selection: PythonTypeAuthoritySelection
+): Promise<MypyConfigSemantics> {
+  if (selection.status !== "selected" || selection.authority !== "mypy") {
+    return { pluginPaths: [], moduleSearchRoots: project.context.sourceRoots, invalidConfigMessages: [] };
+  }
+  return resolveMypyConfigSemantics(validation.fileView, project.context, selection.configPaths);
+}
+
+function blockedProjectAttempt(
+  project: PythonProjectGroup,
+  preparation: PythonTypeCapabilityPreparation,
+  selection: PythonTypeAuthoritySelection,
+  invalidConfigMessages: readonly string[]
+): ProjectAttempt | undefined {
+  if (project.context.outcome === "ambiguous") {
+    return nonExecutableAttempt(preparation, selection, { status: "invalid_config", message: projectFailure(project, "ambiguous"), code: "PYTHON_TYPES_INVALID_CONFIG" });
+  }
+  if (selection.status === "invalid_config") {
+    return nonExecutableAttempt(preparation, selection, {
+      status: "invalid_config",
+      message: selection.message ?? projectFailure(project, "invalid_config"),
+      code: "PYTHON_TYPES_INVALID_CONFIG"
+    });
+  }
+  if (invalidConfigMessages.length > 0) {
+    return nonExecutableAttempt(preparation, selection, {
+      status: "invalid_config",
+      message: invalidConfigMessages.join("; "),
+      code: "PYTHON_TYPES_INVALID_CONFIG"
+    });
+  }
+  if (project.context.outcome === "unsupported") {
+    return nonExecutableAttempt(preparation, selection, { status: "unsupported_target", message: projectFailure(project, "unsupported"), code: "PYTHON_TYPES_UNSUPPORTED_TARGET" });
+  }
+  if (selection.status !== "selected") {
+    return nonExecutableAttempt(preparation, selection, {
+      status: selection.status,
+      message: selection.message ?? projectFailure(project, selection.status),
+      code: "PYTHON_TYPES_UNSUPPORTED_TARGET"
+    });
+  }
+  if (selection.authority === "pyright") {
+    const message = `Pyright authority for ${project.context.projectRoot} is deliberately unsupported until the Pyright authority slice`;
+    return nonExecutableAttempt(preparation, selection, { status: "unsupported_target", message, code: "PYTHON_TYPES_PYRIGHT_UNSUPPORTED" });
+  }
+  if (selection.tool === undefined || !selection.tool.available) {
+    const message = `Selected mypy authority is unavailable for ${project.context.projectRoot}`;
+    return nonExecutableAttempt(preparation, selection, { status: "tool_unavailable", message, code: "PYTHON_TYPES_TOOL_UNAVAILABLE" });
+  }
+  return undefined;
+}
+
+function projectFailure(project: PythonProjectGroup, state: string): string {
+  return project.context.reasons[0]?.message ?? `Canonical Python project is ${state} for ${project.context.projectRoot}`;
+}
+
+function nonExecutableAttempt(
+  preparation: PythonTypeCapabilityPreparation,
+  selection: PythonTypeAuthoritySelection,
+  failure: {
+    status: Extract<PythonValidationCapabilityRunStatus, "invalid_config" | "unsupported_target" | "tool_unavailable">;
+    message: string;
+    code: string;
+  }
+): ProjectAttempt {
+  const authority = evidenceAuthority(selection);
+  const authoritySource = evidenceAuthoritySource(selection);
+  const tool = selection.tool === undefined || authority === undefined
+    ? undefined
+    : portableNonExecutedTool(selection.tool, preparation, authority);
+  const run = createPythonTypeCapabilityRun({
+    preparation,
+    ...(authority === undefined ? {} : { authority }),
+    ...(authoritySource === undefined ? {} : { authoritySource }),
+    status: failure.status,
+    durationMs: 0,
+    counts: { diagnosticCount: 1, errorCount: 0, warningCount: 0, noteCount: 1 },
+    ...(tool === undefined ? {} : { tool })
+  });
+  return {
+    run,
+    outcome: failure.status,
+    failureMessage: failure.message,
+    diagnostics: [diagnostic({
+      category: failure.status === "invalid_config" ? "infrastructure" : "types",
+      severity: "info",
+      code: failure.code,
+      message: failure.message,
+      path: preparation.project.target,
+      ...(tool === undefined ? {} : { tool: {
+        name: tool.name,
+        command: tool.argv.join(" "),
+        ...(tool.version === undefined ? {} : { version: tool.version }),
+        source: tool.source,
+        cwd: tool.cwd
+      } })
+    })]
+  };
+}
+
+function portableNonExecutedTool(
+  checker: PythonProjectToolProvenance,
+  preparation: PythonTypeCapabilityPreparation,
+  authority: PythonValidationAuthority
+): PythonValidationCapabilityToolProvenance {
+  return portablePythonValidationTool({ checker, preparation, authority });
+}
+
+function evidenceAuthority(selection: PythonTypeAuthoritySelection): PythonValidationAuthority | undefined {
+  return selection.authority;
+}
+
+function evidenceAuthoritySource(selection: PythonTypeAuthoritySelection): PythonValidationAuthoritySource | undefined {
+  return selection.source;
+}
+
+function groupProjectContexts(
+  rootPaths: readonly string[],
+  contextByTarget: ReadonlyMap<string, PythonProjectContext>
+): readonly PythonProjectGroup[] {
+  const groups = new Map<string, { context: PythonProjectContext; targets: string[] }>();
+  for (const path of rootPaths) {
+    const context = contextByTarget.get(path);
+    if (context === undefined) continue;
+    const group = groups.get(context.projectKey) ?? { context, targets: [] };
+    if (contextPriority(context) > contextPriority(group.context)) group.context = context;
+    group.targets.push(path);
+    groups.set(context.projectKey, group);
+  }
+  return [...groups.values()]
+    .map((group) => ({ context: group.context, targets: [...new Set(group.targets)].sort() }))
+    .sort((left, right) =>
+      left.context.projectRoot.localeCompare(right.context.projectRoot) ||
+      left.context.projectKey.localeCompare(right.context.projectKey)
+    );
+}
+
+function contextPriority(context: PythonProjectContext): number {
+  if (context.outcome === "ambiguous" || context.reasons.some((reason) => reason.code === "invalid_config")) return 3;
+  if (context.outcome === "unsupported") return 2;
+  if (context.outcome === "degraded") return 1;
+  return 0;
+}
+
+function aggregateOutcome(outcomes: readonly ValidationCheckOutcome[]): ValidationCheckOutcome {
+  const priority: readonly ValidationCheckOutcome[] = [
+    "invalid_config", "timeout", "tool_failure", "tool_unavailable", "unsupported_target", "findings", "passed"
+  ];
+  return priority.find((candidate) => outcomes.includes(candidate)) ?? "passed";
 }
 
 function missingContextResult(missing: readonly string[]): ValidationCheckResult {
@@ -121,237 +352,4 @@ function missingContextResult(missing: readonly string[]): ValidationCheckResult
       message
     }]
   };
-}
-
-function groupProjectContexts(contexts: readonly PythonProjectContext[]): readonly PythonProjectGroup[] {
-  const groups = new Map<string, { context: PythonProjectContext; targets: string[] }>();
-  for (const context of contexts) {
-    const group = groups.get(context.projectKey) ?? { context, targets: [] };
-    group.targets.push(context.target);
-    groups.set(context.projectKey, group);
-  }
-  return [...groups.values()]
-    .map((group) => ({ context: group.context, targets: [...new Set(group.targets)].sort() }))
-    .sort((left, right) => left.context.projectRoot.localeCompare(right.context.projectRoot));
-}
-
-function isUnresolvedTypeContext(context: PythonProjectContext): boolean {
-  return context.outcome === "ambiguous" || context.outcome === "unsupported" || context.interpreter === undefined ||
-    context.reasons.some((reason) => reason.code === "invalid_config");
-}
-
-function selectTypeChecker(context: PythonProjectContext): PythonProjectToolProvenance | undefined {
-  const mypy = context.tools.find((tool) => tool.tool === "mypy" && tool.available);
-  const pyright = context.tools.find((tool) => tool.tool === "pyright" && tool.available);
-  if (pyright?.configFile !== undefined) return pyright;
-  if (mypy?.configFile !== undefined) return mypy;
-  return mypy ?? pyright;
-}
-
-async function materializePythonTypeWorkspace(
-  validation: ValidationCheckContext,
-  project: PythonProjectGroup,
-  files: readonly PythonMaterializedSourceFile[]
-): Promise<MaterializedPythonTypeWorkspace> {
-  const tempRoot = mkdtempSync(join(tmpdir(), "opcore-python-types-"));
-  const root = join(tempRoot, "repo");
-  try {
-    await mkdir(root, { recursive: true });
-    for (const source of files) await writeMaterializedFile(root, source.path, source.content);
-    for (const evidence of project.context.evidence) {
-      if (evidence.role === "layout" || evidence.role === "boundary" && !isConfigPath(evidence.path)) continue;
-      const result = await validation.fileView.readAfter(evidence.path);
-      if (result.status === "found") await writeMaterializedFile(root, evidence.path, result.content);
-    }
-    const projectCwd = project.context.projectRoot === "." ? root : resolveRepoPath(root, project.context.projectRoot);
-    await mkdir(projectCwd, { recursive: true });
-    return { root, projectCwd, cleanup: () => rmSync(tempRoot, { recursive: true, force: true }) };
-  } catch (error) {
-    rmSync(tempRoot, { recursive: true, force: true });
-    throw error;
-  }
-}
-
-async function writeMaterializedFile(root: string, path: string, content: string): Promise<void> {
-  const absolutePath = resolveRepoPath(root, path);
-  await mkdir(dirname(absolutePath), { recursive: true });
-  writeFileSync(absolutePath, content);
-}
-
-function resolveRepoPath(root: string, path: string): string {
-  const absolutePath = resolve(root, path);
-  const relativePath = relative(root, absolutePath);
-  if (relativePath === "" || relativePath.startsWith("..") || relativePath.split(sep).includes("..")) {
-    throw new Error(`Repo-relative path escapes materialized Python workspace: ${path}`);
-  }
-  return absolutePath;
-}
-
-function unresolvedProjectResult(context: PythonProjectContext): ValidationCheckResult {
-  const reason = context.reasons.find((entry) => entry.code === "invalid_config") ??
-    context.reasons.find((entry) => entry.tool === "python") ?? context.reasons[0];
-  const diagnostics: ValidationDiagnostic[] = [diagnostic({
-    category: "infrastructure",
-    severity: "info",
-    code: context.outcome === "ambiguous" ? "PYTHON_CONTEXT_AMBIGUOUS" : "PYTHON_CONTEXT_UNSUPPORTED",
-    message: reason?.message ?? `Python project context is unresolved for ${context.target}`,
-    path: context.target
-  })];
-  if (selectTypeChecker(context) === undefined) {
-    diagnostics.push({
-      category: "types",
-      severity: "info",
-      code: "PYTHON_TYPES_UNSUPPORTED",
-      message: `Python type validation requires mypy or pyright for project ${context.projectRoot}; neither tool is available.`
-    });
-  }
-  return {
-    outcome: reason?.code === "invalid_config" || context.outcome === "ambiguous" ? "invalid_config" : "unsupported_target",
-    failureMessage: reason?.message ?? `Python project context is unresolved for ${context.target}`,
-    diagnostics
-  };
-}
-
-function missingTypeChecker(context: PythonProjectContext): ValidationCheckResult {
-  return {
-    outcome: "tool_unavailable",
-    failureMessage: `Neither mypy nor pyright is available for ${context.projectRoot}.`,
-    diagnostics: [{
-      category: "types",
-      severity: "info",
-      code: "PYTHON_TYPES_UNSUPPORTED",
-      message: `Python type validation requires mypy or pyright for project ${context.projectRoot}; neither tool is available.`
-    }]
-  };
-}
-
-function typeToolFailure(
-  checker: PythonProjectToolProvenance,
-  outcome: Extract<ValidationCheckOutcome, "timeout" | "tool_failure">,
-  message: string
-): ValidationCheckResult {
-  return {
-    outcome,
-    failureMessage: message,
-    diagnostics: [diagnostic({
-      category: "infrastructure",
-      code: outcome === "timeout" ? "PYTHON_TYPES_TOOL_TIMEOUT" : "PYTHON_TYPES_TOOL_FAILED",
-      message: `${checker.tool} could not run: ${message}`,
-      tool: checkerProvenance(checker)
-    })]
-  };
-}
-
-function parseTypeCheckerDiagnostics(
-  checker: PythonProjectToolProvenance,
-  stdout: string,
-  stderr: string,
-  checkerCwd: string,
-  workspaceRoot: string
-): readonly ValidationDiagnostic[] {
-  const text = [stdout, stderr].filter((part) => part.trim().length > 0).join("\n");
-  const diagnostics: ValidationDiagnostic[] = [];
-  for (const line of text.split(/\r?\n/u)) {
-    const parsed = checker.tool === "pyright"
-      ? parsePyrightLine(line, checkerCwd, workspaceRoot, checker)
-      : parseMypyLine(line, checkerCwd, workspaceRoot, checker);
-    if (parsed !== undefined) diagnostics.push(parsed);
-  }
-  return sortDiagnostics(diagnostics);
-}
-
-function parseMypyLine(
-  line: string,
-  checkerCwd: string,
-  workspaceRoot: string,
-  checker: PythonProjectToolProvenance
-): ValidationDiagnostic | undefined {
-  const match = /^(?<path>.+?):(?<line>\d+)(?::(?<column>\d+))?:\s+(?<severity>error|warning|note):\s+(?<message>.+?)(?:\s+\[(?<code>[^\]]+)\])?$/u.exec(line.trim());
-  if (match?.groups === undefined) return undefined;
-  return diagnostic({
-    category: "types",
-    severity: match.groups.severity === "error" ? "error" : "warning",
-    path: repoRelativeDiagnosticPath(match.groups.path, checkerCwd, workspaceRoot),
-    code: match.groups.code === undefined ? "MYPY_TYPE_ERROR" : `MYPY_${normalizeDiagnosticCode(match.groups.code)}`,
-    message: match.groups.message,
-    line: parsePositiveInteger(match.groups.line),
-    column: parsePositiveInteger(match.groups.column),
-    tool: checkerProvenance(checker)
-  });
-}
-
-function parsePyrightLine(
-  line: string,
-  checkerCwd: string,
-  workspaceRoot: string,
-  checker: PythonProjectToolProvenance
-): ValidationDiagnostic | undefined {
-  const match = /^\s*(?<path>.+?):(?<line>\d+):(?<column>\d+)\s+-\s+(?<severity>error|warning|information):\s+(?<message>.+?)(?:\s+\((?<code>[^)]+)\))?$/u.exec(line.trim());
-  if (match?.groups === undefined) return undefined;
-  return diagnostic({
-    category: "types",
-    severity: match.groups.severity === "error" ? "error" : match.groups.severity === "warning" ? "warning" : "info",
-    path: repoRelativeDiagnosticPath(match.groups.path, checkerCwd, workspaceRoot),
-    code: match.groups.code === undefined ? "PYRIGHT_TYPE_ERROR" : `PYRIGHT_${normalizeDiagnosticCode(match.groups.code)}`,
-    message: match.groups.message,
-    line: parsePositiveInteger(match.groups.line),
-    column: parsePositiveInteger(match.groups.column),
-    tool: checkerProvenance(checker)
-  });
-}
-
-function materializedCheckerPrefix(
-  checker: PythonProjectToolProvenance,
-  projectRoot: string
-): readonly string[] {
-  const prefix = [...checker.argv.slice(1)];
-  if (checker.configFile === undefined) return prefix;
-  const options = checker.tool === "mypy" ? ["--config", "--config-file"] : ["--project", "-p"];
-  const materializedConfig = relativeProjectPath(checker.configFile, projectRoot);
-  for (let index = 0; index < prefix.length; index += 1) {
-    const argument = prefix[index];
-    if (options.includes(argument)) {
-      prefix[index + 1] = materializedConfig;
-      index += 1;
-      continue;
-    }
-    const option = options.find((candidate) => argument.startsWith(`${candidate}=`));
-    if (option !== undefined) prefix[index] = `${option}=${materializedConfig}`;
-  }
-  return prefix;
-}
-
-function checkerProvenance(checker: PythonProjectToolProvenance) {
-  return {
-    name: checker.tool,
-    command: checker.argv.join(" "),
-    ...(checker.version === undefined ? {} : { version: checker.version }),
-    source: checker.source,
-    cwd: checker.cwd
-  };
-}
-
-function repoRelativeDiagnosticPath(path: string, checkerCwd: string, workspaceRoot: string): string {
-  const absolute = resolve(checkerCwd, path);
-  const relativePath = relative(workspaceRoot, absolute).replaceAll("\\", "/");
-  return relativePath.length > 0 && !relativePath.startsWith("..") ? relativePath : path.replaceAll("\\", "/");
-}
-
-function normalizeDiagnosticCode(code: string): string {
-  return code.replace(/([a-z])([A-Z])/gu, "$1_$2").replace(/[^A-Za-z0-9]+/gu, "_").replace(/^_+|_+$/gu, "").toUpperCase();
-}
-
-function parsePositiveInteger(value: string | undefined): number | undefined {
-  if (value === undefined) return undefined;
-  const parsed = Number(value);
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
-}
-
-function relativeProjectPath(path: string, projectRoot: string): string {
-  return projectRoot === "." ? path : path.slice(`${projectRoot}/`.length);
-}
-
-
-function isConfigPath(path: string): boolean {
-  return /(?:\.toml|\.ini|\.cfg|\.lock|Pipfile|requirements.*\.txt)$/u.test(path);
 }

@@ -418,6 +418,24 @@ describe("Opcore ASP provider", () => {
           JSON.stringify(contextEvidence.data.reasons)
         );
         assert.equal(JSON.stringify(contextEvidence).includes("disk-must-not-win"), false);
+        const typesAssessment = await peer.request("check/evaluate", {
+          callSite: "interactive",
+          changeset: host.changeset([
+            host.modify("services/api/src/app.py", "VALUE = 2\n")
+          ]),
+          comparison: "all",
+          checks: ["python.types"]
+        });
+        const capabilityEvidence = typesAssessment.evidence.find(
+          (entry) => entry.kind === "python_validation_capability_run"
+        );
+        assert.equal(capabilityEvidence.data.schemaId, "opcore.python.validation-capability-run");
+        assert.equal(Object.hasOwn(capabilityEvidence.data, "checker"), false);
+        assert.equal(Object.hasOwn(capabilityEvidence.data, "checkerSource"), false);
+        assert.equal(capabilityEvidence.data.status, "unsupported_target");
+        assert.match(capabilityEvidence.data.afterStateManifestFingerprint, /^sha256:[a-f0-9]{64}$/);
+        assertNoForbiddenKeys(typesAssessment);
+        assert.equal(JSON.stringify(capabilityEvidence).includes("VALUE = 2"), false);
         assert.equal(existsSync(providerLocalPythonMarker), false, "ASP provider must not execute package-local host paths");
       } finally {
         peer.close();

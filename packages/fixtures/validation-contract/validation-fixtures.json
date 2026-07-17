@@ -273,5 +273,38 @@
     "invalid_payload",
     "skipped",
     "refused"
+  ],
+  "pythonCapabilityRuns": [
+    {
+      "schemaId": "opcore.python.validation-capability-run",
+      "schemaVersion": 1,
+      "capability": "types",
+      "checkId": "python.types",
+      "projectKey": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "contextFingerprint": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "projectRoot": "services/api",
+      "targets": ["services/api/src/app.py"],
+      "selectedSourcePaths": ["services/api/src/app.py"],
+      "selectedConfigPaths": ["services/api/pyproject.toml"],
+      "afterStateManifestFingerprint": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+      "authority": "mypy",
+      "authoritySource": "project_config",
+      "status": "passed",
+      "tool": {
+        "name": "mypy",
+        "executable": "repo:services/api/.venv/bin/mypy",
+        "argv": ["repo:services/api/.venv/bin/mypy", "--output=json", "src/app.py"],
+        "cwd": "services/api",
+        "source": "project_local_environment",
+        "version": "2.3.0",
+        "configFile": "services/api/pyproject.toml"
+      },
+      "execution": { "termination": "exited", "exitCode": 0 },
+      "durationMs": 12,
+      "diagnosticCount": 0,
+      "errorCount": 0,
+      "warningCount": 0,
+      "noteCount": 0
+    }
   ]
 }

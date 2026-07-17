@@ -12,6 +12,7 @@ import {
   writeCommandLatencyTelemetry,
   writeOpcoreMetricArtifacts
 } from "../packages/opcore/dist/index.js";
+import { compactScanValidationResult } from "../packages/opcore/dist/scan-validation-preview.js";
 
 const repoRoot = fileURLToPath(new URL("..", import.meta.url));
 const opcoreBin = resolve(repoRoot, "packages/opcore/dist/index.js");
@@ -158,6 +159,63 @@ describe("opcore public facade", () => {
     } finally {
       rmSync(temp, { recursive: true, force: true });
     }
+  });
+
+  it("preserves source-free Python capability runs when compacting scan diagnostics", () => {
+    const run = {
+      schemaId: "opcore.python.validation-capability-run",
+      schemaVersion: 1,
+      capability: "types",
+      checkId: "python.types",
+      projectKey: `sha256:${"1".repeat(64)}`,
+      contextFingerprint: `sha256:${"2".repeat(64)}`,
+      projectRoot: ".",
+      targets: ["pkg/app.py"],
+      selectedSourcePaths: ["pkg/app.py"],
+      selectedConfigPaths: ["mypy.ini"],
+      afterStateManifestFingerprint: `sha256:${"3".repeat(64)}`,
+      authority: "mypy",
+      authoritySource: "project_config",
+      status: "passed",
+      tool: {
+        name: "mypy",
+        executable: "external:mypy",
+        argv: ["external:mypy", "--output=json", "pkg/app.py"],
+        cwd: ".",
+        source: "project_local_environment",
+        version: "2.3.0",
+        configFile: "mypy.ini"
+      },
+      execution: { termination: "exited", exitCode: 0 },
+      durationMs: 1,
+      diagnosticCount: 0,
+      errorCount: 0,
+      warningCount: 0,
+      noteCount: 0
+    };
+    const compact = compactScanValidationResult({
+      ok: true,
+      status: "passed",
+      diagnostics: [{ category: "types", severity: "warning", message: "preview" }],
+      pythonCapabilityRuns: [run]
+    }, 0);
+
+    assert.deepEqual(compact.diagnostics, []);
+    assert.deepEqual(compact.pythonCapabilityRuns, [run]);
+    assert.equal(JSON.stringify(compact.pythonCapabilityRuns).includes("source text"), false);
+    assert.throws(() => compactScanValidationResult({
+      ok: true,
+      status: "passed",
+      diagnostics: [],
+      pythonCapabilityRuns: [{
+        ...run,
+        tool: {
+          ...run.tool,
+          executable: "/var/folders/private/opcore-python-types-workspace-secret/bin/mypy",
+          argv: ["/var/folders/private/opcore-python-types-workspace-secret/bin/mypy", "pkg/app.py"]
+        }
+      }]
+    }), /portable executable/);
   });
 
   it("excludes generated provider roots from status coverage and scan validation", () => {

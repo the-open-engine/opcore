@@ -10,7 +10,8 @@ import type {
   ValidationResultManifest,
   ValidationResultStatus,
   ValidationSkippedCheck,
-  PythonProjectContext
+  PythonProjectContext,
+  PythonValidationCapabilityRun
 } from "@the-open-engine/opcore-contracts";
 import { GRAPH_SCHEMA_VERSION, validateValidationResultPayload } from "@the-open-engine/opcore-contracts";
 
@@ -30,6 +31,7 @@ export interface AggregateValidationResultsArgs extends CreateValidationManifest
   failure?: ValidationFailure;
   refusal?: EditRefusal;
   pythonProjectContexts?: readonly PythonProjectContext[];
+  pythonCapabilityRuns?: readonly PythonValidationCapabilityRun[];
 }
 
 const failureStatusPriority: readonly ValidationCheckRunStatus[] = [
@@ -64,9 +66,28 @@ export function aggregateValidationResults(args: AggregateValidationResultsArgs)
   if (args.graphStatus !== undefined) result.graphStatus = args.graphStatus;
   if (args.refusal !== undefined) result.refusal = args.refusal;
   if (args.pythonProjectContexts !== undefined) result.pythonProjectContexts = deduplicatePythonProjectContexts(args.pythonProjectContexts);
+  if (args.pythonCapabilityRuns !== undefined) result.pythonCapabilityRuns = deduplicatePythonCapabilityRuns(args.pythonCapabilityRuns);
   const failure = args.failure ?? failureForStatus(status);
   if (failure !== undefined) result.failure = failure;
   return validateValidationResultPayload(result);
+}
+
+function deduplicatePythonCapabilityRuns(
+  runs: readonly PythonValidationCapabilityRun[]
+): readonly PythonValidationCapabilityRun[] {
+  const exact = new Map<string, PythonValidationCapabilityRun>();
+  for (const run of runs) exact.set(JSON.stringify(run), run);
+  return [...exact.values()].sort(comparePythonCapabilityRuns);
+}
+
+function comparePythonCapabilityRuns(
+  left: PythonValidationCapabilityRun,
+  right: PythonValidationCapabilityRun
+): number {
+  return left.projectKey.localeCompare(right.projectKey) ||
+    left.contextFingerprint.localeCompare(right.contextFingerprint) ||
+    left.afterStateManifestFingerprint.localeCompare(right.afterStateManifestFingerprint) ||
+    (left.authority ?? "").localeCompare(right.authority ?? "");
 }
 
 function deduplicatePythonProjectContexts(contexts: readonly PythonProjectContext[]): readonly PythonProjectContext[] {

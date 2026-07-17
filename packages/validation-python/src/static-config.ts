@@ -8,7 +8,8 @@ import { parse as parseToml } from "smol-toml";
 import { isRelevantPythonConfig } from "./project-config-files.js";
 import type { PythonProjectWorkspace } from "./project-workspace.js";
 import { pythonVersionSatisfiesConstraint } from "./version-constraint.js";
-
+import { parsePythonIni, pythonIniHasSection, pythonIniValue, type PythonIniDocument } from "./ini-config.js";
+import { mypyConfigSafetyFailures, mypyPathValidationFailures } from "./mypy-config-values.js";
 
 export const pythonToolConfigPrecedence = {
   pyright: ["pyrightconfig.json", "pyproject.toml"],
@@ -26,6 +27,14 @@ export interface PythonStaticProjectConfig {
   reasons: readonly PythonProjectContextReason[];
 }
 
+interface PythonToolConfigInputs {
+  projectRoot: string;
+  direct: readonly string[];
+  contents: ReadonlyMap<string, string>;
+  tomlDocuments: ReadonlyMap<string, TomlTable>;
+  iniDocuments: ReadonlyMap<string, PythonIniDocument>;
+}
+
 export async function readPythonStaticProjectConfig(
   workspace: PythonProjectWorkspace,
   projectRoot: string,
@@ -35,6 +44,7 @@ export async function readPythonStaticProjectConfig(
   const relevant = direct.filter(isRelevantPythonConfig);
   const contents = new Map<string, string>();
   const tomlDocuments = new Map<string, TomlTable>();
+  const iniDocuments = new Map<string, PythonIniDocument>();
   const reasons: PythonProjectContextReason[] = [];
   for (const path of relevant) {
     const resolved = await workspace.realpath(path);
@@ -59,17 +69,22 @@ export async function readPythonStaticProjectConfig(
     }
     if (isTomlConfig(path)) {
       try {
-        const parsed = parseToml(value);
-        if (isTable(parsed)) tomlDocuments.set(path, parsed);
+        tomlDocuments.set(path, parsePythonToml(value));
       } catch {
         reasons.push({ code: "invalid_config", path, message: `Python project config is malformed: ${path}` });
       }
     }
     if (path.endsWith(".ini") || path.endsWith(".cfg")) {
       try {
-        validateIni(value);
+        iniDocuments.set(path, parsePythonIni(value));
       } catch {
-        reasons.push({ code: "invalid_config", path, message: `Python project config is malformed: ${path}` });
+        if (!isDedicatedMypyConfig(path)) {
+          reasons.push({
+            code: "invalid_config",
+            path,
+            message: `Python project config is malformed: ${path}`
+          });
+        }
       }
     }
   }
@@ -82,12 +97,7 @@ export async function readPythonStaticProjectConfig(
     });
   }
   const target = targetEvidence(projectRoot, contents, tomlDocuments, reasons);
-  const toolConfigs = {
-    mypy: selectConfig(projectRoot, direct, tomlDocuments, "mypy", pythonToolConfigPrecedence.mypy),
-    pyright: selectConfig(projectRoot, direct, tomlDocuments, "pyright", pythonToolConfigPrecedence.pyright),
-    ruff: selectConfig(projectRoot, direct, tomlDocuments, "ruff", pythonToolConfigPrecedence.ruff),
-    pytest: selectConfig(projectRoot, direct, tomlDocuments, "pytest", pythonToolConfigPrecedence.pytest)
-  };
+  const toolConfigs = selectToolConfigs({ projectRoot, direct, contents, tomlDocuments, iniDocuments }, reasons);
   const pyproject = joinRoot(projectRoot, "pyproject.toml");
   const buildSystem = parseBuildSystem(pyproject, tomlDocuments.get(pyproject));
   return { contents, managers, target, toolConfigs, ...(buildSystem === undefined ? {} : { buildSystem }), reasons };
@@ -180,72 +190,121 @@ function parseBuildSystem(path: string, document: TomlTable | undefined): Python
   return { configFile: path, ...(backend === undefined ? {} : { backend }), requires };
 }
 
-function selectConfig(
-  projectRoot: string,
-  direct: readonly string[],
-  tomlDocuments: ReadonlyMap<string, TomlTable>,
+function selectToolConfigs(
+  input: PythonToolConfigInputs,
+  reasons: PythonProjectContextReason[]
+): PythonStaticProjectConfig["toolConfigs"] {
+  const tools = ["mypy", "pyright", "ruff", "pytest"] as const;
+  const selected: Partial<Record<(typeof tools)[number], string>> = {};
+  addMissingMypySectionFailures(input, reasons);
+  addInvalidMypyPythonVersionFailures(input, reasons);
+  addInvalidMypyPathFailures(input, reasons);
+  addUnsafeMypyConfigFailures(input, reasons);
+  for (const tool of tools) {
+    const selectedPath = configuredToolPaths(input, tool)[0];
+    if (selectedPath !== undefined) selected[tool] = selectedPath;
+  }
+  return selected as PythonStaticProjectConfig["toolConfigs"];
+}
+
+function addUnsafeMypyConfigFailures(
+  input: PythonToolConfigInputs,
+  reasons: PythonProjectContextReason[]
+): void {
+  const path = configuredToolPaths(input, "mypy")[0];
+  const content = path === undefined ? undefined : input.contents.get(path);
+  if (path === undefined || content === undefined) return;
+  for (const message of mypyConfigSafetyFailures(path, content, input.projectRoot, parsePythonToml)) {
+    if (message.startsWith("mypy_path ")) continue;
+    reasons.push({ code: "invalid_config", path, tool: "mypy", message: `Invalid mypy configuration: ${message}` });
+  }
+}
+
+function addInvalidMypyPathFailures(
+  input: PythonToolConfigInputs,
+  reasons: PythonProjectContextReason[]
+): void {
+  const path = configuredToolPaths(input, "mypy")[0];
+  if (path === undefined) return;
+  const value = path.endsWith("pyproject.toml")
+    ? valueAt(input.tomlDocuments.get(path), ["tool", "mypy", "mypy_path"])
+    : pythonIniValue(input.iniDocuments.get(path), "mypy", "mypy_path");
+  for (const message of mypyPathValidationFailures(value)) {
+    reasons.push({ code: "invalid_config", path, tool: "mypy", message: `Invalid mypy configuration: ${message}` });
+  }
+}
+
+function addInvalidMypyPythonVersionFailures(
+  input: PythonToolConfigInputs,
+  reasons: PythonProjectContextReason[]
+): void {
+  const path = configuredToolPaths(input, "mypy")[0];
+  if (path === undefined) return;
+  const value = path.endsWith("pyproject.toml")
+    ? valueAt(input.tomlDocuments.get(path), ["tool", "mypy", "python_version"])
+    : pythonIniValue(input.iniDocuments.get(path), "mypy", "python_version");
+  if (value === undefined || typeof value === "string" && /^\d+\.\d+$/u.test(value.trim())) return;
+  reasons.push({
+    code: "invalid_config",
+    path,
+    tool: "mypy",
+    message: `Mypy configuration has an invalid python_version: ${path}`
+  });
+}
+
+function addMissingMypySectionFailures(
+  input: PythonToolConfigInputs,
+  reasons: PythonProjectContextReason[]
+): void {
+  const path = configuredToolPaths(input, "mypy")[0];
+  if (path === undefined || !isDedicatedMypyConfig(path)) return;
+  const document = input.iniDocuments.get(path);
+  if (document !== undefined && pythonIniHasSection(document, "mypy")) return;
+  reasons.push({
+    code: "invalid_config",
+    path,
+    tool: "mypy",
+    message: document === undefined
+      ? `Python project config is malformed: ${path}`
+      : `Dedicated mypy config has no [mypy] section: ${path}`
+  });
+}
+
+function configuredToolPaths(
+  input: PythonToolConfigInputs,
   tool: "mypy" | "pyright" | "ruff" | "pytest",
-  candidates: readonly string[]
-): string | undefined {
-  const names = new Set(direct.map(basename));
+): readonly string[] {
+  const candidates = pythonToolConfigPrecedence[tool];
+  const names = new Set(input.direct.map(basename));
   const section = {
     mypy: "tool.mypy",
     pyright: "tool.pyright",
     ruff: "tool.ruff",
     pytest: "tool.pytest.ini_options"
   }[tool];
-  const name = candidates.find((candidate) => {
+  return candidates.filter((candidate) => {
     if (!names.has(candidate)) return false;
-    if (candidate !== "pyproject.toml") return true;
-    return tableAt(tomlDocuments.get(joinRoot(projectRoot, candidate)), section.split(".")) !== undefined;
-  });
-  return name === undefined ? undefined : joinRoot(projectRoot, name);
+    const path = joinRoot(input.projectRoot, candidate);
+    if (candidate === "pyproject.toml") {
+      return tableAt(input.tomlDocuments.get(path), section.split(".")) !== undefined;
+    }
+    if (tool === "mypy") {
+      return isDedicatedMypyConfig(path) || pythonIniHasSection(input.iniDocuments.get(path), "mypy");
+    }
+    if (tool === "pytest" && (candidate === "setup.cfg" || candidate === "tox.ini" || candidate === "pytest.ini")) {
+      return pythonIniHasSection(input.iniDocuments.get(path), "pytest") || pythonIniHasSection(input.iniDocuments.get(path), "tool:pytest");
+    }
+    return true;
+  }).map((name) => joinRoot(input.projectRoot, name));
 }
 
+function isDedicatedMypyConfig(path: string): boolean {
+  const name = basename(path);
+  return name === "mypy.ini" || name === ".mypy.ini";
+}
 
 function isTomlConfig(path: string): boolean {
   return path.endsWith(".toml") || ["Pipfile", "poetry.lock", "pdm.lock", "uv.lock"].includes(basename(path));
-}
-
-function validateIni(content: string): void {
-  const sections = new Set<string>();
-  const options = new Set<string>();
-  let section: string | undefined;
-  let continuationAllowed = false;
-  for (const [index, rawLine] of content.replace(/^\uFEFF/u, "").split(/\r?\n/u).entries()) {
-    const trimmed = rawLine.trim();
-    if (trimmed.length === 0 || trimmed.startsWith("#") || trimmed.startsWith(";")) continue;
-    if (/^\s/u.test(rawLine)) {
-      if (!continuationAllowed) throw new Error(`Unexpected INI continuation at line ${index + 1}`);
-      continue;
-    }
-    const sectionMatch = /^\[([^\[\]]+)\](?:\s*[#;].*)?$/u.exec(trimmed);
-    if (sectionMatch !== null) {
-      section = sectionMatch[1].trim().toLowerCase();
-      if (section.length === 0 || sections.has(section)) throw new Error(`Invalid INI section at line ${index + 1}`);
-      sections.add(section);
-      continuationAllowed = false;
-      continue;
-    }
-    if (section === undefined) throw new Error(`INI option precedes a section at line ${index + 1}`);
-    const delimiterIndex = firstIniDelimiter(rawLine);
-    if (delimiterIndex <= 0 || rawLine.slice(0, delimiterIndex).trim().length === 0) {
-      throw new Error(`Invalid INI option at line ${index + 1}`);
-    }
-    const option = `${section}\0${rawLine.slice(0, delimiterIndex).trim().toLowerCase()}`;
-    if (options.has(option)) throw new Error(`Duplicate INI option at line ${index + 1}`);
-    options.add(option);
-    continuationAllowed = true;
-  }
-  if (sections.size === 0) throw new Error("INI config has no sections");
-}
-
-function firstIniDelimiter(line: string): number {
-  const equals = line.indexOf("=");
-  const colon = line.indexOf(":");
-  if (equals < 0) return colon;
-  if (colon < 0) return equals;
-  return Math.min(equals, colon);
 }
 
 function directChildren(root: string, files: readonly string[]): readonly string[] {
@@ -283,25 +342,23 @@ function valueForNonTomlConfig(path: string, content: string, key: string): stri
 }
 
 function valueForIniOption(content: string, expectedSection: string, key: string): string | undefined {
-  let section: string | undefined;
-  for (const rawLine of content.replace(/^\uFEFF/u, "").split(/\r?\n/u)) {
-    const trimmed = rawLine.trim();
-    const sectionMatch = /^\[([^\[\]]+)\](?:\s*[#;].*)?$/u.exec(trimmed);
-    if (sectionMatch !== null) {
-      section = sectionMatch[1].trim().toLowerCase();
-      continue;
-    }
-    if (section !== expectedSection || /^\s/u.test(rawLine)) continue;
-    const delimiterIndex = firstIniDelimiter(rawLine);
-    if (delimiterIndex <= 0 || rawLine.slice(0, delimiterIndex).trim().toLowerCase() !== key.toLowerCase()) continue;
-    const value = rawLine.slice(delimiterIndex + 1).trim();
+  try {
+    const value = pythonIniValue(parsePythonIni(content), expectedSection, key);
+    if (value === undefined) return undefined;
     const match = /^(?:"([^"]*)"|'([^']*)'|([^#;]*))/u.exec(value);
     return (match?.[1] ?? match?.[2] ?? match?.[3])?.trim();
+  } catch {
+    return undefined;
   }
-  return undefined;
 }
 
-type TomlTable = Record<string, unknown>;
+export type TomlTable = Record<string, unknown>;
+
+export function parsePythonToml(content: string): TomlTable {
+  const parsed = parseToml(content);
+  if (!isTable(parsed)) throw new Error("TOML config root must be a table");
+  return parsed;
+}
 
 function isTable(value: unknown): value is TomlTable {
   return value !== null && typeof value === "object" && !Array.isArray(value);
