@@ -86,6 +86,66 @@ describe("Opcore agent write gate adapter", () => {
       rmSync(temp, { recursive: true, force: true });
     }
   });
+
+  it("resolves repo-local opcore from node_modules/.bin when the hook PATH is plain", () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-agent-gate-local-bin-"));
+    try {
+      initTypeScriptFixture(temp);
+      createOpcoreShim(temp, "node_modules/.bin");
+      runOpcore(["init", "--repo", temp, "--local", "--approve", "--json"], temp, 0);
+      const hookPath = join(temp, ".opcore", "hooks", "opcore-agent-gate.mjs");
+
+      const clean = runHook(
+        hookPath,
+        {
+          cwd: temp,
+          hook_event_name: "PreToolUse",
+          tool_name: "Write",
+          tool_input: {
+            file_path: join(temp, "src", "index.ts"),
+            content: "export const value: number = 2;\n"
+          },
+          env: { ...process.env, PATH: "/usr/bin:/bin" },
+          expectedStatus: 0
+        }
+      );
+
+      assert.equal(clean.stderr, "");
+      assert.equal(readFileSync(join(temp, "src", "index.ts"), "utf8"), "export const value: number = 1;\n");
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("reports a missing opcore command without crashing on empty spawn output", () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-agent-gate-missing-bin-"));
+    try {
+      initTypeScriptFixture(temp);
+      runOpcore(["init", "--repo", temp, "--local", "--approve", "--json"], temp, 0);
+      const hookPath = join(temp, ".opcore", "hooks", "opcore-agent-gate.mjs");
+
+      const blocked = runHook(
+        hookPath,
+        {
+          cwd: temp,
+          hook_event_name: "PreToolUse",
+          tool_name: "Write",
+          tool_input: {
+            file_path: join(temp, "src", "index.ts"),
+            content: "export const value: number = 2;\n"
+          },
+          env: { ...process.env, PATH: "" },
+          expectedStatus: 2
+        }
+      );
+
+      assert.match(blocked.stderr, /validation command failed/);
+      assert.match(blocked.stderr, /ENOENT/);
+      assert.doesNotMatch(blocked.stderr, /Cannot read properties/);
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
 });
 
 function initTypeScriptFixture(root) {
@@ -98,8 +158,8 @@ function initTypeScriptFixture(root) {
   writeFixtureFile(root, "src/index.ts", "export const value: number = 1;\n");
 }
 
-function createOpcoreShim(root) {
-  const shimDir = join(root, "bin");
+function createOpcoreShim(root, relativeDir = "bin") {
+  const shimDir = join(root, relativeDir);
   mkdirSync(shimDir, { recursive: true });
   const shimPath = join(shimDir, "opcore");
   writeFileSync(shimPath, `#!/usr/bin/env sh\nexec ${JSON.stringify(process.execPath)} ${JSON.stringify(opcoreBin)} "$@"\n`);

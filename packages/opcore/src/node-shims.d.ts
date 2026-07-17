@@ -84,6 +84,7 @@ declare module "node:module" {
 }
 declare module "node:path" {
   export function basename(path: string): string;
+  export const delimiter: string;
   export function dirname(path: string): string;
   export function extname(path: string): string;
   export function isAbsolute(path: string): boolean;
