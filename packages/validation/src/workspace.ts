@@ -8,6 +8,7 @@ import type {
 } from "./scope.js";
 import { validateRepoRelativePath } from "@the-open-engine/opcore-contracts";
 import { spawnSync } from "node:child_process";
+import { readdirSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { relative, resolve, sep } from "node:path";
 
@@ -23,7 +24,7 @@ export function createNodeValidationWorkspace(options: CreateNodeValidationWorks
   const skippedPathSegments = new Set(options.skippedPathSegments ?? []);
   return {
     readFile: (path, context) => readWorkspaceFile(repoRoot, path, context),
-    listFiles: (context) => filterFileSet(listWorkspaceFiles(repoRoot, context), skippedPathSegments),
+    listFiles: (context) => filterFileSet(listWorkspaceFiles(repoRoot, context, skippedPathSegments), skippedPathSegments),
     listChangedFiles: (baseRef) => filterFileSet(listChangedFiles(repoRoot, baseRef), skippedPathSegments),
     listTreeFiles: (treeRef, changedFrom) => filterFileSet(listTreeFiles(repoRoot, treeRef, changedFrom), skippedPathSegments),
     listStagedFiles: () =>
@@ -133,7 +134,11 @@ function listTreeFiles(repoRoot: string, treeRef: string, changedFrom: string): 
   return listDiffFiles(repoRoot, ["diff", "--name-status", "-z", "--find-renames", base.treeSha, tree.treeSha, "--"]);
 }
 
-function listWorkspaceFiles(repoRoot: string, context: ValidationWorkspaceListFilesContext): ValidationWorkspaceFileSet {
+function listWorkspaceFiles(
+  repoRoot: string,
+  context: ValidationWorkspaceListFilesContext,
+  skippedPathSegments: ReadonlySet<string>
+): ValidationWorkspaceFileSet {
   const state = context.state ?? "after";
   const beforeRef = beforeStateTreeRef(repoRoot, { scope: context.scope, state });
   if (beforeRef !== undefined) return mergeFileSets(listTreeSnapshotFiles(repoRoot, beforeRef), listRepoFiles(repoRoot));
@@ -141,9 +146,40 @@ function listWorkspaceFiles(repoRoot: string, context: ValidationWorkspaceListFi
     return mergeFileSets(listTreeSnapshotFiles(repoRoot, context.scope.treeRef), listRepoFiles(repoRoot));
   }
   if (context.scope.kind === "package" && context.scope.packageRoot !== undefined) {
-    return filterPackageFileSet(listRepoFiles(repoRoot), context.scope.packageRoot);
+    const files = repoFilesOrDiskFiles(repoRoot, skippedPathSegments);
+    return filterPackageFileSet(files, context.scope.packageRoot);
   }
-  return listRepoFiles(repoRoot);
+  return repoFilesOrDiskFiles(repoRoot, skippedPathSegments);
+}
+
+function repoFilesOrDiskFiles(repoRoot: string, skippedPathSegments: ReadonlySet<string>): ValidationWorkspaceFileSet {
+  const tracked = listRepoFiles(repoRoot);
+  return tracked.unavailable ? listDiskFiles(repoRoot, skippedPathSegments) : tracked;
+}
+
+function listDiskFiles(repoRoot: string, skippedPathSegments: ReadonlySet<string>): ValidationWorkspaceFileSet {
+  const files: string[] = [];
+  try {
+    const visit = (absoluteDirectory: string, relativeDirectory: string): void => {
+      for (const entry of readdirSync(absoluteDirectory, { withFileTypes: true })) {
+        if (skippedPathSegments.has(entry.name)) continue;
+        const relativePath = relativeDirectory.length === 0 ? entry.name : `${relativeDirectory}/${entry.name}`;
+        const absolutePath = resolve(absoluteDirectory, entry.name);
+        if (entry.isDirectory()) visit(absolutePath, relativePath);
+        else if (entry.isFile()) files.push(validateRepoRelativePath(relativePath));
+        else if (entry.isSymbolicLink()) throw new Error(`Disk validation listing does not follow symlink: ${relativePath}`);
+      }
+    };
+    visit(repoRoot, "");
+    return { files: files.sort() };
+  } catch (error) {
+    return {
+      files: [],
+      unavailable: true,
+      message: "Disk validation file listing is unavailable",
+      cause: error instanceof Error ? error.message : String(error)
+    };
+  }
 }
 
 function listTreeSnapshotFiles(repoRoot: string, treeRef: string): ValidationWorkspaceFileSet {
@@ -191,6 +227,7 @@ function filterPackageFileSet(fileSet: ValidationWorkspaceFileSet, packageRoot: 
   const root = validateRepoRelativePath(packageRoot);
   const prefix = `${root}/`;
   return {
+    ...fileSet,
     files: fileSet.files.filter((file) => {
       const path = typeof file === "string" ? file : file.path;
       return path === root || path.startsWith(prefix);

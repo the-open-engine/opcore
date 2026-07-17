@@ -10,6 +10,11 @@ export interface PythonImportEdge {
   toPath: string;
 }
 
+export interface GraphImportEdge {
+  from: string;
+  to: string;
+}
+
 export interface PythonImportAnalyzer {
   analyze(files: readonly PythonImportSourceFile[]): Promise<readonly PythonImportEdge[]>;
 }
@@ -44,6 +49,26 @@ export function validatePythonImportEdges(
     byKey.set(`${fromPath}\0${toPath}`, { fromPath, toPath });
   }
   return [...byKey.values()].sort(comparePythonImportEdges);
+}
+
+export function pythonImportEdgesFromGraph(
+  edges: readonly GraphImportEdge[],
+  pythonPaths: ReadonlySet<string>
+): readonly PythonImportEdge[] {
+  const imports: PythonImportEdge[] = [];
+  for (const edge of edges) {
+    const fromPath = graphFileEndpointPath(edge.from);
+    const toPath = graphFileEndpointPath(edge.to);
+    if (fromPath !== undefined && toPath !== undefined && pythonPaths.has(fromPath) && pythonPaths.has(toPath)) {
+      imports.push({ fromPath, toPath });
+    }
+  }
+  return imports;
+}
+
+function graphFileEndpointPath(endpoint: string): string | undefined {
+  if (!endpoint.startsWith("file:")) return undefined;
+  return normalizeValidationFileViewPath(endpoint.slice("file:".length));
 }
 
 function comparePythonImportEdges(left: PythonImportEdge, right: PythonImportEdge): number {

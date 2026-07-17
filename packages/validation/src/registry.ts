@@ -47,6 +47,7 @@ export interface ValidationCheckDefinition {
   supportedScopes: readonly ValidationScopeKind[];
   defaultScopes?: readonly ValidationScopeKind[];
   requiresGraph?: boolean;
+  graphUsage?: "none" | "optional" | "required";
   graphRequirements?: (
     context: ValidationCheckContext
   ) => readonly ValidationGraphQueryRequirement[] | Promise<readonly ValidationGraphQueryRequirement[]>;
@@ -175,6 +176,9 @@ function validateValidationCheckDefinition(definition: ValidationCheckDefinition
   }
   if (definition.requiresGraph !== undefined && typeof definition.requiresGraph !== "boolean") {
     throw new ValidationCheckRegistryError("Validation check requiresGraph must be boolean");
+  }
+  if (definition.graphUsage !== undefined && !["none", "optional", "required"].includes(definition.graphUsage)) {
+    throw new ValidationCheckRegistryError("Validation check graphUsage must be none, optional, or required");
   }
   if (definition.graphRequirements !== undefined && typeof definition.graphRequirements !== "function") {
     throw new ValidationCheckRegistryError("Validation check graphRequirements must be a function");

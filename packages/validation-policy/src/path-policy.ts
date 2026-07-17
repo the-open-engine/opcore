@@ -23,10 +23,19 @@ export function withFilteredFileView<T extends Pick<ValidationCheckContext, "fil
     filteredVisibleFilesPromise ??= fileView.listVisibleFiles().then((paths) => paths.filter((path) => pathPolicyIncludes(path, policy)));
     return filteredVisibleFilesPromise;
   };
+  const listVisibleFileUniverse = async () => {
+    const universe = await fileView.listVisibleFileUniverse();
+    return { ...universe, files: universe.files.filter((path) => pathPolicyIncludes(path, policy)) };
+  };
   const filteredFileView: ValidationFileView = {
     ...fileView,
     scopeFiles: fileView.scopeFiles.filter((path) => pathPolicyIncludes(path, policy)),
     listVisibleFiles,
+    listVisibleFileUniverse,
+    listCompleteVisibleFiles: async () => {
+      await fileView.listCompleteVisibleFiles();
+      return (await listVisibleFileUniverse()).files;
+    },
     overlays: filteredOverlays,
     readFile: (path, options) =>
       pathPolicyIncludes(path, policy) ? fileView.readFile(path, options) : Promise.resolve(missingRead(path, options?.state ?? "after")),

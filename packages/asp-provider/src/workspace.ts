@@ -31,6 +31,7 @@ export function createAspHostValidationWorkspace(
   const entryByPath = new Map<string, TreeEntry>();
   const blobTextById = new Map<string, string>();
   const readSet = new Set<string>();
+  let fullTreeTruncated = false;
 
   async function listTree(paths?: readonly string[]): Promise<readonly TreeEntry[]> {
     const params: JsonObject = {
@@ -43,6 +44,7 @@ export function createAspHostValidationWorkspace(
       truncated?: boolean;
     };
     const entries = (result.entries ?? []).map(normalizeTreeEntry).filter((entry): entry is TreeEntry => entry !== undefined);
+    if (paths === undefined) fullTreeTruncated = result.truncated === true;
     for (const entry of entries) entryByPath.set(entry.path, entry);
     return entries;
   }
@@ -74,7 +76,8 @@ export function createAspHostValidationWorkspace(
   async function listRepoFiles(): Promise<ValidationWorkspaceFileSet> {
     const entries = await listTree();
     return {
-      files: entries.map((entry) => ({ path: entry.path, status: "unchanged" as const }))
+      files: entries.map((entry) => ({ path: entry.path, status: "unchanged" as const })),
+      ...(fullTreeTruncated ? { truncated: true, message: "Host workspace/listTree returned a truncated file universe" } : {})
     };
   }
 
@@ -85,6 +88,7 @@ export function createAspHostValidationWorkspace(
     listPackageFiles: async (_packageName, packageRoot) => {
       const files = await listRepoFiles();
       return {
+        ...files,
         files: files.files.filter((file) => {
           const path = typeof file === "string" ? file : file.path;
           return path === packageRoot || path.startsWith(`${packageRoot}/`);

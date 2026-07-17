@@ -114,14 +114,15 @@ interface ExecuteChecksArgs {
 interface PreparedValidationArgs {
   request: ValidationRequest;
   scope: ResolvedValidationScope;
-  graph: ValidationGraphQuerySession;
   selectedChecks: readonly ValidationCheckDefinition[];
   totalStartedAt: number;
   options: RunnerRuntimeOptions;
 }
 
-interface ExecuteValidationRequestArgs extends PreparedValidationArgs {
-  defaultReadState?: "before";
+interface ValidationExecutionState {
+  request: ValidationRequest;
+  fileView: ValidationFileView;
+  graph: ValidationGraphQuerySession;
 }
 
 interface SingleCheckOutcome {
@@ -181,14 +182,10 @@ async function runPreparedValidation(
     }
     const unsupportedResult = unsupportedScopeResult(selectedChecks, scope.kind, totalStartedAt, options.clock);
     if (unsupportedResult !== undefined) return unsupportedResult;
-    const graph = await resolveGraphSession(request, selectedChecks, options);
-    const graphFailure = requiredGraphFailureResult(request, graph.status, selectedChecks, totalStartedAt, options.clock);
-    if (graphFailure !== undefined) return graphFailure;
     if (request.reportMode === "introduced") {
       return await runIntroducedValidation({
         request,
         scope,
-        graph,
         selectedChecks,
         totalStartedAt,
         options
@@ -197,7 +194,6 @@ async function runPreparedValidation(
     return await runCurrentValidation({
       request,
       scope,
-      graph,
       selectedChecks,
       totalStartedAt,
       options
@@ -208,37 +204,59 @@ async function runPreparedValidation(
 }
 
 async function runCurrentValidation(args: PreparedValidationArgs): Promise<ValidationResult> {
-  const execution = await executeValidationRequest(args);
-  if (execution.failureResult !== undefined) return execution.failureResult;
-  return finalValidationResult(args.selectedChecks, execution, args.graph.status, args.totalStartedAt, args.options.clock);
+  const state = await acquireValidationState(args, args.request, "after", exactGraphRequired(args));
+  try {
+    const graphFailure = requiredGraphFailureResult(state.graph, args.request, args.selectedChecks, args.totalStartedAt, args.options.clock);
+    if (graphFailure !== undefined) return graphFailure;
+    const execution = await executeValidationState(args, state, args.selectedChecks, args.options);
+    if (execution.failureResult !== undefined) return execution.failureResult;
+    return finalValidationResult(args.selectedChecks, execution, state.graph.status, args.totalStartedAt, args.options.clock);
+  } finally {
+    await state.graph.dispose();
+  }
 }
 
 async function runIntroducedValidation(args: PreparedValidationArgs): Promise<ValidationResult> {
-  if (args.options.failFast || args.options.onCheckComplete !== undefined) {
-    return runIntroducedValidationIncremental(args);
-  }
   const beforeRequest: ValidationRequest = {
     ...args.request,
     overlays: []
   };
-  const beforeExecution = await executeValidationRequest({
-    ...args,
-    request: beforeRequest,
-    defaultReadState: "before"
-  });
-  if (beforeExecution.failureResult !== undefined) return beforeExecution.failureResult;
-  const execution = await executeValidationRequest(args);
-  if (execution.failureResult !== undefined) return execution.failureResult;
-  return finalValidationResult(
-    args.selectedChecks,
-    introducedExecution(beforeExecution, execution),
-    args.graph.status,
-    args.totalStartedAt,
-    args.options.clock
-  );
+  const exact = exactGraphRequired(args);
+  const beforeState = await acquireValidationState(args, beforeRequest, "before", exact);
+  try {
+    const beforeFailure = requiredGraphFailureResult(beforeState.graph, beforeRequest, args.selectedChecks, args.totalStartedAt, args.options.clock);
+    if (beforeFailure !== undefined) return beforeFailure;
+    const afterState = await acquireValidationState(args, args.request, "after", exact);
+    try {
+      const afterFailure = requiredGraphFailureResult(afterState.graph, args.request, args.selectedChecks, args.totalStartedAt, args.options.clock);
+      if (afterFailure !== undefined) return afterFailure;
+      if (args.options.failFast || args.options.onCheckComplete !== undefined) {
+        return runIntroducedValidationIncremental(args, beforeState, afterState);
+      }
+      const beforeExecution = await executeValidationState(args, beforeState, args.selectedChecks, args.options);
+      if (beforeExecution.failureResult !== undefined) return beforeExecution.failureResult;
+      const execution = await executeValidationState(args, afterState, args.selectedChecks, args.options);
+      if (execution.failureResult !== undefined) return execution.failureResult;
+      return finalValidationResult(
+        args.selectedChecks,
+        introducedExecution(beforeExecution, execution),
+        afterState.graph.status,
+        args.totalStartedAt,
+        args.options.clock
+      );
+    } finally {
+      await afterState.graph.dispose();
+    }
+  } finally {
+    await beforeState.graph.dispose();
+  }
 }
 
-async function runIntroducedValidationIncremental(args: PreparedValidationArgs): Promise<ValidationResult> {
+async function runIntroducedValidationIncremental(
+  args: PreparedValidationArgs,
+  beforeState: ValidationExecutionState,
+  afterState: ValidationExecutionState
+): Promise<ValidationResult> {
   const execution: CheckExecution = {
     runs: [],
     diagnostics: [],
@@ -249,22 +267,9 @@ async function runIntroducedValidationIncremental(args: PreparedValidationArgs):
   const quietOptions = withoutCheckCompleteOptions(args.options);
   for (const check of args.selectedChecks) {
     const selectedChecks = [check];
-    const beforeExecution = await executeValidationRequest({
-      ...args,
-      request: {
-        ...args.request,
-        overlays: []
-      },
-      selectedChecks,
-      defaultReadState: "before",
-      options: quietOptions
-    });
+    const beforeExecution = await executeValidationState(args, beforeState, selectedChecks, quietOptions);
     if (beforeExecution.failureResult !== undefined) return beforeExecution.failureResult;
-    const afterExecution = await executeValidationRequest({
-      ...args,
-      selectedChecks,
-      options: quietOptions
-    });
+    const afterExecution = await executeValidationState(args, afterState, selectedChecks, quietOptions);
     if (afterExecution.failureResult !== undefined) return afterExecution.failureResult;
     const introduced = introducedExecution(beforeExecution, afterExecution);
     mergeCheckExecution(execution, introduced);
@@ -273,7 +278,7 @@ async function runIntroducedValidationIncremental(args: PreparedValidationArgs):
       break;
     }
   }
-  return finalValidationResult(args.selectedChecks, execution, args.graph.status, args.totalStartedAt, args.options.clock);
+  return finalValidationResult(args.selectedChecks, execution, afterState.graph.status, args.totalStartedAt, args.options.clock);
 }
 
 function withoutCheckCompleteOptions(options: RunnerRuntimeOptions): RunnerRuntimeOptions {
@@ -325,24 +330,39 @@ async function emitIntroducedCheckComplete(
   }
 }
 
-async function executeValidationRequest(args: ExecuteValidationRequestArgs): Promise<CheckExecution> {
+async function acquireValidationState(
+  args: PreparedValidationArgs,
+  request: ValidationRequest,
+  defaultReadState: "before" | "after",
+  exact: boolean
+): Promise<ValidationExecutionState> {
   const fileView = await createValidationFileView({
-    request: args.request,
+    request,
     scope: args.scope,
     workspace: args.options.workspace,
-    ...(args.defaultReadState === undefined ? {} : { defaultReadState: args.defaultReadState })
+    defaultReadState
   });
+  const graph = await resolveGraphSession(request, args.selectedChecks, args.options, fileView, exact ? { kind: "exact", state: defaultReadState } : { kind: "persistent" });
+  return { request, fileView, graph };
+}
+
+async function executeValidationState(
+  args: PreparedValidationArgs,
+  state: ValidationExecutionState,
+  selectedChecks: readonly ValidationCheckDefinition[],
+  options: RunnerRuntimeOptions
+): Promise<CheckExecution> {
   return executeSelectedChecks({
-    request: args.request,
+    request: state.request,
     scope: args.scope,
-    graph: args.graph,
-    fileView,
-    selectedChecks: args.selectedChecks,
+    graph: state.graph,
+    fileView: state.fileView,
+    selectedChecks,
     totalStartedAt: args.totalStartedAt,
-    clock: args.options.clock,
-    runtime: args.options.runtime,
-    failFast: args.options.failFast,
-    onCheckComplete: args.options.onCheckComplete
+    clock: options.clock,
+    runtime: options.runtime,
+    failFast: options.failFast,
+    onCheckComplete: options.onCheckComplete
   });
 }
 
@@ -366,13 +386,14 @@ function unsupportedScopeResult(
 }
 
 function requiredGraphFailureResult(
+  graph: ValidationGraphQuerySession,
   request: ValidationRequest,
-  graphStatus: GraphProviderStatus,
   selectedChecks: readonly ValidationCheckDefinition[],
   totalStartedAt: number,
   clock: ValidationClock
 ): ValidationResult | undefined {
-  if (request.graph.mode !== "required" || graphStatus.state === "available") return undefined;
+  const graphStatus = graph.status;
+  if (graphStatus.state === "available" || (request.graph.mode !== "required" && graph.identity.kind !== "exact")) return undefined;
   return aggregateForChecks(selectedChecks, {
     generatedAt: clock.isoNow(),
     durationMs: elapsed(totalStartedAt, clock.nowMs()),
@@ -428,7 +449,7 @@ async function executeSelectedChecks(args: ExecuteChecksArgs): Promise<CheckExec
     }
     const outcome = await runSingleCheck(check, args);
     if (outcome.providerError !== undefined) {
-      if (args.request.graph.mode === "required") {
+      if (args.request.graph.mode === "required" || args.graph.identity.kind === "exact") {
         if (outcome.run !== undefined) execution.runs.push(outcome.run);
         execution.failureResult = checkProviderFailureResult(check, args, execution, outcome.providerError);
         await emitCheckComplete(args, outcomeCheckCompleteEvent(check, outcome));
@@ -566,7 +587,7 @@ async function preloadCheckGraphRequirements(
       return graphRequirementFailureResult(check, args, execution, error);
     }
     if (error instanceof ValidationGraphProviderError) {
-      if (args.request.graph.mode === "required") {
+      if (args.request.graph.mode === "required" || args.graph.identity.kind === "exact") {
         return checkProviderFailureResult(check, args, execution, error);
       }
       return skippedGraphProviderError(check, error);
@@ -807,18 +828,42 @@ function overlayConflictResult(
 async function resolveGraphSession(
   request: ValidationRequest,
   selectedChecks: readonly ValidationCheckDefinition[],
-  options: RunnerRuntimeOptions
+  options: RunnerRuntimeOptions,
+  fileView: ValidationFileView,
+  identity: ValidationGraphQuerySession["identity"]
 ): Promise<ValidationGraphQuerySession> {
-  const factory = options.graphSessionFactory ?? createValidationGraphQuerySession;
-  const graph = await factory({ request, client: options.graphProviderClient });
-  const hasGraphRequiredChecks = selectedChecks.some((check) => check.requiresGraph === true);
-  if (hasGraphRequiredChecks && !graph.queryCapable && graph.status.state === "available") {
+  if (identity.kind === "exact" && options.graphSessionFactory === undefined) {
     return createValidationGraphQuerySession({
       request,
+      fileView,
+      identity,
+      status: missingGraphStatus(request.graph.mode, request.graph.provider ?? defaultValidationGraphProvider)
+    });
+  }
+  const factory = options.graphSessionFactory ?? createValidationGraphQuerySession;
+  const graph = await factory({ request, client: options.graphProviderClient, fileView, identity });
+  const hasGraphRequiredChecks = selectedChecks.some(checkUsesGraph);
+  if (hasGraphRequiredChecks && !graph.queryCapable && graph.status.state === "available") {
+    await graph.dispose();
+    return createValidationGraphQuerySession({
+      request,
+      fileView,
+      identity,
       status: missingGraphStatus(request.graph.mode, request.graph.provider ?? defaultValidationGraphProvider)
     });
   }
   return graph;
+}
+
+function exactGraphRequired(args: PreparedValidationArgs): boolean {
+  return (
+    (args.request.overlays.length > 0 || args.request.reportMode === "introduced") &&
+    args.selectedChecks.some(checkUsesGraph)
+  );
+}
+
+function checkUsesGraph(check: ValidationCheckDefinition): boolean {
+  return check.graphUsage === "optional" || check.graphUsage === "required" || check.requiresGraph === true;
 }
 
 function normalizeCheckResult(result: ValidationCheckResult | readonly ValidationDiagnostic[] | void): ValidationCheckResult {
