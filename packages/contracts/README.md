@@ -9,3 +9,7 @@ Public TypeScript contracts and JSON schema for Opcore package and CLI surfaces.
 ## Context Docs
 
 `requiredContextDocPolicy` is the shared `require-context-doc` policy for agent guidance filenames, required locations, and minimum content length.
+
+## Python Capability Evidence
+
+`PythonValidationCapabilityRun` (`opcore.python.validation-capability-run`, version 1) is the portable, source-free receipt for one Python capability attempt in one canonical project. Tool executable locations use `repo:`, `project:`, `path:`, or `external:` locators so host and materialization roots never enter receipts. An `invalid_config` run has no authority when conflicting evidence prevents selection; after selection it may carry unexecuted static-config evidence or exited tool evidence. `ValidationResult.pythonCapabilityRuns` retains separate project/context/after-state/authority runs through runner events, introduced mode, scan previews, and ASP evidence mapping.

@@ -462,8 +462,8 @@ function validationResult() {
       {
         category: "types",
         severity: "info",
-        code: "PYTHON_TYPES_UNSUPPORTED",
-        message: "Python type validation requires mypy or pyright; neither tool is available."
+        code: "PYTHON_TYPES_UNSUPPORTED_TARGET",
+        message: "Python type validation requires explicit or configured checker authority."
       }
     ],
     manifest: {

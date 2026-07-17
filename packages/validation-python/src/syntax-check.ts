@@ -90,7 +90,7 @@ async function compileSources(
   sources: Awaited<ReturnType<typeof readPythonAfterSources>>,
   options: PythonSyntaxCheckOptions
 ): Promise<ValidationCheckResult> {
-  const result = runTool(interpreter.executable, [...interpreter.argv.slice(1), "-I", "-B", "-c", pythonCompileScript], {
+  const result = await runTool(interpreter.executable, [...interpreter.argv.slice(1), "-I", "-B", "-c", pythonCompileScript], {
     cwd: interpreter.cwd,
     env: options.env,
     timeoutMs: options.timeoutMs ?? 10000,

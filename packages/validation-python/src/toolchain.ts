@@ -9,6 +9,7 @@ import { PYTHON_SYNTAX_CHECK_ID, PYTHON_TYPES_CHECK_ID, pythonValidationCheckIds
 import { validationPythonAdapterName } from "./check-constants.js";
 import type { PythonProjectProcessProbe } from "./environment-resolution.js";
 import type { PythonProjectWorkspace } from "./project-workspace.js";
+import { selectPythonTypeAuthority } from "./type-authority.js";
 
 export interface PythonValidationToolchainOptions {
   repoRoot?: string;
@@ -27,8 +28,7 @@ export function createPythonValidationAdapterStatus(
   options: PythonValidationToolchainOptions = {}
 ): ValidationAdapterRuntimeStatus {
   const toolchain = options.contexts === undefined ? unresolvedContextToolchain() : toolchainFromContexts(options.contexts);
-  const missing = new Set(toolchain.filter((tool) => !tool.available).map((tool) => tool.tool));
-  const degradedChecks = createPythonDegradedChecks(missing);
+  const degradedChecks = pythonTypeDegradedChecks(options.contexts);
   return {
     adapter: validationPythonAdapterName,
     status: degradedChecks.length > 0 || options.contexts?.some((context) => context.outcome !== "resolved")
@@ -41,27 +41,73 @@ export function createPythonValidationAdapterStatus(
   };
 }
 
-export function createPythonDegradedChecks(missing: ReadonlySet<string>): readonly ValidationAdapterDegradedCheckStatus[] {
-  const degraded: ValidationAdapterDegradedCheckStatus[] = [];
-  if (missing.has("mypy") && missing.has("pyright")) {
-    degraded.push({
-      checkId: PYTHON_TYPES_CHECK_ID,
-      status: "unsupported_request",
-      reason: "optional_tool_unavailable",
-      requiredTool: "mypy or pyright",
-      message: "Neither mypy nor pyright is available; Python type validation is reported as degraded instead of passing silently."
-    });
+function pythonTypeDegradedChecks(
+  contexts: readonly PythonProjectContext[] | undefined
+): readonly ValidationAdapterDegradedCheckStatus[] {
+  if (contexts === undefined) return [contextRequiredDegradation()];
+  const typeGaps = contexts.flatMap(pythonTypeGap);
+  const syntaxUnavailable = contexts.some((context) => context.interpreter === undefined);
+  return [
+    ...(typeGaps.length === 0 ? [] : [typeGapDegradation(typeGaps)]),
+    ...(syntaxUnavailable ? [syntaxToolDegradation()] : [])
+  ];
+}
+
+interface PythonTypeGap {
+  projectRoot: string;
+  reason: string;
+  requiredTool: string;
+  followUpIssue?: string;
+}
+
+function pythonTypeGap(context: PythonProjectContext): readonly PythonTypeGap[] {
+  const selection = selectPythonTypeAuthority(context);
+  if (selection.status === "invalid_config") {
+    return [{ projectRoot: context.projectRoot, reason: selection.message ?? "Python type authority configuration is invalid", requiredTool: "one non-conflicting configured authority" }];
   }
-  if (missing.has("python")) {
-    degraded.push({
-      checkId: PYTHON_SYNTAX_CHECK_ID,
-      status: "unsupported_request",
-      reason: "required_tool_unavailable",
-      requiredTool: "python",
-      message: "No compatible Python interpreter is available; python.syntax cannot compile the selected after-state."
-    });
+  if (selection.status === "unsupported_target") {
+    return [{ projectRoot: context.projectRoot, reason: selection.message ?? "Python type authority is not configured", requiredTool: "configured Python type authority" }];
   }
-  return degraded;
+  if (selection.authority === "pyright") {
+    return [{ projectRoot: context.projectRoot, reason: "Configured Pyright authority is deferred until #257", requiredTool: "pyright", followUpIssue: "#257" }];
+  }
+  if (selection.tool === undefined || !selection.tool.available) {
+    return [{ projectRoot: context.projectRoot, reason: "Configured mypy authority is unavailable", requiredTool: "mypy" }];
+  }
+  return [];
+}
+
+function typeGapDegradation(gaps: readonly PythonTypeGap[]): ValidationAdapterDegradedCheckStatus {
+  const requiredTools = [...new Set(gaps.map((gap) => gap.requiredTool))];
+  const followUps = [...new Set(gaps.flatMap((gap) => gap.followUpIssue === undefined ? [] : [gap.followUpIssue]))];
+  return {
+    checkId: PYTHON_TYPES_CHECK_ID,
+    status: "unsupported_request",
+    reason: "configured_authority_unavailable",
+    requiredTool: requiredTools.length === 1 ? requiredTools[0] : "per-project configured authority",
+    message: gaps.map((gap) => `${gap.projectRoot}: ${gap.reason}`).join("; "),
+    ...(followUps.length === 1 ? { followUpIssue: followUps[0] } : {})
+  };
+}
+
+function contextRequiredDegradation(): ValidationAdapterDegradedCheckStatus {
+  return {
+    checkId: PYTHON_TYPES_CHECK_ID,
+    status: "unsupported_request",
+    reason: "canonical_context_required",
+    requiredTool: "configured Python type authority",
+    message: "Canonical Python project contexts are required before reporting python.types authority status."
+  };
+}
+
+function syntaxToolDegradation(): ValidationAdapterDegradedCheckStatus {
+  return {
+    checkId: PYTHON_SYNTAX_CHECK_ID,
+    status: "unsupported_request",
+    reason: "required_tool_unavailable",
+    requiredTool: "python",
+    message: "No compatible canonical project interpreter is available; python.syntax cannot compile the selected after-state."
+  };
 }
 
 function toolchainFromContexts(contexts: readonly PythonProjectContext[]): readonly ValidationAdapterToolchainStatus[] {

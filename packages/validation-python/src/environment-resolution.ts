@@ -15,7 +15,7 @@ import type { PythonProjectWorkspace } from "./project-workspace.js";
 import { isSupportedPythonVersionConstraint, pythonVersionSatisfiesConstraint } from "./version-constraint.js";
 
 export interface PythonProjectProcessProbe {
-  run(command: string, args: readonly string[], options: PythonToolRunOptions): PythonToolRunResult;
+  run(command: string, args: readonly string[], options: PythonToolRunOptions): PythonToolRunResult | Promise<PythonToolRunResult>;
   resolveExecutable?(command: string, options: { env: Readonly<Record<string, string | undefined>>; platform: string }): string | undefined;
 }
 
@@ -131,7 +131,7 @@ async function resolveInterpreter(
     const command = candidate.argv[0];
     const prefix = candidate.argv.slice(1);
     const args = [...prefix, "-I", "-B", "-c", interpreterProbeScript];
-    const result = processProbe.run(command, args, {
+    const result = await processProbe.run(command, args, {
       cwd: projectCwd(options), env, timeoutMs: options.timeoutMs ?? 10000
     });
     if (!result.ok) {
@@ -232,7 +232,7 @@ async function resolveTools(
       if (!(await candidateAvailable(options.workspace, candidate.argv[0]))) continue;
       const command = candidate.argv[0];
       const prefix = candidate.argv.slice(1);
-      const result = processProbe.run(command, [...prefix, "--version"], {
+      const result = await processProbe.run(command, [...prefix, "--version"], {
         cwd: projectCwd(options), env, timeoutMs: options.timeoutMs ?? 10000
       });
       if (!result.ok) {
@@ -282,7 +282,7 @@ async function resolveTools(
     reasons.push(failure ?? { code: "tool_unavailable", tool, message: `${tool} is unavailable for ${options.projectRoot}` });
   }
   if (options.buildSystem !== undefined) {
-    tools.push(resolveBuildTool(options, processProbe, env, interpreter, reasons));
+    tools.push(await resolveBuildTool(options, processProbe, env, interpreter, reasons));
   }
   return tools.sort((left, right) => left.tool.localeCompare(right.tool));
 }
@@ -301,13 +301,13 @@ function runnableInterpreterArgv(
   return launcher === undefined ? [probedExecutable] : [launcher, ...args];
 }
 
-function resolveBuildTool(
+async function resolveBuildTool(
   options: PythonProjectEnvironmentOptions,
   processProbe: PythonProjectProcessProbe,
   env: Record<string, string | undefined>,
   interpreter: PythonInterpreterProvenance | undefined,
   reasons: PythonProjectContextReason[]
-): PythonProjectToolProvenance {
+): Promise<PythonProjectToolProvenance> {
   const buildSystem = options.buildSystem;
   if (buildSystem === undefined) throw new Error("Python build tool resolution requires build-system metadata");
   const fallbackExecutable = interpreter?.executable ?? "python";
@@ -324,7 +324,7 @@ function resolveBuildTool(
       configFile: buildSystem.configFile
     };
   }
-  const result = processProbe.run(interpreter.executable, [...interpreter.argv.slice(1), "-I", "-B", "-c", buildProbeScript], {
+  const result = await processProbe.run(interpreter.executable, [...interpreter.argv.slice(1), "-I", "-B", "-c", buildProbeScript], {
     cwd: interpreter.cwd,
     env,
     timeoutMs: options.timeoutMs ?? 10000

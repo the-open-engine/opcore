@@ -1,4 +1,4 @@
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync, type ChildProcessWithoutNullStreams } from "node:child_process";
 
 const defaultMaxOutputBytes = 1024 * 1024;
 
@@ -53,72 +53,176 @@ export interface PythonToolRunOptions {
   maxOutputBytes?: number;
 }
 
-export function runTool(
+interface ProcessCapture {
+  stdout: string;
+  stderr: string;
+  inputFailure?: string;
+  outputFailure?: string;
+  spawnFailure?: string;
+  timedOut: boolean;
+}
+
+interface ProcessIdentity {
+  command: string;
+  args: readonly string[];
+  cwd: string;
+  allowedExitCodes: readonly number[];
+}
+
+export async function runTool(
   command: string,
   args: readonly string[] = [],
   options: PythonToolRunOptions = {}
-): PythonToolRunResult {
+): Promise<PythonToolRunResult> {
   const cwd = options.cwd ?? process.cwd();
   const allowedExitCodes = uniqueExitCodes(options.allowedExitCodes ?? [0]);
-  const result = spawnSync(command, args, {
-    cwd,
-    env: options.env,
-    encoding: "utf8",
-    stdio: [options.input !== undefined ? "pipe" : "ignore", "pipe", "pipe"],
-    timeout: options.timeoutMs ?? 10000,
-    maxBuffer: options.maxOutputBytes ?? defaultMaxOutputBytes,
-    input: options.input
-  });
-  const base = {
-    command,
-    args: [...args],
-    cwd,
-    allowedExitCodes,
-    exitCode: result.status,
-    signal: result.signal,
-    stdout: result.stdout ?? "",
-    stderr: result.stderr ?? ""
-  };
+  const identity = { command, args, cwd, allowedExitCodes };
+  const capture: ProcessCapture = { stdout: "", stderr: "", timedOut: false };
+  let child: ChildProcessWithoutNullStreams;
+  try {
+    child = spawn(command, args, {
+      cwd,
+      env: options.env,
+      detached: process.platform !== "win32",
+      stdio: ["pipe", "pipe", "pipe"],
+      windowsHide: true
+    });
+  } catch (error) {
+    return spawnFailure(identity, errorMessage(error));
+  }
+  captureProcessOutput(child, capture, options.maxOutputBytes ?? defaultMaxOutputBytes);
+  const timeoutMs = options.timeoutMs ?? 10000;
+  const completionPromise = waitForProcess(child, capture, timeoutMs);
+  writeProcessInput(child, options.input, capture);
+  const completion = await completionPromise;
+  const base = processBase(identity, completion, capture);
+  return classifyProcessResult(base, capture, timeoutMs);
+}
 
-  if (isTimeoutError(result.error)) {
-    return {
-      ...base,
-      termination: "timeout",
-      ok: false,
-      failureMessage: `${command} timed out after ${options.timeoutMs ?? 10000}ms`
-    };
+function waitForProcess(
+  child: ChildProcessWithoutNullStreams,
+  capture: ProcessCapture,
+  timeoutMs: number
+): Promise<{ code: number | null; signal: NodeJS.Signals | null }> {
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => {
+      capture.timedOut = true;
+      terminateProcessTree(child);
+    }, timeoutMs);
+    child.once("error", (error) => {
+      capture.spawnFailure = errorMessage(error);
+      terminateProcessTree(child);
+    });
+    child.once("exit", () => {
+      clearTimeout(timer);
+      terminateProcessTree(child);
+    });
+    child.once("close", (code, signal) => {
+      clearTimeout(timer);
+      resolve({ code, signal });
+    });
+  });
+}
+
+function captureProcessOutput(child: ChildProcessWithoutNullStreams, capture: ProcessCapture, limit: number): void {
+  let bytes = 0;
+  const append = (stream: "stdout" | "stderr", chunk: Buffer): void => {
+    bytes += chunk.byteLength;
+    if (bytes > limit) {
+      capture.outputFailure ??= `Python tool output exceeded ${limit} bytes`;
+      terminateProcessTree(child);
+      return;
+    }
+    capture[stream] += chunk.toString("utf8");
+  };
+  child.stdout.on("data", (chunk: Buffer) => append("stdout", chunk));
+  child.stderr.on("data", (chunk: Buffer) => append("stderr", chunk));
+}
+
+function writeProcessInput(
+  child: ChildProcessWithoutNullStreams,
+  input: string | undefined,
+  capture: ProcessCapture
+): void {
+  child.stdin.on("error", (error) => {
+    if (input === undefined) return;
+    capture.inputFailure ??= `Python tool stdin write failed: ${errorMessage(error)}`;
+    terminateProcessTree(child);
+  });
+  if (input !== undefined) child.stdin.write(input, "utf8");
+  child.stdin.end();
+}
+
+function terminateProcessTree(child: ChildProcessWithoutNullStreams): void {
+  const pid = child.pid;
+  if (pid === undefined) return;
+  if (process.platform === "win32") {
+    spawnSync("taskkill", ["/pid", String(pid), "/t", "/f"], { stdio: "ignore", timeout: 1000 });
+    child.kill("SIGKILL");
+    return;
   }
-  if (result.signal !== null) {
-    return {
-      ...base,
-      termination: "signal",
-      ok: false,
-      signal: result.signal,
-      failureMessage: `${command} terminated with signal ${result.signal}`
-    };
+  try {
+    process.kill(-pid, "SIGKILL");
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "ESRCH") child.kill("SIGKILL");
   }
-  if (result.error !== undefined || result.status === null) {
-    return {
-      ...base,
-      termination: "spawn_error",
-      ok: false,
-      failureMessage: result.error?.message ?? `${command} did not report an exit status`
-    };
-  }
+}
+
+function processBase(
+  identity: ProcessIdentity,
+  completion: { code: number | null; signal: NodeJS.Signals | null },
+  capture: ProcessCapture
+): PythonToolRunBase {
   return {
-    ...base,
-    termination: "exited",
-    ok: allowedExitCodes.includes(result.status),
-    exitCode: result.status,
-    signal: null,
-    ...(allowedExitCodes.includes(result.status)
-      ? {}
-      : { failureMessage: `${command} exited with code ${result.status}; expected ${allowedExitCodes.join(" or ")}` })
+    command: identity.command,
+    args: [...identity.args],
+    cwd: identity.cwd,
+    allowedExitCodes: identity.allowedExitCodes,
+    exitCode: completion.code,
+    signal: completion.signal,
+    stdout: capture.stdout,
+    stderr: capture.stderr
   };
 }
 
-function isTimeoutError(error: Error | undefined): boolean {
-  return (error as (Error & { code?: string }) | undefined)?.code === "ETIMEDOUT";
+function classifyProcessResult(
+  base: PythonToolRunBase,
+  capture: ProcessCapture,
+  timeoutMs: number
+): PythonToolRunResult {
+  if (capture.timedOut) return { ...base, termination: "timeout", ok: false, failureMessage: `${base.command} timed out after ${timeoutMs}ms` };
+  const failure = capture.spawnFailure ?? capture.inputFailure ?? capture.outputFailure;
+  if (failure !== undefined || base.exitCode === null && base.signal === null) {
+    return { ...base, termination: "spawn_error", ok: false, failureMessage: failure ?? `${base.command} did not report an exit status` };
+  }
+  if (base.signal !== null) {
+    return { ...base, termination: "signal", ok: false, signal: base.signal, failureMessage: `${base.command} terminated with signal ${base.signal}` };
+  }
+  const exitCode = base.exitCode as number;
+  const ok = base.allowedExitCodes.includes(exitCode);
+  return {
+    ...base,
+    termination: "exited",
+    ok,
+    exitCode,
+    signal: null,
+    ...(ok ? {} : { failureMessage: `${base.command} exited with code ${exitCode}; expected ${base.allowedExitCodes.join(" or ")}` })
+  };
+}
+
+function spawnFailure(
+  identity: ProcessIdentity,
+  failureMessage: string
+): PythonToolSpawnErrorResult {
+  return {
+    command: identity.command, args: [...identity.args], cwd: identity.cwd,
+    allowedExitCodes: identity.allowedExitCodes, exitCode: null, signal: null,
+    stdout: "", stderr: "", termination: "spawn_error", ok: false, failureMessage
+  };
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }
 
 function uniqueExitCodes(exitCodes: readonly number[]): readonly number[] {

@@ -194,6 +194,41 @@ function pythonProjectContextWith(overrides = {}) {
   };
 }
 
+function pythonCapabilityRunWith(overrides = {}) {
+  return {
+    schemaId: "opcore.python.validation-capability-run",
+    schemaVersion: 1,
+    capability: "types",
+    checkId: "python.types",
+    projectKey: `sha256:${"1".repeat(64)}`,
+    contextFingerprint: `sha256:${"2".repeat(64)}`,
+    projectRoot: "services/api",
+    targets: ["services/api/src/app.py"],
+    selectedSourcePaths: ["services/api/src/app.py"],
+    selectedConfigPaths: ["services/api/pyproject.toml"],
+    afterStateManifestFingerprint: `sha256:${"3".repeat(64)}`,
+    authority: "mypy",
+    authoritySource: "project_config",
+    status: "passed",
+    tool: {
+      name: "mypy",
+      executable: "repo:services/api/.venv/bin/mypy",
+      argv: ["repo:services/api/.venv/bin/mypy", "--output=json", "src/app.py"],
+      cwd: "services/api",
+      source: "project_local_environment",
+      version: "2.3.0",
+      configFile: "services/api/pyproject.toml"
+    },
+    execution: { termination: "exited", exitCode: 0 },
+    durationMs: 12,
+    diagnosticCount: 0,
+    errorCount: 0,
+    warningCount: 0,
+    noteCount: 0,
+    ...overrides
+  };
+}
+
 function preWriteValidationReceiptWith(overrides = {}) {
   return {
     schemaVersion: 1,
@@ -861,6 +896,65 @@ describe("Opcore JSON schema wire constraints", () => {
     assert.equal(isValidDefinition("PythonProjectContext", {
       ...context,
       buildSystem: { ...context.buildSystem, requires: [""] }
+    }), false);
+  });
+
+  it("validates Python capability-run wire evidence", () => {
+    const run = pythonCapabilityRunWith();
+    assert.equal(isValidDefinition("PythonValidationCapabilityRun", run), true);
+    assert.equal(isValidDefinition("ValidationResult", validationResultWith({ pythonCapabilityRuns: [run] })), true);
+    const executedInvalidConfig = {
+      ...run,
+      status: "invalid_config",
+      diagnosticCount: 1,
+      errorCount: 1,
+      execution: { termination: "exited", exitCode: 0, failureSummary: "mypy rejected selected configuration: mypy.ini" }
+    };
+    assert.equal(isValidDefinition("PythonValidationCapabilityRun", executedInvalidConfig), true);
+    assert.equal(isValidDefinition("PythonValidationCapabilityRun", {
+      ...run,
+      tool: {
+        ...run.tool,
+        executable: "/var/folders/private/opcore-python-types-workspace-secret/bin/mypy",
+        argv: ["/var/folders/private/opcore-python-types-workspace-secret/bin/mypy", "--output=json", "src/app.py"]
+      }
+    }), false);
+    const authorityConflict = { ...run, status: "invalid_config", diagnosticCount: 1, noteCount: 1 };
+    delete authorityConflict.authority;
+    delete authorityConflict.authoritySource;
+    delete authorityConflict.tool;
+    delete authorityConflict.execution;
+    assert.equal(isValidDefinition("PythonValidationCapabilityRun", authorityConflict), true);
+    assert.equal(isValidDefinition("PythonValidationCapabilityRun", { ...run, authority: "pytest" }), false);
+    assert.equal(isValidDefinition("PythonValidationCapabilityRun", { ...run, content: "source text" }), false);
+    assert.equal(isValidDefinition("PythonValidationCapabilityRun", {
+      ...run,
+      tool: { ...run.tool, name: "pyright" }
+    }), false);
+    assert.equal(isValidDefinition("PythonValidationCapabilityRun", {
+      ...run,
+      tool: { ...run.tool, version: "latest" }
+    }), false);
+    assert.equal(isValidDefinition("PythonValidationCapabilityRun", {
+      ...run,
+      status: "timeout",
+      execution: { termination: "signal", signal: "SIGTERM", failureSummary: "terminated" }
+    }), false);
+    assert.equal(isValidDefinition("PythonValidationCapabilityRun", {
+      ...run,
+      status: "tool_failure",
+      execution: { termination: "exited", exitCode: 2 }
+    }), false);
+    assert.equal(isValidDefinition("PythonValidationCapabilityRun", {
+      ...executedInvalidConfig,
+      execution: { termination: "exited", exitCode: 0 }
+    }), false);
+    assert.equal(isValidDefinition("PythonValidationCapabilityRun", {
+      ...run,
+      status: "findings",
+      diagnosticCount: 1,
+      errorCount: 1,
+      execution: { termination: "exited", exitCode: 0 }
     }), false);
   });
 

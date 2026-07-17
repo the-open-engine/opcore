@@ -650,6 +650,24 @@ async function evaluateInstalledAspPythonContext(project) {
       entry.kind === "python_project_context" && entry.data?.target === "services/api/src/app.py"
     );
     assert.ok(evidence, JSON.stringify(assessment, null, 2));
+    const typesAssessment = await peer.request("check/evaluate", {
+      callSite: "interactive",
+      changeset: host.changeset([
+        host.modify("services/api/src/app.py", files["services/api/src/app.py"])
+      ]),
+      comparison: "all",
+      checks: ["python.types"]
+    });
+    const capabilityEvidence = typesAssessment.evidence?.find(
+      (entry) => entry.kind === "python_validation_capability_run"
+    );
+    assert.ok(capabilityEvidence, JSON.stringify(typesAssessment, null, 2));
+    assert.equal(capabilityEvidence.data.schemaId, "opcore.python.validation-capability-run");
+    assert.equal(capabilityEvidence.data.status, "unsupported_target");
+    assert.equal(Object.hasOwn(capabilityEvidence.data, "checker"), false);
+    assert.equal(Object.hasOwn(capabilityEvidence.data, "checkerSource"), false);
+    assert.equal(Object.hasOwn(capabilityEvidence.data, "authority"), false);
+    assert.equal(JSON.stringify(capabilityEvidence).includes(files["services/api/src/app.py"]), false);
     return evidence.data;
   } finally {
     peer.close();

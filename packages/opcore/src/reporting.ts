@@ -1009,17 +1009,16 @@ function addValidationDegradations(
         checkId: pythonDeadCodeCheckId
       });
     }
-    if (diagnostic.code === "PYTHON_TYPES_UNSUPPORTED" || diagnostic.code === "PYTHON_TYPES_DEFERRED") {
+    if (isPythonTypeAvailabilityDiagnostic(diagnostic)) {
+      const deferred = diagnostic.code === "PYTHON_TYPES_PYRIGHT_UNSUPPORTED";
       degradations.push({
-        id: diagnostic.code === "PYTHON_TYPES_UNSUPPORTED" ? "python.types.unavailable" : "python.types.deferred",
-        title: diagnostic.code === "PYTHON_TYPES_UNSUPPORTED"
-          ? "Python type metric unavailable"
-          : "Python type metric deferred",
+        id: deferred ? "python.types.deferred" : "python.types.unavailable",
+        title: deferred ? "Python type metric deferred" : "Python type metric unavailable",
         source: "validation_diagnostic",
         severity: "warning",
         message: diagnostic.message,
         checkId: pythonTypesCheckId,
-        requiredTool: "mypy or pyright"
+        requiredTool: deferred ? "pyright" : "configured Python type authority"
       });
     }
   }
@@ -1148,7 +1147,13 @@ function isRustToolchainDiagnostic(diagnostic: ValidationDiagnostic): boolean {
 
 function isPythonTypeSignalDiagnostic(diagnostic: ValidationDiagnostic): boolean {
   if (diagnostic.category !== "types" || !isPythonPath(diagnostic.path)) return false;
-  return diagnostic.code !== "PYTHON_TYPES_UNSUPPORTED" && diagnostic.code !== "PYTHON_TYPES_DEFERRED";
+  return !isPythonTypeAvailabilityDiagnostic(diagnostic);
+}
+
+function isPythonTypeAvailabilityDiagnostic(diagnostic: ValidationDiagnostic): boolean {
+  return diagnostic.code === "PYTHON_TYPES_UNSUPPORTED_TARGET" ||
+    diagnostic.code === "PYTHON_TYPES_PYRIGHT_UNSUPPORTED" ||
+    diagnostic.code === "PYTHON_TYPES_TOOL_UNAVAILABLE";
 }
 
 function graphBackedCheckId(checkId: string): boolean {

@@ -92,7 +92,7 @@ For Python-only validation in the same scan, check, measure loop:
 opcore check --changed --checks python.syntax,python.source-hygiene --json
 ```
 
-`python.types` is optional-tool evidence; missing mypy or pyright is reported as degraded instead of inventing a finding.
+`python.types` is configured-authority evidence. Configured mypy runs per project; configured Pyright is deferred until #257; absent, conflicting, or unavailable authority is degraded instead of inventing a finding.
 
 ## Read Deltas
 
@@ -108,5 +108,5 @@ Coverage:
 Signals:
   typescript.type_errors: 2 baseline=-1 previous=+0
   python-measure-delta: python.dead-code previous=-1 baseline=+0
-  python.types: degraded requiredTool=mypy|pyright
+  python.types: degraded requiredTool=configured-authority
 ```
