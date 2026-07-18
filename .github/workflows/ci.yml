@@ -74,7 +74,7 @@ jobs:
         run: python -m pip install --disable-pip-version-check mypy==2.3.0
 
       - name: Install authoritative Pyright
-        run: npm install --no-save --package-lock=false --ignore-scripts pyright@1.1.411
+        run: npm install --prefix "${RUNNER_TEMP}/opcore-pyright" --no-package-lock --ignore-scripts pyright@1.1.411
 
       - name: Check
         run: npm run ci
@@ -87,7 +87,7 @@ jobs:
       - name: Prove authoritative Pyright after-state execution
         run: npm run python:pyright-authority-proof
         env:
-          OPCORE_REAL_PYRIGHT: ${{ github.workspace }}/node_modules/.bin/pyright
+          OPCORE_REAL_PYRIGHT: ${{ runner.temp }}/opcore-pyright/node_modules/.bin/pyright
 
   native-artifact:
     name: native-artifact (${{ matrix.target }})
