@@ -48,6 +48,7 @@ const bundledExternalRuntimePackages = [
   "@typescript-eslint/visitor-keys",
   "balanced-match",
   "brace-expansion",
+  "concat-map",
   "code-block-writer",
   "debug",
   "eslint-visitor-keys",
