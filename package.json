@@ -1,6 +1,6 @@
 {
   "name": "opcore",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "description": "Local code intelligence, safe edits, and pre-write validation for coding agents.",
   "type": "module",
@@ -43,6 +43,9 @@
     "lint": "node scripts/check-workspace.mjs",
     "pack:check": "node scripts/check-packages.mjs",
     "provenance:check": "node scripts/check-provenance.mjs",
+    "python:resolver-matrix": "node scripts/check-python-resolver-matrix.mjs",
+    "python:mypy-authority-proof": "node scripts/check-python-mypy-authority.mjs",
+    "python:pyright-authority-proof": "node scripts/check-python-pyright-authority.mjs",
     "release:hygiene": "node scripts/check-release-hygiene.mjs",
     "rust:check": "npm run rust:fmt && npm run rust:clippy && npm run rust:test",
     "rust:clippy": "cargo clippy --all-targets --all-features -- -D warnings",

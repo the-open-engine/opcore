@@ -2383,6 +2383,389 @@
         }
       }
     },
+    "PythonProjectContext": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaId", "schemaVersion", "target", "repositoryRoot", "projectRoot", "projectBoundary",
+        "sourceRoots", "layout", "evidence", "targetRuntime", "managers", "tools", "projectKey",
+        "contextFingerprint", "outcome", "reasons"
+      ],
+      "properties": {
+        "schemaId": { "const": "opcore.python.project-context.v1" },
+        "schemaVersion": { "const": 1 },
+        "target": { "allOf": [{ "$ref": "#/$defs/RepoRelativePath" }, { "pattern": "\\.pyi?$" }] },
+        "repositoryRoot": { "type": "string", "minLength": 1 },
+        "projectRoot": { "$ref": "#/$defs/PythonProjectRoot" },
+        "projectBoundary": { "$ref": "#/$defs/PythonProjectRoot" },
+        "sourceRoots": {
+          "type": "array", "minItems": 1, "uniqueItems": true,
+          "items": { "$ref": "#/$defs/PythonProjectRoot" }
+        },
+        "layout": {
+          "type": "object", "additionalProperties": false, "required": ["kinds", "paths"],
+          "properties": {
+            "kinds": {
+              "type": "array", "minItems": 1, "uniqueItems": true,
+              "items": { "enum": ["flat", "src", "namespace", "stub", "package"] }
+            },
+            "paths": {
+              "type": "array", "minItems": 1, "uniqueItems": true,
+              "items": { "$ref": "#/$defs/PythonProjectRoot" }
+            }
+          }
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "type": "object", "additionalProperties": false, "required": ["path", "role"],
+            "properties": {
+              "path": { "$ref": "#/$defs/RepoRelativePath" },
+              "role": { "enum": ["boundary", "config", "lock", "requirements", "build", "layout"] }
+            }
+          }
+        },
+        "targetRuntime": {
+          "type": "object", "additionalProperties": false, "required": ["conflicts"],
+          "properties": {
+            "requiresPython": { "type": "string", "minLength": 1 },
+            "version": { "type": "string", "minLength": 1 },
+            "platform": { "type": "string", "minLength": 1 },
+            "implementation": { "type": "string", "minLength": 1 },
+            "conflicts": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+          }
+        },
+        "managers": {
+          "type": "array",
+          "items": {
+            "type": "object", "additionalProperties": false, "required": ["kind", "configFiles", "lockFiles"],
+            "properties": {
+              "kind": { "enum": ["pip", "uv", "poetry", "pdm", "pipenv"] },
+              "configFiles": { "type": "array", "items": { "$ref": "#/$defs/RepoRelativePath" } },
+              "lockFiles": { "type": "array", "items": { "$ref": "#/$defs/RepoRelativePath" } }
+            }
+          }
+        },
+        "buildSystem": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["configFile", "requires"],
+          "properties": {
+            "configFile": { "$ref": "#/$defs/RepoRelativePath" },
+            "backend": { "type": "string", "minLength": 1 },
+            "requires": {
+              "type": "array",
+              "items": { "type": "string", "minLength": 1 }
+            }
+          }
+        },
+        "interpreter": { "$ref": "#/$defs/PythonInterpreterProvenance" },
+        "tools": {
+          "type": "array",
+          "items": {
+            "allOf": [
+              { "$ref": "#/$defs/PythonExecutableProvenance" },
+              {
+                "type": "object", "required": ["tool", "available"],
+                "properties": {
+                  "tool": { "enum": ["mypy", "pyright", "ruff", "pytest", "build"] },
+                  "available": { "type": "boolean" }
+                }
+              },
+              {
+                "if": { "properties": { "available": { "const": true } }, "required": ["available"] },
+                "then": { "required": ["version"] }
+              }
+            ]
+          }
+        },
+        "projectKey": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+        "contextFingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+        "outcome": { "enum": ["resolved", "degraded", "unsupported", "ambiguous"] },
+        "reasons": {
+          "type": "array",
+          "items": {
+            "type": "object", "additionalProperties": false, "required": ["code", "message"],
+            "properties": {
+              "code": {
+                "enum": [
+                  "missing_config", "invalid_config", "conflicting_managers", "conflicting_targets",
+                  "interpreter_unavailable", "tool_unavailable", "probe_timeout", "probe_signal",
+                  "probe_spawn_failure", "probe_exit_failure", "malformed_probe_output", "unsupported_target",
+                  "unsupported_platform", "path_refused", "symlink_refused", "incompatible_interpreter", "ambiguous_path"
+                ]
+              },
+              "message": { "type": "string", "minLength": 1 },
+              "path": { "$ref": "#/$defs/RepoRelativePath" },
+              "tool": { "type": "string", "minLength": 1 }
+            }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "outcome": { "const": "resolved" } }, "required": ["outcome"] },
+          "then": { "properties": { "reasons": { "maxItems": 0 } } },
+          "else": { "properties": { "reasons": { "minItems": 1 } } }
+        }
+      ]
+    },
+    "PythonProjectRoot": {
+      "anyOf": [{ "const": "." }, { "$ref": "#/$defs/RepoRelativePath" }]
+    },
+    "PythonExecutableProvenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["executable", "argv", "cwd", "source"],
+      "properties": {
+        "executable": { "type": "string", "minLength": 1 },
+        "argv": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } },
+        "cwd": { "type": "string", "minLength": 1 },
+        "source": { "enum": ["explicit_override", "active_environment", "project_local_environment", "manager_environment", "path"] },
+        "version": { "type": "string", "pattern": "^[0-9]+(?:\\.[0-9]+)+(?:[-+._A-Za-z0-9]*)?$" },
+        "configFile": { "$ref": "#/$defs/RepoRelativePath" },
+        "tool": { "enum": ["mypy", "pyright", "ruff", "pytest", "build"] },
+        "available": { "type": "boolean" },
+        "implementation": { "type": "string", "minLength": 1 },
+        "platform": { "type": "string", "minLength": 1 },
+        "architecture": { "type": "string", "minLength": 1 },
+        "abi": { "type": "string", "minLength": 1 },
+        "soabi": { "type": "string", "minLength": 1 }
+      }
+    },
+    "PythonInterpreterProvenance": {
+      "allOf": [
+        { "$ref": "#/$defs/PythonExecutableProvenance" },
+        {
+          "type": "object",
+          "required": ["version", "implementation", "platform", "architecture", "abi", "soabi"],
+          "properties": {
+            "version": {
+              "type": "string",
+              "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:(?:a|b|rc)[0-9]+)?(?:\\+[A-Za-z0-9]+(?:[._-][A-Za-z0-9]+)*)?$"
+            }
+          }
+        }
+      ]
+    },
+    "PythonValidationCapabilityRun": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaId", "schemaVersion", "capability", "checkId", "projectKey", "contextFingerprint",
+        "projectRoot", "targets", "selectedSourcePaths", "selectedConfigPaths", "afterStateManifestFingerprint",
+        "status", "durationMs", "diagnosticCount", "errorCount",
+        "warningCount", "noteCount"
+      ],
+      "properties": {
+        "schemaId": { "const": "opcore.python.validation-capability-run" },
+        "schemaVersion": { "const": 1 },
+        "capability": { "const": "types" },
+        "checkId": { "const": "python.types" },
+        "projectKey": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+        "contextFingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+        "projectRoot": { "$ref": "#/$defs/PythonProjectRoot" },
+        "targets": {
+          "type": "array", "minItems": 1, "uniqueItems": true,
+          "items": { "allOf": [{ "$ref": "#/$defs/RepoRelativePath" }, { "pattern": "\\.pyi?$" }] }
+        },
+        "selectedSourcePaths": {
+          "type": "array", "minItems": 1, "uniqueItems": true,
+          "items": { "allOf": [{ "$ref": "#/$defs/RepoRelativePath" }, { "pattern": "\\.pyi?$" }] }
+        },
+        "selectedConfigPaths": {
+          "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/RepoRelativePath" }
+        },
+        "afterStateManifestFingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+        "authority": { "enum": ["mypy", "pyright"] },
+        "authoritySource": { "enum": ["explicit", "project_config"] },
+        "status": {
+          "enum": ["passed", "findings", "tool_unavailable", "invalid_config", "timeout", "unsupported_target", "tool_failure"]
+        },
+        "tool": {
+          "type": "object", "additionalProperties": false,
+          "required": ["name", "executable", "argv", "cwd", "source"],
+          "properties": {
+            "name": { "enum": ["mypy", "pyright"] },
+            "executable": {
+              "type": "string",
+              "pattern": "^(?:(?:repo|project):(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._+@-]+(?:/[A-Za-z0-9._+@-]+)*|(?:path|external):[A-Za-z0-9_.+-]+)$"
+            },
+            "argv": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "^(?!(?:/|\\\\|[A-Za-z]:[\\\\/]))(?!.*[\\s(\\\"'=](?:/|\\\\|[A-Za-z]:[\\\\/]))(?!.*file://).+$"
+              }
+            },
+            "cwd": { "$ref": "#/$defs/PythonProjectRoot" },
+            "source": { "enum": ["explicit_override", "active_environment", "project_local_environment", "manager_environment", "path"] },
+            "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9][-+._A-Za-z0-9]*$" },
+            "configFile": { "$ref": "#/$defs/RepoRelativePath" }
+          }
+        },
+        "execution": {
+          "type": "object", "additionalProperties": false, "required": ["termination"],
+          "properties": {
+            "termination": { "enum": ["exited", "timeout", "signal", "spawn_error"] },
+            "exitCode": { "type": "integer", "minimum": 0 },
+            "signal": { "type": "string", "minLength": 1 },
+            "failureSummary": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1024,
+              "pattern": "^(?!(?:/|\\\\|[A-Za-z]:[\\\\/]))(?!.*[\\s(\\\"'=](?:/|\\\\|[A-Za-z]:[\\\\/]))(?!.*file://).+$"
+            }
+          },
+          "allOf": [
+            {
+              "if": { "properties": { "termination": { "const": "exited" } }, "required": ["termination"] },
+              "then": { "required": ["exitCode"] },
+              "else": { "not": { "required": ["exitCode"] } }
+            },
+            {
+              "if": { "properties": { "termination": { "const": "signal" } }, "required": ["termination"] },
+              "then": { "required": ["signal"] },
+              "else": { "not": { "required": ["signal"] } }
+            },
+            {
+              "if": { "properties": { "termination": { "enum": ["timeout", "signal", "spawn_error"] } }, "required": ["termination"] },
+              "then": { "required": ["failureSummary"] }
+            }
+          ]
+        },
+        "durationMs": { "type": "integer", "minimum": 0 },
+        "diagnosticCount": { "type": "integer", "minimum": 0 },
+        "errorCount": { "type": "integer", "minimum": 0 },
+        "warningCount": { "type": "integer", "minimum": 0 },
+        "noteCount": { "type": "integer", "minimum": 0 }
+      },
+      "allOf": [
+        {
+          "if": { "required": ["authority"] },
+          "then": { "required": ["authoritySource"] }
+        },
+        {
+          "if": { "required": ["authoritySource"] },
+          "then": { "required": ["authority"] }
+        },
+        {
+          "if": { "required": ["tool"] },
+          "then": { "required": ["authority", "authoritySource"] }
+        },
+        {
+          "if": {
+            "properties": { "status": { "enum": ["invalid_config", "unsupported_target"] } },
+            "required": ["status"]
+          },
+          "else": { "required": ["authority", "authoritySource"] }
+        },
+        {
+          "if": { "properties": { "status": { "enum": ["passed", "findings"] } }, "required": ["status"] },
+          "then": { "required": ["tool", "execution"] }
+        },
+        {
+          "if": { "properties": { "status": { "const": "timeout" } }, "required": ["status"] },
+          "then": {
+            "required": ["tool", "execution"],
+            "properties": {
+              "execution": {
+                "properties": { "termination": { "const": "timeout" } },
+                "required": ["termination", "failureSummary"]
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "status": { "const": "passed" } }, "required": ["status"] },
+          "then": {
+            "properties": {
+              "errorCount": { "const": 0 },
+              "execution": {
+                "properties": { "termination": { "const": "exited" }, "exitCode": { "const": 0 } },
+                "required": ["termination", "exitCode"]
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "status": { "const": "findings" } }, "required": ["status"] },
+          "then": {
+            "anyOf": [
+              { "properties": { "errorCount": { "minimum": 1 } }, "required": ["errorCount"] },
+              { "properties": { "warningCount": { "minimum": 1 } }, "required": ["warningCount"] }
+            ],
+            "properties": {
+              "diagnosticCount": { "minimum": 1 },
+              "execution": {
+                "properties": { "termination": { "const": "exited" }, "exitCode": { "const": 1 } },
+                "required": ["termination", "exitCode"]
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "status": { "const": "unsupported_target" } }, "required": ["status"] },
+          "then": { "not": { "required": ["execution"] } }
+        },
+        {
+          "if": { "properties": { "status": { "const": "invalid_config" } }, "required": ["status"] },
+          "then": {
+            "anyOf": [
+              {
+                "not": {
+                  "anyOf": [
+                    { "required": ["authority"] },
+                    { "required": ["authoritySource"] },
+                    { "required": ["tool"] },
+                    { "required": ["execution"] }
+                  ]
+                }
+              },
+              {
+                "required": ["authority", "authoritySource"],
+                "not": { "required": ["execution"] }
+              },
+              {
+                "required": ["authority", "authoritySource", "tool", "execution"],
+                "properties": {
+                  "execution": {
+                    "properties": { "termination": { "const": "exited" } },
+                    "required": ["termination", "exitCode", "failureSummary"]
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "if": { "properties": { "status": { "const": "tool_unavailable" } }, "required": ["status"] },
+          "then": { "required": ["tool"], "not": { "required": ["execution"] } }
+        },
+        {
+          "if": { "properties": { "status": { "const": "tool_failure" } }, "required": ["status"] },
+          "then": {
+            "required": ["tool", "execution"],
+            "properties": {
+              "execution": {
+                "properties": { "termination": { "enum": ["exited", "signal", "spawn_error"] } },
+                "required": ["termination", "failureSummary"]
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "authority": { "const": "mypy" } }, "required": ["authority", "tool"] },
+          "then": { "properties": { "tool": { "properties": { "name": { "const": "mypy" } } } } }
+        },
+        {
+          "if": { "properties": { "authority": { "const": "pyright" } }, "required": ["authority", "tool"] },
+          "then": { "properties": { "tool": { "properties": { "name": { "const": "pyright" } } } } }
+        }
+      ]
+    },
     "ValidationResult": {
       "type": "object",
       "additionalProperties": false,
@@ -2411,6 +2794,7 @@
           "type": "array",
           "items": {
             "type": "object",
+            "additionalProperties": false,
             "required": [
               "category",
               "message",
@@ -2447,12 +2831,91 @@
               "code": {
                 "type": "string",
                 "minLength": 1
+              },
+              "line": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "column": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "endLine": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "endColumn": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "tool": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "name",
+                  "command"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "command": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "version": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "source": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "cwd": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
               }
-            }
+            },
+            "allOf": [
+              {
+                "if": {
+                  "required": ["column"]
+                },
+                "then": {
+                  "required": ["line"]
+                }
+              },
+              {
+                "if": {
+                  "anyOf": [
+                    { "required": ["endLine"] },
+                    { "required": ["endColumn"] }
+                  ]
+                },
+                "then": {
+                  "required": ["line"]
+                }
+              },
+              {
+                "if": {
+                  "required": ["endColumn"]
+                },
+                "then": {
+                  "required": ["endLine"]
+                }
+              }
+            ]
           }
         },
         "graphStatus": {
           "$ref": "#/$defs/GraphProviderStatus"
+        },
+        "pythonCapabilityRuns": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/PythonValidationCapabilityRun" }
         },
         "failure": {
           "type": "object",
@@ -2514,6 +2977,10 @@
               "$ref": "#/$defs/RepoRelativePath"
             }
           }
+        },
+        "pythonProjectContexts": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/PythonProjectContext" }
         },
         "manifest": {
           "type": "object",
@@ -2617,6 +3084,17 @@
                       "skipped"
                     ]
                   },
+                  "outcome": {
+                    "enum": [
+                      "passed",
+                      "findings",
+                      "tool_unavailable",
+                      "invalid_config",
+                      "timeout",
+                      "unsupported_target",
+                      "tool_failure"
+                    ]
+                  },
                   "durationMs": {
                     "type": "number",
                     "minimum": 0
@@ -2648,6 +3126,38 @@
                         "failureMessage"
                       ]
                     }
+                  },
+                  {
+                    "if": {
+                      "properties": { "outcome": { "const": "passed" } },
+                      "required": ["outcome"]
+                    },
+                    "then": { "properties": { "status": { "const": "passed" } } }
+                  },
+                  {
+                    "if": {
+                      "properties": { "outcome": { "const": "findings" } },
+                      "required": ["outcome"]
+                    },
+                    "then": { "properties": { "status": { "const": "policy_failure" } } }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "outcome": {
+                          "enum": ["tool_unavailable", "invalid_config", "unsupported_target"]
+                        }
+                      },
+                      "required": ["outcome"]
+                    },
+                    "then": { "properties": { "status": { "const": "unsupported_request" } } }
+                  },
+                  {
+                    "if": {
+                      "properties": { "outcome": { "enum": ["timeout", "tool_failure"] } },
+                      "required": ["outcome"]
+                    },
+                    "then": { "properties": { "status": { "const": "infrastructure_failure" } } }
                   }
                 ]
               }
@@ -4209,6 +4719,7 @@
                 "graphModes",
                 "hypothetical",
                 "statusSurfaces",
+                "pythonProjectContext",
                 "writeGate",
                 "checkIds"
               ],
@@ -4395,6 +4906,47 @@
                       "status",
                       "doctor"
                     ]
+                  }
+                },
+                "pythonProjectContext": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "schemaId",
+                    "outcomes",
+                    "readOnly",
+                    "installs"
+                  ],
+                  "properties": {
+                    "schemaId": {
+                      "const": "opcore.python.project-context.v1"
+                    },
+                    "outcomes": {
+                      "type": "array",
+                      "minItems": 4,
+                      "maxItems": 4,
+                      "uniqueItems": true,
+                      "items": {
+                        "enum": [
+                          "resolved",
+                          "degraded",
+                          "unsupported",
+                          "ambiguous"
+                        ]
+                      },
+                      "allOf": [
+                        { "contains": { "const": "resolved" } },
+                        { "contains": { "const": "degraded" } },
+                        { "contains": { "const": "unsupported" } },
+                        { "contains": { "const": "ambiguous" } }
+                      ]
+                    },
+                    "readOnly": {
+                      "const": true
+                    },
+                    "installs": {
+                      "const": false
+                    }
                   }
                 },
                 "writeGate": {
@@ -6101,6 +6653,10 @@
                 }
               }
             },
+            "pythonProjectContexts": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/PythonProjectContext" }
+            },
             "degradedToolchains": {
               "type": "array",
               "items": {
@@ -6641,6 +7197,10 @@
             },
             "policy": {
               "$ref": "#/$defs/OpcoreValidationPolicySummary"
+            },
+            "pythonProjectContexts": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/PythonProjectContext" }
             }
           }
         },
@@ -7513,6 +8073,10 @@
             "type": "string",
             "pattern": "^[a-z][a-z0-9]*(?:[._:-][a-z0-9]+)*$"
           }
+        },
+        "contexts": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/PythonProjectContext" }
         },
         "notes": {
           "type": "array",

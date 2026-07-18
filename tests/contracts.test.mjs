@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
   GRAPH_SCHEMA_VERSION,
+  PYTHON_PROJECT_CONTEXT_SCHEMA_ID,
+  PYTHON_VALIDATION_CAPABILITY_RUN_SCHEMA_ID,
   commandLatencyTelemetryArtifactPolicy,
   commandTimingDegradationReasons,
   commandTimingProcessStates,
@@ -52,6 +54,7 @@ import {
   requiredGraphNodeKinds,
   routeCommandAdapter,
   validationCheckRunStatuses,
+  validationCheckOutcomes,
   validationFailureCategories,
   validationResultStatuses,
   validationSkippedCheckReasons,
@@ -99,6 +102,8 @@ import {
   validateRequiredContextDocPolicy,
   validateValidationRequestPayload,
   validatePreWriteValidationReceipt,
+  validatePythonProjectContext,
+  validatePythonValidationCapabilityRun,
   validateValidationResultPayload,
   validateValidationStatusPayload
 } from "../packages/contracts/dist/index.js";
@@ -205,6 +210,15 @@ describe("Opcore shared contracts", () => {
       "provider_failure",
       "unsupported_request",
       "skipped"
+    ]);
+    assert.deepEqual(validationCheckOutcomes, [
+      "passed",
+      "findings",
+      "tool_unavailable",
+      "invalid_config",
+      "timeout",
+      "unsupported_target",
+      "tool_failure"
     ]);
     assert.deepEqual(validationSkippedCheckReasons, [
       "graph_unavailable",
@@ -851,6 +865,169 @@ describe("Opcore shared contracts", () => {
     );
   });
 
+  it("validates canonical Python project contexts and rejects invalid outcomes and provenance", () => {
+    const context = validPythonProjectContext();
+    assert.equal(validatePythonProjectContext(context).schemaId, PYTHON_PROJECT_CONTEXT_SCHEMA_ID);
+    assert.equal(
+      validateValidationResultPayload(validValidationResult({ pythonProjectContexts: [context] })).pythonProjectContexts[0].projectRoot,
+      "services/api"
+    );
+    assert.throws(() => validatePythonProjectContext({ ...context, outcome: "ready" }), /outcome/);
+    assert.throws(
+      () => validatePythonProjectContext({ ...context, interpreter: { ...context.interpreter, source: "guessed" } }),
+      /source/
+    );
+    for (const field of ["implementation", "platform", "architecture", "abi", "soabi"]) {
+      assert.throws(
+        () => validatePythonProjectContext({ ...context, interpreter: { ...context.interpreter, [field]: 42 } }),
+        new RegExp(field)
+      );
+    }
+    for (const field of ["abi", "soabi"]) {
+      const interpreter = { ...context.interpreter };
+      delete interpreter[field];
+      assert.throws(() => validatePythonProjectContext({ ...context, interpreter }), new RegExp(field));
+    }
+    assert.throws(
+      () => validatePythonProjectContext({ ...context, buildSystem: { ...context.buildSystem, requires: [""] } }),
+      /buildSystem requires/
+    );
+    assert.throws(
+      () => validatePythonProjectContext({ ...context, interpreter: { ...context.interpreter, version: "garbage" } }),
+      /version/
+    );
+    assert.throws(
+      () => validatePythonProjectContext({
+        ...context,
+        tools: [{
+          tool: "mypy",
+          available: true,
+          executable: "/repo/.venv/bin/mypy",
+          argv: ["/repo/.venv/bin/mypy"],
+          cwd: "/repo",
+          source: "project_local_environment"
+        }]
+      }),
+      /version/
+    );
+    assert.throws(() => validatePythonProjectContext({ ...context, contextFingerprint: "secret" }), /fingerprint/i);
+  });
+
+  it("validates source-free Python capability runs and rejects malformed evidence", () => {
+    const run = validPythonCapabilityRun();
+    assert.equal(validatePythonValidationCapabilityRun(run).schemaId, PYTHON_VALIDATION_CAPABILITY_RUN_SCHEMA_ID);
+    assert.equal(
+      validateValidationResultPayload(validValidationResult({ pythonCapabilityRuns: [run] })).pythonCapabilityRuns[0].status,
+      "passed"
+    );
+    assert.equal(validatePythonValidationCapabilityRun({
+      ...run,
+      authority: "pyright",
+      tool: { ...run.tool, name: "pyright" },
+      diagnosticCount: 2,
+      warningCount: 1,
+      noteCount: 1
+    }).status, "passed");
+    assert.throws(() => validatePythonValidationCapabilityRun({
+      ...run,
+      diagnosticCount: 1,
+      errorCount: 1
+    }), /zero errors/);
+    const executedInvalidConfig = {
+      ...run,
+      status: "invalid_config",
+      diagnosticCount: 1,
+      errorCount: 1,
+      execution: { termination: "exited", exitCode: 0, failureSummary: "mypy rejected selected configuration: mypy.ini" }
+    };
+    assert.equal(validatePythonValidationCapabilityRun(executedInvalidConfig).status, "invalid_config");
+    assert.throws(() => validatePythonValidationCapabilityRun({
+      ...run,
+      tool: {
+        ...run.tool,
+        executable: "/var/folders/private/opcore-python-types-workspace-secret/bin/mypy",
+        argv: ["/var/folders/private/opcore-python-types-workspace-secret/bin/mypy", "--output=json", "src/app.py"]
+      }
+    }), /portable executable/);
+    assert.throws(() => validatePythonValidationCapabilityRun({
+      ...run,
+      tool: { ...run.tool, argv: [run.tool.executable, "--cache-dir=/tmp/secret", "src/app.py"] }
+    }), /portable argv/);
+    const authorityConflict = { ...run, status: "invalid_config", diagnosticCount: 1, noteCount: 1 };
+    delete authorityConflict.authority;
+    delete authorityConflict.authoritySource;
+    delete authorityConflict.tool;
+    delete authorityConflict.execution;
+    assert.equal(validatePythonValidationCapabilityRun(authorityConflict).status, "invalid_config");
+    assert.throws(() => validatePythonValidationCapabilityRun({ ...run, authority: "pytest" }), /authority/);
+    assert.throws(() => validatePythonValidationCapabilityRun({ ...run, targets: ["z.py", "a.py"] }), /sorted/);
+    assert.throws(() => validatePythonValidationCapabilityRun({ ...run, afterStateManifestFingerprint: "secret" }), /sha256/);
+    assert.throws(() => validatePythonValidationCapabilityRun({ ...run, content: "source text" }), /unexpected properties/);
+    assert.throws(() => validatePythonValidationCapabilityRun({
+      ...run,
+      tool: { ...run.tool, name: "pyright" }
+    }), /match authority/);
+    assert.throws(() => validatePythonValidationCapabilityRun({
+      ...run,
+      tool: { ...run.tool, version: "latest" }
+    }), /exact version/);
+    assert.throws(() => validatePythonValidationCapabilityRun({
+      ...run,
+      status: "timeout",
+      execution: { termination: "signal", signal: "SIGTERM", failureSummary: "terminated" }
+    }), /timeout failure evidence/);
+    assert.throws(() => validatePythonValidationCapabilityRun({
+      ...run,
+      status: "tool_failure",
+      execution: { termination: "exited", exitCode: 2 }
+    }), /failure evidence/);
+    assert.throws(() => validatePythonValidationCapabilityRun({
+      ...executedInvalidConfig,
+      execution: { termination: "exited", exitCode: 0 }
+    }), /invalid-config.*failure evidence/i);
+    assert.throws(() => validatePythonValidationCapabilityRun({
+      ...run,
+      status: "findings",
+      diagnosticCount: 1,
+      errorCount: 1,
+      execution: { termination: "exited", exitCode: 0 }
+    }), /exit 1/);
+  });
+
+  it("rejects schema-forbidden Python project-context properties recursively", () => {
+    const context = validPythonProjectContext();
+    const invalidContexts = [
+      { ...context, unexpected: true },
+      { ...context, layout: { ...context.layout, unexpected: true } },
+      { ...context, evidence: [{ ...context.evidence[0], unexpected: true }] },
+      { ...context, targetRuntime: { ...context.targetRuntime, unexpected: true } },
+      { ...context, managers: [{ ...context.managers[0], unexpected: true }] },
+      { ...context, buildSystem: { ...context.buildSystem, unexpected: true } },
+      { ...context, interpreter: { ...context.interpreter, unexpected: true } },
+      {
+        ...context,
+        tools: [{
+          tool: "mypy",
+          available: true,
+          executable: "/repo/services/api/.venv/bin/mypy",
+          argv: ["/repo/services/api/.venv/bin/mypy"],
+          cwd: "/repo/services/api",
+          source: "project_local_environment",
+          version: "1.8.0",
+          unexpected: true
+        }]
+      },
+      {
+        ...context,
+        outcome: "degraded",
+        reasons: [{ code: "tool_unavailable", tool: "mypy", message: "mypy is unavailable", unexpected: true }]
+      }
+    ];
+    for (const invalid of invalidContexts) {
+      assert.throws(() => validatePythonProjectContext(invalid), /unexpected|properties/i);
+    }
+  });
+
   it("validates validation result manifest metadata", () => {
     const manifest = {
       schemaVersion: GRAPH_SCHEMA_VERSION,
@@ -879,6 +1056,7 @@ describe("Opcore shared contracts", () => {
         {
           checkId: "types",
           status: "passed",
+          outcome: "passed",
           durationMs: 7,
           diagnosticCount: 1
         }
@@ -960,11 +1138,23 @@ describe("Opcore shared contracts", () => {
           validValidationResult({
             manifest: {
               ...manifest,
-              runs: [{ ...manifest.runs[0], status: "infrastructure_failure", failureMessage: "" }]
+              runs: [{ ...manifest.runs[0], status: "infrastructure_failure", outcome: "tool_failure", failureMessage: "" }]
             }
           })
         ),
       /failureMessage/
+    );
+    assert.throws(
+      () =>
+        validateValidationResultPayload(
+          validValidationResult({
+            manifest: {
+              ...manifest,
+              runs: [{ ...manifest.runs[0], status: "passed", outcome: "findings" }]
+            }
+          })
+        ),
+      /outcome.*requires status/
     );
     assert.throws(
       () =>
@@ -982,6 +1172,54 @@ describe("Opcore shared contracts", () => {
           })
         ),
       /escape/
+    );
+  });
+
+  it("validates diagnostic ranges, tool provenance, and fine-grained outcomes", () => {
+    const diagnostic = {
+      category: "syntax",
+      severity: "error",
+      code: "PY_SYNTAX_ERROR",
+      message: "expected ':'",
+      path: "pkg/app.py",
+      line: 3,
+      column: 8,
+      endLine: 3,
+      endColumn: 9,
+      tool: {
+        name: "python",
+        command: "/repo/.venv/bin/python",
+        version: "3.12.13",
+        source: "repo-venv",
+        cwd: "/repo"
+      }
+    };
+    const result = validateValidationResultPayload(
+      validValidationResult({
+        status: "policy_failure",
+        diagnostics: [diagnostic],
+        failure: { category: "policy_failure", message: "finding" },
+        manifest: {
+          schemaVersion: GRAPH_SCHEMA_VERSION,
+          checks: ["python.syntax"],
+          generatedAt: "2026-07-14T00:00:00.000Z",
+          runs: [{ checkId: "python.syntax", status: "policy_failure", outcome: "findings", diagnosticCount: 1 }]
+        }
+      })
+    );
+    assert.equal(result.diagnostics[0].tool.command, "/repo/.venv/bin/python");
+    assert.equal(result.manifest.runs[0].outcome, "findings");
+    assert.throws(
+      () => validateValidationResultPayload(validValidationResult({ diagnostics: [{ ...diagnostic, line: 0 }] })),
+      /line/
+    );
+    assert.throws(
+      () => validateValidationResultPayload(validValidationResult({ diagnostics: [{ ...diagnostic, line: undefined }] })),
+      /requires line/
+    );
+    assert.throws(
+      () => validateValidationResultPayload(validValidationResult({ diagnostics: [{ ...diagnostic, tool: { name: "python", command: "" } }] })),
+      /tool command/
     );
   });
 
@@ -1198,7 +1436,7 @@ describe("Opcore shared contracts", () => {
         runtimeInfo: validOpcoreRuntimeInfo(),
         opcoreDoctor: validOpcoreDoctor()
       }).opcoreDoctor.runtime.version,
-      "0.2.0"
+      "0.2.1"
     );
     assert.equal(validateInspectRouteResult(validInspectRouteResult()).references[0].symbol.name, "GreetingModel");
     assert.equal(
@@ -3103,7 +3341,7 @@ function validCommandLatencyRecord(overrides = {}) {
     exitCode: 0,
     repo: validRepoShapeFingerprint(),
     timing: validCommandTiming(),
-    opcoreVersion: "0.2.0",
+    opcoreVersion: "0.2.1",
     ...overrides
   };
 }
@@ -3415,7 +3653,7 @@ function validManagedToolDescriptor(overrides = {}) {
     packageIdentity: {
       packageName: "opcore",
       artifactName: "opcore",
-      version: "0.2.0"
+      version: "0.2.1"
     },
     entrypoints: [
       {
@@ -3488,6 +3726,12 @@ function validManagedToolDescriptor(overrides = {}) {
         graphModes: ["optional", "required"],
         hypothetical: true,
         statusSurfaces: ["status", "doctor"],
+        pythonProjectContext: {
+          schemaId: "opcore.python.project-context.v1",
+          outcomes: ["resolved", "degraded", "unsupported", "ambiguous"],
+          readOnly: true,
+          installs: false
+        },
         writeGate: {
           initScopes: ["repo", "global"],
           harnesses: ["claude-code", "codex"],
@@ -3546,6 +3790,80 @@ function validManagedToolDescriptor(overrides = {}) {
       }
     ],
     optionalSurfaces: expectedOptionalAnalysisSurfaces(),
+    ...overrides
+  };
+}
+
+function validPythonProjectContext(overrides = {}) {
+  return {
+    schemaId: "opcore.python.project-context.v1",
+    schemaVersion: 1,
+    target: "services/api/src/app.py",
+    repositoryRoot: "/repo",
+    projectRoot: "services/api",
+    projectBoundary: "services/api",
+    sourceRoots: ["services/api/src"],
+    layout: { kinds: ["src", "package"], paths: ["services/api/src"] },
+    evidence: [{ path: "services/api/pyproject.toml", role: "boundary" }],
+    targetRuntime: { requiresPython: ">=3.12", conflicts: [] },
+    managers: [{ kind: "uv", configFiles: ["services/api/pyproject.toml"], lockFiles: ["services/api/uv.lock"] }],
+    buildSystem: {
+      configFile: "services/api/pyproject.toml",
+      backend: "hatchling.build",
+      requires: ["hatchling>=1"]
+    },
+    interpreter: {
+      executable: "/repo/services/api/.venv/bin/python",
+      argv: ["/repo/services/api/.venv/bin/python"],
+      cwd: "/repo/services/api",
+      source: "project_local_environment",
+      version: "3.12.4",
+      implementation: "CPython",
+      platform: "linux",
+      architecture: "x86_64",
+      abi: "cpython-312",
+      soabi: "cpython-312-x86_64-linux-gnu"
+    },
+    tools: [],
+    projectKey: `sha256:${"1".repeat(64)}`,
+    contextFingerprint: `sha256:${"2".repeat(64)}`,
+    outcome: "resolved",
+    reasons: [],
+    ...overrides
+  };
+}
+
+function validPythonCapabilityRun(overrides = {}) {
+  return {
+    schemaId: "opcore.python.validation-capability-run",
+    schemaVersion: 1,
+    capability: "types",
+    checkId: "python.types",
+    projectKey: `sha256:${"1".repeat(64)}`,
+    contextFingerprint: `sha256:${"2".repeat(64)}`,
+    projectRoot: "services/api",
+    targets: ["services/api/src/app.py"],
+    selectedSourcePaths: ["services/api/src/app.py"],
+    selectedConfigPaths: ["services/api/pyproject.toml"],
+    afterStateManifestFingerprint: `sha256:${"3".repeat(64)}`,
+    authority: "mypy",
+    authoritySource: "project_config",
+    status: "passed",
+    tool: {
+      name: "mypy",
+      executable: "repo:services/api/.venv/bin/mypy",
+      argv: ["repo:services/api/.venv/bin/mypy", "--output=json", "src/app.py"],
+      cwd: "services/api",
+      source: "project_local_environment",
+      version: "2.3.0",
+      configFile: "services/api/pyproject.toml"
+    },
+    execution: { termination: "exited", exitCode: 0 },
+    durationMs: 12,
+    diagnosticCount: 0,
+    errorCount: 0,
+    warningCount: 0,
+    noteCount: 0,
     ...overrides
   };
 }
@@ -3644,7 +3962,7 @@ function surfaceContracts(surfaces) {
 function validArtifactMetadata() {
   return {
     artifactName: "opcore-graph-core",
-    artifactVersion: "0.2.0",
+    artifactVersion: "0.2.1",
     targetPlatform: "test",
     binaryPath: "dist/native/test/opcore-graph-core",
     checksumPath: "dist/native/test/opcore-graph-core.sha256",
@@ -3658,7 +3976,7 @@ function validHandshake() {
     provider: "opcore-graph",
     graphSchemaVersion: 1,
     artifactName: "opcore-graph-core",
-    artifactVersion: "0.2.0",
+    artifactVersion: "0.2.1",
     targetPlatform: "test",
     supportedOperations: ["build", "update", "watch", "status", "query", "ping", "health", "shutdown"],
     nodeKinds: [
@@ -4236,7 +4554,7 @@ function validOpcoreRuntimeInfo() {
   return {
     schemaVersion: 1,
     packageName: "opcore",
-    version: "0.2.0",
+    version: "0.2.1",
     bin: "opcore",
     artifactSource: "source_checkout",
     packageRoot: "/repo/packages/opcore",
@@ -4430,11 +4748,11 @@ function validGraphReleaseReceipt() {
     graphPackageVersions: [
       {
         packageName: "@the-open-engine/opcore-graph",
-        version: "0.2.0"
+        version: "0.2.1"
       },
       ...graphCoreNativeSupportedTargets.map((target) => ({
         packageName: graphCoreNativePackageNameForTarget(target),
-        version: "0.2.0"
+        version: "0.2.1"
       }))
     ],
     graphProviderSchemaVersion: 1,
@@ -4496,7 +4814,7 @@ function validGraphReleaseReceipt() {
     })),
     packageInspection: {
       packageName: "@the-open-engine/opcore-graph",
-      tarballName: "covibes-opcore-graph-0.2.0.tgz",
+      tarballName: "covibes-opcore-graph-0.2.1.tgz",
       fileCount: 1,
       files: ["dist/index.js"],
       forbiddenMarkersAbsent: true,
@@ -4643,10 +4961,10 @@ function validReleaseReceipt() {
     {
       packageName,
       packageRoot: "packages/opcore",
-      version: "0.2.0",
+      version: "0.2.1",
       manifest: {
         name: packageName,
-        version: "0.2.0",
+        version: "0.2.1",
         license: "MIT",
         main: "dist/index.js",
         types: "dist/index.d.ts",
@@ -4656,8 +4974,8 @@ function validReleaseReceipt() {
         bundledDependencies: []
       },
       tarball: {
-        filename: "opcore-0.2.0.tgz",
-        path: ".opcore/release/packages/opcore-0.2.0.tgz",
+        filename: "opcore-0.2.1.tgz",
+        path: ".opcore/release/packages/opcore-0.2.1.tgz",
         sha256: "c".repeat(64),
         integrity: "sha512-test",
         shasum: "d".repeat(40)
@@ -5187,7 +5505,7 @@ function validAspDogfoodReceipt() {
   };
   const manifest = {
     manifestVersion: "asp-server/0.1",
-    server: { id: "opcore", name: "Opcore", version: "0.2.0" },
+    server: { id: "opcore", name: "Opcore", version: "0.2.1" },
     protocolVersions: ["asp/0.1"],
     capabilities: ["check"],
     capabilityProfiles: ["core-check-provider", "opcore-core-check"],

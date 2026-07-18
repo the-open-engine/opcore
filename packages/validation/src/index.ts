@@ -7,7 +7,9 @@ import type {
   ValidationFailure,
   ValidationResult,
   ValidationResultStatus,
-  ValidationSkippedCheck
+  ValidationSkippedCheck,
+  PythonProjectContext,
+  PythonValidationCapabilityRun
 } from "@the-open-engine/opcore-contracts";
 import { GRAPH_SCHEMA_VERSION, validateValidationResultPayload } from "@the-open-engine/opcore-contracts";
 import { createCheckCommandAdapter, createValidateCommandAdapter } from "./command-adapter.js";
@@ -24,6 +26,8 @@ export interface CreateValidationResultSkeletonArgs {
   entries?: readonly ValidationCheckManifestEntry[];
   runs?: readonly ValidationCheckRunSummary[];
   skippedChecks?: readonly ValidationSkippedCheck[];
+  pythonProjectContexts?: readonly PythonProjectContext[];
+  pythonCapabilityRuns?: readonly PythonValidationCapabilityRun[];
 }
 
 export function createValidationResultSkeleton(args: CreateValidationResultSkeletonArgs = {}): ValidationResult {
@@ -36,6 +40,8 @@ export function createValidationResultSkeleton(args: CreateValidationResultSkele
   if (args.graphStatus !== undefined) result.graphStatus = args.graphStatus;
   if (args.failure !== undefined) result.failure = args.failure;
   if (args.refusal !== undefined) result.refusal = args.refusal;
+  if (args.pythonProjectContexts !== undefined) result.pythonProjectContexts = args.pythonProjectContexts;
+  if (args.pythonCapabilityRuns !== undefined) result.pythonCapabilityRuns = args.pythonCapabilityRuns;
   if (args.checks !== undefined) {
     result.manifest = {
       schemaVersion: GRAPH_SCHEMA_VERSION,
@@ -86,6 +92,8 @@ export {
 } from "./request.js";
 export {
   createValidationGraphQuerySession,
+  createStateAwareValidationGraphSessionFactory,
+  createValidationExactGraphSnapshotFactory,
   resolveValidationGraphProviderStatus,
   ValidationGraphProviderError,
   ValidationGraphRequirementError,
@@ -104,7 +112,12 @@ export {
   type ValidationGraphQuerySession,
   type ValidationGraphReviewContextInput,
   type ValidationGraphReviewContextRequirement,
-  type ValidationGraphSessionFactory
+  type ValidationGraphSessionFactory,
+  type ValidationGraphSessionIdentity,
+  type ValidationExactGraphSnapshot,
+  type ValidationExactGraphSnapshotFactory,
+  type ValidationEphemeralGraphSnapshot,
+  type ValidationEphemeralGraphSnapshotProvider
 } from "./graph-client.js";
 export {
   createValidationCheckManifest,
@@ -121,6 +134,7 @@ export {
 } from "./registry.js";
 export {
   ValidationOverlayConflictError,
+  ValidationFileUniverseError,
   calculateValidationFileChecksum,
   createValidationFileView,
   findValidationOverlayEntry,
@@ -137,6 +151,7 @@ export {
   type ValidationFileReadStatus,
   type ValidationFileSourceMetadata,
   type ValidationFileView,
+  type ValidationVisibleFileUniverse,
   type ValidationOverlayEntry
 } from "./overlays.js";
 export {
@@ -182,3 +197,8 @@ export {
   type ValidationClock,
   type ValidationRunner
 } from "./runner.js";
+export {
+  createValidationRunResources,
+  type ValidationRunResource,
+  type ValidationRunResources
+} from "./resources.js";

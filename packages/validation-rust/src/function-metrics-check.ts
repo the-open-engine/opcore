@@ -57,61 +57,57 @@ async function runFunctionMetrics(
 ): Promise<ValidationCheckResult> {
   const thresholds = options.thresholds ?? defaultRustFunctionMetricThresholds;
   const materialized = await materializeRustWorkspace(context, { env: options.env });
-  try {
-    const diagnostics: ValidationDiagnostic[] = [];
-    for (const path of rustInputSet(context).ownedPaths.filter(isRustSourcePath)) {
-      if ((await context.fileView.readAfter(path)).status !== "found") continue;
-      const absolutePath = resolveRepoPath(materialized.root, path);
-      const result = runTool("rust-code-analysis-cli", ["-p", absolutePath, "-m", "-O", "json"], {
-        cwd: materialized.root,
-        env: options.env,
-        timeoutMs: options.timeoutMs
-      });
-      if (!result.ok) {
-        return {
-          status: "infrastructure_failure",
-          diagnostics: [],
-          failureMessage: result.failureMessage ?? "rust-code-analysis-cli failed"
-        };
+  const diagnostics: ValidationDiagnostic[] = [];
+  for (const path of rustInputSet(context).ownedPaths.filter(isRustSourcePath)) {
+    if ((await context.fileView.readAfter(path)).status !== "found") continue;
+    const absolutePath = resolveRepoPath(materialized.root, path);
+    const result = runTool("rust-code-analysis-cli", ["-p", absolutePath, "-m", "-O", "json"], {
+      cwd: materialized.root,
+      env: options.env,
+      timeoutMs: options.timeoutMs
+    });
+    if (!result.ok) {
+      return {
+        status: "infrastructure_failure",
+        diagnostics: [],
+        failureMessage: result.failureMessage ?? "rust-code-analysis-cli failed"
+      };
+    }
+    const value = parseFunctionMetricJson(result.stdout);
+    for (const fn of functionMetricEntries(value, materialized.root, path)) {
+      if (fn.lines > thresholds.maxFunctionLines) {
+        diagnostics.push(
+          diagnostic({
+            category: "policy",
+            path: fn.path,
+            code: "RUST_FUNCTION_LINES",
+            message: `Rust function ${fn.name} has ${fn.lines} lines; max is ${thresholds.maxFunctionLines}.`
+          })
+        );
       }
-      const value = parseFunctionMetricJson(result.stdout);
-      for (const fn of functionMetricEntries(value, materialized.root, path)) {
-        if (fn.lines > thresholds.maxFunctionLines) {
-          diagnostics.push(
-            diagnostic({
-              category: "policy",
-              path: fn.path,
-              code: "RUST_FUNCTION_LINES",
-              message: `Rust function ${fn.name} has ${fn.lines} lines; max is ${thresholds.maxFunctionLines}.`
-            })
-          );
-        }
-        if (fn.complexity > thresholds.maxComplexity) {
-          diagnostics.push(
-            diagnostic({
-              category: "policy",
-              path: fn.path,
-              code: "RUST_FUNCTION_COMPLEXITY",
-              message: `Rust function ${fn.name} has cyclomatic complexity ${fn.complexity}; max is ${thresholds.maxComplexity}.`
-            })
-          );
-        }
-        if (fn.params > thresholds.maxParams) {
-          diagnostics.push(
-            diagnostic({
-              category: "policy",
-              path: fn.path,
-              code: "RUST_FUNCTION_PARAMS",
-              message: `Rust function ${fn.name} has ${fn.params} parameters; max is ${thresholds.maxParams}.`
-            })
-          );
-        }
+      if (fn.complexity > thresholds.maxComplexity) {
+        diagnostics.push(
+          diagnostic({
+            category: "policy",
+            path: fn.path,
+            code: "RUST_FUNCTION_COMPLEXITY",
+            message: `Rust function ${fn.name} has cyclomatic complexity ${fn.complexity}; max is ${thresholds.maxComplexity}.`
+          })
+        );
+      }
+      if (fn.params > thresholds.maxParams) {
+        diagnostics.push(
+          diagnostic({
+            category: "policy",
+            path: fn.path,
+            code: "RUST_FUNCTION_PARAMS",
+            message: `Rust function ${fn.name} has ${fn.params} parameters; max is ${thresholds.maxParams}.`
+          })
+        );
       }
     }
-    return { diagnostics: sortDiagnostics(diagnostics) };
-  } finally {
-    materialized.cleanup();
   }
+  return { diagnostics: sortDiagnostics(diagnostics) };
 }
 
 interface FunctionMetricEntry {

@@ -117,15 +117,11 @@ export function createImportGraphCheck(options: RustImportGraphCheckOptions = {}
       const skipped = skippedRustInputResult(context);
       if (skipped !== undefined) return skipped;
       const materialized = await materializeRustWorkspace(context, { env: options.env });
-      try {
-        const metadata = loadCargoMetadata(materialized.root, options);
-        if (!metadata.ok) return metadataFailureResult(metadata);
-        const packageScope = resolveCargoPackageScope(metadata.metadata, context.scope);
-        if (!packageScope.ok) return metadataFailureResult(packageScope);
-        return await runImportGraph(context, metadata.metadata, packageScope.member);
-      } finally {
-        materialized.cleanup();
-      }
+      const metadata = loadCargoMetadata(materialized.root, options);
+      if (!metadata.ok) return metadataFailureResult(metadata);
+      const packageScope = resolveCargoPackageScope(metadata.metadata, context.scope);
+      if (!packageScope.ok) return metadataFailureResult(packageScope);
+      return runImportGraph(context, metadata.metadata, packageScope.member);
     }
   };
 }

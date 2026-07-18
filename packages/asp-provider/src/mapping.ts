@@ -8,7 +8,11 @@ import type {
   ValidationRequest,
   ValidationResult
 } from "@the-open-engine/opcore-contracts";
-import { validateCommandTiming, validateRepoRelativePath } from "@the-open-engine/opcore-contracts";
+import {
+  validateCommandTiming,
+  validatePythonValidationCapabilityRun,
+  validateRepoRelativePath
+} from "@the-open-engine/opcore-contracts";
 import type { JsonRpcPeer } from "./json-rpc.js";
 import { changesetDigest as computeChangesetDigest, diagnosticFingerprint, digestJson } from "./digests.js";
 import type {
@@ -61,7 +65,13 @@ export function initializeResult(params: InitializeParams): JsonObject {
         manifest: defaultAspProviderValidationManifest,
         scopes: ["changeset", "paths"],
         comparisons: [supportedComparison],
-        fixes: false
+        fixes: false,
+        pythonProjectContext: {
+          schemaId: "opcore.python.project-context.v1",
+          outcomes: ["resolved", "degraded", "unsupported", "ambiguous"],
+          readOnly: true,
+          installs: false
+        }
       }
     },
     requestedPermissions: {
@@ -119,7 +129,7 @@ export async function evaluateChangeset(
       };
     });
     validationResult = await timing.timeAsync("validation", () =>
-      createAspProviderValidationRunner(workspace.workspace).runValidation(request)
+      createAspProviderValidationRunner(workspace.workspace, workspace.pythonWorkspace).runValidation(request)
     );
   } catch (error) {
     const validationFailure = errorAssessment({
@@ -355,6 +365,8 @@ function mapDiagnostic(diagnostic: ValidationDiagnostic, changesetDigest: string
   const code = `${source}/${checkId}/${sanitizeCode(diagnostic.code ?? diagnostic.category)}`;
   const location: JsonObject = {};
   if (diagnostic.path !== undefined) location.path = diagnostic.path;
+  const range = diagnosticRange(diagnostic);
+  if (range !== undefined) location.range = range;
   return {
     source,
     code,
@@ -366,6 +378,7 @@ function mapDiagnostic(diagnostic: ValidationDiagnostic, changesetDigest: string
       source,
       code,
       path: diagnostic.path,
+      range,
       severity: diagnostic.severity,
       message: diagnostic.message,
       changesetDigest
@@ -374,9 +387,26 @@ function mapDiagnostic(diagnostic: ValidationDiagnostic, changesetDigest: string
   };
 }
 
+function diagnosticRange(diagnostic: ValidationDiagnostic): JsonObject | undefined {
+  if (diagnostic.line === undefined) return undefined;
+  const start: JsonObject = { line: diagnostic.line };
+  if (diagnostic.column !== undefined) start.column = diagnostic.column;
+  const range: JsonObject = { start };
+  if (diagnostic.endLine !== undefined) {
+    const end: JsonObject = { line: diagnostic.endLine };
+    if (diagnostic.endColumn !== undefined) end.column = diagnostic.endColumn;
+    range.end = end;
+  }
+  return range;
+}
+
 function checkIdForDiagnostic(diagnostic: ValidationDiagnostic): string {
-  if (diagnostic.category === "syntax") return "typescript.syntax";
-  if (diagnostic.category === "types") return "typescript.types";
+  if (diagnostic.category === "syntax") return diagnostic.path?.endsWith(".py") || diagnostic.path?.endsWith(".pyi")
+    ? "python.syntax"
+    : "typescript.syntax";
+  if (diagnostic.category === "types") return diagnostic.path?.endsWith(".py") || diagnostic.path?.endsWith(".pyi")
+    ? "python.types"
+    : "typescript.types";
   if (diagnostic.category === "test") return "typescript.relevant-tests";
   if (diagnostic.category === "graph") return "typescript.import-graph";
   if (diagnostic.code === "TS_FILE_LINES") return "typescript.file-length";
@@ -409,6 +439,19 @@ function validationCoverageDegradations(result: ValidationResult, selectedIds: r
 } {
   const degraded: ProviderCoverageDegradation[] = [];
   const unsupported: ProviderCoverageDegradation[] = [];
+  for (const context of result.pythonProjectContexts ?? []) {
+    if (context.outcome === "resolved") continue;
+    const reason = context.outcome === "unsupported" ? "unsupported" : "unavailable";
+    const entry = {
+      source: providerSource,
+      reason,
+      requirement: `python-project-context:${context.target}`,
+      detail: context.reasons.map((item) => `${item.code}: ${item.message}`).join("; ") ||
+        `Python project context ${context.outcome}`
+    };
+    degraded.push(entry);
+    if (reason === "unsupported") unsupported.push(entry);
+  }
   for (const skipped of result.manifest?.skippedChecks ?? []) {
     const entry = {
       source: providerSource,
@@ -518,13 +561,91 @@ function validationEvidence(result: ValidationResult): JsonObject[] {
     data.refusalCategory = result.refusal.category;
     data.refusalMessage = result.refusal.message;
   }
-  return [
+  const evidence: JsonObject[] = [
     {
       kind: "message",
       message: "Opcore validation result mapped to ASP Core check assessment.",
       data
     }
   ];
+  for (const context of result.pythonProjectContexts ?? []) {
+    evidence.push({
+      kind: "python_project_context",
+      message: `Canonical Python project context for ${context.target}.`,
+      data: {
+        schemaId: context.schemaId,
+        target: context.target,
+        projectRoot: context.projectRoot,
+        projectKey: context.projectKey,
+        contextFingerprint: context.contextFingerprint,
+        outcome: context.outcome,
+        interpreter: context.interpreter === undefined
+          ? null
+          : {
+              executable: context.interpreter.executable,
+              argv: [...context.interpreter.argv],
+              cwd: context.interpreter.cwd,
+              source: context.interpreter.source,
+              ...(context.interpreter.version === undefined ? {} : { version: context.interpreter.version }),
+              ...(context.interpreter.implementation === undefined ? {} : { implementation: context.interpreter.implementation }),
+              ...(context.interpreter.platform === undefined ? {} : { platform: context.interpreter.platform }),
+              ...(context.interpreter.architecture === undefined ? {} : { architecture: context.interpreter.architecture }),
+              ...(context.interpreter.abi === undefined ? {} : { abi: context.interpreter.abi }),
+              ...(context.interpreter.soabi === undefined ? {} : { soabi: context.interpreter.soabi })
+            },
+        tools: context.tools.map((tool) => ({
+          tool: tool.tool,
+          available: tool.available,
+          executable: tool.executable,
+          argv: [...tool.argv],
+          cwd: tool.cwd,
+          source: tool.source,
+          ...(tool.configFile === undefined ? {} : { configFile: tool.configFile }),
+          ...(tool.version === undefined ? {} : { version: tool.version })
+        })),
+        reasons: context.reasons.map((reason) => ({ code: reason.code, message: reason.message }))
+      }
+    });
+  }
+  for (const run of result.pythonCapabilityRuns ?? []) {
+    validatePythonValidationCapabilityRun(run);
+    evidence.push({
+      kind: "python_validation_capability_run",
+      message: `Python ${run.capability} capability evidence for ${run.projectRoot}.`,
+      data: {
+        schemaId: run.schemaId,
+        schemaVersion: run.schemaVersion,
+        capability: run.capability,
+        checkId: run.checkId,
+        projectKey: run.projectKey,
+        contextFingerprint: run.contextFingerprint,
+        projectRoot: run.projectRoot,
+        targets: [...run.targets],
+        selectedSourcePaths: [...run.selectedSourcePaths],
+        selectedConfigPaths: [...run.selectedConfigPaths],
+        afterStateManifestFingerprint: run.afterStateManifestFingerprint,
+        ...(run.authority === undefined ? {} : { checker: run.authority }),
+        ...(run.authoritySource === undefined ? {} : { checkerSource: run.authoritySource }),
+        status: run.status,
+        durationMs: run.durationMs,
+        diagnosticCount: run.diagnosticCount,
+        errorCount: run.errorCount,
+        warningCount: run.warningCount,
+        noteCount: run.noteCount,
+        ...(run.tool === undefined ? {} : { tool: {
+          name: run.tool.name,
+          executable: run.tool.executable,
+          argv: [...run.tool.argv],
+          cwd: run.tool.cwd,
+          source: run.tool.source,
+          ...(run.tool.version === undefined ? {} : { version: run.tool.version }),
+          ...(run.tool.configFile === undefined ? {} : { configFile: run.tool.configFile })
+        } }),
+        ...(run.execution === undefined ? {} : { execution: { ...run.execution } })
+      }
+    });
+  }
+  return evidence;
 }
 
 function providerMetadata(): Assessment["provider"] {

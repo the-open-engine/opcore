@@ -1,4 +1,7 @@
-import type { ValidationResult } from "@the-open-engine/opcore-contracts";
+import {
+  validatePythonValidationCapabilityRun,
+  type ValidationResult
+} from "@the-open-engine/opcore-contracts";
 
 export const scanDiagnosticPreviewLimit = 50;
 
@@ -16,6 +19,14 @@ export function compactScanValidationResult(
   if (result.graphStatus !== undefined) compact.graphStatus = result.graphStatus;
   if (result.failure !== undefined) compact.failure = result.failure;
   if (result.refusal !== undefined) compact.refusal = result.refusal;
+  if (result.pythonProjectContexts !== undefined) {
+    compact.pythonProjectContexts = [...result.pythonProjectContexts];
+  }
+  if (result.pythonCapabilityRuns !== undefined) {
+    compact.pythonCapabilityRuns = result.pythonCapabilityRuns.map((run) =>
+      validatePythonValidationCapabilityRun(run)
+    );
+  }
   if (result.manifest !== undefined) {
     compact.manifest = {
       schemaVersion: result.manifest.schemaVersion,

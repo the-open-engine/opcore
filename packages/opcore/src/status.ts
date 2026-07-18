@@ -21,7 +21,7 @@ export { resolveRepo, type RepoResolution } from "./status-repo.js";
 export { createRepoState } from "./status-state.js";
 export { validationPolicySummary } from "./status-validation.js";
 
-export function routeOpcoreStatus(argv: readonly string[], parsed: ParsedCommandArgv): CommandRouterResult {
+export async function routeOpcoreStatus(argv: readonly string[], parsed: ParsedCommandArgv): Promise<CommandRouterResult> {
   const rest = parsed.args.slice(1);
   if (rest.some((arg) => isStatusHelpArg(arg))) return statusHelpResult(argv, parsed);
   const parsedStatus = parseOpcoreStatusArgs(rest);
@@ -31,7 +31,7 @@ export function routeOpcoreStatus(argv: readonly string[], parsed: ParsedCommand
 
   let repoState: OpcoreRepoStatePayload;
   try {
-    repoState = createRepoState(resolution.resolution);
+    repoState = await createRepoState(resolution.resolution);
   } catch (error) {
     return statusErrorResult(argv, parsed, errorMessage(error));
   }

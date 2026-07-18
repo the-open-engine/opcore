@@ -54,8 +54,8 @@ describe("opcore edit CLI", () => {
       assert.equal(routed.status, "error");
       assert.equal(routed.exitCode, 1);
       assert.equal(routed.editResult.refusal.category, "validation_failed");
-      assert.equal(routed.editResult.validation.status, "provider_failure");
-      assert.equal(routed.editResult.validation.graphStatus.state, "stale");
+      assert.equal(routed.editResult.validation.status, "policy_failure");
+      assert.equal(routed.editResult.validation.graphStatus.state, "available");
       assert.equal(routed.editResult.applied, false);
       assert.equal(readFileSync(join(repo, "src/a.ts"), "utf8"), "old\n");
     });

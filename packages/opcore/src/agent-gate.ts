@@ -1,7 +1,7 @@
 import { spawnSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
+import { delimiter, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import {
   createNodeEditWorkspace,
   createPatchEditPlan,
@@ -240,12 +240,15 @@ async function patchOverlays(repoRoot: string, input: Record<string, unknown>): 
 }
 
 function runPreWriteValidation(request: ValidationRequest): PreWriteValidationReceipt {
+  const repoRoot = request.repo.repoRoot;
+  if (repoRoot === undefined) throw new Error("pre-write validation requires repoRoot");
   const tempDir = mkdtempSync(resolve(tmpdir(), "opcore-agent-gate-"));
   const requestPath = resolve(tempDir, "validation-request.json");
   try {
     writeFileSync(requestPath, `${JSON.stringify(request)}\n`, "utf8");
     const result = spawnSync("opcore", ["validate", "pre-write", "--request-file", requestPath, "--timeout-ms", String(validationTimeoutMs), "--json"], {
-      cwd: request.repo.repoRoot,
+      cwd: repoRoot,
+      env: validationSpawnEnv(repoRoot),
       encoding: "utf8",
       stdio: ["ignore", "pipe", "pipe"]
     });
@@ -258,8 +261,17 @@ function runPreWriteValidation(request: ValidationRequest): PreWriteValidationRe
   }
 }
 
-function parseValidationOutput(stdout: string): { receipt?: PreWriteValidationReceipt } | undefined {
-  const trimmed = stdout.trim();
+function validationSpawnEnv(repoRoot: string): Record<string, string | undefined> {
+  const env = { ...(process.env ?? {}) };
+  const pathKey = Object.keys(env).find((key) => key.toLowerCase() === "path") ?? "PATH";
+  const currentPath = env[pathKey] ?? "";
+  const localBin = join(repoRoot, "node_modules", ".bin");
+  env[pathKey] = currentPath.length > 0 ? `${localBin}${delimiter}${currentPath}` : localBin;
+  return env;
+}
+
+function parseValidationOutput(stdout: string | null | undefined): { receipt?: PreWriteValidationReceipt } | undefined {
+  const trimmed = (stdout ?? "").trim();
   if (trimmed.length === 0) return undefined;
   const parsed = JSON.parse(trimmed) as unknown;
   if (!isRecord(parsed) || !isRecord(parsed.receipt)) return undefined;

@@ -252,6 +252,15 @@ describe("conformance fixture metadata", () => {
     assert.equal(data.graphModes.requiredFailures.length, 6);
     assert.equal(data.editHypotheticalOverlays.request.overlays[0].action, "delete");
     assert.equal(data.editHypotheticalOverlays.request.overlays[1].action, "write");
+    assert.equal(data.pythonCapabilityRuns[0].schemaId, "opcore.python.validation-capability-run");
+    assert.equal(data.pythonCapabilityRuns[0].authority, "mypy");
+    assert.equal(data.pythonCapabilityRuns[1].authority, "pyright");
+    assert.equal(data.pythonCapabilityRuns[1].tool.version, "1.1.411");
+    assert.deepEqual({
+      errors: data.pythonCapabilityRuns[1].errorCount,
+      warnings: data.pythonCapabilityRuns[1].warningCount,
+      notes: data.pythonCapabilityRuns[1].noteCount
+    }, { errors: 0, warnings: 1, notes: 1 });
   });
 
   it("describes package-owned command adapter metadata for #37", () => {
@@ -366,12 +375,28 @@ describe("conformance fixture metadata", () => {
     assert.deepEqual(sourceExtraction.nodeKinds, ["File", "Module", "Class", "Function", "Variable"]);
     assert.ok(sourceExtraction.edgeKinds.includes("TESTED_BY"));
     assert.deepEqual(sourceExtraction.diagnostics, ["parse_error", "unresolved_import"]);
+    assert.deepEqual(sourceExtraction.importResolution, {
+      owner: "graph-core",
+      expectedEdgeField: "pythonImportEdges",
+      cases: [
+        "multiline-parenthesized",
+        "alias",
+        "conditional",
+        "submodule",
+        "star",
+        "relative",
+        "package-initializer",
+        "stub",
+        "namespace",
+        "src-layout"
+      ]
+    });
   });
 
   it("describes Python validation fixture metadata for #22", () => {
     const validation = fixtureById("validation-python-v1").validationPython;
     assert.equal(validation.fixtureRoot, "packages/fixtures/validation-python");
-    assert.deepEqual(validation.scenarios, ["clean", "failing", "degraded-tools"]);
+    assert.deepEqual(validation.scenarios, ["clean", "failing", "degraded-tools", "mypy-authority", "pyright-authority"]);
     assert.deepEqual(validation.checks, [
       "python.syntax",
       "python.source-hygiene",

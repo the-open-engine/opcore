@@ -1,6 +1,7 @@
 import type {
   CommandAdapter,
   GraphProviderMode,
+  PythonProjectContext,
   ValidationRequest,
   ValidationResult,
   ValidationStatusPayload
@@ -12,6 +13,7 @@ import {
   createValidationStatusPayload,
   type ValidationCommandAdapterOptions,
   type ValidationGraphProviderClient,
+  type ValidationGraphSessionFactory,
   type ValidationRuntimePolicy
 } from "@the-open-engine/opcore-validation";
 import { createPythonValidationAdapterStatus, createPythonValidationChecks } from "@the-open-engine/opcore-validation-python";
@@ -29,6 +31,7 @@ import {
   validationChecksForRepoPolicy
 } from "./repo-validation-policy.js";
 import { commonSkippedPathSegments } from "./source-policy.js";
+import { createOpcoreGraphSessionFactory } from "./validation-graph-session.js";
 
 declare const process: {
   cwd(): string;
@@ -52,13 +55,15 @@ export function createOpcoreCheckCommandAdapter(
 export const opcoreValidationRunner = {
   runValidation(request: ValidationRequest): Promise<ValidationResult> {
     const repoRoot = request.repo.repoRoot ?? process.cwd();
+    const graphProviderClient = createOpcoreValidationGraphProviderClient();
     return createValidationRunner({
       workspace: createNodeValidationWorkspace({
         repoRoot,
         skippedPathSegments: commonSkippedPathSegments
       }),
       checks: validationChecksForRepoPolicy(repoRoot),
-      graphProviderClient: createOpcoreValidationGraphProviderClient(),
+      graphProviderClient,
+      graphSessionFactory: createOpcoreValidationGraphSessionFactory(graphProviderClient),
       runtime: opcorePublicValidationRuntimePolicy
     }).runValidation(request);
   }
@@ -67,20 +72,29 @@ export const opcoreValidationRunner = {
 export function createDefaultValidationStatusPayload(options: {
   repoRoot: string;
   graphMode?: GraphProviderMode;
+  pythonProjectContexts?: readonly PythonProjectContext[];
 }): ValidationStatusPayload {
   const graphMode = options.graphMode ?? "optional";
   return createValidationStatusPayload({
     checks: validationChecksForRepoPolicy(options.repoRoot),
-    adapters: [createRustValidationAdapterStatus(), createPythonValidationAdapterStatus({ repoRoot: options.repoRoot })],
+    adapters: [
+      createRustValidationAdapterStatus(),
+      createPythonValidationAdapterStatus({
+        repoRoot: options.repoRoot,
+        contexts: options.pythonProjectContexts
+      })
+    ],
     graphMode,
     graphStatus: opcoreGraphStatus({ repoRoot: options.repoRoot }, graphMode)
   });
 }
 
 function defaultValidationAdapterOptions(repoRoot = process.cwd()): ValidationCommandAdapterOptions {
+  const graphProviderClient = createOpcoreValidationGraphProviderClient();
   return {
     checksFactory: validationChecksForRepoPolicy,
-    graphProviderClient: createOpcoreValidationGraphProviderClient(),
+    graphProviderClient,
+    graphSessionFactory: createOpcoreValidationGraphSessionFactory(graphProviderClient),
     runtime: opcorePublicValidationRuntimePolicy,
     defaultRepoRoot: repoRoot,
     workspaceFactory: (repoRoot) =>
@@ -89,6 +103,12 @@ function defaultValidationAdapterOptions(repoRoot = process.cwd()): ValidationCo
         skippedPathSegments: commonSkippedPathSegments
       })
   };
+}
+
+export function createOpcoreValidationGraphSessionFactory(
+  persistentClient: ValidationGraphProviderClient = createOpcoreValidationGraphProviderClient()
+): ValidationGraphSessionFactory {
+  return createOpcoreGraphSessionFactory(persistentClient);
 }
 
 export function createOpcoreValidationGraphProviderClient(): ValidationGraphProviderClient {

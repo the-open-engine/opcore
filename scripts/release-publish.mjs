@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import { publicReleasePackageNames, releasePackageDirForName } from "./release-package-dirs.mjs";
 import { createStagedOpcorePackage } from "./stage-opcore-bundle.mjs";
 
-const releaseVersion = valueAfter("--version") ?? "0.2.0";
+const releaseVersion = valueAfter("--version") ?? "0.2.1";
 const tag = valueAfter("--tag") ?? "latest";
 const dryRun = process.argv.includes("--dry-run") || process.env.OPCORE_PUBLISH_DRY_RUN === "1";
 const npmEnv = npmPublishEnv();

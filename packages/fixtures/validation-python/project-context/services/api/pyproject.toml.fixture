@@ -1,0 +1,13 @@
+[project]
+name = "fixture-api"
+requires-python = ">=3.12"
+
+[tool.uv]
+package = true
+
+[build-system]
+requires = [
+  "hatchling>=1",
+  "hatch-vcs>=0.4",
+]
+build-backend = "hatchling.build"

@@ -1,7 +1,10 @@
 import type {
   ValidationCheckManifestEntry,
+  ValidationCheckOutcome,
   ValidationCheckRunStatus,
   ValidationDiagnostic,
+  PythonValidationCapabilityRun,
+  PythonProjectContext,
   GraphProviderStatus,
   ValidationRequest,
   ValidationScopeKind
@@ -9,6 +12,7 @@ import type {
 import { validationCheckIdPattern, validationScopeKinds } from "@the-open-engine/opcore-contracts";
 import type { ValidationGraphQueryRequirement, ValidationGraphQuerySession } from "./graph-client.js";
 import type { ValidationFileView } from "./overlays.js";
+import type { ValidationRunResources } from "./resources.js";
 import type { ResolvedValidationScope } from "./scope.js";
 
 const validationCheckIdRegex = new RegExp(validationCheckIdPattern);
@@ -20,6 +24,7 @@ export interface ValidationCheckContext {
   graphStatus: GraphProviderStatus;
   graph: ValidationGraphQuerySession;
   fileView: ValidationFileView;
+  resources: ValidationRunResources;
   runtime: ValidationRuntimePolicy;
 }
 
@@ -32,7 +37,10 @@ export interface ValidationRuntimePolicy {
 export interface ValidationCheckResult {
   diagnostics?: readonly ValidationDiagnostic[];
   status?: ValidationCheckRunStatus;
+  outcome?: ValidationCheckOutcome;
   failureMessage?: string;
+  pythonProjectContexts?: readonly PythonProjectContext[];
+  pythonCapabilityRuns?: readonly PythonValidationCapabilityRun[];
 }
 
 export interface ValidationCheckDefinition {
@@ -43,6 +51,7 @@ export interface ValidationCheckDefinition {
   supportedScopes: readonly ValidationScopeKind[];
   defaultScopes?: readonly ValidationScopeKind[];
   requiresGraph?: boolean;
+  graphUsage?: "none" | "optional" | "required";
   graphRequirements?: (
     context: ValidationCheckContext
   ) => readonly ValidationGraphQueryRequirement[] | Promise<readonly ValidationGraphQueryRequirement[]>;
@@ -171,6 +180,9 @@ function validateValidationCheckDefinition(definition: ValidationCheckDefinition
   }
   if (definition.requiresGraph !== undefined && typeof definition.requiresGraph !== "boolean") {
     throw new ValidationCheckRegistryError("Validation check requiresGraph must be boolean");
+  }
+  if (definition.graphUsage !== undefined && !["none", "optional", "required"].includes(definition.graphUsage)) {
+    throw new ValidationCheckRegistryError("Validation check graphUsage must be none, optional, or required");
   }
   if (definition.graphRequirements !== undefined && typeof definition.graphRequirements !== "function") {
     throw new ValidationCheckRegistryError("Validation check graphRequirements must be a function");

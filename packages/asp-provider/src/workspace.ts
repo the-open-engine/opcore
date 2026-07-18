@@ -1,10 +1,14 @@
+import { access, realpath } from "node:fs/promises";
+import { resolve } from "node:path";
 import type { ValidationWorkspace, ValidationWorkspaceFileSet, ValidationWorkspaceReadFileResult } from "@the-open-engine/opcore-validation";
 import { calculateValidationFileChecksum } from "@the-open-engine/opcore-validation";
+import type { PythonProjectWorkspace } from "@the-open-engine/opcore-validation-python";
 import type { JsonRpcPeer } from "./json-rpc.js";
 import type { Baseline, ChangeSet, EncodedBlob, InitializedParams, InitializeParams, InlineBlob, JsonObject } from "./protocol.js";
 
 export type AspHostValidationWorkspace = {
   workspace: ValidationWorkspace;
+  pythonWorkspace: PythonProjectWorkspace;
   readBlobText(blobId: string): Promise<string>;
   readInlineOrBlobText(blob: string | InlineBlob | undefined, label: string): Promise<string>;
   checksumForBlob(blobId: string): Promise<string>;
@@ -27,6 +31,7 @@ export function createAspHostValidationWorkspace(
   const entryByPath = new Map<string, TreeEntry>();
   const blobTextById = new Map<string, string>();
   const readSet = new Set<string>();
+  let fullTreeTruncated = false;
 
   async function listTree(paths?: readonly string[]): Promise<readonly TreeEntry[]> {
     const params: JsonObject = {
@@ -39,6 +44,7 @@ export function createAspHostValidationWorkspace(
       truncated?: boolean;
     };
     const entries = (result.entries ?? []).map(normalizeTreeEntry).filter((entry): entry is TreeEntry => entry !== undefined);
+    if (paths === undefined) fullTreeTruncated = result.truncated === true;
     for (const entry of entries) entryByPath.set(entry.path, entry);
     return entries;
   }
@@ -70,16 +76,19 @@ export function createAspHostValidationWorkspace(
   async function listRepoFiles(): Promise<ValidationWorkspaceFileSet> {
     const entries = await listTree();
     return {
-      files: entries.map((entry) => ({ path: entry.path, status: "unchanged" as const }))
+      files: entries.map((entry) => ({ path: entry.path, status: "unchanged" as const })),
+      ...(fullTreeTruncated ? { truncated: true, message: "Host workspace/listTree returned a truncated file universe" } : {})
     };
   }
 
   const workspace: ValidationWorkspace = {
     readFile,
+    listFiles: async () => listRepoFiles(),
     listRepoFiles,
     listPackageFiles: async (_packageName, packageRoot) => {
       const files = await listRepoFiles();
       return {
+        ...files,
         files: files.files.filter((file) => {
           const path = typeof file === "string" ? file : file.path;
           return path === packageRoot || path.startsWith(`${packageRoot}/`);
@@ -88,8 +97,25 @@ export function createAspHostValidationWorkspace(
     }
   };
 
+  const pythonWorkspace: PythonProjectWorkspace = {
+    read: async (path) => {
+      const result = await readFile(path);
+      return result.status === "found" ? result.content : undefined;
+    },
+    list: async () => (await listTree()).filter(isFileLikeTreeEntry).map((entry) => entry.path).sort(),
+    exists: async (path) => (await readFile(path)).status === "found",
+    realpath: async (path) => {
+      let entry = entryByPath.get(path);
+      if (entry === undefined) entry = (await listTree([path])).find((candidate) => candidate.path === path);
+      if (entry === undefined || entry.kind === undefined) return { path, symlink: false, unavailable: true };
+      return entry.kind === "file" ? { path, symlink: false } : { path, symlink: true };
+    },
+    executableExists: async (path) => providerExecutableExists(initialize, path)
+  };
+
   return {
     workspace,
+    pythonWorkspace,
     readBlobText,
     readInlineOrBlobText: async (blob, label) => {
       if (typeof blob === "string") return readBlobText(blob);
@@ -106,16 +132,33 @@ function readGlobs(initialized: InitializedParams): readonly string[] {
   return Array.isArray(read) ? [...read] : ["**/*"];
 }
 
+async function providerExecutableExists(initialize: InitializeParams, path: string): Promise<boolean> {
+  const root = initialize.workspace?.root;
+  if (root === undefined) return false;
+  try {
+    const [hostRoot, providerCwd] = await Promise.all([realpath(resolve(root)), realpath(process.cwd())]);
+    if (hostRoot !== providerCwd) return false;
+    if (!path.includes("/") && !path.includes("\\")) return true;
+    await access(path);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function normalizeTreeEntry(value: unknown): TreeEntry | undefined {
   if (!value || typeof value !== "object") return undefined;
   const entry = value as { path?: unknown; blobId?: unknown; kind?: unknown };
   if (typeof entry.path !== "string" || typeof entry.blobId !== "string") return undefined;
-  if (entry.kind !== undefined && entry.kind !== "file") return undefined;
   return {
     path: entry.path,
     blobId: entry.blobId,
     kind: typeof entry.kind === "string" ? entry.kind : undefined
   };
+}
+
+function isFileLikeTreeEntry(entry: TreeEntry): boolean {
+  return entry.kind === undefined || entry.kind === "file" || entry.kind === "symlink";
 }
 
 function decodeBlob(blob: EncodedBlob): string {

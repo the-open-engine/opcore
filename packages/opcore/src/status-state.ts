@@ -1,4 +1,9 @@
 import type { GraphProviderStatus, OpcoreRepoStatePayload } from "@the-open-engine/opcore-contracts";
+import {
+  createNodePythonProjectWorkspace,
+  isPythonSourcePath,
+  resolvePythonProjectContexts
+} from "@the-open-engine/opcore-validation-python";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import {
@@ -18,16 +23,25 @@ interface StatusWarningOptions {
   traversalFailures: readonly CensusTraversalFailure[];
 }
 
-export function createRepoState(resolution: RepoResolution): OpcoreRepoStatePayload {
-  const validationStatus = createDefaultValidationStatusPayload({
-    repoRoot: resolution.root,
-    graphMode: "optional"
-  });
+export async function createRepoState(resolution: RepoResolution): Promise<OpcoreRepoStatePayload> {
   const census = readRepoCensus(resolution);
   const coverage = computeCoverage(census.files);
+  const pythonTargets = census.files.filter(isPythonSourcePath);
+  const pythonProjectContexts = pythonTargets.length === 0
+    ? []
+    : await resolvePythonProjectContexts({
+        repoRoot: resolution.root,
+        targets: pythonTargets,
+        workspace: createNodePythonProjectWorkspace(resolution.root)
+      });
+  const validationStatus = createDefaultValidationStatusPayload({
+    repoRoot: resolution.root,
+    graphMode: "optional",
+    pythonProjectContexts
+  });
   const graphStatus = validationStatus.graph.status;
   const policy = validationPolicySummary(resolution.root, validationStatus.adapterRegistry.checkIds);
-  const validation = validationSummary(validationStatus, coverage, policy);
+  const validation = validationSummary(validationStatus, coverage, policy, pythonProjectContexts);
   const blockers = statusBlockers(graphStatus, census.traversalFailures);
   const level = activationLevel(graphStatus, validation.ready, blockers);
   const warningOptions = { coverage, validation, graphStatus, traversalFailures: census.traversalFailures };

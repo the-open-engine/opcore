@@ -2,10 +2,10 @@
 
 Maintainer license evidence for the Opcore alpha release gate.
 
-Root package: opcore@0.2.0
+Root package: opcore@0.2.1
 Lockfile version: 3
-Third-party packages: 118
-Bundled runtime packages: 35
+Third-party packages: 119
+Bundled runtime packages: 38
 Workspace packages: 16
 
 ## Third-Party Inventory
@@ -97,6 +97,7 @@ Workspace packages: 16
 | json-buffer | 3.0.1 | MIT | node_modules/json-buffer |
 | json-schema-traverse | 0.4.1 | MIT | node_modules/json-schema-traverse |
 | json-stable-stringify-without-jsonify | 1.0.1 | MIT | node_modules/json-stable-stringify-without-jsonify |
+| jsonc-parser | 3.3.1 | MIT | node_modules/jsonc-parser |
 | keyv | 4.5.4 | MIT | node_modules/keyv |
 | levn | 0.4.1 | MIT | node_modules/levn |
 | locate-path | 6.0.0 | MIT | node_modules/locate-path |
@@ -140,27 +141,27 @@ Workspace packages: 16
 | BSD-2-Clause | 6 |
 | BSD-3-Clause | 1 |
 | ISC | 8 |
-| MIT | 87 |
+| MIT | 88 |
 | Python-2.0 | 1 |
 
 ## Bundled Runtime Dependencies
 
 | Package | Version | License | Source |
 |---------|---------|---------|--------|
-| @the-open-engine/opcore-asp-provider | 0.2.0 | MIT | packages/asp-provider/package.json |
-| @the-open-engine/opcore-contracts | 0.2.0 | MIT | packages/contracts/package.json |
-| @the-open-engine/opcore-edit | 0.2.0 | MIT | packages/edit/package.json |
-| @the-open-engine/opcore-graph | 0.2.0 | MIT | packages/graph/package.json |
-| @the-open-engine/opcore-graph-core-darwin-arm64 | 0.2.0 | MIT | packages/opcore-graph-core-darwin-arm64/package.json |
-| @the-open-engine/opcore-graph-core-darwin-x64 | 0.2.0 | MIT | packages/opcore-graph-core-darwin-x64/package.json |
-| @the-open-engine/opcore-graph-core-linux-x64 | 0.2.0 | MIT | packages/opcore-graph-core-linux-x64/package.json |
-| @the-open-engine/opcore-validation | 0.2.0 | MIT | packages/validation/package.json |
-| @the-open-engine/opcore-validation-clone | 0.2.0 | MIT | packages/validation-clone/package.json |
-| @the-open-engine/opcore-validation-docs | 0.2.0 | MIT | packages/validation-docs/package.json |
-| @the-open-engine/opcore-validation-policy | 0.2.0 | MIT | packages/validation-policy/package.json |
-| @the-open-engine/opcore-validation-python | 0.2.0 | MIT | packages/validation-python/package.json |
-| @the-open-engine/opcore-validation-rust | 0.2.0 | MIT | packages/validation-rust/package.json |
-| @the-open-engine/opcore-validation-typescript | 0.2.0 | MIT | packages/validation-typescript/package.json |
+| @the-open-engine/opcore-asp-provider | 0.2.1 | MIT | packages/asp-provider/package.json |
+| @the-open-engine/opcore-contracts | 0.2.1 | MIT | packages/contracts/package.json |
+| @the-open-engine/opcore-edit | 0.2.1 | MIT | packages/edit/package.json |
+| @the-open-engine/opcore-graph | 0.2.1 | MIT | packages/graph/package.json |
+| @the-open-engine/opcore-graph-core-darwin-arm64 | 0.2.1 | MIT | packages/opcore-graph-core-darwin-arm64/package.json |
+| @the-open-engine/opcore-graph-core-darwin-x64 | 0.2.1 | MIT | packages/opcore-graph-core-darwin-x64/package.json |
+| @the-open-engine/opcore-graph-core-linux-x64 | 0.2.1 | MIT | packages/opcore-graph-core-linux-x64/package.json |
+| @the-open-engine/opcore-validation | 0.2.1 | MIT | packages/validation/package.json |
+| @the-open-engine/opcore-validation-clone | 0.2.1 | MIT | packages/validation-clone/package.json |
+| @the-open-engine/opcore-validation-docs | 0.2.1 | MIT | packages/validation-docs/package.json |
+| @the-open-engine/opcore-validation-policy | 0.2.1 | MIT | packages/validation-policy/package.json |
+| @the-open-engine/opcore-validation-python | 0.2.1 | MIT | packages/validation-python/package.json |
+| @the-open-engine/opcore-validation-rust | 0.2.1 | MIT | packages/validation-rust/package.json |
+| @the-open-engine/opcore-validation-typescript | 0.2.1 | MIT | packages/validation-typescript/package.json |
 | @ts-morph/common | 0.29.0 | MIT | node_modules/@ts-morph/common |
 | @typescript-eslint/project-service | 8.62.0 | MIT | node_modules/@typescript-eslint/project-service |
 | @typescript-eslint/tsconfig-utils | 8.62.0 | MIT | node_modules/@typescript-eslint/tsconfig-utils |
@@ -170,14 +171,17 @@ Workspace packages: 16
 | balanced-match | 4.0.4 | MIT | node_modules/balanced-match |
 | brace-expansion | 5.0.6 | MIT | node_modules/brace-expansion |
 | code-block-writer | 13.0.3 | MIT | node_modules/code-block-writer |
+| concat-map | 0.0.1 | MIT | node_modules/concat-map |
 | debug | 4.4.3 | MIT | node_modules/debug |
 | eslint-visitor-keys | 4.2.1 | Apache-2.0 | node_modules/eslint-visitor-keys |
 | fdir | 6.5.0 | MIT | node_modules/fdir |
+| jsonc-parser | 3.3.1 | MIT | node_modules/jsonc-parser |
 | minimatch | 10.2.5 | BlueOak-1.0.0 | node_modules/minimatch |
 | ms | 2.1.3 | MIT | node_modules/ms |
 | path-browserify | 1.0.1 | MIT | node_modules/path-browserify |
 | picomatch | 4.0.4 | MIT | node_modules/picomatch |
 | semver | 7.8.5 | ISC | node_modules/semver |
+| smol-toml | 1.6.0 | BSD-3-Clause | packages/opcore/node_modules/smol-toml |
 | tinyglobby | 0.2.17 | MIT | node_modules/tinyglobby |
 | ts-api-utils | 2.5.0 | MIT | node_modules/ts-api-utils |
 | ts-morph | 28.0.0 | MIT | node_modules/ts-morph |
@@ -187,21 +191,21 @@ Workspace packages: 16
 
 | Package | Version | License | Manifest |
 |---------|---------|---------|----------|
-| @the-open-engine/opcore-asp-provider | 0.2.0 | MIT | packages/asp-provider/package.json |
-| @the-open-engine/opcore-contracts | 0.2.0 | MIT | packages/contracts/package.json |
-| @the-open-engine/opcore-edit | 0.2.0 | MIT | packages/edit/package.json |
-| @the-open-engine/opcore-fixtures | 0.2.0 | MIT | packages/fixtures/package.json |
-| @the-open-engine/opcore-graph | 0.2.0 | MIT | packages/graph/package.json |
-| @the-open-engine/opcore-graph-core-darwin-arm64 | 0.2.0 | MIT | packages/opcore-graph-core-darwin-arm64/package.json |
-| @the-open-engine/opcore-graph-core-darwin-x64 | 0.2.0 | MIT | packages/opcore-graph-core-darwin-x64/package.json |
-| @the-open-engine/opcore-graph-core-linux-x64 | 0.2.0 | MIT | packages/opcore-graph-core-linux-x64/package.json |
-| @the-open-engine/opcore-validation | 0.2.0 | MIT | packages/validation/package.json |
-| @the-open-engine/opcore-validation-clone | 0.2.0 | MIT | packages/validation-clone/package.json |
-| @the-open-engine/opcore-validation-docs | 0.2.0 | MIT | packages/validation-docs/package.json |
-| @the-open-engine/opcore-validation-policy | 0.2.0 | MIT | packages/validation-policy/package.json |
-| @the-open-engine/opcore-validation-python | 0.2.0 | MIT | packages/validation-python/package.json |
-| @the-open-engine/opcore-validation-rust | 0.2.0 | MIT | packages/validation-rust/package.json |
-| @the-open-engine/opcore-validation-typescript | 0.2.0 | MIT | packages/validation-typescript/package.json |
-| opcore | 0.2.0 | MIT | packages/opcore/package.json |
+| @the-open-engine/opcore-asp-provider | 0.2.1 | MIT | packages/asp-provider/package.json |
+| @the-open-engine/opcore-contracts | 0.2.1 | MIT | packages/contracts/package.json |
+| @the-open-engine/opcore-edit | 0.2.1 | MIT | packages/edit/package.json |
+| @the-open-engine/opcore-fixtures | 0.2.1 | MIT | packages/fixtures/package.json |
+| @the-open-engine/opcore-graph | 0.2.1 | MIT | packages/graph/package.json |
+| @the-open-engine/opcore-graph-core-darwin-arm64 | 0.2.1 | MIT | packages/opcore-graph-core-darwin-arm64/package.json |
+| @the-open-engine/opcore-graph-core-darwin-x64 | 0.2.1 | MIT | packages/opcore-graph-core-darwin-x64/package.json |
+| @the-open-engine/opcore-graph-core-linux-x64 | 0.2.1 | MIT | packages/opcore-graph-core-linux-x64/package.json |
+| @the-open-engine/opcore-validation | 0.2.1 | MIT | packages/validation/package.json |
+| @the-open-engine/opcore-validation-clone | 0.2.1 | MIT | packages/validation-clone/package.json |
+| @the-open-engine/opcore-validation-docs | 0.2.1 | MIT | packages/validation-docs/package.json |
+| @the-open-engine/opcore-validation-policy | 0.2.1 | MIT | packages/validation-policy/package.json |
+| @the-open-engine/opcore-validation-python | 0.2.1 | MIT | packages/validation-python/package.json |
+| @the-open-engine/opcore-validation-rust | 0.2.1 | MIT | packages/validation-rust/package.json |
+| @the-open-engine/opcore-validation-typescript | 0.2.1 | MIT | packages/validation-typescript/package.json |
+| opcore | 0.2.1 | MIT | packages/opcore/package.json |
 
 No unresolved third-party license entries.

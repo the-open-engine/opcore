@@ -16,6 +16,7 @@ import {
   releaseReceiptPackageNames
 } from "../packages/contracts/dist/index.js";
 import { bundledExternalRuntimePackageNames } from "../scripts/release-package-dirs.mjs";
+import { externalRuntimePackageDir } from "../scripts/stage-opcore-bundle.mjs";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const releaseDocsLockTimeoutMs = 900000;
@@ -516,8 +517,7 @@ function tempRepo(options = {}) {
 
 function copyBundledExternalRuntimePackages(repo) {
   for (const packageName of bundledExternalRuntimePackageNames) {
-    const source = join(repoRoot, "node_modules", ...packageName.split("/"));
-    if (!existsSync(source)) throw new Error(`Missing external runtime package fixture source: node_modules/${packageName}`);
+    const source = externalRuntimePackageDir(packageName);
     const destination = join(repo, "node_modules", ...packageName.split("/"));
     mkdirSync(dirname(destination), { recursive: true });
     cpSync(source, destination, { recursive: true });
@@ -665,9 +665,9 @@ function minimalCutoverReceipt(repo, commandOverrides = {}) {
     packageNames,
     installedPackages: packageNames.map((packageName) => ({
         packageName,
-        version: "0.2.0",
+        version: "0.2.1",
         tarball: {
-          filename: `${packageName.replace("@the-open-engine/", "the-open-engine-").replace("/", "-")}-0.2.0.tgz`,
+          filename: `${packageName.replace("@the-open-engine/", "the-open-engine-").replace("/", "-")}-0.2.1.tgz`,
           sha256: "1".repeat(64)
         },
         installedManifest: {

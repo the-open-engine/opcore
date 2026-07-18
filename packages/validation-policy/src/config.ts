@@ -7,6 +7,18 @@ export function readOpcoreRepoConfig(repoRoot: string): OpcoreRepoConfig {
   return parsed === undefined ? defaultRepoConfig() : { validation: readValidationConfig(parsed.validation) };
 }
 
+export function parseOpcoreRepoConfig(content: string | undefined): OpcoreRepoConfig {
+  if (content === undefined) return defaultRepoConfig();
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(content);
+  } catch (error) {
+    throw new Error(`Invalid Opcore config ${configPath}: ${errorMessage(error)}`);
+  }
+  if (!isPlainObject(parsed)) throw new Error(`Invalid Opcore config ${configPath}: expected JSON object`);
+  return { validation: readValidationConfig(parsed.validation) };
+}
+
 export function defaultRepoConfig(): OpcoreRepoConfig {
   return { validation: { checks: defaultChecksConfig() } };
 }

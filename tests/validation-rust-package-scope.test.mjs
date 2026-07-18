@@ -106,7 +106,7 @@ function writePackageScopeFixture(temp) {
 }
 
 function packageManifest(name) {
-  return `[package]\nname = "${name}"\nversion = "0.2.0"\nedition = "2021"\n`;
+  return `[package]\nname = "${name}"\nversion = "0.2.1"\nedition = "2021"\n`;
 }
 
 function writeCargoStub(cargo, logPath) {

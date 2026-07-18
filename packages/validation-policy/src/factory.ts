@@ -3,7 +3,7 @@ import type { ValidationCheckDefinition } from "@the-open-engine/opcore-validati
 import { createValidationCheckRegistry } from "@the-open-engine/opcore-validation";
 import { createCloneValidationChecks } from "@the-open-engine/opcore-validation-clone";
 import { createDocsValidationChecks, type CreateDocsValidationChecksOptions } from "@the-open-engine/opcore-validation-docs";
-import { createPythonValidationChecks } from "@the-open-engine/opcore-validation-python";
+import { createNodePythonProjectWorkspace, createPythonValidationChecks } from "@the-open-engine/opcore-validation-python";
 import { createRustValidationChecks } from "@the-open-engine/opcore-validation-rust";
 import { createTypeScriptValidationChecks } from "@the-open-engine/opcore-validation-typescript";
 import { readOpcoreRepoConfig } from "./config.js";
@@ -35,6 +35,7 @@ export function createBuiltInValidationChecks(
   repoRoot?: string
 ): readonly ValidationCheckDefinition[] {
   const checksConfig = config?.validation.checks;
+  const pythonWorkspace = options.pythonWorkspace ?? (repoRoot === undefined ? undefined : createNodePythonProjectWorkspace(repoRoot));
   return [
     ...createTypeScriptValidationChecks({
       fileLength: checksConfig?.typescript?.fileLength,
@@ -51,7 +52,10 @@ export function createBuiltInValidationChecks(
       deadCode: checksConfig?.typescript?.deadCode
     }),
     ...createRustValidationChecks(rustValidationOptions(config)),
-    ...createPythonValidationChecks(repoRoot !== undefined ? { repoRoot } : {}),
+    ...createPythonValidationChecks({
+      ...(pythonWorkspace === undefined ? {} : { nodeWorkspace: pythonWorkspace }),
+      ...(options.pythonImportAnalyzer === undefined ? {} : { importAnalyzer: options.pythonImportAnalyzer })
+    }),
     ...createDocsValidationChecks(docsValidationOptions(checksConfig?.docs)),
     ...cloneChecks(checksConfig?.clone, options)
   ];
@@ -77,11 +81,12 @@ function validationChecksForRepoConfig(
   const adapters = config.validation.adapters === undefined ? undefined : new Set<string>(config.validation.adapters);
   const disabled = new Set(configuredDisabled);
   const defaults = new Set(configuredDefaults);
+  const filteredContexts = new WeakMap<object, Parameters<ValidationCheckDefinition["run"]>[0]>();
   const checks = available
     .filter((check) => adapters === undefined || adapters.has(check.adapter))
     .filter((check) => !disabled.has(check.id))
     .map((check) => applyDefaultScopePolicy(check, defaults))
-    .map((check) => applyPathPolicy(check, config.validation.pathPolicy));
+    .map((check) => applyPathPolicy(check, config.validation.pathPolicy, filteredContexts));
   createValidationCheckRegistry(checks);
   return checks;
 }
@@ -148,13 +153,21 @@ function applyDefaultScopePolicy(check: ValidationCheckDefinition, defaults: Rea
 
 function applyPathPolicy(
   check: ValidationCheckDefinition,
-  pathPolicy: OpcorePathPolicy | undefined
+  pathPolicy: OpcorePathPolicy | undefined,
+  filteredContexts: WeakMap<object, Parameters<ValidationCheckDefinition["run"]>[0]>
 ): ValidationCheckDefinition {
   if (pathPolicy === undefined) return check;
-  const run: ValidationCheckDefinition["run"] = (context) => check.run(withFilteredFileView(context, pathPolicy));
+  const filteredContext = (context: Parameters<ValidationCheckDefinition["run"]>[0]) => {
+    const existing = filteredContexts.get(context.fileView);
+    if (existing !== undefined) return existing;
+    const filtered = withFilteredFileView(context, pathPolicy);
+    filteredContexts.set(context.fileView, filtered);
+    return filtered;
+  };
+  const run: ValidationCheckDefinition["run"] = (context) => check.run(filteredContext(context));
   if (check.graphRequirements === undefined) return { ...check, run };
   const graphRequirements: NonNullable<ValidationCheckDefinition["graphRequirements"]> = (context) =>
-    check.graphRequirements?.(withFilteredFileView(context, pathPolicy)) ?? [];
+    check.graphRequirements?.(filteredContext(context)) ?? [];
   return { ...check, graphRequirements, run };
 }
 

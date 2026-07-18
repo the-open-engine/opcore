@@ -38,6 +38,8 @@ describe("Opcore metrics", () => {
     assert.equal(signals.get("rust.module_resolution").count, 1);
     assert.equal(signals.get("rust.toolchain_drift").count, 1);
     assert.equal(signals.get("python.syntax_errors").count, 1);
+    assert.equal(signals.get("python.syntax_errors").evidence[0].line, 3);
+    assert.equal(signals.get("python.syntax_errors").evidence[0].column, 8);
     assert.equal(signals.get("python.type_errors").count, 1);
     assert.equal(signals.get("python.untested_modules").count, 1);
     assert.equal(signals.get("python.dead_exports").evidence[0].path, "pkg/api.py");
@@ -413,7 +415,15 @@ function validationResult() {
         code: "RUST_FMT_DRIFT",
         message: "Rust formatting drift."
       },
-      { category: "syntax", severity: "error", path: "pkg/bad.py", code: "PY_SYNTAX_MISSING_COLON", message: "Missing colon." },
+      {
+        category: "syntax",
+        severity: "error",
+        path: "pkg/bad.py",
+        code: "PY_SYNTAX_ERROR",
+        message: "expected ':'",
+        line: 3,
+        column: 8
+      },
       { category: "types", severity: "error", path: "pkg/typed.py", code: "PY_TYPE_MISMATCH", message: "Type mismatch." },
       {
         category: "test",
@@ -452,8 +462,8 @@ function validationResult() {
       {
         category: "types",
         severity: "info",
-        code: "PYTHON_TYPES_UNSUPPORTED",
-        message: "Python type validation requires mypy or pyright; neither tool is available."
+        code: "PYTHON_TYPES_UNSUPPORTED_TARGET",
+        message: "Python type validation requires explicit or configured checker authority."
       }
     ],
     manifest: {
@@ -740,6 +750,6 @@ function latencyRecord(index) {
       ],
       processState: index === 0 ? "cold" : "warm"
     },
-    opcoreVersion: "0.2.0"
+    opcoreVersion: "0.2.1"
   });
 }

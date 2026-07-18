@@ -73,7 +73,7 @@ Cargo.lock-only changes are retained compatibility too. Current native ownership
 
 ## Scope And Overlay Evidence
 
-Rust-owned inputs are `.rs`, `.inc`, and `Cargo.toml`. Cargo.lock-only changes are explicitly skipped as retained compatibility. Tree scope uses committed Git tree content through the validation workspace. Pre-write and hypothetical requests use fileView after-state overlays and temporary materialization for Cargo tools.
+Rust-owned inputs are `.rs`, `.inc`, and `Cargo.toml`. Cargo.lock-only changes are explicitly skipped as retained compatibility. Tree scope uses committed Git tree content through the validation workspace. Pre-write and hypothetical requests use fileView after-state overlays and one run-scoped temporary materialization for Cargo tools. Selected checks with the same materialization environment share the workspace; the runner removes it on normal, fail-fast, streaming, or failed exits.
 
 Representative Opcore diffs:
 
@@ -105,7 +105,8 @@ Expected native result: `rust.clippy` reports owned lint diagnostics when run be
 
 ## #21 Runtime Facts
 
-- Temporary workspace materialization is required for Cargo-backed checks.
+- Temporary workspace materialization is required for Cargo-backed checks, but it is bounded to one workspace per
+  validation file-view state and materialization environment.
 - Missing `cargo`, `rustfmt`, or `clippy` makes the Rust adapter unavailable. Missing `rustdoc`, `cargo-udeps`,
   `cargo-depgraph`, or `rust-code-analysis-cli` keeps the Rust adapter degraded and annotates the retained blocker
   entry with `requiredTool`; no generic retained entries remain when those tools are available.

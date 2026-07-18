@@ -119,21 +119,8 @@ describe("GraphProvider SQLite store conformance", () => {
       const status = graphProviderStatus({ repoRoot: fixtureRoot });
       assert.equal(status.state, "available");
       assert.equal(status.dbPath, refresh.dbPath);
-      assert.deepEqual(status.nodes_by_kind, {
-        Class: 3,
-        File: 9,
-        Function: 12,
-        Module: 9,
-        Variable: 2
-      });
-      assert.deepEqual(status.edges_by_kind, {
-        CALLS: 11,
-        CONTAINS: 26,
-        DEPENDS_ON: 7,
-        IMPORTS_FROM: 7,
-        INHERITS: 1,
-        TESTED_BY: 3
-      });
+      assert.deepEqual(status.nodes_by_kind, expectedPythonNodeCounts());
+      assert.deepEqual(status.edges_by_kind, expectedPythonEdgeCounts());
       const rawStatus = rawGraphStatus(fixtureRoot);
       assert.equal(rawStatus.state, "available");
       assert.deepEqual(rawStatus.nodes_by_kind, status.nodes_by_kind);
@@ -150,28 +137,15 @@ describe("GraphProvider SQLite store conformance", () => {
         assert.equal(db.prepare("pragma user_version").get().user_version, 1);
         assert.deepEqual(
           plainRows(db.prepare("select kind, count(*) as count from nodes group by kind order by kind").all()),
-          [
-            { kind: "Class", count: 3 },
-            { kind: "File", count: 9 },
-            { kind: "Function", count: 12 },
-            { kind: "Module", count: 9 },
-            { kind: "Variable", count: 2 }
-          ]
+          Object.entries(expectedPythonNodeCounts()).map(([kind, count]) => ({ kind, count }))
         );
         assert.deepEqual(
           plainRows(db.prepare("select kind, count(*) as count from edges group by kind order by kind").all()),
-          [
-            { kind: "CALLS", count: 11 },
-            { kind: "CONTAINS", count: 26 },
-            { kind: "DEPENDS_ON", count: 7 },
-            { kind: "IMPORTS_FROM", count: 7 },
-            { kind: "INHERITS", count: 1 },
-            { kind: "TESTED_BY", count: 3 }
-          ]
+          Object.entries(expectedPythonEdgeCounts()).map(([kind, count]) => ({ kind, count }))
         );
         assert.deepEqual(
           plainRows(db.prepare("select language, count(*) as count from file_hashes group by language").all()),
-          [{ language: "python", count: 9 }]
+          [{ language: "python", count: expectedPythonNodeCounts().File }]
         );
         assert.deepEqual(
           Object.fromEntries(
@@ -234,7 +208,13 @@ describe("GraphProvider SQLite store conformance", () => {
         { queryKind: "importers_of", target: "src/pkg/models.py", maxDepth: 2, limit: 100 }
       );
       assert.equal(importers.status.state, "available");
-      assert.deepEqual(paths(importers.nodes), ["src/pkg/__init__.py", "src/pkg/models.py", "tests/test_models.py"]);
+      assert.deepEqual(paths(importers.nodes), [
+        "src/cases/docstring_case.py",
+        "src/cases/package_case.py",
+        "src/pkg/__init__.py",
+        "src/pkg/models.py",
+        "tests/test_models.py"
+      ]);
 
       const tests = graphProviderNamedQuery(
         { repoRoot: fixtureRoot },
@@ -757,6 +737,29 @@ function assertFreshMetadataTimestamp(value, minEpochMs) {
   assert.equal(Number.isFinite(parsed), true, value);
   assert.equal(parsed >= minEpochMs - 5000, true, value);
   assert.equal(parsed <= Date.now() + 5000, true, value);
+}
+
+function expectedPythonNodeCounts() {
+  const kindByPrefix = {
+    class: "Class",
+    file: "File",
+    function: "Function",
+    module: "Module",
+    variable: "Variable"
+  };
+  return countBy(
+    pythonExpected.nodeIds.map((id) => kindByPrefix[id.slice(0, id.indexOf(":"))])
+  );
+}
+
+function expectedPythonEdgeCounts() {
+  return countBy(pythonExpected.edgeTriples.map(([kind]) => kind));
+}
+
+function countBy(values) {
+  const counts = new Map();
+  for (const value of values) counts.set(value, (counts.get(value) ?? 0) + 1);
+  return Object.fromEntries([...counts].sort(([left], [right]) => left.localeCompare(right)));
 }
 
 function edgeTriples(edges) {

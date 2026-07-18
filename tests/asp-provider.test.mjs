@@ -2,10 +2,11 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { spawn, spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { createAspHostValidationWorkspace } from "../packages/asp-provider/dist/workspace.js";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const providerBin = join(repoRoot, "packages/asp-provider/dist/index.js");
@@ -49,6 +50,59 @@ const allCheckIds = [
 ];
 
 describe("Opcore ASP provider", () => {
+  it("preserves host listTree truncation for exact-state validation", async () => {
+    const baseline = { rev: "tree:truncated", stampedAt: "2026-07-16T00:00:00.000Z" };
+    const host = createAspHostValidationWorkspace(
+      { request: async () => ({ entries: [{ path: "src/app.ts", blobId: "blob:app", kind: "file" }], truncated: true }) },
+      { workspace: { baseline } },
+      { baseline, grantedPermissions: { read: ["**/*"], write: false, network: false } },
+      { baseline, changes: [] }
+    );
+
+    const listing = await host.workspace.listFiles({
+      scope: { kind: "files", files: ["src/app.ts"], workspaceFiles: [{ path: "src/app.ts" }] },
+      state: "after"
+    });
+    assert.equal(listing.truncated, true);
+    assert.match(listing.message, /truncated/);
+
+    const packageListing = await host.workspace.listPackageFiles("app", "src");
+    assert.equal(packageListing.truncated, true);
+    assert.match(packageListing.message, /truncated/);
+  });
+
+  it("requires positive host file-kind evidence before treating realpaths as safe", async () => {
+    const baseline = { rev: "tree:realpath-evidence", stampedAt: "2026-07-15T00:00:00.000Z" };
+    const workspaceFor = (entries) => createAspHostValidationWorkspace(
+      {
+        request: async (method) => {
+          assert.equal(method, "workspace/listTree");
+          return { entries, truncated: false };
+        }
+      },
+      { workspace: { baseline } },
+      { baseline, grantedPermissions: { read: ["**/*"], write: false, network: false } },
+      { baseline, changes: [] }
+    ).pythonWorkspace;
+
+    assert.deepEqual(
+      await workspaceFor([]).realpath("app.py"),
+      { path: "app.py", symlink: false, unavailable: true }
+    );
+    assert.deepEqual(
+      await workspaceFor([{ path: "app.py", blobId: "blob:missing-kind" }]).realpath("app.py"),
+      { path: "app.py", symlink: false, unavailable: true }
+    );
+    assert.deepEqual(
+      await workspaceFor([{ path: "app.py", blobId: "blob:file", kind: "file" }]).realpath("app.py"),
+      { path: "app.py", symlink: false }
+    );
+    assert.deepEqual(
+      await workspaceFor([{ path: "app.py", blobId: "blob:symlink", kind: "symlink" }]).realpath("app.py"),
+      { path: "app.py", symlink: true }
+    );
+  });
+
   it("handles initialize/initialized/evaluate over stdio without mutating host files", { timeout: 60000 }, async () => {
     assert.equal(existsSync(providerBin), true, "run npm run build before asp-provider tests");
     const repo = mkdtempSync(join(tmpdir(), "opcore-asp-provider-repo-"));
@@ -76,7 +130,7 @@ describe("Opcore ASP provider", () => {
 
         const init = await peer.request("initialize", {
           protocolVersion: "asp/0.1",
-          host: { name: "fake-host", version: "0.2.0-test" },
+          host: { name: "fake-host", version: "0.2.1-test" },
           hostCapabilities: { readBlob: true, listTree: true, putBlob: false },
           workspace: { root: repo, baseline: host.baseline },
           assuranceMode: "gated"
@@ -124,7 +178,7 @@ describe("Opcore ASP provider", () => {
         assert.ok(assessment.diagnostics.every((diagnostic) => diagnostic.code.startsWith(`${diagnostic.source}/`)));
         assert.ok(assessment.diagnostics.every((diagnostic) => diagnostic.fingerprint.startsWith("sha256:")));
         assert.ok(assessment.coverage.degraded.some((entry) => entry.reason === "unsupported" && /comparison/.test(entry.requirement)));
-        assert.ok(assessment.coverage.degraded.some((entry) => entry.reason === "unavailable" && entry.requirement === "typescript.import-graph"));
+        assert.ok(!assessment.coverage.degraded.some((entry) => entry.reason === "unavailable" && entry.requirement === "typescript.import-graph"));
         assert.equal(assessment.coverage.exhaustive, false);
         assertCommandTiming(assessment.timing, {
           expectedPhases: [
@@ -160,7 +214,7 @@ describe("Opcore ASP provider", () => {
       try {
         await peer.request("initialize", {
           protocolVersion: "asp/0.1",
-          host: { name: "fake-host", version: "0.2.0-test" },
+          host: { name: "fake-host", version: "0.2.1-test" },
           hostCapabilities: { readBlob: true, listTree: true, putBlob: false },
           workspace: { root: repo, baseline: host.baseline },
           assuranceMode: "gated"
@@ -199,6 +253,47 @@ describe("Opcore ASP provider", () => {
     }
   });
 
+  it("reports Python compiler unavailability without executing the provider process PATH", { timeout: 60000 }, async () => {
+    const repo = mkdtempSync(join(tmpdir(), "opcore-asp-provider-python-range-"));
+    try {
+      mkdirSync(join(repo, "pkg"));
+      writeFileSync(join(repo, "pkg/app.py"), "value = 1\n");
+      const host = createHostWorkspace({ "pkg/app.py": "value = 1\n" });
+      const peer = spawnProvider(host);
+      try {
+        await peer.request("initialize", {
+          protocolVersion: "asp/0.1",
+          host: { name: "fake-host", version: "0.2.1-test" },
+          hostCapabilities: { readBlob: true, listTree: true, putBlob: false },
+          workspace: { root: repo, baseline: host.baseline },
+          assuranceMode: "gated"
+        });
+        peer.notify("initialized", {
+          grantedPermissions: { read: ["**/*"], write: false, network: false },
+          baseline: host.baseline
+        });
+        const assessment = await peer.request("check/evaluate", {
+          callSite: "interactive",
+          changeset: host.changeset([host.modify("pkg/app.py", "if True\n    value = 1\n")]),
+          comparison: "all",
+          checks: ["python.syntax"]
+        });
+        const unavailable = assessment.diagnostics.find((entry) => entry.code.includes("/PY_SYNTAX_TOOL_UNAVAILABLE"));
+        assert.equal(unavailable?.code, "opcore/opcore.infrastructure/PY_SYNTAX_TOOL_UNAVAILABLE");
+        assert.deepEqual(unavailable?.location, { path: "pkg/app.py" });
+        assert.equal(
+          assessment.coverage.degraded.some((entry) => entry.requirement === "python.syntax"),
+          true
+        );
+        assert.equal(readFileSync(join(repo, "pkg/app.py"), "utf8"), "value = 1\n");
+      } finally {
+        peer.close();
+      }
+    } finally {
+      rmSync(repo, { recursive: true, force: true });
+    }
+  });
+
   it("honors repo validation policy thresholds during check evaluation", { timeout: 60000 }, async () => {
     assert.equal(existsSync(providerBin), true, "run npm run build before asp-provider tests");
     const repo = mkdtempSync(join(tmpdir(), "opcore-asp-provider-policy-"));
@@ -225,6 +320,7 @@ describe("Opcore ASP provider", () => {
       writeFileSync(join(repo, "src/length.ts"), "export const ok = 1;\n");
 
       const host = createHostWorkspace({
+        ".opcore/config": readFileSync(join(repo, ".opcore/config"), "utf8"),
         "tsconfig.json": "{}\n",
         "src/length.ts": "export const ok = 1;\n"
       });
@@ -232,7 +328,7 @@ describe("Opcore ASP provider", () => {
       try {
         await peer.request("initialize", {
           protocolVersion: "asp/0.1",
-          host: { name: "fake-host", version: "0.2.0-test" },
+          host: { name: "fake-host", version: "0.2.1-test" },
           hostCapabilities: { readBlob: true, listTree: true, putBlob: false },
           workspace: { root: repo, baseline: host.baseline },
           assuranceMode: "gated"
@@ -258,6 +354,195 @@ describe("Opcore ASP provider", () => {
         assert.equal(fileLengthDiagnostic?.source, "opcore");
         assert.equal(fileLengthDiagnostic?.code, "opcore/typescript.file-length/TS_FILE_LINES");
         assert.equal(fileLengthDiagnostic?.message, "TypeScript file has 3 lines; max is 2.");
+      } finally {
+        peer.close();
+      }
+    } finally {
+      rmSync(repo, { recursive: true, force: true });
+    }
+  });
+
+  it("resolves nested Python context exclusively from host after-state callbacks", { timeout: 60000 }, async () => {
+    assert.equal(existsSync(providerBin), true, "run npm run build before asp-provider tests");
+    const repo = mkdtempSync(join(tmpdir(), "opcore-asp-provider-python-context-"));
+    try {
+      mkdirSync(join(repo, "services", "api", "src"), { recursive: true });
+      const providerLocalPythonMarker = join(repo, "provider-local-python-ran");
+      const providerLocalPython = join(repo, "services", "api", ".venv", "bin", "python");
+      mkdirSync(dirname(providerLocalPython), { recursive: true });
+      writeFileSync(providerLocalPython, `#!/bin/sh\n: > ${JSON.stringify(providerLocalPythonMarker)}\nexit 1\n`);
+      chmodSync(providerLocalPython, 0o755);
+      writeFileSync(
+        join(repo, "services", "api", "pyproject.toml"),
+        "[project]\nname='disk-must-not-win'\nrequires-python='>=99'\n"
+      );
+      writeFileSync(join(repo, "services", "api", "src", "app.py"), "DISK = 'must-not-win'\n");
+      const host = createHostWorkspace({
+        "pyproject.toml": "[project]\nname='root'\nrequires-python='>=3.8'\n",
+        "root.py": "ROOT = 1\n",
+        "services/api/pyproject.toml": "[project]\nname='api'\nrequires-python='>=3.8'\n[tool.uv]\npackage=true\n",
+        "services/api/uv.lock": "version=1\n",
+        "services/api/src/app.py": "VALUE = 1\n"
+      });
+      const peer = spawnProvider(host);
+      try {
+        await peer.request("initialize", {
+          protocolVersion: "asp/0.1",
+          host: { name: "fake-host", version: "0.1.0-test" },
+          hostCapabilities: { readBlob: true, listTree: true, putBlob: false },
+          workspace: { root: repo, baseline: host.baseline },
+          assuranceMode: "gated"
+        });
+        peer.notify("initialized", {
+          grantedPermissions: { read: ["**/*"], write: false, network: false },
+          baseline: host.baseline
+        });
+        const assessment = await peer.request("check/evaluate", {
+          callSite: "interactive",
+          changeset: host.changeset([
+            host.modify("services/api/src/app.py", "VALUE = 2  # type: ignore\n")
+          ]),
+          comparison: "all",
+          checks: ["python.source-hygiene"]
+        });
+        const contextEvidence = assessment.evidence.find((entry) => entry.kind === "python_project_context");
+        assert.equal(contextEvidence.data.schemaId, "opcore.python.project-context.v1");
+        assert.equal(contextEvidence.data.target, "services/api/src/app.py");
+        assert.equal(contextEvidence.data.projectRoot, "services/api");
+        assert.match(contextEvidence.data.projectKey, /^sha256:[a-f0-9]{64}$/);
+        assert.match(contextEvidence.data.contextFingerprint, /^sha256:[a-f0-9]{64}$/);
+        assert.equal(contextEvidence.data.outcome, "unsupported");
+        assert.equal(
+          contextEvidence.data.reasons.some((reason) => reason.code === "tool_unavailable"),
+          true,
+          JSON.stringify(contextEvidence.data.reasons)
+        );
+        assert.equal(JSON.stringify(contextEvidence).includes("disk-must-not-win"), false);
+        const typesAssessment = await peer.request("check/evaluate", {
+          callSite: "interactive",
+          changeset: host.changeset([
+            host.modify("services/api/src/app.py", "VALUE = 2\n")
+          ]),
+          comparison: "all",
+          checks: ["python.types"]
+        });
+        const capabilityEvidence = typesAssessment.evidence.find(
+          (entry) => entry.kind === "python_validation_capability_run"
+        );
+        assert.equal(capabilityEvidence.data.schemaId, "opcore.python.validation-capability-run");
+        assert.equal(Object.hasOwn(capabilityEvidence.data, "checker"), false);
+        assert.equal(Object.hasOwn(capabilityEvidence.data, "checkerSource"), false);
+        assert.equal(capabilityEvidence.data.status, "unsupported_target");
+        assert.match(capabilityEvidence.data.afterStateManifestFingerprint, /^sha256:[a-f0-9]{64}$/);
+        assertNoForbiddenKeys(typesAssessment);
+        assert.equal(JSON.stringify(capabilityEvidence).includes("VALUE = 2"), false);
+        assert.equal(existsSync(providerLocalPythonMarker), false, "ASP provider must not execute package-local host paths");
+      } finally {
+        peer.close();
+      }
+    } finally {
+      rmSync(repo, { recursive: true, force: true });
+    }
+  });
+
+  it("preserves selected Pyright capability receipts without ASP-side tool fallback", { timeout: 60000 }, async () => {
+    const repo = mkdtempSync(join(tmpdir(), "opcore-asp-provider-pyright-"));
+    try {
+      const bin = join(repo, "services/api/.venv/bin");
+      mkdirSync(bin, { recursive: true });
+      const pythonPath = join(bin, "python");
+      const pythonScript = [
+        "#!/bin/sh",
+        "case \"$4\" in",
+        "  *opcore.python.project-context.interpreter.v1*)",
+        `    printf '%s\\n' '${JSON.stringify({
+          protocol: "opcore.python.project-context.interpreter.v1",
+          executable: pythonPath,
+          version: "3.12.13",
+          implementation: "CPython",
+          platform: "darwin",
+          architecture: "arm64",
+          abi: "cpython-312",
+          soabi: "cpython-312-darwin"
+        })}'`,
+        "    ;;",
+        "  *) exit 9 ;;",
+        "esac",
+        ""
+      ].join("\n");
+      const pyrightPath = join(bin, "pyright");
+      const pyrightPayload = {
+        version: "1.1.411",
+        time: "0",
+        generalDiagnostics: [{
+          file: "src/app.py",
+          severity: "warning",
+          message: "Unused import",
+          rule: "reportUnusedImport",
+          range: { start: { line: 0, character: 0 }, end: { line: 0, character: 1 } }
+        }],
+        summary: { filesAnalyzed: 1, errorCount: 0, warningCount: 1, informationCount: 0, timeInSec: 0 }
+      };
+      const pyrightScript = [
+        "#!/bin/sh",
+        "if [ \"$1\" = \"--version\" ]; then echo 'pyright 1.1.411'; exit 0; fi",
+        `printf '%s\\n' '${JSON.stringify(pyrightPayload)}'`,
+        "exit 0",
+        ""
+      ].join("\n");
+      writeFileSync(pythonPath, pythonScript);
+      writeFileSync(pyrightPath, pyrightScript);
+      chmodSync(pythonPath, 0o755);
+      chmodSync(pyrightPath, 0o755);
+
+      const host = createHostWorkspace({
+        "services/api/pyproject.toml": "[project]\nname='api'\nrequires-python='>=3.8'\n",
+        "services/api/pyrightconfig.json": JSON.stringify({
+          include: ["src/**/*.py"],
+          exclude: ["**/__pycache__"],
+          ignore: ["generated/**"],
+          extraPaths: [".", "src"],
+          stubPath: "stubs",
+          executionEnvironments: [{ root: "src", extraPaths: [".", "stubs"] }]
+        }) + "\n",
+        "services/api/src/app.py": "import unused\n",
+        "services/api/stubs/external/__init__.pyi": "VALUE: int\n",
+        "services/api/.venv/bin/python": pythonScript,
+        "services/api/.venv/bin/pyright": pyrightScript
+      });
+      const peer = spawnProvider(host);
+      try {
+        await peer.request("initialize", {
+          protocolVersion: "asp/0.1",
+          host: { name: "fake-host", version: "0.1.0-test" },
+          hostCapabilities: { readBlob: true, listTree: true, putBlob: false },
+          workspace: { root: repo, baseline: host.baseline },
+          assuranceMode: "gated"
+        });
+        peer.notify("initialized", {
+          grantedPermissions: { read: ["**/*"], write: false, network: false },
+          baseline: host.baseline
+        });
+        const assessment = await peer.request("check/evaluate", {
+          callSite: "interactive",
+          changeset: host.changeset([host.modify("services/api/src/app.py", "import unused\nVALUE = 1\n")]),
+          comparison: "all",
+          checks: ["python.types"]
+        }, 30000);
+        const evidence = assessment.evidence.find((entry) => entry.kind === "python_validation_capability_run");
+        assert.equal(evidence.data.checker, "pyright", JSON.stringify(assessment, null, 2));
+        assert.equal(evidence.data.status, "unsupported_target", JSON.stringify(assessment, null, 2));
+        assert.equal(assessment.diagnostics.some((entry) => /configured path realpath|invalid config/i.test(entry.message)), false);
+        assert.equal(evidence.data.tool.name, "pyright");
+        assert.equal(evidence.data.tool.configFile, "services/api/pyrightconfig.json");
+        assert.equal(Object.hasOwn(evidence.data, "execution"), false);
+        assert.deepEqual({
+          diagnostics: evidence.data.diagnosticCount,
+          errors: evidence.data.errorCount,
+          warnings: evidence.data.warningCount,
+          notes: evidence.data.noteCount
+        }, { diagnostics: 1, errors: 0, warnings: 0, notes: 1 });
+        assertNoForbiddenKeys(assessment);
       } finally {
         peer.close();
       }
@@ -316,7 +601,7 @@ describe("Opcore ASP provider", () => {
 
     assert.equal(manifest.$schema, "https://covibes.dev/asp/schemas/server-manifest.schema.json");
     assert.equal(manifest.manifestVersion, "asp-server/0.1");
-    assert.deepEqual(manifest.server, { id: "opcore", name: "Opcore", version: "0.2.0" });
+    assert.deepEqual(manifest.server, { id: "opcore", name: "Opcore", version: "0.2.1" });
     assert.deepEqual(manifest.protocolVersions, ["asp/0.1"]);
     assert.deepEqual(manifest.capabilities, ["check"]);
     assert.deepEqual(manifest.entrypoint, { transport: "stdio", bin: "opcore-asp-provider", args: ["--stdio"] });
@@ -341,21 +626,32 @@ describe("Opcore ASP provider", () => {
   });
 
   it("removes stale legacy generated manifests before packaging", () => {
-    const manifestDir = join(repoRoot, "packages/asp-provider/dist/manifests");
-    const legacyManifestPath = join(manifestDir, ["lattice", "asp", "provider.provisional.json"].join("-"));
-    const provisionalManifestPath = join(manifestDir, "opcore-asp-provider.provisional.json");
-    const canonicalManifestPath = join(manifestDir, "asp-server.json");
-    writeFileSync(legacyManifestPath, "{}\n");
+    const temp = mkdtempSync(join(tmpdir(), "opcore-asp-manifest-"));
+    try {
+      const packageRoot = join(temp, "asp-provider");
+      cpSync(join(repoRoot, "packages/asp-provider"), packageRoot, {
+        recursive: true,
+        filter: (source) => !source.split(/[\\/]/u).includes("node_modules")
+      });
+      const manifestDir = join(packageRoot, "dist/manifests");
+      const legacyManifestPath = join(manifestDir, ["lattice", "asp", "provider.provisional.json"].join("-"));
+      const provisionalManifestPath = join(manifestDir, "opcore-asp-provider.provisional.json");
+      const canonicalManifestPath = join(manifestDir, "asp-server.json");
+      writeFileSync(legacyManifestPath, "{}\n");
 
-    const result = spawnSync(process.execPath, ["scripts/write-asp-provider-manifest.mjs"], {
-      cwd: repoRoot,
-      encoding: "utf8"
-    });
+      const result = spawnSync(
+        process.execPath,
+        ["scripts/write-asp-provider-manifest.mjs", "--package-root", packageRoot],
+        { cwd: repoRoot, encoding: "utf8" }
+      );
 
-    assert.equal(result.status, 0, result.stderr);
-    assert.equal(existsSync(legacyManifestPath), false);
-    assert.equal(existsSync(provisionalManifestPath), true);
-    assert.equal(existsSync(canonicalManifestPath), true);
+      assert.equal(result.status, 0, result.stderr);
+      assert.equal(existsSync(legacyManifestPath), false);
+      assert.equal(existsSync(provisionalManifestPath), true);
+      assert.equal(existsSync(canonicalManifestPath), true);
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
   });
 });
 

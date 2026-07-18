@@ -5,12 +5,12 @@
     "name": "opcore",
     "releaseLine": "opcore",
     "packageName": "opcore",
-    "version": "0.2.0"
+    "version": "0.2.1"
   },
   "packageIdentity": {
     "packageName": "opcore",
     "artifactName": "opcore",
-    "version": "0.2.0"
+    "version": "0.2.1"
   },
   "entrypoints": [
     {
@@ -334,6 +334,17 @@
         "status",
         "doctor"
       ],
+      "pythonProjectContext": {
+        "schemaId": "opcore.python.project-context.v1",
+        "outcomes": [
+          "resolved",
+          "degraded",
+          "unsupported",
+          "ambiguous"
+        ],
+        "readOnly": true,
+        "installs": false
+      },
       "writeGate": {
         "initScopes": [
           "repo",

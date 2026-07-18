@@ -12,6 +12,7 @@ import {
   writeCommandLatencyTelemetry,
   writeOpcoreMetricArtifacts
 } from "../packages/opcore/dist/index.js";
+import { compactScanValidationResult } from "../packages/opcore/dist/scan-validation-preview.js";
 
 const repoRoot = fileURLToPath(new URL("..", import.meta.url));
 const opcoreBin = resolve(repoRoot, "packages/opcore/dist/index.js");
@@ -160,6 +161,83 @@ describe("opcore public facade", () => {
     }
   });
 
+  it("preserves source-free Python capability runs when compacting scan diagnostics", () => {
+    const run = {
+      schemaId: "opcore.python.validation-capability-run",
+      schemaVersion: 1,
+      capability: "types",
+      checkId: "python.types",
+      projectKey: `sha256:${"1".repeat(64)}`,
+      contextFingerprint: `sha256:${"2".repeat(64)}`,
+      projectRoot: ".",
+      targets: ["pkg/app.py"],
+      selectedSourcePaths: ["pkg/app.py"],
+      selectedConfigPaths: ["mypy.ini"],
+      afterStateManifestFingerprint: `sha256:${"3".repeat(64)}`,
+      authority: "mypy",
+      authoritySource: "project_config",
+      status: "passed",
+      tool: {
+        name: "mypy",
+        executable: "external:mypy",
+        argv: ["external:mypy", "--output=json", "pkg/app.py"],
+        cwd: ".",
+        source: "project_local_environment",
+        version: "2.3.0",
+        configFile: "mypy.ini"
+      },
+      execution: { termination: "exited", exitCode: 0 },
+      durationMs: 1,
+      diagnosticCount: 0,
+      errorCount: 0,
+      warningCount: 0,
+      noteCount: 0
+    };
+    const pyrightRun = {
+      ...run,
+      projectKey: `sha256:${"4".repeat(64)}`,
+      contextFingerprint: `sha256:${"5".repeat(64)}`,
+      selectedConfigPaths: ["pyrightconfig.json"],
+      afterStateManifestFingerprint: `sha256:${"6".repeat(64)}`,
+      authority: "pyright",
+      tool: {
+        name: "pyright",
+        executable: "external:pyright",
+        argv: ["external:pyright", "--outputjson", "--project", "pyrightconfig.json"],
+        cwd: ".",
+        source: "project_local_environment",
+        version: "1.1.411",
+        configFile: "pyrightconfig.json"
+      },
+      diagnosticCount: 2,
+      warningCount: 1,
+      noteCount: 1
+    };
+    const compact = compactScanValidationResult({
+      ok: true,
+      status: "passed",
+      diagnostics: [{ category: "types", severity: "warning", message: "preview" }],
+      pythonCapabilityRuns: [run, pyrightRun]
+    }, 0);
+
+    assert.deepEqual(compact.diagnostics, []);
+    assert.deepEqual(compact.pythonCapabilityRuns, [run, pyrightRun]);
+    assert.equal(JSON.stringify(compact.pythonCapabilityRuns).includes("source text"), false);
+    assert.throws(() => compactScanValidationResult({
+      ok: true,
+      status: "passed",
+      diagnostics: [],
+      pythonCapabilityRuns: [{
+        ...run,
+        tool: {
+          ...run.tool,
+          executable: "/var/folders/private/opcore-python-types-workspace-secret/bin/mypy",
+          argv: ["/var/folders/private/opcore-python-types-workspace-secret/bin/mypy", "pkg/app.py"]
+        }
+      }]
+    }), /portable executable/);
+  });
+
   it("excludes generated provider roots from status coverage and scan validation", () => {
     const temp = mkdtempSync(join(tmpdir(), "opcore-provider-root-skip-"));
     try {
@@ -201,7 +279,7 @@ describe("opcore public facade", () => {
     try {
       const human = runOpcore(["--version"], temp, 0);
       assert.equal(human.stderr, "");
-      assert.match(human.stdout, /^opcore 0\.2\.0\b/);
+      assert.match(human.stdout, /^opcore 0\.2\.1\b/);
       assert.equal(existsSync(join(temp, ".opcore")), false);
 
       const json = parseJson(runOpcore(["--version", "--json"], temp, 0).stdout);
@@ -209,7 +287,7 @@ describe("opcore public facade", () => {
       assert.equal(json.owner, "runtime");
       assert.equal(json.runtimeInfo.schemaVersion, 1);
       assert.equal(json.runtimeInfo.packageName, "opcore");
-      assert.equal(json.runtimeInfo.version, "0.2.0");
+      assert.equal(json.runtimeInfo.version, "0.2.1");
       assert.equal(json.runtimeInfo.bin, "opcore");
       assert.match(json.runtimeInfo.artifactSource, /^(source_checkout|installed_package|unknown)$/);
       assert.match(json.runtimeInfo.packageRoot, /packages\/opcore$/);
@@ -383,7 +461,7 @@ describe("opcore public facade", () => {
       mkdirSync(join(temp, "src"), { recursive: true });
       writeFileSync(
         join(temp, "Cargo.toml"),
-        "[package]\nname = \"opcore-rust-status\"\nversion = \"0.2.0\"\nedition = \"2021\"\n"
+        "[package]\nname = \"opcore-rust-status\"\nversion = \"0.2.1\"\nedition = \"2021\"\n"
       );
       writeFileSync(join(temp, "src/lib.rs"), "pub fn value() -> u64 { 1 }\n");
 
@@ -1263,7 +1341,7 @@ describe("opcore public facade", () => {
       {
         name: "rust",
         files: [
-          ["Cargo.toml", "[package]\nname = \"opcore_fixture\"\nversion = \"0.2.0\"\nedition = \"2021\"\n"],
+          ["Cargo.toml", "[package]\nname = \"opcore_fixture\"\nversion = \"0.2.1\"\nedition = \"2021\"\n"],
           ["src/lib.rs", "pub fn value() -> i32 { 1 }\n"]
         ],
         expect: { totalFiles: 2, languages: ["Rust"], unsupportedFiles: 0 }
@@ -1272,7 +1350,7 @@ describe("opcore public facade", () => {
         name: "mixed",
         files: [
           ["src/index.ts", "export const value = 1;\n"],
-          ["Cargo.toml", "[package]\nname = \"opcore_fixture\"\nversion = \"0.2.0\"\nedition = \"2021\"\n"],
+          ["Cargo.toml", "[package]\nname = \"opcore_fixture\"\nversion = \"0.2.1\"\nedition = \"2021\"\n"],
           ["src/lib.rs", "pub fn value() -> i32 { 1 }\n"]
         ],
         expect: { totalFiles: 3, languages: ["Rust", "TypeScript"], unsupportedFiles: 0 }
@@ -1329,16 +1407,15 @@ describe("opcore public facade", () => {
           assert.match(result.opcoreInit.settings.languages[0].notes.join(" "), /pyproject\.toml/);
           assert.match(result.opcoreInit.settings.languages[0].notes.join(" "), /requirements\.txt/);
           assert.match(result.opcoreInit.settings.languages[0].notes.join(" "), /uv\.lock/);
-          assert.match(result.opcoreInit.settings.languages[0].notes.join(" "), /\.venv/);
           assert.deepEqual(
             result.opcoreInit.settings.python.dependencyManagers.map((entry) => [entry.kind, entry.path]),
             [
-              ["pyproject", "pyproject.toml"],
               ["requirements", "requirements.txt"],
               ["uv", "uv.lock"]
             ]
           );
-          assert.deepEqual(result.opcoreInit.settings.python.virtualEnvironments, [{ kind: "venv", path: ".venv" }]);
+          assert.deepEqual(result.opcoreInit.settings.python.virtualEnvironments, []);
+          assert.equal(result.opcoreInit.settings.python.contexts[0].outcome, "ambiguous");
         }
         if (fixture.name === "mixed-cargo-lock-only") {
           const rust = result.opcoreInit.settings.languages.find((entry) => entry.language === "Rust");
@@ -2265,6 +2342,6 @@ function measureLatencyRecord(recordedAt, totalMs, validationMs) {
         { phase: "validation_typescript_syntax", durationMs: Math.max(0, totalMs - validationMs) }
       ]
     },
-    opcoreVersion: "0.2.0"
+    opcoreVersion: "0.2.1"
   };
 }

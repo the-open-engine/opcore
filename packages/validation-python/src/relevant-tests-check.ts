@@ -2,10 +2,10 @@ import type { GraphFactEdge, ValidationDiagnostic } from "@the-open-engine/opcor
 import type { ValidationCheckDefinition } from "@the-open-engine/opcore-validation";
 import { PYTHON_RELEVANT_TESTS_CHECK_ID } from "./check-ids.js";
 import { pythonCheckAdapter, pythonCheckOwner, supportedPythonValidationScopes } from "./check-constants.js";
-import { relevantTestsGraphRequirements } from "./graph-requirements.js";
-import { materializePythonSources, toFileNodeId } from "./source-files.js";
+import { createRelevantTestsGraphRequirements } from "./graph-requirements.js";
+import { toFileNodeId, type PythonSourceRootResolver } from "./source-files.js";
 
-export function createRelevantTestsCheck(): ValidationCheckDefinition {
+export function createRelevantTestsCheck(resolveRoots: PythonSourceRootResolver): ValidationCheckDefinition {
   return {
     id: PYTHON_RELEVANT_TESTS_CHECK_ID,
     owner: pythonCheckOwner,
@@ -13,10 +13,10 @@ export function createRelevantTestsCheck(): ValidationCheckDefinition {
     defaultSeverity: "info",
     supportedScopes: supportedPythonValidationScopes,
     requiresGraph: true,
-    graphRequirements: relevantTestsGraphRequirements,
+    graphRequirements: createRelevantTestsGraphRequirements(resolveRoots),
     run: async (context) => {
-      const [sourceSet, testedBy] = await Promise.all([materializePythonSources(context), context.graph.testedBy()]);
-      const diagnostics = sourceSet.rootPaths.map((path): ValidationDiagnostic => {
+      const [rootPaths, testedBy] = await Promise.all([resolveRoots(context), context.graph.testedBy()]);
+      const diagnostics = rootPaths.map((path): ValidationDiagnostic => {
         const evidence = testedBy.filter((edge) => edgeReferencesFile(edge, path));
         if (evidence.length > 0) {
           return {

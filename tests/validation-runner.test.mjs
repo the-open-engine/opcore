@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { createValidationRunner } from "../packages/validation/dist/index.js";
+import { createValidationGraphQuerySession, createValidationRunner } from "../packages/validation/dist/index.js";
 
 describe("validation runner", () => {
   it("returns invalid_payload for malformed requests without throwing validator errors", async () => {
@@ -184,6 +184,35 @@ describe("validation runner", () => {
     assert.equal(warning.ok, true);
   });
 
+  it("maps fine-grained check outcomes and sorts ranged diagnostics deterministically", async () => {
+    const findings = await runner([
+      check("python.syntax", {
+        run: () => ({
+          outcome: "findings",
+          diagnostics: [
+            { category: "syntax", severity: "error", code: "B", message: "later", path: "pkg/app.py", line: 4, column: 2 },
+            { category: "syntax", severity: "error", code: "A", message: "earlier", path: "pkg/app.py", line: 2, column: 8 }
+          ]
+        })
+      })
+    ]).runValidation(request({ checks: ["python.syntax"] }));
+    const timedOut = await runner([
+      check("python.syntax", {
+        run: () => ({
+          outcome: "timeout",
+          failureMessage: "compiler timed out",
+          diagnostics: []
+        })
+      })
+    ]).runValidation(request({ checks: ["python.syntax"] }));
+
+    assert.equal(findings.status, "policy_failure");
+    assert.equal(findings.manifest.runs[0].outcome, "findings");
+    assert.deepEqual(findings.diagnostics.map((entry) => entry.line), [2, 4]);
+    assert.equal(timedOut.status, "infrastructure_failure");
+    assert.equal(timedOut.manifest.runs[0].outcome, "timeout");
+  });
+
   it("stops running checks after the first policy failure when fail-fast is enabled", async () => {
     const observed = [];
     const result = await createValidationRunner({
@@ -297,6 +326,48 @@ describe("validation runner", () => {
       ["TS_INTRODUCED"]
     );
     assert.equal(result.manifest.runs[0].diagnosticCount, 1);
+  });
+
+  it("preserves Python capability runs in results, completion events, and introduced after-state", async () => {
+    const events = [];
+    const current = await createValidationRunner({
+      workspace: testWorkspace(),
+      onCheckComplete: (event) => events.push(event),
+      checks: [check("python.types", { run: async () => ({ diagnostics: [], pythonCapabilityRuns: [pythonCapabilityRun("a")] }) })]
+    }).runValidation(request({ checks: ["python.types"] }));
+    assert.equal(current.pythonCapabilityRuns[0].afterStateManifestFingerprint, `sha256:${"a".repeat(64)}`);
+    assert.deepEqual(events[0].pythonCapabilityRuns, current.pythonCapabilityRuns);
+
+    const introduced = await runner([check("python.types", {
+      run: async (context) => ({
+        diagnostics: [],
+        pythonCapabilityRuns: [pythonCapabilityRun(context.fileView.hasOverlay("src/index.ts") ? "b" : "a")]
+      })
+    })]).runValidation(request({
+      checks: ["python.types"],
+      reportMode: "introduced",
+      overlays: [{ path: "src/index.ts", action: "write", content: "export const value = 'introduced';" }]
+    }));
+    assert.equal(introduced.pythonCapabilityRuns.length, 1);
+    assert.equal(introduced.pythonCapabilityRuns[0].afterStateManifestFingerprint, `sha256:${"b".repeat(64)}`);
+
+    const baselineUnavailable = await runner([check("python.types", {
+      run: async (context) => context.fileView.hasOverlay("src/index.ts")
+        ? { diagnostics: [], pythonCapabilityRuns: [pythonCapabilityRun("b")] }
+        : {
+            outcome: "tool_unavailable",
+            failureMessage: "baseline mypy unavailable",
+            diagnostics: [],
+            pythonCapabilityRuns: [unsupportedPythonCapabilityRun("a")]
+          }
+    })]).runValidation(request({
+      checks: ["python.types"],
+      reportMode: "introduced",
+      overlays: [{ path: "src/index.ts", action: "write", content: "export const value = 'introduced';" }]
+    }));
+    assert.equal(baselineUnavailable.status, "unsupported_request");
+    assert.equal(baselineUnavailable.pythonCapabilityRuns[0].status, "passed");
+    assert.equal(baselineUnavailable.pythonCapabilityRuns[0].afterStateManifestFingerprint, `sha256:${"b".repeat(64)}`);
   });
 
   it("fail-fast in introduced report mode stops only after an introduced policy failure", async () => {
@@ -732,6 +803,159 @@ describe("validation runner", () => {
     assert.equal(required.graphStatus.state, "schema_mismatch");
     assert.equal(required.failure.cause, "schema_mismatch");
   });
+
+  it("builds and disposes one exact graph session per introduced file-view state and shares it across checks", async () => {
+    const factoryStates = [];
+    const disposedStates = [];
+    const observations = [];
+    const exactFactory = async (args) => {
+      factoryStates.push(args.identity.state);
+      const session = await createValidationGraphQuerySession({
+        ...args,
+        status: availableStatus(args.request.graph.mode, args.request.repo),
+        client: graphClient()
+      });
+      return { ...session, dispose: () => disposedStates.push(args.identity.state) };
+    };
+    const checks = ["graph.first", "graph.second"].map((id) => check(id, {
+      requiresGraph: true,
+      run: (context) => {
+        observations.push(`${id}:${context.graph.identity.state}`);
+        return { diagnostics: [] };
+      }
+    }));
+
+    const result = await runner(checks, { graphSessionFactory: exactFactory, onCheckComplete: () => {} }).runValidation(request({
+      checks: undefined,
+      reportMode: "introduced",
+      overlays: [{ path: "src/index.ts", action: "write", content: "export const value = 'after';" }]
+    }));
+
+    assert.equal(result.status, "passed");
+    assert.deepEqual(factoryStates, ["before", "after"]);
+    assert.deepEqual(observations, [
+      "graph.first:before",
+      "graph.first:after",
+      "graph.second:before",
+      "graph.second:after"
+    ]);
+    assert.deepEqual(disposedStates, ["after", "before"]);
+  });
+
+  it("uses separate exact graph sessions for introduced file-view states without overlays", async () => {
+    const identities = [];
+    const result = await runner([
+      check("graph.required", { requiresGraph: true })
+    ], {
+      graphSessionFactory: async (args) => {
+        identities.push(args.identity);
+        return createValidationGraphQuerySession({
+          ...args,
+          status: availableStatus(args.request.graph.mode, args.request.repo),
+          client: graphClient()
+        });
+      }
+    }).runValidation(request({
+      checks: ["graph.required"],
+      reportMode: "introduced"
+    }));
+
+    assert.equal(result.status, "passed");
+    assert.deepEqual(identities, [
+      { kind: "exact", state: "before" },
+      { kind: "exact", state: "after" }
+    ]);
+  });
+
+  it("fails closed for exact-state graph query errors even when persistent graph mode is optional", async () => {
+    let disposed = 0;
+    const result = await runner([
+      check("graph.optional", {
+        graphUsage: "optional",
+        run: async (context) => {
+          await context.graph.facts({ kind: "nodes" });
+        }
+      }),
+      check("syntax")
+    ], {
+      graphSessionFactory: async (args) => {
+        const session = await createValidationGraphQuerySession({
+          ...args,
+          status: availableStatus("optional", args.request.repo),
+          client: graphClient({
+            factQuery: () => ({ status: graphFailure("error", "query_failed", "optional") })
+          })
+        });
+        return { ...session, dispose: () => { disposed += 1; } };
+      }
+    }).runValidation(request({
+      checks: undefined,
+      overlays: [{ path: "src/index.ts", action: "write", content: "export const value = 'after';" }]
+    }));
+
+    assert.equal(result.status, "provider_failure");
+    assert.equal(result.ok, false);
+    assert.equal(result.failure.category, "provider_failure");
+    assert.equal(disposed, 1);
+  });
+
+  it("shares run resources across checks and disposes them once in reverse order", async () => {
+    const events = [];
+    let shared;
+    const result = await runner([
+      check("resource.first", {
+        run: async (context) => {
+          shared = await context.resources.getOrCreate("shared", () => {
+            events.push("create:shared");
+            return { dispose: () => events.push("dispose:shared") };
+          });
+          return { diagnostics: [] };
+        }
+      }),
+      check("resource.second", {
+        run: async (context) => {
+          assert.equal(await context.resources.getOrCreate("shared", () => {
+            throw new Error("shared resource recreated");
+          }), shared);
+          await context.resources.getOrCreate("second", () => {
+            events.push("create:second");
+            return { dispose: () => events.push("dispose:second") };
+          });
+          return { diagnostics: [] };
+        }
+      })
+    ]).runValidation(request({ checks: ["resource.first", "resource.second"] }));
+
+    assert.equal(result.status, "passed");
+    assert.deepEqual(events, ["create:shared", "create:second", "dispose:second", "dispose:shared"]);
+  });
+
+  it("evicts rejected resource factories and disposes replacements after check failures", async () => {
+    let attempts = 0;
+    let disposals = 0;
+    const result = await runner([
+      check("resource.failure", {
+        run: async (context) => {
+          await assert.rejects(
+            context.resources.getOrCreate("replaceable", () => {
+              attempts += 1;
+              throw new Error("first creation failed");
+            }),
+            /first creation failed/
+          );
+          await context.resources.getOrCreate("replaceable", () => {
+            attempts += 1;
+            return { dispose: () => { disposals += 1; } };
+          });
+          throw new Error("check crashed after acquisition");
+        }
+      })
+    ]).runValidation(request({ checks: ["resource.failure"] }));
+
+    assert.equal(result.status, "infrastructure_failure");
+    assert.equal(attempts, 2);
+    assert.equal(disposals, 1);
+  });
 });
 
 function runner(checks, options = {}) {
@@ -923,4 +1147,44 @@ function sequenceClock(values, iso) {
     },
     isoNow: () => iso
   };
+}
+
+function pythonCapabilityRun(fingerprintCharacter) {
+  return {
+    schemaId: "opcore.python.validation-capability-run",
+    schemaVersion: 1,
+    capability: "types",
+    checkId: "python.types",
+    projectKey: `sha256:${"1".repeat(64)}`,
+    contextFingerprint: `sha256:${"2".repeat(64)}`,
+    projectRoot: ".",
+    targets: ["pkg/app.py"],
+    selectedSourcePaths: ["pkg/app.py"],
+    selectedConfigPaths: [],
+    afterStateManifestFingerprint: `sha256:${fingerprintCharacter.repeat(64)}`,
+    authority: "mypy",
+    authoritySource: "explicit",
+    status: "passed",
+    tool: {
+      name: "mypy",
+      executable: "external:mypy",
+      argv: ["external:mypy", "--output=json", "pkg/app.py"],
+      cwd: ".",
+      source: "explicit_override",
+      version: "2.3.0"
+    },
+    execution: { termination: "exited", exitCode: 0 },
+    durationMs: 1,
+    diagnosticCount: 0,
+    errorCount: 0,
+    warningCount: 0,
+    noteCount: 0
+  };
+}
+
+function unsupportedPythonCapabilityRun(fingerprintCharacter) {
+  const run = pythonCapabilityRun(fingerprintCharacter);
+  delete run.execution;
+  run.status = "tool_unavailable";
+  return run;
 }

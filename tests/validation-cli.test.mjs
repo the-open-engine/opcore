@@ -984,7 +984,7 @@ describe("validation CLI", () => {
     try {
       mkdirSync(join(temp, "crates/app/src"), { recursive: true });
       writeFileSync(join(temp, "Cargo.toml"), '[workspace]\nmembers = ["crates/app"]\nresolver = "2"\n');
-      writeFileSync(join(temp, "crates/app/Cargo.toml"), '[package]\nname = "app"\nversion = "0.2.0"\nedition = "2021"\n');
+      writeFileSync(join(temp, "crates/app/Cargo.toml"), '[package]\nname = "app"\nversion = "0.2.1"\nedition = "2021"\n');
       writeFileSync(
         join(temp, "crates/app/src/lib.rs"),
         "pub fn configured(a: i32, b: i32) -> i32 {\n  if a > b { a } else { b }\n}\n"
@@ -1264,7 +1264,7 @@ describe("validation CLI", () => {
     try {
       mkdirSync(join(temp, "crates/app/src"), { recursive: true });
       writeFileSync(join(temp, "Cargo.toml"), '[workspace]\nmembers = ["crates/app"]\nresolver = "2"\n');
-      writeFileSync(join(temp, "crates/app/Cargo.toml"), '[package]\nname = "app"\nversion = "0.2.0"\nedition = "2021"\n');
+      writeFileSync(join(temp, "crates/app/Cargo.toml"), '[package]\nname = "app"\nversion = "0.2.1"\nedition = "2021"\n');
       const sourcePath = join(temp, "crates/app/src/lib.rs");
       writeFileSync(sourcePath, "pub fn safe() {}\n");
       const requestPath = join(temp, "rust-pre-write.json");

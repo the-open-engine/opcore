@@ -1,43 +1,34 @@
-import type { ValidationDiagnostic } from "@the-open-engine/opcore-contracts";
-import type { ValidationCheckDefinition } from "@the-open-engine/opcore-validation";
+import type {
+  ValidationCheckOutcome,
+  ValidationDiagnostic,
+  ValidationDiagnosticToolProvenance,
+  PythonInterpreterProvenance,
+  PythonProjectContext
+} from "@the-open-engine/opcore-contracts";
+import type { ValidationCheckDefinition, ValidationCheckResult } from "@the-open-engine/opcore-validation";
 import { PYTHON_SYNTAX_CHECK_ID } from "./check-ids.js";
 import { pythonCheckAdapter, pythonCheckOwner, supportedPythonValidationScopes } from "./check-constants.js";
+import {
+  compilerRequest,
+  compilerToolProvenance,
+  parseCompilerResponse,
+  pythonCompileScript,
+  type PythonCompilerErrorKind,
+  type PythonCompilerFinding
+} from "./compiler-protocol.js";
 import { diagnostic, sortDiagnostics } from "./diagnostics.js";
 import { runTool } from "./process.js";
-import { readPythonAfterSources, skippedPythonInputResult } from "./source-files.js";
-import { pythonAvailable, type PythonValidationToolchainOptions } from "./toolchain.js";
+import { readPythonAfterSources, skippedPythonInputResult, type PythonProjectContextResolver } from "./source-files.js";
+import { type PythonValidationToolchainOptions } from "./toolchain.js";
 
-const compoundStatementPattern =
-  /^(?:async\s+def|def|class|if|elif|else\b|for|while|try\b|except|finally\b|with|match|case)\b/u;
+export interface PythonSyntaxCheckOptions extends Omit<PythonValidationToolchainOptions, "contexts"> {
+  timeoutMs?: number;
+}
 
-const PY_AST_CHECK_SCRIPT = `
-import ast
-import json
-import sys
-
-source = sys.stdin.read()
-try:
-    ast.parse(source)
-    print(json.dumps({"ok": True}))
-except SyntaxError as error:
-    print(json.dumps({
-        "ok": False,
-        "message": error.msg,
-        "line": error.lineno,
-        "column": error.offset
-    }))
-except (ValueError, RecursionError) as error:
-    print(json.dumps({
-        "ok": False,
-        "message": str(error),
-        "line": None,
-        "column": None
-    }))
-`;
-
-export interface PythonSyntaxCheckOptions extends PythonValidationToolchainOptions {}
-
-export function createSyntaxCheck(options: PythonSyntaxCheckOptions = {}): ValidationCheckDefinition {
+export function createSyntaxCheck(
+  options: PythonSyntaxCheckOptions = {},
+  resolveContexts?: PythonProjectContextResolver
+): ValidationCheckDefinition {
   return {
     id: PYTHON_SYNTAX_CHECK_ID,
     owner: pythonCheckOwner,
@@ -48,218 +39,162 @@ export function createSyntaxCheck(options: PythonSyntaxCheckOptions = {}): Valid
       const skipped = skippedPythonInputResult(context);
       if (skipped !== undefined) return skipped;
 
-      const pythonCommand = options.pythonCommand ?? "python3";
-      const parserAvailable = pythonAvailable({ env: options.env, pythonCommand });
-      if (!parserAvailable) {
-        return {
-          status: "unsupported_request",
-          diagnostics: [
-            diagnostic({
-              category: "syntax",
-              severity: "info",
-              code: "PY_SYNTAX_PARSER_UNAVAILABLE",
-              message:
-                "Python syntax validation requires a Python interpreter (python3); none is available, so results are reported as unsupported instead of a false pass."
-            })
-          ]
-        };
-      }
-
+      const sources = await readPythonAfterSources(context);
+      if (sources.length === 0) return { diagnostics: [] };
+      if (resolveContexts === undefined) return missingContextResult(sources.map((source) => source.path));
+      const resolvedContexts = await resolveContexts(context);
+      const missing = sources.map((source) => source.path).filter((path) => !resolvedContexts.some((candidate) => candidate.target === path));
+      if (resolvedContexts.length === 0 || missing.length > 0) return missingContextResult(missing);
+      const unresolved = resolvedContexts.find((candidate) => candidate.interpreter === undefined || hasInterpreterFailure(candidate));
+      if (unresolved !== undefined) return resolutionFailure(unresolved);
+      const contexts = groupProjectContexts(resolvedContexts);
       const diagnostics: ValidationDiagnostic[] = [];
-      for (const source of await readPythonAfterSources(context)) {
-        const parserDiagnostics = parseWithPython(source.path, source.content, pythonCommand, options.env);
-        diagnostics.push(...parserDiagnostics);
-        if (parserDiagnostics.length === 0) diagnostics.push(...heuristicSyntaxDiagnostics(source.path, source.content));
+      for (const project of contexts) {
+        if (project.interpreter === undefined) return resolutionFailure(project);
+        const selected = sources.filter((source) => project.targets.includes(source.path));
+        const result = await compileSources(project.interpreter, selected, options);
+        diagnostics.push(...(result.diagnostics ?? []));
+        if (result.outcome !== "passed" && result.outcome !== "findings") return result;
       }
-      return { diagnostics: sortDiagnostics(diagnostics) };
+      return { outcome: diagnostics.length === 0 ? "passed" : "findings", diagnostics: sortDiagnostics(diagnostics) };
     }
   };
 }
 
-function parseWithPython(
-  path: string,
-  content: string,
-  pythonCommand: string,
-  env: Record<string, string | undefined> | undefined
-): readonly ValidationDiagnostic[] {
-  const result = runTool(pythonCommand, ["-c", PY_AST_CHECK_SCRIPT], {
-    input: content,
-    env,
-    timeoutMs: 10000
+function missingContextResult(missing: readonly string[]): ValidationCheckResult {
+  const suffix = missing.length === 0 ? "" : `: ${missing.join(", ")}`;
+  const message = `Canonical Python project context resolution returned no context for selected source${suffix}`;
+  return {
+    outcome: "tool_failure",
+    failureMessage: message,
+    diagnostics: [diagnostic({ category: "infrastructure", code: "PY_SYNTAX_CONTEXT_MISSING", message })]
+  };
+}
+
+type PythonSyntaxProjectGroup = PythonProjectContext & { targets: readonly string[] };
+
+function groupProjectContexts(contexts: readonly PythonProjectContext[]): readonly PythonSyntaxProjectGroup[] {
+  const groups = new Map<string, { context: PythonProjectContext; targets: string[] }>();
+  for (const context of contexts) {
+    const group = groups.get(context.projectKey) ?? { context, targets: [] };
+    group.targets.push(context.target);
+    groups.set(context.projectKey, group);
+  }
+  return [...groups.values()]
+    .map(({ context, targets }) => ({ ...context, targets: [...new Set(targets)].sort() }))
+    .sort((left, right) => left.projectRoot.localeCompare(right.projectRoot));
+}
+
+async function compileSources(
+  interpreter: PythonInterpreterProvenance,
+  sources: Awaited<ReturnType<typeof readPythonAfterSources>>,
+  options: PythonSyntaxCheckOptions
+): Promise<ValidationCheckResult> {
+  const result = await runTool(interpreter.executable, [...interpreter.argv.slice(1), "-I", "-B", "-c", pythonCompileScript], {
+    cwd: interpreter.cwd,
+    env: options.env,
+    timeoutMs: options.timeoutMs ?? 10000,
+    input: compilerRequest(sources)
   });
-
-  let parsed: { ok: boolean; message?: string; line?: number | null; column?: number | null } | undefined;
-  try {
-    parsed = JSON.parse(result.stdout.trim());
-  } catch {
-    parsed = undefined;
+  if (!result.ok) {
+    const outcome = result.termination === "timeout" ? "timeout" : "tool_failure";
+    return checkFailure(outcome, result.failureMessage ?? "Python compiler invocation failed", compilerToolProvenance(interpreter));
   }
+  const response = parseCompilerResponse(result.stdout, sources, interpreter);
+  if (response.status === "malformed") {
+    return checkFailure("tool_failure", response.message, compilerToolProvenance(interpreter));
+  }
+  const diagnostics = response.findings.map((finding) => findingDiagnostic(finding, interpreter));
+  return {
+    outcome: diagnostics.length === 0 ? "passed" : "findings",
+    diagnostics: sortDiagnostics(diagnostics)
+  };
+}
 
-  if (parsed === undefined) {
-    return [
+function resolutionFailure(context: PythonProjectContext): ValidationCheckResult {
+  const primary = context.reasons.find((reason) => reason.tool === "python") ?? context.reasons[0];
+  const outcome = primary?.code === "probe_timeout" ? "timeout" :
+    primary?.code === "invalid_config" || context.outcome === "ambiguous" ? "invalid_config" :
+    primary?.code === "incompatible_interpreter" || primary?.code === "unsupported_target" || primary?.code === "unsupported_platform"
+      ? "unsupported_target" :
+      primary?.code === "interpreter_unavailable" || primary?.code === "tool_unavailable" ? "tool_unavailable" : "tool_failure";
+  const message = primary?.message ?? `Python project context is unresolved for ${context.target}`;
+  const code = resolutionFailureCode(outcome);
+  const unsupported = outcome === "tool_unavailable" || outcome === "invalid_config" || outcome === "unsupported_target";
+  return {
+    outcome,
+    failureMessage: message,
+    diagnostics: [
       diagnostic({
-        category: "syntax",
-        path,
-        code: "PY_SYNTAX_PARSE_ERROR",
-        message: "Unable to parse Python source with the configured Python interpreter."
+        category: "infrastructure",
+        severity: unsupported ? "info" : "error",
+        code,
+        message,
+        path: context.target,
+        ...(context.interpreter === undefined ? {} : { tool: compilerToolProvenance(context.interpreter) })
       })
-    ];
-  }
-
-  if (parsed.ok) return [];
-
-  return [
-    diagnostic({
-      category: "syntax",
-      path,
-      code: "PY_SYNTAX_PARSE_ERROR",
-      message: buildParseErrorMessage(parsed)
-    })
-  ];
+    ]
+  };
 }
 
-function buildParseErrorMessage(parsed: { message?: string; line?: number | null; column?: number | null }): string {
-  const reason = parsed.message ?? "invalid syntax";
-  if (parsed.line !== null && parsed.line !== undefined && parsed.column !== null && parsed.column !== undefined) {
-    return `${reason} (line ${parsed.line}, column ${parsed.column})`;
-  }
-  return reason;
-}
-
-function heuristicSyntaxDiagnostics(path: string, content: string): readonly ValidationDiagnostic[] {
-  const diagnostics: ValidationDiagnostic[] = [];
-  diagnostics.push(...missingColonDiagnostics(path, content));
-  diagnostics.push(...delimiterDiagnostics(path, content));
-  return diagnostics;
-}
-
-function missingColonDiagnostics(path: string, content: string): readonly ValidationDiagnostic[] {
-  const diagnostics: ValidationDiagnostic[] = [];
-  for (const rawLine of content.split(/\r?\n/u)) {
-    const line = stripInlineComment(rawLine).trim();
-    if (line.length === 0 || line.endsWith(":") || line.endsWith("\\")) continue;
-    if (!compoundStatementPattern.test(line)) continue;
-    diagnostics.push(
+function checkFailure(
+  outcome: Extract<ValidationCheckOutcome, "timeout" | "tool_failure">,
+  message: string,
+  tool: ValidationDiagnosticToolProvenance
+): ValidationCheckResult {
+  return {
+    outcome,
+    failureMessage: message,
+    diagnostics: [
       diagnostic({
-        category: "syntax",
-        path,
-        code: "PY_SYNTAX_MISSING_COLON",
-        message: "Python compound statements must end with a colon."
+        category: "infrastructure",
+        code: outcome === "timeout" ? "PY_SYNTAX_COMPILER_TIMEOUT" : "PY_SYNTAX_COMPILER_FAILURE",
+        message,
+        tool
       })
-    );
-  }
-  return diagnostics;
+    ]
+  };
 }
 
-function delimiterDiagnostics(path: string, content: string): readonly ValidationDiagnostic[] {
-  const diagnostics: ValidationDiagnostic[] = [];
-  const stack: string[] = [];
-  let quote: "'" | "\"" | undefined;
-  let tripleQuote: string | undefined;
-  let escaped = false;
-
-  for (let index = 0; index < content.length; index += 1) {
-    const char = content[index];
-    const nextThree = content.slice(index, index + 3);
-    if (tripleQuote !== undefined) {
-      if (nextThree === tripleQuote) {
-        tripleQuote = undefined;
-        index += 2;
-      }
-      continue;
-    }
-    if (escaped) {
-      escaped = false;
-      continue;
-    }
-    if (quote !== undefined) {
-      if (char === "\\") {
-        escaped = true;
-        continue;
-      }
-      if (char === quote) quote = undefined;
-      if (char === "\n") quote = undefined;
-      continue;
-    }
-    if (nextThree === "'''" || nextThree === "\"\"\"") {
-      tripleQuote = nextThree;
-      index += 2;
-      continue;
-    }
-    if (char === "'" || char === "\"") {
-      quote = char;
-      continue;
-    }
-    if (char === "#") {
-      while (index < content.length && content[index] !== "\n") index += 1;
-      continue;
-    }
-    if (char === "(" || char === "[" || char === "{") {
-      stack.push(char);
-      continue;
-    }
-    if (char === ")" || char === "]" || char === "}") {
-      const open = stack.pop();
-      if (open === undefined || matchingClose(open) !== char) {
-        diagnostics.push(
-          diagnostic({
-            category: "syntax",
-            path,
-            code: "PY_SYNTAX_MISMATCHED_DELIMITER",
-            message: "Python delimiters are mismatched."
-          })
-        );
-        break;
-      }
-    }
-  }
-
-  if (tripleQuote !== undefined || quote !== undefined) {
-    diagnostics.push(
-      diagnostic({
-        category: "syntax",
-        path,
-        code: "PY_SYNTAX_UNTERMINATED_STRING",
-        message: "Python string literal is unterminated."
-      })
-    );
-  }
-  if (stack.length > 0) {
-    diagnostics.push(
-      diagnostic({
-        category: "syntax",
-        path,
-        code: "PY_SYNTAX_UNCLOSED_DELIMITER",
-        message: "Python delimiters are not closed."
-      })
-    );
-  }
-  return diagnostics;
+function findingDiagnostic(finding: PythonCompilerFinding, interpreter: PythonInterpreterProvenance): ValidationDiagnostic {
+  return diagnostic({
+    category: "syntax",
+    path: finding.path,
+    code: compilerFindingCode(finding.kind),
+    message: finding.message,
+    line: finding.line,
+    column: finding.column,
+    endLine: finding.endLine,
+    endColumn: finding.endColumn,
+    tool: compilerToolProvenance(interpreter)
+  });
 }
 
-function matchingClose(open: string): string {
-  return open === "(" ? ")" : open === "[" ? "]" : "}";
+function compilerFindingCode(kind: PythonCompilerErrorKind): string {
+  const codes: Record<PythonCompilerErrorKind, string> = {
+    syntax_error: "PY_SYNTAX_ERROR",
+    indentation_error: "PY_INDENTATION_ERROR",
+    tab_error: "PY_TAB_ERROR",
+    null_byte: "PY_NULL_BYTE",
+    recursion_error: "PY_COMPILER_RECURSION_ERROR",
+    overflow_error: "PY_COMPILER_OVERFLOW_ERROR"
+  };
+  return codes[kind];
 }
 
-function stripInlineComment(line: string): string {
-  let quote: "'" | "\"" | undefined;
-  let escaped = false;
-  for (let index = 0; index < line.length; index += 1) {
-    const char = line[index];
-    if (escaped) {
-      escaped = false;
-      continue;
-    }
-    if (quote !== undefined && char === "\\") {
-      escaped = true;
-      continue;
-    }
-    if (char === "'" || char === "\"") {
-      if (quote === undefined) quote = char;
-      else if (quote === char) quote = undefined;
-      continue;
-    }
-    if (quote === undefined && char === "#") return line.slice(0, index);
-  }
-  return line;
+function resolutionFailureCode(outcome: Exclude<ValidationCheckOutcome, "passed" | "findings">): string {
+  const codes = {
+    tool_unavailable: "PY_SYNTAX_TOOL_UNAVAILABLE",
+    invalid_config: "PY_SYNTAX_INVALID_CONFIG",
+    timeout: "PY_SYNTAX_INTERPRETER_TIMEOUT",
+    unsupported_target: "PY_SYNTAX_UNSUPPORTED_TARGET",
+    tool_failure: "PY_SYNTAX_INTERPRETER_FAILURE"
+  } as const;
+  return codes[outcome];
+}
+
+function hasInterpreterFailure(context: PythonProjectContext): boolean {
+  return context.outcome === "ambiguous" || context.outcome === "unsupported" || context.reasons.some((reason) => reason.tool === "python" ||
+    reason.code === "invalid_config" ||
+    ["incompatible_interpreter", "unsupported_target", "unsupported_platform", "symlink_refused", "path_refused", "ambiguous_path"].includes(reason.code));
 }

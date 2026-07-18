@@ -28,6 +28,7 @@ import {
   validationRustAdapterName
 } from "../packages/validation-rust/dist/index.js";
 import { runTool } from "../packages/validation-rust/dist/process.js";
+import { materializeRustWorkspace } from "../packages/validation-rust/dist/materialize.js";
 import {
   commitWorktreeFile,
   defaultCargoMetadata,
@@ -477,7 +478,7 @@ const rustCheckIds = [
       mkdirSync(join(temp, "src"), { recursive: true });
       writeFileSync(
         join(temp, "Cargo.toml"),
-        ['[package]', 'name = "staged-dirty"', 'version = "0.2.0"', 'edition = "2021"', ""].join("\n")
+        ['[package]', 'name = "staged-dirty"', 'version = "0.2.1"', 'edition = "2021"', ""].join("\n")
       );
       writeFileSync(join(temp, "src/lib.rs"), "mod other;\npub fn value() -> i32 { other::value() }\n");
       writeFileSync(join(temp, "src/other.rs"), "pub fn value() -> i32 { 1 }\n");
@@ -511,7 +512,7 @@ const rustCheckIds = [
       mkdirSync(join(temp, "src"), { recursive: true });
       writeFileSync(
         join(temp, "Cargo.toml"),
-        ['[package]', 'name = "import-context"', 'version = "0.2.0"', 'edition = "2021"', ""].join("\n")
+        ['[package]', 'name = "import-context"', 'version = "0.2.1"', 'edition = "2021"', ""].join("\n")
       );
       writeFileSync(join(temp, "src/lib.rs"), "pub mod store;\n");
       writeFileSync(join(temp, "src/store.rs"), "pub fn value() -> i32 { 1 }\n");
@@ -1523,6 +1524,83 @@ const rustCheckIds = [
     } finally {
       rmSync(temp, { recursive: true, force: true });
     }
+  });
+
+  it("shares one materialized workspace across Rust checks and removes it after validation", async () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-validation-rust-shared-workspace-"));
+    try {
+      const repoRoot = join(temp, "repo");
+      mkdirSync(join(repoRoot, "crates/app/src"), { recursive: true });
+      writeFileSync(join(repoRoot, "Cargo.toml"), rustCrate()["Cargo.toml"]);
+      writeFileSync(join(repoRoot, "crates/app/Cargo.toml"), rustCrate()["crates/app/Cargo.toml"]);
+      writeFileSync(join(repoRoot, "crates/app/src/lib.rs"), rustCrate()["crates/app/src/lib.rs"]);
+      const logPath = join(temp, "cargo.log");
+      const { env } = writeFakeRustToolchain(join(temp, "bin"), {
+        cargo: {
+          logPath,
+          logCwd: true
+        }
+      });
+      const validationRunner = createValidationRunner({
+        workspace: createNodeValidationWorkspace({ repoRoot }),
+        checks: createRustValidationChecks({ env })
+      });
+
+      const result = await validationRunner.runValidation(
+        request({
+          repo: { repoRoot },
+          checks: [
+            RUST_CARGO_CHECK_ID,
+            RUST_CLIPPY_CHECK_ID,
+            RUST_RUSTDOC_CHECK_ID,
+            RUST_IMPORT_GRAPH_CHECK_ID,
+            RUST_UNUSED_DEPS_CHECK_ID
+          ],
+          scope: {
+            kind: "files",
+            files: ["Cargo.toml", "crates/app/Cargo.toml", "crates/app/src/lib.rs"]
+          }
+        })
+      );
+
+      assert.equal(result.status, "passed", JSON.stringify(result, null, 2));
+      const workspaceRoots = readFileSync(logPath, "utf8")
+        .split(/\r?\n/)
+        .map((line) => /\tCWD=([^\t]+)$/.exec(line)?.[1])
+        .filter((path) => path?.includes("lattice-validation-rust-"));
+      assert.equal(workspaceRoots.length > 5, true);
+      assert.equal(new Set(workspaceRoots).size, 1, workspaceRoots.join("\n"));
+      assert.match(workspaceRoots[0], /lattice-validation-rust-[^/]+\/repo$/);
+      assert.equal(existsSync(workspaceRoots[0]), false);
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("keeps distinct materialization environments isolated and cleans both workspaces", async () => {
+    const roots = [];
+    const checks = ["first", "second"].map((suffix) => ({
+      id: `rust.test-materialization-${suffix}`,
+      owner: "validation-rust-test",
+      adapter: "rust",
+      defaultSeverity: "error",
+      supportedScopes: ["files"],
+      run: async (context) => {
+        const workspace = await materializeRustWorkspace(context, {
+          env: { ...process.env, OPCORE_MATERIALIZATION_VARIANT: suffix }
+        });
+        roots.push(workspace.root);
+        return { diagnostics: [] };
+      }
+    }));
+
+    const result = await rustGraphRunner({ checks }).runValidation(
+      request({ checks: checks.map((check) => check.id) })
+    );
+
+    assert.equal(result.status, "passed", JSON.stringify(result, null, 2));
+    assert.equal(new Set(roots).size, 2);
+    assert.equal(roots.every((root) => existsSync(root) === false), true);
   });
 
   it("keys cargo target dirs by generic overlay after-state without writing overlays to the real repo", async () => {

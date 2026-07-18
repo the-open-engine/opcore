@@ -155,6 +155,80 @@ function validationResultWith(overrides = {}) {
   };
 }
 
+function pythonProjectContextWith(overrides = {}) {
+  return {
+    schemaId: "opcore.python.project-context.v1",
+    schemaVersion: 1,
+    target: "services/api/src/app.py",
+    repositoryRoot: "/repo",
+    projectRoot: "services/api",
+    projectBoundary: "services/api",
+    sourceRoots: ["services/api/src"],
+    layout: { kinds: ["package", "src"], paths: ["services/api/src"] },
+    evidence: [{ path: "services/api/pyproject.toml", role: "boundary" }],
+    targetRuntime: { requiresPython: ">=3.12", conflicts: [] },
+    managers: [{ kind: "uv", configFiles: ["services/api/pyproject.toml"], lockFiles: ["services/api/uv.lock"] }],
+    buildSystem: {
+      configFile: "services/api/pyproject.toml",
+      backend: "hatchling.build",
+      requires: ["hatchling>=1"]
+    },
+    interpreter: {
+      executable: "/repo/services/api/.venv/bin/python",
+      argv: ["/repo/services/api/.venv/bin/python"],
+      cwd: "/repo/services/api",
+      source: "project_local_environment",
+      version: "3.12.4",
+      implementation: "CPython",
+      platform: "linux",
+      architecture: "x86_64",
+      abi: "cpython-312",
+      soabi: "cpython-312-x86_64-linux-gnu"
+    },
+    tools: [],
+    projectKey: `sha256:${"1".repeat(64)}`,
+    contextFingerprint: `sha256:${"2".repeat(64)}`,
+    outcome: "resolved",
+    reasons: [],
+    ...overrides
+  };
+}
+
+function pythonCapabilityRunWith(overrides = {}) {
+  return {
+    schemaId: "opcore.python.validation-capability-run",
+    schemaVersion: 1,
+    capability: "types",
+    checkId: "python.types",
+    projectKey: `sha256:${"1".repeat(64)}`,
+    contextFingerprint: `sha256:${"2".repeat(64)}`,
+    projectRoot: "services/api",
+    targets: ["services/api/src/app.py"],
+    selectedSourcePaths: ["services/api/src/app.py"],
+    selectedConfigPaths: ["services/api/pyproject.toml"],
+    afterStateManifestFingerprint: `sha256:${"3".repeat(64)}`,
+    authority: "mypy",
+    authoritySource: "project_config",
+    status: "passed",
+    tool: {
+      name: "mypy",
+      executable: "repo:services/api/.venv/bin/mypy",
+      argv: ["repo:services/api/.venv/bin/mypy", "--output=json", "src/app.py"],
+      cwd: "services/api",
+      source: "project_local_environment",
+      version: "2.3.0",
+      configFile: "services/api/pyproject.toml"
+    },
+    execution: { termination: "exited", exitCode: 0 },
+    durationMs: 12,
+    diagnosticCount: 0,
+    errorCount: 0,
+    warningCount: 0,
+    noteCount: 0,
+    ...overrides
+  };
+}
+
 function preWriteValidationReceiptWith(overrides = {}) {
   return {
     schemaVersion: 1,
@@ -702,6 +776,7 @@ describe("Opcore JSON schema wire constraints", () => {
         {
           checkId: "types",
           status: "passed",
+          outcome: "passed",
           durationMs: 7,
           diagnosticCount: 0
         }
@@ -746,6 +821,154 @@ describe("Opcore JSON schema wire constraints", () => {
       ),
       false
     );
+    assert.equal(
+      isValidDefinition(
+        "ValidationResult",
+        validationResultWith({
+          manifest: {
+            ...manifest,
+            runs: [{ ...manifest.runs[0], outcome: "findings" }]
+          }
+        })
+      ),
+      false
+    );
+  });
+
+  it("validates ValidationResult diagnostic ranges and tool provenance", () => {
+    const diagnostic = {
+      category: "syntax",
+      message: "expected ':'",
+      severity: "error",
+      code: "PY_SYNTAX_ERROR",
+      path: "pkg/app.py",
+      line: 2,
+      column: 8,
+      endLine: 2,
+      endColumn: 9,
+      tool: {
+        name: "python",
+        command: "/repo/.venv/bin/python",
+        version: "3.12.13",
+        source: "repo-venv",
+        cwd: "/repo"
+      }
+    };
+    assert.equal(isValidDefinition("ValidationResult", validationResultWith({ diagnostics: [diagnostic] })), true);
+    assert.equal(isValidDefinition("ValidationResult", validationResultWith({ diagnostics: [{ ...diagnostic, line: 0 }] })), false);
+    assert.equal(
+      isValidDefinition("ValidationResult", validationResultWith({ diagnostics: [{ ...diagnostic, line: undefined }] })),
+      false
+    );
+    assert.equal(
+      isValidDefinition("ValidationResult", validationResultWith({ diagnostics: [{ ...diagnostic, tool: { name: "python", command: "" } }] })),
+      false
+    );
+  });
+
+  it("validates Python project-context wire identity and typed outcome vocabulary", () => {
+    const context = pythonProjectContextWith();
+    assert.equal(isValidDefinition("PythonProjectContext", context), true);
+    assert.equal(isValidDefinition("ValidationResult", validationResultWith({ pythonProjectContexts: [context] })), true);
+    assert.equal(isValidDefinition("PythonProjectContext", { ...context, schemaId: "python.context.v0" }), false);
+    assert.equal(isValidDefinition("PythonProjectContext", { ...context, outcome: "ready" }), false);
+    assert.equal(isValidDefinition("PythonProjectContext", { ...context, contextFingerprint: "secret" }), false);
+    assert.equal(isValidDefinition("PythonProjectContext", {
+      ...context,
+      interpreter: { ...context.interpreter, version: "garbage" }
+    }), false);
+    for (const field of ["abi", "soabi"]) {
+      const interpreter = { ...context.interpreter };
+      delete interpreter[field];
+      assert.equal(isValidDefinition("PythonProjectContext", { ...context, interpreter }), false, field);
+    }
+    assert.equal(isValidDefinition("PythonProjectContext", {
+      ...context,
+      tools: [{
+        tool: "mypy",
+        available: true,
+        executable: "/repo/.venv/bin/mypy",
+        argv: ["/repo/.venv/bin/mypy"],
+        cwd: "/repo",
+        source: "project_local_environment"
+      }]
+    }), false);
+    assert.equal(isValidDefinition("PythonProjectContext", {
+      ...context,
+      buildSystem: { ...context.buildSystem, requires: [""] }
+    }), false);
+  });
+
+  it("validates Python capability-run wire evidence", () => {
+    const run = pythonCapabilityRunWith();
+    assert.equal(isValidDefinition("PythonValidationCapabilityRun", run), true);
+    assert.equal(isValidDefinition("PythonValidationCapabilityRun", {
+      ...run,
+      authority: "pyright",
+      tool: { ...run.tool, name: "pyright" },
+      diagnosticCount: 2,
+      warningCount: 1,
+      noteCount: 1
+    }), true);
+    assert.equal(isValidDefinition("PythonValidationCapabilityRun", {
+      ...run,
+      diagnosticCount: 1,
+      errorCount: 1
+    }), false);
+    assert.equal(isValidDefinition("ValidationResult", validationResultWith({ pythonCapabilityRuns: [run] })), true);
+    const executedInvalidConfig = {
+      ...run,
+      status: "invalid_config",
+      diagnosticCount: 1,
+      errorCount: 1,
+      execution: { termination: "exited", exitCode: 0, failureSummary: "mypy rejected selected configuration: mypy.ini" }
+    };
+    assert.equal(isValidDefinition("PythonValidationCapabilityRun", executedInvalidConfig), true);
+    assert.equal(isValidDefinition("PythonValidationCapabilityRun", {
+      ...run,
+      tool: {
+        ...run.tool,
+        executable: "/var/folders/private/opcore-python-types-workspace-secret/bin/mypy",
+        argv: ["/var/folders/private/opcore-python-types-workspace-secret/bin/mypy", "--output=json", "src/app.py"]
+      }
+    }), false);
+    const authorityConflict = { ...run, status: "invalid_config", diagnosticCount: 1, noteCount: 1 };
+    delete authorityConflict.authority;
+    delete authorityConflict.authoritySource;
+    delete authorityConflict.tool;
+    delete authorityConflict.execution;
+    assert.equal(isValidDefinition("PythonValidationCapabilityRun", authorityConflict), true);
+    assert.equal(isValidDefinition("PythonValidationCapabilityRun", { ...run, authority: "pytest" }), false);
+    assert.equal(isValidDefinition("PythonValidationCapabilityRun", { ...run, content: "source text" }), false);
+    assert.equal(isValidDefinition("PythonValidationCapabilityRun", {
+      ...run,
+      tool: { ...run.tool, name: "pyright" }
+    }), false);
+    assert.equal(isValidDefinition("PythonValidationCapabilityRun", {
+      ...run,
+      tool: { ...run.tool, version: "latest" }
+    }), false);
+    assert.equal(isValidDefinition("PythonValidationCapabilityRun", {
+      ...run,
+      status: "timeout",
+      execution: { termination: "signal", signal: "SIGTERM", failureSummary: "terminated" }
+    }), false);
+    assert.equal(isValidDefinition("PythonValidationCapabilityRun", {
+      ...run,
+      status: "tool_failure",
+      execution: { termination: "exited", exitCode: 2 }
+    }), false);
+    assert.equal(isValidDefinition("PythonValidationCapabilityRun", {
+      ...executedInvalidConfig,
+      execution: { termination: "exited", exitCode: 0 }
+    }), false);
+    assert.equal(isValidDefinition("PythonValidationCapabilityRun", {
+      ...run,
+      status: "findings",
+      diagnosticCount: 1,
+      errorCount: 1,
+      execution: { termination: "exited", exitCode: 0 }
+    }), false);
   });
 
   it("rejects absolute and parent-directory edit-change paths", () => {
@@ -2165,7 +2388,7 @@ describe("Opcore JSON schema wire constraints", () => {
         graphPackageVersions: [
           {
             packageName: "@the-open-engine/opcore-contracts",
-            version: "0.2.0"
+            version: "0.2.1"
           }
         ]
       }),
@@ -2954,7 +3177,7 @@ function validCommandLatencyRecord(overrides = {}) {
     exitCode: 0,
     repo: validRepoShapeFingerprint(),
     timing: validCommandTiming(),
-    opcoreVersion: "0.2.0",
+    opcoreVersion: "0.2.1",
     ...overrides
   };
 }
@@ -3266,7 +3489,7 @@ function validManagedToolDescriptor(overrides = {}) {
     packageIdentity: {
       packageName: "opcore",
       artifactName: "opcore",
-      version: "0.2.0"
+      version: "0.2.1"
     },
     entrypoints: [
       {
@@ -3333,6 +3556,12 @@ function validManagedToolDescriptor(overrides = {}) {
         graphModes: ["optional", "required"],
         hypothetical: true,
         statusSurfaces: ["status", "doctor"],
+        pythonProjectContext: {
+          schemaId: "opcore.python.project-context.v1",
+          outcomes: ["resolved", "degraded", "unsupported", "ambiguous"],
+          readOnly: true,
+          installs: false
+        },
         writeGate: {
           initScopes: ["repo", "global"],
           harnesses: ["claude-code", "codex"],
@@ -3461,7 +3690,7 @@ function descriptorNativeChecksumReferences(nativeArtifacts = descriptorNativeAr
 function validArtifactMetadata() {
   return {
     artifactName: "opcore-graph-core",
-    artifactVersion: "0.2.0",
+    artifactVersion: "0.2.1",
     targetPlatform: "test",
     binaryPath: "dist/native/test/opcore-graph-core",
     checksumPath: "dist/native/test/opcore-graph-core.sha256",
@@ -3475,7 +3704,7 @@ function validHandshake() {
     provider: "opcore-graph",
     graphSchemaVersion: 1,
     artifactName: "opcore-graph-core",
-    artifactVersion: "0.2.0",
+    artifactVersion: "0.2.1",
     targetPlatform: "test",
     supportedOperations: ["build", "update", "watch", "status", "query", "ping", "health", "shutdown"],
     nodeKinds: [
@@ -3715,7 +3944,7 @@ function validOpcoreRuntimeInfo() {
   return {
     schemaVersion: 1,
     packageName: "opcore",
-    version: "0.2.0",
+    version: "0.2.1",
     bin: "opcore",
     artifactSource: "source_checkout",
     packageRoot: "/repo/packages/opcore",
@@ -4007,11 +4236,11 @@ function validGraphReleaseReceipt() {
     graphPackageVersions: [
       {
         packageName: "@the-open-engine/opcore-graph",
-        version: "0.2.0"
+        version: "0.2.1"
       },
       ...graphCoreNativeSupportedTargets.map((target) => ({
         packageName: graphCoreNativePackageNameForTarget(target),
-        version: "0.2.0"
+        version: "0.2.1"
       }))
     ],
     graphProviderSchemaVersion: 1,
@@ -4103,7 +4332,7 @@ function validGraphReleaseReceipt() {
     })),
     packageInspection: {
       packageName: "@the-open-engine/opcore-graph",
-      tarballName: "covibes-opcore-graph-0.2.0.tgz",
+      tarballName: "covibes-opcore-graph-0.2.1.tgz",
       fileCount: 1,
       files: ["dist/index.js"],
       forbiddenMarkersAbsent: true,
@@ -4251,10 +4480,10 @@ function validReleaseReceipt() {
     return {
       packageName,
       packageRoot: "packages/opcore",
-      version: "0.2.0",
+      version: "0.2.1",
       manifest: {
         name: packageName,
-        version: "0.2.0",
+        version: "0.2.1",
         license: "MIT",
         main: "dist/index.js",
         types: "dist/index.d.ts",
@@ -4267,7 +4496,7 @@ function validReleaseReceipt() {
         ]
       },
       tarball: {
-        filename: packageName.replace("@the-open-engine/", "the-open-engine-").replace("/", "-") + "-0.2.0.tgz",
+        filename: packageName.replace("@the-open-engine/", "the-open-engine-").replace("/", "-") + "-0.2.1.tgz",
         path: ".opcore/release/packages/package.tgz",
         sha256: "c".repeat(64),
         integrity: "sha512-test",
@@ -4792,7 +5021,7 @@ function validAspDogfoodReceipt() {
   };
   const manifest = {
     manifestVersion: "asp-server/0.1",
-    server: { id: "opcore", name: "Opcore", version: "0.2.0" },
+    server: { id: "opcore", name: "Opcore", version: "0.2.1" },
     protocolVersions: ["asp/0.1"],
     capabilities: ["check"],
     capabilityProfiles: ["core-check-provider", "opcore-core-check"],

@@ -1,6 +1,6 @@
 {
   "name": "@the-open-engine/opcore-edit",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Deterministic edit planning and validation-gated apply for coding agents.",
   "type": "module",
   "license": "MIT",
@@ -25,7 +25,7 @@
     "developer-tools"
   ],
   "dependencies": {
-    "@the-open-engine/opcore-contracts": "0.2.0",
+    "@the-open-engine/opcore-contracts": "0.2.1",
     "ts-morph": "^28.0.0"
   },
   "engines": {

@@ -283,7 +283,9 @@ export function createOpcoreMetricReport(input: CreateOpcoreMetricReportInput): 
       ...(validationResult?.status ? { status: validationResult.status } : {}),
       diagnosticCount: validationResult?.diagnostics.length ?? 0,
       checkCount: validationResult?.manifest?.checks.length ?? input.repoState.validation.checkCount,
-      policy: input.repoState.validation.policy
+      policy: input.repoState.validation.policy,
+      pythonProjectContexts:
+        validationResult?.pythonProjectContexts ?? input.repoState.validation.pythonProjectContexts ?? []
     },
     signals: sortSignals(signals),
     degradations: sortDegradations(degradations),
@@ -1007,17 +1009,15 @@ function addValidationDegradations(
         checkId: pythonDeadCodeCheckId
       });
     }
-    if (diagnostic.code === "PYTHON_TYPES_UNSUPPORTED" || diagnostic.code === "PYTHON_TYPES_DEFERRED") {
+    if (isPythonTypeAvailabilityDiagnostic(diagnostic)) {
       degradations.push({
-        id: diagnostic.code === "PYTHON_TYPES_UNSUPPORTED" ? "python.types.unavailable" : "python.types.deferred",
-        title: diagnostic.code === "PYTHON_TYPES_UNSUPPORTED"
-          ? "Python type metric unavailable"
-          : "Python type metric deferred",
+        id: "python.types.unavailable",
+        title: "Python type metric unavailable",
         source: "validation_diagnostic",
         severity: "warning",
         message: diagnostic.message,
         checkId: pythonTypesCheckId,
-        requiredTool: "mypy or pyright"
+        requiredTool: "configured Python type authority"
       });
     }
   }
@@ -1112,7 +1112,9 @@ function diagnosticEvidence(diagnostic: ValidationDiagnostic, checkId: string): 
       path: diagnostic.path,
       message: diagnostic.message,
       checkId,
-      ...(diagnostic.code ? { code: diagnostic.code } : {})
+      ...(diagnostic.code ? { code: diagnostic.code } : {}),
+      ...(diagnostic.line === undefined ? {} : { line: diagnostic.line }),
+      ...(diagnostic.column === undefined ? {} : { column: diagnostic.column })
     }
   ];
 }
@@ -1144,7 +1146,12 @@ function isRustToolchainDiagnostic(diagnostic: ValidationDiagnostic): boolean {
 
 function isPythonTypeSignalDiagnostic(diagnostic: ValidationDiagnostic): boolean {
   if (diagnostic.category !== "types" || !isPythonPath(diagnostic.path)) return false;
-  return diagnostic.code !== "PYTHON_TYPES_UNSUPPORTED" && diagnostic.code !== "PYTHON_TYPES_DEFERRED";
+  return !isPythonTypeAvailabilityDiagnostic(diagnostic);
+}
+
+function isPythonTypeAvailabilityDiagnostic(diagnostic: ValidationDiagnostic): boolean {
+  return diagnostic.code === "PYTHON_TYPES_UNSUPPORTED_TARGET" ||
+    diagnostic.code === "PYTHON_TYPES_TOOL_UNAVAILABLE";
 }
 
 function graphBackedCheckId(checkId: string): boolean {

@@ -115,7 +115,7 @@ async function assertInspectCandidatesStayInsideFailure() {
 async function initializeWarmPeer(peer, repo, host) {
   const init = await peer.request("initialize", {
     protocolVersion: "asp/0.1",
-    host: { name: "fake-host", version: "0.2.0-test" },
+    host: { name: "fake-host", version: "0.2.1-test" },
     hostCapabilities: { readBlob: true, listTree: true, putBlob: false },
     workspace: { root: repo, baseline: host.baseline },
     assuranceMode: "gated"

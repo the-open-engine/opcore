@@ -28,12 +28,8 @@ export function createFmtCheck(options: { env?: Record<string, string | undefine
       const skipped = skippedRustInputResult(context);
       if (skipped !== undefined) return skipped;
       const materialized = await materializeRustWorkspace(context, { env: options.env });
-      try {
-        const command = fmtCommand(context.scope.kind, rustInputSet(context).ownedPaths.filter(isRustSourcePath), materialized.root);
-        return runFmtCommand(command, materialized.root, options);
-      } finally {
-        materialized.cleanup();
-      }
+      const command = fmtCommand(context.scope.kind, rustInputSet(context).ownedPaths.filter(isRustSourcePath), materialized.root);
+      return runFmtCommand(command, materialized.root, options);
     }
   };
 }

@@ -54,6 +54,11 @@ jobs:
           node-version: 22
           cache: npm
 
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -65,8 +70,24 @@ jobs:
       - name: Install
         run: npm ci
 
+      - name: Install authoritative mypy
+        run: python -m pip install --disable-pip-version-check mypy==2.3.0
+
+      - name: Install authoritative Pyright
+        run: npm install --prefix "${RUNNER_TEMP}/opcore-pyright" --no-package-lock --ignore-scripts pyright@1.1.411
+
       - name: Check
         run: npm run ci
+
+      - name: Prove authoritative mypy after-state execution
+        run: npm run python:mypy-authority-proof
+        env:
+          OPCORE_REAL_MYPY: ${{ env.pythonLocation }}/bin/mypy
+
+      - name: Prove authoritative Pyright after-state execution
+        run: npm run python:pyright-authority-proof
+        env:
+          OPCORE_REAL_PYRIGHT: ${{ runner.temp }}/opcore-pyright/node_modules/.bin/pyright
 
   native-artifact:
     name: native-artifact (${{ matrix.target }})

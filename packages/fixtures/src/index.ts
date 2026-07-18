@@ -166,6 +166,11 @@ export interface SyntheticFixtureMetadata {
     nodeKinds: readonly string[];
     edgeKinds: readonly string[];
     diagnostics: readonly string[];
+    importResolution?: {
+      owner: "graph-core";
+      expectedEdgeField: "pythonImportEdges";
+      cases: readonly string[];
+    };
   };
   graphPipeline?: {
     operations: readonly string[];
@@ -215,7 +220,7 @@ export interface SyntheticFixtureMetadata {
   };
   validationPython?: {
     fixtureRoot: string;
-    scenarios: readonly ("clean" | "failing" | "degraded-tools")[];
+    scenarios: readonly ("clean" | "failing" | "degraded-tools" | "mypy-authority" | "pyright-authority")[];
     checks: readonly string[];
     degradedTools: readonly string[];
   };
@@ -568,7 +573,23 @@ export const conformanceFixtureMetadata = [
       languages: ["py", "pyi"],
       nodeKinds: ["File", "Module", "Class", "Function", "Variable"],
       edgeKinds: ["CONTAINS", "IMPORTS_FROM", "DEPENDS_ON", "CALLS", "TESTED_BY", "INHERITS"],
-      diagnostics: ["parse_error", "unresolved_import"]
+      diagnostics: ["parse_error", "unresolved_import"],
+      importResolution: {
+        owner: "graph-core",
+        expectedEdgeField: "pythonImportEdges",
+        cases: [
+          "multiline-parenthesized",
+          "alias",
+          "conditional",
+          "submodule",
+          "star",
+          "relative",
+          "package-initializer",
+          "stub",
+          "namespace",
+          "src-layout"
+        ]
+      }
     }
   },
   {
@@ -581,7 +602,7 @@ export const conformanceFixtureMetadata = [
     status: "validation_python",
     validationPython: {
       fixtureRoot: "packages/fixtures/validation-python",
-      scenarios: ["clean", "failing", "degraded-tools"],
+      scenarios: ["clean", "failing", "degraded-tools", "mypy-authority", "pyright-authority"],
       checks: [
         "python.syntax",
         "python.source-hygiene",
