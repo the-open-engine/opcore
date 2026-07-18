@@ -1,6 +1,6 @@
 {
   "name": "@the-open-engine/opcore-asp-provider",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Standalone ASP Core check provider facade for Opcore validation.",
   "type": "module",
   "license": "MIT",
@@ -30,14 +30,14 @@
     "opcore-asp-provider": "dist/index.js"
   },
   "dependencies": {
-    "@the-open-engine/opcore-contracts": "0.2.0",
-    "@the-open-engine/opcore-graph": "0.2.0",
-    "@the-open-engine/opcore-validation": "0.2.0",
-    "@the-open-engine/opcore-validation-policy": "0.2.0",
-    "@the-open-engine/opcore-validation-docs": "0.2.0",
-    "@the-open-engine/opcore-validation-python": "0.2.0",
-    "@the-open-engine/opcore-validation-rust": "0.2.0",
-    "@the-open-engine/opcore-validation-typescript": "0.2.0"
+    "@the-open-engine/opcore-contracts": "0.2.1",
+    "@the-open-engine/opcore-graph": "0.2.1",
+    "@the-open-engine/opcore-validation": "0.2.1",
+    "@the-open-engine/opcore-validation-policy": "0.2.1",
+    "@the-open-engine/opcore-validation-docs": "0.2.1",
+    "@the-open-engine/opcore-validation-python": "0.2.1",
+    "@the-open-engine/opcore-validation-rust": "0.2.1",
+    "@the-open-engine/opcore-validation-typescript": "0.2.1"
   },
   "engines": {
     "node": ">=22"

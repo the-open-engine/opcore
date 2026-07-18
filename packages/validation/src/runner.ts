@@ -35,6 +35,7 @@ import {
   type ValidationRuntimePolicy
 } from "./registry.js";
 import { defaultValidationGraphProvider, missingGraphStatus, normalizeValidationRequest } from "./request.js";
+import { createValidationRunResources, type ValidationRunResources } from "./resources.js";
 import {
   resolveValidationScope,
   ValidationScopeResolutionError,
@@ -106,6 +107,7 @@ interface ExecuteChecksArgs {
   scope: ResolvedValidationScope;
   graph: ValidationGraphQuerySession;
   fileView: ValidationFileView;
+  resources: ValidationRunResources;
   selectedChecks: readonly ValidationCheckDefinition[];
   totalStartedAt: number;
   clock: ValidationClock;
@@ -126,6 +128,7 @@ interface ValidationExecutionState {
   request: ValidationRequest;
   fileView: ValidationFileView;
   graph: ValidationGraphQuerySession;
+  resources: ValidationRunResources;
 }
 
 interface SingleCheckOutcome {
@@ -216,7 +219,7 @@ async function runCurrentValidation(args: PreparedValidationArgs): Promise<Valid
     if (execution.failureResult !== undefined) return execution.failureResult;
     return finalValidationResult(args.selectedChecks, execution, state.graph.status, args.totalStartedAt, args.options.clock);
   } finally {
-    await state.graph.dispose();
+    await disposeValidationState(state);
   }
 }
 
@@ -251,10 +254,10 @@ async function runIntroducedValidation(args: PreparedValidationArgs): Promise<Va
         args.options.clock
       );
     } finally {
-      await afterState.graph.dispose();
+      await disposeValidationState(afterState);
     }
   } finally {
-    await beforeState.graph.dispose();
+    await disposeValidationState(beforeState);
   }
 }
 
@@ -385,7 +388,15 @@ async function acquireValidationState(
     fileView,
     exact ? { kind: "exact", state: defaultReadState } : { kind: "persistent" }
   );
-  return { request, fileView, graph };
+  return { request, fileView, graph, resources: createValidationRunResources() };
+}
+
+async function disposeValidationState(state: ValidationExecutionState): Promise<void> {
+  try {
+    await state.resources.dispose();
+  } finally {
+    await state.graph.dispose();
+  }
 }
 
 async function executeValidationState(
@@ -399,6 +410,7 @@ async function executeValidationState(
     scope: args.scope,
     graph: state.graph,
     fileView: state.fileView,
+    resources: state.resources,
     selectedChecks,
     totalStartedAt: args.totalStartedAt,
     clock: options.clock,
@@ -709,6 +721,7 @@ function checkContext(args: ExecuteChecksArgs) {
     graphStatus: args.graph.status,
     graph: args.graph,
     fileView: args.fileView,
+    resources: args.resources,
     runtime: args.runtime
   };
 }

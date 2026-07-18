@@ -45,7 +45,7 @@ export function request(overrides = {}) {
 export function rustCrate(overrides = {}) {
   return {
     "Cargo.toml": '[workspace]\nmembers = ["crates/app"]\nresolver = "2"\n',
-    "crates/app/Cargo.toml": '[package]\nname = "app"\nversion = "0.2.0"\nedition = "2021"\n',
+    "crates/app/Cargo.toml": '[package]\nname = "app"\nversion = "0.2.1"\nedition = "2021"\n',
     "crates/app/src/lib.rs": "pub fn answer() -> i32 { 42 }\n",
     ...overrides
   };
@@ -105,10 +105,11 @@ export function fakeCargoScript({
   udepsVersionStatus = 0,
   metadata = defaultCargoMetadata(),
   logPath,
+  logCwd = false,
   logEnvKeys = []
 } = {}) {
   const metadataJson = typeof metadata === "string" ? metadata : JSON.stringify(metadata);
-  const logLine = cargoInvocationLogLine(logPath, logEnvKeys);
+  const logLine = cargoInvocationLogLine(logPath, logEnvKeys, logCwd);
   return [
     "#!/bin/sh",
     logLine,
@@ -223,15 +224,16 @@ function shellEscapeSingleQuoted(value) {
   return String(value).replaceAll("'", "'\\''");
 }
 
-function cargoInvocationLogLine(logPath, logEnvKeys) {
+function cargoInvocationLogLine(logPath, logEnvKeys, logCwd) {
   if (logPath === undefined) return "";
   const escapedLogPath = shellEscapeSingleQuoted(logPath);
-  if (logEnvKeys.length === 0) return `printf '%s\\n' "$*" >> '${escapedLogPath}'`;
+  if (logEnvKeys.length === 0 && !logCwd) return `printf '%s\\n' "$*" >> '${escapedLogPath}'`;
   const envWrites = logEnvKeys.map((key) => {
     if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(key)) throw new Error(`Invalid env key for fake cargo log: ${key}`);
     return `printf '\\t%s=%s' '${shellEscapeSingleQuoted(key)}' "$${key}" >> '${escapedLogPath}'`;
   });
-  return [`printf '%s' "$*" >> '${escapedLogPath}'`, ...envWrites, `printf '\\n' >> '${escapedLogPath}'`].join("\n");
+  const cwdWrite = logCwd ? [`printf '\\tCWD=%s' "$(pwd -P)" >> '${escapedLogPath}'`] : [];
+  return [`printf '%s' "$*" >> '${escapedLogPath}'`, ...envWrites, ...cwdWrite, `printf '\\n' >> '${escapedLogPath}'`].join("\n");
 }
 
 function writeExecutable(path, content) {

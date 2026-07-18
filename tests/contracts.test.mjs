@@ -1436,7 +1436,7 @@ describe("Opcore shared contracts", () => {
         runtimeInfo: validOpcoreRuntimeInfo(),
         opcoreDoctor: validOpcoreDoctor()
       }).opcoreDoctor.runtime.version,
-      "0.2.0"
+      "0.2.1"
     );
     assert.equal(validateInspectRouteResult(validInspectRouteResult()).references[0].symbol.name, "GreetingModel");
     assert.equal(
@@ -3341,7 +3341,7 @@ function validCommandLatencyRecord(overrides = {}) {
     exitCode: 0,
     repo: validRepoShapeFingerprint(),
     timing: validCommandTiming(),
-    opcoreVersion: "0.2.0",
+    opcoreVersion: "0.2.1",
     ...overrides
   };
 }
@@ -3653,7 +3653,7 @@ function validManagedToolDescriptor(overrides = {}) {
     packageIdentity: {
       packageName: "opcore",
       artifactName: "opcore",
-      version: "0.2.0"
+      version: "0.2.1"
     },
     entrypoints: [
       {
@@ -3962,7 +3962,7 @@ function surfaceContracts(surfaces) {
 function validArtifactMetadata() {
   return {
     artifactName: "opcore-graph-core",
-    artifactVersion: "0.2.0",
+    artifactVersion: "0.2.1",
     targetPlatform: "test",
     binaryPath: "dist/native/test/opcore-graph-core",
     checksumPath: "dist/native/test/opcore-graph-core.sha256",
@@ -3976,7 +3976,7 @@ function validHandshake() {
     provider: "opcore-graph",
     graphSchemaVersion: 1,
     artifactName: "opcore-graph-core",
-    artifactVersion: "0.2.0",
+    artifactVersion: "0.2.1",
     targetPlatform: "test",
     supportedOperations: ["build", "update", "watch", "status", "query", "ping", "health", "shutdown"],
     nodeKinds: [
@@ -4554,7 +4554,7 @@ function validOpcoreRuntimeInfo() {
   return {
     schemaVersion: 1,
     packageName: "opcore",
-    version: "0.2.0",
+    version: "0.2.1",
     bin: "opcore",
     artifactSource: "source_checkout",
     packageRoot: "/repo/packages/opcore",
@@ -4748,11 +4748,11 @@ function validGraphReleaseReceipt() {
     graphPackageVersions: [
       {
         packageName: "@the-open-engine/opcore-graph",
-        version: "0.2.0"
+        version: "0.2.1"
       },
       ...graphCoreNativeSupportedTargets.map((target) => ({
         packageName: graphCoreNativePackageNameForTarget(target),
-        version: "0.2.0"
+        version: "0.2.1"
       }))
     ],
     graphProviderSchemaVersion: 1,
@@ -4814,7 +4814,7 @@ function validGraphReleaseReceipt() {
     })),
     packageInspection: {
       packageName: "@the-open-engine/opcore-graph",
-      tarballName: "covibes-opcore-graph-0.2.0.tgz",
+      tarballName: "covibes-opcore-graph-0.2.1.tgz",
       fileCount: 1,
       files: ["dist/index.js"],
       forbiddenMarkersAbsent: true,
@@ -4961,10 +4961,10 @@ function validReleaseReceipt() {
     {
       packageName,
       packageRoot: "packages/opcore",
-      version: "0.2.0",
+      version: "0.2.1",
       manifest: {
         name: packageName,
-        version: "0.2.0",
+        version: "0.2.1",
         license: "MIT",
         main: "dist/index.js",
         types: "dist/index.d.ts",
@@ -4974,8 +4974,8 @@ function validReleaseReceipt() {
         bundledDependencies: []
       },
       tarball: {
-        filename: "opcore-0.2.0.tgz",
-        path: ".opcore/release/packages/opcore-0.2.0.tgz",
+        filename: "opcore-0.2.1.tgz",
+        path: ".opcore/release/packages/opcore-0.2.1.tgz",
         sha256: "c".repeat(64),
         integrity: "sha512-test",
         shasum: "d".repeat(40)
@@ -5505,7 +5505,7 @@ function validAspDogfoodReceipt() {
   };
   const manifest = {
     manifestVersion: "asp-server/0.1",
-    server: { id: "opcore", name: "Opcore", version: "0.2.0" },
+    server: { id: "opcore", name: "Opcore", version: "0.2.1" },
     protocolVersions: ["asp/0.1"],
     capabilities: ["check"],
     capabilityProfiles: ["core-check-provider", "opcore-core-check"],

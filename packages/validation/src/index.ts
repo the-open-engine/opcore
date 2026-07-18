@@ -197,3 +197,8 @@ export {
   type ValidationClock,
   type ValidationRunner
 } from "./runner.js";
+export {
+  createValidationRunResources,
+  type ValidationRunResource,
+  type ValidationRunResources
+} from "./resources.js";

@@ -26,7 +26,7 @@ jobs:
       (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
     runs-on: ubuntu-latest
     env:
-      RELEASE_VERSION: "0.2.0"
+      RELEASE_VERSION: "0.2.1"
       NPM_TAG: latest
     steps:
       - name: Checkout
@@ -97,7 +97,7 @@ jobs:
         if: github.event_name == 'workflow_run'
         run: npm run release:publish -- --version "$RELEASE_VERSION" --tag "$NPM_TAG"
         env:
-          OPCORE_CONFIRM_PUBLISH: "0.2.0"
+          OPCORE_CONFIRM_PUBLISH: "0.2.1"
           OPCORE_REQUIRE_ALL_NATIVE_PACKAGES: "1"
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 

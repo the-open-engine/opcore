@@ -12,7 +12,7 @@ import {
 import { publicReleasePackageNames, releasePackageDirForName } from "./release-package-dirs.mjs";
 import { createStagedOpcorePackage, npmPackResultForPackage } from "./stage-opcore-bundle.mjs";
 
-const releaseVersion = "0.2.0";
+const releaseVersion = "0.2.1";
 const publicPackages = publicReleasePackageNames;
 const cloneProtocolMarker = Buffer.from("opcore.clone.v1", "utf8");
 const target = currentGraphCoreNativeTarget();

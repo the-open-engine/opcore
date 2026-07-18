@@ -12,6 +12,7 @@ import type {
 import { validationCheckIdPattern, validationScopeKinds } from "@the-open-engine/opcore-contracts";
 import type { ValidationGraphQueryRequirement, ValidationGraphQuerySession } from "./graph-client.js";
 import type { ValidationFileView } from "./overlays.js";
+import type { ValidationRunResources } from "./resources.js";
 import type { ResolvedValidationScope } from "./scope.js";
 
 const validationCheckIdRegex = new RegExp(validationCheckIdPattern);
@@ -23,6 +24,7 @@ export interface ValidationCheckContext {
   graphStatus: GraphProviderStatus;
   graph: ValidationGraphQuerySession;
   fileView: ValidationFileView;
+  resources: ValidationRunResources;
   runtime: ValidationRuntimePolicy;
 }
 

@@ -171,4 +171,4 @@ export type RpcThrowable = Error & {
 export const ASP_PROTOCOL_VERSION = "asp/0.1";
 export const OPCORE_PROVIDER_ID = "opcore";
 export const OPCORE_PROVIDER_PACKAGE = "opcore";
-export const OPCORE_PROVIDER_VERSION = "0.2.0";
+export const OPCORE_PROVIDER_VERSION = "0.2.1";
