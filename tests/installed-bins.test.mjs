@@ -44,6 +44,7 @@ describe("installed package bins", () => {
 
       assert.equal(existsSync(binPath(project, "opcore")), true);
       assert.equal(existsSync(binPath(project, "opcore-asp-provider")), true);
+      assert.equal(existsSync(join(project, "node_modules", "opcore", "node_modules", "jsonc-parser", "package.json")), true);
       for (const oldBin of ["lattice", "crg", "cix", "rox"]) assert.equal(existsSync(binPath(project, oldBin)), false, oldBin);
 
       assertAspProviderInitializeSmoke(project);

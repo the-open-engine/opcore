@@ -305,6 +305,37 @@
       "errorCount": 0,
       "warningCount": 0,
       "noteCount": 0
+    },
+    {
+      "schemaId": "opcore.python.validation-capability-run",
+      "schemaVersion": 1,
+      "capability": "types",
+      "checkId": "python.types",
+      "projectKey": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+      "contextFingerprint": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+      "projectRoot": "services/worker",
+      "targets": ["services/worker/src/job.py"],
+      "selectedSourcePaths": ["services/worker/src/job.py"],
+      "selectedConfigPaths": ["services/worker/pyrightconfig.json"],
+      "afterStateManifestFingerprint": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+      "authority": "pyright",
+      "authoritySource": "project_config",
+      "status": "passed",
+      "tool": {
+        "name": "pyright",
+        "executable": "repo:services/worker/node_modules/.bin/pyright",
+        "argv": ["repo:services/worker/node_modules/.bin/pyright", "--outputjson", "--project", "pyrightconfig.json"],
+        "cwd": "services/worker",
+        "source": "project_local_environment",
+        "version": "1.1.411",
+        "configFile": "services/worker/pyrightconfig.json"
+      },
+      "execution": { "termination": "exited", "exitCode": 0 },
+      "durationMs": 9,
+      "diagnosticCount": 2,
+      "errorCount": 0,
+      "warningCount": 1,
+      "noteCount": 1
     }
   ]
 }

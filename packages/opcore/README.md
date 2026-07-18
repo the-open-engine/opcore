@@ -48,7 +48,7 @@ The command validates changed source files with stable JSON and agent-friendly e
 
 - TypeScript and JavaScript: deep graph-backed and validation signals for syntax, types, imports, relevant tests, dead exports, and graph structure when facts are available.
 - Rust: useful validation and toolchain signals for source hygiene, oversized files, module evidence, cargo, fmt, clippy, rustdoc, and optional-tool evidence when available.
-- Python: experimental degraded-honest validation for graph-backed `.py`/`.pyi` structure, untested modules, dead exports, syntax, and source-hygiene; `python.types` runs configured mypy authority per project, defers configured Pyright until #257, and reports absent/conflicting/unavailable authority as degraded.
+- Python: experimental degraded-honest validation for graph-backed `.py`/`.pyi` structure, untested modules, dead exports, syntax, and source-hygiene; `python.types` runs one configured mypy or Pyright authority per project and reports absent/conflicting/unavailable authority as degraded.
 - Other non-TS/JS/Rust/Python languages: counted and reported as unsupported; Opcore does not invent findings or ratings for files it cannot assess.
 
 Metric output is named evidence and deltas.

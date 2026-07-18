@@ -902,6 +902,19 @@ describe("Opcore JSON schema wire constraints", () => {
   it("validates Python capability-run wire evidence", () => {
     const run = pythonCapabilityRunWith();
     assert.equal(isValidDefinition("PythonValidationCapabilityRun", run), true);
+    assert.equal(isValidDefinition("PythonValidationCapabilityRun", {
+      ...run,
+      authority: "pyright",
+      tool: { ...run.tool, name: "pyright" },
+      diagnosticCount: 2,
+      warningCount: 1,
+      noteCount: 1
+    }), true);
+    assert.equal(isValidDefinition("PythonValidationCapabilityRun", {
+      ...run,
+      diagnosticCount: 1,
+      errorCount: 1
+    }), false);
     assert.equal(isValidDefinition("ValidationResult", validationResultWith({ pythonCapabilityRuns: [run] })), true);
     const executedInvalidConfig = {
       ...run,

@@ -254,6 +254,13 @@ describe("conformance fixture metadata", () => {
     assert.equal(data.editHypotheticalOverlays.request.overlays[1].action, "write");
     assert.equal(data.pythonCapabilityRuns[0].schemaId, "opcore.python.validation-capability-run");
     assert.equal(data.pythonCapabilityRuns[0].authority, "mypy");
+    assert.equal(data.pythonCapabilityRuns[1].authority, "pyright");
+    assert.equal(data.pythonCapabilityRuns[1].tool.version, "1.1.411");
+    assert.deepEqual({
+      errors: data.pythonCapabilityRuns[1].errorCount,
+      warnings: data.pythonCapabilityRuns[1].warningCount,
+      notes: data.pythonCapabilityRuns[1].noteCount
+    }, { errors: 0, warnings: 1, notes: 1 });
   });
 
   it("describes package-owned command adapter metadata for #37", () => {
@@ -389,7 +396,7 @@ describe("conformance fixture metadata", () => {
   it("describes Python validation fixture metadata for #22", () => {
     const validation = fixtureById("validation-python-v1").validationPython;
     assert.equal(validation.fixtureRoot, "packages/fixtures/validation-python");
-    assert.deepEqual(validation.scenarios, ["clean", "failing", "degraded-tools", "mypy-authority"]);
+    assert.deepEqual(validation.scenarios, ["clean", "failing", "degraded-tools", "mypy-authority", "pyright-authority"]);
     assert.deepEqual(validation.checks, [
       "python.syntax",
       "python.source-hygiene",

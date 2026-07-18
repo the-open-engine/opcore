@@ -10,7 +10,7 @@ import type {
 import { normalizeValidationFileViewPath, type ValidationFileReadStatus, type ValidationFileView } from "@the-open-engine/opcore-validation";
 import { createHash } from "node:crypto";
 import { mkdtempSync, rmSync } from "node:fs";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, realpath, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, isAbsolute, join, posix, relative, resolve, sep } from "node:path";
 
@@ -38,6 +38,9 @@ export interface MaterializedPythonTypeWorkspace {
   runtimeRoot: string;
   projectCwd: string;
   pythonPathEntries: readonly string[];
+  selectedSourcePaths: readonly string[];
+  selectedConfigPaths: readonly string[];
+  afterStateContentByPath: ReadonlyMap<string, string>;
   cleanup(): void;
 }
 
@@ -94,9 +97,11 @@ export async function materializePythonTypeCapability(
   preparation: PythonTypeCapabilityPreparation
 ): Promise<MaterializedPythonTypeWorkspace> {
   const tempRoot = mkdtempSync(join(tmpdir(), "opcore-python-types-workspace-"));
-  const root = join(tempRoot, "repo");
+  const rawRoot = join(tempRoot, "repo");
   try {
-    await mkdir(root, { recursive: true });
+    await mkdir(rawRoot, { recursive: true });
+    const root = await realpath(rawRoot);
+    const runtimeRoot = await realpath(tempRoot);
     for (const record of preparation.records) {
       if (record.status !== "found" || record.content === undefined) continue;
       const absolute = resolveRepoPath(root, record.path);
@@ -108,13 +113,24 @@ export async function materializePythonTypeCapability(
       : resolveRepoPath(root, preparation.project.projectRoot);
     await mkdir(projectCwd, { recursive: true });
     await writeFile(join(projectCwd, isolatedMypyConfigPath), "[mypy]\n", "utf8");
-    for (const name of ["home", "xdg-config", "xdg-cache", "tmp"]) {
+    for (const name of ["home", "xdg-config", "xdg-cache", "tmp", "pyright-cache"]) {
       await mkdir(join(tempRoot, name), { recursive: true });
     }
     const pythonPathEntries = preparation.moduleSearchRoots.map((path) =>
       path === "." ? root : resolveRepoPath(root, path)
     );
-    return { root, runtimeRoot: tempRoot, projectCwd, pythonPathEntries, cleanup: () => rmSync(tempRoot, { recursive: true, force: true }) };
+    return {
+      root,
+      runtimeRoot,
+      projectCwd,
+      pythonPathEntries,
+      selectedSourcePaths: preparation.selectedSourcePaths,
+      selectedConfigPaths: preparation.selectedConfigPaths,
+      afterStateContentByPath: new Map(preparation.records.flatMap((record) =>
+        record.status === "found" && record.content !== undefined ? [[record.path, record.content] as const] : []
+      )),
+      cleanup: () => rmSync(tempRoot, { recursive: true, force: true })
+    };
   } catch (error) {
     rmSync(tempRoot, { recursive: true, force: true });
     throw error;

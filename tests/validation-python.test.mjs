@@ -422,7 +422,7 @@ describe("validation-python adapter", () => {
     }
   });
 
-  it("reports configured pyright as unsupported without checker execution", async () => {
+  it("executes configured pyright and normalizes machine JSON diagnostics", async () => {
     const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-types-pyright-"));
     try {
       writePassingPythonProtocolShim(repoRoot);
@@ -431,13 +431,13 @@ describe("validation-python adapter", () => {
       writeToolShim(
         repoRoot,
         "pyright",
-        [
-          "#!/bin/sh",
-          "if [ \"$1\" = \"--version\" ]; then echo 'pyright 1.1.0'; exit 0; fi",
-          "echo \"  $1:1:14 - error: Type \\\"Literal['wrong']\\\" is not assignable to declared type \\\"int\\\" (reportAssignmentType)\"",
-          "exit 1",
-          ""
-        ].join("\n")
+        pyrightShim("1.1.0", [{
+          file: "pkg/app.py",
+          severity: "error",
+          message: "Type mismatch\n  Literal is not assignable to int",
+          rule: "reportAssignmentType",
+          range: { start: { line: 0, character: 13 }, end: { line: 0, character: 20 } }
+        }], 1)
       );
 
       const result = await runner({
@@ -461,12 +461,138 @@ describe("validation-python adapter", () => {
         })
       );
 
-      assert.equal(result.status, "unsupported_request");
-      assert.equal(result.diagnostics[0].code, "PYTHON_TYPES_PYRIGHT_UNSUPPORTED");
+      assert.equal(result.status, "policy_failure", JSON.stringify(result, null, 2));
+      assert.equal(result.diagnostics[0].code, "PYRIGHT_REPORT_ASSIGNMENT_TYPE");
       assert.equal(result.diagnostics[0].path, "pkg/app.py");
-      assert.equal(result.pythonCapabilityRuns[0].status, "unsupported_target");
+      assert.equal(result.diagnostics[0].line, 1);
+      assert.equal(result.diagnostics[0].column, 14);
+      assert.equal(result.diagnostics[0].message.includes("\n"), true);
+      assert.equal(result.pythonCapabilityRuns[0].status, "findings");
+      assert.deepEqual(result.pythonCapabilityRuns[0].tool.argv.slice(-5), [
+        "--outputjson", "--project", "pyrightconfig.json", "--pythonpath", "repo:.venv/bin/python"
+      ]);
       assert.equal(result.pythonProjectContexts[0].tools.find((tool) => tool.tool === "pyright")?.source, "explicit_override");
       assert.equal(result.pythonProjectContexts[0].tools.find((tool) => tool.tool === "pyright")?.configFile, "pyrightconfig.json");
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("executes [tool.pyright] and preserves pyrightconfig.json precedence", async () => {
+    for (const testCase of [
+      {
+        name: "toml",
+        files: {
+          "pyproject.toml": "[project]\nname='fixture'\n[tool.pyright]\ninclude=['pkg']\n",
+          "pkg/app.py": "value: int = 1\n"
+        },
+        configFile: "pyproject.toml"
+      },
+      {
+        name: "json-precedence",
+        files: {
+          "pyrightconfig.json": "{}\n",
+          "pyproject.toml": "[project]\nname='fixture'\n[tool.pyright]\nstubPath='/tmp/host-stubs'\n",
+          "pkg/app.py": "value: int = 1\n"
+        },
+        configFile: "pyrightconfig.json"
+      }
+    ]) {
+      const repoRoot = mkdtempSync(join(tmpdir(), `opcore-python-pyright-${testCase.name}-`));
+      try {
+        writePassingPythonProtocolShim(repoRoot);
+        writeToolShim(repoRoot, "pyright", pyrightShim("1.1.411", [], 0));
+        const result = await runner({
+          files: testCase.files,
+          checks: createPythonValidationChecks({ repoRoot, env: { PATH: "" }, nodeWorkspace: createNodePythonProjectWorkspace(repoRoot) })
+        }).runValidation(request({ repo: { repoRoot }, checks: [PYTHON_TYPES_CHECK_ID] }));
+
+        assert.equal(result.status, "passed", `${testCase.name}: ${JSON.stringify(result, null, 2)}`);
+        assert.deepEqual(result.pythonCapabilityRuns[0].selectedConfigPaths, [testCase.configFile]);
+        assert.equal(result.pythonCapabilityRuns[0].tool.configFile, testCase.configFile);
+        assert.deepEqual(result.pythonCapabilityRuns[0].tool.argv.slice(1, 4), ["--outputjson", "--project", testCase.configFile]);
+      } finally {
+        rmSync(repoRoot, { recursive: true, force: true });
+      }
+    }
+  });
+
+  it("accepts the canonical repository root in every Pyright path field", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-pyright-root-paths-"));
+    try {
+      writePassingPythonProtocolShim(repoRoot);
+      writeToolShim(repoRoot, "pyright", pyrightShim("1.1.411", [], 0));
+      const config = {
+        include: ["."],
+        exclude: ["."],
+        ignore: ["."],
+        extraPaths: ["."],
+        stubPath: ".",
+        typeshedPath: ".",
+        venvPath: ".",
+        venv: "fixture-env",
+        executionEnvironments: [{ root: ".", extraPaths: ["."] }]
+      };
+      const result = await runner({
+        files: {
+          "pyrightconfig.json": `${JSON.stringify(config)}\n`,
+          "pkg/app.py": "value: int = 1\n"
+        },
+        checks: createPythonValidationChecks({
+          repoRoot,
+          env: { PATH: "" },
+          nodeWorkspace: createNodePythonProjectWorkspace(repoRoot)
+        })
+      }).runValidation(request({ repo: { repoRoot }, checks: [PYTHON_TYPES_CHECK_ID] }));
+
+      assert.equal(result.status, "passed", JSON.stringify(result, null, 2));
+      assert.equal(result.pythonCapabilityRuns[0].status, "passed");
+      assert.deepEqual(result.pythonCapabilityRuns[0].selectedSourcePaths, ["pkg/app.py"]);
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("accepts Pyright glob patterns and the repository root without non-file realpath evidence", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-pyright-host-paths-"));
+    try {
+      writePassingPythonProtocolShim(repoRoot);
+      writeToolShim(repoRoot, "pyright", pyrightShim("1.1.411", [], 0));
+      const config = {
+        include: ["src/**/*.py"],
+        exclude: ["**/__pycache__"],
+        ignore: ["generated/**"],
+        extraPaths: [".", "src"],
+        stubPath: "stubs",
+        executionEnvironments: [{ root: "src", extraPaths: [".", "stubs"] }]
+      };
+      const files = {
+        "pyrightconfig.json": `${JSON.stringify(config)}\n`,
+        "src/app.py": "value: int = 1\n",
+        "stubs/external/__init__.pyi": "VALUE: int\n"
+      };
+      const baseWorkspace = projectWorkspace(files, (path) => existsSync(path));
+      const result = await runner({
+        files,
+        checks: createPythonValidationChecks({
+          repoRoot,
+          env: { PATH: "" },
+          nodeWorkspace: {
+            ...baseWorkspace,
+            realpath: async (path) => files[path] === undefined
+              ? { path, symlink: false, unavailable: true }
+              : { path, symlink: false }
+          }
+        })
+      }).runValidation(request({
+        repo: { repoRoot },
+        checks: [PYTHON_TYPES_CHECK_ID],
+        scope: { kind: "files", files: ["src/app.py"] }
+      }));
+
+      assert.equal(result.status, "passed", JSON.stringify(result, null, 2));
+      assert.equal(result.pythonCapabilityRuns[0].status, "passed");
+      assert.equal(result.diagnostics.some((entry) => entry.code === "PYTHON_TYPES_INVALID_CONFIG"), false);
     } finally {
       rmSync(repoRoot, { recursive: true, force: true });
     }
@@ -480,13 +606,13 @@ describe("validation-python adapter", () => {
       writeToolShim(
         repoRoot,
         "pyright",
-        [
-          "#!/bin/sh",
-          "if [ \"$1\" = \"--version\" ]; then echo 'pyright 1.1.0'; exit 0; fi",
-          "echo \"  $1:1:14 - error: overlay config selected Pyright (reportAssignmentType)\"",
-          "exit 1",
-          ""
-        ].join("\n")
+        pyrightShim("1.1.0", [{
+          file: "pkg/app.py",
+          severity: "error",
+          message: "overlay config selected Pyright",
+          rule: "reportAssignmentType",
+          range: { start: { line: 0, character: 13 }, end: { line: 0, character: 20 } }
+        }], 1)
       );
       const files = {
         "mypy.ini": "[mypy]\nstrict = true\n",
@@ -508,10 +634,520 @@ describe("validation-python adapter", () => {
         ]
       }));
 
-      assert.equal(result.status, "unsupported_request");
-      assert.equal(result.diagnostics[0].code, "PYTHON_TYPES_PYRIGHT_UNSUPPORTED");
-      assert.equal(result.pythonCapabilityRuns[0].authority, "pyright");
+      assert.equal(result.status, "policy_failure", JSON.stringify(result, null, 2));
+      assert.equal(result.diagnostics[0].code, "PYRIGHT_REPORT_ASSIGNMENT_TYPE");
+      assert.equal(result.pythonCapabilityRuns[0].authority, "pyright", JSON.stringify(result, null, 2));
       assert.equal(result.pythonProjectContexts[0].tools.find((tool) => tool.tool === "pyright")?.configFile, "pyrightconfig.json");
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("switches pyright to mypy from the same exact authority overlay", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-types-overlay-pyright-to-mypy-"));
+    try {
+      writePassingPythonProtocolShim(repoRoot);
+      writeToolShim(repoRoot, "pyright", pyrightShim("1.1.411", [], 0));
+      writeToolShim(repoRoot, "mypy", "#!/bin/sh\nif [ \"$1\" = \"--version\" ]; then echo 'mypy 2.3.0'; exit 0; fi\nexit 0\n");
+      const files = { "pyrightconfig.json": "{}\n", "pkg/app.py": "value: int = 1\n" };
+      const result = await runner({
+        files,
+        checks: createPythonValidationChecks({ repoRoot, env: { PATH: "" }, nodeWorkspace: createNodePythonProjectWorkspace(repoRoot) })
+      }).runValidation(request({
+        repo: { repoRoot },
+        checks: [PYTHON_TYPES_CHECK_ID],
+        overlays: [
+          { path: "pyrightconfig.json", action: "delete" },
+          { path: "mypy.ini", action: "write", content: "[mypy]\nstrict = true\n" }
+        ]
+      }));
+
+      assert.equal(result.status, "passed", JSON.stringify(result, null, 2));
+      assert.equal(result.pythonCapabilityRuns[0].authority, "mypy");
+      assert.deepEqual(result.pythonCapabilityRuns[0].selectedConfigPaths, ["mypy.ini"]);
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("fails pyright machine protocol contradictions and fatal exits closed", async () => {
+    const validFinding = pyrightPayload("1.1.411", [{
+      file: "pkg/app.py",
+      severity: "error",
+      message: "assignment failure",
+      rule: "reportAssignmentType",
+      range: { start: { line: 0, character: 0 }, end: { line: 0, character: 1 } }
+    }]);
+    const clean = pyrightPayload("1.1.411", []);
+    const deeplyNested = '{"version":"1.1.411","generalDiagnostics":' + "[".repeat(10000) + "0" + "]".repeat(10000) +
+      ',"summary":{"filesAnalyzed":1,"errorCount":0,"warningCount":0,"informationCount":0,"timeInSec":0}}';
+    const contradictory = pyrightPayload("1.1.411", [
+      validFinding.generalDiagnostics[0],
+      { ...validFinding.generalDiagnostics[0], severity: "warning" }
+    ]);
+    const cases = [
+      { name: "malformed", body: "printf '{not-json\\n'; exit 1" },
+      { name: "truncated", body: `printf '%s' '${JSON.stringify(clean).slice(0, -2)}'; exit 0` },
+      { name: "excessively-nested", body: `cat <<'JSON'\n${deeplyNested}\nJSON\nexit 1` },
+      { name: "duplicate-key", body: `cat <<'JSON'\n${JSON.stringify(clean).replace('\"version\":\"1.1.411\"', '\"version\":\"1.1.411\",\"version\":\"1.1.411\"')}\nJSON\nexit 0` },
+      { name: "version-mismatch", body: `cat <<'JSON'\n${JSON.stringify({ ...clean, version: "1.1.410" })}\nJSON\nexit 0` },
+      { name: "summary-mismatch", body: `cat <<'JSON'\n${JSON.stringify({ ...validFinding, summary: { ...validFinding.summary, errorCount: 0 } })}\nJSON\nexit 1` },
+      { name: "zero-files", body: `cat <<'JSON'\n${JSON.stringify({ ...clean, summary: { ...clean.summary, filesAnalyzed: 0 } })}\nJSON\nexit 0` },
+      { name: "contradictory-diagnostic", body: `cat <<'JSON'\n${JSON.stringify(contradictory)}\nJSON\nexit 1` },
+      { name: "out-of-repo", body: `cat <<'JSON'\n${JSON.stringify(pyrightPayload("1.1.411", [{ ...validFinding.generalDiagnostics[0], file: "/tmp/outside.py" }]))}\nJSON\nexit 1` },
+      { name: "outside-source-closure", body: `cat <<'JSON'\n${JSON.stringify(pyrightPayload("1.1.411", [{ ...validFinding.generalDiagnostics[0], file: "pkg/missing.py" }]))}\nJSON\nexit 1` },
+      { name: "reversed-range", body: `cat <<'JSON'\n${JSON.stringify(pyrightPayload("1.1.411", [{ ...validFinding.generalDiagnostics[0], range: { start: { line: 2, character: 1 }, end: { line: 1, character: 1 } } }]))}\nJSON\nexit 1` },
+      { name: "out-of-bounds-range", body: `cat <<'JSON'\n${JSON.stringify(pyrightPayload("1.1.411", [{ ...validFinding.generalDiagnostics[0], range: { start: { line: 99, character: 0 }, end: { line: 99, character: 1 } } }]))}\nJSON\nexit 1` },
+      { name: "stderr", body: `cat <<'JSON'\n${JSON.stringify(clean)}\nJSON\necho fatal >&2\nexit 0` },
+      { name: "exit-zero-errors", body: `cat <<'JSON'\n${JSON.stringify(validFinding)}\nJSON\nexit 0` },
+      { name: "exit-one-empty", body: `cat <<'JSON'\n${JSON.stringify(clean)}\nJSON\nexit 1` },
+      { name: "fatal-two", body: `cat <<'JSON'\n${JSON.stringify(clean)}\nJSON\nexit 2` },
+      { name: "illegal-four", body: `cat <<'JSON'\n${JSON.stringify(clean)}\nJSON\nexit 4` }
+    ];
+    for (const testCase of cases) {
+      const repoRoot = mkdtempSync(join(tmpdir(), `opcore-python-pyright-${testCase.name}-`));
+      try {
+        writePassingPythonProtocolShim(repoRoot);
+        writeToolShim(repoRoot, "pyright", rawPyrightShim("1.1.411", testCase.body));
+        const files = { "pyrightconfig.json": "{}\n", "pkg/app.py": "value: int = 1\n" };
+        const before = materializedMypyWorkspaces();
+        const result = await runner({
+          files,
+          checks: createPythonValidationChecks({
+            repoRoot,
+            env: { PATH: "" },
+            nodeWorkspace: createNodePythonProjectWorkspace(repoRoot)
+          })
+        }).runValidation(request({ repo: { repoRoot }, checks: [PYTHON_TYPES_CHECK_ID] }));
+        assert.equal(result.status, "infrastructure_failure", `${testCase.name}: ${JSON.stringify(result, null, 2)}`);
+        assert.equal(result.pythonCapabilityRuns.length, 1, testCase.name);
+        assert.equal(result.pythonCapabilityRuns[0].status, "tool_failure", testCase.name);
+        assert.equal(result.diagnostics.some((entry) => entry.code === "PYTHON_TYPES_TOOL_FAILED"), true, testCase.name);
+        assert.deepEqual(materializedMypyWorkspaces(), before, testCase.name);
+      } finally {
+        rmSync(repoRoot, { recursive: true, force: true });
+      }
+    }
+  });
+
+  it("maps pyright exit 3 to executed invalid_config evidence", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-pyright-config-exit-"));
+    try {
+      writePassingPythonProtocolShim(repoRoot);
+      const payload = pyrightPayload("1.1.411", [{
+        file: "pyrightconfig.json",
+        severity: "error",
+        message: "Invalid configuration",
+        range: { start: { line: 0, character: 0 }, end: { line: 0, character: 1 } }
+      }]);
+      writeToolShim(repoRoot, "pyright", rawPyrightShim("1.1.411", `cat <<'JSON'\n${JSON.stringify(payload)}\nJSON\necho rejected >&2\nexit 3`));
+      const files = { "pyrightconfig.json": "{}\n", "pkg/app.py": "value: int = 1\n" };
+      const result = await runner({
+        files,
+        checks: createPythonValidationChecks({ repoRoot, env: { PATH: "" }, nodeWorkspace: createNodePythonProjectWorkspace(repoRoot) })
+      }).runValidation(request({ repo: { repoRoot }, checks: [PYTHON_TYPES_CHECK_ID] }));
+
+      assert.equal(result.status, "unsupported_request", JSON.stringify(result, null, 2));
+      assert.equal(result.pythonCapabilityRuns[0].status, "invalid_config");
+      assert.deepEqual(result.pythonCapabilityRuns[0].execution, {
+        termination: "exited",
+        exitCode: 3,
+        failureSummary: "pyright rejected selected configuration: pyrightconfig.json"
+      });
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("maps pyright timeout, signal, and spawn failures and cleans exact workspaces", async () => {
+    const cases = [
+      { name: "timeout", body: "/bin/sleep 2", status: "timeout", termination: "timeout", timeoutMs: 500 },
+      { name: "signal", body: "kill -TERM $$", status: "tool_failure", termination: "signal" },
+      { name: "spawn", body: "exit 0", status: "tool_failure", termination: "spawn_error", removeAfterProbe: true }
+    ];
+    for (const testCase of cases) {
+      const repoRoot = mkdtempSync(join(tmpdir(), `opcore-python-pyright-${testCase.name}-`));
+      try {
+        writePassingPythonProtocolShim(repoRoot);
+        const executable = join(repoRoot, ".venv/bin/pyright");
+        writeToolShim(repoRoot, "pyright", testCase.removeAfterProbe
+          ? `#!/bin/sh\nif [ \"$1\" = \"--version\" ]; then /bin/rm -- \"$0\"; echo 'pyright 1.1.411'; exit 0; fi\nexit 0\n`
+          : rawPyrightShim("1.1.411", testCase.body));
+        const files = { "pyrightconfig.json": "{}\n", "pkg/app.py": "value: int = 1\n" };
+        const before = materializedMypyWorkspaces();
+        const result = await runner({
+          files,
+          checks: createPythonValidationChecks({
+            repoRoot,
+            env: { PATH: "" },
+            timeoutMs: testCase.timeoutMs,
+            nodeWorkspace: createNodePythonProjectWorkspace(repoRoot),
+            toolArgv: { pyright: [executable] }
+          })
+        }).runValidation(request({ repo: { repoRoot }, checks: [PYTHON_TYPES_CHECK_ID] }));
+        assert.ok(result.pythonCapabilityRuns?.[0], JSON.stringify(result, null, 2));
+        assert.equal(result.pythonCapabilityRuns[0].status, testCase.status, JSON.stringify(result, null, 2));
+        assert.equal(result.pythonCapabilityRuns[0].execution.termination, testCase.termination);
+        assert.deepEqual(materializedMypyWorkspaces(), before);
+      } finally {
+        rmSync(repoRoot, { recursive: true, force: true });
+      }
+    }
+  });
+
+  it("accepts passed pyright warning and information evidence", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-pyright-warning-"));
+    try {
+      writePassingPythonProtocolShim(repoRoot);
+      writeToolShim(repoRoot, "pyright", pyrightShim("1.1.411", [
+        { file: "pkg/app.py", severity: "warning", message: "warning", rule: "reportUnusedImport", range: { start: { line: 0, character: 0 }, end: { line: 0, character: 1 } } },
+        { file: "pkg/app.py", severity: "information", message: "information", range: { start: { line: 0, character: 1 }, end: { line: 0, character: 2 } } }
+      ], 0));
+      const files = { "pyrightconfig.json": "{}\n", "pkg/app.py": "value: int = 1\n" };
+      const result = await runner({
+        files,
+        checks: createPythonValidationChecks({ repoRoot, env: { PATH: "" }, nodeWorkspace: createNodePythonProjectWorkspace(repoRoot) })
+      }).runValidation(request({ repo: { repoRoot }, checks: [PYTHON_TYPES_CHECK_ID] }));
+
+      assert.equal(result.pythonCapabilityRuns[0].status, "passed", JSON.stringify(result, null, 2));
+      assert.deepEqual({
+        errors: result.pythonCapabilityRuns[0].errorCount,
+        warnings: result.pythonCapabilityRuns[0].warningCount,
+        notes: result.pythonCapabilityRuns[0].noteCount
+      }, { errors: 0, warnings: 1, notes: 1 });
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("materializes recursive pyright extends and rejects unsafe closures before execution", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-pyright-extends-"));
+    try {
+      writePassingPythonProtocolShim(repoRoot);
+      writeToolShim(repoRoot, "pyright", rawPyrightShim("1.1.411", [
+        "test -f configs/base.json || exit 91",
+        "test -f configs/stubs/external/__init__.pyi || exit 92",
+        `cat <<'JSON'\n${JSON.stringify(pyrightPayload("1.1.411", []))}\nJSON`,
+        "exit 0"
+      ].join("\n")));
+      const files = {
+        "pyrightconfig.json": "{ // JSONC\n  \"extends\": \"configs/base.json\",\n  \"include\": [\"src\"],\n}\n",
+        "configs/base.json": "{\"stubPath\":\"stubs\",\"extraPaths\":[\"src\"]}\n",
+        "configs/src/helper.py": "VALUE: int = 1\n",
+        "src/app.py": "value: int = 1\n",
+        "configs/stubs/external/__init__.pyi": "VALUE: int\n"
+      };
+      const result = await runner({
+        files,
+        checks: createPythonValidationChecks({ repoRoot, env: { PATH: "" }, nodeWorkspace: projectWorkspace(files, () => true) })
+      }).runValidation(request({ repo: { repoRoot }, checks: [PYTHON_TYPES_CHECK_ID], scope: { kind: "files", files: ["src/app.py"] } }));
+      assert.equal(result.status, "passed", JSON.stringify(result, null, 2));
+      assert.deepEqual(result.pythonCapabilityRuns[0].selectedConfigPaths, ["configs/base.json", "pyrightconfig.json"]);
+
+      for (const [name, configFiles] of Object.entries({
+        missing: { "pyrightconfig.json": "{\"extends\":\"configs/missing.json\"}\n" },
+        rootDirectory: { "pyrightconfig.json": "{\"extends\":\".\"}\n" },
+        cycle: {
+          "pyrightconfig.json": "{\"extends\":\"configs/a.json\"}\n",
+          "configs/a.json": "{\"extends\":\"b.json\"}\n",
+          "configs/b.json": "{\"extends\":\"a.json\"}\n"
+        },
+        traversal: { "pyrightconfig.json": "{\"extraPaths\":[\"../outside\"]}\n" },
+        absolute: { "pyrightconfig.json": "{\"stubPath\":\"/tmp/stubs\"}\n" }
+      })) {
+        const attempted = join(repoRoot, `attempted-${name}`);
+        writeToolShim(repoRoot, "pyright", rawPyrightShim("1.1.411", `touch ${JSON.stringify(attempted)}\nexit 0`));
+        const caseFiles = { ...configFiles, "src/app.py": "value: int = 1\n" };
+        const failed = await runner({
+          files: caseFiles,
+          checks: createPythonValidationChecks({ repoRoot, env: { PATH: "" }, nodeWorkspace: projectWorkspace(caseFiles, () => true) })
+        }).runValidation(request({ repo: { repoRoot }, checks: [PYTHON_TYPES_CHECK_ID], scope: { kind: "files", files: ["src/app.py"] } }));
+        assert.equal(failed.pythonCapabilityRuns[0].status, "invalid_config", `${name}: ${JSON.stringify(failed, null, 2)}`);
+        assert.equal(existsSync(attempted), false, name);
+      }
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("materializes pyright stub write/delete overlays without stale inputs", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-pyright-stub-overlay-"));
+    try {
+      writePassingPythonProtocolShim(repoRoot);
+      writeToolShim(repoRoot, "pyright", rawPyrightShim("1.1.411", [
+        "test ! -e stubs/old.pyi || exit 91",
+        "test -f stubs/new.pyi || exit 92",
+        `cat <<'JSON'\n${JSON.stringify(pyrightPayload("1.1.411", []))}\nJSON`,
+        "exit 0"
+      ].join("\n")));
+      const files = {
+        "pyrightconfig.json": "{\"stubPath\":\"stubs\"}\n",
+        "pkg/app.py": "value: int = 1\n",
+        "stubs/old.pyi": "OLD: int\n"
+      };
+      const result = await runner({
+        files,
+        checks: createPythonValidationChecks({ repoRoot, env: { PATH: "" }, nodeWorkspace: createNodePythonProjectWorkspace(repoRoot) })
+      }).runValidation(request({
+        repo: { repoRoot },
+        checks: [PYTHON_TYPES_CHECK_ID],
+        overlays: [
+          { path: "stubs/old.pyi", action: "delete" },
+          { path: "stubs/new.pyi", action: "write", content: "NEW: int\n" }
+        ]
+      }));
+
+      assert.equal(result.status, "passed", JSON.stringify(result, null, 2));
+      assert.equal(result.pythonCapabilityRuns[0].selectedSourcePaths.includes("stubs/old.pyi"), false);
+      assert.equal(result.pythonCapabilityRuns[0].selectedSourcePaths.includes("stubs/new.pyi"), true);
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("refuses symlinked pyright configs, configured roots, and stub inputs before execution", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-pyright-symlink-"));
+    try {
+      writePassingPythonProtocolShim(repoRoot);
+      const marker = join(repoRoot, "pyright-ran");
+      writeToolShim(repoRoot, "pyright", rawPyrightShim("1.1.411", `touch ${JSON.stringify(marker)}\nexit 0`));
+      const cases = [
+        {
+          files: {
+            "pyrightconfig.json": "{\"extends\":\"configs/base.json\"}\n",
+            "configs/base.json": "{}\n",
+            "src/app.py": "VALUE = 1\n"
+          },
+          symlinks: new Set(["configs/base.json"])
+        },
+        {
+          files: {
+            "pyrightconfig.json": "{\"stubPath\":\"stubs\"}\n",
+            "src/app.py": "VALUE = 1\n",
+            "stubs/external/__init__.pyi": "VALUE: int\n"
+          },
+          symlinks: new Set(["stubs/external/__init__.pyi"])
+        },
+        {
+          files: {
+            "pyrightconfig.json": "{\"stubPath\":\"stubs\"}\n",
+            "src/app.py": "VALUE = 1\n"
+          },
+          symlinks: new Set(["stubs"])
+        }
+      ];
+      for (const testCase of cases) {
+        const result = await runner({
+          files: testCase.files,
+          checks: createPythonValidationChecks({
+            repoRoot,
+            env: { PATH: "" },
+            nodeWorkspace: projectWorkspace(testCase.files, () => true, testCase.symlinks)
+          })
+        }).runValidation(request({
+          repo: { repoRoot }, checks: [PYTHON_TYPES_CHECK_ID], scope: { kind: "files", files: ["src/app.py"] }
+        }));
+        assert.equal(result.pythonCapabilityRuns[0].status, "invalid_config", JSON.stringify(result, null, 2));
+        assert.equal(existsSync(marker), false);
+      }
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("does not fall back to mypy when configured pyright is unavailable", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-pyright-unavailable-"));
+    try {
+      writePassingPythonProtocolShim(repoRoot);
+      const mypyMarker = join(repoRoot, "mypy-ran");
+      writeToolShim(repoRoot, "mypy", `#!/bin/sh\nif [ \"$1\" = \"--version\" ]; then echo 'mypy 2.3.0'; exit 0; fi\ntouch ${JSON.stringify(mypyMarker)}\nexit 0\n`);
+      const files = { "pyrightconfig.json": "{}\n", "pkg/app.py": "value: int = 1\n" };
+      const result = await runner({
+        files,
+        checks: createPythonValidationChecks({
+          repoRoot,
+          env: { PATH: "" },
+          nodeWorkspace: createNodePythonProjectWorkspace(repoRoot)
+        })
+      }).runValidation(request({ repo: { repoRoot }, checks: [PYTHON_TYPES_CHECK_ID] }));
+      assert.equal(result.pythonCapabilityRuns[0].authority, "pyright", JSON.stringify(result, null, 2));
+      assert.equal(result.pythonCapabilityRuns[0].status, "tool_unavailable", JSON.stringify(result, null, 2));
+      assert.equal(existsSync(mypyMarker), false);
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("retains a Pyright receipt when canonical interpreter probing is malformed", async () => {
+    const files = {
+      "pyrightconfig.json": "{}\n",
+      "pkg/app.py": "value: int = 1\n"
+    };
+    const result = await runner({
+      files,
+      checks: createPythonValidationChecks({
+        env: { PATH: "/fixture/bin" },
+        nodeWorkspace: projectWorkspace(files, () => true),
+        processProbe: successfulProbe("malformed-version")
+      })
+    }).runValidation(request({ repo: { repoRoot: "/fixture" }, checks: [PYTHON_TYPES_CHECK_ID] }));
+
+    assert.equal(result.pythonProjectContexts[0].interpreter, undefined);
+    assert.equal(result.pythonProjectContexts[0].reasons.some((reason) =>
+      reason.code === "malformed_probe_output" && reason.tool === "python"
+    ), true);
+    assert.equal(result.pythonCapabilityRuns.length, 1, JSON.stringify(result, null, 2));
+    assert.equal(result.pythonCapabilityRuns[0].authority, "pyright");
+    assert.equal(result.pythonCapabilityRuns[0].status, "invalid_config");
+    assert.equal(result.pythonCapabilityRuns[0].execution, undefined);
+    assert.equal(result.diagnostics.some((entry) => entry.code === "PYTHON_TYPES_INVALID_CONFIG"), true);
+  });
+
+  it("retains independent mixed mypy and pyright project receipts", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-mixed-authorities-"));
+    try {
+      const mypyRoot = join(repoRoot, "services/mypy-app");
+      const pyrightRoot = join(repoRoot, "services/pyright-app");
+      mkdirSync(mypyRoot, { recursive: true });
+      mkdirSync(pyrightRoot, { recursive: true });
+      writePassingPythonProtocolShim(mypyRoot);
+      writePassingPythonProtocolShim(pyrightRoot);
+      writeToolShim(mypyRoot, "mypy", "#!/bin/sh\nif [ \"$1\" = \"--version\" ]; then echo 'mypy 2.3.0'; exit 0; fi\nexit 0\n");
+      writeToolShim(pyrightRoot, "pyright", pyrightShim("1.1.411", [], 0));
+      const files = {
+        "services/mypy-app/pyproject.toml": "[project]\nname='mypy-app'\n[tool.mypy]\nstrict=true\n",
+        "services/mypy-app/app.py": "VALUE: int = 1\n",
+        "services/pyright-app/pyproject.toml": "[project]\nname='pyright-app'\n",
+        "services/pyright-app/pyrightconfig.json": "{\"include\":[\".\"]}\n",
+        "services/pyright-app/app.py": "VALUE: int = 1\n"
+      };
+      const result = await runner({
+        files,
+        checks: createPythonValidationChecks({
+          repoRoot,
+          env: { PATH: "" },
+          nodeWorkspace: projectWorkspace(files, (path) => existsSync(path))
+        })
+      }).runValidation(request({
+        repo: { repoRoot },
+        checks: [PYTHON_TYPES_CHECK_ID],
+        scope: { kind: "files", files: ["services/mypy-app/app.py", "services/pyright-app/app.py"] }
+      }));
+
+      assert.equal(result.status, "passed", JSON.stringify(result, null, 2));
+      assert.deepEqual(result.pythonCapabilityRuns.map((run) => [run.projectRoot, run.authority, run.status]), [
+        ["services/mypy-app", "mypy", "passed"],
+        ["services/pyright-app", "pyright", "passed"]
+      ]);
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("keeps root Pyright sources outside a nested mypy authority boundary", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-nested-authority-boundary-"));
+    try {
+      const nestedRoot = join(repoRoot, "nested");
+      mkdirSync(nestedRoot, { recursive: true });
+      writePassingPythonProtocolShim(repoRoot);
+      writePassingPythonProtocolShim(nestedRoot);
+      const nestedDiagnostic = {
+        file: "nested/app.py",
+        severity: "error",
+        message: "root Pyright crossed the nested mypy authority boundary",
+        rule: "reportAssignmentType",
+        range: { start: { line: 0, character: 13 }, end: { line: 0, character: 20 } }
+      };
+      writeToolShim(repoRoot, "pyright", rawPyrightShim("1.1.411", [
+        "if [ -f nested/app.py ]; then",
+        "cat <<'OPCORE_PYRIGHT_NESTED_JSON'",
+        JSON.stringify(pyrightPayload("1.1.411", [nestedDiagnostic])),
+        "OPCORE_PYRIGHT_NESTED_JSON",
+        "exit 1",
+        "fi",
+        "cat <<'OPCORE_PYRIGHT_ROOT_JSON'",
+        JSON.stringify(pyrightPayload("1.1.411", [])),
+        "OPCORE_PYRIGHT_ROOT_JSON",
+        "exit 0"
+      ].join("\n")));
+      writeToolShim(nestedRoot, "mypy", "#!/bin/sh\nif [ \"$1\" = \"--version\" ]; then echo 'mypy 2.3.0'; exit 0; fi\nexit 0\n");
+      const files = {
+        "pyrightconfig.json": "{\"include\":[\"**/*.py\"]}\n",
+        "root.py": "VALUE: int = 1\n",
+        "nested/pyproject.toml": "[project]\nname='nested'\n[tool.mypy]\nstrict=true\n",
+        "nested/app.py": "value: int = 'wrong'\n"
+      };
+      const result = await runner({
+        files,
+        checks: createPythonValidationChecks({
+          repoRoot,
+          env: { PATH: "" },
+          nodeWorkspace: projectWorkspace(files, (path) => existsSync(path))
+        })
+      }).runValidation(request({
+        repo: { repoRoot },
+        checks: [PYTHON_TYPES_CHECK_ID],
+        scope: { kind: "files", files: ["root.py", "nested/app.py"] }
+      }));
+
+      assert.equal(result.status, "passed", JSON.stringify(result, null, 2));
+      assert.deepEqual(result.pythonCapabilityRuns.map((run) => [run.projectRoot, run.authority, run.selectedSourcePaths]), [
+        ["nested", "mypy", ["nested/app.py"]],
+        [".", "pyright", ["root.py"]]
+      ]);
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("keeps root-only Pyright scope outside nested canonical project sources", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-root-only-authority-boundary-"));
+    try {
+      writePassingPythonProtocolShim(repoRoot);
+      const nestedRoot = join(repoRoot, "nested");
+      mkdirSync(nestedRoot, { recursive: true });
+      const nestedDiagnostic = {
+        file: "nested/app.py",
+        severity: "error",
+        message: "root-only Pyright materialized a nested canonical project",
+        rule: "reportAssignmentType",
+        range: { start: { line: 0, character: 13 }, end: { line: 0, character: 20 } }
+      };
+      writeToolShim(repoRoot, "pyright", rawPyrightShim("1.1.411", [
+        "if [ -f nested/app.py ]; then",
+        "cat <<'OPCORE_PYRIGHT_ROOT_ONLY_JSON'",
+        JSON.stringify(pyrightPayload("1.1.411", [nestedDiagnostic])),
+        "OPCORE_PYRIGHT_ROOT_ONLY_JSON",
+        "exit 1",
+        "fi",
+        "cat <<'OPCORE_PYRIGHT_ROOT_ONLY_CLEAN_JSON'",
+        JSON.stringify(pyrightPayload("1.1.411", [])),
+        "OPCORE_PYRIGHT_ROOT_ONLY_CLEAN_JSON",
+        "exit 0"
+      ].join("\n")));
+      const files = {
+        "pyrightconfig.json": "{\"include\":[\"**/*.py\"]}\n",
+        "root.py": "VALUE: int = 1\n",
+        "nested/pyproject.toml": "[project]\nname='nested'\n[tool.mypy]\nstrict=true\n",
+        "nested/app.py": "value: int = 'wrong'\n"
+      };
+      const result = await runner({
+        files,
+        checks: createPythonValidationChecks({
+          repoRoot,
+          env: { PATH: "" },
+          nodeWorkspace: projectWorkspace(files, (path) => existsSync(path))
+        })
+      }).runValidation(request({
+        repo: { repoRoot },
+        checks: [PYTHON_TYPES_CHECK_ID],
+        scope: { kind: "files", files: ["root.py"] }
+      }));
+
+      assert.equal(result.status, "passed", JSON.stringify(result, null, 2));
+      assert.deepEqual(result.pythonCapabilityRuns.map((run) => [run.projectRoot, run.authority, run.selectedSourcePaths]), [
+        [".", "pyright", ["root.py"]]
+      ]);
     } finally {
       rmSync(repoRoot, { recursive: true, force: true });
     }
@@ -2995,6 +3631,79 @@ describe("Python project-context resolver", () => {
     assert.equal(context.outcome, "unsupported");
   });
 
+  it("uses JSONC target fields only from the precedence-selected Pyright config", async () => {
+    const preferred = await resolvePythonProjectContext({
+      repoRoot: "/fixture",
+      target: "app.py",
+      workspace: projectWorkspace({
+        "pyrightconfig.json": "{ // selected target\n  \"pythonVersion\": \"3.14\",\n  \"pythonPlatform\": \"linux\",\n}\n",
+        "pyproject.toml": "[project]\nname='fixture'\n[tool.pyright]\npythonVersion='3.11'\npythonPlatform='win32'\n",
+        "app.py": "VALUE = 1\n"
+      }, () => true),
+      processProbe: successfulProbe("3.14.1")
+    });
+
+    assert.deepEqual(preferred.targetRuntime, {
+      version: "3.14",
+      platform: "linux",
+      conflicts: []
+    });
+    assert.equal(preferred.outcome, "resolved");
+
+    const incompatible = await resolvePythonProjectContext({
+      repoRoot: "/fixture",
+      target: "app.py",
+      workspace: projectWorkspace({
+        "pyrightconfig.json": "{ // preserve JSONC fields\n  \"pythonVersion\": \"3.13\",\n  \"pythonPlatform\": \"linux\",\n  \"pythonImplementation\": \"CPython\",\n}\n",
+        "app.py": "VALUE = 1\n"
+      }, () => true),
+      processProbe: successfulProbe("3.13.9", "darwin")
+    });
+
+    assert.equal(incompatible.targetRuntime.version, "3.13");
+    assert.equal(incompatible.targetRuntime.platform, "linux");
+    assert.equal(incompatible.targetRuntime.implementation, "CPython");
+    assert.equal(incompatible.reasons.some((reason) => reason.code === "incompatible_interpreter"), true);
+    assert.equal(incompatible.outcome, "unsupported");
+  });
+
+  it("inherits recursive Pyright target fields into compatibility and fingerprints with child overrides", async () => {
+    const inheritedFiles = {
+      "pyrightconfig.json": "{ // child override\n  \"extends\": \"configs/base.json\",\n  \"pythonVersion\": \"3.13\",\n}\n",
+      "configs/base.json": "{\n  \"extends\": \"more/leaf.json\",\n  \"pythonPlatform\": \"linux\",\n}\n",
+      "configs/more/leaf.json": "{\n  \"pythonVersion\": \"3.11\",\n  \"pythonImplementation\": \"CPython\",\n}\n",
+      "app.py": "VALUE = 1\n"
+    };
+    const inherited = await resolvePythonProjectContext({
+      repoRoot: "/fixture",
+      target: "app.py",
+      workspace: projectWorkspace(inheritedFiles, () => true),
+      processProbe: successfulProbe("3.13.9", "darwin")
+    });
+
+    assert.deepEqual(inherited.targetRuntime, {
+      version: "3.13",
+      platform: "linux",
+      implementation: "CPython",
+      conflicts: []
+    });
+    assert.equal(inherited.reasons.some((reason) => reason.code === "incompatible_interpreter"), true);
+    assert.equal(inherited.outcome, "unsupported");
+
+    const changed = await resolvePythonProjectContext({
+      repoRoot: "/fixture",
+      target: "app.py",
+      workspace: projectWorkspace({
+        ...inheritedFiles,
+        "configs/more/leaf.json": "{\n  \"pythonVersion\": \"3.11\",\n  \"pythonImplementation\": \"PyPy\",\n}\n"
+      }, () => true),
+      processProbe: successfulProbe("3.13.9", "darwin")
+    });
+
+    assert.equal(changed.targetRuntime.implementation, "PyPy");
+    assert.notEqual(changed.contextFingerprint, inherited.contextFingerprint);
+  });
+
   it("returns a typed ambiguous context for a target symlink escaping the repository", async () => {
     const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-symlink-repo-"));
     const externalRoot = mkdtempSync(join(tmpdir(), "opcore-python-symlink-external-"));
@@ -3174,7 +3883,7 @@ function fixedImportAnalyzer(edges) {
   return { analyze: async () => edges };
 }
 
-function successfulProbe(version = "3.12.4") {
+function successfulProbe(version = "3.12.4", platform = "linux") {
   return {
     resolveExecutable(command) {
       return command.includes("/") ? command : `/usr/bin/${command}`;
@@ -3192,7 +3901,7 @@ function successfulProbe(version = "3.12.4") {
               executable: command.includes("/") ? command : `/usr/bin/${command}`,
               version,
               implementation: "CPython",
-              platform: "linux",
+              platform,
               architecture: "x86_64",
               abi: "cpython-312",
               soabi: "cpython-312-x86_64-linux-gnu"
@@ -3350,6 +4059,36 @@ function writeToolShim(repoRoot, name, content) {
   const shimPath = join(bin, name);
   writeFileSync(shimPath, content);
   chmodSync(shimPath, 0o755);
+}
+
+function pyrightShim(version, diagnostics, exitCode = diagnostics.some((entry) => entry.severity === "error") ? 1 : 0) {
+  const payload = pyrightPayload(version, diagnostics);
+  return rawPyrightShim(version, [
+    "cat <<'OPCORE_PYRIGHT_JSON'",
+    JSON.stringify(payload),
+    "OPCORE_PYRIGHT_JSON",
+    `exit ${exitCode}`
+  ].join("\n"));
+}
+
+function pyrightPayload(version, diagnostics) {
+  const summary = {
+    filesAnalyzed: 1,
+    errorCount: diagnostics.filter((entry) => entry.severity === "error").length,
+    warningCount: diagnostics.filter((entry) => entry.severity === "warning").length,
+    informationCount: diagnostics.filter((entry) => entry.severity === "information").length,
+    timeInSec: 0.01
+  };
+  return { version, time: "0", generalDiagnostics: diagnostics, summary };
+}
+
+function rawPyrightShim(version, body) {
+  return [
+    "#!/bin/sh",
+    `for arg in \"$@\"; do if [ \"$arg\" = \"--version\" ]; then echo 'pyright ${version}'; exit 0; fi; done`,
+    body,
+    ""
+  ].join("\n");
 }
 
 function writePythonProtocolShim(repoRoot, compilerBranch) {

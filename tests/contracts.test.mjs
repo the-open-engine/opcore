@@ -920,6 +920,19 @@ describe("Opcore shared contracts", () => {
       validateValidationResultPayload(validValidationResult({ pythonCapabilityRuns: [run] })).pythonCapabilityRuns[0].status,
       "passed"
     );
+    assert.equal(validatePythonValidationCapabilityRun({
+      ...run,
+      authority: "pyright",
+      tool: { ...run.tool, name: "pyright" },
+      diagnosticCount: 2,
+      warningCount: 1,
+      noteCount: 1
+    }).status, "passed");
+    assert.throws(() => validatePythonValidationCapabilityRun({
+      ...run,
+      diagnosticCount: 1,
+      errorCount: 1
+    }), /zero errors/);
     const executedInvalidConfig = {
       ...run,
       status: "invalid_config",

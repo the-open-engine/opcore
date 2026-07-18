@@ -6763,8 +6763,8 @@ function validatePythonCapabilityRunStatus(run: PythonValidationCapabilityRun): 
 
 function validatePassedPythonCapability(run: PythonValidationCapabilityRun): void {
   requireExitedPythonCapability(run);
-  if (run.execution?.exitCode !== 0 || run.diagnosticCount !== 0) {
-    throw new Error("Passed Python validation capability run requires exit 0 and zero diagnostics");
+  if (run.execution?.exitCode !== 0 || run.errorCount !== 0) {
+    throw new Error("Passed Python validation capability run requires exit 0 and zero errors");
   }
 }
 

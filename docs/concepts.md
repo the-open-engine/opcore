@@ -4,7 +4,7 @@
 
 Opcore starts by counting the repository. TypeScript, JavaScript, Rust sources, `Cargo.toml`, retained Rust metadata, and Python `.py`/`.pyi` files are recognized for alpha checks. Unsupported extensions are still counted with examples so reports do not imply broader coverage than exists.
 
-Python coverage is experimental and degraded-honest. Graph-backed structure, untested modules, dead exports, syntax, source-hygiene, import graph, and relevant-test signals may be reported for `.py`/`.pyi` files. `python.types` requires one configured per-project authority; mypy is executable now, while configured Pyright is reported as deferred until #257. Missing or conflicting authority evidence is degraded instead of becoming a fake pass/fail finding.
+Python coverage is experimental and degraded-honest. Graph-backed structure, untested modules, dead exports, syntax, source-hygiene, import graph, and relevant-test signals may be reported for `.py`/`.pyi` files. `python.types` executes exactly one configured mypy or Pyright authority per project over the same hypothetical after-state. Missing, conflicting, or unavailable authority evidence is degraded instead of becoming a fake pass/fail finding.
 
 ## Findings
 
