@@ -11,8 +11,10 @@ export interface MaterializedRustWorkspace {
   cargoTargetCacheKey: string;
   tempRoot: string;
   root: string;
-  cleanup: () => void;
+  dispose: () => void;
 }
+
+const materializedRustWorkspaceResourceKey = "opcore.validation-rust.materialized-workspace";
 
 const excludedParts = new Set([
   ".git",
@@ -27,6 +29,24 @@ const excludedParts = new Set([
 export async function materializeRustWorkspace(
   context: ValidationCheckContext,
   options: { env?: Record<string, string | undefined> } = {}
+): Promise<MaterializedRustWorkspace> {
+  const resourceKey = `${materializedRustWorkspaceResourceKey}:${environmentKey(options.env ?? process.env)}`;
+  return context.resources.getOrCreate(resourceKey, () =>
+    createMaterializedRustWorkspace(context, options)
+  );
+}
+
+function environmentKey(env: Record<string, string | undefined>): string {
+  return JSON.stringify(
+    Object.entries(env)
+      .filter((entry): entry is [string, string] => entry[1] !== undefined)
+      .sort(([left], [right]) => left.localeCompare(right))
+  );
+}
+
+async function createMaterializedRustWorkspace(
+  context: ValidationCheckContext,
+  options: { env?: Record<string, string | undefined> }
 ): Promise<MaterializedRustWorkspace> {
   const tempRoot = mkdtempSync(join(tmpdir(), "lattice-validation-rust-"));
   const root = join(tempRoot, "repo");
@@ -47,7 +67,7 @@ export async function materializeRustWorkspace(
       cargoTargetCacheKey: cargoTargetCacheKeyForContext(context),
       tempRoot,
       root,
-      cleanup: () => rmSync(tempRoot, { recursive: true, force: true })
+      dispose: () => rmSync(tempRoot, { recursive: true, force: true })
     };
   } catch (error) {
     rmSync(tempRoot, { recursive: true, force: true });

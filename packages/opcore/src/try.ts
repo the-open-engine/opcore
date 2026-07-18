@@ -224,7 +224,7 @@ function writeRustCrate(repoRoot: string, crateName: string): void {
     [
       "[package]",
       `name = "${crateName}"`,
-      "version = \"0.2.0\"",
+      "version = \"0.2.1\"",
       "edition = \"2021\"",
       "",
       "[lib]",

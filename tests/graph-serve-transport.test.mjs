@@ -162,7 +162,7 @@ describe("graph serve stdio transport", () => {
         ok: true,
         artifact: {
           artifactName: "opcore-graph-core",
-          artifactVersion: "0.2.0",
+          artifactVersion: "0.2.1",
           targetPlatform: "test",
           binaryPath: "dist/native/test/opcore-graph-core",
           checksumPath: "dist/native/test/opcore-graph-core.sha256",

@@ -190,9 +190,9 @@ function readOpcoreVersion(): string {
     const parsed = JSON.parse(readFileSync(packageJsonPath, "utf8")) as { version?: unknown };
     cachedOpcoreVersion = typeof parsed.version === "string" && parsed.version.length > 0
       ? parsed.version
-      : "0.2.0";
+      : "0.2.1";
   } catch {
-    cachedOpcoreVersion = "0.2.0";
+    cachedOpcoreVersion = "0.2.1";
   }
   return cachedOpcoreVersion;
 }

@@ -34,7 +34,7 @@ async function probeProvider(providerBin, probeRoot) {
 function initialize(peer, probeRoot, baseline) {
   return peer.request("initialize", {
     protocolVersion: "asp/0.1",
-    host: { name: "asp-dogfood-receipt", version: "0.2.0-test" },
+    host: { name: "asp-dogfood-receipt", version: "0.2.1-test" },
     hostCapabilities: { readBlob: true, listTree: true, putBlob: false },
     workspace: { root: probeRoot, baseline },
     assuranceMode: "advisory"

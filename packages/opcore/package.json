@@ -1,6 +1,6 @@
 {
   "name": "opcore",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Local quality gates and pre-write validation for AI coding agents.",
   "type": "module",
   "license": "MIT",
@@ -94,17 +94,17 @@
     "typescript"
   ],
   "dependencies": {
-    "@the-open-engine/opcore-asp-provider": "0.2.0",
-    "@the-open-engine/opcore-edit": "0.2.0",
-    "@the-open-engine/opcore-contracts": "0.2.0",
-    "@the-open-engine/opcore-graph": "0.2.0",
-    "@the-open-engine/opcore-validation": "0.2.0",
-    "@the-open-engine/opcore-validation-policy": "0.2.0",
-    "@the-open-engine/opcore-validation-clone": "0.2.0",
-    "@the-open-engine/opcore-validation-docs": "0.2.0",
-    "@the-open-engine/opcore-validation-python": "0.2.0",
-    "@the-open-engine/opcore-validation-rust": "0.2.0",
-    "@the-open-engine/opcore-validation-typescript": "0.2.0",
+    "@the-open-engine/opcore-asp-provider": "0.2.1",
+    "@the-open-engine/opcore-edit": "0.2.1",
+    "@the-open-engine/opcore-contracts": "0.2.1",
+    "@the-open-engine/opcore-graph": "0.2.1",
+    "@the-open-engine/opcore-validation": "0.2.1",
+    "@the-open-engine/opcore-validation-policy": "0.2.1",
+    "@the-open-engine/opcore-validation-clone": "0.2.1",
+    "@the-open-engine/opcore-validation-docs": "0.2.1",
+    "@the-open-engine/opcore-validation-python": "0.2.1",
+    "@the-open-engine/opcore-validation-rust": "0.2.1",
+    "@the-open-engine/opcore-validation-typescript": "0.2.1",
     "@typescript-eslint/typescript-estree": "^8.62.0",
     "concat-map": "0.0.1",
     "jsonc-parser": "3.3.1",
@@ -113,9 +113,9 @@
     "typescript": "^5.9.3"
   },
   "optionalDependencies": {
-    "@the-open-engine/opcore-graph-core-darwin-arm64": "0.2.0",
-    "@the-open-engine/opcore-graph-core-darwin-x64": "0.2.0",
-    "@the-open-engine/opcore-graph-core-linux-x64": "0.2.0"
+    "@the-open-engine/opcore-graph-core-darwin-arm64": "0.2.1",
+    "@the-open-engine/opcore-graph-core-darwin-x64": "0.2.1",
+    "@the-open-engine/opcore-graph-core-linux-x64": "0.2.1"
   },
   "engines": {
     "node": ">=22"

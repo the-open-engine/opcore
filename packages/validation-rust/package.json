@@ -1,6 +1,6 @@
 {
   "name": "@the-open-engine/opcore-validation-rust",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Rust cargo, lint, import, dead-code, and function-metric validation checks for Opcore.",
   "type": "module",
   "license": "MIT",
@@ -26,8 +26,8 @@
     "developer-tools"
   ],
   "dependencies": {
-    "@the-open-engine/opcore-contracts": "0.2.0",
-    "@the-open-engine/opcore-validation": "0.2.0"
+    "@the-open-engine/opcore-contracts": "0.2.1",
+    "@the-open-engine/opcore-validation": "0.2.1"
   },
   "engines": {
     "node": ">=22"

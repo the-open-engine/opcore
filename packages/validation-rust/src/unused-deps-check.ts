@@ -34,41 +34,37 @@ export function createUnusedDepsCheck(options: { env?: Record<string, string | u
         };
       }
       const materialized = await materializeRustWorkspace(context, { env: options.env });
-      try {
-        const metadata = loadCargoMetadata(materialized.root, {
-          ...options,
-          cargoTargetCacheKey: materialized.cargoTargetCacheKey
+      const metadata = loadCargoMetadata(materialized.root, {
+        ...options,
+        cargoTargetCacheKey: materialized.cargoTargetCacheKey
+      });
+      if (!metadata.ok) return metadataFailureResult(metadata);
+      const packageScope = resolveCargoPackageScope(metadata.metadata, context.scope);
+      if (!packageScope.ok) return metadataFailureResult(packageScope);
+      const result = runTool("cargo", unusedDepsArgs(packageScope.member, options), {
+        cwd: materialized.root,
+        cargoTargetCacheKey: materialized.cargoTargetCacheKey,
+        env: options.env,
+        timeoutMs: options.timeoutMs,
+        allowedExitCodes: [0, 1, 101]
+      });
+      const infrastructureFailure = commandInfrastructureFailure(result);
+      if (infrastructureFailure !== undefined) return infrastructureFailure;
+      const unsupportedFailure = requiredToolUnsupportedFailure(result, "udeps") ?? requiredToolUnsupportedFailure(result, "cargo-udeps");
+      if (unsupportedFailure !== undefined) return unsupportedFailure;
+      if (result.status !== 0) {
+        const diagnostics = parseUnusedDependencyDiagnostics(result.stderr || result.stdout, packageScope.member);
+        if (diagnostics.length > 0) return { diagnostics };
+        const toolchainFailure = cargoUdepsToolchainFailure(result);
+        if (toolchainFailure !== undefined) return toolchainFailure;
+        return singleStderrPolicyFailure({
+          path: packageScope.member?.manifestPath ?? "Cargo.toml",
+          code: "RUST_UNUSED_DEPS",
+          stderr: result.stderr || result.stdout,
+          fallback: "Unused Rust dependencies found"
         });
-        if (!metadata.ok) return metadataFailureResult(metadata);
-        const packageScope = resolveCargoPackageScope(metadata.metadata, context.scope);
-        if (!packageScope.ok) return metadataFailureResult(packageScope);
-        const result = runTool("cargo", unusedDepsArgs(packageScope.member, options), {
-          cwd: materialized.root,
-          cargoTargetCacheKey: materialized.cargoTargetCacheKey,
-          env: options.env,
-          timeoutMs: options.timeoutMs,
-          allowedExitCodes: [0, 1, 101]
-        });
-        const infrastructureFailure = commandInfrastructureFailure(result);
-        if (infrastructureFailure !== undefined) return infrastructureFailure;
-        const unsupportedFailure = requiredToolUnsupportedFailure(result, "udeps") ?? requiredToolUnsupportedFailure(result, "cargo-udeps");
-        if (unsupportedFailure !== undefined) return unsupportedFailure;
-        if (result.status !== 0) {
-          const diagnostics = parseUnusedDependencyDiagnostics(result.stderr || result.stdout, packageScope.member);
-          if (diagnostics.length > 0) return { diagnostics };
-          const toolchainFailure = cargoUdepsToolchainFailure(result);
-          if (toolchainFailure !== undefined) return toolchainFailure;
-          return singleStderrPolicyFailure({
-            path: packageScope.member?.manifestPath ?? "Cargo.toml",
-            code: "RUST_UNUSED_DEPS",
-            stderr: result.stderr || result.stdout,
-            fallback: "Unused Rust dependencies found"
-          });
-        }
-        return { diagnostics: [] };
-      } finally {
-        materialized.cleanup();
       }
+      return { diagnostics: [] };
     }
   };
 }

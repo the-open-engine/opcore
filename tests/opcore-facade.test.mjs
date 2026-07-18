@@ -279,7 +279,7 @@ describe("opcore public facade", () => {
     try {
       const human = runOpcore(["--version"], temp, 0);
       assert.equal(human.stderr, "");
-      assert.match(human.stdout, /^opcore 0\.2\.0\b/);
+      assert.match(human.stdout, /^opcore 0\.2\.1\b/);
       assert.equal(existsSync(join(temp, ".opcore")), false);
 
       const json = parseJson(runOpcore(["--version", "--json"], temp, 0).stdout);
@@ -287,7 +287,7 @@ describe("opcore public facade", () => {
       assert.equal(json.owner, "runtime");
       assert.equal(json.runtimeInfo.schemaVersion, 1);
       assert.equal(json.runtimeInfo.packageName, "opcore");
-      assert.equal(json.runtimeInfo.version, "0.2.0");
+      assert.equal(json.runtimeInfo.version, "0.2.1");
       assert.equal(json.runtimeInfo.bin, "opcore");
       assert.match(json.runtimeInfo.artifactSource, /^(source_checkout|installed_package|unknown)$/);
       assert.match(json.runtimeInfo.packageRoot, /packages\/opcore$/);
@@ -461,7 +461,7 @@ describe("opcore public facade", () => {
       mkdirSync(join(temp, "src"), { recursive: true });
       writeFileSync(
         join(temp, "Cargo.toml"),
-        "[package]\nname = \"opcore-rust-status\"\nversion = \"0.2.0\"\nedition = \"2021\"\n"
+        "[package]\nname = \"opcore-rust-status\"\nversion = \"0.2.1\"\nedition = \"2021\"\n"
       );
       writeFileSync(join(temp, "src/lib.rs"), "pub fn value() -> u64 { 1 }\n");
 
@@ -1341,7 +1341,7 @@ describe("opcore public facade", () => {
       {
         name: "rust",
         files: [
-          ["Cargo.toml", "[package]\nname = \"opcore_fixture\"\nversion = \"0.2.0\"\nedition = \"2021\"\n"],
+          ["Cargo.toml", "[package]\nname = \"opcore_fixture\"\nversion = \"0.2.1\"\nedition = \"2021\"\n"],
           ["src/lib.rs", "pub fn value() -> i32 { 1 }\n"]
         ],
         expect: { totalFiles: 2, languages: ["Rust"], unsupportedFiles: 0 }
@@ -1350,7 +1350,7 @@ describe("opcore public facade", () => {
         name: "mixed",
         files: [
           ["src/index.ts", "export const value = 1;\n"],
-          ["Cargo.toml", "[package]\nname = \"opcore_fixture\"\nversion = \"0.2.0\"\nedition = \"2021\"\n"],
+          ["Cargo.toml", "[package]\nname = \"opcore_fixture\"\nversion = \"0.2.1\"\nedition = \"2021\"\n"],
           ["src/lib.rs", "pub fn value() -> i32 { 1 }\n"]
         ],
         expect: { totalFiles: 3, languages: ["Rust", "TypeScript"], unsupportedFiles: 0 }
@@ -2342,6 +2342,6 @@ function measureLatencyRecord(recordedAt, totalMs, validationMs) {
         { phase: "validation_typescript_syntax", durationMs: Math.max(0, totalMs - validationMs) }
       ]
     },
-    opcoreVersion: "0.2.0"
+    opcoreVersion: "0.2.1"
   };
 }

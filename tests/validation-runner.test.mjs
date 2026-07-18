@@ -898,6 +898,64 @@ describe("validation runner", () => {
     assert.equal(result.failure.category, "provider_failure");
     assert.equal(disposed, 1);
   });
+
+  it("shares run resources across checks and disposes them once in reverse order", async () => {
+    const events = [];
+    let shared;
+    const result = await runner([
+      check("resource.first", {
+        run: async (context) => {
+          shared = await context.resources.getOrCreate("shared", () => {
+            events.push("create:shared");
+            return { dispose: () => events.push("dispose:shared") };
+          });
+          return { diagnostics: [] };
+        }
+      }),
+      check("resource.second", {
+        run: async (context) => {
+          assert.equal(await context.resources.getOrCreate("shared", () => {
+            throw new Error("shared resource recreated");
+          }), shared);
+          await context.resources.getOrCreate("second", () => {
+            events.push("create:second");
+            return { dispose: () => events.push("dispose:second") };
+          });
+          return { diagnostics: [] };
+        }
+      })
+    ]).runValidation(request({ checks: ["resource.first", "resource.second"] }));
+
+    assert.equal(result.status, "passed");
+    assert.deepEqual(events, ["create:shared", "create:second", "dispose:second", "dispose:shared"]);
+  });
+
+  it("evicts rejected resource factories and disposes replacements after check failures", async () => {
+    let attempts = 0;
+    let disposals = 0;
+    const result = await runner([
+      check("resource.failure", {
+        run: async (context) => {
+          await assert.rejects(
+            context.resources.getOrCreate("replaceable", () => {
+              attempts += 1;
+              throw new Error("first creation failed");
+            }),
+            /first creation failed/
+          );
+          await context.resources.getOrCreate("replaceable", () => {
+            attempts += 1;
+            return { dispose: () => { disposals += 1; } };
+          });
+          throw new Error("check crashed after acquisition");
+        }
+      })
+    ]).runValidation(request({ checks: ["resource.failure"] }));
+
+    assert.equal(result.status, "infrastructure_failure");
+    assert.equal(attempts, 2);
+    assert.equal(disposals, 1);
+  });
 });
 
 function runner(checks, options = {}) {

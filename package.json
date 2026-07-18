@@ -1,6 +1,6 @@
 {
   "name": "opcore",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "description": "Local code intelligence, safe edits, and pre-write validation for coding agents.",
   "type": "module",

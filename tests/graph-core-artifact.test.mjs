@@ -25,7 +25,7 @@ describe("graph-core native artifact", () => {
     assert.equal(result.ok, false);
     assert.equal(result.status.state, "required_missing");
     assert.equal(result.status.failure.category, "provider_missing");
-    assert.match(result.status.message, /Opcore 0\.2\.0 supports darwin-arm64, darwin-x64, linux-x64/);
+    assert.match(result.status.message, /Opcore 0\.2\.1 supports darwin-arm64, darwin-x64, linux-x64/);
     assert.match(result.status.message, /Windows is not supported/);
     assert.deepEqual(attempted, []);
   });
@@ -49,7 +49,7 @@ describe("graph-core native artifact", () => {
       mkdirSync(join(temp, "bin"), { recursive: true });
       mkdirSync(join(temp, "packages", "graph"), { recursive: true });
       mkdirSync(join(temp, "packages", "opcore-graph-core-linux-x64"), { recursive: true });
-      writeFileSync(join(temp, "packages", "graph", "package.json"), `${JSON.stringify({ version: "0.2.0" })}\n`);
+      writeFileSync(join(temp, "packages", "graph", "package.json"), `${JSON.stringify({ version: "0.2.1" })}\n`);
       const cargoStub = join(temp, "bin", "cargo");
       writeFileSync(
         cargoStub,

@@ -169,30 +169,26 @@ async function runCargoTool(
   const skipped = skippedRustInputResult(context);
   if (skipped !== undefined) return skipped;
   const materialized = await materializeRustWorkspace(context, { env: args.options.env });
-  try {
-    const metadata = loadCargoMetadata(materialized.root, {
-      ...args.options,
-      cargoTargetCacheKey: materialized.cargoTargetCacheKey
-    });
-    if (!metadata.ok) return metadataFailureResult(metadata);
-    const packageScope = resolveCargoPackageScope(metadata.metadata, context.scope);
-    if (!packageScope.ok) return metadataFailureResult(packageScope);
-    const commandArgs = scopedCargoArgs(args.args, packageScope.member);
-    const result = runTool("cargo", commandArgs, {
-      cwd: materialized.root,
-      cargoTargetCacheKey: materialized.cargoTargetCacheKey,
-      env: args.options.env,
-      timeoutMs: args.options.timeoutMs,
-      allowedExitCodes: [0, 101]
-    });
-    return (
-      commandInfrastructureFailure(result) ??
-      cargoDiagnosticsResult(result.stdout, materialized.root, args) ??
-      cargoCommandFailureResult(result, args) ?? { diagnostics: [] }
-    );
-  } finally {
-    materialized.cleanup();
-  }
+  const metadata = loadCargoMetadata(materialized.root, {
+    ...args.options,
+    cargoTargetCacheKey: materialized.cargoTargetCacheKey
+  });
+  if (!metadata.ok) return metadataFailureResult(metadata);
+  const packageScope = resolveCargoPackageScope(metadata.metadata, context.scope);
+  if (!packageScope.ok) return metadataFailureResult(packageScope);
+  const commandArgs = scopedCargoArgs(args.args, packageScope.member);
+  const result = runTool("cargo", commandArgs, {
+    cwd: materialized.root,
+    cargoTargetCacheKey: materialized.cargoTargetCacheKey,
+    env: args.options.env,
+    timeoutMs: args.options.timeoutMs,
+    allowedExitCodes: [0, 101]
+  });
+  return (
+    commandInfrastructureFailure(result) ??
+    cargoDiagnosticsResult(result.stdout, materialized.root, args) ??
+    cargoCommandFailureResult(result, args) ?? { diagnostics: [] }
+  );
 }
 
 function cargoDiagnosticsResult(
@@ -257,35 +253,31 @@ async function runCachedCargoCheck(
   options: RustCommandCheckOptions
 ): Promise<CachedCargoCheckResult> {
   const materialized = await materializeRustWorkspace(context, { env: options.env });
-  try {
-    const metadata = loadCargoMetadata(materialized.root, {
-      ...options,
-      cargoTargetCacheKey: materialized.cargoTargetCacheKey
-    });
-    if (!metadata.ok) return { ok: false, result: metadataFailureResult(metadata) };
-    const packageScope = resolveCargoPackageScope(metadata.metadata, context.scope);
-    if (!packageScope.ok) return { ok: false, result: metadataFailureResult(packageScope) };
-    const commandArgs = scopedCargoArgs(cargoCheckArgs, packageScope.member);
-    const result = runTool("cargo", commandArgs, {
-      cwd: materialized.root,
-      cargoTargetCacheKey: materialized.cargoTargetCacheKey,
-      env: options.env,
-      timeoutMs: options.timeoutMs,
-      allowedExitCodes: [0, 101]
-    });
-    return {
-      ok: true,
-      execution: {
-        args: commandArgs,
-        metadata: metadata.metadata,
-        member: packageScope.member,
-        result,
-        workspaceRoot: materialized.root
-      }
-    };
-  } finally {
-    materialized.cleanup();
-  }
+  const metadata = loadCargoMetadata(materialized.root, {
+    ...options,
+    cargoTargetCacheKey: materialized.cargoTargetCacheKey
+  });
+  if (!metadata.ok) return { ok: false, result: metadataFailureResult(metadata) };
+  const packageScope = resolveCargoPackageScope(metadata.metadata, context.scope);
+  if (!packageScope.ok) return { ok: false, result: metadataFailureResult(packageScope) };
+  const commandArgs = scopedCargoArgs(cargoCheckArgs, packageScope.member);
+  const result = runTool("cargo", commandArgs, {
+    cwd: materialized.root,
+    cargoTargetCacheKey: materialized.cargoTargetCacheKey,
+    env: options.env,
+    timeoutMs: options.timeoutMs,
+    allowedExitCodes: [0, 101]
+  });
+  return {
+    ok: true,
+    execution: {
+      args: commandArgs,
+      metadata: metadata.metadata,
+      member: packageScope.member,
+      result,
+      workspaceRoot: materialized.root
+    }
+  };
 }
 
 function cargoExecutionResult(

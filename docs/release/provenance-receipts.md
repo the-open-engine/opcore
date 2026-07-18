@@ -2,8 +2,8 @@
 
 Maintainer provenance evidence for the Opcore alpha release gate.
 
-- Current-tree files scanned: 551
-- Git-history commits scanned: 248
+- Current-tree files scanned: 695
+- Git-history commits scanned: 305
 - Python code-review-graph source findings: 0
 - Python package metadata findings: 0
 - Copied git-history marker findings: 0
