@@ -1,10 +1,11 @@
 import type { PythonProjectContext } from "@the-open-engine/opcore-contracts";
 import type { ValidationFileView } from "@the-open-engine/opcore-validation";
-import { parse, parseTree, type ParseError } from "jsonc-parser";
-import { posix } from "node:path";
-import { parsePythonToml, type TomlTable } from "./static-config.js";
+import {
+  isPyrightConfigPath,
+  parsePyrightConfig,
+  resolveConfiguredPath
+} from "./pyright-config-values.js";
 import type { PythonProjectWorkspace } from "./project-workspace.js";
-import { duplicateJsonObjectKey } from "./strict-json.js";
 
 export interface PyrightConfigSemantics {
   configPaths: readonly string[];
@@ -140,30 +141,6 @@ function resolveExtendedConfigPath(
   return resolved.path;
 }
 
-export function parsePyrightConfig(path: string, content: string): Record<string, unknown> | string {
-  if (path.endsWith("pyproject.toml")) {
-    try {
-      const document = parsePythonToml(content);
-      const section = tableAt(document, ["tool", "pyright"]);
-      return section ?? "pyproject.toml has no [tool.pyright] table";
-    } catch {
-      return "Pyright TOML configuration is malformed";
-    }
-  }
-  try {
-    const errors: ParseError[] = [];
-    const value = parse(content, errors, { allowTrailingComma: true, disallowComments: false }) as unknown;
-    if (errors.length > 0 || !isTable(value)) return "Pyright JSONC configuration is malformed";
-    const treeErrors: ParseError[] = [];
-    const tree = parseTree(content, treeErrors, { allowTrailingComma: true, disallowComments: false });
-    if (tree === undefined || treeErrors.length > 0) return "Pyright JSONC configuration is malformed";
-    const duplicate = duplicateJsonObjectKey(tree);
-    return duplicate === undefined ? value : `Pyright JSONC configuration has duplicate key ${duplicate}`;
-  } catch {
-    return "Pyright JSONC configuration is malformed or excessively nested";
-  }
-}
-
 function collectSearchRoots(
   document: ConfigDocument,
   roots: Set<string>,
@@ -214,7 +191,7 @@ function collectExecutionEnvironmentRoots(collection: RootCollection): void {
     return;
   }
   for (const [index, value] of environments.entries()) {
-    if (!isTable(value)) {
+    if (!isObjectTable(value)) {
       collection.failures.push(`${collection.configPath}: Pyright executionEnvironments[${index}] must be an object`);
       continue;
     }
@@ -222,36 +199,30 @@ function collectExecutionEnvironmentRoots(collection: RootCollection): void {
     if (value.extraPaths !== undefined) {
       if (!Array.isArray(value.extraPaths)) {
         collection.failures.push(`${collection.configPath}: Pyright executionEnvironments[${index}].extraPaths must be an array`);
-      }
-      else for (const path of value.extraPaths) {
-        addSearchRoot(collection, `executionEnvironments[${index}].extraPaths`, path);
+      } else {
+        for (const path of value.extraPaths) {
+          addSearchRoot(collection, `executionEnvironments[${index}].extraPaths`, path);
+        }
       }
     }
   }
 }
 
-function addSearchRoot(
-  collection: RootCollection,
-  key: string,
-  value: unknown
-): void {
+function addSearchRoot(collection: RootCollection, key: string, value: unknown): void {
   if (typeof value !== "string" || value.trim().length === 0) {
     collection.failures.push(`${collection.configPath}: Pyright ${key} must contain non-empty paths`);
     return;
   }
   const resolved = resolveConfiguredPath(collection.configPath, value, key);
-  if (typeof resolved === "string") collection.failures.push(`${collection.configPath}: ${resolved}`);
-  else {
-    collection.roots.add(resolved.path);
-    collection.configuredRoots.add(resolved.path);
+  if (typeof resolved === "string") {
+    collection.failures.push(`${collection.configPath}: ${resolved}`);
+    return;
   }
+  collection.roots.add(resolved.path);
+  collection.configuredRoots.add(resolved.path);
 }
 
-function validateConfiguredPattern(
-  collection: RootCollection,
-  key: string,
-  value: unknown
-): void {
+function validateConfiguredPattern(collection: RootCollection, key: string, value: unknown): void {
   if (typeof value !== "string" || value.trim().length === 0) {
     collection.failures.push(`${collection.configPath}: Pyright ${key} must contain non-empty paths`);
     return;
@@ -279,50 +250,8 @@ async function validateConfiguredRoots(
   }
 }
 
-export function resolveConfiguredPath(
-  configPath: string,
-  configured: string,
-  key: string
-): { path: string } | string {
-  const value = configured.trim().replaceAll("\\", "/");
-  if (value.length === 0 || value.includes("\0")) return `Pyright ${key} has an invalid path`;
-  if (isAbsolutePath(value)) return `Pyright ${key} must not use an absolute path`;
-  if (/[$%{}]/u.test(value) || value.includes("://")) return `Pyright ${key} must not use host environment or URI expansion`;
-  if (hasUnsafePathSegment(value)) return `Pyright ${key} must not use parent traversal`;
-  const base = posix.dirname(configPath);
-  const normalized = posix.normalize(posix.join(base, value));
-  if (normalized === "." && key === "extends") {
-    return "Pyright extends must name a repo-relative configuration file";
-  }
-  if (normalized === ".." || normalized.startsWith("../")) {
-    return `Pyright ${key} escapes the repository`;
-  }
-  return { path: normalized };
-}
-
-function tableAt(value: TomlTable | undefined, path: readonly string[]): Record<string, unknown> | undefined {
-  let current: unknown = value;
-  for (const key of path) {
-    if (!isTable(current)) return undefined;
-    current = current[key];
-  }
-  return isTable(current) ? current : undefined;
-}
-
-function isPyrightConfigPath(path: string): boolean {
-  return path.endsWith("pyrightconfig.json") || path.endsWith("pyproject.toml");
-}
-
-function isTable(value: unknown): value is Record<string, unknown> {
+function isObjectTable(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
-}
-
-function isAbsolutePath(value: string): boolean {
-  return value.startsWith("/") || /^[A-Za-z]:\//u.test(value) || value.startsWith("//") || value.startsWith("~");
-}
-
-function hasUnsafePathSegment(value: string): boolean {
-  return value.split("/").includes("..");
 }
 
 function uniqueSorted(values: readonly string[]): readonly string[] {

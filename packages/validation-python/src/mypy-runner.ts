@@ -1,8 +1,5 @@
-import type {
-  PythonProjectToolProvenance,
-  PythonValidationCapabilityToolProvenance
-} from "@the-open-engine/opcore-contracts";
-import { delimiter, dirname, isAbsolute, join } from "node:path";
+import type { PythonProjectToolProvenance } from "@the-open-engine/opcore-contracts";
+import { delimiter, join } from "node:path";
 import {
   completedMypyResult,
   invalidConfigFailure,
@@ -19,31 +16,24 @@ import type {
 import { runTool, type PythonToolRunResult } from "./process.js";
 import {
   isolatedMypyConfigPath,
-  materializePythonTypeCapability,
-  portablePythonValidationTool,
   relativePythonProjectPath,
   repoRelativeMaterializedPath,
   type MaterializedPythonTypeWorkspace,
   type PythonTypeCapabilityPreparation
 } from "./type-capability-run.js";
+import { isolatedTypeEnvironmentBase, withMaterializedTypeExecution } from "./type-runner-runtime.js";
+import type { TypeCapabilityArgs, TypeExecutionContext } from "./type-runner-types.js";
 
 export type { MypyCapabilityArgs, MypyCapabilityResult, MypyExecutionContext } from "./mypy-runner-types.js";
 
 export async function runMypyCapability(args: MypyCapabilityArgs): Promise<MypyCapabilityResult> {
-  const startedAt = Date.now();
   const observedArgv = mypyArgv(args.checker, args.preparation);
-  const tool = portableTool(args.checker, observedArgv, args.preparation);
-  let workspace: MaterializedPythonTypeWorkspace;
-  try {
-    workspace = await materializePythonTypeCapability(args.preparation);
-  } catch {
-    return materializationFailure(args, tool, startedAt);
-  }
-  try {
-    return await executeMypyCapability({ args, workspace, tool, startedAt }, observedArgv);
-  } finally {
-    workspace.cleanup();
-  }
+  return withMaterializedTypeExecution(
+    sharedTypeArgs(args),
+    observedArgv,
+    async (context) => executeMypyCapability(toMypyExecutionContext(context, args), observedArgv),
+    (tool, startedAt) => materializationFailure(args, tool, startedAt)
+  );
 }
 
 async function executeMypyCapability(
@@ -160,46 +150,26 @@ function isolatedMypyEnvironment(
   checker: PythonProjectToolProvenance,
   workspace: MaterializedPythonTypeWorkspace
 ): Record<string, string> {
-  const source = input ?? process.env;
-  const path = isolatedExecutablePath(checker.executable, source);
-  return {
-    PATH: path,
-    PWD: workspace.projectCwd,
-    HOME: join(workspace.runtimeRoot, "home"),
-    XDG_CONFIG_HOME: join(workspace.runtimeRoot, "xdg-config"),
-    XDG_CACHE_HOME: join(workspace.runtimeRoot, "xdg-cache"),
-    TMPDIR: join(workspace.runtimeRoot, "tmp"),
-    TEMP: join(workspace.runtimeRoot, "tmp"),
-    TMP: join(workspace.runtimeRoot, "tmp"),
-    PYTHONPATH: workspace.pythonPathEntries.join(delimiter),
-    PYTHONNOUSERSITE: "1",
-    PYTHONDONTWRITEBYTECODE: "1",
-    PYTHONUTF8: "1",
-    MYPY_CACHE_DIR: join(workspace.projectCwd, ".opcore-mypy-cache"),
-    LC_ALL: "C",
-    LANG: "C",
-    ...(process.platform !== "win32" ? {} : windowsEnvironment(source))
-  };
+  return isolatedTypeEnvironmentBase({
+    input,
+    executable: checker.executable,
+    workspace,
+    extra: {
+      MYPY_CACHE_DIR: join(workspace.projectCwd, ".opcore-mypy-cache"),
+      PYTHONPATH: workspace.pythonPathEntries.join(delimiter)
+    }
+  });
 }
 
-function isolatedExecutablePath(
-  executable: string,
-  source: Readonly<Record<string, string | undefined>>
-): string {
-  const system = process.platform === "win32" ? source.SystemRoot ?? source.SYSTEMROOT : undefined;
-  const systemPaths = system === undefined ? ["/usr/bin", "/bin"] : [join(system, "System32"), system];
-  return [...new Set([isAbsolute(executable) ? dirname(executable) : undefined, ...systemPaths])]
-    .filter((path): path is string => path !== undefined)
-    .join(delimiter);
+function sharedTypeArgs(args: MypyCapabilityArgs): TypeCapabilityArgs {
+  return { ...args, authority: "mypy" };
 }
 
-function windowsEnvironment(source: Readonly<Record<string, string | undefined>>): Record<string, string> {
-  const values: Record<string, string> = {};
-  for (const key of ["SystemRoot", "SYSTEMROOT", "WINDIR", "COMSPEC", "PATHEXT"] as const) {
-    const value = source[key];
-    if (value !== undefined) values[key] = value;
-  }
-  return values;
+function toMypyExecutionContext(
+  context: TypeExecutionContext,
+  args: MypyCapabilityArgs
+): MypyExecutionContext {
+  return { ...context, args };
 }
 
 function withoutConfigArguments(args: readonly string[]): readonly string[] {
@@ -214,12 +184,4 @@ function withoutConfigArguments(args: readonly string[]): readonly string[] {
     filtered.push(argument);
   }
   return filtered;
-}
-
-function portableTool(
-  checker: PythonProjectToolProvenance,
-  argv: readonly string[],
-  preparation: PythonTypeCapabilityPreparation
-): PythonValidationCapabilityToolProvenance {
-  return portablePythonValidationTool({ checker, argv, preparation, authority: "mypy" });
 }

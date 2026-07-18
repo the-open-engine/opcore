@@ -9,7 +9,7 @@ import {
   readMypyConfigValues,
   type MypyConfigValues
 } from "./mypy-config-values.js";
-import { parsePythonToml } from "./static-config.js";
+import { parsePythonToml } from "./toml-config.js";
 
 export interface MypyConfigSemantics {
   pluginPaths: readonly string[];

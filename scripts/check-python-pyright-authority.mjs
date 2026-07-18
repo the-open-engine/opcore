@@ -69,7 +69,7 @@ assert.deepEqual(overlay.diagnostics.map(normalizedDiagnostic), materialized.dia
 const configExit3 = proveRealConfigExit3();
 const packedInstall = provePackedInstall(files);
 assert.equal(treeHash(fixtureRoot), fixtureHashBefore, "Pyright proof changed fixture inputs");
-assert.equal(readFileSync(resolve(fixtureRoot, "src/acme/app.py"), "utf8"), originalApp);
+assert.equal(readFileSync(fixtureDiskPath("src/acme/app.py"), "utf8"), originalApp);
 assert.equal(existsSync(resolve(fixtureRoot, ".pyright")), false);
 assert.equal(existsSync(resolve(fixtureRoot, "__pycache__")), false);
 assert.deepEqual(pyrightTempWorkspaces(), tempBefore);
@@ -183,6 +183,14 @@ function fixtureFiles(root) {
     files[path] = readFileSync(absolute, "utf8");
   }
   return files;
+}
+
+function fixtureDiskPath(path) {
+  const direct = resolve(fixtureRoot, path);
+  if (existsSync(direct)) return direct;
+  const fixture = resolve(fixtureRoot, `${path}.fixture`);
+  if (existsSync(fixture)) return fixture;
+  throw new Error(`fixture path missing from proof repository: ${path}`);
 }
 
 function writeFixture(root, files) {

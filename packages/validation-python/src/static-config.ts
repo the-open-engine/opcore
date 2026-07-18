@@ -4,14 +4,21 @@ import type {
   PythonProjectManagerEvidence,
   PythonProjectTarget
 } from "@the-open-engine/opcore-contracts";
-import { parse as parseToml } from "smol-toml";
 import { parse as parseJsonc, type ParseError } from "jsonc-parser";
 import { isRelevantPythonConfig } from "./project-config-files.js";
 import type { PythonProjectWorkspace } from "./project-workspace.js";
-import { parsePyrightConfig, resolveConfiguredPath } from "./pyright-config.js";
+import { parsePyrightConfig, resolveConfiguredPath } from "./pyright-config-values.js";
 import { pythonVersionSatisfiesConstraint } from "./version-constraint.js";
 import { parsePythonIni, pythonIniHasSection, pythonIniValue, type PythonIniDocument } from "./ini-config.js";
 import { mypyConfigSafetyFailures, mypyPathValidationFailures } from "./mypy-config-values.js";
+import {
+  parsePythonToml,
+  tomlStringArrayAt,
+  tomlStringAt,
+  tomlTableAt,
+  tomlValueAt,
+  type TomlTable
+} from "./toml-config.js";
 
 export const pythonToolConfigPrecedence = {
   pyright: ["pyrightconfig.json", "pyproject.toml"],
@@ -127,14 +134,14 @@ function managerEvidence(
   if (requirements.length > 0 || names.has("setup.py")) {
     managers.push({ kind: "pip", configFiles: requirements.length > 0 ? requirements : [joinRoot(projectRoot, "setup.py")], lockFiles: [] });
   }
-  if (names.has("uv.lock") || tableAt(pyprojectDocument, ["tool", "uv"]) !== undefined) {
-    managers.push({ kind: "uv", configFiles: tableAt(pyprojectDocument, ["tool", "uv"]) === undefined ? [] : [pyprojectPath], lockFiles: names.has("uv.lock") ? [joinRoot(projectRoot, "uv.lock")] : [] });
+  if (names.has("uv.lock") || tomlTableAt(pyprojectDocument, ["tool", "uv"]) !== undefined) {
+    managers.push({ kind: "uv", configFiles: tomlTableAt(pyprojectDocument, ["tool", "uv"]) === undefined ? [] : [pyprojectPath], lockFiles: names.has("uv.lock") ? [joinRoot(projectRoot, "uv.lock")] : [] });
   }
-  if (names.has("poetry.lock") || tableAt(pyprojectDocument, ["tool", "poetry"]) !== undefined) {
-    managers.push({ kind: "poetry", configFiles: tableAt(pyprojectDocument, ["tool", "poetry"]) === undefined ? [] : [pyprojectPath], lockFiles: names.has("poetry.lock") ? [joinRoot(projectRoot, "poetry.lock")] : [] });
+  if (names.has("poetry.lock") || tomlTableAt(pyprojectDocument, ["tool", "poetry"]) !== undefined) {
+    managers.push({ kind: "poetry", configFiles: tomlTableAt(pyprojectDocument, ["tool", "poetry"]) === undefined ? [] : [pyprojectPath], lockFiles: names.has("poetry.lock") ? [joinRoot(projectRoot, "poetry.lock")] : [] });
   }
-  if (names.has("pdm.lock") || tableAt(pyprojectDocument, ["tool", "pdm"]) !== undefined) {
-    managers.push({ kind: "pdm", configFiles: tableAt(pyprojectDocument, ["tool", "pdm"]) === undefined ? [] : [pyprojectPath], lockFiles: names.has("pdm.lock") ? [joinRoot(projectRoot, "pdm.lock")] : [] });
+  if (names.has("pdm.lock") || tomlTableAt(pyprojectDocument, ["tool", "pdm"]) !== undefined) {
+    managers.push({ kind: "pdm", configFiles: tomlTableAt(pyprojectDocument, ["tool", "pdm"]) === undefined ? [] : [pyprojectPath], lockFiles: names.has("pdm.lock") ? [joinRoot(projectRoot, "pdm.lock")] : [] });
   }
   if (names.has("Pipfile") || names.has("Pipfile.lock")) {
     managers.push({ kind: "pipenv", configFiles: names.has("Pipfile") ? [joinRoot(projectRoot, "Pipfile")] : [], lockFiles: names.has("Pipfile.lock") ? [joinRoot(projectRoot, "Pipfile.lock")] : [] });
@@ -153,12 +160,12 @@ function targetEvidence(
   const declarations: { source: string; kind: "requires" | "version" | "platform" | "implementation"; value: string }[] = [];
   for (const [path, content] of contents) {
     const document = tomlDocuments.get(path);
-    const requires = stringAt(document, ["project", "requires-python"]) ??
-      stringAt(document, ["tool", "poetry", "dependencies", "python"]) ??
+    const requires = tomlStringAt(document, ["project", "requires-python"]) ??
+      tomlStringAt(document, ["tool", "poetry", "dependencies", "python"]) ??
       valueForNonTomlConfig(path, content, "requires-python") ??
       valueForNonTomlConfig(path, content, "python_requires");
     if (requires !== undefined) declarations.push({ source: path, kind: "requires", value: requires });
-    const version = stringAt(document, ["requires", "python_version"]) ??
+    const version = tomlStringAt(document, ["requires", "python_version"]) ??
       valueForNonTomlConfig(path, content, "python_version");
     if (version !== undefined) declarations.push({ source: path, kind: "version", value: version });
     const platform = valueForNonTomlConfig(path, content, "platform");
@@ -169,7 +176,7 @@ function targetEvidence(
     ["platform", "pythonPlatform"],
     ["implementation", "pythonImplementation"]
   ] as const) {
-    const value = stringAt(pyrightTarget, [key]);
+    const value = tomlStringAt(pyrightTarget, [key]);
     if (value !== undefined && selectedPyrightConfig !== undefined) {
       declarations.push({ source: selectedPyrightConfig, kind, value });
     }
@@ -293,10 +300,10 @@ async function readSelectedPyrightConfigClosure(
 }
 
 function parseBuildSystem(path: string, document: TomlTable | undefined): PythonStaticProjectConfig["buildSystem"] {
-  const section = tableAt(document, ["build-system"]);
+  const section = tomlTableAt(document, ["build-system"]);
   if (section === undefined) return undefined;
-  const backend = stringAt(section, ["build-backend"]);
-  const requires = stringArrayAt(section, ["requires"]).sort();
+  const backend = tomlStringAt(section, ["build-backend"]);
+  const requires = tomlStringArrayAt(section, ["requires"]).sort();
   return { configFile: path, ...(backend === undefined ? {} : { backend }), requires };
 }
 
@@ -337,7 +344,7 @@ function addInvalidMypyPathFailures(
   const path = configuredToolPaths(input, "mypy")[0];
   if (path === undefined) return;
   const value = path.endsWith("pyproject.toml")
-    ? valueAt(input.tomlDocuments.get(path), ["tool", "mypy", "mypy_path"])
+    ? tomlValueAt(input.tomlDocuments.get(path), ["tool", "mypy", "mypy_path"])
     : pythonIniValue(input.iniDocuments.get(path), "mypy", "mypy_path");
   for (const message of mypyPathValidationFailures(value)) {
     reasons.push({ code: "invalid_config", path, tool: "mypy", message: `Invalid mypy configuration: ${message}` });
@@ -351,7 +358,7 @@ function addInvalidMypyPythonVersionFailures(
   const path = configuredToolPaths(input, "mypy")[0];
   if (path === undefined) return;
   const value = path.endsWith("pyproject.toml")
-    ? valueAt(input.tomlDocuments.get(path), ["tool", "mypy", "python_version"])
+    ? tomlValueAt(input.tomlDocuments.get(path), ["tool", "mypy", "python_version"])
     : pythonIniValue(input.iniDocuments.get(path), "mypy", "python_version");
   if (value === undefined || typeof value === "string" && /^\d+\.\d+$/u.test(value.trim())) return;
   reasons.push({
@@ -396,7 +403,7 @@ function configuredToolPaths(
     if (!names.has(candidate)) return false;
     const path = joinRoot(input.projectRoot, candidate);
     if (candidate === "pyproject.toml") {
-      return tableAt(input.tomlDocuments.get(path), section.split(".")) !== undefined;
+      return tomlTableAt(input.tomlDocuments.get(path), section.split(".")) !== undefined;
     }
     if (tool === "mypy") {
       return isDedicatedMypyConfig(path) || pythonIniHasSection(input.iniDocuments.get(path), "mypy");
@@ -462,41 +469,8 @@ function valueForIniOption(content: string, expectedSection: string, key: string
   }
 }
 
-export type TomlTable = Record<string, unknown>;
-
-export function parsePythonToml(content: string): TomlTable {
-  const parsed = parseToml(content);
-  if (!isTable(parsed)) throw new Error("TOML config root must be a table");
-  return parsed;
-}
-
 function isTable(value: unknown): value is TomlTable {
   return value !== null && typeof value === "object" && !Array.isArray(value);
-}
-
-function valueAt(value: unknown, path: readonly string[]): unknown {
-  let current = value;
-  for (const segment of path) {
-    if (!isTable(current)) return undefined;
-    current = current[segment];
-  }
-  return current;
-}
-
-function tableAt(value: unknown, path: readonly string[]): TomlTable | undefined {
-  const selected = valueAt(value, path);
-  return isTable(selected) ? selected : undefined;
-}
-
-function stringAt(value: unknown, path: readonly string[]): string | undefined {
-  const selected = valueAt(value, path);
-  return typeof selected === "string" && selected.trim().length > 0 ? selected.trim() : undefined;
-}
-
-function stringArrayAt(value: unknown, path: readonly string[]): string[] {
-  const selected = valueAt(value, path);
-  if (!Array.isArray(selected)) return [];
-  return selected.filter((entry): entry is string => typeof entry === "string" && entry.length > 0);
 }
 
 function joinRoot(root: string, name: string): string {

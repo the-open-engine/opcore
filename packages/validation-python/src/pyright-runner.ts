@@ -1,18 +1,20 @@
 import type {
   PythonProjectToolProvenance,
-  PythonValidationAuthoritySource,
-  PythonValidationCapabilityToolProvenance
+  PythonValidationAuthoritySource
 } from "@the-open-engine/opcore-contracts";
-import { delimiter, dirname, isAbsolute, join } from "node:path";
+import { join } from "node:path";
 import { parsePyrightJsonOutput } from "./pyright-output.js";
 import { runTool, type PythonToolExitedResult, type PythonToolRunResult } from "./process.js";
 import {
-  materializePythonTypeCapability,
-  portablePythonValidationTool,
   relativePythonProjectPath,
   type MaterializedPythonTypeWorkspace,
   type PythonTypeCapabilityPreparation
 } from "./type-capability-run.js";
+import {
+  isolatedTypeEnvironmentBase,
+  portableTypeTool,
+  withMaterializedTypeExecution
+} from "./type-runner-runtime.js";
 import {
   completedTypeResult,
   terminatedTypeResult,
@@ -35,25 +37,17 @@ export type PyrightCapabilityResult = TypeCapabilityResult;
 
 export async function runPyrightCapability(args: PyrightCapabilityArgs): Promise<PyrightCapabilityResult> {
   const sharedArgs: TypeCapabilityArgs = { ...args, authority: "pyright" };
-  const startedAt = Date.now();
   const invocation = pyrightInvocation(args.checker, args.preparation);
   if (!invocation.ok) {
-    const tool = portableTool(args.checker, args.checker.argv, args.preparation);
+    const tool = portableTypeTool(sharedArgs, args.checker.argv);
     return typePreflightFailure(sharedArgs, tool, invocation.message);
   }
-  const observedArgv = invocation.argv;
-  const tool = portableTool(args.checker, observedArgv, args.preparation);
-  let workspace: MaterializedPythonTypeWorkspace;
-  try {
-    workspace = await materializePythonTypeCapability(args.preparation);
-  } catch {
-    return typeMaterializationFailure(sharedArgs, tool, startedAt);
-  }
-  try {
-    return await executePyrightCapability({ args: sharedArgs, workspace, tool, startedAt }, observedArgv);
-  } finally {
-    workspace.cleanup();
-  }
+  return withMaterializedTypeExecution(
+    sharedArgs,
+    invocation.argv,
+    async (context) => executePyrightCapability(context, invocation.argv),
+    (tool, startedAt) => typeMaterializationFailure(sharedArgs, tool, startedAt)
+  );
 }
 
 async function executePyrightCapability(
@@ -168,8 +162,7 @@ function pyrightInvocation(
 
 function withoutConflictingPyrightArguments(checker: PythonProjectToolProvenance): readonly string[] {
   const args = checker.argv.slice(1);
-  const preservedLauncherCount = launcherPrefixLength(checker.executable, args);
-  return args.slice(0, preservedLauncherCount);
+  return args.slice(0, launcherPrefixLength(checker.executable, args));
 }
 
 function launcherPrefixLength(executable: string, args: readonly string[]): number {
@@ -184,55 +177,16 @@ function isolatedPyrightEnvironment(
   checker: PythonProjectToolProvenance,
   workspace: MaterializedPythonTypeWorkspace
 ): Record<string, string> {
-  const source = input ?? process.env;
-  return {
-    PATH: isolatedExecutablePath(checker.executable, source),
-    PWD: workspace.projectCwd,
-    HOME: join(workspace.runtimeRoot, "home"),
-    XDG_CONFIG_HOME: join(workspace.runtimeRoot, "xdg-config"),
-    XDG_CACHE_HOME: join(workspace.runtimeRoot, "xdg-cache"),
-    TMPDIR: join(workspace.runtimeRoot, "tmp"),
-    TEMP: join(workspace.runtimeRoot, "tmp"),
-    TMP: join(workspace.runtimeRoot, "tmp"),
-    PYRIGHT_PYTHON_CACHE_DIR: join(workspace.runtimeRoot, "pyright-cache"),
-    PYTHONPATH: "",
-    PYTHONNOUSERSITE: "1",
-    PYTHONDONTWRITEBYTECODE: "1",
-    PYTHONUTF8: "1",
-    NODE_PATH: "",
-    NODE_OPTIONS: "",
-    LC_ALL: "C",
-    LANG: "C",
-    ...(process.platform !== "win32" ? {} : windowsEnvironment(source))
-  };
-}
-
-function isolatedExecutablePath(
-  executable: string,
-  source: Readonly<Record<string, string | undefined>>
-): string {
-  const system = process.platform === "win32" ? source.SystemRoot ?? source.SYSTEMROOT : undefined;
-  const systemPaths = system === undefined ? ["/usr/bin", "/bin"] : [join(system, "System32"), system];
-  return [...new Set([
-    isAbsolute(executable) ? dirname(executable) : undefined,
-    dirname(process.execPath),
-    ...systemPaths
-  ])].filter((path): path is string => path !== undefined).join(delimiter);
-}
-
-function windowsEnvironment(source: Readonly<Record<string, string | undefined>>): Record<string, string> {
-  const values: Record<string, string> = {};
-  for (const key of ["SystemRoot", "SYSTEMROOT", "WINDIR", "COMSPEC", "PATHEXT"] as const) {
-    const value = source[key];
-    if (value !== undefined) values[key] = value;
-  }
-  return values;
-}
-
-function portableTool(
-  checker: PythonProjectToolProvenance,
-  argv: readonly string[],
-  preparation: PythonTypeCapabilityPreparation
-): PythonValidationCapabilityToolProvenance {
-  return portablePythonValidationTool({ checker, argv, preparation, authority: "pyright" });
+  return isolatedTypeEnvironmentBase({
+    input,
+    executable: checker.executable,
+    workspace,
+    includeProcessExecPath: true,
+    extra: {
+      NODE_OPTIONS: "",
+      NODE_PATH: "",
+      PYRIGHT_PYTHON_CACHE_DIR: join(workspace.runtimeRoot, "pyright-cache"),
+      PYTHONPATH: ""
+    }
+  });
 }
