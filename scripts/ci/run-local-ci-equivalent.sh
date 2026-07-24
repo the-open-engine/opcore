@@ -6,6 +6,33 @@ cd "${repo_root}"
 
 generated_artifact_backup=""
 
+terminate_descendant_processes() {
+  local pid="$1"
+  local signal="${2:-TERM}"
+  local child
+
+  while IFS= read -r child; do
+    [ -n "${child}" ] || continue
+    terminate_descendant_processes "${child}" "${signal}"
+  done < <(pgrep -P "${pid}" || true)
+
+  kill "-${signal}" "${pid}" 2>/dev/null || true
+}
+
+cleanup_local_ci() {
+  local status="$1"
+  local child
+
+  while IFS= read -r child; do
+    [ -n "${child}" ] || continue
+    terminate_descendant_processes "${child}" TERM
+  done < <(pgrep -P "$$" || true)
+
+  restore_generated_artifacts
+  rm -f "${changed_file_list}"
+  exit "${status}"
+}
+
 run_step() {
   printf '\n==> %s\n' "$*"
   "$@"
@@ -90,7 +117,7 @@ run_docs_or_agent_gate() {
 }
 
 changed_file_list="$(mktemp "${TMPDIR:-/tmp}/opcore-local-ci-changed.XXXXXX")"
-trap 'restore_generated_artifacts; rm -f "${changed_file_list}"' EXIT
+trap 'cleanup_local_ci "$?"' EXIT
 collect_changed_files > "${changed_file_list}"
 
 if docs_or_agent_only_changes "${changed_file_list}"; then

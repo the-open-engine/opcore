@@ -3,7 +3,7 @@ import type { ValidationCheckDefinition } from "@the-open-engine/opcore-validati
 import { createValidationCheckRegistry } from "@the-open-engine/opcore-validation";
 import { createCloneValidationChecks } from "@the-open-engine/opcore-validation-clone";
 import { createDocsValidationChecks, type CreateDocsValidationChecksOptions } from "@the-open-engine/opcore-validation-docs";
-import { createNodePythonProjectWorkspace, createPythonValidationChecks } from "@the-open-engine/opcore-validation-python";
+import { createNodePythonProjectWorkspace, createPythonValidationChecks, disabledPytestRun, PYTHON_PYTEST_CHECK_ID } from "@the-open-engine/opcore-validation-python";
 import { createRustValidationChecks } from "@the-open-engine/opcore-validation-rust";
 import { createTypeScriptValidationChecks } from "@the-open-engine/opcore-validation-typescript";
 import { readOpcoreRepoConfig } from "./config.js";
@@ -84,7 +84,8 @@ function validationChecksForRepoConfig(
   const filteredContexts = new WeakMap<object, Parameters<ValidationCheckDefinition["run"]>[0]>();
   const checks = available
     .filter((check) => adapters === undefined || adapters.has(check.adapter))
-    .filter((check) => !disabled.has(check.id))
+    .filter((check) => !disabled.has(check.id) || check.id === PYTHON_PYTEST_CHECK_ID)
+    .map((check) => disabled.has(check.id) ? applyDisabledPolicy(check) : check)
     .map((check) => applyDefaultScopePolicy(check, defaults))
     .map((check) => applyPathPolicy(check, config.validation.pathPolicy, filteredContexts));
   createValidationCheckRegistry(checks);
@@ -149,6 +150,17 @@ function cloneValidationOptions(policy: OpcoreClonePolicy | undefined) {
 function applyDefaultScopePolicy(check: ValidationCheckDefinition, defaults: ReadonlySet<string>): ValidationCheckDefinition {
   if (!defaults.has(check.id)) return check;
   return { ...check, defaultScopes: check.supportedScopes };
+}
+
+function applyDisabledPolicy(check: ValidationCheckDefinition): ValidationCheckDefinition {
+  if (check.id !== PYTHON_PYTEST_CHECK_ID) return check;
+  return {
+    ...check,
+    requiresGraph: false,
+    graphRequirements: undefined,
+    defaultScopes: [],
+    run: async () => disabledPytestRun()
+  };
 }
 
 function applyPathPolicy(

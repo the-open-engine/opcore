@@ -515,7 +515,7 @@ function runPythonToolDegradationNegativeChecks(tempRoot, opcoreBin, env, comman
     throw new Error("python-relevant-tests-no-pytest did not pass with graph-backed relevant-test evidence");
   }
   const relevantTestCodes = relevantTestsParsed.validationResult.diagnostics?.map((diagnostic) => diagnostic.code) ?? [];
-  if (!relevantTestCodes.some((code) => code === "PY_RELEVANT_TESTS_FOUND" || code === "PY_RELEVANT_TESTS_ABSENT")) {
+  if (!relevantTestCodes.some((code) => code === "PY_RELEVANT_TEST_CANDIDATES_FOUND" || code === "PY_RELEVANT_TEST_CANDIDATES_ABSENT")) {
     throw new Error("python-relevant-tests-no-pytest did not report Python relevant-test graph evidence");
   }
   const statusResult = run(opcoreBin, ["status", "--json"], {

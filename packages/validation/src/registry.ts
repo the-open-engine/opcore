@@ -3,6 +3,7 @@ import type {
   ValidationCheckOutcome,
   ValidationCheckRunStatus,
   ValidationDiagnostic,
+  PythonValidationCapabilityRun,
   PythonProjectContext,
   GraphProviderStatus,
   ValidationRequest,
@@ -37,6 +38,7 @@ export interface ValidationCheckResult {
   outcome?: ValidationCheckOutcome;
   failureMessage?: string;
   pythonProjectContexts?: readonly PythonProjectContext[];
+  pythonCapabilityRuns?: readonly PythonValidationCapabilityRun[];
 }
 
 export interface ValidationCheckDefinition {

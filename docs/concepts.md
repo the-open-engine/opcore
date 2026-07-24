@@ -8,7 +8,7 @@ Python coverage is experimental and degraded-honest. Graph-backed structure, unt
 
 ## Findings
 
-Findings are named signals such as `typescript.type_errors`, `rust.source_hygiene`, `python.syntax`, `python.source-hygiene`, `python.types`, `python.import-graph`, `python.dead-code`, `python.relevant-tests`, and `coverage.unsupported_stacks`. Counts come from validation diagnostics, graph evidence when available, optional-tool degradation, and repository census data. Opcore does not blend them into a single rating.
+Findings are named signals such as `typescript.type_errors`, `rust.source_hygiene`, `python.syntax`, `python.source-hygiene`, `python.types`, `python.import-graph`, `python.dead-code`, `python.relevant-tests`, `python.pytest`, and `coverage.unsupported_stacks`. Counts come from validation diagnostics, graph evidence when available, optional-tool degradation, and repository census data. Opcore does not blend them into a single rating.
 
 ## Artifacts
 

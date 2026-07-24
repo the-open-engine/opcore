@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { constants, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -19,7 +19,6 @@ import { bundledExternalRuntimePackageNames } from "../scripts/release-package-d
 import { externalRuntimePackageDir } from "../scripts/stage-opcore-bundle.mjs";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const releaseDocsLockTimeoutMs = 900000;
 const copiedRepoSkips = new Set([
   ".git",
   "node_modules",
@@ -30,15 +29,23 @@ const copiedRepoSkips = new Set([
   ".codex",
   ".gemini",
   ".opencode",
+  ".opcore",
   ".lattice",
   ".code-review-graph",
   ".rox-cache",
   ".robustness-engine-cache",
   ".receipt-test.lock"
 ]);
+const tempRepoTemplateCache = new Map();
+const activeGroup = process.env.OPCORE_GATE_NEGATIVE_GROUP ?? "";
 
+function gateTest(group, name, fn) {
+  if (activeGroup === group) it(name, fn);
+}
+
+if (activeGroup) {
 describe("negative gate fixtures", () => {
-  it("rejects tracked TypeScript build info", () => {
+  gateTest("plain", "rejects tracked TypeScript build info", () => {
     const repo = tempRepo();
     writeFileSync(join(repo, "packages/contracts/tsconfig.tsbuildinfo"), "{}\n");
     run(repo, "git", ["add", "-f", "packages/contracts/tsconfig.tsbuildinfo"]);
@@ -47,7 +54,7 @@ describe("negative gate fixtures", () => {
     assert.match(stderrAndStdout(result), /Generated TypeScript build info must not be checked in/);
   });
 
-  it("rejects Python CRG provenance markers", () => {
+  gateTest("plain", "rejects Python CRG provenance markers", () => {
     const repo = tempRepo();
     writeFileSync(join(repo, "pyproject.toml"), "[project]\nname = \"code-review-graph\"\n");
     run(repo, "git", ["add", "pyproject.toml"]);
@@ -56,7 +63,7 @@ describe("negative gate fixtures", () => {
     assert.match(stderrAndStdout(result), /Forbidden Python packaging file/);
   });
 
-  it("rejects provenance receipt checks without build artifacts", () => {
+  gateTest("plain", "rejects provenance receipt checks without build artifacts", () => {
     const repo = tempRepo();
     const workflowPath = join(repo, ".github/workflows/provenance.yml");
     const workflow = readFileSync(workflowPath, "utf8")
@@ -68,7 +75,7 @@ describe("negative gate fixtures", () => {
     assert.match(stderrAndStdout(result), /provenance\.yml.*(build.*release receipt|release-receipt:check.*build)/i);
   });
 
-  it("rejects high-confidence secrets in release receipt scan", () => {
+  gateTest("release-a", "rejects high-confidence secrets in release receipt scan", () => {
     const repo = tempRepo({ includeDist: true });
     writeFileSync(join(repo, "secret.txt"), `OPENAI_API_KEY=${JSON.stringify(`sk-${"a".repeat(40)}`)}\n`);
 
@@ -76,7 +83,7 @@ describe("negative gate fixtures", () => {
     assert.match(stderrAndStdout(result), /Secret\/history scan.*secret\.txt|openai_api_key/i);
   });
 
-  it("allows reviewed path-scoped secret false positives", () => {
+  gateTest("release-a", "allows reviewed path-scoped secret false positives", () => {
     const repo = tempRepo({ includeDist: true });
     writeFileSync(join(repo, "tmp-allowlisted-secret.txt"), ["token", " = ", JSON.stringify("documented-placeholder-value"), "\n"].join(""));
     writeFileSync(
@@ -105,7 +112,7 @@ describe("negative gate fixtures", () => {
     assert.equal(scan.findingCount, 0);
   });
 
-  it("rejects secret allowlist entries without reviewed metadata", () => {
+  gateTest("release-a", "rejects secret allowlist entries without reviewed metadata", () => {
     const repo = tempRepo({ includeDist: true });
     writeFileSync(
       join(repo, "docs/release/secret-scan-allowlist.json"),
@@ -128,7 +135,7 @@ describe("negative gate fixtures", () => {
     assert.match(stderrAndStdout(result), /allowlist.*reviewer|allowlist.*reason|allowlist.*expiresAt/i);
   });
 
-  it("rejects secret allowlist entries without path or commit scope", () => {
+  gateTest("release-a", "rejects secret allowlist entries without path or commit scope", () => {
     const repo = tempRepo({ includeDist: true });
     writeFileSync(
       join(repo, "docs/release/secret-scan-allowlist.json"),
@@ -153,7 +160,7 @@ describe("negative gate fixtures", () => {
     assert.match(stderrAndStdout(result), /allowlist.*path|allowlist.*commit/i);
   });
 
-  it("rejects unexpected package files in release package inspection", () => {
+  gateTest("release-a", "rejects unexpected package files in release package inspection", () => {
     const repo = tempRepo({ includeDist: true });
     const manifestPath = join(repo, "packages/edit/package.json");
     const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
@@ -165,7 +172,7 @@ describe("negative gate fixtures", () => {
     assert.match(stderrAndStdout(result), /packed files mismatch|EXTRA\.md/);
   });
 
-  it("rejects old public bins in release package inspection", () => {
+  gateTest("release-a", "rejects old public bins in release package inspection", () => {
     const repo = tempRepo({ includeDist: true });
     const manifestPath = join(repo, "packages/opcore/package.json");
     const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
@@ -176,7 +183,7 @@ describe("negative gate fixtures", () => {
     assert.match(stderrAndStdout(result), /forbidden old public bin crg/);
   });
 
-  it("rejects canonical ASP server manifest launch claim overreach", () => {
+  gateTest("release-b", "rejects canonical ASP server manifest launch claim overreach", () => {
     const repo = tempRepo({ includeDist: true });
     const manifestPath = join(repo, "packages/asp-provider/dist/manifests/asp-server.json");
     const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
@@ -188,7 +195,7 @@ describe("negative gate fixtures", () => {
     assert.match(stderrAndStdout(result), /packages\/asp-provider\/dist\/manifests\/asp-server\.json/);
   });
 
-  it("rejects generic Opcore replacement overclaims in launch docs", () => {
+  gateTest("release-b", "rejects generic Opcore replacement overclaims in launch docs", () => {
     const repo = tempRepo({ includeDist: true });
     writeFileSync(join(repo, "docs/quickstart.md"), "Opcore replaces your linters.\n");
 
@@ -198,7 +205,7 @@ describe("negative gate fixtures", () => {
     assert.match(stderrAndStdout(result), /docs\/quickstart\.md/);
   });
 
-  it("rejects blended quality score overclaims in launch docs", () => {
+  gateTest("release-b", "rejects blended quality score overclaims in launch docs", () => {
     const repo = tempRepo({ includeDist: true });
     writeFileSync(join(repo, "docs/quickstart.md"), "Opcore reports a blended quality score.\n");
 
@@ -208,7 +215,7 @@ describe("negative gate fixtures", () => {
     assert.match(stderrAndStdout(result), /docs\/quickstart\.md/);
   });
 
-  it("rejects bad descriptor artifact references in release descriptor inspection", () => {
+  gateTest("release-b", "rejects bad descriptor artifact references in release descriptor inspection", () => {
     const repo = tempRepo({ includeDist: true });
     const descriptorPath = join(repo, "packages/opcore/dist/descriptors/opcore.managed-tool.json");
     const descriptor = JSON.parse(readFileSync(descriptorPath, "utf8"));
@@ -221,7 +228,7 @@ describe("negative gate fixtures", () => {
     assert.match(stderrAndStdout(result), /packaged descriptor artifact|missing\.json/);
   });
 
-  it("rejects missing native checksum evidence in release package inspection", () => {
+  gateTest("release-b", "rejects missing native checksum evidence in release package inspection", () => {
     const repo = tempRepo({ includeDist: true });
     const packageName = graphCoreNativePackageNameForTarget(`${process.platform}-${process.arch}`);
     const checksumPath = join(
@@ -236,7 +243,7 @@ describe("negative gate fixtures", () => {
     assert.match(stderrAndStdout(result), /packed files mismatch|checksum|sha256/);
   });
 
-  it("rejects current-tool markers in cutover descriptor inspection", () => {
+  gateTest("cutover", "rejects current-tool markers in cutover descriptor inspection", () => {
     const repo = tempRepo({ includeDist: true });
     const descriptorPath = join(repo, "packages/opcore/dist/descriptors/opcore.managed-tool.json");
     const descriptor = JSON.parse(readFileSync(descriptorPath, "utf8"));
@@ -247,7 +254,7 @@ describe("negative gate fixtures", () => {
     assert.match(stderrAndStdout(result), /private runtime|forbidden marker|\.ace/);
   });
 
-  it("rejects cutover receipts with advertised not_implemented commands", () => {
+  gateTest("cutover", "rejects cutover receipts with advertised not_implemented commands", () => {
     const repo = tempRepo({ includeDist: true });
     const receiptPath = join(repo, "bad-cutover-receipt.json");
     writeFileSync(receiptPath, `${JSON.stringify(minimalCutoverReceipt(repo, { status: "not_implemented", exitCode: 2 }), null, 2)}\n`);
@@ -258,7 +265,7 @@ describe("negative gate fixtures", () => {
     assert.match(stderrAndStdout(result), /not_implemented/);
   });
 
-  it("rejects cutover receipts missing required command evidence", () => {
+  gateTest("cutover", "rejects cutover receipts missing required command evidence", () => {
     const repo = tempRepo({ includeDist: true });
     const receiptPath = join(repo, "bad-cutover-missing-command.json");
     const receipt = minimalCutoverReceipt(repo);
@@ -271,7 +278,7 @@ describe("negative gate fixtures", () => {
     assert.match(stderrAndStdout(result), /command receipts.*inspect-search/);
   });
 
-  it("rejects old bin fallback in installed cutover projects", () => {
+  gateTest("cutover", "rejects old bin fallback in installed cutover projects", () => {
     const repo = tempRepo({ includeDist: true });
     const project = join(repo, "tmp-installed-project");
     mkdirSync(join(project, "node_modules/.bin"), { recursive: true });
@@ -286,7 +293,7 @@ describe("negative gate fixtures", () => {
     assert.match(stderrAndStdout(result), /old public bin.*lattice/);
   });
 
-  it("rejects sibling file dependencies", () => {
+  gateTest("plain", "rejects sibling file dependencies", () => {
     const repo = tempRepo();
     const manifestPath = join(repo, "packages/graph/package.json");
     const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
@@ -297,7 +304,7 @@ describe("negative gate fixtures", () => {
     assert.match(stderrAndStdout(result), /file dependencies must stay inside packages|must not reference sibling repo/);
   });
 
-  it("rejects parent-directory TypeScript outputs", () => {
+  gateTest("plain", "rejects parent-directory TypeScript outputs", () => {
     const repo = tempRepo();
     const tsconfigPath = join(repo, "packages/validation/tsconfig.json");
     const tsconfig = JSON.parse(readFileSync(tsconfigPath, "utf8"));
@@ -308,7 +315,7 @@ describe("negative gate fixtures", () => {
     assert.match(stderrAndStdout(result), /must not reference parent directories or absolute paths/);
   });
 
-  it("rejects reserved graph implementation package paths", () => {
+  gateTest("plain", "rejects reserved graph implementation package paths", () => {
     const repo = tempRepo();
     const readmePath = join(repo, "reserved-graph-name.md");
     writeFileSync(readmePath, `${["packages", "crg"].join("/")} is reserved for removed implementation references\n`);
@@ -317,7 +324,7 @@ describe("negative gate fixtures", () => {
     assert.match(stderrAndStdout(result), /reserved graph naming references/);
   });
 
-  it("rejects reserved graph implementation package names", () => {
+  gateTest("plain", "rejects reserved graph implementation package names", () => {
     const repo = tempRepo();
     const manifestPath = join(repo, "packages/graph/package.json");
     const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
@@ -328,7 +335,7 @@ describe("negative gate fixtures", () => {
     assert.match(stderrAndStdout(result), /reserved graph naming references/);
   });
 
-  it("rejects reserved graph provider literals", () => {
+  gateTest("plain", "rejects reserved graph provider literals", () => {
     const repo = tempRepo();
     const sourcePath = join(repo, "packages/graph/src/reserved-provider.ts");
     writeFileSync(sourcePath, `export const status = { provider: ${JSON.stringify("crg")} };\n`);
@@ -337,7 +344,7 @@ describe("negative gate fixtures", () => {
     assert.match(stderrAndStdout(result), /reserved graph naming references/);
   });
 
-  it("rejects reserved graph providerName metadata", () => {
+  gateTest("plain", "rejects reserved graph providerName metadata", () => {
     const repo = tempRepo();
     const sourcePath = join(repo, "packages/graph/src/reserved-provider-name-metadata.ts");
     writeFileSync(sourcePath, `export const status = { providerName: ${JSON.stringify("crg")} };\n`);
@@ -347,7 +354,7 @@ describe("negative gate fixtures", () => {
     assert.match(stderrAndStdout(result), /legacy graph provider name metadata/);
   });
 
-  it("rejects reserved graph provider name constants", () => {
+  gateTest("plain", "rejects reserved graph provider name constants", () => {
     const repo = tempRepo();
     const sourcePath = join(repo, "packages/graph/src/bad-provider-name.ts");
     const legacyGraphTool = "cr" + "g";
@@ -358,7 +365,7 @@ describe("negative gate fixtures", () => {
     assert.match(stderrAndStdout(result), /legacy graph provider name constant/);
   });
 
-  it("rejects stale CONTRIBUTING graph naming", () => {
+  gateTest("plain", "rejects stale CONTRIBUTING graph naming", () => {
     const repo = tempRepo();
     const contributingPath = join(repo, "CONTRIBUTING.md");
     const legacyGraphTool = "cr" + "g";
@@ -378,7 +385,7 @@ describe("negative gate fixtures", () => {
     assert.match(stderrAndStdout(result), /reserved graph naming references/);
   });
 
-  it("rejects edit importing graph-core native artifact loaders", () => {
+  gateTest("plain", "rejects edit importing graph-core native artifact loaders", () => {
     const repo = tempRepo();
     const sourcePath = join(repo, "packages/edit/src/bad-graph-loader.ts");
     writeFileSync(sourcePath, `import { resolveGraphCoreArtifact } from "@the-open-engine/opcore-graph";\nvoid resolveGraphCoreArtifact;\n`);
@@ -387,7 +394,7 @@ describe("negative gate fixtures", () => {
     assert.match(stderrAndStdout(result), /bad-graph-loader\.ts/);
   });
 
-  it("rejects validation relying on graph sqlite internals", () => {
+  gateTest("plain", "rejects validation relying on graph sqlite internals", () => {
     const repo = tempRepo();
     const sourcePath = join(repo, "packages/validation/src/bad-graph-sqlite.ts");
     writeFileSync(sourcePath, `export const graphSqliteInternal = "graph sqlite internal reader";\n`);
@@ -396,7 +403,7 @@ describe("negative gate fixtures", () => {
     assert.match(stderrAndStdout(result), /bad-graph-sqlite\.ts/);
   });
 
-  it("rejects Cargo package names containing crg", () => {
+  gateTest("plain", "rejects Cargo package names containing crg", () => {
     const repo = tempRepo();
     const manifestPath = join(repo, "crates/graph-core/Cargo.toml");
     const manifest = readFileSync(manifestPath, "utf8").replace(
@@ -409,7 +416,7 @@ describe("negative gate fixtures", () => {
     assert.match(stderrAndStdout(result), /must not use crg in Rust package/);
   });
 
-  it("rejects Rox code-quality coverage without all Rust crate paths", () => {
+  gateTest("plain", "rejects Rox code-quality coverage without all Rust crate paths", () => {
     const repo = tempRepo();
     const roxPath = join(repo, "rox.json");
     const rox = JSON.parse(readFileSync(roxPath, "utf8"));
@@ -420,7 +427,7 @@ describe("negative gate fixtures", () => {
     assert.match(stderrAndStdout(result), /checks\.codeQuality\.include must include "crates\/"/);
   });
 
-  it("rejects Rox code-quality coverage without existing TypeScript and script scopes", () => {
+  gateTest("plain", "rejects Rox code-quality coverage without existing TypeScript and script scopes", () => {
     const repo = tempRepo();
     const roxPath = join(repo, "rox.json");
     const rox = JSON.parse(readFileSync(roxPath, "utf8"));
@@ -431,7 +438,7 @@ describe("negative gate fixtures", () => {
     assert.match(stderrAndStdout(result), /checks\.codeQuality\.include must include "packages\/"/);
   });
 
-  it("rejects scoped Rust quality scripts that run against the whole repo", () => {
+  gateTest("plain", "rejects scoped Rust quality scripts that run against the whole repo", () => {
     const repo = tempRepo();
     const manifestPath = join(repo, "package.json");
     const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
@@ -442,7 +449,7 @@ describe("negative gate fixtures", () => {
     assert.match(stderrAndStdout(result), /must run scoped Rust graph function metrics script/);
   });
 
-  it("rejects repo-wide Rox without scoped Rust graph metrics", () => {
+  gateTest("plain", "rejects repo-wide Rox without scoped Rust graph metrics", () => {
     const repo = tempRepo();
     const roxPath = join(repo, "rox.json");
     const rox = JSON.parse(readFileSync(roxPath, "utf8"));
@@ -453,7 +460,7 @@ describe("negative gate fixtures", () => {
     assert.match(stderrAndStdout(result), /must run scoped Rust graph function metrics/);
   });
 
-  it("rejects Rox all-mode Rust metrics without crate package scope", () => {
+  gateTest("plain", "rejects Rox all-mode Rust metrics without crate package scope", () => {
     const repo = tempRepo();
     const roxPath = join(repo, "rox.json");
     const rox = JSON.parse(readFileSync(roxPath, "utf8"));
@@ -464,7 +471,7 @@ describe("negative gate fixtures", () => {
     assert.match(stderrAndStdout(result), /packages must include "crates"/);
   });
 
-  it("rejects Rox code-quality coverage without changed-file modes", () => {
+  gateTest("plain", "rejects Rox code-quality coverage without changed-file modes", () => {
     const repo = tempRepo();
     const roxPath = join(repo, "rox.json");
     const rox = JSON.parse(readFileSync(roxPath, "utf8"));
@@ -475,7 +482,7 @@ describe("negative gate fixtures", () => {
     assert.match(stderrAndStdout(result), /checks\.codeQuality\.when\.modes must include "changed"/);
   });
 
-  it("rejects graph-core crates without workspace lint opt-in", () => {
+  gateTest("plain", "rejects graph-core crates without workspace lint opt-in", () => {
     const repo = tempRepo();
     const manifestPath = join(repo, "crates/graph-core/Cargo.toml");
     const manifest = readFileSync(manifestPath, "utf8").replace(/\n\[lints]\nworkspace = true\n?/, "\n");
@@ -485,7 +492,7 @@ describe("negative gate fixtures", () => {
     assert.match(stderrAndStdout(result), /crates\/graph-core\/Cargo\.toml must include \[lints]/);
   });
 
-  it("rejects Cargo workspace manifests without clippy lint policy", () => {
+  gateTest("plain", "rejects Cargo workspace manifests without clippy lint policy", () => {
     const repo = tempRepo();
     const manifestPath = join(repo, "Cargo.toml");
     const manifest = readFileSync(manifestPath, "utf8").replace(/\n\[workspace\.lints\.clippy][\s\S]*$/, "\n");
@@ -495,23 +502,37 @@ describe("negative gate fixtures", () => {
     assert.match(stderrAndStdout(result), /Cargo\.toml must include \[workspace\.lints\.clippy]/);
   });
 });
+}
 
 function tempRepo(options = {}) {
-  const tempRoot = mkdtempSync(join(tmpdir(), "lattice-gate-"));
-  const repo = join(tempRoot, "repo");
-  withReleaseDocsLock(() => {
-    cpSync(repoRoot, repo, {
-      recursive: true,
-      filter(source) {
-        const rel = relative(repoRoot, source);
-        if (rel === "") return true;
-        return !rel.split(/[\\/]/).some((segment) => copiedRepoSkips.has(segment) || (segment === "dist" && !options.includeDist));
-      }
-    });
+  const repo = tempRepoTemplate(options);
+  resetTempRepo(repo);
+  return repo;
+}
+
+function tempRepoTemplate(options = {}) {
+  const includeDist = options.includeDist === true;
+  const cacheKey = includeDist ? "include-dist" : "default";
+  const cached = tempRepoTemplateCache.get(cacheKey);
+  if (cached && existsSync(cached)) return cached;
+
+  const templateRoot = mkdtempSync(join(tmpdir(), `lattice-gate-template-${cacheKey}-`));
+  const repo = join(templateRoot, "repo");
+  cpSync(repoRoot, repo, {
+    mode: constants.COPYFILE_FICLONE,
+    recursive: true,
+    filter(source) {
+      const rel = relative(repoRoot, source);
+      if (rel === "") return true;
+      if (rel.endsWith(".tsbuildinfo")) return false;
+      return !rel.split(/[\\/]/).some((segment) => copiedRepoSkips.has(segment) || (segment === "dist" && !includeDist));
+    }
   });
-  if (options.includeDist) copyBundledExternalRuntimePackages(repo);
+  if (includeDist) copyBundledExternalRuntimePackages(repo);
   run(repo, "git", ["init", "--quiet"]);
   stageRepoEntries(repo);
+  run(repo, "git", ["-c", "user.name=fixture", "-c", "user.email=fixture@example.invalid", "commit", "--quiet", "-m", "fixture baseline"]);
+  tempRepoTemplateCache.set(cacheKey, repo);
   return repo;
 }
 
@@ -520,38 +541,17 @@ function copyBundledExternalRuntimePackages(repo) {
     const source = externalRuntimePackageDir(packageName);
     const destination = join(repo, "node_modules", ...packageName.split("/"));
     mkdirSync(dirname(destination), { recursive: true });
-    cpSync(source, destination, { recursive: true });
+    cpSync(source, destination, { mode: constants.COPYFILE_FICLONE, recursive: true });
   }
 }
 
 function stageRepoEntries(repo) {
-  const files = run(repo, "git", ["ls-files", "--others", "--exclude-standard", "-z"]).stdout.split("\0").filter(Boolean);
-  for (let index = 0; index < files.length; index += 100) {
-    run(repo, "git", ["add", "--", ...files.slice(index, index + 100)]);
-  }
+  run(repo, "git", ["add", "-A", "-f", "."]);
 }
 
-function withReleaseDocsLock(runLocked) {
-  const lockPath = join(repoRoot, "docs/release/.receipt-test.lock");
-  const deadline = Date.now() + releaseDocsLockTimeoutMs;
-  while (Date.now() < deadline) {
-    try {
-      mkdirSync(lockPath);
-      try {
-        return runLocked();
-      } finally {
-        rmSync(lockPath, { recursive: true, force: true });
-      }
-    } catch (error) {
-      if (error?.code !== "EEXIST") throw error;
-      sleep(50);
-    }
-  }
-  throw new Error(`timed out waiting for ${lockPath}`);
-}
-
-function sleep(ms) {
-  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+function resetTempRepo(repo) {
+  run(repo, "git", ["reset", "--hard", "--quiet", "HEAD"]);
+  run(repo, "git", ["clean", "-fdx", "--quiet"]);
 }
 
 function run(cwd, command, args, options = {}) {

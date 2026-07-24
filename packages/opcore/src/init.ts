@@ -755,7 +755,8 @@ function checksForLanguage(language: string, validation: OpcoreInitLanguageSetti
       "python.types",
       "python.import-graph",
       "python.dead-code",
-      "python.relevant-tests"
+      "python.relevant-tests",
+      "python.pytest"
     ];
   }
   return [];

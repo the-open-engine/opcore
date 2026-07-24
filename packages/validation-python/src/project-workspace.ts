@@ -14,9 +14,11 @@ export interface PythonProjectWorkspaceRealpath {
 export interface PythonProjectWorkspace {
   read(path: string): Promise<string | undefined>;
   list(): Promise<readonly string[]>;
+  listAll?(): Promise<readonly string[]>;
   exists(path: string): Promise<boolean>;
   realpath(path: string): Promise<PythonProjectWorkspaceRealpath>;
   executableExists(path: string): Promise<boolean>;
+  statMode?(path: string): Promise<number | undefined>;
 }
 
 export function createValidationFileViewPythonWorkspace(
@@ -25,34 +27,34 @@ export function createValidationFileViewPythonWorkspace(
   fullWorkspace?: PythonProjectWorkspace
 ): PythonProjectWorkspace {
   const executableAvailable = executableExists ?? fullWorkspace?.executableExists ?? nodeExecutableExists;
+  const listPaths = async (include: (path: string) => boolean) => {
+    const fileViewPaths = await fileView.listVisibleFiles();
+    const fullWorkspacePaths = fullWorkspace === undefined ? [] : await fullWorkspace.list();
+    const fileViewPathSet = new Set(fileViewPaths);
+    const fullWorkspacePathSet = new Set(fullWorkspacePaths);
+    const candidates = [...new Set([...fileViewPaths, ...fullWorkspacePaths])].filter(include).sort();
+    const visible: string[] = [];
+    for (const path of candidates) {
+      if (fileView.defaultReadState === "after") {
+        const overlay = fileView.overlayFor(path);
+        if (overlay?.action === "delete") continue;
+        if (overlay?.action === "write"
+          || (fileViewPathSet.has(path) && (fullWorkspace === undefined || fullWorkspacePathSet.has(path)))) {
+          visible.push(path);
+          continue;
+        }
+      }
+      if (await fileView.exists(path)) visible.push(path);
+    }
+    return visible;
+  };
   return {
     read: async (path) => {
       const result = await fileView.readAfter(validateRepoRelativePath(path));
       return result.status === "found" ? result.content : undefined;
     },
-    list: async () => {
-      const fileViewPaths = await fileView.listVisibleFiles();
-      const fullWorkspacePaths = fullWorkspace === undefined ? [] : await fullWorkspace.list();
-      const fileViewPathSet = new Set(fileViewPaths);
-      const fullWorkspacePathSet = new Set(fullWorkspacePaths);
-      const candidates = [...new Set([...fileViewPaths, ...fullWorkspacePaths])]
-        .filter(isPythonProjectWorkspaceInput)
-        .sort();
-      const visible: string[] = [];
-      for (const path of candidates) {
-        if (fileView.defaultReadState === "after") {
-          const overlay = fileView.overlayFor(path);
-          if (overlay?.action === "delete") continue;
-          if (overlay?.action === "write"
-            || (fileViewPathSet.has(path) && (fullWorkspace === undefined || fullWorkspacePathSet.has(path)))) {
-            visible.push(path);
-            continue;
-          }
-        }
-        if (await fileView.exists(path)) visible.push(path);
-      }
-      return visible;
-    },
+    list: async () => listPaths(isPythonProjectWorkspaceInput),
+    listAll: async () => listPaths(() => true),
     exists: (path) => fileView.exists(validateRepoRelativePath(path)),
     realpath: async (path) => {
       const normalized = validateRepoRelativePath(path);
@@ -63,7 +65,10 @@ export function createValidationFileViewPythonWorkspace(
       if (baseline.unavailable && await fullWorkspace.exists(normalized)) return baseline;
       return { path: normalized, symlink: false };
     },
-    executableExists: executableAvailable
+    executableExists: executableAvailable,
+    statMode: fullWorkspace?.statMode === undefined
+      ? undefined
+      : async (path) => fullWorkspace.statMode?.(validateRepoRelativePath(path))
   };
 }
 function isPythonProjectWorkspaceInput(path: string): boolean {
@@ -110,7 +115,15 @@ export function createNodePythonProjectWorkspace(repoRoot: string): PythonProjec
         throw error;
       }
     },
-    executableExists: nodeExecutableExists
+    executableExists: nodeExecutableExists,
+    statMode: async (path) => {
+      try {
+        return (await lstat(resolveRepoPath(canonicalRoot, path))).mode;
+      } catch (error) {
+        if (isMissing(error)) return undefined;
+        throw error;
+      }
+    }
   };
 }
 

@@ -609,7 +609,8 @@ export const conformanceFixtureMetadata = [
         "python.types",
         "python.import-graph",
         "python.dead-code",
-        "python.relevant-tests"
+        "python.relevant-tests",
+        "python.pytest"
       ],
       degradedTools: ["mypy", "pyright", "ruff", "pytest"]
     }

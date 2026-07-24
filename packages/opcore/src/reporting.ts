@@ -228,11 +228,11 @@ export function createOpcoreMetricReport(input: CreateOpcoreMetricReportInput): 
   });
   addDiagnosticSignal(signals, {
     id: "python.untested_modules",
-    title: "Python modules without TESTED_BY graph evidence",
+    title: "Python modules without TESTED_BY graph candidate evidence",
     category: "python",
     severity: "warning",
     checkId: pythonRelevantTestsCheckId,
-    diagnostics: diagnostics.filter((diagnostic) => diagnostic.code === "PY_RELEVANT_TESTS_ABSENT" && hasPath(diagnostic))
+    diagnostics: diagnostics.filter((diagnostic) => diagnostic.code === "PY_RELEVANT_TEST_CANDIDATES_ABSENT" && hasPath(diagnostic))
   });
   addDiagnosticSignal(signals, {
     id: "python.dead_exports",

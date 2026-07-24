@@ -9,6 +9,7 @@ import {
   statSync,
   writeFileSync
 } from "node:fs";
+import { tmpdir } from "node:os";
 import { join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -187,7 +188,7 @@ function packageSourceFor(packageName, stagedPackages) {
     };
   }
   if (!stagedPackages.has(packageName)) {
-    stagedPackages.set(packageName, createStagedOpcorePackage(join(repoRoot, packDestination)));
+    stagedPackages.set(packageName, createStagedOpcorePackage(tmpdir()));
   }
   const staged = stagedPackages.get(packageName);
   return { repoRoot: staged.stageRoot, packageRoot: staged.packageRoot, packageDir: staged.packageDir };

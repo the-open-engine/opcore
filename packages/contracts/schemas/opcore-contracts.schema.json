@@ -2548,6 +2548,102 @@
         }
       ]
     },
+    "PythonCapabilityCounts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidateCount",
+        "collectedCount",
+        "executedCount",
+        "passedCount",
+        "failedCount",
+        "skippedCount",
+        "xfailedCount",
+        "xpassedCount",
+        "errorCount"
+      ],
+      "properties": {
+        "candidateCount": { "type": "integer", "minimum": 0 },
+        "collectedCount": { "type": "integer", "minimum": 0 },
+        "executedCount": { "type": "integer", "minimum": 0 },
+        "passedCount": { "type": "integer", "minimum": 0 },
+        "failedCount": { "type": "integer", "minimum": 0 },
+        "skippedCount": { "type": "integer", "minimum": 0 },
+        "xfailedCount": { "type": "integer", "minimum": 0 },
+        "xpassedCount": { "type": "integer", "minimum": 0 },
+        "errorCount": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "PythonCapabilityCleanupEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["attempted", "ok"],
+      "properties": {
+        "attempted": { "type": "boolean" },
+        "ok": { "type": "boolean" },
+        "failureMessage": { "type": "string", "minLength": 1 }
+      }
+    },
+    "PythonCapabilityInvocation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "stage",
+        "command",
+        "argsDigest",
+        "argCount",
+        "selectionMode",
+        "durationMs",
+        "termination",
+        "outputBytes"
+      ],
+      "properties": {
+        "stage": { "enum": ["collection", "execution"] },
+        "command": { "type": "string", "minLength": 1 },
+        "argsDigest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+        "argCount": { "type": "integer", "minimum": 0 },
+        "selectionMode": { "enum": ["none", "direct_argv", "manifest"] },
+        "selectionDigest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+        "durationMs": { "type": "number", "minimum": 0 },
+        "termination": { "enum": ["exited", "timeout", "signal", "spawn_error"] },
+        "exitCode": { "type": "integer", "minimum": 0 },
+        "signal": { "type": "string", "minLength": 1 },
+        "outputBytes": { "type": "integer", "minimum": 0 },
+        "stdoutDigest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+        "stderrDigest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+      }
+    },
+    "PythonValidationCapabilityRun": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["capability", "checkId", "activation", "outcome", "message"],
+      "properties": {
+        "capability": { "const": "pytest" },
+        "checkId": { "$ref": "#/$defs/ValidationCheckId" },
+        "activation": { "enum": ["enabled", "disabled", "not_applicable"] },
+        "outcome": { "type": "string", "minLength": 1 },
+        "message": { "type": "string", "minLength": 1 },
+        "projectKey": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+        "projectRoot": { "$ref": "#/$defs/RepoRelativePath" },
+        "configFile": { "$ref": "#/$defs/RepoRelativePath" },
+        "targetCount": { "type": "integer", "minimum": 0 },
+        "candidatePaths": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/RepoRelativePath" }
+        },
+        "collectedNodeIds": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "afterStateFingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+        "selectionMode": { "enum": ["none", "direct_argv", "manifest"] },
+        "selectionDigest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+        "counts": { "$ref": "#/$defs/PythonCapabilityCounts" },
+        "collection": { "$ref": "#/$defs/PythonCapabilityInvocation" },
+        "execution": { "$ref": "#/$defs/PythonCapabilityInvocation" },
+        "cleanup": { "$ref": "#/$defs/PythonCapabilityCleanupEvidence" }
+      }
+    },
     "ValidationResult": {
       "type": "object",
       "additionalProperties": false,
@@ -2759,6 +2855,10 @@
         "pythonProjectContexts": {
           "type": "array",
           "items": { "$ref": "#/$defs/PythonProjectContext" }
+        },
+        "pythonCapabilityRuns": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/PythonValidationCapabilityRun" }
         },
         "manifest": {
           "type": "object",

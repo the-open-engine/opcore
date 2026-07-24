@@ -19,6 +19,9 @@ export function compactScanValidationResult(
   if (result.pythonProjectContexts !== undefined) {
     compact.pythonProjectContexts = [...result.pythonProjectContexts];
   }
+  if (result.pythonCapabilityRuns !== undefined) {
+    compact.pythonCapabilityRuns = [...result.pythonCapabilityRuns];
+  }
   if (result.manifest !== undefined) {
     compact.manifest = {
       schemaVersion: result.manifest.schemaVersion,

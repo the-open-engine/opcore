@@ -8,6 +8,7 @@ import type {
   ValidationFailureCategory,
   ValidationRequest,
   ValidationResult,
+  PythonValidationCapabilityRun,
   PythonProjectContext,
   ValidationScopeKind,
   ValidationSkippedCheck
@@ -95,6 +96,7 @@ interface CheckExecution {
   diagnosticsByCheck: Map<string, ValidationDiagnostic[]>;
   skippedChecks: ValidationSkippedCheck[];
   pythonProjectContexts: PythonProjectContext[];
+  pythonCapabilityRuns: PythonValidationCapabilityRun[];
   failureResult?: ValidationResult;
 }
 
@@ -131,6 +133,7 @@ interface SingleCheckOutcome {
   failureStatus?: Extract<ValidationCheckRunStatus, "infrastructure_failure" | "provider_failure" | "unsupported_request">;
   providerError?: ValidationGraphProviderError;
   pythonProjectContexts: readonly PythonProjectContext[];
+  pythonCapabilityRuns: readonly PythonValidationCapabilityRun[];
 }
 
 export function createValidationRunner(options: CreateValidationRunnerOptions): ValidationRunner {
@@ -244,7 +247,8 @@ async function runIntroducedValidationIncremental(args: PreparedValidationArgs):
     diagnostics: [],
     diagnosticsByCheck: new Map(),
     skippedChecks: [],
-    pythonProjectContexts: []
+    pythonProjectContexts: [],
+    pythonCapabilityRuns: []
   };
   const quietOptions = withoutCheckCompleteOptions(args.options);
   for (const check of args.selectedChecks) {
@@ -289,6 +293,7 @@ function mergeCheckExecution(target: CheckExecution, source: CheckExecution): vo
   target.diagnostics.push(...source.diagnostics);
   target.skippedChecks.push(...source.skippedChecks);
   mergePythonProjectContexts(target.pythonProjectContexts, source.pythonProjectContexts);
+  target.pythonCapabilityRuns.push(...source.pythonCapabilityRuns);
   for (const [checkId, diagnostics] of source.diagnosticsByCheck) {
     target.diagnosticsByCheck.set(checkId, diagnostics);
   }
@@ -392,7 +397,8 @@ async function executeSelectedChecks(args: ExecuteChecksArgs): Promise<CheckExec
     diagnostics: [],
     diagnosticsByCheck: new Map(),
     skippedChecks: [],
-    pythonProjectContexts: []
+    pythonProjectContexts: [],
+    pythonCapabilityRuns: []
   };
   for (const check of args.selectedChecks) {
     const skippedCheck = skippedGraphCheck(check, args.graph.status);
@@ -448,6 +454,7 @@ async function executeSelectedChecks(args: ExecuteChecksArgs): Promise<CheckExec
     }
     if (outcome.run !== undefined) execution.runs.push(outcome.run);
     mergePythonProjectContexts(execution.pythonProjectContexts, outcome.pythonProjectContexts);
+    execution.pythonCapabilityRuns.push(...outcome.pythonCapabilityRuns);
     execution.diagnosticsByCheck.set(check.id, [...outcome.diagnostics]);
     execution.diagnostics.push(...outcome.diagnostics);
     await emitCheckComplete(args, outcomeCheckCompleteEvent(check, outcome));
@@ -508,6 +515,7 @@ function introducedExecution(before: CheckExecution, after: CheckExecution): Che
     diagnosticsByCheck,
     skippedChecks: after.skippedChecks,
     pythonProjectContexts: after.pythonProjectContexts,
+    pythonCapabilityRuns: after.pythonCapabilityRuns,
     failureResult: after.failureResult
   };
 }
@@ -589,6 +597,7 @@ async function runSingleCheck(check: ValidationCheckDefinition, args: ExecuteChe
     return {
       diagnostics,
       pythonProjectContexts: normalized.pythonProjectContexts ?? [],
+      pythonCapabilityRuns: normalized.pythonCapabilityRuns ?? [],
       failureMessage,
       failureStatus,
       run: {
@@ -605,6 +614,7 @@ async function runSingleCheck(check: ValidationCheckDefinition, args: ExecuteChe
       return {
         diagnostics: [],
         pythonProjectContexts: [],
+        pythonCapabilityRuns: [],
         providerError: error,
         run: {
           checkId: check.id,
@@ -618,6 +628,7 @@ async function runSingleCheck(check: ValidationCheckDefinition, args: ExecuteChe
     return {
       diagnostics: [],
       pythonProjectContexts: [],
+      pythonCapabilityRuns: [],
       failureMessage: errorMessage(error),
       failureStatus: "infrastructure_failure",
       run: {
@@ -674,6 +685,7 @@ function checkRunFailureResult(
     skippedChecks: execution.skippedChecks,
     diagnostics: execution.diagnostics,
     pythonProjectContexts: execution.pythonProjectContexts,
+    pythonCapabilityRuns: execution.pythonCapabilityRuns,
     generatedAt: args.clock.isoNow(),
     durationMs: elapsed(args.totalStartedAt, args.clock.nowMs()),
     graphStatus: args.graph.status,
@@ -697,6 +709,7 @@ function checkProviderFailureResult(
     skippedChecks: execution.skippedChecks,
     diagnostics: execution.diagnostics,
     pythonProjectContexts: execution.pythonProjectContexts,
+    pythonCapabilityRuns: execution.pythonCapabilityRuns,
     generatedAt: args.clock.isoNow(),
     durationMs: elapsed(args.totalStartedAt, args.clock.nowMs()),
     graphStatus: error.status,
@@ -720,6 +733,7 @@ function graphRequirementFailureResult(
     skippedChecks: execution.skippedChecks,
     diagnostics: execution.diagnostics,
     pythonProjectContexts: execution.pythonProjectContexts,
+    pythonCapabilityRuns: execution.pythonCapabilityRuns,
     generatedAt: args.clock.isoNow(),
     durationMs: elapsed(args.totalStartedAt, args.clock.nowMs()),
     graphStatus: args.graph.status,
@@ -744,6 +758,7 @@ function finalValidationResult(
     skippedChecks: execution.skippedChecks,
     diagnostics: execution.diagnostics,
     pythonProjectContexts: execution.pythonProjectContexts,
+    pythonCapabilityRuns: execution.pythonCapabilityRuns,
     generatedAt: clock.isoNow(),
     durationMs: elapsed(totalStartedAt, clock.nowMs()),
     graphStatus
@@ -829,7 +844,8 @@ function normalizeCheckResult(result: ValidationCheckResult | readonly Validatio
     status: result.status,
     outcome: result.outcome,
     failureMessage: result.failureMessage,
-    pythonProjectContexts: result.pythonProjectContexts
+    pythonProjectContexts: result.pythonProjectContexts,
+    pythonCapabilityRuns: result.pythonCapabilityRuns
   };
 }
 

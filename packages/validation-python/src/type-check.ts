@@ -9,13 +9,18 @@ import type {
   ValidationCheckDefinition,
   ValidationCheckResult
 } from "@the-open-engine/opcore-validation";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync } from "node:fs";
 import { mkdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { dirname, join, relative, resolve, sep } from "node:path";
+import { join, relative, resolve } from "node:path";
 import { PYTHON_TYPES_CHECK_ID } from "./check-ids.js";
 import { pythonCheckAdapter, pythonCheckOwner, supportedPythonValidationScopes } from "./check-constants.js";
 import { diagnostic, sortDiagnostics } from "./diagnostics.js";
+import {
+  removeMaterializedWorkspace,
+  resolveMaterializedWorkspacePath,
+  writeMaterializedWorkspaceFile
+} from "./materialized-workspace.js";
 import { runTool } from "./process.js";
 import {
   pythonInputSet,
@@ -157,34 +162,23 @@ async function materializePythonTypeWorkspace(
   const root = join(tempRoot, "repo");
   try {
     await mkdir(root, { recursive: true });
-    for (const source of files) await writeMaterializedFile(root, source.path, source.content);
+    for (const source of files) await writeMaterializedWorkspaceFile(root, source.path, source.content, "materialized Python workspace");
     for (const evidence of project.context.evidence) {
       if (evidence.role === "layout" || evidence.role === "boundary" && !isConfigPath(evidence.path)) continue;
       const result = await validation.fileView.readAfter(evidence.path);
-      if (result.status === "found") await writeMaterializedFile(root, evidence.path, result.content);
+      if (result.status === "found") await writeMaterializedWorkspaceFile(root, evidence.path, result.content, "materialized Python workspace");
     }
-    const projectCwd = project.context.projectRoot === "." ? root : resolveRepoPath(root, project.context.projectRoot);
+    const projectCwd = project.context.projectRoot === "." ? root : resolveMaterializedWorkspacePath(root, project.context.projectRoot, "materialized Python workspace");
     await mkdir(projectCwd, { recursive: true });
-    return { root, projectCwd, cleanup: () => rmSync(tempRoot, { recursive: true, force: true }) };
+    return {
+      root,
+      projectCwd,
+      cleanup: () => removeMaterializedWorkspace(tempRoot, "Materialized Python workspace")
+    };
   } catch (error) {
-    rmSync(tempRoot, { recursive: true, force: true });
+    removeMaterializedWorkspace(tempRoot, "Materialized Python workspace");
     throw error;
   }
-}
-
-async function writeMaterializedFile(root: string, path: string, content: string): Promise<void> {
-  const absolutePath = resolveRepoPath(root, path);
-  await mkdir(dirname(absolutePath), { recursive: true });
-  writeFileSync(absolutePath, content);
-}
-
-function resolveRepoPath(root: string, path: string): string {
-  const absolutePath = resolve(root, path);
-  const relativePath = relative(root, absolutePath);
-  if (relativePath === "" || relativePath.startsWith("..") || relativePath.split(sep).includes("..")) {
-    throw new Error(`Repo-relative path escapes materialized Python workspace: ${path}`);
-  }
-  return absolutePath;
 }
 
 function unresolvedProjectResult(context: PythonProjectContext): ValidationCheckResult {

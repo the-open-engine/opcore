@@ -1330,6 +1330,70 @@ export interface ValidationResultManifest {
   skippedChecks?: readonly ValidationSkippedCheck[];
 }
 
+export const pythonCapabilityActivations = ["enabled", "disabled", "not_applicable"] as const;
+export type PythonCapabilityActivation = (typeof pythonCapabilityActivations)[number];
+
+export const pythonPytestSelectionModes = ["none", "direct_argv", "manifest"] as const;
+export type PythonPytestSelectionMode = (typeof pythonPytestSelectionModes)[number];
+
+export const pythonCapabilityProcessTerminations = ["exited", "timeout", "signal", "spawn_error"] as const;
+export type PythonCapabilityProcessTermination = (typeof pythonCapabilityProcessTerminations)[number];
+
+export interface PythonCapabilityCounts {
+  candidateCount: number;
+  collectedCount: number;
+  executedCount: number;
+  passedCount: number;
+  failedCount: number;
+  skippedCount: number;
+  xfailedCount: number;
+  xpassedCount: number;
+  errorCount: number;
+}
+
+export interface PythonCapabilityCleanupEvidence {
+  attempted: boolean;
+  ok: boolean;
+  failureMessage?: string;
+}
+
+export interface PythonCapabilityInvocation {
+  stage: "collection" | "execution";
+  command: string;
+  argsDigest: string;
+  argCount: number;
+  selectionMode: PythonPytestSelectionMode;
+  selectionDigest?: string;
+  durationMs: number;
+  termination: PythonCapabilityProcessTermination;
+  exitCode?: number;
+  signal?: string;
+  outputBytes: number;
+  stdoutDigest?: string;
+  stderrDigest?: string;
+}
+
+export interface PythonValidationCapabilityRun {
+  capability: "pytest";
+  checkId: string;
+  activation: PythonCapabilityActivation;
+  outcome: string;
+  message: string;
+  projectKey?: string;
+  projectRoot?: string;
+  configFile?: string;
+  targetCount?: number;
+  candidatePaths?: readonly string[];
+  collectedNodeIds?: readonly string[];
+  afterStateFingerprint?: string;
+  selectionMode?: PythonPytestSelectionMode;
+  selectionDigest?: string;
+  counts?: PythonCapabilityCounts;
+  collection?: PythonCapabilityInvocation;
+  execution?: PythonCapabilityInvocation;
+  cleanup?: PythonCapabilityCleanupEvidence;
+}
+
 export interface ValidationResult {
   ok: boolean;
   status: ValidationResultStatus;
@@ -1339,6 +1403,7 @@ export interface ValidationResult {
   refusal?: EditRefusal;
   manifest?: ValidationResultManifest;
   pythonProjectContexts?: readonly PythonProjectContext[];
+  pythonCapabilityRuns?: readonly PythonValidationCapabilityRun[];
 }
 
 export interface RequiredContextDocPolicy {
@@ -6621,7 +6686,63 @@ export function validateValidationResultPayload(result: ValidationResult): Valid
     validateValidationResultManifest(result.manifest);
   }
   if (result.pythonProjectContexts !== undefined) validatePythonProjectContexts(result.pythonProjectContexts);
+  if (result.pythonCapabilityRuns !== undefined) validatePythonValidationCapabilityRuns(result.pythonCapabilityRuns);
   return result;
+}
+
+export function validatePythonValidationCapabilityRuns(
+  runs: readonly PythonValidationCapabilityRun[]
+): readonly PythonValidationCapabilityRun[] {
+  if (!Array.isArray(runs)) throw new Error("Python capability runs must be an array");
+  for (const run of runs) validatePythonValidationCapabilityRun(run);
+  return runs;
+}
+
+export function validatePythonValidationCapabilityRun(run: PythonValidationCapabilityRun): PythonValidationCapabilityRun {
+  if (!run || typeof run !== "object") throw new Error("Python capability run is required");
+  validateExactObjectKeys(run, [
+    "capability",
+    "checkId",
+    "activation",
+    "outcome",
+    "message",
+    "projectKey",
+    "projectRoot",
+    "configFile",
+    "targetCount",
+    "candidatePaths",
+    "collectedNodeIds",
+    "afterStateFingerprint",
+    "selectionMode",
+    "selectionDigest",
+    "counts",
+    "collection",
+    "execution",
+    "cleanup"
+  ], "Python capability run");
+  if (run.capability !== "pytest") throw new Error("Python capability run capability must be pytest");
+  validateNonEmptyString(run.checkId, "Python capability run checkId");
+  if (!includesString(pythonCapabilityActivations, run.activation)) {
+    throw new Error(`Unknown Python capability activation: ${String(run.activation)}`);
+  }
+  validateNonEmptyString(run.outcome, "Python capability run outcome");
+  validateNonEmptyString(run.message, "Python capability run message");
+  if (run.projectKey !== undefined) validateSha256Identity(run.projectKey, "Python capability run projectKey");
+  if (run.projectRoot !== undefined) validatePythonProjectRoot(run.projectRoot, "Python capability run projectRoot");
+  if (run.configFile !== undefined) validateRepoRelativePath(run.configFile);
+  if (run.targetCount !== undefined) validateNonNegativeInteger(run.targetCount, "Python capability run targetCount");
+  if (run.candidatePaths !== undefined) validateRepoPathArray(run.candidatePaths, "Python capability run candidatePaths");
+  if (run.collectedNodeIds !== undefined) validateStringArray(run.collectedNodeIds, "Python capability run collectedNodeIds", { allowEmpty: true });
+  if (run.afterStateFingerprint !== undefined) validateSha256Identity(run.afterStateFingerprint, "Python capability run afterStateFingerprint");
+  if (run.selectionMode !== undefined && !includesString(pythonPytestSelectionModes, run.selectionMode)) {
+    throw new Error(`Unknown Python capability selection mode: ${String(run.selectionMode)}`);
+  }
+  if (run.selectionDigest !== undefined) validateSha256Identity(run.selectionDigest, "Python capability run selectionDigest");
+  if (run.counts !== undefined) validatePythonCapabilityCounts(run.counts);
+  if (run.collection !== undefined) validatePythonCapabilityInvocation(run.collection, "Python capability run collection");
+  if (run.execution !== undefined) validatePythonCapabilityInvocation(run.execution, "Python capability run execution");
+  if (run.cleanup !== undefined) validatePythonCapabilityCleanupEvidence(run.cleanup);
+  return run;
 }
 
 export function validatePythonProjectContext(context: PythonProjectContext): PythonProjectContext {
@@ -6719,6 +6840,72 @@ export function validatePythonProjectContexts(contexts: readonly PythonProjectCo
     targets.add(context.target);
   }
   return contexts;
+}
+
+function validatePythonCapabilityCounts(counts: PythonCapabilityCounts): void {
+  if (!counts || typeof counts !== "object") throw new Error("Python capability counts are required");
+  validateExactObjectKeys(counts, [
+    "candidateCount",
+    "collectedCount",
+    "executedCount",
+    "passedCount",
+    "failedCount",
+    "skippedCount",
+    "xfailedCount",
+    "xpassedCount",
+    "errorCount"
+  ], "Python capability counts");
+  for (const key of Object.keys(counts) as (keyof PythonCapabilityCounts)[]) {
+    validateNonNegativeInteger(counts[key], `Python capability counts ${key}`);
+  }
+}
+
+function validatePythonCapabilityCleanupEvidence(cleanup: PythonCapabilityCleanupEvidence): void {
+  if (!cleanup || typeof cleanup !== "object") throw new Error("Python capability cleanup evidence is required");
+  validateExactObjectKeys(cleanup, ["attempted", "ok", "failureMessage"], "Python capability cleanup evidence");
+  if (typeof cleanup.attempted !== "boolean") throw new Error("Python capability cleanup attempted must be boolean");
+  if (typeof cleanup.ok !== "boolean") throw new Error("Python capability cleanup ok must be boolean");
+  if (cleanup.failureMessage !== undefined) {
+    validateNonEmptyString(cleanup.failureMessage, "Python capability cleanup failureMessage");
+  }
+}
+
+function validatePythonCapabilityInvocation(invocation: PythonCapabilityInvocation, label: string): void {
+  if (!invocation || typeof invocation !== "object") throw new Error(`${label} is required`);
+  validateExactObjectKeys(invocation, [
+    "stage",
+    "command",
+    "argsDigest",
+    "argCount",
+    "selectionMode",
+    "selectionDigest",
+    "durationMs",
+    "termination",
+    "exitCode",
+    "signal",
+    "outputBytes",
+    "stdoutDigest",
+    "stderrDigest"
+  ], label);
+  if (!includesString(["collection", "execution"] as const, invocation.stage)) {
+    throw new Error(`${label} stage must be collection or execution`);
+  }
+  validateNonEmptyString(invocation.command, `${label} command`);
+  validateSha256Identity(invocation.argsDigest, `${label} argsDigest`);
+  validateNonNegativeInteger(invocation.argCount, `${label} argCount`);
+  if (!includesString(pythonPytestSelectionModes, invocation.selectionMode)) {
+    throw new Error(`Unknown ${label} selectionMode: ${String(invocation.selectionMode)}`);
+  }
+  if (invocation.selectionDigest !== undefined) validateSha256Identity(invocation.selectionDigest, `${label} selectionDigest`);
+  validateNonNegativeInteger(invocation.durationMs, `${label} durationMs`);
+  if (!includesString(pythonCapabilityProcessTerminations, invocation.termination)) {
+    throw new Error(`Unknown ${label} termination: ${String(invocation.termination)}`);
+  }
+  if (invocation.exitCode !== undefined) validateNonNegativeInteger(invocation.exitCode, `${label} exitCode`);
+  if (invocation.signal !== undefined) validateNonEmptyString(invocation.signal, `${label} signal`);
+  validateNonNegativeInteger(invocation.outputBytes, `${label} outputBytes`);
+  if (invocation.stdoutDigest !== undefined) validateSha256Identity(invocation.stdoutDigest, `${label} stdoutDigest`);
+  if (invocation.stderrDigest !== undefined) validateSha256Identity(invocation.stderrDigest, `${label} stderrDigest`);
 }
 
 function validatePythonProjectTarget(target: PythonProjectTarget): void {

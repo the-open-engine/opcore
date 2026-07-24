@@ -10,6 +10,7 @@ import type {
   ValidationResultManifest,
   ValidationResultStatus,
   ValidationSkippedCheck,
+  PythonValidationCapabilityRun,
   PythonProjectContext
 } from "@the-open-engine/opcore-contracts";
 import { GRAPH_SCHEMA_VERSION, validateValidationResultPayload } from "@the-open-engine/opcore-contracts";
@@ -30,6 +31,7 @@ export interface AggregateValidationResultsArgs extends CreateValidationManifest
   failure?: ValidationFailure;
   refusal?: EditRefusal;
   pythonProjectContexts?: readonly PythonProjectContext[];
+  pythonCapabilityRuns?: readonly PythonValidationCapabilityRun[];
 }
 
 const failureStatusPriority: readonly ValidationCheckRunStatus[] = [
@@ -64,6 +66,7 @@ export function aggregateValidationResults(args: AggregateValidationResultsArgs)
   if (args.graphStatus !== undefined) result.graphStatus = args.graphStatus;
   if (args.refusal !== undefined) result.refusal = args.refusal;
   if (args.pythonProjectContexts !== undefined) result.pythonProjectContexts = deduplicatePythonProjectContexts(args.pythonProjectContexts);
+  if (args.pythonCapabilityRuns !== undefined) result.pythonCapabilityRuns = [...args.pythonCapabilityRuns];
   const failure = args.failure ?? failureForStatus(status);
   if (failure !== undefined) result.failure = failure;
   return validateValidationResultPayload(result);
