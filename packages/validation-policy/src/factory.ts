@@ -29,6 +29,13 @@ export function validationChecksForRepoPolicyAndCoverage(
   return validationChecksForRepoPolicy(repoRoot, options).filter((check) => adapters.has(check.adapter));
 }
 
+export function validationChecksForConfigPolicy(
+  config: OpcoreRepoConfig,
+  options: OpcoreRepoValidationPolicyOptions = {}
+): readonly ValidationCheckDefinition[] {
+  return applyValidationPolicy(createBuiltInValidationChecks(config, options), config);
+}
+
 export function createBuiltInValidationChecks(
   config?: OpcoreRepoConfig,
   options: OpcoreRepoValidationPolicyOptions = {},
@@ -69,6 +76,13 @@ function validationChecksForRepoConfig(
   const builtIns = createBuiltInValidationChecks(config, options, repoRoot);
   const packChecks = loadRepoCheckPacks(repoRoot, config).flatMap((pack) => pack.checks);
   const available = [...builtIns, ...packChecks];
+  return applyValidationPolicy(available, config);
+}
+
+function applyValidationPolicy(
+  available: readonly ValidationCheckDefinition[],
+  config: OpcoreRepoConfig
+): readonly ValidationCheckDefinition[] {
   createValidationCheckRegistry(available);
 
   const knownCheckIds = new Set(available.map((check) => check.id));
@@ -84,8 +98,9 @@ function validationChecksForRepoConfig(
   const filteredContexts = new WeakMap<object, Parameters<ValidationCheckDefinition["run"]>[0]>();
   const checks = available
     .filter((check) => adapters === undefined || adapters.has(check.adapter))
-    .filter((check) => !disabled.has(check.id))
     .map((check) => applyDefaultScopePolicy(check, defaults))
+    .map((check) => applyDisabledPolicy(check, disabled))
+    .filter((check): check is ValidationCheckDefinition => check !== undefined)
     .map((check) => applyPathPolicy(check, config.validation.pathPolicy, filteredContexts));
   createValidationCheckRegistry(checks);
   return checks;
@@ -149,6 +164,20 @@ function cloneValidationOptions(policy: OpcoreClonePolicy | undefined) {
 function applyDefaultScopePolicy(check: ValidationCheckDefinition, defaults: ReadonlySet<string>): ValidationCheckDefinition {
   if (!defaults.has(check.id)) return check;
   return { ...check, defaultScopes: check.supportedScopes };
+}
+
+function applyDisabledPolicy(
+  check: ValidationCheckDefinition,
+  disabled: ReadonlySet<string>
+): ValidationCheckDefinition | undefined {
+  if (!disabled.has(check.id)) return check;
+  if (check.inactiveResult === undefined) return undefined;
+  return {
+    ...check,
+    defaultScopes: [],
+    inactiveStateWhenUnselected: "disabled",
+    run: (context) => check.inactiveResult?.(context, "disabled")
+  };
 }
 
 function applyPathPolicy(

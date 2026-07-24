@@ -20,6 +20,7 @@ import type {
 } from "./source-types.js";
 
 export const pythonSourceExtensions = [".py", ".pyi"] as const;
+const allPythonProjectToolKinds = ["mypy", "pyright", "ruff", "pytest"] as const;
 
 export type {
   PythonMaterializedSourceFile,
@@ -29,41 +30,62 @@ export type {
   PythonSourceSetResolver
 } from "./source-types.js";
 
+export async function selectPythonSourceFilesForTargets(
+  context: ValidationCheckContext,
+  sourceSet: PythonMaterializedSourceSet,
+  resolveContexts: PythonProjectContextResolver,
+  rootPaths: readonly string[]
+): Promise<readonly PythonMaterializedSourceFile[]> {
+  if (sourceSet.files.length === 0 || rootPaths.length === 0) return [];
+  const selectedPaths = await expandPythonSourceClosure({
+    context,
+    rootPaths: uniqueSorted(rootPaths.map(normalizeValidationFileViewPath).filter((path) => sourceSet.sourceFileByPath.has(path))),
+    edges: sourceSet.repoImports,
+    sourceByPath: sourceSet.sourceFileByPath,
+    resolveContexts
+  });
+  return selectedPaths.map((path) => sourceSet.sourceFileByPath.get(path)).filter(isDefined);
+}
+
 export function createPythonProjectContextResolver(
   options: Omit<ResolvePythonProjectContextsOptions, "repoRoot" | "targets" | "workspace"> & {
     nodeWorkspace?: PythonProjectWorkspace;
   } = {}
 ): PythonProjectContextResolver {
   const cache = new WeakMap<ValidationFileView, PythonProjectContextCache>();
-  return async (context, requestedTargets) => {
+  return async (context, requestedTargets, requestedToolKinds) => {
     let cached = cache.get(context.fileView);
     if (cached === undefined) {
-      cached = { contexts: new Map() };
+      cached = { contexts: new Map(), pending: new Map() };
       cache.set(context.fileView, cached);
     }
     const targets = requestedTargets === undefined
       ? await (cached.inputTargets ??= readPythonAfterSources(context).then((sources) => sources.map((source) => source.path)))
       : uniqueSorted(requestedTargets.map(normalizeValidationFileViewPath).filter(isPythonSourcePath));
+    const normalizedToolKinds = normalizeToolKinds(requestedToolKinds);
+    const toolKey = normalizedToolKinds.join(",");
     while (true) {
-      const missing = targets.filter((target) => !cached.contexts.has(target));
-      if (missing.length === 0) return targets.map((target) => requiredProjectContext(cached.contexts, target));
-      if (cached.pending !== undefined) {
-        await cached.pending;
+      const missing = targets.filter((target) => !cached.contexts.has(cacheKey(target, toolKey)));
+      if (missing.length === 0) return targets.map((target) => requiredProjectContext(cached.contexts, cacheKey(target, toolKey)));
+      const pending = cached.pending.get(toolKey);
+      if (pending !== undefined) {
+        await pending;
         continue;
       }
-      const pending = resolvePythonProjectContexts({
+      const nextPending = resolvePythonProjectContexts({
         repoRoot: context.request.repo.repoRoot ?? process.cwd(),
         targets: missing,
         workspace: createValidationFileViewPythonWorkspace(context.fileView, undefined, options.nodeWorkspace),
+        ...(normalizedToolKinds.length === allPythonProjectToolKinds.length ? {} : { toolKinds: normalizedToolKinds }),
         ...withoutNodeWorkspace(options)
       }).then((contexts) => {
-        for (const projectContext of contexts) cached.contexts.set(projectContext.target, projectContext);
+        for (const projectContext of contexts) cached.contexts.set(cacheKey(projectContext.target, toolKey), projectContext);
       });
-      cached.pending = pending;
+      cached.pending.set(toolKey, nextPending);
       try {
-        await pending;
+        await nextPending;
       } finally {
-        delete cached.pending;
+        cached.pending.delete(toolKey);
       }
     }
   };
@@ -72,7 +94,7 @@ export function createPythonProjectContextResolver(
 interface PythonProjectContextCache {
   contexts: Map<string, PythonProjectContext>;
   inputTargets?: Promise<readonly string[]>;
-  pending?: Promise<void>;
+  pending: Map<string, Promise<void>>;
 }
 
 function requiredProjectContext(
@@ -136,6 +158,19 @@ export function skippedPythonInputResult(context: ValidationCheckContext): Valid
     diagnostics: [],
     failureMessage: "No Python-owned files were selected."
   };
+}
+
+function normalizeToolKinds(
+  toolKinds: readonly (typeof allPythonProjectToolKinds)[number][] | undefined
+): readonly (typeof allPythonProjectToolKinds)[number][] {
+  if (toolKinds === undefined) return [...allPythonProjectToolKinds];
+  return uniqueSorted(
+    toolKinds.filter((tool): tool is (typeof allPythonProjectToolKinds)[number] => allPythonProjectToolKinds.includes(tool))
+  ) as readonly (typeof allPythonProjectToolKinds)[number][];
+}
+
+function cacheKey(target: string, toolKey: string): string {
+  return `${toolKey}\0${target}`;
 }
 
 export function createPythonSourceSetResolver(
@@ -215,4 +250,8 @@ function emptySourceSet(): PythonMaterializedSourceSet {
 
 export function uniqueSorted(values: readonly string[]): readonly string[] {
   return [...new Set(values)].sort();
+}
+
+function isDefined<T>(value: T | undefined): value is T {
+  return value !== undefined;
 }

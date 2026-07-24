@@ -33,6 +33,8 @@ const allCheckIds = [
   "rust.function-metrics",
   "python.syntax",
   "python.source-hygiene",
+  "python.ruff-lint",
+  "python.ruff-format",
   "python.types",
   "python.import-graph",
   "python.dead-code",
@@ -413,7 +415,7 @@ describe("Opcore ASP provider", () => {
         assert.match(contextEvidence.data.contextFingerprint, /^sha256:[a-f0-9]{64}$/);
         assert.equal(contextEvidence.data.outcome, "unsupported");
         assert.equal(
-          contextEvidence.data.reasons.some((reason) => reason.code === "tool_unavailable"),
+          contextEvidence.data.reasons.some((reason) => reason.code === "tool_unavailable" || reason.code === "interpreter_unavailable"),
           true,
           JSON.stringify(contextEvidence.data.reasons)
         );
@@ -550,6 +552,309 @@ describe("Opcore ASP provider", () => {
       rmSync(repo, { recursive: true, force: true });
     }
   });
+
+  it("emits Python capability receipt evidence for selected Ruff checks", { timeout: 60000 }, async () => {
+    assert.equal(existsSync(providerBin), true, "run npm run build before asp-provider tests");
+    const repo = mkdtempSync(join(tmpdir(), "opcore-asp-provider-ruff-"));
+    try {
+      const toolBin = join(repo, ".venv", "bin");
+      mkdirSync(toolBin, { recursive: true });
+      writeFileSync(join(repo, "pyproject.toml"), "[project]\nname='ruff-fixture'\nrequires-python='>=3.8'\n");
+      writeFileSync(join(repo, "ruff.toml"), "[lint]\nselect = [\"F401\"]\n");
+      writeFileSync(join(repo, "pkg.py"), "value = 1\n");
+      const ruffPath = join(toolBin, "ruff");
+      writeFileSync(
+        ruffPath,
+        [
+          "#!/bin/sh",
+          "if [ \"$1\" = \"--version\" ]; then echo 'ruff 0.6.9'; exit 0; fi",
+          "if [ \"$1\" = \"check\" ]; then",
+          "  printf '%s\\n' '[{\"code\":\"F401\",\"filename\":\"pkg.py\",\"location\":{\"row\":1,\"column\":8},\"end_location\":{\"row\":1,\"column\":10},\"message\":\"unused import\"}]'",
+          "  exit 1",
+          "fi",
+          "exit 2",
+          ""
+        ].join("\n")
+      );
+      chmodSync(ruffPath, 0o755);
+
+      const host = createHostWorkspace({
+        "pyproject.toml": "[project]\nname='ruff-fixture'\nrequires-python='>=3.8'\n",
+        "ruff.toml": "[lint]\nselect = [\"F401\"]\n",
+        "pkg.py": "value = 1\n"
+      });
+      const peer = spawnProvider(host, process.env, repo);
+      try {
+        await peer.request("initialize", {
+          protocolVersion: "asp/0.1",
+          host: { name: "fake-host", version: "0.1.0-test" },
+          hostCapabilities: { readBlob: true, listTree: true, putBlob: false },
+          workspace: { root: repo, baseline: host.baseline },
+          assuranceMode: "gated"
+        });
+        peer.notify("initialized", {
+          grantedPermissions: { read: ["**/*"], write: false, network: false },
+          baseline: host.baseline
+        });
+        const assessment = await peer.request("check/evaluate", {
+          callSite: "interactive",
+          changeset: host.changeset([host.modify("pkg.py", "import os\n")]),
+          comparison: "all",
+          checks: ["python.ruff-lint"]
+        });
+        assert.equal(assessment.status, "complete", JSON.stringify(assessment, null, 2));
+        assert.equal(
+          assessment.coverage.degraded.some((entry) => entry.requirement.startsWith("python-project-context:")),
+          false,
+          JSON.stringify(assessment.coverage, null, 2)
+        );
+        const receipts = assessment.evidence.filter((entry) => entry.kind === "python_validation_capability_run");
+        assert.deepEqual(receipts.map((receipt) => receipt.data.checkId), ["python.ruff-lint"]);
+        assert.equal(receipts[0].data.capability, "ruff_lint");
+        assert.equal(receipts[0].data.state, "findings");
+        assert.match(receipts[0].data.afterStateManifestFingerprint, /^sha256:[a-f0-9]{64}$/);
+        assert.deepEqual(receipts[0].data.sourcePaths, ["pkg.py"]);
+        assert.equal(receipts[0].data.executable, "repo:.venv/bin/ruff");
+        assert.equal(receipts[0].data.argv[0], "repo:.venv/bin/ruff");
+        assert.equal(JSON.stringify(receipts[0].data).includes(repo), false);
+        assert.equal(receipts[0].data.diagnosticCount, 1);
+        assert.equal(receipts[0].data.termination, "exited");
+        assert.equal(receipts[0].data.exitCode, 1);
+      } finally {
+        peer.close();
+      }
+    } finally {
+      rmSync(repo, { recursive: true, force: true });
+    }
+  });
+
+  it("does not activate opt-in Ruff checks when check selection is omitted", { timeout: 60000 }, async () => {
+    assert.equal(existsSync(providerBin), true, "run npm run build before asp-provider tests");
+    const repo = mkdtempSync(join(tmpdir(), "opcore-asp-provider-ruff-defaults-"));
+    try {
+      const toolBin = join(repo, ".venv", "bin");
+      const marker = join(repo, "ruff-invoked");
+      mkdirSync(toolBin, { recursive: true });
+      writeFileSync(join(repo, "pyproject.toml"), "[project]\nname='ruff-defaults'\n");
+      writeFileSync(join(repo, "app.py"), "value = 1\n");
+      const ruffPath = join(toolBin, "ruff");
+      writeFileSync(ruffPath, `#!/bin/sh\nprintf invoked > ${JSON.stringify(marker)}\nexit 2\n`);
+      chmodSync(ruffPath, 0o755);
+
+      const host = createHostWorkspace({
+        "pyproject.toml": "[project]\nname='ruff-defaults'\n",
+        "app.py": "value = 1\n"
+      });
+      const peer = spawnProvider(host, { ...process.env, PATH: "" }, repo);
+      try {
+        await peer.request("initialize", {
+          protocolVersion: "asp/0.1",
+          host: { name: "fake-host", version: "0.1.0-test" },
+          hostCapabilities: { readBlob: true, listTree: true, putBlob: false },
+          workspace: { root: repo, baseline: host.baseline },
+          assuranceMode: "gated"
+        });
+        peer.notify("initialized", {
+          grantedPermissions: { read: ["**/*"], write: false, network: false },
+          baseline: host.baseline
+        });
+        const assessment = await peer.request("check/evaluate", {
+          callSite: "interactive",
+          changeset: host.changeset([host.modify("app.py", "value = 2\n")]),
+          comparison: "all"
+        });
+
+        assert.equal(existsSync(marker), false);
+        assert.equal(
+          assessment.evidence.some((entry) =>
+            entry.kind === "python_validation_capability_run" &&
+            (entry.data.checkId === "python.ruff-lint" || entry.data.checkId === "python.ruff-format")
+          ),
+          false
+        );
+      } finally {
+        peer.close();
+      }
+    } finally {
+      rmSync(repo, { recursive: true, force: true });
+    }
+  });
+
+  it("activates Ruff defaults from host config when ASP check selection is omitted", { timeout: 60000 }, async () => {
+    assert.equal(existsSync(providerBin), true, "run npm run build before asp-provider tests");
+    const repo = mkdtempSync(join(tmpdir(), "opcore-asp-provider-ruff-policy-default-"));
+    try {
+      const toolBin = join(repo, ".venv", "bin");
+      const marker = join(repo, "ruff-invoked");
+      const config = JSON.stringify({
+        validation: {
+          checks: {
+            defaults: ["python.ruff-lint"]
+          }
+        }
+      });
+      mkdirSync(toolBin, { recursive: true });
+      writeFileSync(join(repo, "pyproject.toml"), "[project]\nname='ruff-default'\n");
+      writeFileSync(join(repo, "app.py"), "value = 1\n");
+      const ruffPath = join(toolBin, "ruff");
+      writeFileSync(
+        ruffPath,
+        [
+          "#!/bin/sh",
+          "if [ \"$1\" = \"--version\" ]; then echo 'ruff 0.6.9'; exit 0; fi",
+          `printf invoked > ${JSON.stringify(marker)}`,
+          "printf '%s\\n' '[]'",
+          "exit 0",
+          ""
+        ].join("\n")
+      );
+      chmodSync(ruffPath, 0o755);
+
+      const host = createHostWorkspace({
+        ".opcore/config": config,
+        "pyproject.toml": "[project]\nname='ruff-default'\n",
+        "app.py": "value = 1\n"
+      });
+      const peer = spawnProvider(host, process.env, repo);
+      try {
+        await peer.request("initialize", {
+          protocolVersion: "asp/0.1",
+          host: { name: "fake-host", version: "0.1.0-test" },
+          hostCapabilities: { readBlob: true, listTree: true, putBlob: false },
+          workspace: { root: repo, baseline: host.baseline },
+          assuranceMode: "gated"
+        });
+        peer.notify("initialized", {
+          grantedPermissions: { read: ["**/*"], write: false, network: false },
+          baseline: host.baseline
+        });
+        const assessment = await peer.request("check/evaluate", {
+          callSite: "interactive",
+          changeset: host.changeset([host.modify("app.py", "value = 2\n")]),
+          comparison: "all"
+        });
+
+        assert.equal(existsSync(marker), true);
+        const receipt = assessment.evidence.find((entry) =>
+          entry.kind === "python_validation_capability_run" &&
+          entry.data.checkId === "python.ruff-lint"
+        );
+        assert.equal(receipt?.data.state, "passed");
+        assert.equal(receipt?.data.invocations?.length, 1);
+      } finally {
+        peer.close();
+      }
+    } finally {
+      rmSync(repo, { recursive: true, force: true });
+    }
+  });
+
+  it("preserves selected Ruff identity for activated tool-unavailable diagnostics", { timeout: 60000 }, async () => {
+    assert.equal(existsSync(providerBin), true, "run npm run build before asp-provider tests");
+    const repo = mkdtempSync(join(tmpdir(), "opcore-asp-provider-ruff-unavailable-"));
+    try {
+      writeFileSync(join(repo, "pyproject.toml"), "[project]\nname='ruff-unavailable'\n[tool.ruff]\n");
+      writeFileSync(join(repo, "app.py"), "value = 1\n");
+      const host = createHostWorkspace({
+        "pyproject.toml": "[project]\nname='ruff-unavailable'\n[tool.ruff]\n",
+        "app.py": "value = 1\n"
+      });
+      const peer = spawnProvider(host, { ...process.env, PATH: "" }, repo);
+      try {
+        await peer.request("initialize", {
+          protocolVersion: "asp/0.1",
+          host: { name: "fake-host", version: "0.1.0-test" },
+          hostCapabilities: { readBlob: true, listTree: true, putBlob: false },
+          workspace: { root: repo, baseline: host.baseline },
+          assuranceMode: "gated"
+        });
+        peer.notify("initialized", {
+          grantedPermissions: { read: ["**/*"], write: false, network: false },
+          baseline: host.baseline
+        });
+        const assessment = await peer.request("check/evaluate", {
+          callSite: "interactive",
+          changeset: host.changeset([host.modify("app.py", "value = 2\n")]),
+          comparison: "all",
+          checks: ["python.ruff-lint"]
+        });
+
+        const unavailable = assessment.diagnostics.find((entry) =>
+          entry.code.endsWith("/PY_RUFF_LINT_TOOL_UNAVAILABLE")
+        );
+        assert.equal(
+          unavailable?.code,
+          "opcore/python.ruff-lint/PY_RUFF_LINT_TOOL_UNAVAILABLE"
+        );
+      } finally {
+        peer.close();
+      }
+    } finally {
+      rmSync(repo, { recursive: true, force: true });
+    }
+  });
+
+  it("applies ASP disabled policy before explicit Ruff selection", { timeout: 60000 }, async () => {
+    assert.equal(existsSync(providerBin), true, "run npm run build before asp-provider tests");
+    const repo = mkdtempSync(join(tmpdir(), "opcore-asp-provider-ruff-policy-disabled-"));
+    try {
+      const toolBin = join(repo, ".venv", "bin");
+      const marker = join(repo, "ruff-invoked");
+      const config = JSON.stringify({
+        validation: {
+          checks: {
+            defaults: ["python.ruff-lint"],
+            disabled: ["python.ruff-lint"]
+          }
+        }
+      });
+      mkdirSync(toolBin, { recursive: true });
+      writeFileSync(join(repo, "pyproject.toml"), "[project]\nname='ruff-disabled'\n");
+      writeFileSync(join(repo, "app.py"), "value = 1\n");
+      const ruffPath = join(toolBin, "ruff");
+      writeFileSync(ruffPath, `#!/bin/sh\nprintf invoked > ${JSON.stringify(marker)}\nexit 1\n`);
+      chmodSync(ruffPath, 0o755);
+
+      const host = createHostWorkspace({
+        ".opcore/config": config,
+        "pyproject.toml": "[project]\nname='ruff-disabled'\n",
+        "app.py": "value = 1\n"
+      });
+      const peer = spawnProvider(host, { ...process.env, PATH: "" }, repo);
+      try {
+        await peer.request("initialize", {
+          protocolVersion: "asp/0.1",
+          host: { name: "fake-host", version: "0.1.0-test" },
+          hostCapabilities: { readBlob: true, listTree: true, putBlob: false },
+          workspace: { root: repo, baseline: host.baseline },
+          assuranceMode: "gated"
+        });
+        peer.notify("initialized", {
+          grantedPermissions: { read: ["**/*"], write: false, network: false },
+          baseline: host.baseline
+        });
+        const assessment = await peer.request("check/evaluate", {
+          callSite: "interactive",
+          changeset: host.changeset([host.modify("app.py", "value = 2\n")]),
+          comparison: "all",
+          checks: ["python.ruff-lint"]
+        });
+
+        assert.equal(existsSync(marker), false);
+        const receipt = assessment.evidence.find((entry) =>
+          entry.kind === "python_validation_capability_run" &&
+          entry.data.checkId === "python.ruff-lint"
+        );
+        assert.equal(receipt?.data.state, "disabled");
+        assert.equal(receipt?.data.termination, undefined);
+      } finally {
+        peer.close();
+      }
+    } finally {
+      rmSync(repo, { recursive: true, force: true });
+    }
+  });
+
 
   it("ships a provisional install manifest without authority semantics", () => {
     const manifestPath = join(repoRoot, "packages/asp-provider/dist/manifests/opcore-asp-provider.provisional.json");
@@ -717,9 +1022,10 @@ describe("Opcore ASP provider claim scrub", () => {
   });
 });
 
-function spawnProvider(host) {
+function spawnProvider(host, env = process.env, cwd = repoRoot) {
   const child = spawn(process.execPath, [providerBin, "--stdio"], {
-    cwd: repoRoot,
+    cwd,
+    env,
     stdio: ["pipe", "pipe", "pipe"]
   });
   const peer = new TestJsonRpcPeer(child, host).start();

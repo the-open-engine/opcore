@@ -75,18 +75,28 @@ export function createDefaultValidationStatusPayload(options: {
   pythonProjectContexts?: readonly PythonProjectContext[];
 }): ValidationStatusPayload {
   const graphMode = options.graphMode ?? "optional";
+  const checks = validationChecksForRepoPolicy(options.repoRoot);
   return createValidationStatusPayload({
-    checks: validationChecksForRepoPolicy(options.repoRoot),
+    checks,
     adapters: [
       createRustValidationAdapterStatus(),
       createPythonValidationAdapterStatus({
         repoRoot: options.repoRoot,
-        contexts: options.pythonProjectContexts
+        contexts: options.pythonProjectContexts,
+        activeCheckIds: activeDefaultCheckIds(checks)
       })
     ],
     graphMode,
     graphStatus: opcoreGraphStatus({ repoRoot: options.repoRoot }, graphMode)
   });
+}
+
+function activeDefaultCheckIds(
+  checks: readonly ReturnType<typeof validationChecksForRepoPolicy>[number][]
+): readonly string[] {
+  return checks
+    .filter((check) => (check.defaultScopes ?? check.supportedScopes).length > 0)
+    .map((check) => check.id);
 }
 
 function defaultValidationAdapterOptions(repoRoot = process.cwd()): ValidationCommandAdapterOptions {
@@ -97,9 +107,9 @@ function defaultValidationAdapterOptions(repoRoot = process.cwd()): ValidationCo
     graphSessionFactory: createOpcoreValidationGraphSessionFactory(graphProviderClient),
     runtime: opcorePublicValidationRuntimePolicy,
     defaultRepoRoot: repoRoot,
-    workspaceFactory: (repoRoot) =>
+    workspaceFactory: (targetRepoRoot) =>
       createNodeValidationWorkspace({
-        repoRoot,
+        repoRoot: targetRepoRoot,
         skippedPathSegments: commonSkippedPathSegments
       })
   };
@@ -121,3 +131,5 @@ export function createOpcoreValidationGraphProviderClient(): ValidationGraphProv
     detectChanges: opcoreGraphDetectChanges
   };
 }
+
+export { defaultValidationChecks, createPythonValidationChecks, createRustValidationChecks };

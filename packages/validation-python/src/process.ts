@@ -32,6 +32,12 @@ export interface PythonToolSignalResult extends PythonToolRunBase {
   signal: string;
 }
 
+export interface PythonToolOverflowResult extends PythonToolRunBase {
+  termination: "overflow";
+  ok: false;
+  failureMessage: string;
+}
+
 export interface PythonToolSpawnErrorResult extends PythonToolRunBase {
   termination: "spawn_error";
   ok: false;
@@ -42,6 +48,7 @@ export type PythonToolRunResult =
   | PythonToolExitedResult
   | PythonToolTimeoutResult
   | PythonToolSignalResult
+  | PythonToolOverflowResult
   | PythonToolSpawnErrorResult;
 
 export interface PythonToolRunOptions {
@@ -191,7 +198,10 @@ function classifyProcessResult(
   timeoutMs: number
 ): PythonToolRunResult {
   if (capture.timedOut) return { ...base, termination: "timeout", ok: false, failureMessage: `${base.command} timed out after ${timeoutMs}ms` };
-  const failure = capture.spawnFailure ?? capture.inputFailure ?? capture.outputFailure;
+  if (capture.outputFailure !== undefined) {
+    return { ...base, termination: "overflow", ok: false, failureMessage: capture.outputFailure };
+  }
+  const failure = capture.spawnFailure ?? capture.inputFailure;
   if (failure !== undefined || base.exitCode === null && base.signal === null) {
     return { ...base, termination: "spawn_error", ok: false, failureMessage: failure ?? `${base.command} did not report an exit status` };
   }

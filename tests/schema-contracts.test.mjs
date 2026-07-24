@@ -866,6 +866,268 @@ describe("Opcore JSON schema wire constraints", () => {
     );
   });
 
+  it("validates portable Python capability receipts on manifest runs", () => {
+    const manifest = {
+      schemaVersion: 1,
+      checks: ["python.ruff-lint"],
+      generatedAt: "2026-07-18T00:00:00.000Z",
+      runs: [{
+        checkId: "python.ruff-lint",
+        status: "policy_failure",
+        outcome: "findings",
+        diagnosticCount: 1,
+        pythonCapabilityRuns: [{
+          schemaId: "opcore.python.validation-capability-run",
+          schemaVersion: 1,
+          checkId: "python.ruff-lint",
+          capability: "ruff_lint",
+          state: "findings",
+          projectKey: `sha256:${"1".repeat(64)}`,
+          contextFingerprint: `sha256:${"2".repeat(64)}`,
+          afterStateManifestFingerprint: `sha256:${"3".repeat(64)}`,
+          sourcePaths: ["pkg/app.py"],
+          configPaths: ["ruff.toml"],
+          executable: "repo:.venv/bin/ruff",
+          command: "repo:.venv/bin/ruff check --output-format=json pkg/app.py",
+          argv: ["repo:.venv/bin/ruff", "check", "--output-format=json", "pkg/app.py"],
+          cwd: ".",
+          configPath: "ruff.toml",
+          toolVersion: "0.6.9",
+          toolSource: "project_local_environment",
+          termination: "exited",
+          exitCode: 1,
+          invocations: [{
+            argv: ["repo:.venv/bin/ruff", "check", "--output-format=json", "pkg/app.py"],
+            termination: "exited",
+            exitCode: 1,
+            durationMs: 12
+          }],
+          durationMs: 12,
+          diagnosticCount: 1
+        }]
+      }]
+    };
+
+    assert.equal(isValidDefinition("ValidationResult", validationResultWith({ manifest })), true);
+    const portableRun = manifest.runs[0].pythonCapabilityRuns[0];
+    const validNestedRuffRun = (run) => isValidDefinition(
+      "ValidationResult",
+      validationResultWith({
+        manifest: {
+          ...manifest,
+          runs: [{ ...manifest.runs[0], pythonCapabilityRuns: [run] }]
+        }
+      })
+    );
+    const assertRuffSchemaCopies = (run, expected, message) => {
+      assert.equal(isValidDefinition("PythonRuffValidationCapabilityRun", run), expected, `canonical: ${message}`);
+      assert.equal(validNestedRuffRun(run), expected, `nested: ${message}`);
+    };
+    assertRuffSchemaCopies(portableRun, true, "findings");
+    for (const invalidRun of [
+      { ...portableRun, executable: "/tmp/private/ruff" },
+      { ...portableRun, argv: [portableRun.executable, "--cache-dir=/tmp/private/cache"] },
+      {
+        ...portableRun,
+        invocations: [{
+          ...portableRun.invocations[0],
+          argv: ["/tmp/private/ruff", "check", "pkg/app.py"]
+        }]
+      },
+      { ...portableRun, failureMessage: "Ruff failed in /tmp/private/workspace" }
+    ]) {
+      assert.equal(
+        isValidDefinition("ValidationResult", validationResultWith({
+          manifest: {
+            ...manifest,
+            runs: [{ ...manifest.runs[0], pythonCapabilityRuns: [invalidRun] }]
+          }
+        })),
+        false
+      );
+    }
+    assert.equal(
+      isValidDefinition(
+        "ValidationResult",
+        validationResultWith({
+          manifest: {
+            ...manifest,
+            runs: [{
+              ...manifest.runs[0],
+              pythonCapabilityRuns: [{ ...manifest.runs[0].pythonCapabilityRuns[0], state: "disabled", argv: ["repo:.venv/bin/ruff"] }]
+            }]
+          }
+        })
+      ),
+      false
+    );
+    const unavailableRun = {
+      ...manifest.runs[0].pythonCapabilityRuns[0],
+      state: "tool_unavailable",
+      durationMs: 0,
+      diagnosticCount: 1,
+      failureMessage: "Ruff is unavailable"
+    };
+    for (const field of [
+      "executable", "command", "argv", "configPath", "toolVersion", "toolSource",
+      "termination", "exitCode", "invocations"
+    ]) {
+      delete unavailableRun[field];
+    }
+    assertRuffSchemaCopies(unavailableRun, true, "tool_unavailable");
+    const unsupportedRun = {
+      ...unavailableRun,
+      state: "unsupported_target",
+      failureMessage: "Ruff does not support the selected target"
+    };
+    const unexecutedInvalidConfigRun = {
+      ...unavailableRun,
+      state: "invalid_config",
+      executable: portableRun.executable,
+      toolVersion: portableRun.toolVersion,
+      toolSource: portableRun.toolSource,
+      failureMessage: "Ruff rejected the selected configuration"
+    };
+    const timeoutRun = {
+      ...portableRun,
+      state: "timeout",
+      termination: "timeout",
+      diagnosticCount: 0,
+      failureMessage: "Ruff timed out",
+      invocations: [{
+        argv: portableRun.argv,
+        termination: "timeout",
+        durationMs: 12
+      }]
+    };
+    delete timeoutRun.exitCode;
+    const executedInvalidConfigRun = {
+      ...portableRun,
+      state: "invalid_config",
+      exitCode: 2,
+      diagnosticCount: 1,
+      failureMessage: "Ruff rejected the selected configuration",
+      invocations: [{
+        argv: portableRun.argv,
+        termination: "exited",
+        exitCode: 2,
+        durationMs: 12
+      }]
+    };
+    const toolFailureRun = {
+      ...portableRun,
+      state: "tool_failure",
+      exitCode: 2,
+      diagnosticCount: 0,
+      failureMessage: "Ruff failed",
+      invocations: [{
+        argv: portableRun.argv,
+        termination: "exited",
+        exitCode: 2,
+        durationMs: 12
+      }]
+    };
+    const signalToolFailureRun = {
+      ...portableRun,
+      state: "tool_failure",
+      termination: "signal",
+      signal: "SIGTERM",
+      diagnosticCount: 0,
+      failureMessage: "Ruff was terminated",
+      invocations: [{
+        argv: portableRun.argv,
+        termination: "signal",
+        signal: "SIGTERM",
+        durationMs: 12
+      }]
+    };
+    delete signalToolFailureRun.exitCode;
+    for (const validFailureRun of [
+      unsupportedRun,
+      unexecutedInvalidConfigRun,
+      timeoutRun,
+      executedInvalidConfigRun,
+      toolFailureRun,
+      signalToolFailureRun
+    ]) {
+      assertRuffSchemaCopies(validFailureRun, true, validFailureRun.state);
+    }
+    for (const [name, invalidFailureRun] of [
+      ["tool_unavailable with process evidence", { ...portableRun, state: "tool_unavailable", failureMessage: "Ruff unavailable" }],
+      ["unsupported_target with process evidence", { ...portableRun, state: "unsupported_target", failureMessage: "Unsupported target" }],
+      ["timeout without execution evidence", { ...unavailableRun, state: "timeout", failureMessage: "Ruff timed out" }],
+      ["timeout with contradictory invocation evidence", {
+        ...timeoutRun,
+        invocations: [{
+          argv: portableRun.argv,
+          termination: "exited",
+          exitCode: 0,
+          durationMs: 12
+        }]
+      }],
+      ["invalid_config with partial execution evidence", {
+        ...unexecutedInvalidConfigRun,
+        command: portableRun.command
+      }],
+      ["tool_failure with partial execution evidence", {
+        ...unavailableRun,
+        state: "tool_failure",
+        argv: portableRun.argv,
+        failureMessage: "Ruff failed"
+      }],
+      ["tool_failure with contradictory invocation evidence", {
+        ...signalToolFailureRun,
+        invocations: [{
+          argv: portableRun.argv,
+          termination: "exited",
+          exitCode: 0,
+          durationMs: 12
+        }]
+      }]
+    ]) {
+      assertRuffSchemaCopies(invalidFailureRun, false, name);
+    }
+    for (const field of [
+      "projectKey", "contextFingerprint", "afterStateManifestFingerprint", "sourcePaths", "configPaths", "cwd"
+    ]) {
+      const incomplete = { ...unavailableRun };
+      delete incomplete[field];
+      assert.equal(
+        isValidDefinition(
+          "ValidationResult",
+          validationResultWith({
+            manifest: {
+              ...manifest,
+              runs: [{ ...manifest.runs[0], pythonCapabilityRuns: [incomplete] }]
+            }
+          })
+        ),
+        false,
+        field
+      );
+    }
+    for (const field of ["projectKey", "contextFingerprint", "afterStateManifestFingerprint", "invocations"]) {
+      const incomplete = { ...manifest.runs[0].pythonCapabilityRuns[0] };
+      delete incomplete[field];
+      assert.equal(
+        isValidDefinition(
+          "ValidationResult",
+          validationResultWith({
+            manifest: {
+              ...manifest,
+              runs: [{
+                ...manifest.runs[0],
+                pythonCapabilityRuns: [incomplete]
+              }]
+            }
+          })
+        ),
+        false,
+        field
+      );
+    }
+  });
+
   it("validates Python project-context wire identity and typed outcome vocabulary", () => {
     const context = pythonProjectContextWith();
     assert.equal(isValidDefinition("PythonProjectContext", context), true);

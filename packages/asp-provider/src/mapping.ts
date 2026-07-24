@@ -35,6 +35,7 @@ import {
 } from "./protocol.js";
 import { createAspHostValidationWorkspace } from "./workspace.js";
 import {
+  aspProviderValidationChecks,
   createAspProviderValidationRunner,
   defaultAspProviderValidationCheckIds,
   defaultAspProviderValidationManifest,
@@ -97,12 +98,12 @@ export async function evaluateChangeset(
   const timing = createAssessmentTiming();
   const params = normalizeEvaluateParams(rawParams);
   const digest = params.changesetDigest ?? computeChangesetDigest(params.changeset);
-  const selectedIds = normalizeRequestedChecks(params.checks);
-  const selectedChecks = selectedValidationChecks(selectedIds);
   const changedPaths = changedScopePaths(params.changeset.changes);
   const workspace = timing.timeSync("host_workspace_binding", () =>
     createAspHostValidationWorkspace(peer, initialize, initialized, params.changeset)
   );
+  let selectedIds: readonly string[] = [];
+  let policyChecks: Awaited<ReturnType<typeof aspProviderValidationChecks>> = [];
   let validationResult: ValidationResult;
   let request: ValidationRequest;
   const mappingDegradations = comparisonDegradations(params.comparison ?? "introduced");
@@ -110,6 +111,9 @@ export async function evaluateChangeset(
   try {
     request = await timing.timeAsync("changeset_overlay_mapping", async () => {
       const overlays = await overlaysForChanges(params.changeset.changes, workspace);
+      policyChecks = await aspProviderValidationChecks(workspace.workspace, workspace.pythonWorkspace, overlays);
+      selectedIds = normalizeRequestedChecks(params.checks, policyChecks);
+      const selectedChecks = selectedValidationChecks(policyChecks, selectedIds);
       const graphMode = graphModeFor(params.callSite, selectedChecks);
       return {
         requestId: digest,
@@ -124,12 +128,12 @@ export async function evaluateChangeset(
           mode: graphMode,
           provider: "opcore-graph"
         },
-        checks: selectedIds,
+        checks: params.checks === undefined ? undefined : selectedIds,
         overlays
       };
     });
     validationResult = await timing.timeAsync("validation", () =>
-      createAspProviderValidationRunner(workspace.workspace, workspace.pythonWorkspace).runValidation(request)
+      createAspProviderValidationRunner(workspace.workspace, policyChecks).runValidation(request)
     );
   } catch (error) {
     const validationFailure = errorAssessment({
@@ -190,10 +194,17 @@ function normalizeEvaluateParams(value: unknown): EvaluateChangesetParams {
   };
 }
 
-function normalizeRequestedChecks(checks: readonly string[] | undefined): readonly string[] {
-  if (checks === undefined) return defaultAspProviderValidationCheckIds;
+function normalizeRequestedChecks(
+  checks: readonly string[] | undefined,
+  policyChecks: readonly { id: string; supportedScopes: readonly string[]; defaultScopes?: readonly string[] }[]
+): readonly string[] {
+  if (checks === undefined) {
+    return policyChecks
+      .filter((check) => (check.defaultScopes ?? check.supportedScopes).includes("files"))
+      .map((check) => check.id);
+  }
   const selected: string[] = [];
-  const known = new Set(defaultAspProviderValidationCheckIds);
+  const known = new Set(policyChecks.map((check) => check.id));
   for (const check of checks) {
     if (typeof check !== "string" || check.trim().length === 0) throw new Error("Requested checks must be non-empty strings");
     const normalized = check.trim();
@@ -294,7 +305,7 @@ function assessmentFromValidationResult(args: {
     diagnostics: args.validationResult.diagnostics.map((diagnostic) =>
       mapDiagnostic(diagnostic, args.changesetDigest, args.requestedComparison)
     ),
-    evidence: validationEvidence(args.validationResult),
+    evidence: validationEvidence(args.validationResult, args.selectedIds),
     coverage: {
       requested: coveragePart(args.changedPaths, args.selectedIds, args.requestedComparison),
       covered: coveragePart(args.changedPaths, coveredRules(args.validationResult, args.selectedIds), supportedComparison),
@@ -401,6 +412,9 @@ function diagnosticRange(diagnostic: ValidationDiagnostic): JsonObject | undefin
 }
 
 function checkIdForDiagnostic(diagnostic: ValidationDiagnostic): string {
+  const code = diagnostic.code ?? "";
+  if (code.startsWith("PY_RUFF_LINT_")) return "python.ruff-lint";
+  if (code.startsWith("PY_RUFF_FORMAT_")) return "python.ruff-format";
   if (diagnostic.category === "syntax") return diagnostic.path?.endsWith(".py") || diagnostic.path?.endsWith(".pyi")
     ? "python.syntax"
     : "typescript.syntax";
@@ -421,6 +435,8 @@ function policyCheckIdForDiagnostic(diagnostic: ValidationDiagnostic): string {
   const code = diagnostic.code ?? "";
   if (code.startsWith("TS_FUNCTION_")) return "typescript.function-metrics";
   if (code.startsWith("TS_FILE_")) return "typescript.file-length";
+  if (code.startsWith("PY_RUFF_LINT_")) return "python.ruff-lint";
+  if (code.startsWith("PY_RUFF_FORMAT_")) return "python.ruff-format";
   if (code.startsWith("PY_SOURCE_")) return "python.source-hygiene";
   if (code.startsWith("RUST_FILE_")) return "rust.file-length";
   if (code.startsWith("RUST_FUNCTION_")) return "rust.function-metrics";
@@ -440,13 +456,14 @@ function validationCoverageDegradations(result: ValidationResult, selectedIds: r
   const degraded: ProviderCoverageDegradation[] = [];
   const unsupported: ProviderCoverageDegradation[] = [];
   for (const context of result.pythonProjectContexts ?? []) {
-    if (context.outcome === "resolved") continue;
+    const relevantReasons = context.reasons.filter((reason) => pythonContextReasonIsRelevant(reason.tool, selectedIds));
+    if (relevantReasons.length === 0) continue;
     const reason = context.outcome === "unsupported" ? "unsupported" : "unavailable";
     const entry = {
       source: providerSource,
       reason,
       requirement: `python-project-context:${context.target}`,
-      detail: context.reasons.map((item) => `${item.code}: ${item.message}`).join("; ") ||
+      detail: relevantReasons.map((item) => `${item.code}: ${item.message}`).join("; ") ||
         `Python project context ${context.outcome}`
     };
     degraded.push(entry);
@@ -461,7 +478,11 @@ function validationCoverageDegradations(result: ValidationResult, selectedIds: r
     };
     degraded.push(entry);
   }
+  // WHY: opt-in checks the host did not select record inactive runs; they are not coverage gaps
+  // for the requested rules.
+  const selected = new Set(selectedIds);
   for (const run of result.manifest?.runs ?? []) {
+    if (!selected.has(run.checkId)) continue;
     if (run.status === "passed" || run.status === "policy_failure") continue;
     const reason = run.status === "unsupported_request" ? "unsupported" : run.status === "skipped" ? "unavailable" : "error";
     const entry = {
@@ -496,6 +517,21 @@ function validationCoverageDegradations(result: ValidationResult, selectedIds: r
     if (reason === "unsupported") unsupported.push(entry);
   }
   return { degraded, unsupported };
+}
+
+function pythonContextReasonIsRelevant(tool: string | undefined, selectedIds: readonly string[]): boolean {
+  const selected = new Set(selectedIds);
+  if (tool === "ruff") {
+    return selected.has("python.ruff-lint") || selected.has("python.ruff-format");
+  }
+  if (tool === "mypy" || tool === "pyright") return selected.has("python.types");
+  if (tool === "pytest") return selected.has("python.relevant-tests");
+  if (tool === "python") {
+    return selected.has("python.syntax") ||
+      selected.has("python.types") ||
+      selected.has("python.relevant-tests");
+  }
+  return selectedIds.some((checkId) => checkId.startsWith("python."));
 }
 
 function graphStatusMessage(status: GraphProviderStatus): string {
@@ -547,7 +583,7 @@ function coveredRules(result: ValidationResult, selectedIds: readonly string[]):
   return selectedIds.filter((checkId) => !skipped.has(checkId) && !failed.has(checkId));
 }
 
-function validationEvidence(result: ValidationResult): JsonObject[] {
+function validationEvidence(result: ValidationResult, selectedIds: readonly string[]): JsonObject[] {
   const data: JsonObject = {
     validationStatus: result.status,
     checkCount: result.manifest?.checks.length ?? 0,
@@ -608,40 +644,86 @@ function validationEvidence(result: ValidationResult): JsonObject[] {
     });
   }
   for (const run of result.pythonCapabilityRuns ?? []) {
+    if (!selectedIds.includes(run.checkId)) continue;
     validatePythonValidationCapabilityRun(run);
+    if (run.capability === "types") {
+      evidence.push({
+        kind: "python_validation_capability_run",
+        message: `Python types capability evidence for ${run.projectRoot}.`,
+        data: {
+          schemaId: run.schemaId,
+          schemaVersion: run.schemaVersion,
+          capability: run.capability,
+          checkId: run.checkId,
+          projectKey: run.projectKey,
+          contextFingerprint: run.contextFingerprint,
+          projectRoot: run.projectRoot,
+          targets: [...run.targets],
+          selectedSourcePaths: [...run.selectedSourcePaths],
+          selectedConfigPaths: [...run.selectedConfigPaths],
+          afterStateManifestFingerprint: run.afterStateManifestFingerprint,
+          ...(run.authority === undefined ? {} : { checker: run.authority }),
+          ...(run.authoritySource === undefined ? {} : { checkerSource: run.authoritySource }),
+          status: run.status,
+          durationMs: run.durationMs,
+          diagnosticCount: run.diagnosticCount,
+          errorCount: run.errorCount,
+          warningCount: run.warningCount,
+          noteCount: run.noteCount,
+          ...(run.tool === undefined ? {} : { tool: {
+            name: run.tool.name,
+            executable: run.tool.executable,
+            argv: [...run.tool.argv],
+            cwd: run.tool.cwd,
+            source: run.tool.source,
+            ...(run.tool.version === undefined ? {} : { version: run.tool.version }),
+            ...(run.tool.configFile === undefined ? {} : { configFile: run.tool.configFile })
+          } }),
+          ...(run.execution === undefined ? {} : { execution: { ...run.execution } })
+        }
+      });
+      continue;
+    }
     evidence.push({
       kind: "python_validation_capability_run",
-      message: `Python ${run.capability} capability evidence for ${run.projectRoot}.`,
+      message: `Python ${run.capability} capability evidence for ${run.checkId}.`,
       data: {
         schemaId: run.schemaId,
         schemaVersion: run.schemaVersion,
-        capability: run.capability,
         checkId: run.checkId,
-        projectKey: run.projectKey,
-        contextFingerprint: run.contextFingerprint,
-        projectRoot: run.projectRoot,
-        targets: [...run.targets],
-        selectedSourcePaths: [...run.selectedSourcePaths],
-        selectedConfigPaths: [...run.selectedConfigPaths],
-        afterStateManifestFingerprint: run.afterStateManifestFingerprint,
-        ...(run.authority === undefined ? {} : { checker: run.authority }),
-        ...(run.authoritySource === undefined ? {} : { checkerSource: run.authoritySource }),
-        status: run.status,
+        capability: run.capability,
+        state: run.state,
+        ...(run.projectKey === undefined ? {} : { projectKey: run.projectKey }),
+        ...(run.contextFingerprint === undefined ? {} : { contextFingerprint: run.contextFingerprint }),
+        ...(run.afterStateManifestFingerprint === undefined
+          ? {}
+          : { afterStateManifestFingerprint: run.afterStateManifestFingerprint }),
+        ...(run.sourcePaths === undefined ? {} : { sourcePaths: [...run.sourcePaths] }),
+        ...(run.configPaths === undefined ? {} : { configPaths: [...run.configPaths] }),
+        ...(run.executable === undefined ? {} : { executable: run.executable }),
+        ...(run.command === undefined ? {} : { command: run.command }),
+        ...(run.argv === undefined ? {} : { argv: [...run.argv] }),
+        ...(run.cwd === undefined ? {} : { cwd: run.cwd }),
+        ...(run.configPath === undefined ? {} : { configPath: run.configPath }),
+        ...(run.toolVersion === undefined ? {} : { toolVersion: run.toolVersion }),
+        ...(run.toolSource === undefined ? {} : { toolSource: run.toolSource }),
+        ...(run.termination === undefined ? {} : { termination: run.termination }),
+        ...(run.exitCode === undefined ? {} : { exitCode: run.exitCode }),
+        ...(run.signal === undefined ? {} : { signal: run.signal }),
+        ...(run.invocations === undefined
+          ? {}
+          : {
+              invocations: run.invocations.map((invocation) => ({
+                argv: [...invocation.argv],
+                termination: invocation.termination,
+                ...(invocation.exitCode === undefined ? {} : { exitCode: invocation.exitCode }),
+                ...(invocation.signal === undefined ? {} : { signal: invocation.signal }),
+                durationMs: invocation.durationMs
+              }))
+            }),
         durationMs: run.durationMs,
         diagnosticCount: run.diagnosticCount,
-        errorCount: run.errorCount,
-        warningCount: run.warningCount,
-        noteCount: run.noteCount,
-        ...(run.tool === undefined ? {} : { tool: {
-          name: run.tool.name,
-          executable: run.tool.executable,
-          argv: [...run.tool.argv],
-          cwd: run.tool.cwd,
-          source: run.tool.source,
-          ...(run.tool.version === undefined ? {} : { version: run.tool.version }),
-          ...(run.tool.configFile === undefined ? {} : { configFile: run.tool.configFile })
-        } }),
-        ...(run.execution === undefined ? {} : { execution: { ...run.execution } })
+        ...(run.failureMessage === undefined ? {} : { failureMessage: run.failureMessage })
       }
     });
   }

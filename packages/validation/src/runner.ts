@@ -108,6 +108,8 @@ interface ExecuteChecksArgs {
   graph: ValidationGraphQuerySession;
   fileView: ValidationFileView;
   resources: ValidationRunResources;
+  allChecks: readonly ValidationCheckDefinition[];
+  activeCheckIds: readonly string[];
   selectedChecks: readonly ValidationCheckDefinition[];
   totalStartedAt: number;
   clock: ValidationClock;
@@ -411,6 +413,8 @@ async function executeValidationState(
     graph: state.graph,
     fileView: state.fileView,
     resources: state.resources,
+    allChecks: args.options.registry.checks,
+    activeCheckIds: args.selectedChecks.map((check) => check.id),
     selectedChecks,
     totalStartedAt: args.totalStartedAt,
     clock: options.clock,
@@ -470,73 +474,129 @@ async function executeSelectedChecks(args: ExecuteChecksArgs): Promise<CheckExec
     pythonProjectContexts: [],
     pythonCapabilityRuns: []
   };
-  for (const check of args.selectedChecks) {
-    const skippedCheck = skippedGraphCheck(check, args.graph.status);
-    if (skippedCheck !== undefined) {
-      execution.skippedChecks.push(skippedCheck);
-      await emitCheckComplete(args, {
-        schemaVersion: 1,
-        kind: "validation.check",
-        checkId: check.id,
-        status: "skipped",
-        diagnostics: [],
-        skippedCheck
-      });
-      continue;
-    }
-    const preloadFailure = await preloadCheckGraphRequirements(check, args, execution);
-    if (preloadFailure !== undefined) {
-      if ("status" in preloadFailure) {
-        execution.failureResult = preloadFailure;
-        await emitCheckComplete(args, failureCheckCompleteEvent(check, preloadFailure, execution.diagnostics));
+  try {
+    for (const check of args.selectedChecks) {
+      const skippedCheck = skippedGraphCheck(check, args.graph.status);
+      if (skippedCheck !== undefined) {
+        execution.skippedChecks.push(skippedCheck);
+        await emitCheckComplete(args, {
+          schemaVersion: 1,
+          kind: "validation.check",
+          checkId: check.id,
+          status: "skipped",
+          diagnostics: [],
+          skippedCheck
+        });
+        continue;
+      }
+      const preloadFailure = await preloadCheckGraphRequirements(check, args, execution);
+      if (preloadFailure !== undefined) {
+        if ("status" in preloadFailure) {
+          execution.failureResult = preloadFailure;
+          await emitCheckComplete(args, failureCheckCompleteEvent(check, preloadFailure, execution.diagnostics));
+          return execution;
+        }
+        execution.skippedChecks.push(preloadFailure);
+        await emitCheckComplete(args, {
+          schemaVersion: 1,
+          kind: "validation.check",
+          checkId: check.id,
+          status: "skipped",
+          diagnostics: [],
+          skippedCheck: preloadFailure
+        });
+        continue;
+      }
+      const outcome = await runSingleCheck(check, args);
+      if (outcome.providerError !== undefined) {
+        if (args.request.graph.mode === "required" || args.graph.identity.kind === "exact") {
+          if (outcome.run !== undefined) execution.runs.push(outcome.run);
+          execution.failureResult = checkProviderFailureResult(check, args, execution, outcome.providerError);
+          await emitCheckComplete(args, outcomeCheckCompleteEvent(check, outcome));
+          return execution;
+        }
+        const skippedCheck = skippedGraphProviderError(check, outcome.providerError);
+        execution.skippedChecks.push(skippedCheck);
+        await emitCheckComplete(args, {
+          schemaVersion: 1,
+          kind: "validation.check",
+          checkId: check.id,
+          status: "skipped",
+          diagnostics: [],
+          skippedCheck
+        });
+        continue;
+      }
+      if (outcome.run !== undefined) execution.runs.push(outcome.run);
+      mergePythonProjectContexts(execution.pythonProjectContexts, outcome.pythonProjectContexts);
+      mergePythonCapabilityRuns(execution.pythonCapabilityRuns, outcome.pythonCapabilityRuns);
+      execution.diagnosticsByCheck.set(check.id, [...outcome.diagnostics]);
+      execution.diagnostics.push(...outcome.diagnostics);
+      await emitCheckComplete(args, outcomeCheckCompleteEvent(check, outcome));
+      if (outcome.failureStatus !== undefined && outcome.failureMessage !== undefined) {
+        execution.failureResult = checkRunFailureResult(check, args, execution, outcome.failureStatus, outcome.failureMessage);
         return execution;
       }
-      execution.skippedChecks.push(preloadFailure);
-      await emitCheckComplete(args, {
-        schemaVersion: 1,
-        kind: "validation.check",
-        checkId: check.id,
-        status: "skipped",
-        diagnostics: [],
-        skippedCheck: preloadFailure
-      });
-      continue;
-    }
-    const outcome = await runSingleCheck(check, args);
-    if (outcome.providerError !== undefined) {
-      if (args.request.graph.mode === "required" || args.graph.identity.kind === "exact") {
-        if (outcome.run !== undefined) execution.runs.push(outcome.run);
-        execution.failureResult = checkProviderFailureResult(check, args, execution, outcome.providerError);
-        await emitCheckComplete(args, outcomeCheckCompleteEvent(check, outcome));
+      if (args.failFast && outcome.run?.status === "policy_failure") {
         return execution;
       }
-      const skippedCheck = skippedGraphProviderError(check, outcome.providerError);
-      execution.skippedChecks.push(skippedCheck);
-      await emitCheckComplete(args, {
-        schemaVersion: 1,
-        kind: "validation.check",
-        checkId: check.id,
-        status: "skipped",
-        diagnostics: [],
-        skippedCheck
+    }
+    return execution;
+  } finally {
+    await appendInactiveCheckRuns(args, execution);
+    if (execution.failureResult !== undefined) {
+      const failure = execution.failureResult;
+      execution.failureResult = aggregateForChecks(args.selectedChecks, {
+        runs: execution.runs,
+        skippedChecks: execution.skippedChecks,
+        diagnostics: execution.diagnostics,
+        pythonProjectContexts: execution.pythonProjectContexts,
+        pythonCapabilityRuns: execution.pythonCapabilityRuns,
+        generatedAt: args.clock.isoNow(),
+        durationMs: elapsed(args.totalStartedAt, args.clock.nowMs()),
+        ...(failure.graphStatus === undefined ? {} : { graphStatus: failure.graphStatus }),
+        status: failure.status,
+        ...(failure.failure === undefined ? {} : { failure: failure.failure }),
+        ...(failure.refusal === undefined ? {} : { refusal: failure.refusal })
       });
-      continue;
-    }
-    if (outcome.run !== undefined) execution.runs.push(outcome.run);
-    mergePythonProjectContexts(execution.pythonProjectContexts, outcome.pythonProjectContexts);
-    mergePythonCapabilityRuns(execution.pythonCapabilityRuns, outcome.pythonCapabilityRuns);
-    execution.diagnosticsByCheck.set(check.id, [...outcome.diagnostics]);
-    execution.diagnostics.push(...outcome.diagnostics);
-    await emitCheckComplete(args, outcomeCheckCompleteEvent(check, outcome));
-    if (outcome.failureStatus !== undefined && outcome.failureMessage !== undefined) {
-      execution.failureResult = checkRunFailureResult(check, args, execution, outcome.failureStatus, outcome.failureMessage);
-      return execution;
-    }
-    if (args.failFast && outcome.run?.status === "policy_failure") {
-      return execution;
     }
   }
-  return execution;
+}
+
+async function appendInactiveCheckRuns(args: ExecuteChecksArgs, execution: CheckExecution): Promise<void> {
+  const selectedCheckIds = new Set(args.activeCheckIds);
+  for (const check of args.allChecks) {
+    if (
+      selectedCheckIds.has(check.id) ||
+      check.inactiveResult === undefined ||
+      !check.supportedScopes.includes(args.scope.kind)
+    ) {
+      continue;
+    }
+    const normalized = normalizeCheckResult(
+      await check.inactiveResult(checkContext(args), check.inactiveStateWhenUnselected ?? "not_applicable")
+    );
+    const diagnostics = normalized.diagnostics ?? [];
+    const status = normalized.status ?? statusForOutcome(normalized.outcome) ??
+      (diagnostics.some((diagnostic) => diagnostic.severity === "error") ? "policy_failure" : "passed");
+    const failureStatus = failureStatusForCheckRun(status);
+    const failureMessage =
+      normalized.failureMessage ?? (failureStatus === undefined ? undefined : `Validation check returned ${status}`);
+    execution.runs.push({
+      checkId: check.id,
+      status,
+      ...(normalized.outcome === undefined ? {} : { outcome: normalized.outcome }),
+      durationMs: 0,
+      diagnosticCount: diagnostics.length,
+      ...(failureMessage === undefined ? {} : { failureMessage }),
+      ...(normalized.pythonCapabilityRuns === undefined
+        ? {}
+        : { pythonCapabilityRuns: normalized.pythonCapabilityRuns })
+    });
+    mergePythonProjectContexts(execution.pythonProjectContexts, normalized.pythonProjectContexts ?? []);
+    execution.diagnosticsByCheck.set(check.id, [...diagnostics]);
+    execution.diagnostics.push(...diagnostics);
+  }
 }
 
 function outcomeCheckCompleteEvent(check: ValidationCheckDefinition, outcome: SingleCheckOutcome): ValidationCheckCompleteEvent {
@@ -678,7 +738,10 @@ async function runSingleCheck(check: ValidationCheckDefinition, args: ExecuteChe
         ...(normalized.outcome === undefined ? {} : { outcome: normalized.outcome }),
         durationMs: elapsed(checkStartedAt, args.clock.nowMs()),
         diagnosticCount: diagnostics.length,
-        ...(failureMessage === undefined ? {} : { failureMessage })
+        ...(failureMessage === undefined ? {} : { failureMessage }),
+        ...(normalized.pythonCapabilityRuns === undefined
+          ? {}
+          : { pythonCapabilityRuns: normalized.pythonCapabilityRuns })
       }
     };
   } catch (error) {
@@ -717,6 +780,7 @@ async function runSingleCheck(check: ValidationCheckDefinition, args: ExecuteChe
 function checkContext(args: ExecuteChecksArgs) {
   return {
     request: args.request,
+    selectedCheckIds: args.activeCheckIds,
     scope: args.scope,
     graphStatus: args.graph.status,
     graph: args.graph,
@@ -959,11 +1023,19 @@ function mergePythonCapabilityRuns(
   const exact = new Map(target.map((run) => [JSON.stringify(run), run]));
   for (const run of source) exact.set(JSON.stringify(run), run);
   target.splice(0, target.length, ...[...exact.values()].sort((left, right) =>
-    left.projectKey.localeCompare(right.projectKey) ||
-    left.contextFingerprint.localeCompare(right.contextFingerprint) ||
-    left.afterStateManifestFingerprint.localeCompare(right.afterStateManifestFingerprint) ||
-    (left.authority ?? "").localeCompare(right.authority ?? "")
+    pythonCapabilitySortKey(left).localeCompare(pythonCapabilitySortKey(right))
   ));
+}
+
+function pythonCapabilitySortKey(run: PythonValidationCapabilityRun): string {
+  return JSON.stringify({
+    checkId: run.checkId,
+    capability: run.capability,
+    projectKey: "projectKey" in run ? run.projectKey ?? "" : "",
+    contextFingerprint: "contextFingerprint" in run ? run.contextFingerprint ?? "" : "",
+    state: "state" in run ? run.state : "",
+    receipt: run
+  });
 }
 
 function isValidationDiagnosticArray(

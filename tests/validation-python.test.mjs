@@ -6,10 +6,13 @@ import { dirname, join, relative } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 import { createValidationCheckRegistry, createValidationGraphQuerySession, createValidationRunner } from "../packages/validation/dist/index.js";
+import { validationChecksForRepoPolicy } from "../packages/validation-policy/dist/index.js";
 import {
   PYTHON_DEAD_CODE_CHECK_ID,
   PYTHON_IMPORT_GRAPH_CHECK_ID,
   PYTHON_RELEVANT_TESTS_CHECK_ID,
+  PYTHON_RUFF_FORMAT_CHECK_ID,
+  PYTHON_RUFF_LINT_CHECK_ID,
   PYTHON_SOURCE_HYGIENE_CHECK_ID,
   PYTHON_SYNTAX_CHECK_ID,
   PYTHON_TYPES_CHECK_ID,
@@ -25,6 +28,7 @@ import {
   validationPythonAdapterName
 } from "../packages/validation-python/dist/index.js";
 import { runTool } from "../packages/validation-python/dist/process.js";
+import { ruffCommandArgs } from "../packages/validation-python/dist/ruff-execution.js";
 
 const repoRoot = dirname(fileURLToPath(import.meta.url));
 const validationFixtureRoot = join(repoRoot, "../packages/fixtures/validation-python");
@@ -44,6 +48,21 @@ describe("validation-python adapter", () => {
     );
   });
 
+  it("keeps mypy-authority fixture resources out of repository Python source discovery", () => {
+    const fixturePaths = walkFiles(join(validationFixtureRoot, "mypy-authority"));
+    assert.ok(fixturePaths.length > 0);
+    assert.ok(fixturePaths.every((path) => !isPythonSourcePath(path)));
+    assert.deepEqual(Object.keys(fixtureFiles("mypy-authority")).sort(), [
+      "pyproject.toml",
+      "src/acme/__init__.py",
+      "src/acme/app.py",
+      "src/acme/mypy_plugin.py",
+      "src/acme/plugin_support.py",
+      "src/acme/widget.py",
+      "stubs/external/__init__.pyi"
+    ]);
+  });
+
   it("exports stable Python check ids and definitions", () => {
     const checks = createPythonValidationChecks();
     const registry = createValidationCheckRegistry(checks);
@@ -54,6 +73,8 @@ describe("validation-python adapter", () => {
       [
         PYTHON_SYNTAX_CHECK_ID,
         PYTHON_SOURCE_HYGIENE_CHECK_ID,
+        PYTHON_RUFF_LINT_CHECK_ID,
+        PYTHON_RUFF_FORMAT_CHECK_ID,
         PYTHON_TYPES_CHECK_ID,
         PYTHON_IMPORT_GRAPH_CHECK_ID,
         PYTHON_DEAD_CODE_CHECK_ID,
@@ -63,6 +84,39 @@ describe("validation-python adapter", () => {
     assert.equal(registry.byId.get(PYTHON_SYNTAX_CHECK_ID)?.requiresGraph, false);
     assert.equal(registry.byId.get(PYTHON_SOURCE_HYGIENE_CHECK_ID)?.requiresGraph, false);
     assert.equal(registry.byId.get(PYTHON_IMPORT_GRAPH_CHECK_ID)?.requiresGraph, true);
+  });
+
+  it("places canonical explicit Ruff config overrides after the subcommand", () => {
+    const baseTool = {
+      tool: "ruff",
+      available: true,
+      executable: "/usr/bin/ruff",
+      configFile: "pkg/ruff.toml",
+      cwd: "/repo/pkg",
+      source: "explicit_override"
+    };
+    assert.deepEqual(
+      ruffCommandArgs(
+        { ...baseTool, argv: ["/usr/bin/ruff", "--config", "pkg/ruff.toml"] },
+        { projectRoot: "pkg", repositoryRoot: "/repo" },
+        "check",
+        ["app.py"]
+      ),
+      ["check", "--config", "ruff.toml", "app.py"]
+    );
+    assert.deepEqual(
+      ruffCommandArgs(
+        {
+          ...baseTool,
+          configFile: "ruff.toml",
+          argv: ["/usr/bin/ruff", "--config=../../ruff.toml"]
+        },
+        { projectRoot: "services/api", repositoryRoot: "/repo" },
+        "format",
+        ["--check", "app.py"]
+      ),
+      ["format", "--config", "../../ruff.toml", "--check", "app.py"]
+    );
   });
 
   it("fails syntax and type checks closed when no canonical context resolver is injected", async () => {
@@ -241,7 +295,7 @@ describe("validation-python adapter", () => {
         scope: { kind: "files", files: ["services/api/src/acme/ns/app.py"] }
       }));
 
-      assert.equal(result.status, "passed", JSON.stringify(result, null, 2));
+      if (result.status !== "passed") throw new Error(JSON.stringify(result, null, 2));
       assert.equal(result.pythonProjectContexts[0].projectRoot, "services/api");
       assert.deepEqual(result.pythonProjectContexts[0].sourceRoots, ["services/api/src"]);
     } finally {
@@ -775,12 +829,24 @@ describe("validation-python adapter", () => {
           : rawPyrightShim("1.1.411", testCase.body));
         const files = { "pyrightconfig.json": "{}\n", "pkg/app.py": "value: int = 1\n" };
         const before = materializedMypyWorkspaces();
+        const baseProbe = successfulProbe();
+        const processProbe = testCase.removeAfterProbe
+          ? {
+              ...baseProbe,
+              async run(command, args, options) {
+                const result = await baseProbe.run(command, args, options);
+                if (command === executable && args.includes("--version")) rmSync(executable, { force: true });
+                return result;
+              }
+            }
+          : baseProbe;
         const result = await runner({
           files,
           checks: createPythonValidationChecks({
             repoRoot,
             env: { PATH: "" },
             timeoutMs: testCase.timeoutMs,
+            processProbe,
             nodeWorkspace: createNodePythonProjectWorkspace(repoRoot),
             toolArgv: { pyright: [executable] }
           })
@@ -1987,7 +2053,7 @@ describe("validation-python adapter", () => {
         checks: createPythonValidationChecks({ repoRoot })
       }).runValidation(request({ repo: { repoRoot } }));
 
-      assert.equal(result.status, "passed");
+      assert.equal(result.status, "passed", JSON.stringify(result, null, 2));
       assert.equal(readFileSync(join(repoRoot, "compiler-called"), "utf8"), "compiler");
     } finally {
       rmSync(repoRoot, { recursive: true, force: true });
@@ -2067,6 +2133,2096 @@ describe("validation-python adapter", () => {
       assert.equal(result.status, "infrastructure_failure");
       assert.equal(result.manifest.runs[0].outcome, "tool_failure");
       assert.deepEqual(result.diagnostics.map((entry) => entry.code), ["PYTHON_TYPES_TOOL_FAILED"]);
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("runs opt-in Ruff lint and records a portable receipt", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-ruff-lint-"));
+    try {
+      writePassingPythonProtocolShim(repoRoot);
+      writeToolShim(
+        repoRoot,
+        "ruff",
+        [
+          "#!/bin/sh",
+          "if [ \"$1\" = \"--version\" ]; then echo 'ruff 0.6.9'; exit 0; fi",
+          "if [ \"$1\" = \"check\" ]; then",
+          "  printf '%s\\n' '[{\"code\":\"F401\",\"filename\":\"pkg/app.py\",\"location\":{\"row\":1,\"column\":8},\"end_location\":{\"row\":1,\"column\":10},\"message\":\"unused import\"}]'",
+          "  exit 1",
+          "fi",
+          "exit 2",
+          ""
+        ].join("\n")
+      );
+
+      const result = await runner({
+        files: {
+          "pkg/app.py": "value = 1\n",
+          "ruff.toml": "[lint]\nselect = [\"F401\"]\n"
+        },
+        checks: createPythonValidationChecks({ repoRoot, env: { PATH: "" } })
+      }).runValidation(
+        request({
+          repo: { repoRoot },
+          checks: [PYTHON_RUFF_LINT_CHECK_ID],
+          overlays: [{ path: "pkg/app.py", action: "write", content: "import os\n" }]
+        })
+      );
+
+      assert.equal(result.status, "policy_failure");
+      assert.deepEqual(result.diagnostics.map((entry) => entry.code), ["PY_RUFF_LINT_F401"]);
+      const receipt = result.manifest.runs[0].pythonCapabilityRuns?.[0];
+      assert.equal(receipt?.checkId, PYTHON_RUFF_LINT_CHECK_ID);
+      assert.equal(receipt?.capability, "ruff_lint");
+      assert.equal(receipt?.state, "findings");
+      assert.equal(receipt?.cwd, ".");
+      assert.deepEqual(receipt?.sourcePaths, ["pkg/app.py"]);
+      assert.deepEqual(receipt?.configPaths, ["ruff.toml"]);
+      assert.equal(receipt?.argv.includes("check"), true);
+      assert.equal(receipt?.argv.includes("pkg/app.py"), true);
+      assert.equal(receipt?.configPath, "ruff.toml");
+      assert.equal(receipt?.termination, "exited");
+      assert.equal(receipt?.exitCode, 1);
+      assert.equal(receipt?.diagnosticCount, 1);
+      assert.match(receipt?.afterStateManifestFingerprint ?? "", /^sha256:[a-f0-9]{64}$/);
+      assert.equal(receipt?.executable, "repo:.venv/bin/ruff");
+      assert.equal(receipt?.argv?.[0], "repo:.venv/bin/ruff");
+      assert.equal(receipt?.invocations?.every((invocation) => invocation.argv[0] === "repo:.venv/bin/ruff"), true);
+      assert.equal(JSON.stringify(receipt).includes(repoRoot), false);
+      assert.equal((receipt?.command ?? "").includes("opcore-python-check"), false);
+      assert.equal(receipt?.argv.includes("--no-fix"), true);
+      assert.equal(receipt?.argv.includes("--no-cache"), true);
+      assert.equal(result.diagnostics[0].tool?.command, receipt?.command);
+      assert.equal(result.diagnostics[0].tool?.cwd, receipt?.cwd);
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("maps Ruff syntax diagnostics with null codes to deterministic findings", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-ruff-null-code-"));
+    try {
+      writePassingPythonProtocolShim(repoRoot);
+      writeToolShim(
+        repoRoot,
+        "ruff",
+        [
+          "#!/bin/sh",
+          "if [ \"$1\" = \"--version\" ]; then echo 'ruff 0.6.9'; exit 0; fi",
+          "if [ \"$1\" = \"check\" ]; then",
+          "  printf '%s\\n' '[{\"cell\":null,\"code\":null,\"end_location\":{\"column\":1,\"row\":2},\"filename\":\"pkg/app.py\",\"fix\":null,\"location\":{\"column\":12,\"row\":1},\"message\":\"SyntaxError: Expected \\\")\\\", found newline\",\"noqa_row\":null,\"url\":null}]'",
+          "  exit 1",
+          "fi",
+          "exit 2",
+          ""
+        ].join("\n")
+      );
+
+      const result = await runner({
+        files: {
+          "pkg/app.py": "print(\"oops\"\\n",
+          "ruff.toml": "target-version = \"py38\"\n"
+        },
+        checks: createPythonValidationChecks({ repoRoot, env: { PATH: "" } })
+      }).runValidation(
+        request({
+          repo: { repoRoot },
+          checks: [PYTHON_RUFF_LINT_CHECK_ID]
+        })
+      );
+
+      assert.equal(result.status, "policy_failure", JSON.stringify(result, null, 2));
+      assert.deepEqual(result.diagnostics.map((entry) => entry.code), ["PY_RUFF_LINT_SYNTAX_ERROR"]);
+      assert.equal(result.diagnostics[0].line, 1);
+      assert.equal(result.diagnostics[0].column, 12);
+      assert.equal(result.manifest.runs[0].outcome, "findings");
+      const receipt = result.manifest.runs[0].pythonCapabilityRuns?.[0];
+      assert.equal(receipt?.state, "findings");
+      assert.equal(receipt?.diagnosticCount, 1);
+      assert.equal(receipt?.exitCode, 1);
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("runs Ruff without Python and keeps standalone Ruff status available", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-ruff-no-interpreter-"));
+    try {
+      writeToolShim(
+        repoRoot,
+        "ruff",
+        [
+          "#!/bin/sh",
+          "if [ \"$1\" = \"--version\" ]; then echo 'ruff 0.6.9'; exit 0; fi",
+          "if [ \"$1\" = \"check\" ]; then printf '%s\\n' '[]'; exit 0; fi",
+          "exit 2",
+          ""
+        ].join("\n")
+      );
+
+      const result = await runner({
+        files: {
+          "pyproject.toml": "[project]\nname='fixture'\n[tool.mypy]\n",
+          "pkg/app.py": "value = 1\n"
+        },
+        checks: createPythonValidationChecks({ repoRoot, env: { PATH: "" } })
+      }).runValidation(
+        request({
+          repo: { repoRoot },
+          checks: [PYTHON_RUFF_LINT_CHECK_ID]
+        })
+      );
+
+      assert.equal(result.status, "passed");
+      assert.equal(result.pythonProjectContexts[0].outcome, "unsupported");
+      assert.equal(
+        result.pythonProjectContexts[0].reasons.some((reason) => reason.code === "interpreter_unavailable"),
+        true
+      );
+      assert.equal(
+        result.pythonProjectContexts[0].tools.some((tool) => tool.tool === "ruff" && tool.available),
+        true
+      );
+      assert.equal(result.manifest.runs[0].pythonCapabilityRuns?.[0]?.state, "passed");
+
+      const status = createPythonValidationAdapterStatus({
+        contexts: result.pythonProjectContexts,
+        activeCheckIds: [PYTHON_RUFF_LINT_CHECK_ID]
+      });
+      assert.equal(status.status, "available");
+      assert.deepEqual(status.degradedChecks, []);
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("does not attribute malformed mypy, Pyright, or pytest config to a Ruff-only run", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-ruff-unrelated-config-"));
+    try {
+      writeToolShim(
+        repoRoot,
+        "ruff",
+        [
+          "#!/bin/sh",
+          "if [ \"$1\" = \"--version\" ]; then echo 'ruff 0.6.9'; exit 0; fi",
+          "if [ \"$1\" = \"check\" ]; then printf '%s\\n' '[]'; exit 0; fi",
+          "exit 2",
+          ""
+        ].join("\n")
+      );
+
+      const result = await runner({
+        files: {
+          "pkg/app.py": "value = 1\n",
+          "pyproject.toml": "[tool.mypy]\npython_version = [\n",
+          "mypy.ini": "option-before-section = true\n",
+          "pyrightconfig.json": "{not-json\n",
+          "pytest.ini": "option-before-section = true\n"
+        },
+        checks: createPythonValidationChecks({ repoRoot, env: { PATH: "" } })
+      }).runValidation(request({
+        repo: { repoRoot },
+        checks: [PYTHON_RUFF_LINT_CHECK_ID],
+        scope: { kind: "files", files: ["pkg/app.py"] }
+      }));
+
+      assert.equal(result.status, "passed", JSON.stringify(result, null, 2));
+      assert.equal(result.manifest.runs[0].pythonCapabilityRuns?.[0]?.state, "passed");
+      assert.deepEqual(
+        [...new Set(result.pythonProjectContexts[0].reasons
+          .filter((reason) => reason.code === "invalid_config")
+          .map((reason) => reason.tool)
+          .filter((tool) => tool !== undefined))].sort(),
+        []
+      );
+      assert.equal(
+        result.pythonProjectContexts[0].reasons.some((reason) =>
+          reason.code === "invalid_config" && reason.tool === "ruff"
+        ),
+        false
+      );
+      assert.equal(
+        result.pythonProjectContexts[0].tools.find((tool) => tool.tool === "ruff")?.configFile,
+        undefined
+      );
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("ignores top-level pyproject extend while honoring the selected tool.ruff table", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-ruff-pyproject-extend-"));
+    try {
+      writeToolShim(
+        repoRoot,
+        "ruff",
+        [
+          "#!/bin/sh",
+          "if [ \"$1\" = \"--version\" ]; then echo 'ruff 0.6.9'; exit 0; fi",
+          "if [ \"$1\" = \"check\" ]; then printf '%s\\n' '[]'; exit 0; fi",
+          "exit 2",
+          ""
+        ].join("\n")
+      );
+      const result = await runner({
+        files: {
+          "pyproject.toml": [
+            "extend = \"../unrelated.toml\"",
+            "[project]",
+            "name = \"fixture\"",
+            "[tool.ruff]",
+            "line-length = 99",
+            ""
+          ].join("\n"),
+          "pkg/app.py": "value = 1\n"
+        },
+        checks: createPythonValidationChecks({ repoRoot, env: { PATH: "" } })
+      }).runValidation(request({
+        repo: { repoRoot },
+        checks: [PYTHON_RUFF_LINT_CHECK_ID],
+        scope: { kind: "files", files: ["pkg/app.py"] }
+      }));
+
+      assert.equal(result.status, "passed", JSON.stringify(result, null, 2));
+      assert.deepEqual(result.manifest.runs[0].pythonCapabilityRuns?.[0]?.configPaths, ["pyproject.toml"]);
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("materializes overlay-aware Ruff extend config outside a nested project boundary", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-ruff-extend-"));
+    try {
+      writePassingPythonProtocolShim(join(repoRoot, "apps/api"));
+      writeToolShim(
+        join(repoRoot, "apps/api"),
+        "ruff",
+        [
+          "#!/bin/sh",
+          "if [ \"$1\" = \"--version\" ]; then echo 'ruff 0.6.9'; exit 0; fi",
+          "if [ \"$1\" = \"--config\" ]; then shift 2; fi",
+          "IFS= read -r extended_line < ../../config/base-style.toml",
+          "if [ \"$1\" = \"check\" ] && [ \"$extended_line\" = 'line-length = 99' ]; then",
+          "  printf '%s\\n' '[]'",
+          "  exit 0",
+          "fi",
+          "exit 2",
+          ""
+        ].join("\n")
+      );
+
+      const result = await runner({
+        files: {
+          "apps/api/pyproject.toml": "[project]\nname = 'api'\n",
+          "apps/api/ruff.toml": "extend = \"../../config/base-style.toml\"\n",
+          "apps/api/src/app.py": "VALUE = 1\n",
+          "config/base-style.toml": "line-length = 88\n"
+        },
+        checks: createPythonValidationChecks({ repoRoot, env: { PATH: "" } })
+      }).runValidation(request({
+        repo: { repoRoot },
+        checks: [PYTHON_RUFF_LINT_CHECK_ID],
+        scope: { kind: "files", files: ["apps/api/src/app.py"] },
+        overlays: [{ path: "config/base-style.toml", action: "write", content: "line-length = 99\n" }]
+      }));
+
+      assert.equal(result.status, "passed", JSON.stringify(result, null, 2));
+      const receipt = result.manifest.runs[0].pythonCapabilityRuns?.[0];
+      assert.deepEqual(receipt?.configPaths, [
+        "apps/api/ruff.toml",
+        "config/base-style.toml"
+      ]);
+      assert.equal(receipt?.state, "passed");
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("materializes only the selected Ruff extend chain and ignores unrelated sibling config", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-ruff-absolute-extend-"));
+    try {
+      writePassingPythonProtocolShim(repoRoot);
+      writeToolShim(
+        repoRoot,
+        "ruff",
+        [
+          "#!/bin/sh",
+          "if [ \"$1\" = \"--version\" ]; then echo 'ruff 0.6.9'; exit 0; fi",
+          "IFS= read -r root_extend < ruff.toml",
+          "IFS= read -r base_extend < config/base-style.toml",
+          "IFS= read -r final_style < config/final-style.toml",
+          "if [ \"$1\" = \"check\" ] &&",
+          "   [ \"$root_extend\" = 'extend = \"config/base-style.toml\"' ] &&",
+          "   [ \"$base_extend\" = 'extend = \"final-style.toml\"' ] &&",
+          "   [ \"$final_style\" = 'line-length = 99' ]; then",
+          "  printf '%s\\n' '[]'",
+          "  exit 0",
+          "fi",
+          "exit 2",
+          ""
+        ].join("\n")
+      );
+      const absoluteBase = join(repoRoot, "config/base-style.toml");
+      const absoluteFinal = join(repoRoot, "config/final-style.toml");
+      const result = await runner({
+        files: {
+          "pyproject.toml": "[project]\nname = 'absolute-extend'\n",
+          "ruff.toml": `extend = ${JSON.stringify(absoluteBase)}\n`,
+          "config/base-style.toml": `extend = ${JSON.stringify(absoluteFinal)}\n`,
+          "config/final-style.toml": "line-length = 88\n",
+          "other/ruff.toml": "extend = \"/outside/does-not-exist.toml\"\n",
+          "pkg/app.py": "VALUE = 1\n"
+        },
+        checks: createPythonValidationChecks({ repoRoot, env: { PATH: "" } })
+      }).runValidation(request({
+        repo: { repoRoot },
+        checks: [PYTHON_RUFF_LINT_CHECK_ID],
+        scope: { kind: "files", files: ["pkg/app.py"] },
+        overlays: [{ path: "config/final-style.toml", action: "write", content: "line-length = 99\n" }]
+      }));
+
+      assert.equal(result.status, "passed", JSON.stringify(result, null, 2));
+      const receipt = result.manifest.runs[0].pythonCapabilityRuns?.[0];
+      assert.deepEqual(receipt?.configPaths, [
+        "config/base-style.toml",
+        "config/final-style.toml",
+        "ruff.toml"
+      ]);
+      assert.equal(receipt?.state, "passed");
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("partitions Ruff execution by each target's closest configuration", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-ruff-target-config-"));
+    try {
+      writeToolShim(
+        repoRoot,
+        "ruff",
+        [
+          "#!/bin/sh",
+          "if [ \"$1\" = \"--version\" ]; then echo 'ruff 0.6.9'; exit 0; fi",
+          "case \" $* \" in",
+          "  *' pkg/app.py '*)",
+          "    /usr/bin/grep -q '^line-length = 99$' pkg/ruff.toml || exit 9",
+          "    [ ! -e ruff.toml ] || exit 9",
+          "    printf '%s\\n' '[{\"code\":\"F401\",\"filename\":\"pkg/app.py\",\"location\":{\"row\":1,\"column\":1},\"message\":\"nested config\"}]'",
+          "    exit 1",
+          "    ;;",
+          "  *' root.py '*)",
+          "    /usr/bin/grep -q '^line-length = 88$' ruff.toml || exit 9",
+          "    [ ! -e pkg/ruff.toml ] || exit 9",
+          "    printf '%s\\n' '[]'",
+          "    exit 0",
+          "    ;;",
+          "esac",
+          "exit 9",
+          ""
+        ].join("\n")
+      );
+      const result = await runner({
+        files: {
+          "ruff.toml": "line-length = 88\n",
+          "root.py": "ROOT = 1\n",
+          "pkg/ruff.toml": "line-length = 99\n",
+          "pkg/app.py": "APP = 1\n"
+        },
+        checks: createPythonValidationChecks({ repoRoot, env: { PATH: "" } })
+      }).runValidation(request({
+        repo: { repoRoot },
+        checks: [PYTHON_RUFF_LINT_CHECK_ID],
+        scope: { kind: "files", files: ["root.py", "pkg/app.py"] }
+      }));
+
+      assert.equal(result.status, "policy_failure", JSON.stringify(result, null, 2));
+      assert.deepEqual(result.diagnostics.map((entry) => entry.path), ["pkg/app.py"]);
+      assert.deepEqual(
+        result.manifest.runs[0].pythonCapabilityRuns?.map((receipt) => receipt.configPaths),
+        [["pkg/ruff.toml"], ["ruff.toml"]]
+      );
+      assert.deepEqual(
+        result.pythonProjectContexts.map((context) => [
+          context.target,
+          context.tools.find((tool) => tool.tool === "ruff")?.configFile
+        ]),
+        [["pkg/app.py", "pkg/ruff.toml"], ["root.py", "ruff.toml"]]
+      );
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("uses the closest ancestor Ruff config across a nested project boundary", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-ruff-ancestor-config-"));
+    try {
+      writeToolShim(
+        join(repoRoot, "services/api"),
+        "ruff",
+        [
+          "#!/bin/sh",
+          "if [ \"$1\" = \"--version\" ]; then echo 'ruff 0.6.9'; exit 0; fi",
+          "if [ \"$1\" = \"check\" ] && /usr/bin/grep -q 'E501' ../../ruff.toml; then",
+          "  printf '%s\\n' '[{\"code\":\"E501\",\"filename\":\"app.py\",\"location\":{\"row\":1,\"column\":89},\"message\":\"line too long\"}]'",
+          "  exit 1",
+          "fi",
+          "printf '%s\\n' '[]'",
+          "exit 0",
+          ""
+        ].join("\n")
+      );
+      const result = await runner({
+        files: {
+          "ruff.toml": "[lint]\nselect = [\"E501\"]\n",
+          "services/api/pyproject.toml": "[project]\nname = \"api\"\n",
+          "services/api/app.py": `${"x".repeat(100)}\n`
+        },
+        checks: createPythonValidationChecks({
+          repoRoot,
+          env: { PATH: "" },
+          nodeWorkspace: createNodePythonProjectWorkspace(repoRoot)
+        })
+      }).runValidation(request({
+        repo: { repoRoot },
+        checks: [PYTHON_RUFF_LINT_CHECK_ID],
+        scope: { kind: "files", files: ["services/api/app.py"] }
+      }));
+
+      assert.equal(result.status, "policy_failure", JSON.stringify(result, null, 2));
+      assert.deepEqual(result.diagnostics.map((entry) => entry.code), ["PY_RUFF_LINT_E501"]);
+      assert.equal(
+        result.pythonProjectContexts[0].tools.find((tool) => tool.tool === "ruff")?.configFile,
+        "ruff.toml"
+      );
+      assert.deepEqual(result.manifest.runs[0].pythonCapabilityRuns?.[0]?.configPaths, ["ruff.toml"]);
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("executes nested explicit Ruff config overrides after the subcommand with the materialized ancestor path", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-ruff-explicit-config-"));
+    const projectRoot = join(repoRoot, "services/api");
+    try {
+      writeToolShim(
+        projectRoot,
+        "ruff",
+        [
+          "#!/bin/sh",
+          "if [ \"$1\" = \"--version\" ]; then echo 'ruff 0.6.9'; exit 0; fi",
+          "if [ \"$1\" = \"check\" ] && [ \"$2\" = \"--config\" ] && [ \"$3\" = \"../../ruff.toml\" ]; then",
+          "  printf '%s\\n' '[]'",
+          "  exit 0",
+          "fi",
+          "if [ \"$1\" = \"format\" ] && [ \"$2\" = \"--config\" ] && [ \"$3\" = \"../../ruff.toml\" ]; then",
+          "  exit 0",
+          "fi",
+          "exit 9",
+          ""
+        ].join("\n")
+      );
+      const ruff = join(projectRoot, ".venv/bin/ruff");
+      const result = await runner({
+        files: {
+          "ruff.toml": "line-length = 88\n",
+          "services/api/pyproject.toml": "[project]\nname = \"api\"\n",
+          "services/api/app.py": "VALUE = 1\n"
+        },
+        checks: createPythonValidationChecks({
+          repoRoot,
+          env: { PATH: "" },
+          nodeWorkspace: createNodePythonProjectWorkspace(repoRoot),
+          toolArgv: { ruff: [ruff, "--config", "../../ruff.toml"] }
+        })
+      }).runValidation(request({
+        repo: { repoRoot },
+        checks: [PYTHON_RUFF_LINT_CHECK_ID, PYTHON_RUFF_FORMAT_CHECK_ID],
+        scope: { kind: "files", files: ["services/api/app.py"] }
+      }));
+
+      assert.equal(result.status, "passed", JSON.stringify(result, null, 2));
+      const runs = new Map(result.manifest.runs.map((run) => [run.checkId, run]));
+      assert.deepEqual(
+        runs.get(PYTHON_RUFF_LINT_CHECK_ID)?.pythonCapabilityRuns?.[0]?.argv?.slice(1, 4),
+        ["check", "--config", "../../ruff.toml"]
+      );
+      assert.deepEqual(
+        runs.get(PYTHON_RUFF_FORMAT_CHECK_ID)?.pythonCapabilityRuns?.[0]?.argv?.slice(1, 4),
+        ["format", "--config", "../../ruff.toml"]
+      );
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects Ruff lint diagnostics outside the selected after-state source set", async () => {
+    for (const [id, filename] of [
+      ["outside", "/etc/passwd"],
+      ["unselected", "pkg/unselected.py"]
+    ]) {
+      const repoRoot = mkdtempSync(join(tmpdir(), `opcore-python-ruff-output-${id}-`));
+      try {
+        writeToolShim(
+          repoRoot,
+          "ruff",
+          [
+            "#!/bin/sh",
+            "if [ \"$1\" = \"--version\" ]; then echo 'ruff 0.6.9'; exit 0; fi",
+            `printf '%s\\n' ${JSON.stringify(JSON.stringify([{
+              code: "F401",
+              filename,
+              location: { row: 1, column: 1 },
+              message: "unauthorized path"
+            }]))}`,
+            "exit 1",
+            ""
+          ].join("\n")
+        );
+        const result = await runner({
+          files: {
+            "pkg/app.py": "APP = 1\n",
+            "pkg/unselected.py": "UNSELECTED = 1\n"
+          },
+          checks: createPythonValidationChecks({ repoRoot, env: { PATH: "" } })
+        }).runValidation(request({
+          repo: { repoRoot },
+          checks: [PYTHON_RUFF_LINT_CHECK_ID],
+          scope: { kind: "files", files: ["pkg/app.py"] }
+        }));
+
+        assert.equal(result.status, "infrastructure_failure", `${id}: ${JSON.stringify(result, null, 2)}`);
+        assert.equal(result.manifest.runs[0].outcome, "tool_failure");
+        assert.deepEqual(result.diagnostics.map((entry) => entry.code), ["PY_RUFF_LINT_TOOL_FAILED"]);
+        assert.equal(JSON.stringify(result).includes(filename), false);
+      } finally {
+        rmSync(repoRoot, { recursive: true, force: true });
+      }
+    }
+  });
+
+  it("keeps unrelated refused tool configuration from disabling a Ruff-only run", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-ruff-refusal-scope-"));
+    try {
+      writeToolShim(
+        repoRoot,
+        "ruff",
+        [
+          "#!/bin/sh",
+          "if [ \"$1\" = \"--version\" ]; then echo 'ruff 0.6.9'; exit 0; fi",
+          "printf '%s\\n' '[]'",
+          "exit 0",
+          ""
+        ].join("\n")
+      );
+      const files = {
+        "mypy.ini": "[mypy]\nstrict = true\n",
+        "ruff.toml": "line-length = 88\n",
+        "pkg/app.py": "APP = 1\n"
+      };
+      const result = await runner({
+        files,
+        checks: createPythonValidationChecks({
+          repoRoot,
+          env: { PATH: "" },
+          nodeWorkspace: projectWorkspace(files, () => true, new Set(["mypy.ini"]))
+        })
+      }).runValidation(request({
+        repo: { repoRoot },
+        checks: [PYTHON_RUFF_LINT_CHECK_ID],
+        scope: { kind: "files", files: ["pkg/app.py"] }
+      }));
+
+      assert.equal(result.status, "passed", JSON.stringify(result, null, 2));
+      assert.equal(result.manifest.runs[0].pythonCapabilityRuns?.[0]?.state, "passed");
+      assert.equal(
+        result.pythonProjectContexts[0].reasons.some((reason) => reason.tool === "mypy"),
+        false
+      );
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("isolates Ruff execution from poisoned host paths and Python state", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-ruff-host-isolation-"));
+    const poisonRoot = mkdtempSync(join(tmpdir(), "opcore-python-ruff-poison-"));
+    try {
+      writeToolShim(
+        repoRoot,
+        "ruff",
+        [
+          "#!/bin/sh",
+          "if [ \"$1\" = \"--version\" ]; then echo 'ruff 0.6.9'; exit 0; fi",
+          `case \"$HOME:$XDG_CONFIG_HOME:$XDG_CACHE_HOME:$TMPDIR:$PATH:$PYTHONPATH\" in *${poisonRoot}*) exit 9 ;; esac`,
+          "[ \"$PYTHONNOUSERSITE\" = 1 ] || exit 9",
+          "[ \"$PYTHONDONTWRITEBYTECODE\" = 1 ] || exit 9",
+          "[ \"$PWD\" = \"$(pwd)\" ] || exit 9",
+          "[ \"$RUFF_CACHE_DIR\" = \"${TMPDIR%/tmp}/ruff-cache\" ] || exit 9",
+          "printf '%s\\n' '[]'",
+          "exit 0",
+          ""
+        ].join("\n")
+      );
+      const result = await runner({
+        files: { "pkg/app.py": "APP = 1\n" },
+        checks: createPythonValidationChecks({
+          repoRoot,
+          env: {
+            PATH: poisonRoot,
+            HOME: poisonRoot,
+            XDG_CONFIG_HOME: poisonRoot,
+            XDG_CACHE_HOME: poisonRoot,
+            TMPDIR: poisonRoot,
+            PYTHONPATH: poisonRoot
+          }
+        })
+      }).runValidation(request({
+        repo: { repoRoot },
+        checks: [PYTHON_RUFF_LINT_CHECK_ID],
+        scope: { kind: "files", files: ["pkg/app.py"] }
+      }));
+
+      assert.equal(result.status, "passed", JSON.stringify(result, null, 2));
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+      rmSync(poisonRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("attributes malformed pyproject Ruff dotted, quoted, and inline declarations", async () => {
+    const declarations = [
+      "tool.ruff = { line-length = 88 }",
+      "\"tool\".\"ruff\" = { line-length = 88 }",
+      "tool = { ruff = { line-length = 88 } }"
+    ];
+    for (const [index, declaration] of declarations.entries()) {
+      const repoRoot = mkdtempSync(join(tmpdir(), `opcore-python-ruff-declaration-${index}-`));
+      const markerPath = join(repoRoot, "ruff-check-executed");
+      try {
+        writeToolShim(
+          repoRoot,
+          "ruff",
+          [
+            "#!/bin/sh",
+            "if [ \"$1\" = \"--version\" ]; then echo 'ruff 0.6.9'; exit 0; fi",
+            `printf executed > ${JSON.stringify(markerPath)}`,
+            "printf '%s\\n' '[]'",
+            "exit 0",
+            ""
+          ].join("\n")
+        );
+        const result = await runner({
+          files: {
+            "pyproject.toml": `${declaration}\nBROKEN = [\n`,
+            "pkg/app.py": "APP = 1\n"
+          },
+          checks: createPythonValidationChecks({ repoRoot, env: { PATH: "" } })
+        }).runValidation(request({
+          repo: { repoRoot },
+          checks: [PYTHON_RUFF_LINT_CHECK_ID],
+          scope: { kind: "files", files: ["pkg/app.py"] }
+        }));
+
+        assert.equal(result.status, "unsupported_request", `${declaration}: ${JSON.stringify(result, null, 2)}`);
+        assert.equal(result.manifest.runs[0].outcome, "invalid_config");
+        assert.equal(result.manifest.runs[0].pythonCapabilityRuns?.[0]?.configPath, "pyproject.toml");
+        assert.equal(existsSync(markerPath), false);
+      } finally {
+        rmSync(repoRoot, { recursive: true, force: true });
+      }
+    }
+  });
+
+  it("fails closed before execution when an absolute Ruff extend escapes the after-state repository", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-ruff-external-extend-"));
+    const markerPath = join(repoRoot, "ruff-check-executed");
+    try {
+      writePassingPythonProtocolShim(repoRoot);
+      writeToolShim(
+        repoRoot,
+        "ruff",
+        [
+          "#!/bin/sh",
+          "if [ \"$1\" = \"--version\" ]; then echo 'ruff 0.6.9'; exit 0; fi",
+          `printf executed > '${markerPath}'`,
+          "exit 0",
+          ""
+        ].join("\n")
+      );
+      const result = await runner({
+        files: {
+          "ruff.toml": "extend = \"/outside/opcore-style.toml\"\n",
+          "pkg/app.py": "VALUE = 1\n"
+        },
+        checks: createPythonValidationChecks({ repoRoot, env: { PATH: "" } })
+      }).runValidation(request({
+        repo: { repoRoot },
+        checks: [PYTHON_RUFF_LINT_CHECK_ID],
+        scope: { kind: "files", files: ["pkg/app.py"] }
+      }));
+
+      assert.equal(result.status, "unsupported_request", JSON.stringify(result, null, 2));
+      assert.equal(result.manifest.runs[0].outcome, "invalid_config");
+      assert.equal(result.manifest.runs[0].pythonCapabilityRuns?.[0]?.state, "invalid_config");
+      assert.deepEqual(result.diagnostics.map((entry) => entry.code), ["PY_RUFF_LINT_INVALID_CONFIG"]);
+      assert.equal(existsSync(markerPath), false);
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("fails closed before reading a Ruff extend symlink that resolves outside the repository", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-ruff-symlink-extend-"));
+    const externalRoot = mkdtempSync(join(tmpdir(), "opcore-python-ruff-symlink-external-"));
+    const markerPath = join(repoRoot, "ruff-check-executed");
+    try {
+      mkdirSync(join(repoRoot, "config"), { recursive: true });
+      writeFileSync(join(externalRoot, "base.toml"), "line-length = 200\n");
+      symlinkSync(join(externalRoot, "base.toml"), join(repoRoot, "config/base.toml"));
+      writeToolShim(
+        repoRoot,
+        "ruff",
+        [
+          "#!/bin/sh",
+          "if [ \"$1\" = \"--version\" ]; then echo 'ruff 0.6.9'; exit 0; fi",
+          `printf executed > '${markerPath}'`,
+          "exit 0",
+          ""
+        ].join("\n")
+      );
+      const result = await runner({
+        files: {
+          "ruff.toml": "extend = \"config/base.toml\"\n",
+          "config/base.toml": "line-length = 200\n",
+          "pkg/app.py": "VALUE = 1\n"
+        },
+        checks: createPythonValidationChecks({
+          repoRoot,
+          env: { PATH: "" },
+          nodeWorkspace: createNodePythonProjectWorkspace(repoRoot)
+        })
+      }).runValidation(request({
+        repo: { repoRoot },
+        checks: [PYTHON_RUFF_LINT_CHECK_ID],
+        scope: { kind: "files", files: ["pkg/app.py"] }
+      }));
+
+      assert.equal(result.status, "unsupported_request", JSON.stringify(result, null, 2));
+      assert.equal(result.manifest.runs[0].outcome, "invalid_config");
+      assert.deepEqual(result.diagnostics.map((entry) => entry.code), ["PY_RUFF_LINT_INVALID_CONFIG"]);
+      assert.match(result.diagnostics[0].message, /symlinked Ruff configuration path/i);
+      assert.equal(existsSync(markerPath), false);
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+      rmSync(externalRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("Ruff activation: records not_applicable receipts with zero Ruff processes when unrequested", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-ruff-inactive-"));
+    const markerPath = join(repoRoot, "ruff-called");
+    try {
+      writePassingPythonProtocolShim(repoRoot);
+      writeToolShim(
+        repoRoot,
+        "ruff",
+        [
+          "#!/bin/sh",
+          `printf 'called' > '${markerPath}'`,
+          "exit 1",
+          ""
+        ].join("\n")
+      );
+      const result = await runner({
+        files: { "pkg/app.py": "value = 1\n" },
+        checks: createPythonValidationChecks({ repoRoot, env: { PATH: "" } })
+      }).runValidation(
+        request({
+          repo: { repoRoot },
+          checks: [PYTHON_SOURCE_HYGIENE_CHECK_ID]
+        })
+      );
+
+      assert.equal(result.status, "passed");
+      const lintRun = result.manifest.runs.find((run) => run.checkId === PYTHON_RUFF_LINT_CHECK_ID);
+      const formatRun = result.manifest.runs.find((run) => run.checkId === PYTHON_RUFF_FORMAT_CHECK_ID);
+      assert.equal(lintRun?.status, "skipped");
+      assert.equal(lintRun?.pythonCapabilityRuns?.[0]?.state, "not_applicable");
+      assert.equal(lintRun?.pythonCapabilityRuns?.[0]?.diagnosticCount, 0);
+      assert.equal(formatRun?.status, "skipped");
+      assert.equal(formatRun?.pythonCapabilityRuns?.[0]?.state, "not_applicable");
+      assert.equal(formatRun?.pythonCapabilityRuns?.[0]?.diagnosticCount, 0);
+      assert.equal(existsSync(markerPath), false);
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("records deleted-only Ruff scope as not applicable without probing or executing Ruff", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-ruff-deleted-only-"));
+    const markerPath = join(repoRoot, "ruff-called");
+    try {
+      writeToolShim(
+        repoRoot,
+        "ruff",
+        [
+          "#!/bin/sh",
+          `printf called > '${markerPath}'`,
+          "exit 1",
+          ""
+        ].join("\n")
+      );
+      const result = await runner({
+        files: { "pkg/app.py": "VALUE = 1\n" },
+        checks: createPythonValidationChecks({ repoRoot, env: { PATH: "" } })
+      }).runValidation(request({
+        repo: { repoRoot },
+        checks: [PYTHON_RUFF_LINT_CHECK_ID],
+        scope: { kind: "files", files: ["pkg/app.py"] },
+        overlays: [{ path: "pkg/app.py", action: "delete" }]
+      }));
+
+      const run = result.manifest.runs.find((entry) => entry.checkId === PYTHON_RUFF_LINT_CHECK_ID);
+      assert.equal(run?.status, "skipped", JSON.stringify(result, null, 2));
+      assert.equal(run?.pythonCapabilityRuns?.[0]?.state, "not_applicable");
+      assert.equal(run?.pythonCapabilityRuns?.[0]?.durationMs, 0);
+      assert.equal(existsSync(markerPath), false);
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("refines Ruff format drift to the exact file set and records a findings receipt", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-ruff-format-"));
+    try {
+      writePassingPythonProtocolShim(repoRoot);
+      writeToolShim(
+        repoRoot,
+        "ruff",
+        [
+          "#!/bin/sh",
+          "if [ \"$1\" = \"--version\" ]; then echo 'ruff 0.6.9'; exit 0; fi",
+          "if [ \"$1\" = \"format\" ]; then",
+          "  shift",
+          "  for arg in \"$@\"; do",
+          "    case \"$arg\" in",
+          "      *pkg/bad.py) exit 1 ;;",
+          "    esac",
+          "  done",
+          "  exit 0",
+          "fi",
+          "exit 2",
+          ""
+        ].join("\n")
+      );
+
+      const result = await runner({
+        files: {
+          "pkg/good.py": "value = 1\n",
+          "pkg/bad.py": "value=1\n"
+        },
+        checks: createPythonValidationChecks({ repoRoot, env: { PATH: "" } })
+      }).runValidation(
+        request({
+          repo: { repoRoot },
+          checks: [PYTHON_RUFF_FORMAT_CHECK_ID],
+          scope: { kind: "files", files: ["pkg/good.py", "pkg/bad.py"] }
+        })
+      );
+
+      assert.equal(result.status, "policy_failure");
+      assert.deepEqual(result.diagnostics.map((entry) => entry.code), ["PY_RUFF_FORMAT_DRIFT"]);
+      assert.deepEqual(result.diagnostics.map((entry) => entry.path), ["pkg/bad.py"]);
+      const receipt = result.manifest.runs[0].pythonCapabilityRuns?.[0];
+      assert.equal(receipt?.capability, "ruff_format");
+      assert.equal(receipt?.state, "findings");
+      assert.equal(receipt?.termination, "exited");
+      assert.equal(receipt?.exitCode, 1);
+      assert.equal(receipt?.diagnosticCount, 1);
+      assert.deepEqual(receipt?.sourcePaths, ["pkg/bad.py", "pkg/good.py"]);
+      assert.equal(receipt?.argv.includes("format"), true);
+      assert.equal(receipt?.argv.includes("pkg/bad.py"), true);
+      assert.equal(receipt?.argv.includes("pkg/good.py"), true);
+      assert.equal(receipt?.argv.includes("--no-cache"), true);
+      assert.equal(receipt?.invocations?.length, 3);
+      assert.equal(receipt?.invocations?.every((invocation) => invocation.termination === "exited"), true);
+      assert.equal(result.diagnostics[0].tool?.command, receipt?.command);
+      assert.equal(result.diagnostics[0].tool?.cwd, receipt?.cwd);
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("bounds Ruff format argv batches before refinement", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-ruff-format-batches-"));
+    const markerPath = join(repoRoot, "format-invocations");
+    try {
+      writePassingPythonProtocolShim(repoRoot);
+      writeToolShim(
+        repoRoot,
+        "ruff",
+        [
+          "#!/bin/sh",
+          "if [ \"$1\" = \"--version\" ]; then echo 'ruff 0.6.9'; exit 0; fi",
+          `if [ \"$1\" = \"format\" ]; then printf x >> '${markerPath}'; exit 0; fi`,
+          "exit 2",
+          ""
+        ].join("\n")
+      );
+      const files = Object.fromEntries(
+        Array.from({ length: 65 }, (_, index) => [`pkg/file_${String(index).padStart(2, "0")}.py`, "VALUE = 1\n"])
+      );
+      const targets = Object.keys(files);
+      const result = await runner({
+        files,
+        checks: createPythonValidationChecks({ repoRoot, env: { PATH: "" } })
+      }).runValidation(request({
+        repo: { repoRoot },
+        checks: [PYTHON_RUFF_FORMAT_CHECK_ID],
+        scope: { kind: "files", files: targets }
+      }));
+
+      assert.equal(result.status, "passed", JSON.stringify(result, null, 2));
+      assert.equal(readFileSync(markerPath, "utf8"), "xx");
+      const receipt = result.manifest.runs[0].pythonCapabilityRuns?.[0];
+      assert.equal(receipt?.state, "passed");
+      assert.equal(receipt?.sourcePaths?.length, 65);
+      assert.equal((receipt?.argv?.filter((argument) => argument.endsWith(".py")).length ?? 0) <= 64, true);
+      assert.equal(receipt?.invocations?.length, 2);
+      assert.equal(
+        receipt?.invocations?.every(
+          (invocation) => invocation.argv.filter((argument) => argument.endsWith(".py")).length <= 64
+        ),
+        true
+      );
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("fails closed with bounded invocation evidence when Ruff format refinement exceeds its invocation bound", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-ruff-format-invocation-bound-"));
+    try {
+      writePassingPythonProtocolShim(repoRoot);
+      writeToolShim(
+        repoRoot,
+        "ruff",
+        [
+          "#!/bin/sh",
+          "if [ \"$1\" = \"--version\" ]; then echo 'ruff 0.6.9'; exit 0; fi",
+          "if [ \"$1\" = \"format\" ]; then exit 1; fi",
+          "exit 2",
+          ""
+        ].join("\n")
+      );
+      const files = Object.fromEntries(
+        Array.from({ length: 320 }, (_, index) => [`pkg/file_${String(index).padStart(3, "0")}.py`, "value=1\n"])
+      );
+      const targets = Object.keys(files);
+      const result = await runner({
+        files,
+        checks: createPythonValidationChecks({ repoRoot, env: { PATH: "" } })
+      }).runValidation(request({
+        repo: { repoRoot },
+        checks: [PYTHON_RUFF_FORMAT_CHECK_ID],
+        scope: { kind: "files", files: targets }
+      }));
+
+      assert.equal(result.status, "infrastructure_failure", JSON.stringify(result.failure, null, 2));
+      const run = result.manifest.runs.find((entry) => entry.checkId === PYTHON_RUFF_FORMAT_CHECK_ID);
+      assert.equal(run?.outcome, "tool_failure");
+      assert.deepEqual(result.diagnostics.map((entry) => entry.code), ["PY_RUFF_FORMAT_TOOL_FAILED"]);
+      const receipt = run?.pythonCapabilityRuns?.[0];
+      assert.equal(receipt?.state, "tool_failure");
+      assert.equal(receipt?.termination, "overflow");
+      assert.equal(receipt?.exitCode, undefined);
+      assert.match(receipt?.failureMessage ?? "", /bounded invocations/u);
+      const bounded = receipt?.invocations?.filter((invocation) => invocation.termination === "overflow") ?? [];
+      assert.equal(bounded.length, 1);
+      assert.deepEqual(bounded[0].argv, receipt?.argv);
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("Ruff outcome matrix: fails closed for malformed, contradictory, exit, timeout, signal, spawn, and overflow states", async () => {
+    const cases = [
+      {
+        id: "malformed",
+        body: "printf '%s\\n' 'not-json'\nexit 1",
+        outcome: "tool_failure",
+        code: "PY_RUFF_LINT_TOOL_FAILED"
+      },
+      {
+        id: "contradictory-clean",
+        body: "printf '%s\\n' '[]'\nexit 1",
+        outcome: "tool_failure",
+        code: "PY_RUFF_LINT_TOOL_FAILED"
+      },
+      {
+        id: "contradictory-findings",
+        body: "printf '%s\\n' '[{\"code\":\"F401\",\"filename\":\"pkg/app.py\",\"location\":{\"row\":1,\"column\":1},\"message\":\"unused\"}]'\nexit 0",
+        outcome: "tool_failure",
+        code: "PY_RUFF_LINT_TOOL_FAILED"
+      },
+      {
+        id: "unknown-exit",
+        body: "printf '%s\\n' '[]'\nexit 2",
+        outcome: "tool_failure",
+        code: "PY_RUFF_LINT_TOOL_FAILED"
+      },
+      {
+        id: "timeout",
+        body: "while :; do :; done",
+        outcome: "timeout",
+        code: "PY_RUFF_LINT_TIMEOUT",
+        timeoutMs: 20
+      },
+      {
+        id: "signal",
+        body: "kill -TERM $",
+        outcome: "tool_failure",
+        code: "PY_RUFF_LINT_TOOL_FAILED"
+      },
+      {
+        id: "spawn",
+        version: `echo 'ruff 0.6.9'; /bin/rm \"$0\"; exit 0`,
+        body: "exit 0",
+        outcome: "tool_failure",
+        code: "PY_RUFF_LINT_TOOL_FAILED"
+      },
+      {
+        id: "overflow",
+        body: `'${process.execPath}' -e 'process.stdout.write(\"x\".repeat(1100000))'\nexit 0`,
+        outcome: "tool_failure",
+        code: "PY_RUFF_LINT_TOOL_FAILED"
+      }
+    ];
+    for (const fixture of cases) {
+      const repoRoot = mkdtempSync(join(tmpdir(), `opcore-python-ruff-${fixture.id}-`));
+      try {
+        writePassingPythonProtocolShim(repoRoot);
+        writeToolShim(
+          repoRoot,
+          "ruff",
+          [
+            "#!/bin/sh",
+            `if [ \"$1\" = \"--version\" ]; then ${fixture.version ?? "echo 'ruff 0.6.9'; exit 0"}; fi`,
+            fixture.body,
+            ""
+          ].join("\n")
+        );
+        const baseProbe = successfulProbe();
+        const processProbe = fixture.id === "spawn"
+          ? {
+              ...baseProbe,
+              run(command, args, options) {
+                const result = baseProbe.run(command, args, options);
+                if (command.endsWith("/ruff")) rmSync(command, { force: true });
+                return result;
+              }
+            }
+          : baseProbe;
+        const result = await runner({
+          files: { "pkg/app.py": "VALUE = 1\n" },
+          checks: createPythonValidationChecks({
+            repoRoot,
+            env: { PATH: "" },
+            processProbe,
+            timeoutMs: fixture.timeoutMs ?? 30000
+          })
+        }).runValidation(request({
+          repo: { repoRoot },
+          checks: [PYTHON_RUFF_LINT_CHECK_ID],
+          scope: { kind: "files", files: ["pkg/app.py"] }
+        }));
+
+        assert.equal(result.status, "infrastructure_failure", `${fixture.id}: ${JSON.stringify(result, null, 2)}`);
+        const run = result.manifest.runs[0];
+        assert.equal(run.outcome, fixture.outcome, `${fixture.id}: ${JSON.stringify(result, null, 2)}`);
+        assert.deepEqual(result.diagnostics.map((diagnostic) => diagnostic.code), [fixture.code], fixture.id);
+        const receipt = run.pythonCapabilityRuns?.[0];
+        assert.equal(receipt?.state, fixture.outcome, fixture.id);
+        assert.notEqual(receipt?.state, "passed", fixture.id);
+        if (fixture.id === "overflow") assert.equal(receipt?.termination, "overflow");
+      } finally {
+        rmSync(repoRoot, { recursive: true, force: true });
+      }
+    }
+  });
+
+  it("Ruff outcome matrix: proves malformed dedicated and pyproject config as invalid_config without executing a check", async () => {
+    for (const [configPath, configContent] of [
+      ["ruff.toml", "line-length = [\n"],
+      ["pyproject.toml", "[project]\nname = 'fixture'\n[tool.ruff]\nline-length = [\n"]
+    ]) {
+      for (const checkId of [PYTHON_RUFF_LINT_CHECK_ID, PYTHON_RUFF_FORMAT_CHECK_ID]) {
+        const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-ruff-invalid-config-"));
+        const markerPath = join(repoRoot, "ruff-check-executed");
+        try {
+          writePassingPythonProtocolShim(repoRoot);
+          writeToolShim(
+            repoRoot,
+            "ruff",
+            [
+              "#!/bin/sh",
+              "if [ \"$1\" = \"--version\" ]; then echo 'ruff 0.6.9'; exit 0; fi",
+              `printf executed > '${markerPath}'`,
+              "exit 0",
+              ""
+            ].join("\n")
+          );
+          const result = await runner({
+            files: {
+              "pkg/app.py": "VALUE = 1\n",
+              [configPath]: configContent
+            },
+            checks: createPythonValidationChecks({ repoRoot, env: { PATH: "" } })
+          }).runValidation(request({
+            repo: { repoRoot },
+            checks: [checkId],
+            scope: { kind: "files", files: ["pkg/app.py"] }
+          }));
+
+          assert.equal(result.status, "unsupported_request", `${checkId} ${configPath}: ${JSON.stringify(result, null, 2)}`);
+          assert.equal(result.manifest.runs[0].outcome, "invalid_config");
+          const receipt = result.manifest.runs[0].pythonCapabilityRuns?.[0];
+          assert.equal(receipt?.state, "invalid_config");
+          assert.equal(receipt?.configPath, configPath);
+          assert.equal(
+            result.pythonProjectContexts[0].reasons.some((reason) =>
+              reason.code === "invalid_config" &&
+              reason.tool === "ruff" &&
+              reason.path === configPath
+            ),
+            true
+          );
+          assert.equal(existsSync(markerPath), false);
+        } finally {
+          rmSync(repoRoot, { recursive: true, force: true });
+        }
+      }
+    }
+  });
+
+  it("classifies malformed extended Ruff configs as invalid_config before lint or format execution", async () => {
+    for (const checkId of [PYTHON_RUFF_LINT_CHECK_ID, PYTHON_RUFF_FORMAT_CHECK_ID]) {
+      const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-ruff-malformed-extend-"));
+      const markerPath = join(repoRoot, "ruff-check-executed");
+      try {
+        writeToolShim(
+          repoRoot,
+          "ruff",
+          [
+            "#!/bin/sh",
+            "if [ \"$1\" = \"--version\" ]; then echo 'ruff 0.6.9'; exit 0; fi",
+            `printf executed > '${markerPath}'`,
+            "printf '%s\\n' 'Failed to parse config/base.toml: expected a value' >&2",
+            "exit 2",
+            ""
+          ].join("\n")
+        );
+        const result = await runner({
+          files: {
+            "pkg/app.py": "VALUE = 1\n",
+            "ruff.toml": "extend = \"config/base.toml\"\n",
+            "config/base.toml": "line-length = [\n"
+          },
+          checks: createPythonValidationChecks({ repoRoot, env: { PATH: "" } })
+        }).runValidation(request({
+          repo: { repoRoot },
+          checks: [checkId],
+          scope: { kind: "files", files: ["pkg/app.py"] }
+        }));
+
+        assert.equal(result.status, "unsupported_request", `${checkId}: ${JSON.stringify(result, null, 2)}`);
+        assert.equal(result.manifest.runs[0].outcome, "invalid_config");
+        const receipt = result.manifest.runs[0].pythonCapabilityRuns?.[0];
+        assert.equal(receipt?.state, "invalid_config");
+        assert.equal(receipt?.configPath, "config/base.toml");
+        assert.match(receipt?.afterStateManifestFingerprint ?? "", /^sha256:[a-f0-9]{64}$/u);
+        assert.deepEqual(receipt?.sourcePaths, ["pkg/app.py"]);
+        assert.deepEqual(receipt?.configPaths, ["config/base.toml", "ruff.toml"]);
+        assert.equal(receipt?.cwd, ".");
+        assert.deepEqual(result.diagnostics.map((entry) => entry.path), ["config/base.toml"]);
+        assert.equal(existsSync(markerPath), false);
+      } finally {
+        rmSync(repoRoot, { recursive: true, force: true });
+      }
+    }
+  });
+
+  it("classifies deleted extended Ruff configs as invalid_config without executing Ruff", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-ruff-deleted-extend-"));
+    const markerPath = join(repoRoot, "ruff-check-executed");
+    try {
+      writeToolShim(
+        repoRoot,
+        "ruff",
+        [
+          "#!/bin/sh",
+          "if [ \"$1\" = \"--version\" ]; then echo 'ruff 0.6.9'; exit 0; fi",
+          `printf executed > '${markerPath}'`,
+          "exit 2",
+          ""
+        ].join("\n")
+      );
+      const result = await runner({
+        files: {
+          "pkg/app.py": "VALUE = 1\n",
+          "ruff.toml": "extend = \"config/base.toml\"\n",
+          "config/base.toml": "line-length = 88\n"
+        },
+        checks: createPythonValidationChecks({ repoRoot, env: { PATH: "" } })
+      }).runValidation(request({
+        repo: { repoRoot },
+        checks: [PYTHON_RUFF_LINT_CHECK_ID],
+        scope: { kind: "files", files: ["pkg/app.py"] },
+        overlays: [{ path: "config/base.toml", action: "delete" }]
+      }));
+
+      assert.equal(result.status, "unsupported_request", JSON.stringify(result, null, 2));
+      assert.equal(result.manifest.runs[0].outcome, "invalid_config");
+      const receipt = result.manifest.runs[0].pythonCapabilityRuns?.[0];
+      assert.equal(receipt?.state, "invalid_config");
+      assert.equal(receipt?.configPath, "config/base.toml");
+      assert.match(receipt?.afterStateManifestFingerprint ?? "", /^sha256:[a-f0-9]{64}$/u);
+      assert.deepEqual(receipt?.sourcePaths, ["pkg/app.py"]);
+      assert.deepEqual(receipt?.configPaths, ["config/base.toml", "ruff.toml"]);
+      assert.equal(receipt?.cwd, ".");
+      assert.deepEqual(result.diagnostics.map((entry) => entry.path), ["config/base.toml"]);
+      assert.equal(existsSync(markerPath), false);
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("classifies Ruff extend cycles as exact-state invalid_config without executing Ruff", async () => {
+    for (const checkId of [PYTHON_RUFF_LINT_CHECK_ID, PYTHON_RUFF_FORMAT_CHECK_ID]) {
+      const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-ruff-cycle-extend-"));
+      const markerPath = join(repoRoot, "ruff-check-executed");
+      try {
+        writeToolShim(
+          repoRoot,
+          "ruff",
+          [
+            "#!/bin/sh",
+            "if [ \"$1\" = \"--version\" ]; then echo 'ruff 0.6.9'; exit 0; fi",
+            `printf executed > '${markerPath}'`,
+            "printf '%s\\n' 'Circular dependency detected in ruff.toml' >&2",
+            "exit 2",
+            ""
+          ].join("\n")
+        );
+        const result = await runner({
+          files: {
+            "pkg/app.py": "VALUE = 1\n",
+            "ruff.toml": "extend = \"config/base.toml\"\n",
+            "config/base.toml": "extend = \"../ruff.toml\"\n"
+          },
+          checks: createPythonValidationChecks({ repoRoot, env: { PATH: "" } })
+        }).runValidation(request({
+          repo: { repoRoot },
+          checks: [checkId],
+          scope: { kind: "files", files: ["pkg/app.py"] }
+        }));
+
+        assert.equal(result.status, "unsupported_request", `${checkId}: ${JSON.stringify(result, null, 2)}`);
+        assert.equal(result.manifest.runs[0].outcome, "invalid_config");
+        const receipt = result.manifest.runs[0].pythonCapabilityRuns?.[0];
+        assert.equal(receipt?.state, "invalid_config");
+        assert.equal(receipt?.configPath, "config/base.toml");
+        assert.match(receipt?.afterStateManifestFingerprint ?? "", /^sha256:[a-f0-9]{64}$/u);
+        assert.deepEqual(receipt?.sourcePaths, ["pkg/app.py"]);
+        assert.deepEqual(receipt?.configPaths, ["config/base.toml", "ruff.toml"]);
+        assert.equal(receipt?.cwd, ".");
+        assert.deepEqual(result.diagnostics.map((entry) => entry.path), ["config/base.toml"]);
+        assert.equal(existsSync(markerPath), false);
+      } finally {
+        rmSync(repoRoot, { recursive: true, force: true });
+      }
+    }
+  });
+
+  it("uses the selected Ruff config closure to prove semantic extended-config rejection", async () => {
+    for (const checkId of [PYTHON_RUFF_LINT_CHECK_ID, PYTHON_RUFF_FORMAT_CHECK_ID]) {
+      const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-ruff-semantic-extend-"));
+      try {
+        writeToolShim(
+          repoRoot,
+          "ruff",
+          [
+            "#!/bin/sh",
+            "if [ \"$1\" = \"--version\" ]; then echo 'ruff 0.6.9'; exit 0; fi",
+            "printf '%s\\n' 'Failed to parse config/base.toml: invalid value' >&2",
+            "exit 2",
+            ""
+          ].join("\n")
+        );
+        const result = await runner({
+          files: {
+            "pkg/app.py": "VALUE = 1\n",
+            "ruff.toml": "extend = \"config/base.toml\"\n",
+            "config/base.toml": "line-length = \"wide\"\n"
+          },
+          checks: createPythonValidationChecks({ repoRoot, env: { PATH: "" } })
+        }).runValidation(request({
+          repo: { repoRoot },
+          checks: [checkId],
+          scope: { kind: "files", files: ["pkg/app.py"] }
+        }));
+
+        assert.equal(result.status, "unsupported_request", `${checkId}: ${JSON.stringify(result, null, 2)}`);
+        assert.equal(result.manifest.runs[0].outcome, "invalid_config");
+        assert.equal(result.manifest.runs[0].pythonCapabilityRuns?.[0]?.state, "invalid_config");
+        assert.deepEqual(result.diagnostics.map((entry) => entry.path), ["config/base.toml"]);
+        assert.equal(result.manifest.runs[0].pythonCapabilityRuns?.[0]?.invocations?.length, 2);
+      } finally {
+        rmSync(repoRoot, { recursive: true, force: true });
+      }
+    }
+  });
+
+  it("Ruff outcome matrix: uses a settings probe to prove semantic config rejection separately from internal exit", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-ruff-semantic-config-"));
+    const invocationMarker = join(repoRoot, "ruff-invocations");
+    try {
+      writePassingPythonProtocolShim(repoRoot);
+      writeToolShim(
+        repoRoot,
+        "ruff",
+        [
+          "#!/bin/sh",
+          "if [ \"$1\" = \"--version\" ]; then echo 'ruff 0.6.9'; exit 0; fi",
+          `printf x >> '${invocationMarker}'`,
+          "case \" $* \" in",
+          "  *' --show-settings '*)",
+          "    printf '%s\\n' 'selected configuration ruff.toml rejected' >&2",
+          "    exit 2",
+          "    ;;",
+          "esac",
+          "if [ \"$1\" = \"check\" ]; then",
+          "  printf '%s\\n' 'check failed to load selected configuration' >&2",
+          "  exit 2",
+          "fi",
+          "exit 9",
+          ""
+        ].join("\n")
+      );
+      const result = await runner({
+        files: {
+          "pkg/app.py": "VALUE = 1\n",
+          "ruff.toml": "line-length = \"wide\"\n"
+        },
+        checks: createPythonValidationChecks({ repoRoot, env: { PATH: "" } })
+      }).runValidation(request({
+        repo: { repoRoot },
+        checks: [PYTHON_RUFF_LINT_CHECK_ID],
+        scope: { kind: "files", files: ["pkg/app.py"] }
+      }));
+
+      assert.equal(result.status, "unsupported_request", JSON.stringify(result, null, 2));
+      assert.equal(result.manifest.runs[0].outcome, "invalid_config");
+      assert.deepEqual(result.diagnostics.map((entry) => entry.code), ["PY_RUFF_LINT_INVALID_CONFIG"]);
+      assert.equal(readFileSync(invocationMarker, "utf8"), "xx");
+      const receipt = result.manifest.runs[0].pythonCapabilityRuns?.[0];
+      assert.equal(receipt?.state, "invalid_config");
+      assert.equal(receipt?.exitCode, 2);
+      assert.equal(receipt?.argv.includes("--show-settings"), true);
+      assert.equal(receipt?.configPath, "ruff.toml");
+      assert.equal(receipt?.invocations?.length, 2);
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("does not relabel an unrelated configuration cache failure as invalid_config", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-ruff-config-cache-failure-"));
+    try {
+      writeToolShim(
+        repoRoot,
+        "ruff",
+        [
+          "#!/bin/sh",
+          "if [ \"$1\" = \"--version\" ]; then echo 'ruff 0.6.9'; exit 0; fi",
+          "printf '%s\\n' 'error: configuration cache initialization failed for ruff.toml' >&2",
+          "exit 2",
+          ""
+        ].join("\n")
+      );
+      const result = await runner({
+        files: {
+          "pkg/app.py": "VALUE = 1\n",
+          "ruff.toml": "line-length = 88\n"
+        },
+        checks: createPythonValidationChecks({ repoRoot, env: { PATH: "" } })
+      }).runValidation(request({
+        repo: { repoRoot },
+        checks: [PYTHON_RUFF_LINT_CHECK_ID],
+        scope: { kind: "files", files: ["pkg/app.py"] }
+      }));
+
+      assert.equal(result.status, "infrastructure_failure", JSON.stringify(result, null, 2));
+      assert.equal(result.manifest.runs[0].outcome, "tool_failure");
+      assert.equal(result.manifest.runs[0].pythonCapabilityRuns?.[0]?.state, "tool_failure");
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("keeps unsupported settings probes as tool failures with complete invocation evidence", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-ruff-unsupported-settings-"));
+    try {
+      writePassingPythonProtocolShim(repoRoot);
+      writeToolShim(
+        repoRoot,
+        "ruff",
+        [
+          "#!/bin/sh",
+          "if [ \"$1\" = \"--version\" ]; then echo 'ruff 0.6.9'; exit 0; fi",
+          "if [ \"$1\" = \"check\" ] && [ \"$2\" = \"--show-settings\" ]; then",
+          "  printf '%s\\n' \"unexpected argument '--show-settings'\" >&2",
+          "  exit 2",
+          "fi",
+          "if [ \"$1\" = \"check\" ]; then",
+          "  printf '%s\\n' 'internal execution failure' >&2",
+          "  exit 2",
+          "fi",
+          "exit 9",
+          ""
+        ].join("\n")
+      );
+      const result = await runner({
+        files: {
+          "pkg/app.py": "VALUE = 1\n",
+          "ruff.toml": "line-length = 88\n"
+        },
+        checks: createPythonValidationChecks({ repoRoot, env: { PATH: "" } })
+      }).runValidation(request({
+        repo: { repoRoot },
+        checks: [PYTHON_RUFF_LINT_CHECK_ID],
+        scope: { kind: "files", files: ["pkg/app.py"] }
+      }));
+
+      assert.equal(result.status, "infrastructure_failure", JSON.stringify(result, null, 2));
+      assert.equal(result.manifest.runs[0].outcome, "tool_failure");
+      const receipt = result.manifest.runs[0].pythonCapabilityRuns?.[0];
+      assert.equal(receipt?.state, "tool_failure");
+      assert.equal(receipt?.invocations?.length, 2);
+      assert.equal(receipt?.invocations?.[1]?.argv.includes("--show-settings"), true);
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("Ruff outcome matrix: reports an activated missing tool without a false pass", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-ruff-missing-"));
+    try {
+      writePassingPythonProtocolShim(repoRoot);
+      const result = await runner({
+        files: { "pkg/app.py": "VALUE = 1\n" },
+        checks: createPythonValidationChecks({ repoRoot, env: { PATH: "" } })
+      }).runValidation(request({
+        repo: { repoRoot },
+        checks: [PYTHON_RUFF_LINT_CHECK_ID],
+        scope: { kind: "files", files: ["pkg/app.py"] }
+      }));
+
+      assert.equal(result.status, "unsupported_request", JSON.stringify(result, null, 2));
+      assert.equal(result.manifest.runs[0].outcome, "tool_unavailable");
+      const receipt = result.manifest.runs[0].pythonCapabilityRuns?.[0];
+      assert.equal(receipt?.state, "tool_unavailable");
+      assert.equal(receipt?.termination, undefined);
+      assert.equal(receipt?.diagnosticCount, 1);
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("Ruff activation: disabled policy wins with zero Ruff processes", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-ruff-disabled-"));
+    const markerPath = join(repoRoot, "ruff-called");
+    try {
+      writePassingPythonProtocolShim(repoRoot);
+      mkdirSync(join(repoRoot, ".opcore"), { recursive: true });
+      writeFileSync(
+        join(repoRoot, ".opcore", "config"),
+        JSON.stringify({
+          validation: {
+            checks: {
+              disabled: [PYTHON_RUFF_LINT_CHECK_ID]
+            }
+          }
+        })
+      );
+      writeToolShim(
+        repoRoot,
+        "ruff",
+        [
+          "#!/bin/sh",
+          `printf 'called' > '${markerPath}'`,
+          "exit 1",
+          ""
+        ].join("\n")
+      );
+      const result = await createValidationRunner({
+        workspace: workspace({
+          repoRoot,
+          files: { "pkg/app.py": "value = 1\n" }
+        }),
+        checks: validationChecksForRepoPolicy(repoRoot, {
+          pythonWorkspace: canonicalTestPythonWorkspace(),
+          pythonImportAnalyzer: fixedImportAnalyzer([])
+        })
+      }).runValidation(
+        request({
+          repo: { repoRoot },
+          checks: [PYTHON_RUFF_LINT_CHECK_ID]
+        })
+      );
+
+      assert.equal(result.status, "skipped");
+      const run = result.manifest.runs.find((entry) => entry.checkId === PYTHON_RUFF_LINT_CHECK_ID);
+      assert.equal(run?.status, "skipped");
+      assert.equal(run?.pythonCapabilityRuns?.[0]?.state, "disabled");
+      assert.equal(run?.pythonCapabilityRuns?.[0]?.diagnosticCount, 0);
+      assert.equal(existsSync(markerPath), false);
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("finalizes inactive Ruff receipts after an earlier check infrastructure failure", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-ruff-early-failure-"));
+    try {
+      mkdirSync(join(repoRoot, ".opcore"), { recursive: true });
+      writeFileSync(
+        join(repoRoot, ".opcore", "config"),
+        JSON.stringify({
+          validation: {
+            checks: {
+              disabled: [PYTHON_RUFF_LINT_CHECK_ID]
+            }
+          }
+        })
+      );
+      const failingCheck = {
+        id: "fixture.infrastructure",
+        owner: "fixture",
+        adapter: "fixture",
+        defaultSeverity: "error",
+        supportedScopes: ["files"],
+        run: () => ({
+          outcome: "tool_failure",
+          failureMessage: "fixture failed before Ruff",
+          diagnostics: []
+        })
+      };
+      const result = await createValidationRunner({
+        workspace: workspace({ files: { "pkg/app.py": "VALUE = 1\n" } }),
+        checks: [
+          failingCheck,
+          ...validationChecksForRepoPolicy(repoRoot, {
+            pythonWorkspace: canonicalTestPythonWorkspace()
+          })
+        ]
+      }).runValidation(request({
+        repo: { repoRoot },
+        checks: ["fixture.infrastructure"],
+        scope: { kind: "files", files: ["pkg/app.py"] }
+      }));
+
+      assert.equal(result.status, "infrastructure_failure");
+      const lintRun = result.manifest.runs.find((run) => run.checkId === PYTHON_RUFF_LINT_CHECK_ID);
+      const formatRun = result.manifest.runs.find((run) => run.checkId === PYTHON_RUFF_FORMAT_CHECK_ID);
+      assert.equal(lintRun?.pythonCapabilityRuns?.[0]?.state, "disabled");
+      assert.equal(formatRun?.pythonCapabilityRuns?.[0]?.state, "not_applicable");
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("Ruff activation: repo defaults execute the selected Ruff check", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-ruff-default-"));
+    const markerPath = join(repoRoot, "ruff-executed");
+    try {
+      mkdirSync(join(repoRoot, ".opcore"), { recursive: true });
+      writeFileSync(
+        join(repoRoot, ".opcore", "config"),
+        JSON.stringify({ validation: { checks: { defaults: [PYTHON_RUFF_LINT_CHECK_ID] } } })
+      );
+      writePassingPythonProtocolShim(repoRoot);
+      writeToolShim(
+        repoRoot,
+        "ruff",
+        [
+          "#!/bin/sh",
+          "if [ \"$1\" = \"--version\" ]; then echo 'ruff 0.6.9'; exit 0; fi",
+          `printf executed > '${markerPath}'`,
+          "printf '%s\\n' '[]'",
+          "exit 0",
+          ""
+        ].join("\n")
+      );
+      const result = createValidationRunner({
+        workspace: workspace({ repoRoot, files: { "pkg/app.py": "VALUE = 1\n" } }),
+        checks: validationChecksForRepoPolicy(repoRoot, {
+          pythonWorkspace: canonicalTestPythonWorkspace(),
+          pythonImportAnalyzer: fixedImportAnalyzer([])
+        })
+      }).runValidation(request({
+        repo: { repoRoot },
+        checks: undefined,
+        scope: { kind: "files", files: ["pkg/app.py"] }
+      }));
+
+      const resolved = await result;
+      assert.equal(resolved.status, "unsupported_request", JSON.stringify(resolved, null, 2));
+      assert.equal(readFileSync(markerPath, "utf8"), "executed");
+      const run = resolved.manifest.runs.find((entry) => entry.checkId === PYTHON_RUFF_LINT_CHECK_ID);
+      assert.equal(run?.pythonCapabilityRuns?.[0]?.state, "passed");
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("records exact per-project Ruff receipt source paths and executed command", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-ruff-multi-project-"));
+    try {
+      for (const projectRoot of [join(repoRoot, "apps/one"), join(repoRoot, "apps/two")]) {
+        writePassingPythonProtocolShim(projectRoot);
+        writeToolShim(
+          projectRoot,
+          "ruff",
+          [
+            "#!/bin/sh",
+            "if [ \"$1\" = \"--version\" ]; then echo 'ruff 0.6.9'; exit 0; fi",
+            "if [ \"$1\" = \"check\" ]; then",
+            "  printf '%s\\n' '[]'",
+            "  exit 0",
+            "fi",
+            "exit 2",
+            ""
+          ].join("\n")
+        );
+      }
+
+      const result = await runner({
+        files: {
+          "apps/one/pyproject.toml": "[project]\nname='one'\n[tool.ruff]\n",
+          "apps/one/pkg/app.py": "value = 1\n",
+          "apps/two/pyproject.toml": "[project]\nname='two'\n[tool.ruff]\n",
+          "apps/two/pkg/app.py": "value = 2\n"
+        },
+        checks: createPythonValidationChecks({ repoRoot, env: { PATH: "" } })
+      }).runValidation(
+        request({
+          repo: { repoRoot },
+          checks: [PYTHON_RUFF_LINT_CHECK_ID],
+          scope: {
+            kind: "files",
+            files: ["apps/one/pkg/app.py", "apps/two/pkg/app.py"]
+          }
+        })
+      );
+
+      assert.equal(result.status, "passed");
+      const receipts = result.manifest.runs[0].pythonCapabilityRuns ?? [];
+      assert.equal(receipts.length, 2);
+      assert.deepEqual(
+        receipts.map((receipt) => ({
+          cwd: receipt.cwd,
+          sourcePaths: receipt.sourcePaths,
+          command: receipt.command
+        })),
+        [
+          {
+            cwd: "apps/one",
+            sourcePaths: ["apps/one/pkg/app.py"],
+            command: `${receipts[0].argv.join(" ")}`
+          },
+          {
+            cwd: "apps/two",
+            sourcePaths: ["apps/two/pkg/app.py"],
+            command: `${receipts[1].argv.join(" ")}`
+          }
+        ]
+      );
+      assert.equal(receipts[0].command.includes("check"), true);
+      assert.equal(receipts[1].command.includes("check"), true);
+      assert.equal(receipts[0].command.includes("apps/two/pkg/app.py"), false);
+      assert.equal(receipts[1].command.includes("apps/one/pkg/app.py"), false);
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("preserves Ruff tool provenance on mixed Ruff and type runs", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-ruff-types-context-"));
+    try {
+      writePassingPythonProtocolShim(repoRoot);
+      writeToolShim(
+        repoRoot,
+        "ruff",
+        [
+          "#!/bin/sh",
+          "if [ \"$1\" = \"--version\" ]; then echo 'ruff 0.6.9'; exit 0; fi",
+          "if [ \"$1\" = \"check\" ]; then printf '%s\\n' '[]'; exit 0; fi",
+          "exit 2",
+          ""
+        ].join("\n")
+      );
+      writeToolShim(
+        repoRoot,
+        "mypy",
+        [
+          "#!/bin/sh",
+          "if [ \"$1\" = \"--version\" ]; then echo 'mypy 1.8.0'; exit 0; fi",
+          "exit 0",
+          ""
+        ].join("\n")
+      );
+
+      const result = await runner({
+        files: {
+          "app.py": "value: int = 1\n",
+          "pyproject.toml": "[project]\nname='fixture'\n[tool.mypy]\n",
+          "ruff.toml": "[lint]\nselect = ['F401']\n"
+        },
+        checks: createPythonValidationChecks({ repoRoot, env: { PATH: "" } })
+      }).runValidation(
+        request({
+          repo: { repoRoot },
+          checks: [PYTHON_RUFF_LINT_CHECK_ID, PYTHON_TYPES_CHECK_ID],
+          scope: { kind: "files", files: ["app.py"] }
+        })
+      );
+
+      assert.equal(result.status, "passed");
+      assert.equal(result.pythonProjectContexts.length, 1);
+      const tools = result.pythonProjectContexts[0].tools;
+      assert.equal(
+        tools.some((tool) => tool.tool === "ruff" && tool.available === true && tool.configFile === "ruff.toml"),
+        true,
+        JSON.stringify(tools, null, 2)
+      );
+      assert.equal(tools.some((tool) => tool.tool === "mypy" && tool.available === true), true);
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("preserves Ruff tool provenance when policy defaults enable mixed Ruff and type runs", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-ruff-types-default-context-"));
+    try {
+      writePassingPythonProtocolShim(repoRoot);
+      writeToolShim(
+        repoRoot,
+        "ruff",
+        [
+          "#!/bin/sh",
+          "if [ \"$1\" = \"--version\" ]; then echo 'ruff 0.6.9'; exit 0; fi",
+          "if [ \"$1\" = \"check\" ]; then printf '%s\\n' '[]'; exit 0; fi",
+          "exit 2",
+          ""
+        ].join("\n")
+      );
+      writeToolShim(
+        repoRoot,
+        "mypy",
+        [
+          "#!/bin/sh",
+          "if [ \"$1\" = \"--version\" ]; then echo 'mypy 1.8.0'; exit 0; fi",
+          "exit 0",
+          ""
+        ].join("\n")
+      );
+      const checks = createPythonValidationChecks({ repoRoot, env: { PATH: "" } }).map((check) =>
+        check.id === PYTHON_RUFF_LINT_CHECK_ID || check.id === PYTHON_TYPES_CHECK_ID
+          ? { ...check, defaultScopes: check.supportedScopes }
+          : { ...check, defaultScopes: [] }
+      );
+
+      const result = await createValidationRunner({
+        workspace: workspace({
+          repoRoot,
+          files: {
+            "app.py": "value: int = 1\n",
+            "pyproject.toml": "[project]\nname='fixture'\n[tool.mypy]\n",
+            "ruff.toml": "[lint]\nselect = ['F401']\n"
+          }
+        }),
+        checks
+      }).runValidation(
+        request({
+          repo: { repoRoot },
+          checks: undefined,
+          scope: { kind: "files", files: ["app.py"] }
+        })
+      );
+
+      assert.equal(result.status, "passed");
+      assert.equal(result.pythonProjectContexts.length, 1);
+      const tools = result.pythonProjectContexts[0].tools;
+      assert.equal(
+        tools.some((tool) => tool.tool === "ruff" && tool.available === true && tool.configFile === "ruff.toml"),
+        true,
+        JSON.stringify(tools, null, 2)
+      );
+      assert.equal(tools.some((tool) => tool.tool === "mypy" && tool.available === true), true);
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("retains earlier Ruff lint receipts when a later project fails", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-ruff-lint-multi-failure-"));
+    try {
+      writePassingPythonProtocolShim(join(repoRoot, "apps/one"));
+      writePassingPythonProtocolShim(join(repoRoot, "apps/two"));
+      writeToolShim(
+        join(repoRoot, "apps/one"),
+        "ruff",
+        [
+          "#!/bin/sh",
+          "if [ \"$1\" = \"--version\" ]; then echo 'ruff 0.6.9'; exit 0; fi",
+          "if [ \"$1\" = \"check\" ]; then printf '%s\\n' '[]'; exit 0; fi",
+          "exit 2",
+          ""
+        ].join("\n")
+      );
+      writeToolShim(
+        join(repoRoot, "apps/two"),
+        "ruff",
+        [
+          "#!/bin/sh",
+          "if [ \"$1\" = \"--version\" ]; then echo 'ruff 0.6.9'; exit 0; fi",
+          "if [ \"$1\" = \"check\" ]; then printf '%s\\n' 'not-json'; exit 1; fi",
+          "exit 2",
+          ""
+        ].join("\n")
+      );
+
+      const result = await runner({
+        files: {
+          "apps/one/pyproject.toml": "[project]\nname='one'\n[tool.ruff]\n",
+          "apps/one/pkg/app.py": "value = 1\n",
+          "apps/two/pyproject.toml": "[project]\nname='two'\n[tool.ruff]\n",
+          "apps/two/pkg/app.py": "value = 2\n"
+        },
+        checks: createPythonValidationChecks({ repoRoot, env: { PATH: "" } })
+      }).runValidation(
+        request({
+          repo: { repoRoot },
+          checks: [PYTHON_RUFF_LINT_CHECK_ID],
+          scope: {
+            kind: "files",
+            files: ["apps/one/pkg/app.py", "apps/two/pkg/app.py"]
+          }
+        })
+      );
+
+      assert.equal(result.status, "infrastructure_failure");
+      const receipts = result.manifest.runs[0].pythonCapabilityRuns ?? [];
+      assert.equal(receipts.length, 2);
+      assert.deepEqual(
+        receipts.map((receipt) => ({ cwd: receipt.cwd, state: receipt.state, exitCode: receipt.exitCode })),
+        [
+          { cwd: "apps/one", state: "passed", exitCode: 0 },
+          { cwd: "apps/two", state: "tool_failure", exitCode: 1 }
+        ]
+      );
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("retains earlier Ruff diagnostics and attempts remaining projects after a mixed-project failure", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-ruff-lint-complete-aggregation-"));
+    const finalMarker = join(repoRoot, "apps/c/ruff-executed");
+    try {
+      for (const project of ["a", "b", "c"]) writePassingPythonProtocolShim(join(repoRoot, `apps/${project}`));
+      writeToolShim(
+        join(repoRoot, "apps/a"),
+        "ruff",
+        [
+          "#!/bin/sh",
+          "if [ \"$1\" = \"--version\" ]; then echo 'ruff 0.6.9'; exit 0; fi",
+          "printf '%s\\n' '[{\"code\":\"F401\",\"filename\":\"pkg/app.py\",\"location\":{\"row\":1,\"column\":1},\"message\":\"unused import\"}]'",
+          "exit 1",
+          ""
+        ].join("\n")
+      );
+      writeToolShim(
+        join(repoRoot, "apps/b"),
+        "ruff",
+        [
+          "#!/bin/sh",
+          "if [ \"$1\" = \"--version\" ]; then echo 'ruff 0.6.9'; exit 0; fi",
+          "printf '%s\\n' 'not-json'",
+          "exit 1",
+          ""
+        ].join("\n")
+      );
+      writeToolShim(
+        join(repoRoot, "apps/c"),
+        "ruff",
+        [
+          "#!/bin/sh",
+          "if [ \"$1\" = \"--version\" ]; then echo 'ruff 0.6.9'; exit 0; fi",
+          `printf executed > '${finalMarker}'`,
+          "printf '%s\\n' '[]'",
+          "exit 0",
+          ""
+        ].join("\n")
+      );
+      const files = {};
+      for (const project of ["a", "b", "c"]) {
+        files[`apps/${project}/pyproject.toml`] = `[project]\nname='${project}'\n[tool.ruff]\n`;
+        files[`apps/${project}/pkg/app.py`] = "import os\n";
+      }
+
+      const result = await runner({
+        files,
+        checks: createPythonValidationChecks({ repoRoot, env: { PATH: "" } })
+      }).runValidation(request({
+        repo: { repoRoot },
+        checks: [PYTHON_RUFF_LINT_CHECK_ID],
+        scope: {
+          kind: "files",
+          files: ["apps/a/pkg/app.py", "apps/b/pkg/app.py", "apps/c/pkg/app.py"]
+        }
+      }));
+
+      assert.equal(result.status, "infrastructure_failure", JSON.stringify(result, null, 2));
+      assert.deepEqual(
+        result.diagnostics.map((diagnostic) => [diagnostic.code, diagnostic.path]),
+        [
+          ["PY_RUFF_LINT_TOOL_FAILED", undefined],
+          ["PY_RUFF_LINT_F401", "apps/a/pkg/app.py"]
+        ]
+      );
+      assert.deepEqual(
+        result.manifest.runs[0].pythonCapabilityRuns?.map((receipt) => [receipt.cwd, receipt.state]),
+        [["apps/a", "findings"], ["apps/b", "tool_failure"], ["apps/c", "passed"]]
+      );
+      assert.equal(existsSync(finalMarker), true);
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("continues healthy Ruff projects and binds unavailable receipts to each exact after-state", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-ruff-lint-unavailable-project-"));
+    const healthyMarker = join(repoRoot, "apps/b/ruff-executed");
+    try {
+      for (const project of ["a", "b"]) writePassingPythonProtocolShim(join(repoRoot, `apps/${project}`));
+      writeToolShim(
+        join(repoRoot, "apps/b"),
+        "ruff",
+        [
+          "#!/bin/sh",
+          "if [ \"$1\" = \"--version\" ]; then echo 'ruff 0.6.9'; exit 0; fi",
+          `printf executed > '${healthyMarker}'`,
+          "printf '%s\\n' '[]'",
+          "exit 0",
+          ""
+        ].join("\n")
+      );
+      const result = await runner({
+        files: {
+          "apps/a/pyproject.toml": "[project]\nname='a'\n[tool.ruff]\n",
+          "apps/a/pkg/app.py": "value = 1\n",
+          "apps/b/pyproject.toml": "[project]\nname='b'\n[tool.ruff]\n",
+          "apps/b/pkg/app.py": "value = 2\n"
+        },
+        checks: createPythonValidationChecks({ repoRoot, env: { PATH: "" } })
+      }).runValidation(request({
+        repo: { repoRoot },
+        checks: [PYTHON_RUFF_LINT_CHECK_ID],
+        scope: {
+          kind: "files",
+          files: ["apps/a/pkg/app.py", "apps/b/pkg/app.py"]
+        }
+      }));
+
+      assert.equal(result.status, "unsupported_request", JSON.stringify(result, null, 2));
+      const receipts = result.manifest.runs[0].pythonCapabilityRuns ?? [];
+      assert.deepEqual(
+        receipts.map((receipt) => [receipt.cwd, receipt.state]),
+        [["apps/a", "tool_unavailable"], ["apps/b", "passed"]]
+      );
+      const unavailable = receipts[0];
+      assert.match(unavailable.projectKey, /^sha256:[a-f0-9]{64}$/u);
+      assert.match(unavailable.contextFingerprint, /^sha256:[a-f0-9]{64}$/u);
+      assert.match(unavailable.afterStateManifestFingerprint, /^sha256:[a-f0-9]{64}$/u);
+      assert.deepEqual(unavailable.sourcePaths, ["apps/a/pkg/app.py"]);
+      assert.deepEqual(unavailable.configPaths, ["apps/a/pyproject.toml"]);
+      assert.equal(existsSync(healthyMarker), true);
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("retains earlier Ruff format receipts when a later project fails", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-ruff-format-multi-failure-"));
+    try {
+      writePassingPythonProtocolShim(join(repoRoot, "apps/one"));
+      writePassingPythonProtocolShim(join(repoRoot, "apps/two"));
+      writeToolShim(
+        join(repoRoot, "apps/one"),
+        "ruff",
+        [
+          "#!/bin/sh",
+          "if [ \"$1\" = \"--version\" ]; then echo 'ruff 0.6.9'; exit 0; fi",
+          "if [ \"$1\" = \"format\" ]; then exit 0; fi",
+          "exit 2",
+          ""
+        ].join("\n")
+      );
+      writeToolShim(
+        join(repoRoot, "apps/two"),
+        "ruff",
+        [
+          "#!/bin/sh",
+          "if [ \"$1\" = \"--version\" ]; then echo 'ruff 0.6.9'; exit 0; fi",
+          "if [ \"$1\" = \"format\" ]; then echo 'internal error' >&2; exit 2; fi",
+          "exit 2",
+          ""
+        ].join("\n")
+      );
+
+      const result = await runner({
+        files: {
+          "apps/one/pyproject.toml": "[project]\nname='one'\n[tool.ruff]\n",
+          "apps/one/pkg/app.py": "value = 1\n",
+          "apps/two/pyproject.toml": "[project]\nname='two'\n[tool.ruff]\n",
+          "apps/two/pkg/app.py": "value = 2\n"
+        },
+        checks: createPythonValidationChecks({ repoRoot, env: { PATH: "" } })
+      }).runValidation(
+        request({
+          repo: { repoRoot },
+          checks: [PYTHON_RUFF_FORMAT_CHECK_ID],
+          scope: {
+            kind: "files",
+            files: ["apps/one/pkg/app.py", "apps/two/pkg/app.py"]
+          }
+        })
+      );
+
+      assert.equal(result.status, "infrastructure_failure");
+      const receipts = result.manifest.runs[0].pythonCapabilityRuns ?? [];
+      assert.equal(receipts.length, 2);
+      assert.deepEqual(
+        receipts.map((receipt) => ({ cwd: receipt.cwd, state: receipt.state, exitCode: receipt.exitCode })),
+        [
+          { cwd: "apps/one", state: "passed", exitCode: 0 },
+          { cwd: "apps/two", state: "tool_failure", exitCode: 2 }
+        ]
+      );
     } finally {
       rmSync(repoRoot, { recursive: true, force: true });
     }
@@ -3453,7 +5609,7 @@ describe("Python project-context resolver", () => {
     }
   });
 
-  it("resolves each validation file view once across Python checks", async () => {
+  it("resolves each validation file view once per required Python tool selection", async () => {
     const files = {
       "pyproject.toml": "[project]\nname='fixture'\n",
       "app.py": "VALUE = 1\n"
@@ -3478,7 +5634,7 @@ describe("Python project-context resolver", () => {
     }));
 
     assert.equal(result.pythonProjectContexts.length, 1);
-    assert.equal(listCalls, 1);
+    assert.equal(listCalls, 2);
   });
 
   it("resolves each current file view independently of earlier context evidence", async () => {
@@ -3765,7 +5921,7 @@ describe("Python project-context resolver", () => {
     assert.deepEqual(context.layout.kinds, ["flat"]);
   });
 
-  it("matches overlay after-state identity with the equivalent materialized tree", async () => {
+  it("preserves overlay after-state project identity without probing inactive Ruff tools", async () => {
     const before = {
       "pyproject.toml": "[project]\nname='fixture'\nrequires-python='>=3.11'\n",
       "app.py": "VALUE = 1\n"
@@ -3794,12 +5950,13 @@ describe("Python project-context resolver", () => {
     });
 
     assert.equal(validationResult.pythonProjectContexts.length, 1);
-    assert.equal(validationResult.pythonProjectContexts[0].contextFingerprint, materialized.contextFingerprint);
     assert.equal(validationResult.pythonProjectContexts[0].projectKey, materialized.projectKey);
+    assert.equal(validationResult.pythonProjectContexts[0].projectRoot, materialized.projectRoot);
     assert.equal(validationResult.pythonProjectContexts[0].outcome, materialized.outcome);
+    assert.deepEqual(validationResult.pythonProjectContexts[0].tools, []);
   });
 
-  it("removes deleted project markers from overlay discovery and matches materialized identity", async () => {
+  it("removes deleted project markers from overlay discovery without probing inactive Ruff tools", async () => {
     const before = {
       "pyproject.toml": "[project]\nname='root'\n",
       "services/api/pyproject.toml": "[project]\nname='api'\n",
@@ -3828,8 +5985,9 @@ describe("Python project-context resolver", () => {
     });
     const overlay = result.pythonProjectContexts[0];
     assert.equal(overlay.projectRoot, ".");
-    assert.equal(overlay.contextFingerprint, materialized.contextFingerprint, JSON.stringify({ overlay, materialized }, null, 2));
+    assert.equal(overlay.projectKey, materialized.projectKey, JSON.stringify({ overlay, materialized }, null, 2));
     assert.equal(overlay.outcome, materialized.outcome);
+    assert.deepEqual(overlay.tools, []);
   });
 });
 
@@ -4050,7 +6208,9 @@ async function processExited(pid) {
 }
 
 function materializedMypyWorkspaces() {
-  return readdirSync(tmpdir()).filter((entry) => entry.startsWith("opcore-python-types-workspace-")).sort();
+  return readdirSync(tmpdir())
+    .filter((entry) => entry.startsWith(`opcore-python-types-workspace-${process.pid}-`))
+    .sort();
 }
 
 function writeToolShim(repoRoot, name, content) {

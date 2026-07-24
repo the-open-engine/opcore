@@ -186,6 +186,25 @@ export type PythonValidationAuthoritySource = (typeof pythonValidationAuthorityS
 export const pythonValidationCapabilityTerminationKinds = ["exited", "timeout", "signal", "spawn_error"] as const;
 export type PythonValidationCapabilityTerminationKind = (typeof pythonValidationCapabilityTerminationKinds)[number];
 
+export const pythonValidationCapabilities = ["types", "ruff_lint", "ruff_format"] as const;
+export type PythonValidationCapability = (typeof pythonValidationCapabilities)[number];
+
+export const pythonValidationCapabilityStates = [
+  ...validationCheckOutcomes,
+  "not_applicable",
+  "disabled"
+] as const;
+export type PythonValidationCapabilityState = (typeof pythonValidationCapabilityStates)[number];
+
+export const pythonValidationCapabilityTerminations = [
+  "exited",
+  "timeout",
+  "signal",
+  "spawn_error",
+  "overflow"
+] as const;
+export type PythonValidationCapabilityTermination = (typeof pythonValidationCapabilityTerminations)[number];
+
 export const validationSkippedCheckReasons = [
   "graph_unavailable",
   "unsupported_scope",
@@ -1307,7 +1326,7 @@ export interface PythonValidationCapabilityExecution {
 }
 
 /** Portable, source-free evidence for one attempted Python capability in one canonical project. */
-export interface PythonValidationCapabilityRun {
+export interface PythonTypesValidationCapabilityRun {
   schemaId: typeof PYTHON_VALIDATION_CAPABILITY_RUN_SCHEMA_ID;
   schemaVersion: 1;
   capability: "types";
@@ -1361,6 +1380,45 @@ export interface ValidationCheckManifestEntry {
   requiresGraph: boolean;
 }
 
+export interface PythonRuffValidationCapabilityRun {
+  schemaId: typeof PYTHON_VALIDATION_CAPABILITY_RUN_SCHEMA_ID;
+  schemaVersion: 1;
+  checkId: "python.ruff-lint" | "python.ruff-format";
+  capability: "ruff_lint" | "ruff_format";
+  state: PythonValidationCapabilityState;
+  projectKey?: string;
+  contextFingerprint?: string;
+  afterStateManifestFingerprint?: string;
+  sourcePaths?: readonly string[];
+  configPaths?: readonly string[];
+  executable?: string;
+  command?: string;
+  argv?: readonly string[];
+  cwd?: string;
+  configPath?: string;
+  toolVersion?: string;
+  toolSource?: PythonProjectExecutableSource;
+  termination?: PythonValidationCapabilityTermination;
+  exitCode?: number;
+  signal?: string;
+  invocations?: readonly PythonValidationCapabilityInvocation[];
+  durationMs: number;
+  diagnosticCount: number;
+  failureMessage?: string;
+}
+
+export type PythonValidationCapabilityRun =
+  | PythonTypesValidationCapabilityRun
+  | PythonRuffValidationCapabilityRun;
+
+export interface PythonValidationCapabilityInvocation {
+  argv: readonly string[];
+  termination: PythonValidationCapabilityTermination;
+  exitCode?: number;
+  signal?: string;
+  durationMs: number;
+}
+
 export interface ValidationCheckRunSummary {
   checkId: string;
   status: ValidationCheckRunStatus;
@@ -1368,6 +1426,7 @@ export interface ValidationCheckRunSummary {
   durationMs?: number;
   diagnosticCount?: number;
   failureMessage?: string;
+  pythonCapabilityRuns?: readonly PythonValidationCapabilityRun[];
 }
 
 export interface ValidationSkippedCheck {
@@ -6685,6 +6744,14 @@ export function validateValidationResultPayload(result: ValidationResult): Valid
 export function validatePythonValidationCapabilityRun(
   run: PythonValidationCapabilityRun
 ): PythonValidationCapabilityRun {
+  return run.capability === "types"
+    ? validatePythonTypesValidationCapabilityRun(run)
+    : validatePythonRuffValidationCapabilityRun(run);
+}
+
+function validatePythonTypesValidationCapabilityRun(
+  run: PythonTypesValidationCapabilityRun
+): PythonTypesValidationCapabilityRun {
   if (!run || typeof run !== "object") throw new Error("Python validation capability run is required");
   validatePythonCapabilityRunShape(run);
   validatePythonCapabilityRunIdentity(run);
@@ -6695,7 +6762,7 @@ export function validatePythonValidationCapabilityRun(
   return run;
 }
 
-function validatePythonCapabilityRunShape(run: PythonValidationCapabilityRun): void {
+function validatePythonCapabilityRunShape(run: PythonTypesValidationCapabilityRun): void {
   validateExactObjectKeys(run, [
     "schemaId", "schemaVersion", "capability", "checkId", "projectKey", "contextFingerprint", "projectRoot",
     "targets", "selectedSourcePaths", "selectedConfigPaths", "afterStateManifestFingerprint", "authority",
@@ -6711,7 +6778,7 @@ function validatePythonCapabilityRunShape(run: PythonValidationCapabilityRun): v
   }
 }
 
-function validatePythonCapabilityRunIdentity(run: PythonValidationCapabilityRun): void {
+function validatePythonCapabilityRunIdentity(run: PythonTypesValidationCapabilityRun): void {
   validateSha256Identity(run.projectKey, "Python validation capability run projectKey");
   validateSha256Identity(run.contextFingerprint, "Python validation capability run contextFingerprint");
   validatePythonProjectRoot(run.projectRoot, "Python validation capability run projectRoot");
@@ -6741,7 +6808,7 @@ function validatePythonCapabilityRunIdentity(run: PythonValidationCapabilityRun)
   }
 }
 
-function validatePythonCapabilityRunCounts(run: PythonValidationCapabilityRun): void {
+function validatePythonCapabilityRunCounts(run: PythonTypesValidationCapabilityRun): void {
   for (const [key, value] of [
     ["durationMs", run.durationMs], ["diagnosticCount", run.diagnosticCount], ["errorCount", run.errorCount],
     ["warningCount", run.warningCount], ["noteCount", run.noteCount]
@@ -6751,7 +6818,7 @@ function validatePythonCapabilityRunCounts(run: PythonValidationCapabilityRun): 
   }
 }
 
-function validatePythonCapabilityRunStatus(run: PythonValidationCapabilityRun): void {
+function validatePythonCapabilityRunStatus(run: PythonTypesValidationCapabilityRun): void {
   if (run.status === "passed") validatePassedPythonCapability(run);
   if (run.status === "findings") validateFindingsPythonCapability(run);
   if (run.status === "timeout") validateTimeoutPythonCapability(run);
@@ -6761,14 +6828,14 @@ function validatePythonCapabilityRunStatus(run: PythonValidationCapabilityRun): 
   if (run.status === "tool_failure") validateFailedPythonCapability(run);
 }
 
-function validatePassedPythonCapability(run: PythonValidationCapabilityRun): void {
+function validatePassedPythonCapability(run: PythonTypesValidationCapabilityRun): void {
   requireExitedPythonCapability(run);
   if (run.execution?.exitCode !== 0 || run.errorCount !== 0) {
     throw new Error("Passed Python validation capability run requires exit 0 and zero errors");
   }
 }
 
-function validateFindingsPythonCapability(run: PythonValidationCapabilityRun): void {
+function validateFindingsPythonCapability(run: PythonTypesValidationCapabilityRun): void {
   requireExitedPythonCapability(run);
   if (run.execution?.exitCode !== 1 || run.diagnosticCount === 0) {
     throw new Error("Findings Python validation capability run requires exit 1 and diagnostics");
@@ -6778,19 +6845,19 @@ function validateFindingsPythonCapability(run: PythonValidationCapabilityRun): v
   }
 }
 
-function requireExitedPythonCapability(run: PythonValidationCapabilityRun): void {
+function requireExitedPythonCapability(run: PythonTypesValidationCapabilityRun): void {
   if (run.tool === undefined || run.execution?.termination !== "exited") {
     throw new Error(`Python validation capability run ${run.status} requires exited tool evidence`);
   }
 }
 
-function validateTimeoutPythonCapability(run: PythonValidationCapabilityRun): void {
+function validateTimeoutPythonCapability(run: PythonTypesValidationCapabilityRun): void {
   if (run.tool === undefined || run.execution?.termination !== "timeout" || run.execution.failureSummary === undefined) {
     throw new Error("Timeout Python validation capability run requires tool and timeout failure evidence");
   }
 }
 
-function validateInvalidPythonCapability(run: PythonValidationCapabilityRun): void {
+function validateInvalidPythonCapability(run: PythonTypesValidationCapabilityRun): void {
   if (run.authority === undefined && (run.tool !== undefined || run.execution !== undefined)) {
     throw new Error("Unselected invalid-config Python validation capability run must not include tool or execution evidence");
   }
@@ -6800,17 +6867,17 @@ function validateInvalidPythonCapability(run: PythonValidationCapabilityRun): vo
   }
 }
 
-function validateUnexecutedPythonCapability(run: PythonValidationCapabilityRun): void {
+function validateUnexecutedPythonCapability(run: PythonTypesValidationCapabilityRun): void {
   if (run.execution !== undefined) throw new Error(`${run.status} Python validation capability run must not include execution evidence`);
 }
 
-function validateUnavailablePythonCapability(run: PythonValidationCapabilityRun): void {
+function validateUnavailablePythonCapability(run: PythonTypesValidationCapabilityRun): void {
   if (run.tool === undefined || run.execution !== undefined) {
     throw new Error("Tool-unavailable Python validation capability run requires tool provenance without execution");
   }
 }
 
-function validateFailedPythonCapability(run: PythonValidationCapabilityRun): void {
+function validateFailedPythonCapability(run: PythonTypesValidationCapabilityRun): void {
   if (run.tool === undefined || run.execution === undefined || run.execution.termination === "timeout" || run.execution.failureSummary === undefined) {
     throw new Error("Tool-failure Python validation capability run requires non-timeout tool failure evidence");
   }
@@ -6826,7 +6893,7 @@ export function validatePythonValidationCapabilityRuns(
 
 function validatePythonValidationCapabilityTool(
   tool: PythonValidationCapabilityToolProvenance,
-  run: PythonValidationCapabilityRun
+  run: PythonTypesValidationCapabilityRun
 ): void {
   validateExactObjectKeys(tool, ["name", "executable", "argv", "cwd", "source", "version", "configFile"], "Python validation capability tool");
   if (run.authority === undefined || tool.name !== run.authority) throw new Error("Python validation capability tool must match authority");
@@ -7623,6 +7690,12 @@ function validateValidationCheckRunSummary(run: ValidationCheckRunSummary): Vali
   ) {
     throw new Error("Validation check run summary failureMessage is required for failure statuses");
   }
+  if (run.pythonCapabilityRuns !== undefined) {
+    if (!Array.isArray(run.pythonCapabilityRuns)) {
+      throw new Error("Validation check run summary pythonCapabilityRuns must be an array");
+    }
+    for (const capabilityRun of run.pythonCapabilityRuns) validatePythonValidationCapabilityRun(capabilityRun);
+  }
   return run;
 }
 
@@ -7639,6 +7712,327 @@ function validateValidationCheckOutcomeStatus(run: ValidationCheckRunSummary): v
   };
   if (run.status !== expectedStatus[run.outcome]) {
     throw new Error(`Validation check outcome ${run.outcome} requires status ${expectedStatus[run.outcome]}`);
+  }
+}
+
+function validatePythonRuffValidationCapabilityRun(
+  run: PythonRuffValidationCapabilityRun
+): PythonRuffValidationCapabilityRun {
+  if (!run || typeof run !== "object") {
+    throw new Error("Python validation capability run is required");
+  }
+  validateExactObjectKeys(run, [
+    "schemaId", "schemaVersion", "checkId", "capability", "state", "projectKey", "contextFingerprint",
+    "afterStateManifestFingerprint", "sourcePaths", "configPaths", "executable", "command", "argv", "cwd",
+    "configPath", "toolVersion", "toolSource", "termination", "exitCode", "signal", "invocations",
+    "durationMs", "diagnosticCount", "failureMessage"
+  ], "Python Ruff validation capability run");
+  if (run.schemaId !== PYTHON_VALIDATION_CAPABILITY_RUN_SCHEMA_ID) {
+    throw new Error(`Python validation capability run schemaId must be ${PYTHON_VALIDATION_CAPABILITY_RUN_SCHEMA_ID}`);
+  }
+  if (run.schemaVersion !== 1) throw new Error("Python validation capability run schemaVersion must be 1");
+  validateValidationCheckId(run.checkId, "Python validation capability run checkId");
+  if (!includesString(pythonValidationCapabilities, run.capability)) {
+    throw new Error(`Unknown Python validation capability: ${String(run.capability)}`);
+  }
+  if (!includesString(pythonValidationCapabilityStates, run.state)) {
+    throw new Error(`Unknown Python validation capability state: ${String(run.state)}`);
+  }
+  if (run.projectKey !== undefined) validateSha256Identity(run.projectKey, "Python validation capability run projectKey");
+  if (run.contextFingerprint !== undefined) {
+    validateSha256Identity(run.contextFingerprint, "Python validation capability run contextFingerprint");
+  }
+  if (run.afterStateManifestFingerprint !== undefined) {
+    validateSha256Identity(
+      run.afterStateManifestFingerprint,
+      "Python validation capability run afterStateManifestFingerprint"
+    );
+  }
+  if (run.sourcePaths !== undefined) {
+    validateStringArray(run.sourcePaths, "Python validation capability run sourcePaths", { allowEmpty: true });
+    for (const path of run.sourcePaths) validateRepoRelativePath(path);
+  }
+  if (run.configPaths !== undefined) {
+    validateStringArray(run.configPaths, "Python validation capability run configPaths", { allowEmpty: true });
+    for (const path of run.configPaths) validateRepoRelativePath(path);
+  }
+  if (run.executable !== undefined) validatePortablePythonCapabilityExecutable(run.executable);
+  if (run.command !== undefined) validateNonEmptyString(run.command, "Python validation capability run command");
+  if (run.argv !== undefined) {
+    validateStringArray(run.argv, "Python validation capability run argv", { allowEmpty: false });
+    validatePortablePythonCapabilityArgv(run.argv);
+  }
+  if (run.cwd !== undefined) validateNonEmptyString(run.cwd, "Python validation capability run cwd");
+  if (run.configPath !== undefined) validateRepoRelativePath(run.configPath);
+  if (run.toolVersion !== undefined) {
+    validateNonEmptyString(run.toolVersion, "Python validation capability run toolVersion");
+    if (!/^[0-9]+\.[0-9][-+._A-Za-z0-9]*$/u.test(run.toolVersion)) {
+      throw new Error("Python validation capability run toolVersion must be exact version provenance");
+    }
+  }
+  if (run.toolSource !== undefined && !includesString(pythonProjectExecutableSources, run.toolSource)) {
+    throw new Error(`Unknown Python validation capability run toolSource: ${String(run.toolSource)}`);
+  }
+  if (run.termination !== undefined && !includesString(pythonValidationCapabilityTerminations, run.termination)) {
+    throw new Error(`Unknown Python validation capability termination: ${String(run.termination)}`);
+  }
+  if (run.exitCode !== undefined) validateNonNegativeInteger(run.exitCode, "Python validation capability run exitCode");
+  if (run.signal !== undefined) validateNonEmptyString(run.signal, "Python validation capability run signal");
+  if (run.invocations !== undefined) {
+    if (!Array.isArray(run.invocations) || run.invocations.length === 0) {
+      throw new Error("Python validation capability run invocations must be a non-empty array");
+    }
+    for (const invocation of run.invocations) {
+      validatePythonValidationCapabilityInvocation(invocation);
+      if (run.executable !== undefined && invocation.argv[0] !== run.executable) {
+        throw new Error("Python validation capability invocation argv must start with executable");
+      }
+    }
+  }
+  validateNonNegativeNumber(run.durationMs, "Python validation capability run durationMs");
+  validateNonNegativeInteger(run.diagnosticCount, "Python validation capability run diagnosticCount");
+  if (run.failureMessage !== undefined) {
+    validateNonEmptyString(run.failureMessage, "Python validation capability run failureMessage");
+    if (containsHostAbsolutePath(run.failureMessage)) {
+      throw new Error("Python validation capability run failureMessage must not contain host-absolute paths");
+    }
+  }
+  if (run.state === "not_applicable" || run.state === "disabled") {
+    if (
+      run.termination !== undefined ||
+      run.exitCode !== undefined ||
+      run.signal !== undefined ||
+      run.command !== undefined ||
+      run.argv !== undefined ||
+      run.invocations !== undefined
+    ) {
+      throw new Error(`Python validation capability state ${run.state} must not record a process invocation`);
+    }
+  }
+  if (run.signal !== undefined && run.termination !== "signal") {
+    throw new Error("Python validation capability run signal requires signal termination");
+  }
+  if (run.exitCode !== undefined && run.termination !== "exited") {
+    throw new Error("Python validation capability run exitCode requires exited termination");
+  }
+  validateRuffCapabilityRun(run);
+  return run;
+}
+
+function validatePythonValidationCapabilityInvocation(invocation: PythonValidationCapabilityInvocation): void {
+  if (!invocation || typeof invocation !== "object") {
+    throw new Error("Python validation capability invocation is required");
+  }
+  validateStringArray(invocation.argv, "Python validation capability invocation argv", { allowEmpty: false });
+  validatePortablePythonCapabilityArgv(invocation.argv);
+  if (!includesString(pythonValidationCapabilityTerminations, invocation.termination)) {
+    throw new Error(`Unknown Python validation capability invocation termination: ${String(invocation.termination)}`);
+  }
+  if (invocation.exitCode !== undefined) {
+    validateNonNegativeInteger(invocation.exitCode, "Python validation capability invocation exitCode");
+    if (invocation.termination !== "exited") {
+      throw new Error("Python validation capability invocation exitCode requires exited termination");
+    }
+  }
+  if (invocation.signal !== undefined) {
+    validateNonEmptyString(invocation.signal, "Python validation capability invocation signal");
+    if (invocation.termination !== "signal") {
+      throw new Error("Python validation capability invocation signal requires signal termination");
+    }
+  }
+  validateRuffTerminationEvidence(invocation, "Python validation capability invocation");
+  validateNonNegativeNumber(invocation.durationMs, "Python validation capability invocation durationMs");
+}
+
+function validateRuffCapabilityRun(run: PythonRuffValidationCapabilityRun): void {
+  const expectedCheckId =
+    run.capability === "ruff_lint"
+      ? "python.ruff-lint"
+      : run.capability === "ruff_format"
+        ? "python.ruff-format"
+        : undefined;
+  if (expectedCheckId === undefined) return;
+  if (run.checkId !== expectedCheckId) {
+    throw new Error(`Python validation capability ${run.capability} requires checkId ${expectedCheckId}`);
+  }
+  if (run.state === "not_applicable" || run.state === "disabled") return;
+  const exactStateFields: readonly (keyof PythonRuffValidationCapabilityRun)[] = [
+    "projectKey",
+    "contextFingerprint",
+    "afterStateManifestFingerprint",
+    "sourcePaths",
+    "configPaths",
+    "cwd"
+  ];
+  for (const field of exactStateFields) {
+    if (run[field] === undefined) {
+      throw new Error(`Activated Ruff capability run requires ${field}`);
+    }
+  }
+  if ((run.sourcePaths?.length ?? 0) === 0) {
+    throw new Error("Activated Ruff capability run requires at least one source path");
+  }
+  if (run.cwd !== "." && run.cwd !== undefined) validateRepoRelativePath(run.cwd);
+  if (
+    run.state === "tool_unavailable" ||
+    run.state === "unsupported_target"
+  ) {
+    requireRuffFailureMessage(run);
+    rejectRuffProcessEvidence(run);
+    return;
+  }
+  if (run.state === "timeout") {
+    requireRuffFailureMessage(run);
+    requireExecutedRuffCapability(run);
+    if (run.termination !== "timeout") {
+      throw new Error("Ruff capability timeout requires timeout termination");
+    }
+    validateExecutedRuffCapabilityCoherence(run);
+    return;
+  }
+  if (run.state === "invalid_config") {
+    requireRuffFailureMessage(run);
+    if (!hasRuffProcessEvidence(run)) return;
+    requireExecutedRuffCapability(run);
+    if (run.termination !== "exited" || run.exitCode !== 2) {
+      throw new Error("Executed Ruff capability invalid_config requires exited configuration-rejection evidence");
+    }
+    validateExecutedRuffCapabilityCoherence(run);
+    return;
+  }
+  if (run.state === "tool_failure") {
+    requireRuffFailureMessage(run);
+    if (!hasRuffProcessEvidence(run)) return;
+    requireExecutedRuffCapability(run);
+    if (run.termination === "timeout") {
+      throw new Error("Executed Ruff capability tool_failure must not use timeout termination");
+    }
+    validateExecutedRuffCapabilityCoherence(run);
+    return;
+  }
+  if (run.state !== "passed" && run.state !== "findings") return;
+  requireExecutedRuffCapability(run);
+  if (run.termination !== "exited") {
+    throw new Error("Executed Ruff capability run requires exited termination");
+  }
+  for (const invocation of run.invocations ?? []) {
+    if (invocation.termination !== "exited" || (invocation.exitCode !== 0 && invocation.exitCode !== 1)) {
+      throw new Error("Executed Ruff capability invocation requires exited Ruff result code 0 or 1");
+    }
+  }
+  validateExecutedRuffCapabilityCoherence(run);
+  const expectedExitCode = run.state === "passed" ? 0 : 1;
+  if (run.exitCode !== expectedExitCode) {
+    throw new Error(`Executed Ruff capability state ${run.state} requires exitCode ${expectedExitCode}`);
+  }
+  if (run.state === "passed" && run.diagnosticCount !== 0) {
+    throw new Error("Passed Ruff capability run requires zero diagnostics");
+  }
+  if (run.state === "findings" && run.diagnosticCount <= 0) {
+    throw new Error("Ruff findings capability run requires positive diagnosticCount");
+  }
+}
+
+function requireRuffFailureMessage(run: PythonRuffValidationCapabilityRun): void {
+  if (run.failureMessage === undefined) {
+    throw new Error(`Ruff capability state ${run.state} requires failureMessage`);
+  }
+}
+
+function hasRuffProcessEvidence(run: PythonRuffValidationCapabilityRun): boolean {
+  return (
+    run.command !== undefined ||
+    run.argv !== undefined ||
+    run.termination !== undefined ||
+    run.exitCode !== undefined ||
+    run.signal !== undefined ||
+    run.invocations !== undefined
+  );
+}
+
+function rejectRuffProcessEvidence(run: PythonRuffValidationCapabilityRun): void {
+  if (hasRuffProcessEvidence(run)) {
+    throw new Error(`Ruff capability state ${run.state} must not record process evidence`);
+  }
+}
+
+function requireExecutedRuffCapability(run: PythonRuffValidationCapabilityRun): void {
+  const executionFields: readonly (keyof PythonRuffValidationCapabilityRun)[] = [
+    "executable",
+    "command",
+    "argv",
+    "toolVersion",
+    "toolSource",
+    "termination",
+    "invocations"
+  ];
+  for (const field of executionFields) {
+    if (run[field] === undefined) {
+      throw new Error(`Executed Ruff capability run requires ${field}`);
+    }
+  }
+  if (run.durationMs <= 0) {
+    throw new Error("Executed Ruff capability run requires positive durationMs");
+  }
+  if (run.argv?.[0] !== run.executable) {
+    throw new Error("Executed Ruff capability run argv must start with executable");
+  }
+  if (run.command !== run.argv?.join(" ")) {
+    throw new Error("Executed Ruff capability run command must match argv");
+  }
+  validateRuffTerminationEvidence(run, "Executed Ruff capability run");
+  for (const invocation of run.invocations ?? []) {
+    if (invocation.argv[0] !== run.executable) {
+      throw new Error("Executed Ruff capability invocation argv must start with executable");
+    }
+    if (invocation.durationMs <= 0) {
+      throw new Error("Executed Ruff capability invocation requires positive durationMs");
+    }
+  }
+}
+
+function validateExecutedRuffCapabilityCoherence(run: PythonRuffValidationCapabilityRun): void {
+  const matchingInvocation = run.invocations?.some((invocation) =>
+    invocation.termination === run.termination &&
+    invocation.exitCode === run.exitCode &&
+    invocation.signal === run.signal &&
+    invocation.argv.length === run.argv?.length &&
+    invocation.argv.every((argument, index) => argument === run.argv?.[index])
+  );
+  if (matchingInvocation !== true) {
+    throw new Error("Executed Ruff capability run requires an invocation matching its argv and termination evidence");
+  }
+}
+
+function validateRuffTerminationEvidence(
+  evidence: Pick<
+    PythonRuffValidationCapabilityRun | PythonValidationCapabilityInvocation,
+    "termination" | "exitCode" | "signal"
+  >,
+  label: string
+): void {
+  if (evidence.termination === "exited") {
+    if (evidence.exitCode === undefined || evidence.signal !== undefined) {
+      throw new Error(`${label} exited termination requires exitCode without signal`);
+    }
+    return;
+  }
+  if (evidence.termination === "signal") {
+    if (evidence.signal === undefined || evidence.exitCode !== undefined) {
+      throw new Error(`${label} signal termination requires signal without exitCode`);
+    }
+    return;
+  }
+  if (evidence.exitCode !== undefined || evidence.signal !== undefined) {
+    throw new Error(`${label} ${String(evidence.termination)} termination must not record exitCode or signal`);
+  }
+}
+
+function validatePortablePythonCapabilityArgv(argv: readonly string[]): void {
+  for (const argument of argv) {
+    if (containsHostAbsolutePath(argument)) {
+      throw new Error("Python validation capability run requires portable argv without host-absolute paths");
+    }
   }
 }
 

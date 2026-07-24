@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { spawn, spawnSync } from "node:child_process";
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -449,7 +449,89 @@ describe("opcore public facade", () => {
         })),
         []
       );
-      assert.deepEqual(degradedPythonTools, ["mypy", "pyright", "python", "pytest", "ruff"].sort());
+      assert.deepEqual(degradedPythonTools, ["mypy", "pyright", "pytest", "python"].sort());
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("keeps inactive Ruff tooling out of status degradation and missing-tools output", () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-python-inactive-ruff-status-"));
+    try {
+      mkdirSync(join(temp, ".venv", "bin"), { recursive: true });
+      mkdirSync(join(temp, ".opcore"), { recursive: true });
+      writeFileSync(join(temp, ".opcore", "config"), JSON.stringify({
+        validation: {
+          checks: {
+            disabled: ["python.syntax", "python.types", "python.relevant-tests"]
+          }
+        }
+      }, null, 2));
+      writeFileSync(join(temp, "pyproject.toml"), "[project]\nname='fixture'\nrequires-python='>=3.11'\n");
+      writeFileSync(join(temp, "app.py"), "VALUE = 1\n");
+      writeFileSync(join(temp, ".venv", "bin", "python"), `#!/bin/sh
+printf '%s\\n' '${JSON.stringify({
+  protocol: "opcore.python.project-context.interpreter.v1",
+  executable: join(temp, ".venv", "bin", "python"),
+  version: "3.12.13",
+  implementation: "CPython",
+  platform: process.platform,
+  architecture: process.arch,
+  abi: "cpython-312",
+  soabi: "cpython-312"
+})}'
+`);
+      chmodSync(join(temp, ".venv", "bin", "python"), 0o755);
+      writeFileSync(join(temp, ".venv", "bin", "python3"), readFileSync(join(temp, ".venv", "bin", "python"), "utf8"));
+      chmodSync(join(temp, ".venv", "bin", "python3"), 0o755);
+
+      const result = parseJson(runOpcore(["status", "--repo", temp, "--json"], temp, 0, { ...process.env, PATH: "" }).stdout);
+      const pythonAdapter = result.repoState.validation.adapters.find((adapter) => adapter.adapter === "python");
+
+      assert.equal(pythonAdapter.status, "available");
+      assert.equal(pythonAdapter.degradedChecks.includes("python.ruff-lint"), false);
+      assert.equal(pythonAdapter.degradedChecks.includes("python.ruff-format"), false);
+      assert.equal(pythonAdapter.missingTools.includes("ruff"), false);
+      assert.equal(
+        result.repoState.validation.degradedToolchains.some((tool) => tool.adapter === "python" && tool.tool === "ruff"),
+        false
+      );
+
+      writeFileSync(join(temp, ".opcore", "config"), JSON.stringify({
+        validation: {
+          checks: {
+            defaults: ["python.ruff-lint"],
+            disabled: ["python.syntax", "python.types", "python.relevant-tests"]
+          }
+        }
+      }, null, 2));
+      const active = parseJson(runOpcore(["status", "--repo", temp, "--json"], temp, 0, { ...process.env, PATH: "" }).stdout);
+      const activePython = active.repoState.validation.adapters.find((adapter) => adapter.adapter === "python");
+      assert.equal(activePython.status, "degraded");
+      assert.equal(activePython.degradedChecks.includes("python.ruff-lint"), true);
+      assert.equal(activePython.missingTools.includes("ruff"), true);
+      assert.equal(
+        active.repoState.validation.degradedToolchains.some((tool) => tool.adapter === "python" && tool.tool === "ruff"),
+        true
+      );
+
+      rmSync(join(temp, ".venv", "bin", "python"));
+      rmSync(join(temp, ".venv", "bin", "python3"));
+      writeFileSync(join(temp, ".venv", "bin", "ruff"), "#!/bin/sh\necho 'ruff 0.6.9'\n");
+      chmodSync(join(temp, ".venv", "bin", "ruff"), 0o755);
+      const standalone = parseJson(runOpcore(["status", "--repo", temp, "--json"], temp, 0, {
+        ...process.env,
+        PATH: ""
+      }).stdout);
+      const standalonePython = standalone.repoState.validation.adapters.find((adapter) => adapter.adapter === "python");
+      assert.equal(standalonePython.status, "available");
+      assert.deepEqual(standalonePython.degradedChecks, []);
+      assert.deepEqual(standalonePython.missingTools, []);
+      assert.equal(
+        standalone.repoState.validation.degradedToolchains.some((tool) => tool.adapter === "python" && tool.tool === "python"),
+        false
+      );
+      assert.equal(standalone.repoState.warnings.some((warning) => warning.includes("python")), false);
     } finally {
       rmSync(temp, { recursive: true, force: true });
     }

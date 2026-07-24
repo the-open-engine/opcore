@@ -3,7 +3,7 @@ import { createCommandRouterResult } from "@the-open-engine/opcore-contracts";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { readOpcoreRuntimeInfo } from "./runtime-info.js";
-import { resolveRepo, validationPolicySummary } from "./status.js";
+import { resolveRepo } from "./status.js";
 import { createRepoState } from "./status-state.js";
 import { createDefaultValidationStatusPayload } from "./validation-composition.js";
 
@@ -63,7 +63,7 @@ export async function routeOpcoreDoctor(argv: readonly string[], parsed: ParsedC
     pythonProjectContexts: repoState.validation.pythonProjectContexts
   });
   const runtimeInfo = readOpcoreRuntimeInfo();
-  const policy = validationPolicySummary(resolution.resolution.root, validationStatus.adapterRegistry.checkIds);
+  const policy = repoState.validation.policy;
   const opcoreDoctor: OpcoreDoctorPayload = {
     schemaVersion: 1,
     runtime: runtimeInfo,

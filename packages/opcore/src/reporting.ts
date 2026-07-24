@@ -16,6 +16,8 @@ import type {
   OpcoreMetricReport,
   OpcoreMetricSignal,
   OpcoreRepoStatePayload,
+  PythonRuffValidationCapabilityRun,
+  PythonValidationCapabilityRun,
   ValidationDiagnostic,
   ValidationResult,
   ValidationSkippedCheck
@@ -72,6 +74,8 @@ const rustGraphSignalsCheckId = "rust.graph-signals";
 const rustFileLengthCheckId = "rust.file-length";
 const pythonSyntaxCheckId = "python.syntax";
 const pythonSourceHygieneCheckId = "python.source-hygiene";
+const pythonRuffLintCheckId = "python.ruff-lint";
+const pythonRuffFormatCheckId = "python.ruff-format";
 const pythonTypesCheckId = "python.types";
 const pythonImportGraphCheckId = "python.import-graph";
 const pythonDeadCodeCheckId = "python.dead-code";
@@ -233,6 +237,28 @@ export function createOpcoreMetricReport(input: CreateOpcoreMetricReportInput): 
     severity: "warning",
     checkId: pythonRelevantTestsCheckId,
     diagnostics: diagnostics.filter((diagnostic) => diagnostic.code === "PY_RELEVANT_TESTS_ABSENT" && hasPath(diagnostic))
+  });
+  addReceiptBackedDiagnosticSignal(signals, validationResult, {
+    id: "python.ruff_lint_findings",
+    title: "Python Ruff lint findings",
+    category: "python",
+    severity: "warning",
+    checkId: pythonRuffLintCheckId,
+    capability: "ruff_lint",
+    diagnostics: diagnostics.filter((diagnostic) =>
+      diagnostic.category === "policy" &&
+      diagnostic.code?.startsWith("PY_RUFF_LINT_") === true &&
+      hasPath(diagnostic)
+    )
+  });
+  addReceiptBackedDiagnosticSignal(signals, validationResult, {
+    id: "python.ruff_format_findings",
+    title: "Python Ruff format drift",
+    category: "python",
+    severity: "warning",
+    checkId: pythonRuffFormatCheckId,
+    capability: "ruff_format",
+    diagnostics: diagnostics.filter((diagnostic) => diagnostic.code === "PY_RUFF_FORMAT_DRIFT" && hasPath(diagnostic))
   });
   addDiagnosticSignal(signals, {
     id: "python.dead_exports",
@@ -721,6 +747,102 @@ function addMappedDiagnosticSignal(
     count: evidence.length,
     evidence
   });
+}
+
+function addReceiptBackedDiagnosticSignal(
+  signals: OpcoreMetricSignal[],
+  result: ValidationResult | undefined,
+  args: {
+    id: string;
+    title: string;
+    category: OpcoreMetricSignal["category"];
+    severity: OpcoreMetricSignal["severity"];
+    checkId: string;
+    capability: "ruff_lint" | "ruff_format";
+    diagnostics: readonly ValidationDiagnostic[];
+  }
+): void {
+  const capabilityRuns = uniquePythonCapabilityRuns([
+    ...(result?.pythonCapabilityRuns ?? []),
+    ...(result?.manifest?.runs ?? []).flatMap((run) => run.pythonCapabilityRuns ?? [])
+  ])
+    .filter(isProvenRuffFindingsRun)
+    .filter((run) =>
+      run.checkId === args.checkId &&
+      run.capability === args.capability
+    );
+  const count = capabilityRuns.reduce((total, run) => total + run.diagnosticCount, 0);
+  if (count === 0) return;
+  const evidence = args.diagnostics.length > 0
+    ? args.diagnostics.flatMap((diagnostic) => diagnosticEvidence(diagnostic, args.checkId))
+    : capabilityRuns
+      .map((run): OpcoreMetricEvidence | undefined => {
+        const path = run.sourcePaths?.[0];
+        if (path === undefined) return undefined;
+        return {
+          source: "validation_manifest",
+          path,
+          message: `${args.checkId} reported ${run.diagnosticCount} finding${run.diagnosticCount === 1 ? "" : "s"} for ${path}.`,
+          checkId: args.checkId
+        };
+      })
+      .filter((entry): entry is OpcoreMetricEvidence => entry !== undefined);
+  if (evidence.length === 0) return;
+  signals.push({
+    id: args.id,
+    title: args.title,
+    category: args.category,
+    severity: args.severity,
+    count,
+    evidence
+  });
+}
+
+function uniquePythonCapabilityRuns(
+  runs: readonly PythonValidationCapabilityRun[]
+): readonly PythonValidationCapabilityRun[] {
+  return [...new Map(runs.map((run) => [JSON.stringify(run), run])).values()];
+}
+
+function isProvenRuffFindingsRun(
+  run: PythonValidationCapabilityRun
+): run is PythonRuffValidationCapabilityRun {
+  const sha256Identity = /^sha256:[a-f0-9]{64}$/u;
+  return run.capability !== "types" &&
+    run.state === "findings" &&
+    run.checkId === (run.capability === "ruff_lint" ? "python.ruff-lint" : "python.ruff-format") &&
+    typeof run.projectKey === "string" &&
+    sha256Identity.test(run.projectKey) &&
+    typeof run.contextFingerprint === "string" &&
+    sha256Identity.test(run.contextFingerprint) &&
+    typeof run.afterStateManifestFingerprint === "string" &&
+    sha256Identity.test(run.afterStateManifestFingerprint) &&
+    Array.isArray(run.sourcePaths) &&
+    run.sourcePaths.length > 0 &&
+    Array.isArray(run.configPaths) &&
+    typeof run.executable === "string" &&
+    run.executable.length > 0 &&
+    Array.isArray(run.argv) &&
+    run.argv.length > 0 &&
+    run.argv[0] === run.executable &&
+    run.command === run.argv.join(" ") &&
+    typeof run.cwd === "string" &&
+    run.cwd.length > 0 &&
+    typeof run.toolVersion === "string" &&
+    run.toolVersion.length > 0 &&
+    run.toolSource !== undefined &&
+    run.termination === "exited" &&
+    run.exitCode === 1 &&
+    run.durationMs > 0 &&
+    run.diagnosticCount > 0 &&
+    Array.isArray(run.invocations) &&
+    run.invocations.length > 0 &&
+    run.invocations.every((invocation) =>
+      invocation.argv[0] === run.executable &&
+      invocation.termination === "exited" &&
+      (invocation.exitCode === 0 || invocation.exitCode === 1) &&
+      invocation.durationMs > 0
+    );
 }
 
 function addUnsupportedLanguageSignal(signals: OpcoreMetricSignal[], repoState: OpcoreRepoStatePayload): void {

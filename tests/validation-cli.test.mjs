@@ -43,6 +43,7 @@ const pythonCheckIds = [
   "python.dead-code",
   "python.relevant-tests"
 ];
+const optInPythonCheckIds = ["python.ruff-lint", "python.ruff-format"];
 const docsCheckIds = [
   "docs.existence",
   "docs.staleness",
@@ -59,6 +60,16 @@ const cloneCheckIds = ["clone.duplication"];
 const typeScriptExecutableDefaultCheckIds = typeScriptCheckIds.filter((checkId) => checkId !== "typescript.lint");
 const executableDefaultCheckIds = [...typeScriptExecutableDefaultCheckIds, ...rustCheckIds, ...pythonCheckIds, ...cloneCheckIds];
 const defaultCheckIds = [...typeScriptCheckIds, ...rustCheckIds, ...pythonCheckIds, ...docsCheckIds, ...cloneCheckIds];
+const availableCheckIds = [
+  ...typeScriptCheckIds,
+  ...rustCheckIds,
+  pythonCheckIds[0],
+  pythonCheckIds[1],
+  ...optInPythonCheckIds,
+  ...pythonCheckIds.slice(2),
+  ...docsCheckIds,
+  ...cloneCheckIds
+];
 
 describe("validation CLI", () => {
   it("keeps opcore status separate from validation execution results", async () => {
@@ -71,16 +82,17 @@ describe("validation CLI", () => {
 
       assert.equal(result.status, "ok");
       assert.deepEqual(result.canonicalCommand, ["opcore", "status"]);
-      assert.equal(result.repoState.validation.checkCount, defaultCheckIds.length);
+      assert.equal(result.repoState.validation.checkCount, availableCheckIds.length);
       assert.equal(result.repoState.validation.policy.state, "missing");
-      assert.deepEqual(result.repoState.validation.policy.configuredChecks, defaultCheckIds);
+      assert.deepEqual(result.repoState.validation.policy.configuredChecks, executableDefaultCheckIds);
       assert.equal(Object.hasOwn(result, "validationResult"), false);
       assert.equal(Object.hasOwn(result, "validationStatus"), false);
       assertCommandTiming(result);
 
       const compatible = run(["status", "--json"]);
       assert.deepEqual(compatible.canonicalCommand, ["opcore", "status"]);
-      assert.equal(compatible.validationStatus.adapterRegistry.checkIds.length, defaultCheckIds.length);
+      assert.equal(compatible.validationStatus.adapterRegistry.checkIds.length, availableCheckIds.length);
+      assert.deepEqual(compatible.validationStatus.adapterRegistry.checkIds, availableCheckIds);
       assert.equal(Object.hasOwn(compatible, "repoState"), false);
     } finally {
       rmSync(temp, { recursive: true, force: true });
@@ -258,7 +270,7 @@ describe("validation CLI", () => {
       assert.equal(result.status, "ok");
       assert.deepEqual(
         result.validationResult.manifest.entries.map((entry) => entry.checkId),
-        defaultCheckIds
+        availableCheckIds
       );
       for (const checkId of ["rust.fmt", "rust.cargo-check", "rust.clippy"]) {
         assert.equal(result.validationResult.manifest.checks.includes(checkId), true, checkId);
@@ -1347,7 +1359,7 @@ describe("validation CLI", () => {
       const result = run([command, "--json"], [0], { env: full.env });
       assert.equal(result.owner, "runtime");
       assert.equal(result.validationStatus.ready, true);
-      assert.deepEqual(result.validationStatus.adapterRegistry.checkIds, defaultCheckIds);
+      assert.deepEqual(result.validationStatus.adapterRegistry.checkIds, availableCheckIds);
       assert.equal(result.validationStatus.adapterRegistry.checkIds.includes("rust.file-length"), true);
       const rustAdapter = result.validationStatus.adapterRegistry.adapters.find((adapter) => adapter.adapter === "rust");
       const pythonAdapter = result.validationStatus.adapterRegistry.adapters.find((adapter) => adapter.adapter === "python");

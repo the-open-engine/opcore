@@ -80,11 +80,18 @@ export function createDefaultValidationStatusPayload(options: {
   pythonProjectContexts?: readonly PythonProjectContext[];
 }): ValidationStatusPayload {
   const graphMode = options.graphMode ?? "optional";
+  const checks = validationChecksForRepoPolicy(options.repoRoot);
   return createValidationStatusPayload({
-    checks: validationChecksForRepoPolicy(options.repoRoot),
+    checks,
     adapters: [
       createRustValidationAdapterStatus(),
-      createPythonValidationAdapterStatus({ repoRoot: options.repoRoot, contexts: options.pythonProjectContexts })
+      createPythonValidationAdapterStatus({
+        repoRoot: options.repoRoot,
+        contexts: options.pythonProjectContexts,
+        activeCheckIds: checks
+          .filter((check) => (check.defaultScopes ?? check.supportedScopes).length > 0)
+          .map((check) => check.id)
+      })
     ],
     graphMode,
     graphStatus: cliGraphStatus({ repoRoot: options.repoRoot }, graphMode)
@@ -98,9 +105,9 @@ function defaultValidationAdapterOptions(repoRoot = process.cwd()): ValidationCo
     graphProviderClient,
     graphSessionFactory: createCliValidationGraphSessionFactory(graphProviderClient),
     defaultRepoRoot: repoRoot,
-    workspaceFactory: (repoRoot) =>
+    workspaceFactory: (targetRepoRoot) =>
       createNodeValidationWorkspace({
-        repoRoot,
+        repoRoot: targetRepoRoot,
         skippedPathSegments: commonSkippedPathSegments
       })
   };
@@ -122,3 +129,5 @@ function createCliValidationGraphProviderClient(): ValidationGraphProviderClient
     detectChanges: cliGraphDetectChanges
   };
 }
+
+export { defaultValidationChecks, createPythonValidationChecks, createRustValidationChecks };

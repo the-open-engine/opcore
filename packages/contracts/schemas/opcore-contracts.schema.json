@@ -2766,6 +2766,390 @@
         }
       ]
     },
+    "PythonRuffValidationCapabilityRun": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaId", "schemaVersion", "checkId", "capability", "state", "durationMs", "diagnosticCount"
+      ],
+      "properties": {
+        "schemaId": { "const": "opcore.python.validation-capability-run" },
+        "schemaVersion": { "const": 1 },
+        "checkId": { "enum": ["python.ruff-lint", "python.ruff-format"] },
+        "capability": { "enum": ["ruff_lint", "ruff_format"] },
+        "state": {
+          "enum": [
+            "passed", "findings", "tool_unavailable", "invalid_config", "timeout",
+            "unsupported_target", "tool_failure", "not_applicable", "disabled"
+          ]
+        },
+        "projectKey": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+        "contextFingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+        "afterStateManifestFingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+        "sourcePaths": {
+          "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/RepoRelativePath" }
+        },
+        "configPaths": {
+          "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/RepoRelativePath" }
+        },
+        "executable": {
+          "type": "string",
+          "pattern": "^(?:(?:repo|project):(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._+@-]+(?:/[A-Za-z0-9._+@-]+)*|(?:path|external):[A-Za-z0-9_.+-]+)$"
+        },
+        "command": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^(?!(?:/|\\\\|[A-Za-z]:[\\\\/]))(?!.*[\\s(\\\"'=](?:/|\\\\|[A-Za-z]:[\\\\/]))(?!.*file://).+$"
+        },
+        "argv": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^(?!(?:/|\\\\|[A-Za-z]:[\\\\/]))(?!.*[\\s(\\\"'=](?:/|\\\\|[A-Za-z]:[\\\\/]))(?!.*file://).+$"
+          }
+        },
+        "cwd": { "$ref": "#/$defs/PythonProjectRoot" },
+        "configPath": { "$ref": "#/$defs/RepoRelativePath" },
+        "toolVersion": { "type": "string", "pattern": "^[0-9]+\\.[0-9][-+._A-Za-z0-9]*$" },
+        "toolSource": {
+          "enum": ["explicit_override", "active_environment", "project_local_environment", "manager_environment", "path"]
+        },
+        "termination": { "enum": ["exited", "timeout", "signal", "spawn_error", "overflow"] },
+        "exitCode": { "type": "integer", "minimum": 0 },
+        "signal": { "type": "string", "minLength": 1 },
+        "invocations": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["argv", "termination", "durationMs"],
+            "properties": {
+              "argv": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "pattern": "^(?!(?:/|\\\\|[A-Za-z]:[\\\\/]))(?!.*[\\s(\\\"'=](?:/|\\\\|[A-Za-z]:[\\\\/]))(?!.*file://).+$"
+                }
+              },
+              "termination": { "enum": ["exited", "timeout", "signal", "spawn_error", "overflow"] },
+              "exitCode": { "type": "integer", "minimum": 0 },
+              "signal": { "type": "string", "minLength": 1 },
+              "durationMs": { "type": "number", "minimum": 0 }
+            },
+            "allOf": [
+              {
+                "if": { "required": ["signal"] },
+                "then": { "properties": { "termination": { "const": "signal" } } }
+              },
+              {
+                "if": { "required": ["exitCode"] },
+                "then": { "properties": { "termination": { "const": "exited" } } }
+              },
+              {
+                "if": { "properties": { "termination": { "const": "exited" } }, "required": ["termination"] },
+                "then": { "required": ["exitCode"], "not": { "required": ["signal"] } }
+              },
+              {
+                "if": { "properties": { "termination": { "const": "signal" } }, "required": ["termination"] },
+                "then": { "required": ["signal"], "not": { "required": ["exitCode"] } }
+              },
+              {
+                "if": {
+                  "properties": { "termination": { "enum": ["timeout", "spawn_error", "overflow"] } },
+                  "required": ["termination"]
+                },
+                "then": {
+                  "not": {
+                    "anyOf": [{ "required": ["exitCode"] }, { "required": ["signal"] }]
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "durationMs": { "type": "number", "minimum": 0 },
+        "diagnosticCount": { "type": "integer", "minimum": 0 },
+        "failureMessage": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024,
+          "pattern": "^(?!(?:/|\\\\|[A-Za-z]:[\\\\/]))(?!.*[\\s(\\\"'=](?:/|\\\\|[A-Za-z]:[\\\\/]))(?!.*file://).+$"
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "capability": { "const": "ruff_lint" } }, "required": ["capability"] },
+          "then": { "properties": { "checkId": { "const": "python.ruff-lint" } } }
+        },
+        {
+          "if": { "properties": { "capability": { "const": "ruff_format" } }, "required": ["capability"] },
+          "then": { "properties": { "checkId": { "const": "python.ruff-format" } } }
+        },
+        {
+          "if": {
+            "properties": {
+              "state": { "enum": ["not_applicable", "disabled"] }
+            },
+            "required": ["state"]
+          },
+          "then": {
+            "not": {
+              "anyOf": [
+                { "required": ["termination"] }, { "required": ["exitCode"] }, { "required": ["signal"] },
+                { "required": ["command"] }, { "required": ["argv"] }, { "required": ["invocations"] }
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "enum": [
+                  "passed", "findings", "tool_unavailable", "invalid_config", "timeout",
+                  "unsupported_target", "tool_failure"
+                ]
+              }
+            },
+            "required": ["state"]
+          },
+          "then": {
+            "required": [
+              "projectKey", "contextFingerprint", "afterStateManifestFingerprint",
+              "sourcePaths", "configPaths", "cwd"
+            ],
+            "properties": {
+              "sourcePaths": { "minItems": 1 }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "termination": { "const": "exited" } }, "required": ["termination"] },
+          "then": { "required": ["exitCode"], "not": { "required": ["signal"] } }
+        },
+        {
+          "if": { "properties": { "termination": { "const": "signal" } }, "required": ["termination"] },
+          "then": { "required": ["signal"], "not": { "required": ["exitCode"] } }
+        },
+        {
+          "if": {
+            "properties": { "termination": { "enum": ["timeout", "spawn_error", "overflow"] } },
+            "required": ["termination"]
+          },
+          "then": {
+            "not": {
+              "anyOf": [{ "required": ["exitCode"] }, { "required": ["signal"] }]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "state": { "enum": ["tool_unavailable", "unsupported_target"] } },
+            "required": ["state"]
+          },
+          "then": {
+            "required": ["failureMessage"],
+            "not": {
+              "anyOf": [
+                { "required": ["termination"] }, { "required": ["exitCode"] }, { "required": ["signal"] },
+                { "required": ["command"] }, { "required": ["argv"] }, { "required": ["invocations"] }
+              ]
+            }
+          }
+        },
+        {
+          "if": { "properties": { "state": { "const": "timeout" } }, "required": ["state"] },
+          "then": {
+            "required": [
+              "executable", "command", "argv", "toolVersion", "toolSource", "termination",
+              "invocations", "failureMessage"
+            ],
+            "properties": {
+              "termination": { "const": "timeout" },
+              "durationMs": { "exclusiveMinimum": 0 },
+              "invocations": {
+                "contains": {
+                  "properties": { "termination": { "const": "timeout" } },
+                  "required": ["termination"]
+                },
+                "minContains": 1
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "state": { "const": "invalid_config" } }, "required": ["state"] },
+          "then": {
+            "required": ["failureMessage"],
+            "anyOf": [
+              {
+                "not": {
+                  "anyOf": [
+                    { "required": ["termination"] }, { "required": ["exitCode"] }, { "required": ["signal"] },
+                    { "required": ["command"] }, { "required": ["argv"] }, { "required": ["invocations"] }
+                  ]
+                }
+              },
+              {
+                "required": [
+                  "executable", "command", "argv", "toolVersion", "toolSource", "termination",
+                  "exitCode", "invocations"
+                ],
+                "properties": {
+                  "termination": { "const": "exited" },
+                  "exitCode": { "const": 2 },
+                  "durationMs": { "exclusiveMinimum": 0 },
+                  "invocations": {
+                    "contains": {
+                      "properties": {
+                        "termination": { "const": "exited" },
+                        "exitCode": { "const": 2 }
+                      },
+                      "required": ["termination", "exitCode"]
+                    },
+                    "minContains": 1
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "if": { "properties": { "state": { "const": "tool_failure" } }, "required": ["state"] },
+          "then": {
+            "required": ["failureMessage"],
+            "anyOf": [
+              {
+                "not": {
+                  "anyOf": [
+                    { "required": ["termination"] }, { "required": ["exitCode"] }, { "required": ["signal"] },
+                    { "required": ["command"] }, { "required": ["argv"] }, { "required": ["invocations"] }
+                  ]
+                }
+              },
+              {
+                "required": [
+                  "executable", "command", "argv", "toolVersion", "toolSource", "termination", "invocations"
+                ],
+                "properties": {
+                  "termination": { "enum": ["exited", "signal", "spawn_error", "overflow"] },
+                  "durationMs": { "exclusiveMinimum": 0 }
+                },
+                "allOf": [
+                  {
+                    "if": {
+                      "properties": { "termination": { "const": "exited" } },
+                      "required": ["termination"]
+                    },
+                    "then": {
+                      "properties": {
+                        "invocations": {
+                          "contains": {
+                            "properties": { "termination": { "const": "exited" } },
+                            "required": ["termination", "exitCode"]
+                          },
+                          "minContains": 1
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": { "termination": { "const": "signal" } },
+                      "required": ["termination"]
+                    },
+                    "then": {
+                      "properties": {
+                        "invocations": {
+                          "contains": {
+                            "properties": { "termination": { "const": "signal" } },
+                            "required": ["termination", "signal"]
+                          },
+                          "minContains": 1
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": { "termination": { "const": "spawn_error" } },
+                      "required": ["termination"]
+                    },
+                    "then": {
+                      "properties": {
+                        "invocations": {
+                          "contains": {
+                            "properties": { "termination": { "const": "spawn_error" } },
+                            "required": ["termination"]
+                          },
+                          "minContains": 1
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": { "termination": { "const": "overflow" } },
+                      "required": ["termination"]
+                    },
+                    "then": {
+                      "properties": {
+                        "invocations": {
+                          "contains": {
+                            "properties": { "termination": { "const": "overflow" } },
+                            "required": ["termination"]
+                          },
+                          "minContains": 1
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": { "state": { "enum": ["passed", "findings"] } },
+            "required": ["state"]
+          },
+          "then": {
+            "required": [
+              "executable", "command", "argv", "toolVersion", "toolSource", "termination",
+              "exitCode", "invocations"
+            ],
+            "properties": {
+              "termination": { "const": "exited" },
+              "durationMs": { "exclusiveMinimum": 0 },
+              "invocations": {
+                "items": {
+                  "properties": {
+                    "termination": { "const": "exited" },
+                    "exitCode": { "enum": [0, 1] },
+                    "durationMs": { "exclusiveMinimum": 0 }
+                  },
+                  "required": ["exitCode"]
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "state": { "const": "passed" } }, "required": ["state"] },
+          "then": { "properties": { "exitCode": { "const": 0 }, "diagnosticCount": { "const": 0 } } }
+        },
+        {
+          "if": { "properties": { "state": { "const": "findings" } }, "required": ["state"] },
+          "then": { "properties": { "exitCode": { "const": 1 }, "diagnosticCount": { "minimum": 1 } } }
+        }
+      ]
+    },
     "ValidationResult": {
       "type": "object",
       "additionalProperties": false,
@@ -2915,7 +3299,12 @@
         },
         "pythonCapabilityRuns": {
           "type": "array",
-          "items": { "$ref": "#/$defs/PythonValidationCapabilityRun" }
+          "items": {
+            "oneOf": [
+              { "$ref": "#/$defs/PythonValidationCapabilityRun" },
+              { "$ref": "#/$defs/PythonRuffValidationCapabilityRun" }
+            ]
+          }
         },
         "failure": {
           "type": "object",
@@ -3106,6 +3495,662 @@
                   "failureMessage": {
                     "type": "string",
                     "minLength": 1
+                  },
+                  "pythonCapabilityRuns": {
+                    "type": "array",
+                    "items": {
+                      "oneOf": [
+                        { "$ref": "#/$defs/PythonValidationCapabilityRun" },
+                        {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "schemaId",
+                        "schemaVersion",
+                        "checkId",
+                        "capability",
+                        "state",
+                        "durationMs",
+                        "diagnosticCount"
+                      ],
+                      "properties": {
+                        "schemaId": {
+                          "const": "opcore.python.validation-capability-run"
+                        },
+                        "schemaVersion": {
+                          "const": 1
+                        },
+                        "checkId": {
+                          "$ref": "#/$defs/ValidationCheckId"
+                        },
+                        "capability": {
+                          "enum": ["ruff_lint", "ruff_format"]
+                        },
+                        "state": {
+                          "enum": [
+                            "passed",
+                            "findings",
+                            "tool_unavailable",
+                            "invalid_config",
+                            "timeout",
+                            "unsupported_target",
+                            "tool_failure",
+                            "not_applicable",
+                            "disabled"
+                          ]
+                        },
+                        "projectKey": {
+                          "type": "string",
+                          "pattern": "^sha256:[a-f0-9]{64}$"
+                        },
+                        "contextFingerprint": {
+                          "type": "string",
+                          "pattern": "^sha256:[a-f0-9]{64}$"
+                        },
+                        "afterStateManifestFingerprint": {
+                          "type": "string",
+                          "pattern": "^sha256:[a-f0-9]{64}$"
+                        },
+                        "sourcePaths": {
+                          "type": "array",
+                          "items": { "$ref": "#/$defs/RepoRelativePath" }
+                        },
+                        "configPaths": {
+                          "type": "array",
+                          "items": { "$ref": "#/$defs/RepoRelativePath" }
+                        },
+                        "executable": {
+                          "type": "string",
+                          "pattern": "^(?:(?:repo|project):(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._+@-]+(?:/[A-Za-z0-9._+@-]+)*|(?:path|external):[A-Za-z0-9_.+-]+)$"
+                        },
+                        "command": {
+                          "type": "string",
+                          "minLength": 1,
+                          "pattern": "^(?!(?:/|\\\\|[A-Za-z]:[\\\\/]))(?!.*[\\s(\\\"'=](?:/|\\\\|[A-Za-z]:[\\\\/]))(?!.*file://).+$"
+                        },
+                        "argv": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "minLength": 1,
+                            "pattern": "^(?!(?:/|\\\\|[A-Za-z]:[\\\\/]))(?!.*[\\s(\\\"'=](?:/|\\\\|[A-Za-z]:[\\\\/]))(?!.*file://).+$"
+                          },
+                          "minItems": 1
+                        },
+                        "cwd": {
+                          "anyOf": [
+                            { "const": "." },
+                            { "$ref": "#/$defs/RepoRelativePath" }
+                          ]
+                        },
+                        "configPath": {
+                          "$ref": "#/$defs/RepoRelativePath"
+                        },
+                        "toolVersion": {
+                          "type": "string",
+                          "pattern": "^[0-9]+\\.[0-9][-+._A-Za-z0-9]*$"
+                        },
+                        "toolSource": {
+                          "enum": [
+                            "explicit_override",
+                            "active_environment",
+                            "project_local_environment",
+                            "manager_environment",
+                            "path"
+                          ]
+                        },
+                        "termination": {
+                          "enum": ["exited", "timeout", "signal", "spawn_error", "overflow"]
+                        },
+                        "exitCode": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "signal": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "invocations": {
+                          "type": "array",
+                          "minItems": 1,
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": ["argv", "termination", "durationMs"],
+                            "properties": {
+                              "argv": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "pattern": "^(?!(?:/|\\\\|[A-Za-z]:[\\\\/]))(?!.*[\\s(\\\"'=](?:/|\\\\|[A-Za-z]:[\\\\/]))(?!.*file://).+$"
+                                },
+                                "minItems": 1
+                              },
+                              "termination": {
+                                "enum": ["exited", "timeout", "signal", "spawn_error", "overflow"]
+                              },
+                              "exitCode": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "signal": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "durationMs": {
+                                "type": "number",
+                                "minimum": 0
+                              }
+                            },
+                            "allOf": [
+                              {
+                                "if": { "required": ["signal"] },
+                                "then": {
+                                  "properties": {
+                                    "termination": { "const": "signal" }
+                                  }
+                                }
+                              },
+                              {
+                                "if": { "required": ["exitCode"] },
+                                "then": {
+                                  "properties": {
+                                    "termination": { "const": "exited" }
+                                  }
+                                }
+                              },
+                              {
+                                "if": {
+                                  "properties": { "termination": { "const": "exited" } },
+                                  "required": ["termination"]
+                                },
+                                "then": {
+                                  "required": ["exitCode"],
+                                  "not": { "required": ["signal"] }
+                                }
+                              },
+                              {
+                                "if": {
+                                  "properties": { "termination": { "const": "signal" } },
+                                  "required": ["termination"]
+                                },
+                                "then": {
+                                  "required": ["signal"],
+                                  "not": { "required": ["exitCode"] }
+                                }
+                              },
+                              {
+                                "if": {
+                                  "properties": {
+                                    "termination": { "enum": ["timeout", "spawn_error", "overflow"] }
+                                  },
+                                  "required": ["termination"]
+                                },
+                                "then": {
+                                  "not": {
+                                    "anyOf": [
+                                      { "required": ["exitCode"] },
+                                      { "required": ["signal"] }
+                                    ]
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        },
+                        "durationMs": {
+                          "type": "number",
+                          "minimum": 0
+                        },
+                        "diagnosticCount": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "failureMessage": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 1024,
+                          "pattern": "^(?!(?:/|\\\\|[A-Za-z]:[\\\\/]))(?!.*[\\s(\\\"'=](?:/|\\\\|[A-Za-z]:[\\\\/]))(?!.*file://).+$"
+                        }
+                      },
+                      "allOf": [
+                        {
+                          "if": {
+                            "properties": {
+                              "state": {
+                                "enum": ["not_applicable", "disabled"]
+                              }
+                            }
+                          },
+                          "then": {
+                            "not": {
+                              "anyOf": [
+                                { "required": ["termination"] },
+                                { "required": ["exitCode"] },
+                                { "required": ["signal"] },
+                                { "required": ["command"] },
+                                { "required": ["argv"] },
+                                { "required": ["invocations"] }
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "if": {
+                            "required": ["signal"]
+                          },
+                          "then": {
+                            "properties": {
+                              "termination": { "const": "signal" }
+                            },
+                            "required": ["termination"]
+                          }
+                        },
+                        {
+                          "if": {
+                            "required": ["exitCode"]
+                          },
+                          "then": {
+                            "properties": {
+                              "termination": { "const": "exited" }
+                            },
+                            "required": ["termination"]
+                          }
+                        },
+                        {
+                          "if": {
+                            "properties": { "termination": { "const": "exited" } },
+                            "required": ["termination"]
+                          },
+                          "then": {
+                            "required": ["exitCode"],
+                            "not": { "required": ["signal"] }
+                          }
+                        },
+                        {
+                          "if": {
+                            "properties": { "termination": { "const": "signal" } },
+                            "required": ["termination"]
+                          },
+                          "then": {
+                            "required": ["signal"],
+                            "not": { "required": ["exitCode"] }
+                          }
+                        },
+                        {
+                          "if": {
+                            "properties": {
+                              "termination": { "enum": ["timeout", "spawn_error", "overflow"] }
+                            },
+                            "required": ["termination"]
+                          },
+                          "then": {
+                            "not": {
+                              "anyOf": [
+                                { "required": ["exitCode"] },
+                                { "required": ["signal"] }
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "if": {
+                            "properties": {
+                              "capability": { "const": "ruff_lint" }
+                            }
+                          },
+                          "then": {
+                            "properties": {
+                              "checkId": { "const": "python.ruff-lint" }
+                            }
+                          }
+                        },
+                        {
+                          "if": {
+                            "properties": {
+                              "state": { "enum": ["tool_unavailable", "unsupported_target"] }
+                            },
+                            "required": ["state"]
+                          },
+                          "then": {
+                            "required": ["failureMessage"],
+                            "not": {
+                              "anyOf": [
+                                { "required": ["termination"] },
+                                { "required": ["exitCode"] },
+                                { "required": ["signal"] },
+                                { "required": ["command"] },
+                                { "required": ["argv"] },
+                                { "required": ["invocations"] }
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "if": {
+                            "properties": { "state": { "const": "timeout" } },
+                            "required": ["state"]
+                          },
+                          "then": {
+                            "required": [
+                              "executable",
+                              "command",
+                              "argv",
+                              "toolVersion",
+                              "toolSource",
+                              "termination",
+                              "invocations",
+                              "failureMessage"
+                            ],
+                            "properties": {
+                              "termination": { "const": "timeout" },
+                              "durationMs": { "exclusiveMinimum": 0 },
+                              "invocations": {
+                                "contains": {
+                                  "properties": {
+                                    "termination": { "const": "timeout" }
+                                  },
+                                  "required": ["termination"]
+                                },
+                                "minContains": 1
+                              }
+                            }
+                          }
+                        },
+                        {
+                          "if": {
+                            "properties": { "state": { "const": "invalid_config" } },
+                            "required": ["state"]
+                          },
+                          "then": {
+                            "required": ["failureMessage"],
+                            "anyOf": [
+                              {
+                                "not": {
+                                  "anyOf": [
+                                    { "required": ["termination"] },
+                                    { "required": ["exitCode"] },
+                                    { "required": ["signal"] },
+                                    { "required": ["command"] },
+                                    { "required": ["argv"] },
+                                    { "required": ["invocations"] }
+                                  ]
+                                }
+                              },
+                              {
+                                "required": [
+                                  "executable",
+                                  "command",
+                                  "argv",
+                                  "toolVersion",
+                                  "toolSource",
+                                  "termination",
+                                  "exitCode",
+                                  "invocations"
+                                ],
+                                "properties": {
+                                  "termination": { "const": "exited" },
+                                  "exitCode": { "const": 2 },
+                                  "durationMs": { "exclusiveMinimum": 0 },
+                                  "invocations": {
+                                    "contains": {
+                                      "properties": {
+                                        "termination": { "const": "exited" },
+                                        "exitCode": { "const": 2 }
+                                      },
+                                      "required": ["termination", "exitCode"]
+                                    },
+                                    "minContains": 1
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        },
+                        {
+                          "if": {
+                            "properties": { "state": { "const": "tool_failure" } },
+                            "required": ["state"]
+                          },
+                          "then": {
+                            "required": ["failureMessage"],
+                            "anyOf": [
+                              {
+                                "not": {
+                                  "anyOf": [
+                                    { "required": ["termination"] },
+                                    { "required": ["exitCode"] },
+                                    { "required": ["signal"] },
+                                    { "required": ["command"] },
+                                    { "required": ["argv"] },
+                                    { "required": ["invocations"] }
+                                  ]
+                                }
+                              },
+                              {
+                                "required": [
+                                  "executable",
+                                  "command",
+                                  "argv",
+                                  "toolVersion",
+                                  "toolSource",
+                                  "termination",
+                                  "invocations"
+                                ],
+                                "properties": {
+                                  "termination": {
+                                    "enum": ["exited", "signal", "spawn_error", "overflow"]
+                                  },
+                                  "durationMs": { "exclusiveMinimum": 0 }
+                                },
+                                "allOf": [
+                                  {
+                                    "if": {
+                                      "properties": { "termination": { "const": "exited" } },
+                                      "required": ["termination"]
+                                    },
+                                    "then": {
+                                      "properties": {
+                                        "invocations": {
+                                          "contains": {
+                                            "properties": { "termination": { "const": "exited" } },
+                                            "required": ["termination", "exitCode"]
+                                          },
+                                          "minContains": 1
+                                        }
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "if": {
+                                      "properties": { "termination": { "const": "signal" } },
+                                      "required": ["termination"]
+                                    },
+                                    "then": {
+                                      "properties": {
+                                        "invocations": {
+                                          "contains": {
+                                            "properties": { "termination": { "const": "signal" } },
+                                            "required": ["termination", "signal"]
+                                          },
+                                          "minContains": 1
+                                        }
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "if": {
+                                      "properties": { "termination": { "const": "spawn_error" } },
+                                      "required": ["termination"]
+                                    },
+                                    "then": {
+                                      "properties": {
+                                        "invocations": {
+                                          "contains": {
+                                            "properties": { "termination": { "const": "spawn_error" } },
+                                            "required": ["termination"]
+                                          },
+                                          "minContains": 1
+                                        }
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "if": {
+                                      "properties": { "termination": { "const": "overflow" } },
+                                      "required": ["termination"]
+                                    },
+                                    "then": {
+                                      "properties": {
+                                        "invocations": {
+                                          "contains": {
+                                            "properties": { "termination": { "const": "overflow" } },
+                                            "required": ["termination"]
+                                          },
+                                          "minContains": 1
+                                        }
+                                      }
+                                    }
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        },
+                        {
+                          "if": {
+                            "properties": {
+                              "capability": { "const": "ruff_format" }
+                            }
+                          },
+                          "then": {
+                            "properties": {
+                              "checkId": { "const": "python.ruff-format" }
+                            }
+                          }
+                        },
+                        {
+                          "if": {
+                            "properties": {
+                              "capability": {
+                                "enum": ["ruff_lint", "ruff_format"]
+                              },
+                              "state": {
+                                "enum": [
+                                  "passed", "findings", "tool_unavailable", "invalid_config", "timeout",
+                                  "unsupported_target", "tool_failure"
+                                ]
+                              }
+                            }
+                          },
+                          "then": {
+                            "required": [
+                              "projectKey",
+                              "contextFingerprint",
+                              "afterStateManifestFingerprint",
+                              "sourcePaths",
+                              "configPaths",
+                              "cwd"
+                            ],
+                            "properties": {
+                              "sourcePaths": {
+                                "minItems": 1
+                              }
+                            }
+                          }
+                        },
+                        {
+                          "if": {
+                            "properties": {
+                              "capability": {
+                                "enum": ["ruff_lint", "ruff_format"]
+                              },
+                              "state": {
+                                "enum": ["passed", "findings"]
+                              }
+                            }
+                          },
+                          "then": {
+                            "required": [
+                              "projectKey",
+                              "contextFingerprint",
+                              "afterStateManifestFingerprint",
+                              "sourcePaths",
+                              "configPaths",
+                              "executable",
+                              "command",
+                              "argv",
+                              "cwd",
+                              "toolVersion",
+                              "toolSource",
+                              "termination",
+                              "exitCode",
+                              "invocations"
+                            ],
+                            "properties": {
+                              "sourcePaths": {
+                                "minItems": 1
+                              },
+                              "termination": {
+                                "const": "exited"
+                              },
+                              "durationMs": {
+                                "exclusiveMinimum": 0
+                              },
+                              "invocations": {
+                                "items": {
+                                  "properties": {
+                                    "termination": { "const": "exited" },
+                                    "exitCode": {
+                                      "enum": [0, 1]
+                                    },
+                                    "durationMs": {
+                                      "exclusiveMinimum": 0
+                                    }
+                                  },
+                                  "required": ["exitCode"]
+                                }
+                              }
+                            }
+                          }
+                        },
+                        {
+                          "if": {
+                            "properties": {
+                              "capability": {
+                                "enum": ["ruff_lint", "ruff_format"]
+                              },
+                              "state": { "const": "passed" }
+                            }
+                          },
+                          "then": {
+                            "properties": {
+                              "exitCode": { "const": 0 },
+                              "diagnosticCount": { "const": 0 }
+                            }
+                          }
+                        },
+                        {
+                          "if": {
+                            "properties": {
+                              "capability": {
+                                "enum": ["ruff_lint", "ruff_format"]
+                              },
+                              "state": { "const": "findings" }
+                            }
+                          },
+                          "then": {
+                            "properties": {
+                              "exitCode": { "const": 1 },
+                              "diagnosticCount": { "minimum": 1 }
+                            }
+                          }
+                        }
+                      ]
+                        }
+                      ]
+                    }
                   }
                 },
                 "allOf": [
