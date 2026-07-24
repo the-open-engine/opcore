@@ -2394,7 +2394,19 @@
       "properties": {
         "schemaId": { "const": "opcore.python.project-context.v1" },
         "schemaVersion": { "const": 1 },
-        "target": { "allOf": [{ "$ref": "#/$defs/RepoRelativePath" }, { "pattern": "\\.pyi?$" }] },
+        "target": {
+          "allOf": [
+            { "$ref": "#/$defs/RepoRelativePath" },
+            {
+              "anyOf": [
+                { "pattern": "\\.pyi?$" },
+                {
+                  "pattern": "(^|/)(pyproject\\.toml|Pipfile|Pipfile\\.lock|poetry\\.lock|pdm\\.lock|uv\\.lock|setup\\.cfg|setup\\.py|pytest\\.ini|tox\\.ini|pyrightconfig\\.json|ruff\\.toml|\\.ruff\\.toml|mypy\\.ini|\\.mypy\\.ini|conftest\\.py|requirements.*\\.txt)$"
+                }
+              ]
+            }
+          ]
+        },
         "repositoryRoot": { "type": "string", "minLength": 1 },
         "projectRoot": { "$ref": "#/$defs/PythonProjectRoot" },
         "projectBoundary": { "$ref": "#/$defs/PythonProjectRoot" },

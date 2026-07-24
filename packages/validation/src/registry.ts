@@ -19,14 +19,17 @@ const diagnosticSeverities = ["info", "warning", "error"] as const;
 
 export interface ValidationCheckContext {
   request: ValidationRequest;
+  selectedCheckIds?: readonly string[];
   scope: ResolvedValidationScope;
   graphStatus: GraphProviderStatus;
   graph: ValidationGraphQuerySession;
   fileView: ValidationFileView;
+  resources?: unknown;
   runtime: ValidationRuntimePolicy;
 }
 
 export type ValidationPersistentCacheMode = "enabled" | "disabled";
+export type ValidationInactiveCheckState = "not_applicable" | "disabled";
 
 export interface ValidationRuntimePolicy {
   persistentCaches: ValidationPersistentCacheMode;
@@ -49,6 +52,12 @@ export interface ValidationCheckDefinition {
   supportedScopes: readonly ValidationScopeKind[];
   defaultScopes?: readonly ValidationScopeKind[];
   requiresGraph?: boolean;
+  graphUsage?: "none" | "optional" | "required";
+  inactiveResult?: (
+    context: ValidationCheckContext,
+    state: ValidationInactiveCheckState
+  ) => ValidationCheckResult | readonly ValidationDiagnostic[] | void | Promise<ValidationCheckResult | readonly ValidationDiagnostic[] | void>;
+  inactiveStateWhenUnselected?: ValidationInactiveCheckState;
   graphRequirements?: (
     context: ValidationCheckContext
   ) => readonly ValidationGraphQueryRequirement[] | Promise<readonly ValidationGraphQueryRequirement[]>;
@@ -148,41 +157,75 @@ function validateValidationCheckDefinition(definition: ValidationCheckDefinition
   if (!definition || typeof definition !== "object") {
     throw new ValidationCheckRegistryError("Validation check definition is required");
   }
+  validateDefinitionIdentity(definition);
+  validateDefinitionScopes(definition);
+  validateDefinitionGraphSettings(definition);
+  validateDefinitionInactiveSettings(definition);
+  validateDefinitionHooks(definition);
+}
+
+function validateDefinitionIdentity(definition: ValidationCheckDefinition): void {
   validateValidationCheckId(definition.id, "Validation check id");
   validateNonEmptyString(definition.owner, "Validation check owner");
   validateNonEmptyString(definition.adapter, "Validation check adapter");
   if (!diagnosticSeverities.includes(definition.defaultSeverity)) {
     throw new ValidationCheckRegistryError(`Unknown validation check defaultSeverity: ${String(definition.defaultSeverity)}`);
   }
+}
+
+function validateDefinitionScopes(definition: ValidationCheckDefinition): void {
   if (!Array.isArray(definition.supportedScopes) || definition.supportedScopes.length === 0) {
     throw new ValidationCheckRegistryError("Validation check supportedScopes must be a non-empty array");
   }
-  for (const scope of definition.supportedScopes) {
-    if (!validationScopeKinds.includes(scope)) {
-      throw new ValidationCheckRegistryError(`Unknown validation check supported scope: ${String(scope)}`);
+  for (const scope of definition.supportedScopes) validateKnownScope(scope, "Validation check supported scope");
+  if (definition.defaultScopes === undefined) return;
+  if (!Array.isArray(definition.defaultScopes)) {
+    throw new ValidationCheckRegistryError("Validation check defaultScopes must be an array when provided");
+  }
+  for (const scope of definition.defaultScopes) {
+    validateKnownScope(scope, "Validation check default scope");
+    if (!definition.supportedScopes.includes(scope)) {
+      throw new ValidationCheckRegistryError(`Validation check default scope must also be supported: ${String(scope)}`);
     }
   }
-  if (definition.defaultScopes !== undefined) {
-    if (!Array.isArray(definition.defaultScopes)) {
-      throw new ValidationCheckRegistryError("Validation check defaultScopes must be an array when provided");
-    }
-    for (const scope of definition.defaultScopes) {
-      if (!validationScopeKinds.includes(scope)) {
-        throw new ValidationCheckRegistryError(`Unknown validation check default scope: ${String(scope)}`);
-      }
-      if (!definition.supportedScopes.includes(scope)) {
-        throw new ValidationCheckRegistryError(`Validation check default scope must also be supported: ${String(scope)}`);
-      }
-    }
-  }
+}
+
+function validateDefinitionGraphSettings(definition: ValidationCheckDefinition): void {
   if (definition.requiresGraph !== undefined && typeof definition.requiresGraph !== "boolean") {
     throw new ValidationCheckRegistryError("Validation check requiresGraph must be boolean");
   }
+  if (definition.graphUsage !== undefined && !["none", "optional", "required"].includes(definition.graphUsage)) {
+    throw new ValidationCheckRegistryError("Validation check graphUsage must be none, optional, or required");
+  }
+}
+
+function validateDefinitionInactiveSettings(definition: ValidationCheckDefinition): void {
+  if (definition.inactiveResult !== undefined && typeof definition.inactiveResult !== "function") {
+    throw new ValidationCheckRegistryError("Validation check inactiveResult must be a function");
+  }
+  if (definition.inactiveStateWhenUnselected === undefined) return;
+  if (definition.inactiveResult === undefined) {
+    throw new ValidationCheckRegistryError("Validation check inactiveStateWhenUnselected requires inactiveResult");
+  }
+  if (definition.inactiveStateWhenUnselected !== "not_applicable" && definition.inactiveStateWhenUnselected !== "disabled") {
+    throw new ValidationCheckRegistryError(
+      `Unknown validation check inactiveStateWhenUnselected: ${String(definition.inactiveStateWhenUnselected)}`
+    );
+  }
+}
+
+function validateDefinitionHooks(definition: ValidationCheckDefinition): void {
   if (definition.graphRequirements !== undefined && typeof definition.graphRequirements !== "function") {
     throw new ValidationCheckRegistryError("Validation check graphRequirements must be a function");
   }
   if (typeof definition.run !== "function") {
     throw new ValidationCheckRegistryError("Validation check run must be a function");
+  }
+}
+
+function validateKnownScope(scope: unknown, label: string): void {
+  if (!validationScopeKinds.includes(scope as ValidationScopeKind)) {
+    throw new ValidationCheckRegistryError(`Unknown ${label}: ${String(scope)}`);
   }
 }
 

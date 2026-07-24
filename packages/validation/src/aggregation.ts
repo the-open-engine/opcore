@@ -57,19 +57,69 @@ export function createValidationManifest(args: CreateValidationManifestArgs): Va
 export function aggregateValidationResults(args: AggregateValidationResultsArgs): ValidationResult {
   const diagnostics = sortDiagnostics(args.diagnostics ?? []);
   const status = args.status ?? deriveStatus(diagnostics, args.runs ?? [], args.skippedChecks ?? []);
-  const result: ValidationResult = {
+  const result = withPythonValidationEvidence({
     ok: status === "passed",
     status,
     diagnostics,
     manifest: createValidationManifest(args)
-  };
+  }, args);
   if (args.graphStatus !== undefined) result.graphStatus = args.graphStatus;
   if (args.refusal !== undefined) result.refusal = args.refusal;
-  if (args.pythonProjectContexts !== undefined) result.pythonProjectContexts = deduplicatePythonProjectContexts(args.pythonProjectContexts);
-  if (args.pythonCapabilityRuns !== undefined) result.pythonCapabilityRuns = [...args.pythonCapabilityRuns];
   const failure = args.failure ?? failureForStatus(status);
   if (failure !== undefined) result.failure = failure;
   return validateValidationResultPayload(result);
+}
+
+function withPythonValidationEvidence(
+  result: ValidationResult,
+  args: AggregateValidationResultsArgs
+): ValidationResult {
+  attachProjectContexts(result, args.pythonProjectContexts);
+  attachCapabilityRuns(result, args.pythonCapabilityRuns);
+  return result;
+}
+
+function attachProjectContexts(
+  result: ValidationResult,
+  projectContexts: readonly PythonProjectContext[] | undefined
+): void {
+  if (projectContexts === undefined) return;
+  const deduplicated = deduplicatePythonProjectContexts(projectContexts);
+  if (deduplicated.length > 0) result.pythonProjectContexts = deduplicated;
+}
+
+function attachCapabilityRuns(
+  result: ValidationResult,
+  capabilityRuns: readonly PythonValidationCapabilityRun[] | undefined
+): void {
+  if (capabilityRuns === undefined) return;
+  const deduplicated = deduplicatePythonCapabilityRuns(capabilityRuns);
+  if (deduplicated.length > 0) result.pythonCapabilityRuns = deduplicated;
+}
+
+function deduplicatePythonCapabilityRuns(
+  runs: readonly PythonValidationCapabilityRun[]
+): readonly PythonValidationCapabilityRun[] {
+  const exact = new Map<string, PythonValidationCapabilityRun>();
+  for (const run of runs) exact.set(JSON.stringify(run), run);
+  return [...exact.values()].sort(comparePythonCapabilityRuns);
+}
+
+function comparePythonCapabilityRuns(
+  left: PythonValidationCapabilityRun,
+  right: PythonValidationCapabilityRun
+): number {
+  return pythonCapabilitySortKey(left).localeCompare(pythonCapabilitySortKey(right));
+}
+
+function pythonCapabilitySortKey(run: PythonValidationCapabilityRun): string {
+  return JSON.stringify({
+    checkId: run.checkId,
+    capability: run.capability,
+    projectKey: run.projectKey ?? "",
+    contextFingerprint: "contextFingerprint" in run && typeof run.contextFingerprint === "string" ? run.contextFingerprint : "",
+    receipt: run
+  });
 }
 
 function deduplicatePythonProjectContexts(contexts: readonly PythonProjectContext[]): readonly PythonProjectContext[] {

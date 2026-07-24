@@ -43,6 +43,12 @@ export interface PythonProjectEnvironmentResolution {
   fingerprintInput: unknown;
 }
 
+interface ResolvedPythonTool {
+  tool?: PythonProjectToolProvenance;
+  failure?: PythonProjectContextReason;
+  terminal?: boolean;
+}
+
 interface ExecutableCandidate {
   argv: readonly string[];
   source: PythonProjectExecutableSource;
@@ -205,88 +211,148 @@ async function resolveTools(
   managerCandidates: ManagerExecutableCandidates,
   reasons: PythonProjectContextReason[]
 ): Promise<readonly PythonProjectToolProvenance[]> {
-  const toolKinds: PythonProjectToolKind[] = ["mypy", "pyright", "ruff", "pytest"];
+  const toolKinds: readonly Exclude<PythonProjectToolKind, "build">[] = ["mypy", "pyright", "ruff", "pytest"];
   const tools: PythonProjectToolProvenance[] = [];
   for (const tool of toolKinds) {
-    const configFile = tool === "mypy" || tool === "pyright" || tool === "ruff" || tool === "pytest"
-      ? options.toolConfigs[tool]
-      : undefined;
     const candidates = toolCandidates(tool, options, managerCandidates, reasons);
-    if (options.toolArgv?.[tool] !== undefined && candidates.length === 0) {
-      const override = options.toolArgv[tool];
-      if (override === undefined) throw new Error(`Python ${tool} argv override is required`);
-      tools.push({
-        tool,
-        available: false,
-        executable: override[0],
-        argv: [...override],
-        cwd: projectCwd(options),
-        source: "explicit_override",
-        ...(configFile === undefined ? {} : { configFile })
-      });
+    const overrideTool = explicitOverrideUnavailableTool(tool, options, candidates);
+    if (overrideTool !== undefined) {
+      tools.push(overrideTool);
       continue;
     }
-    let resolvedTool: PythonProjectToolProvenance | undefined;
-    let failure: PythonProjectContextReason | undefined;
-    for (const candidate of candidates) {
-      if (!(await candidateAvailable(options.workspace, candidate.argv[0]))) continue;
-      const command = candidate.argv[0];
-      const prefix = candidate.argv.slice(1);
-      const result = processProbe.run(command, [...prefix, "--version"], {
-        cwd: projectCwd(options),
-        env: tool === "pytest" ? { ...env, PYTEST_DISABLE_PLUGIN_AUTOLOAD: "1" } : env,
-        timeoutMs: options.timeoutMs ?? 10000
-      });
-      if (!result.ok) {
-        failure = probeFailureReason(result, tool);
-        if (candidate.source !== "path") break;
-        continue;
-      }
-      const version = firstVersion(result.stdout, result.stderr);
-      if (version === undefined) {
-        failure = {
-          code: "malformed_probe_output",
-          tool,
-          message: `${tool} version probe returned malformed metadata`
-        };
-        if (candidate.source !== "path") break;
-        continue;
-      }
-      const executable = candidate.source === "path"
-        ? processProbe.resolveExecutable?.(command, { env, platform: options.platform ?? process.platform }) ?? command
-        : command;
-      resolvedTool = {
-        tool,
-        available: true,
-        executable,
-        argv: [executable, ...prefix],
-        cwd: projectCwd(options),
-        source: candidate.source,
-        version,
-        ...(configFile === undefined ? {} : { configFile })
-      };
-      break;
-    }
-    if (resolvedTool !== undefined) {
-      tools.push(resolvedTool);
+    const resolved = await resolveAvailableTool(tool, options, processProbe, env, candidates);
+    if (resolved.tool !== undefined) {
+      tools.push(resolved.tool);
       continue;
     }
-    const fallback = candidates[0] ?? { argv: [tool], source: "path" as const };
-    tools.push({
-      tool,
-      available: false,
-      executable: fallback.argv[0],
-      argv: fallback.argv,
-      cwd: projectCwd(options),
-      source: fallback.source,
-      ...(configFile === undefined ? {} : { configFile })
-    });
-    reasons.push(failure ?? { code: "tool_unavailable", tool, message: `${tool} is unavailable for ${options.projectRoot}` });
+    reasons.push(resolved.failure ?? { code: "tool_unavailable", tool, message: `${tool} is unavailable for ${options.projectRoot}` });
+    tools.push(unavailableTool(tool, options, candidates));
   }
   if (options.buildSystem !== undefined) {
     tools.push(resolveBuildTool(options, processProbe, env, interpreter, reasons));
   }
   return tools.sort((left, right) => left.tool.localeCompare(right.tool));
+}
+
+function explicitOverrideUnavailableTool(
+  tool: Exclude<PythonProjectToolKind, "build">,
+  options: PythonProjectEnvironmentOptions,
+  candidates: readonly ExecutableCandidate[]
+): PythonProjectToolProvenance | undefined {
+  if (options.toolArgv?.[tool] === undefined || candidates.length > 0) return undefined;
+  const override = options.toolArgv[tool];
+  if (override === undefined) throw new Error(`Python ${tool} argv override is required`);
+  return {
+    tool,
+    available: false,
+    executable: override[0],
+    argv: [...override],
+    cwd: projectCwd(options),
+    source: "explicit_override",
+    ...(toolConfigFile(tool, options) === undefined ? {} : { configFile: toolConfigFile(tool, options) })
+  };
+}
+
+async function resolveAvailableTool(
+  tool: Exclude<PythonProjectToolKind, "build">,
+  options: PythonProjectEnvironmentOptions,
+  processProbe: PythonProjectProcessProbe,
+  env: Record<string, string | undefined>,
+  candidates: readonly ExecutableCandidate[]
+): Promise<ResolvedPythonTool> {
+  let failure: PythonProjectContextReason | undefined;
+  for (const candidate of candidates) {
+    const resolved = await resolveAvailableToolCandidate(tool, options, processProbe, env, candidate);
+    if (resolved.failure !== undefined) failure = resolved.failure;
+    if (resolved.tool !== undefined || resolved.terminal) return resolved;
+  }
+  return failure === undefined ? {} : { failure };
+}
+
+async function resolveAvailableToolCandidate(
+  tool: Exclude<PythonProjectToolKind, "build">,
+  options: PythonProjectEnvironmentOptions,
+  processProbe: PythonProjectProcessProbe,
+  env: Record<string, string | undefined>,
+  candidate: ExecutableCandidate
+): Promise<ResolvedPythonTool> {
+  if (!(await candidateAvailable(options.workspace, candidate.argv[0]))) return {};
+  const command = candidate.argv[0];
+  const prefix = candidate.argv.slice(1);
+  const result = await processProbe.run(command, [...toolVersionProbePrefix(tool, prefix), "--version"], {
+    cwd: projectCwd(options),
+    env: tool === "pytest" ? { ...env, PYTEST_DISABLE_PLUGIN_AUTOLOAD: "1" } : env,
+    timeoutMs: options.timeoutMs ?? 10000
+  });
+  if (!result.ok) return { failure: probeFailureReason(result, tool), terminal: candidate.source !== "path" };
+  const version = firstVersion(result.stdout, result.stderr);
+  if (version === undefined) {
+    return {
+      failure: {
+        code: "malformed_probe_output",
+        tool,
+        message: `${tool} version probe returned malformed metadata`
+      },
+      terminal: candidate.source !== "path"
+    };
+  }
+  const executable = resolvedToolExecutable(command, candidate.source, processProbe, env, options.platform ?? process.platform);
+  return {
+    tool: {
+      tool,
+      available: true,
+      executable,
+      argv: [executable, ...prefix],
+      cwd: projectCwd(options),
+      source: candidate.source,
+      version,
+      ...(toolConfigFile(tool, options) === undefined ? {} : { configFile: toolConfigFile(tool, options) })
+    },
+    terminal: true
+  };
+}
+
+function unavailableTool(
+  tool: Exclude<PythonProjectToolKind, "build">,
+  options: PythonProjectEnvironmentOptions,
+  candidates: readonly ExecutableCandidate[]
+): PythonProjectToolProvenance {
+  const fallback = candidates[0] ?? { argv: [tool], source: "path" as const };
+  return {
+    tool,
+    available: false,
+    executable: fallback.argv[0],
+    argv: fallback.argv,
+    cwd: projectCwd(options),
+    source: fallback.source,
+    ...(toolConfigFile(tool, options) === undefined ? {} : { configFile: toolConfigFile(tool, options) })
+  };
+}
+
+function toolConfigFile(
+  tool: Exclude<PythonProjectToolKind, "build">,
+  options: PythonProjectEnvironmentOptions
+): string | undefined {
+  return options.toolConfigs[tool];
+}
+
+function toolVersionProbePrefix(
+  tool: Exclude<PythonProjectToolKind, "build">,
+  prefix: readonly string[]
+): readonly string[] {
+  return tool === "ruff" ? withoutToolConfigOptions(prefix, tool) : prefix;
+}
+
+function resolvedToolExecutable(
+  command: string,
+  source: PythonProjectExecutableSource,
+  processProbe: PythonProjectProcessProbe,
+  env: Record<string, string | undefined>,
+  platform: string
+): string {
+  return source === "path"
+    ? processProbe.resolveExecutable?.(command, { env, platform }) ?? command
+    : command;
 }
 
 function runnableInterpreterArgv(
@@ -698,6 +764,24 @@ function safeToolOptionPrefix(tool: Exclude<PythonProjectToolKind, "build">, arg
     return false;
   }
   return true;
+}
+
+function withoutToolConfigOptions(
+  args: readonly string[],
+  tool: Exclude<PythonProjectToolKind, "build">
+): readonly string[] {
+  const options = toolConfigOptions[tool];
+  const result: string[] = [];
+  for (let index = 0; index < args.length; index += 1) {
+    const argument = args[index];
+    if (options.includes(argument)) {
+      index += 1;
+      continue;
+    }
+    if (options.some((option) => argument.startsWith(`${option}=`))) continue;
+    result.push(argument);
+  }
+  return result;
 }
 
 function safeToolConfigPaths(

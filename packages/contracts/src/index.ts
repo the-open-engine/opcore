@@ -6752,31 +6752,56 @@ export function validatePythonProjectContext(context: PythonProjectContext): Pyt
     "layout", "evidence", "targetRuntime", "managers", "buildSystem", "interpreter", "tools", "projectKey",
     "contextFingerprint", "outcome", "reasons"
   ], "Python project context");
+  validatePythonProjectContextIdentity(context);
+  validatePythonProjectContextLayout(context.layout);
+  validatePythonProjectContextEvidence(context.evidence);
+  validatePythonProjectTarget(context.targetRuntime);
+  validatePythonProjectManagerEvidenceEntries(context.managers);
+  validatePythonProjectBuildSystem(context.buildSystem);
+  if (context.interpreter !== undefined) validatePythonInterpreterProvenance(context.interpreter);
+  validatePythonProjectToolEntries(context.tools);
+  validateSha256Identity(context.projectKey, "Python project context projectKey");
+  validateSha256Identity(context.contextFingerprint, "Python project context contextFingerprint");
+  validatePythonProjectContextOutcome(context.outcome, context.reasons);
+  return context;
+}
+
+function validatePythonProjectContextIdentity(context: PythonProjectContext): void {
   if (context.schemaId !== PYTHON_PROJECT_CONTEXT_SCHEMA_ID) {
     throw new Error(`Python project context schemaId must be ${PYTHON_PROJECT_CONTEXT_SCHEMA_ID}`);
   }
   if (context.schemaVersion !== 1) throw new Error("Python project context schemaVersion must be 1");
   validateRepoRelativePath(context.target);
-  if (!/\.pyi?$/u.test(context.target)) throw new Error("Python project context target must be a .py or .pyi path");
+  if (!isPythonProjectContextTarget(context.target)) {
+    throw new Error("Python project context target must be Python source or config");
+  }
   validateNonEmptyString(context.repositoryRoot, "Python project context repositoryRoot");
   validatePythonProjectRoot(context.projectRoot, "Python project context projectRoot");
   validatePythonProjectRoot(context.projectBoundary, "Python project context projectBoundary");
   validatePythonProjectRoots(context.sourceRoots, "Python project context sourceRoots");
-  if (!context.layout || typeof context.layout !== "object") throw new Error("Python project context layout is required");
-  validateExactObjectKeys(context.layout, ["kinds", "paths"], "Python project context layout");
-  validateExactEnumArray(context.layout.kinds, pythonProjectLayoutKinds, "Python project context layout kinds", false);
-  validatePythonProjectRoots(context.layout.paths, "Python project context layout paths");
-  if (!Array.isArray(context.evidence)) throw new Error("Python project context evidence must be an array");
-  for (const entry of context.evidence) {
+}
+
+function validatePythonProjectContextLayout(layout: PythonProjectContext["layout"]): void {
+  if (!layout || typeof layout !== "object") throw new Error("Python project context layout is required");
+  validateExactObjectKeys(layout, ["kinds", "paths"], "Python project context layout");
+  validateExactEnumArray(layout.kinds, pythonProjectLayoutKinds, "Python project context layout kinds", false);
+  validatePythonProjectRoots(layout.paths, "Python project context layout paths");
+}
+
+function validatePythonProjectContextEvidence(evidence: PythonProjectContext["evidence"]): void {
+  if (!Array.isArray(evidence)) throw new Error("Python project context evidence must be an array");
+  for (const entry of evidence) {
     validateExactObjectKeys(entry, ["path", "role"], "Python project context evidence");
     validateRepoRelativePath(entry.path);
     if (!includesString(["boundary", "config", "lock", "requirements", "build", "layout"] as const, entry.role)) {
       throw new Error(`Unknown Python project evidence role: ${String(entry.role)}`);
     }
   }
-  validatePythonProjectTarget(context.targetRuntime);
-  if (!Array.isArray(context.managers)) throw new Error("Python project context managers must be an array");
-  for (const manager of context.managers) {
+}
+
+function validatePythonProjectManagerEvidenceEntries(managers: PythonProjectContext["managers"]): void {
+  if (!Array.isArray(managers)) throw new Error("Python project context managers must be an array");
+  for (const manager of managers) {
     validateExactObjectKeys(manager, ["kind", "configFiles", "lockFiles"], "Python project manager evidence");
     if (!includesString(pythonProjectManagerKinds, manager.kind)) {
       throw new Error(`Unknown Python project manager kind: ${String(manager.kind)}`);
@@ -6784,17 +6809,21 @@ export function validatePythonProjectContext(context: PythonProjectContext): Pyt
     validateRepoPathArray(manager.configFiles, "Python project manager configFiles");
     validateRepoPathArray(manager.lockFiles, "Python project manager lockFiles");
   }
-  if (context.buildSystem !== undefined) {
-    validateExactObjectKeys(context.buildSystem, ["configFile", "backend", "requires"], "Python project buildSystem");
-    validateRepoRelativePath(context.buildSystem.configFile);
-    if (context.buildSystem.backend !== undefined) {
-      validateNonEmptyString(context.buildSystem.backend, "Python project buildSystem backend");
-    }
-    validateStringArray(context.buildSystem.requires, "Python project buildSystem requires", { allowEmpty: true });
+}
+
+function validatePythonProjectBuildSystem(buildSystem: PythonProjectContext["buildSystem"]): void {
+  if (buildSystem === undefined) return;
+  validateExactObjectKeys(buildSystem, ["configFile", "backend", "requires"], "Python project buildSystem");
+  validateRepoRelativePath(buildSystem.configFile);
+  if (buildSystem.backend !== undefined) {
+    validateNonEmptyString(buildSystem.backend, "Python project buildSystem backend");
   }
-  if (context.interpreter !== undefined) validatePythonInterpreterProvenance(context.interpreter);
-  if (!Array.isArray(context.tools)) throw new Error("Python project context tools must be an array");
-  for (const tool of context.tools) {
+  validateStringArray(buildSystem.requires, "Python project buildSystem requires", { allowEmpty: true });
+}
+
+function validatePythonProjectToolEntries(tools: PythonProjectContext["tools"]): void {
+  if (!Array.isArray(tools)) throw new Error("Python project context tools must be an array");
+  for (const tool of tools) {
     validateExactObjectKeys(
       tool,
       ["tool", "available", "executable", "argv", "cwd", "source", "version", "configFile"],
@@ -6807,13 +6836,17 @@ export function validatePythonProjectContext(context: PythonProjectContext): Pyt
       throw new Error(`Available Python project tool ${tool.tool} must include version provenance`);
     }
   }
-  validateSha256Identity(context.projectKey, "Python project context projectKey");
-  validateSha256Identity(context.contextFingerprint, "Python project context contextFingerprint");
-  if (!includesString(pythonProjectContextOutcomes, context.outcome)) {
-    throw new Error(`Unknown Python project context outcome: ${String(context.outcome)}`);
+}
+
+function validatePythonProjectContextOutcome(
+  outcome: PythonProjectContext["outcome"],
+  reasons: PythonProjectContext["reasons"]
+): void {
+  if (!includesString(pythonProjectContextOutcomes, outcome)) {
+    throw new Error(`Unknown Python project context outcome: ${String(outcome)}`);
   }
-  if (!Array.isArray(context.reasons)) throw new Error("Python project context reasons must be an array");
-  for (const reason of context.reasons) {
+  if (!Array.isArray(reasons)) throw new Error("Python project context reasons must be an array");
+  for (const reason of reasons) {
     validateExactObjectKeys(reason, ["code", "message", "path", "tool"], "Python project context reason");
     if (!includesString(pythonProjectContextReasonCodes, reason.code)) {
       throw new Error(`Unknown Python project context reason: ${String(reason.code)}`);
@@ -6822,13 +6855,31 @@ export function validatePythonProjectContext(context: PythonProjectContext): Pyt
     if (reason.path !== undefined) validateRepoRelativePath(reason.path);
     if (reason.tool !== undefined) validateNonEmptyString(reason.tool, "Python project context reason tool");
   }
-  if (context.outcome === "resolved" && context.reasons.length > 0) {
-    throw new Error("Resolved Python project context must not include reasons");
-  }
-  if (context.outcome !== "resolved" && context.reasons.length === 0) {
-    throw new Error("Non-resolved Python project context must include reasons");
-  }
-  return context;
+  if (outcome === "resolved" && reasons.length > 0) throw new Error("Resolved Python project context must not include reasons");
+  if (outcome !== "resolved" && reasons.length === 0) throw new Error("Non-resolved Python project context must include reasons");
+}
+
+function isPythonProjectContextTarget(path: string): boolean {
+  if (/\.pyi?$/u.test(path)) return true;
+  const name = path.slice(path.lastIndexOf("/") + 1);
+  return [
+    "pyproject.toml",
+    "Pipfile",
+    "Pipfile.lock",
+    "poetry.lock",
+    "pdm.lock",
+    "uv.lock",
+    "setup.cfg",
+    "setup.py",
+    "pytest.ini",
+    "tox.ini",
+    "pyrightconfig.json",
+    "ruff.toml",
+    ".ruff.toml",
+    "mypy.ini",
+    ".mypy.ini",
+    "conftest.py"
+  ].includes(name) || /^requirements.*\.txt$/u.test(name);
 }
 
 export function validatePythonProjectContexts(contexts: readonly PythonProjectContext[]): readonly PythonProjectContext[] {

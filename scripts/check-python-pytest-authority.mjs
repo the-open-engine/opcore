@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import assert from "node:assert/strict";
-import { createHash } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import { spawnSync } from "node:child_process";
 import {
   chmodSync,
@@ -22,6 +22,7 @@ const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const opcoreBin = join(repoRoot, "packages/opcore/dist/index.js");
 const fixtureRoot = join(repoRoot, "packages/fixtures/validation-python/pytest-authority");
 const tempRoot = mkdtempSync(join(tmpdir(), "opcore-pytest-authority-"));
+const workspacePrefix = `opcore-python-pytest-workspace-${randomBytes(6).toString("hex")}-`;
 
 try {
   const venvRoot = join(tempRoot, "venv");
@@ -32,6 +33,7 @@ try {
   const pytestVersion = run(venvPython, ["-m", "pytest", "--version"], { cwd: repoRoot }).stdout.trim();
   const env = {
     ...process.env,
+    OPCORE_INTERNAL_PYTEST_WORKSPACE_PREFIX: workspacePrefix,
     VIRTUAL_ENV: venvRoot,
     PATH: `${venvBin}:${process.env.PATH ?? ""}`
   };
@@ -215,7 +217,7 @@ function materializeFixture(name, destinationName = name) {
 function currentPytestTempRoots() {
   return new Set(
     readdirSync(tmpdir(), { withFileTypes: true })
-      .filter((entry) => entry.isDirectory() && entry.name.startsWith("opcore-python-pytest-"))
+      .filter((entry) => entry.isDirectory() && entry.name.startsWith(workspacePrefix))
       .map((entry) => join(tmpdir(), entry.name))
   );
 }

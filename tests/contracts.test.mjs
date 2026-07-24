@@ -866,6 +866,7 @@ describe("Opcore shared contracts", () => {
   it("validates canonical Python project contexts and rejects invalid outcomes and provenance", () => {
     const context = validPythonProjectContext();
     assert.equal(validatePythonProjectContext(context).schemaId, PYTHON_PROJECT_CONTEXT_SCHEMA_ID);
+    assert.equal(validatePythonProjectContext({ ...context, target: "services/api/pyproject.toml" }).target, "services/api/pyproject.toml");
     assert.equal(
       validateValidationResultPayload(validValidationResult({ pythonProjectContexts: [context] })).pythonProjectContexts[0].projectRoot,
       "services/api"

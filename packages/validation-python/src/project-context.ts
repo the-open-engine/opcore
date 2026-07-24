@@ -18,6 +18,7 @@ import {
   normalizePythonProjectFingerprintInput,
   pythonProjectDigest
 } from "./project-fingerprint.js";
+import { isRelevantPythonConfig } from "./project-config-files.js";
 import type { PythonProjectWorkspace } from "./project-workspace.js";
 import { readPythonStaticProjectConfig } from "./static-config.js";
 
@@ -177,7 +178,9 @@ function normalizeTargets(targets: readonly string[]): readonly string[] {
   return [...new Set(targets.map((target) => {
     try {
       const normalized = validateRepoRelativePath(target.replaceAll("\\", "/"));
-      if (!/\.pyi?$/u.test(normalized)) throw new Error(`Python project context target must be .py or .pyi: ${normalized}`);
+      if (!/\.pyi?$/u.test(normalized) && !isRelevantPythonConfig(normalized)) {
+        throw new Error(`Python project context target must be Python source or config: ${normalized}`);
+      }
       return normalized;
     } catch (error) {
       throw new PythonProjectContextResolutionError(error instanceof Error ? error.message : String(error));

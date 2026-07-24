@@ -834,6 +834,7 @@ describe("Opcore JSON schema wire constraints", () => {
   it("validates Python project-context wire identity and typed outcome vocabulary", () => {
     const context = pythonProjectContextWith();
     assert.equal(isValidDefinition("PythonProjectContext", context), true);
+    assert.equal(isValidDefinition("PythonProjectContext", { ...context, target: "services/api/pyproject.toml" }), true);
     assert.equal(isValidDefinition("ValidationResult", validationResultWith({ pythonProjectContexts: [context] })), true);
     assert.equal(isValidDefinition("PythonProjectContext", { ...context, schemaId: "python.context.v0" }), false);
     assert.equal(isValidDefinition("PythonProjectContext", { ...context, outcome: "ready" }), false);

@@ -1,5 +1,7 @@
+import { existsSync } from "node:fs";
 import type { PythonProjectToolProvenance, PythonValidationCapabilityRun } from "@the-open-engine/opcore-contracts";
 import type { ValidationCheckContext } from "@the-open-engine/opcore-validation";
+import { removeMaterializedWorkspace } from "./materialized-workspace.js";
 import type { PythonProjectWorkspace } from "./project-workspace.js";
 import { collectPytestProjectPaths, materializePytestWorkspace } from "./pytest-workspace.js";
 import { runCollection, runExecution, writePytestRuntimeModule } from "./pytest-process.js";
@@ -51,7 +53,7 @@ export async function executeProjectPytest(
         };
       }
     } finally {
-      recordCleanup(cleanup, collectionWorkspace.cleanup);
+      cleanupWorkspace(cleanup, collectionWorkspace);
     }
     if (collectionFailure !== undefined) return finalizeCapabilityRun(cleanup, collectionFailure);
     if (!cleanup.ok) return cleanupFailureResult(cleanup, capabilityBase, afterStateFingerprint, collectedNodeIds, collectionSelectionMode, collectionSelectionDigest, collectionCounts, collectionInvocation, group.context.target);
@@ -74,7 +76,7 @@ export async function executeProjectPytest(
         capabilityRun: { ...capabilityBase, afterStateFingerprint, outcome: execution.outcome, message: execution.message, collectedNodeIds, selectionMode: execution.selectionMode, selectionDigest: execution.selectionDigest, counts: execution.counts, collection: collectionInvocation, execution: execution.invocation }
       };
     } finally {
-      recordCleanup(cleanup, executionWorkspace.cleanup);
+      cleanupWorkspace(cleanup, executionWorkspace);
     }
     return finalizeCapabilityRun(cleanup, executionResult ?? {
       outcome: "tool_failure",
@@ -120,4 +122,13 @@ function cleanupFailureResult(
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
+}
+
+function cleanupWorkspace(
+  cleanup: Parameters<typeof finalizeCapabilityRun>[0],
+  workspace: { root: string; cleanup(): void }
+): void {
+  recordCleanup(cleanup, workspace.cleanup);
+  if (!existsSync(workspace.root)) return;
+  recordCleanup(cleanup, () => removeMaterializedWorkspace(workspace.root, "Pytest temporary workspace"));
 }

@@ -70,12 +70,23 @@ interface Buffer {
   toString(encoding?: BufferEncoding): string;
 }
 
+declare namespace NodeJS {
+  type Signals = string;
+
+  interface ErrnoException extends Error {
+    code?: string;
+  }
+}
+
 declare const Buffer: {
   byteLength(input: string, encoding?: BufferEncoding): number;
 };
 
 declare const process: {
   env: Record<string, string | undefined>;
+  execPath: string;
+  pid: number;
   cwd(): string;
+  kill(pid: number, signal?: string): boolean;
   platform: string;
 };

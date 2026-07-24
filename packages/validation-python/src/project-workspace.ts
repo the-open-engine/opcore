@@ -57,6 +57,11 @@ export function createValidationFileViewPythonWorkspace(
     listAll: async () => listPaths(() => true),
     exists: (path) => fileView.exists(validateRepoRelativePath(path)),
     realpath: async (path) => {
+      if (path === ".") {
+        return fullWorkspace === undefined
+          ? { path: ".", symlink: false, unavailable: true }
+          : fullWorkspace.realpath(path);
+      }
       const normalized = validateRepoRelativePath(path);
       if (fullWorkspace === undefined) return { path: normalized, symlink: false, unavailable: true };
       const baseline = await fullWorkspace.realpath(normalized);
@@ -102,6 +107,7 @@ export function createNodePythonProjectWorkspace(repoRoot: string): PythonProjec
       }
     },
     realpath: async (path) => {
+      if (path === ".") return { path: ".", symlink: false };
       const normalized = validateRepoRelativePath(path);
       const absolute = resolveRepoPath(canonicalRoot, normalized);
       try {

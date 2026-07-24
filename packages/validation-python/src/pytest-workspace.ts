@@ -45,7 +45,7 @@ export async function materializePytestWorkspace(
   args: MaterializePytestWorkspaceArgs
 ): Promise<MaterializedPytestWorkspace> {
   const workspace = createValidationFileViewPythonWorkspace(args.context.fileView, undefined, args.nodeWorkspace);
-  const tempRoot = mkdtempSync(join(tmpdir(), "opcore-python-pytest-"));
+  const tempRoot = mkdtempSync(join(tmpdir(), pytestWorkspacePrefix()));
   const repoRoot = join(tempRoot, "repo");
   const runtimeRoot = join(tempRoot, "runtime");
   let totalBytes = 0;
@@ -113,4 +113,13 @@ function withinProject(path: string, projectRoot: string): boolean {
 
 function writeMaterializedProjectPath(root: string, path: string): string {
   return path === "." ? root : resolveMaterializedWorkspacePath(root, path, "pytest workspace");
+}
+
+function pytestWorkspacePrefix(): string {
+  const configured = process.env.OPCORE_INTERNAL_PYTEST_WORKSPACE_PREFIX;
+  if (configured === undefined) return "opcore-python-pytest-workspace-";
+  if (!/^[A-Za-z0-9._-]+$/.test(configured) || !configured.endsWith("-")) {
+    throw new Error("OPCORE_INTERNAL_PYTEST_WORKSPACE_PREFIX must be a simple basename ending with '-'");
+  }
+  return configured;
 }

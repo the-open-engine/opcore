@@ -859,7 +859,7 @@ describe("validation CLI", () => {
   });
 
   it("returns a typed disabled python.pytest capability run instead of an unknown check failure", () => {
-    const temp = mkdtempSync(join(tmpdir(), "opcore-python-pytest-disabled-"));
+    const temp = mkdtempSync(join(tmpdir(), "opcore-validation-cli-python-pytest-disabled-"));
     try {
       mkdirSync(join(temp, "src"), { recursive: true });
       writeFileSync(join(temp, "src/app.py"), "VALUE = 1\n");
@@ -887,6 +887,62 @@ describe("validation CLI", () => {
           selectionMode: "none"
         }
       ]);
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("emits an unrequested not_applicable python.pytest capability run for Python-targeted explicit checks", async () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-validation-cli-python-pytest-unrequested-"));
+    try {
+      mkdirSync(join(temp, "src"), { recursive: true });
+      writeFileSync(join(temp, "src/app.py"), "VALUE = 1\n");
+
+      const result = await routeCommand(
+        ["check", "files", "--files", "src/app.py", "--repo", temp, "--checks", "python.syntax", "--json"],
+        "opcore"
+      );
+
+      assert.equal(result.status, "ok");
+      assert.equal(result.validationResult.status, "passed");
+      assert.deepEqual(result.validationResult.manifest.checks, ["python.syntax"]);
+      assert.deepEqual(result.validationResult.pythonCapabilityRuns, [
+        {
+          capability: "pytest",
+          checkId: "python.pytest",
+          activation: "not_applicable",
+          outcome: "not_applicable",
+          message: "Python pytest execution is opt-in."
+        }
+      ]);
+      assert.deepEqual(
+        result.validationResult.manifest.runs.map((run) => run.checkId),
+        ["python.syntax"]
+      );
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("does not emit unrequested python.pytest capability evidence for unrelated explicit checks", async () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-validation-cli-unrelated-checks-"));
+    try {
+      mkdirSync(join(temp, "src"), { recursive: true });
+      writeFileSync(join(temp, "src/app.ts"), "export const value = 1;\n");
+
+      const result = await routeCommand(
+        ["check", "files", "--files", "src/app.ts", "--repo", temp, "--checks", "typescript.syntax", "--json"],
+        "opcore"
+      );
+
+      assert.equal(result.status, "ok");
+      assert.equal(result.validationResult.status, "passed");
+      assert.deepEqual(result.validationResult.manifest.checks, ["typescript.syntax"]);
+      assert.deepEqual(result.validationResult.pythonCapabilityRuns ?? [], []);
+      assert.deepEqual(
+        result.validationResult.manifest.runs.map((run) => run.checkId),
+        ["typescript.syntax"]
+      );
     } finally {
       rmSync(temp, { recursive: true, force: true });
     }

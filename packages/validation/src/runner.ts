@@ -67,6 +67,7 @@ export interface ValidationCheckCompleteEvent {
   diagnostics: readonly ValidationDiagnostic[];
   run?: ValidationCheckRunSummary;
   skippedCheck?: ValidationSkippedCheck;
+  pythonCapabilityRuns?: readonly PythonValidationCapabilityRun[];
 }
 
 export type ValidationCheckCompleteHandler = (event: ValidationCheckCompleteEvent) => void | Promise<void>;
@@ -105,7 +106,9 @@ interface ExecuteChecksArgs {
   scope: ResolvedValidationScope;
   graph: ValidationGraphQuerySession;
   fileView: ValidationFileView;
+  activeCheckIds: readonly string[];
   selectedChecks: readonly ValidationCheckDefinition[];
+  inactiveChecks: readonly ValidationCheckDefinition[];
   totalStartedAt: number;
   clock: ValidationClock;
   runtime: ValidationRuntimePolicy;
@@ -118,6 +121,7 @@ interface PreparedValidationArgs {
   scope: ResolvedValidationScope;
   graph: ValidationGraphQuerySession;
   selectedChecks: readonly ValidationCheckDefinition[];
+  inactiveChecks: readonly ValidationCheckDefinition[];
   totalStartedAt: number;
   options: RunnerRuntimeOptions;
 }
@@ -184,6 +188,7 @@ async function runPreparedValidation(
     }
     const unsupportedResult = unsupportedScopeResult(selectedChecks, scope.kind, totalStartedAt, options.clock);
     if (unsupportedResult !== undefined) return unsupportedResult;
+    const inactiveChecks = selectInactiveValidationChecks(options.registry, selectedChecks, scope.kind);
     const graph = await resolveGraphSession(request, selectedChecks, options);
     const graphFailure = requiredGraphFailureResult(request, graph.status, selectedChecks, totalStartedAt, options.clock);
     if (graphFailure !== undefined) return graphFailure;
@@ -193,6 +198,7 @@ async function runPreparedValidation(
         scope,
         graph,
         selectedChecks,
+        inactiveChecks,
         totalStartedAt,
         options
       });
@@ -202,6 +208,7 @@ async function runPreparedValidation(
       scope,
       graph,
       selectedChecks,
+      inactiveChecks,
       totalStartedAt,
       options
     });
@@ -293,7 +300,7 @@ function mergeCheckExecution(target: CheckExecution, source: CheckExecution): vo
   target.diagnostics.push(...source.diagnostics);
   target.skippedChecks.push(...source.skippedChecks);
   mergePythonProjectContexts(target.pythonProjectContexts, source.pythonProjectContexts);
-  target.pythonCapabilityRuns.push(...source.pythonCapabilityRuns);
+  mergePythonCapabilityRuns(target.pythonCapabilityRuns, source.pythonCapabilityRuns);
   for (const [checkId, diagnostics] of source.diagnosticsByCheck) {
     target.diagnosticsByCheck.set(checkId, diagnostics);
   }
@@ -342,7 +349,9 @@ async function executeValidationRequest(args: ExecuteValidationRequestArgs): Pro
     scope: args.scope,
     graph: args.graph,
     fileView,
+    activeCheckIds: args.selectedChecks.map((check) => check.id),
     selectedChecks: args.selectedChecks,
+    inactiveChecks: args.inactiveChecks,
     totalStartedAt: args.totalStartedAt,
     clock: args.options.clock,
     runtime: args.options.runtime,
@@ -392,7 +401,22 @@ function requiredGraphFailureResult(
 }
 
 async function executeSelectedChecks(args: ExecuteChecksArgs): Promise<CheckExecution> {
-  const execution: CheckExecution = {
+  const execution = emptyCheckExecution();
+  try {
+    for (const check of args.selectedChecks) {
+      const loopAction = await executeSelectedCheck(check, args, execution);
+      if (loopAction === "return") return execution;
+      if (loopAction === "break") break;
+    }
+    await executeInactiveChecks(args, execution);
+    return execution;
+  } finally {
+    aggregateExecutionFailure(args, execution);
+  }
+}
+
+function emptyCheckExecution(): CheckExecution {
+  return {
     runs: [],
     diagnostics: [],
     diagnosticsByCheck: new Map(),
@@ -400,73 +424,111 @@ async function executeSelectedChecks(args: ExecuteChecksArgs): Promise<CheckExec
     pythonProjectContexts: [],
     pythonCapabilityRuns: []
   };
-  for (const check of args.selectedChecks) {
-    const skippedCheck = skippedGraphCheck(check, args.graph.status);
-    if (skippedCheck !== undefined) {
-      execution.skippedChecks.push(skippedCheck);
-      await emitCheckComplete(args, {
-        schemaVersion: 1,
-        kind: "validation.check",
-        checkId: check.id,
-        status: "skipped",
-        diagnostics: [],
-        skippedCheck
-      });
-      continue;
-    }
-    const preloadFailure = await preloadCheckGraphRequirements(check, args, execution);
-    if (preloadFailure !== undefined) {
-      if ("status" in preloadFailure) {
-        execution.failureResult = preloadFailure;
-        await emitCheckComplete(args, failureCheckCompleteEvent(check, preloadFailure, execution.diagnostics));
-        return execution;
-      }
-      execution.skippedChecks.push(preloadFailure);
-      await emitCheckComplete(args, {
-        schemaVersion: 1,
-        kind: "validation.check",
-        checkId: check.id,
-        status: "skipped",
-        diagnostics: [],
-        skippedCheck: preloadFailure
-      });
-      continue;
-    }
-    const outcome = await runSingleCheck(check, args);
-    if (outcome.providerError !== undefined) {
-      if (args.request.graph.mode === "required") {
-        if (outcome.run !== undefined) execution.runs.push(outcome.run);
-        execution.failureResult = checkProviderFailureResult(check, args, execution, outcome.providerError);
-        await emitCheckComplete(args, outcomeCheckCompleteEvent(check, outcome));
-        return execution;
-      }
-      const skippedCheck = skippedGraphProviderError(check, outcome.providerError);
-      execution.skippedChecks.push(skippedCheck);
-      await emitCheckComplete(args, {
-        schemaVersion: 1,
-        kind: "validation.check",
-        checkId: check.id,
-        status: "skipped",
-        diagnostics: [],
-        skippedCheck
-      });
-      continue;
-    }
-    if (outcome.run !== undefined) execution.runs.push(outcome.run);
-    mergePythonProjectContexts(execution.pythonProjectContexts, outcome.pythonProjectContexts);
-    execution.pythonCapabilityRuns.push(...outcome.pythonCapabilityRuns);
-    execution.diagnosticsByCheck.set(check.id, [...outcome.diagnostics]);
-    execution.diagnostics.push(...outcome.diagnostics);
-    await emitCheckComplete(args, outcomeCheckCompleteEvent(check, outcome));
-    if (outcome.failureStatus !== undefined && outcome.failureMessage !== undefined) {
-      execution.failureResult = checkRunFailureResult(check, args, execution, outcome.failureStatus, outcome.failureMessage);
-      return execution;
-    }
-    if (args.failFast && outcome.run?.status === "policy_failure") {
-      return execution;
-    }
+}
+
+async function executeSelectedCheck(
+  check: ValidationCheckDefinition,
+  args: ExecuteChecksArgs,
+  execution: CheckExecution
+): Promise<"continue" | "break" | "return"> {
+  const skippedCheck = skippedGraphCheck(check, args.graph.status);
+  if (skippedCheck !== undefined) {
+    await recordSkippedCheck(args, execution, check.id, skippedCheck);
+    return "continue";
   }
-  return execution;
+  const preloadResult = await handlePreloadFailure(check, args, execution);
+  if (preloadResult !== undefined) return preloadResult;
+  const outcome = await runSingleCheck(check, args);
+  const providerResult = await handleProviderError(check, args, execution, outcome);
+  if (providerResult !== undefined) return providerResult;
+  await recordCheckOutcome(args, execution, check, outcome);
+  if (outcome.failureStatus !== undefined && outcome.failureMessage !== undefined) {
+    execution.failureResult = checkRunFailureResult(check, args, execution, outcome.failureStatus, outcome.failureMessage);
+    return "return";
+  }
+  return args.failFast && outcome.run?.status === "policy_failure" ? "break" : "continue";
+}
+
+async function handlePreloadFailure(
+  check: ValidationCheckDefinition,
+  args: ExecuteChecksArgs,
+  execution: CheckExecution
+): Promise<"continue" | "return" | undefined> {
+  const preloadFailure = await preloadCheckGraphRequirements(check, args, execution);
+  if (preloadFailure === undefined) return undefined;
+  if ("status" in preloadFailure) {
+    execution.failureResult = preloadFailure;
+    await emitCheckComplete(args, failureCheckCompleteEvent(check, preloadFailure, execution.diagnostics));
+    return "return";
+  }
+  await recordSkippedCheck(args, execution, check.id, preloadFailure);
+  return "continue";
+}
+
+async function handleProviderError(
+  check: ValidationCheckDefinition,
+  args: ExecuteChecksArgs,
+  execution: CheckExecution,
+  outcome: SingleCheckOutcome
+): Promise<"continue" | "return" | undefined> {
+  if (outcome.providerError === undefined) return undefined;
+  if (args.request.graph.mode === "required") {
+    if (outcome.run !== undefined) execution.runs.push(outcome.run);
+    execution.failureResult = checkProviderFailureResult(check, args, execution, outcome.providerError);
+    await emitCheckComplete(args, outcomeCheckCompleteEvent(check, outcome));
+    return "return";
+  }
+  await recordSkippedCheck(args, execution, check.id, skippedGraphProviderError(check, outcome.providerError));
+  return "continue";
+}
+
+async function recordSkippedCheck(
+  args: ExecuteChecksArgs,
+  execution: CheckExecution,
+  checkId: string,
+  skippedCheck: ValidationSkippedCheck
+): Promise<void> {
+  execution.skippedChecks.push(skippedCheck);
+  await emitCheckComplete(args, {
+    schemaVersion: 1,
+    kind: "validation.check",
+    checkId,
+    status: "skipped",
+    diagnostics: [],
+    skippedCheck
+  });
+}
+
+async function recordCheckOutcome(
+  args: ExecuteChecksArgs,
+  execution: CheckExecution,
+  check: ValidationCheckDefinition,
+  outcome: SingleCheckOutcome
+): Promise<void> {
+  if (outcome.run !== undefined) execution.runs.push(outcome.run);
+  mergePythonProjectContexts(execution.pythonProjectContexts, outcome.pythonProjectContexts);
+  mergePythonCapabilityRuns(execution.pythonCapabilityRuns, outcome.pythonCapabilityRuns);
+  execution.diagnosticsByCheck.set(check.id, [...outcome.diagnostics]);
+  execution.diagnostics.push(...outcome.diagnostics);
+  await emitCheckComplete(args, outcomeCheckCompleteEvent(check, outcome));
+}
+
+function aggregateExecutionFailure(args: ExecuteChecksArgs, execution: CheckExecution): void {
+  if (execution.failureResult === undefined) return;
+  const failure = execution.failureResult;
+  execution.failureResult = aggregateForChecks(args.selectedChecks, {
+    runs: execution.runs,
+    skippedChecks: execution.skippedChecks,
+    diagnostics: execution.diagnostics,
+    pythonProjectContexts: execution.pythonProjectContexts,
+    pythonCapabilityRuns: execution.pythonCapabilityRuns,
+    generatedAt: args.clock.isoNow(),
+    durationMs: elapsed(args.totalStartedAt, args.clock.nowMs()),
+    ...(failure.graphStatus === undefined ? {} : { graphStatus: failure.graphStatus }),
+    status: failure.status,
+    ...(failure.failure === undefined ? {} : { failure: failure.failure }),
+    ...(failure.refusal === undefined ? {} : { refusal: failure.refusal })
+  });
 }
 
 function outcomeCheckCompleteEvent(check: ValidationCheckDefinition, outcome: SingleCheckOutcome): ValidationCheckCompleteEvent {
@@ -476,7 +538,8 @@ function outcomeCheckCompleteEvent(check: ValidationCheckDefinition, outcome: Si
     checkId: check.id,
     status: outcome.run?.status ?? "passed",
     diagnostics: outcome.diagnostics,
-    ...(outcome.run === undefined ? {} : { run: outcome.run })
+    ...(outcome.run === undefined ? {} : { run: outcome.run }),
+    ...(outcome.pythonCapabilityRuns.length === 0 ? {} : { pythonCapabilityRuns: outcome.pythonCapabilityRuns })
   };
 }
 
@@ -642,9 +705,20 @@ async function runSingleCheck(check: ValidationCheckDefinition, args: ExecuteChe
   }
 }
 
+async function executeInactiveChecks(args: ExecuteChecksArgs, execution: CheckExecution): Promise<void> {
+  for (const check of args.inactiveChecks) {
+    if (check.inactiveResult === undefined || check.inactiveStateWhenUnselected === undefined) continue;
+    const result = await check.inactiveResult(checkContext(args), check.inactiveStateWhenUnselected);
+    const normalized = normalizeCheckResult(result);
+    mergePythonProjectContexts(execution.pythonProjectContexts, normalized.pythonProjectContexts ?? []);
+    mergePythonCapabilityRuns(execution.pythonCapabilityRuns, normalized.pythonCapabilityRuns ?? []);
+  }
+}
+
 function checkContext(args: ExecuteChecksArgs) {
   return {
     request: args.request,
+    selectedCheckIds: args.activeCheckIds,
     scope: args.scope,
     graphStatus: args.graph.status,
     graph: args.graph,
@@ -853,6 +927,26 @@ function mergePythonProjectContexts(target: PythonProjectContext[], source: read
   const byTarget = new Map(target.map((context) => [context.target, context]));
   for (const context of source) byTarget.set(context.target, context);
   target.splice(0, target.length, ...[...byTarget.values()].sort((left, right) => left.target.localeCompare(right.target)));
+}
+
+function mergePythonCapabilityRuns(target: PythonValidationCapabilityRun[], source: readonly PythonValidationCapabilityRun[]): void {
+  const byFingerprint = new Map<string, PythonValidationCapabilityRun>(target.map((run) => [JSON.stringify(run), run]));
+  for (const run of source) byFingerprint.set(JSON.stringify(run), run);
+  target.splice(0, target.length, ...[...byFingerprint.values()]);
+}
+
+function selectInactiveValidationChecks(
+  registry: ValidationCheckRegistry,
+  selectedChecks: readonly ValidationCheckDefinition[],
+  scopeKind: ValidationScopeKind
+): readonly ValidationCheckDefinition[] {
+  const selectedIds = new Set(selectedChecks.map((check) => check.id));
+  return registry.checks.filter((check) =>
+    !selectedIds.has(check.id) &&
+    check.supportedScopes.includes(scopeKind) &&
+    check.inactiveResult !== undefined &&
+    check.inactiveStateWhenUnselected !== undefined
+  );
 }
 
 function isValidationDiagnosticArray(

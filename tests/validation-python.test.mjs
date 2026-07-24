@@ -957,7 +957,7 @@ describe("validation-python adapter", () => {
     }));
 
     assert.equal(result.status, "passed", JSON.stringify(result, null, 2));
-    assert.deepEqual(result.pythonProjectContexts, []);
+    assert.deepEqual(result.pythonProjectContexts ?? [], []);
   });
 
   it("shares one canonical source resolver across graph-dependent Python checks", async () => {
@@ -1121,7 +1121,7 @@ describe("validation-python adapter", () => {
   });
 
   it("materializes pytest support files and preserves exact regular-file modes", async () => {
-    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-pytest-support-"));
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-validation-python-pytest-support-"));
     try {
       writePassingPythonProtocolShim(repoRoot);
       writePytestShim(repoRoot, {
@@ -1180,8 +1180,64 @@ describe("validation-python adapter", () => {
     }
   });
 
+  it("executes python.pytest for config-only targets inside the canonical project", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-validation-python-pytest-config-only-"));
+    try {
+      writePassingPythonProtocolShim(repoRoot);
+      writePytestShim(repoRoot, {
+        collectionShellLines: [
+          "emit '{\"type\":\"collected\",\"nodeid\":\"tests/test_app.py::test_config_only\"}'",
+          "emit '{\"type\":\"session_finish\",\"exitstatus\":0}'"
+        ],
+        executionShellLines: [
+          "emit '{\"type\":\"collected\",\"nodeid\":\"tests/test_app.py::test_config_only\"}'",
+          "emit '{\"type\":\"test_report\",\"nodeid\":\"tests/test_app.py::test_config_only\",\"when\":\"call\",\"outcome\":\"passed\"}'",
+          "emit '{\"type\":\"session_finish\",\"exitstatus\":0}'"
+        ]
+      });
+      const files = {
+        "pyproject.toml": "[project]\nname='fixture'\n",
+        "src/app.py": "VALUE = 7\n",
+        "tests/test_app.py": "def test_config_only():\n    assert True\n"
+      };
+      writeRepoFiles(repoRoot, files);
+      const result = await runner({
+        files,
+        checks: createPythonValidationChecks({
+          repoRoot,
+          env: { PATH: "" },
+          nodeWorkspace: createNodePythonProjectWorkspace(repoRoot),
+          processProbe: successfulProbe(),
+          toolArgv: { pytest: [join(repoRoot, ".venv", "bin", "pytest")] }
+        }),
+        graphProviderClient: graphClient({
+          factQuery: (query) =>
+            availableFactResult(
+              query,
+              [],
+              query.selector.kind === "edges" && query.selector.edgeKinds?.includes("TESTED_BY")
+                ? [{ kind: "TESTED_BY", from: "file:src/app.py", to: "file:tests/test_app.py" }]
+                : []
+            )
+        })
+      }).runValidation(request({
+        repo: { repoRoot },
+        checks: [PYTHON_PYTEST_CHECK_ID],
+        scope: { kind: "files", files: ["pyproject.toml"] }
+      }));
+
+      assert.equal(result.status, "passed", JSON.stringify(result, null, 2));
+      assert.equal(result.pythonCapabilityRuns[0]?.outcome, "passed");
+      assert.deepEqual(result.pythonCapabilityRuns[0]?.candidatePaths, ["tests/test_app.py"]);
+      assert.equal(result.pythonCapabilityRuns[0]?.counts?.passedCount, 1);
+      assert.equal(result.pythonProjectContexts[0]?.projectRoot, ".");
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
   it("fails python.pytest when execution hook events do not match the collected node ids", async () => {
-    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-pytest-mismatch-"));
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-validation-python-pytest-mismatch-"));
     try {
       writePassingPythonProtocolShim(repoRoot);
       writePytestShim(repoRoot, {
@@ -2619,6 +2675,36 @@ function writeRepoFiles(repoRoot, files) {
     mkdirSync(dirname(join(repoRoot, path)), { recursive: true });
     writeFileSync(join(repoRoot, path), content);
   }
+}
+
+function pyrightShim(version, diagnostics, exitCode = diagnostics.some((entry) => entry.severity === "error") ? 1 : 0) {
+  const payload = pyrightPayload(version, diagnostics);
+  return rawPyrightShim(version, [
+    "cat <<'OPCORE_PYRIGHT_JSON'",
+    JSON.stringify(payload),
+    "OPCORE_PYRIGHT_JSON",
+    `exit ${exitCode}`
+  ].join("\n"));
+}
+
+function pyrightPayload(version, diagnostics) {
+  const summary = {
+    filesAnalyzed: 1,
+    errorCount: diagnostics.filter((entry) => entry.severity === "error").length,
+    warningCount: diagnostics.filter((entry) => entry.severity === "warning").length,
+    informationCount: diagnostics.filter((entry) => entry.severity === "information").length,
+    timeInSec: 0.01
+  };
+  return { version, time: "0", generalDiagnostics: diagnostics, summary };
+}
+
+function rawPyrightShim(version, body) {
+  return [
+    "#!/bin/sh",
+    `for arg in \"$@\"; do if [ \"$arg\" = \"--version\" ]; then echo 'pyright ${version}'; exit 0; fi; done`,
+    body,
+    ""
+  ].join("\n");
 }
 
 function writePythonProtocolShim(repoRoot, compilerBranch) {

@@ -118,13 +118,19 @@ export function collectNpmPackTextEntries(repoRoot, packageInfos) {
 }
 
 export function collectPackageTarballTextEntries(tarballPath, labelPrefix = "npm-pack") {
-  const list = runTar(["-tf", tarballPath], `list ${tarballPath}`)
-    .split(/\r?\n/)
-    .filter((path) => path.length > 0 && isScrubbableTextPath(path));
-  return list.map((path) => ({
-    label: `${labelPrefix}:${path}`,
-    text: runTar(["-xOf", tarballPath, path], `read ${tarballPath}:${path}`)
-  }));
+  const extractionRoot = mkdtempSync(join(tmpdir(), "opcore-launch-scrub-tar-"));
+  try {
+    runTar(["-xf", tarballPath, "-C", extractionRoot], `extract ${tarballPath}`);
+    return walkFiles(extractionRoot)
+      .filter((path) => isScrubbableTextPath(path))
+      .map((path) => ({
+        label: `${labelPrefix}:${relative(extractionRoot, path).split("\\").join("/")}`,
+        path,
+        text: readFileSync(path, "utf8")
+      }));
+  } finally {
+    rmSync(extractionRoot, { recursive: true, force: true });
+  }
 }
 
 export function collectInstalledPackageTextEntries(projectRoot, packageNames) {
