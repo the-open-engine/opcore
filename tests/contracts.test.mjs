@@ -1223,6 +1223,297 @@ describe("Opcore shared contracts", () => {
     );
   });
 
+  it("validates portable Python capability receipts on validation runs", () => {
+    const result = validateValidationResultPayload(validValidationResult({
+      status: "policy_failure",
+      diagnostics: [],
+      failure: { category: "policy_failure", message: "finding" },
+      manifest: {
+        schemaVersion: GRAPH_SCHEMA_VERSION,
+        checks: ["python.ruff-lint"],
+        generatedAt: "2026-07-18T00:00:00.000Z",
+        runs: [{
+          checkId: "python.ruff-lint",
+          status: "policy_failure",
+          outcome: "findings",
+          diagnosticCount: 1,
+          pythonCapabilityRuns: [{
+            schemaId: "opcore.python.validation-capability-run",
+            schemaVersion: 1,
+            checkId: "python.ruff-lint",
+            capability: "ruff_lint",
+            state: "findings",
+            projectKey: `sha256:${"1".repeat(64)}`,
+            contextFingerprint: `sha256:${"2".repeat(64)}`,
+            afterStateManifestFingerprint: `sha256:${"3".repeat(64)}`,
+            sourcePaths: ["pkg/app.py"],
+            configPaths: ["ruff.toml"],
+            executable: "repo:.venv/bin/ruff",
+            command: "repo:.venv/bin/ruff check --output-format=json pkg/app.py",
+            argv: ["repo:.venv/bin/ruff", "check", "--output-format=json", "pkg/app.py"],
+            cwd: ".",
+            configPath: "ruff.toml",
+            toolVersion: "0.6.9",
+            toolSource: "project_local_environment",
+            termination: "exited",
+            exitCode: 1,
+            invocations: [{
+              argv: ["repo:.venv/bin/ruff", "check", "--output-format=json", "pkg/app.py"],
+              termination: "exited",
+              exitCode: 1,
+              durationMs: 12
+            }],
+            durationMs: 12,
+            diagnosticCount: 1
+          }]
+        }]
+      }
+    }));
+
+    assert.equal(result.manifest.runs[0].pythonCapabilityRuns[0].capability, "ruff_lint");
+    assert.equal(result.manifest.runs[0].pythonCapabilityRuns[0].termination, "exited");
+    const portableRun = result.manifest.runs[0].pythonCapabilityRuns[0];
+    for (const invalidRun of [
+      { ...portableRun, executable: "/tmp/private/ruff" },
+      { ...portableRun, argv: [portableRun.executable, "--cache-dir=/tmp/private/cache"] },
+      {
+        ...portableRun,
+        invocations: [{
+          ...portableRun.invocations[0],
+          argv: ["/tmp/private/ruff", "check", "pkg/app.py"]
+        }]
+      },
+      { ...portableRun, failureMessage: "Ruff failed in /tmp/private/workspace" }
+    ]) {
+      assert.throws(
+        () => validatePythonValidationCapabilityRun(invalidRun),
+        /portable|host-absolute/
+      );
+    }
+    const legacyFingerprintRun = {
+      ...portableRun,
+      afterStateFingerprint: portableRun.afterStateManifestFingerprint
+    };
+    delete legacyFingerprintRun.afterStateManifestFingerprint;
+    assert.throws(
+      () => validatePythonValidationCapabilityRun(legacyFingerprintRun),
+      /unexpected properties/
+    );
+    assert.throws(
+      () => validateValidationResultPayload(validValidationResult({
+        status: "policy_failure",
+        diagnostics: [],
+        failure: { category: "policy_failure", message: "finding" },
+        manifest: {
+          schemaVersion: GRAPH_SCHEMA_VERSION,
+          checks: ["python.ruff-lint"],
+          generatedAt: "2026-07-18T00:00:00.000Z",
+          runs: [{
+            checkId: "python.ruff-lint",
+            status: "policy_failure",
+            outcome: "findings",
+            diagnosticCount: 1,
+            pythonCapabilityRuns: [{
+              schemaId: "opcore.python.validation-capability-run",
+              schemaVersion: 1,
+              checkId: "python.ruff-lint",
+              capability: "ruff_lint",
+              state: "disabled",
+              argv: ["repo:.venv/bin/ruff"],
+              durationMs: 0,
+              diagnosticCount: 0
+            }]
+          }]
+        }
+      })),
+      /must not record a process invocation/
+    );
+    const unavailableRun = {
+      ...portableRun,
+      state: "tool_unavailable",
+      durationMs: 0,
+      diagnosticCount: 1,
+      failureMessage: "Ruff is unavailable"
+    };
+    for (const field of [
+      "executable", "command", "argv", "configPath", "toolVersion", "toolSource",
+      "termination", "exitCode", "invocations"
+    ]) {
+      delete unavailableRun[field];
+    }
+    assert.equal(validatePythonValidationCapabilityRun(unavailableRun).state, "tool_unavailable");
+    const unsupportedRun = {
+      ...unavailableRun,
+      state: "unsupported_target",
+      failureMessage: "Ruff does not support the selected target"
+    };
+    const unexecutedInvalidConfigRun = {
+      ...unavailableRun,
+      state: "invalid_config",
+      executable: portableRun.executable,
+      toolVersion: portableRun.toolVersion,
+      toolSource: portableRun.toolSource,
+      failureMessage: "Ruff rejected the selected configuration"
+    };
+    const timeoutRun = {
+      ...portableRun,
+      state: "timeout",
+      termination: "timeout",
+      diagnosticCount: 0,
+      failureMessage: "Ruff timed out",
+      invocations: [{
+        argv: portableRun.argv,
+        termination: "timeout",
+        durationMs: 12
+      }]
+    };
+    delete timeoutRun.exitCode;
+    const executedInvalidConfigRun = {
+      ...portableRun,
+      state: "invalid_config",
+      exitCode: 2,
+      diagnosticCount: 1,
+      failureMessage: "Ruff rejected the selected configuration",
+      invocations: [{
+        argv: portableRun.argv,
+        termination: "exited",
+        exitCode: 2,
+        durationMs: 12
+      }]
+    };
+    const toolFailureRun = {
+      ...portableRun,
+      state: "tool_failure",
+      exitCode: 2,
+      diagnosticCount: 0,
+      failureMessage: "Ruff failed",
+      invocations: [{
+        argv: portableRun.argv,
+        termination: "exited",
+        exitCode: 2,
+        durationMs: 12
+      }]
+    };
+    const signalToolFailureRun = {
+      ...portableRun,
+      state: "tool_failure",
+      termination: "signal",
+      signal: "SIGTERM",
+      diagnosticCount: 0,
+      failureMessage: "Ruff was terminated",
+      invocations: [{
+        argv: portableRun.argv,
+        termination: "signal",
+        signal: "SIGTERM",
+        durationMs: 12
+      }]
+    };
+    delete signalToolFailureRun.exitCode;
+    for (const validFailureRun of [
+      unavailableRun,
+      unsupportedRun,
+      unexecutedInvalidConfigRun,
+      timeoutRun,
+      executedInvalidConfigRun,
+      toolFailureRun,
+      signalToolFailureRun
+    ]) {
+      assert.equal(validatePythonValidationCapabilityRun(validFailureRun).state, validFailureRun.state);
+    }
+    for (const [name, invalidFailureRun] of [
+      ["tool_unavailable with process evidence", { ...portableRun, state: "tool_unavailable", failureMessage: "Ruff unavailable" }],
+      ["unsupported_target with process evidence", { ...portableRun, state: "unsupported_target", failureMessage: "Unsupported target" }],
+      ["timeout without execution evidence", { ...unavailableRun, state: "timeout", failureMessage: "Ruff timed out" }],
+      ["timeout with contradictory invocation evidence", {
+        ...timeoutRun,
+        invocations: [{
+          argv: portableRun.argv,
+          termination: "exited",
+          exitCode: 0,
+          durationMs: 12
+        }]
+      }],
+      ["invalid_config with partial execution evidence", {
+        ...unexecutedInvalidConfigRun,
+        command: portableRun.command
+      }],
+      ["tool_failure with partial execution evidence", {
+        ...unavailableRun,
+        state: "tool_failure",
+        argv: portableRun.argv,
+        failureMessage: "Ruff failed"
+      }],
+      ["tool_failure with contradictory invocation evidence", {
+        ...signalToolFailureRun,
+        invocations: [{
+          argv: portableRun.argv,
+          termination: "exited",
+          exitCode: 0,
+          durationMs: 12
+        }]
+      }]
+    ]) {
+      assert.throws(
+        () => validatePythonValidationCapabilityRun(invalidFailureRun),
+        /Ruff capability/,
+        name
+      );
+    }
+    for (const field of [
+      "projectKey", "contextFingerprint", "afterStateManifestFingerprint", "sourcePaths", "configPaths", "cwd"
+    ]) {
+      const incomplete = { ...unavailableRun };
+      delete incomplete[field];
+      assert.throws(
+        () => validatePythonValidationCapabilityRun(incomplete),
+        /Activated Ruff capability run requires/,
+        field
+      );
+    }
+    for (const field of ["projectKey", "contextFingerprint", "afterStateManifestFingerprint", "invocations"]) {
+      const incomplete = { ...result.manifest.runs[0].pythonCapabilityRuns[0] };
+      delete incomplete[field];
+      assert.throws(
+        () => validateValidationResultPayload(validValidationResult({
+          status: "policy_failure",
+          diagnostics: [],
+          failure: { category: "policy_failure", message: "finding" },
+          manifest: {
+            ...result.manifest,
+            runs: [{
+              ...result.manifest.runs[0],
+              pythonCapabilityRuns: [incomplete]
+            }]
+          }
+        })),
+        /Ruff capability run requires/,
+        field
+      );
+    }
+    for (const field of ["projectKey", "contextFingerprint", "afterStateManifestFingerprint"]) {
+      const invalidIdentity = {
+        ...result.manifest.runs[0].pythonCapabilityRuns[0],
+        [field]: "not-a-sha256-identity"
+      };
+      assert.throws(
+        () => validateValidationResultPayload(validValidationResult({
+          status: "policy_failure",
+          diagnostics: [],
+          failure: { category: "policy_failure", message: "finding" },
+          manifest: {
+            ...result.manifest,
+            runs: [{
+              ...result.manifest.runs[0],
+              pythonCapabilityRuns: [invalidIdentity]
+            }]
+          }
+        })),
+        /sha256 identity/,
+        field
+      );
+    }
+  });
+
   it("rejects ambiguous repo identity and untyped provider failures", () => {
     assert.throws(
       () =>

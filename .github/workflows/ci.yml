@@ -59,6 +59,11 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Provision pinned Ruff proof artifact
+        run: |
+          python -m pip install --disable-pip-version-check ruff==0.6.9
+          test "$(ruff --version)" = "ruff 0.6.9"
+
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:

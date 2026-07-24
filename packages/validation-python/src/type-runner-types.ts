@@ -2,7 +2,7 @@ import type {
   PythonProjectToolProvenance,
   PythonValidationAuthority,
   PythonValidationAuthoritySource,
-  PythonValidationCapabilityRun,
+  PythonTypesValidationCapabilityRun,
   PythonValidationCapabilityToolProvenance,
   ValidationDiagnostic
 } from "@the-open-engine/opcore-contracts";
@@ -12,7 +12,7 @@ import type {
 } from "./type-capability-run.js";
 
 export interface TypeCapabilityResult {
-  run: PythonValidationCapabilityRun;
+  run: PythonTypesValidationCapabilityRun;
   diagnostics: readonly ValidationDiagnostic[];
   failureMessage?: string;
 }

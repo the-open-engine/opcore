@@ -17,6 +17,8 @@ import {
   type PythonCompilerFinding
 } from "./compiler-protocol.js";
 import { diagnostic, sortDiagnostics } from "./diagnostics.js";
+import { groupPythonProjectContexts } from "./project-groups.js";
+import { missingPythonProjectContextResult } from "./python-context-result.js";
 import { runTool } from "./process.js";
 import { readPythonAfterSources, skippedPythonInputResult, type PythonProjectContextResolver } from "./source-files.js";
 import { type PythonValidationToolchainOptions } from "./toolchain.js";
@@ -42,17 +44,17 @@ export function createSyntaxCheck(
       const sources = await readPythonAfterSources(context);
       if (sources.length === 0) return { diagnostics: [] };
       if (resolveContexts === undefined) return missingContextResult(sources.map((source) => source.path));
-      const resolvedContexts = await resolveContexts(context);
+      const resolvedContexts = await resolveContexts(context, undefined, []);
       const missing = sources.map((source) => source.path).filter((path) => !resolvedContexts.some((candidate) => candidate.target === path));
       if (resolvedContexts.length === 0 || missing.length > 0) return missingContextResult(missing);
       const unresolved = resolvedContexts.find((candidate) => candidate.interpreter === undefined || hasInterpreterFailure(candidate));
       if (unresolved !== undefined) return resolutionFailure(unresolved);
-      const contexts = groupProjectContexts(resolvedContexts);
+      const contexts = groupPythonProjectContexts(resolvedContexts);
       const diagnostics: ValidationDiagnostic[] = [];
       for (const project of contexts) {
-        if (project.interpreter === undefined) return resolutionFailure(project);
+        if (project.context.interpreter === undefined) return resolutionFailure(project.context);
         const selected = sources.filter((source) => project.targets.includes(source.path));
-        const result = await compileSources(project.interpreter, selected, options);
+        const result = await compileSources(project.context.interpreter, selected, options);
         diagnostics.push(...(result.diagnostics ?? []));
         if (result.outcome !== "passed" && result.outcome !== "findings") return result;
       }
@@ -62,27 +64,7 @@ export function createSyntaxCheck(
 }
 
 function missingContextResult(missing: readonly string[]): ValidationCheckResult {
-  const suffix = missing.length === 0 ? "" : `: ${missing.join(", ")}`;
-  const message = `Canonical Python project context resolution returned no context for selected source${suffix}`;
-  return {
-    outcome: "tool_failure",
-    failureMessage: message,
-    diagnostics: [diagnostic({ category: "infrastructure", code: "PY_SYNTAX_CONTEXT_MISSING", message })]
-  };
-}
-
-type PythonSyntaxProjectGroup = PythonProjectContext & { targets: readonly string[] };
-
-function groupProjectContexts(contexts: readonly PythonProjectContext[]): readonly PythonSyntaxProjectGroup[] {
-  const groups = new Map<string, { context: PythonProjectContext; targets: string[] }>();
-  for (const context of contexts) {
-    const group = groups.get(context.projectKey) ?? { context, targets: [] };
-    group.targets.push(context.target);
-    groups.set(context.projectKey, group);
-  }
-  return [...groups.values()]
-    .map(({ context, targets }) => ({ ...context, targets: [...new Set(targets)].sort() }))
-    .sort((left, right) => left.projectRoot.localeCompare(right.projectRoot));
+  return missingPythonProjectContextResult("PY_SYNTAX_CONTEXT_MISSING", missing);
 }
 
 async function compileSources(

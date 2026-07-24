@@ -44,6 +44,8 @@ describe("Opcore metrics", () => {
     assert.equal(signals.get("python.untested_modules").count, 1);
     assert.equal(signals.get("python.dead_exports").evidence[0].path, "pkg/api.py");
     assert.equal(signals.get("python.source_hygiene").count, 1);
+    assert.equal(signals.get("python.ruff_lint_findings").count, 1);
+    assert.equal(signals.get("python.ruff_format_findings").count, 1);
     assert.equal(signals.get("python.import_graph").count, 1);
     assert.equal(signals.get("coverage.unsupported_stacks").count, 2);
     assert.equal(report.signals.every((signal) => signal.count > 0 && signal.evidence.every((entry) => entry.path)), true);
@@ -55,6 +57,82 @@ describe("Opcore metrics", () => {
     assert.deepEqual(report.validation.policy.disabledChecks, ["typescript.types"]);
     assert.equal(JSON.stringify(report).includes("blendedScore"), false);
     assert.equal(Object.hasOwn(report, "score"), false);
+  });
+
+  it("counts Ruff metrics only from executed findings receipts", () => {
+    const validation = validationResult();
+    const duplicated = createOpcoreMetricReport({
+      repoState: repoState(),
+      validationResult: {
+        ...validation,
+        pythonCapabilityRuns: validation.manifest.runs.flatMap((run) => run.pythonCapabilityRuns ?? [])
+      },
+      graphFacts: graphFacts(),
+      generatedAt: "2026-06-25T00:00:00.000Z"
+    });
+    assert.equal(
+      duplicated.signals.find((signal) => signal.id === "python.ruff_lint_findings")?.count,
+      1
+    );
+    assert.equal(
+      duplicated.signals.find((signal) => signal.id === "python.ruff_format_findings")?.count,
+      1
+    );
+
+    const report = createOpcoreMetricReport({
+      repoState: repoState(),
+      validationResult: {
+        ...validation,
+        diagnostics: [{
+          category: "infrastructure",
+          severity: "info",
+          path: "pkg/app.py",
+          code: "PY_RUFF_LINT_INVALID_CONFIG",
+          message: "Ruff config is invalid."
+        }],
+        manifest: {
+          ...validation.manifest,
+          runs: [{
+            checkId: "python.ruff-lint",
+            status: "unsupported_request",
+            outcome: "invalid_config",
+            diagnosticCount: 1,
+            pythonCapabilityRuns: [{
+              checkId: "python.ruff-lint",
+              capability: "ruff_lint",
+              state: "invalid_config",
+              sourcePaths: ["pkg/app.py"],
+              durationMs: 0,
+              diagnosticCount: 1
+            }]
+          }]
+        }
+      },
+      graphFacts: graphFacts(),
+      generatedAt: "2026-06-25T00:00:00.000Z"
+    });
+
+    assert.equal(report.signals.some((signal) => signal.id === "python.ruff_lint_findings"), false);
+
+    const executed = validationResult();
+    const incompleteReceipt = { ...executed.manifest.runs[0].pythonCapabilityRuns[0] };
+    delete incompleteReceipt.projectKey;
+    const incompleteReport = createOpcoreMetricReport({
+      repoState: repoState(),
+      validationResult: {
+        ...executed,
+        manifest: {
+          ...executed.manifest,
+          runs: [{
+            ...executed.manifest.runs[0],
+            pythonCapabilityRuns: [incompleteReceipt]
+          }]
+        }
+      },
+      graphFacts: graphFacts(),
+      generatedAt: "2026-06-25T00:00:00.000Z"
+    });
+    assert.equal(incompleteReport.signals.some((signal) => signal.id === "python.ruff_lint_findings"), false);
   });
 
   it("separates graph-backed Rust signals from validation toolchain drift", () => {
@@ -453,6 +531,20 @@ function validationResult() {
         message: "Python type-ignore suppressions are not allowed."
       },
       {
+        category: "policy",
+        severity: "warning",
+        path: "pkg/app.py",
+        code: "PY_RUFF_LINT_F401",
+        message: "unused import"
+      },
+      {
+        category: "policy",
+        severity: "warning",
+        path: "pkg/format.py",
+        code: "PY_RUFF_FORMAT_DRIFT",
+        message: "ruff format --check would reformat pkg/format.py"
+      },
+      {
         category: "graph",
         severity: "warning",
         path: "pkg/importer.py",
@@ -480,10 +572,78 @@ function validationResult() {
         "rust.fmt",
         "python.syntax",
         "python.source-hygiene",
+        "python.ruff-lint",
+        "python.ruff-format",
         "python.types",
         "python.import-graph",
         "python.dead-code",
         "python.relevant-tests"
+      ],
+      runs: [
+        {
+          checkId: "python.ruff-lint",
+          status: "policy_failure",
+          outcome: "findings",
+          diagnosticCount: 1,
+          pythonCapabilityRuns: [{
+            checkId: "python.ruff-lint",
+            capability: "ruff_lint",
+            state: "findings",
+            projectKey: `sha256:${"1".repeat(64)}`,
+            contextFingerprint: `sha256:${"2".repeat(64)}`,
+            afterStateManifestFingerprint: `sha256:${"3".repeat(64)}`,
+            sourcePaths: ["pkg/app.py"],
+            configPaths: ["ruff.toml"],
+            executable: "repo:.venv/bin/ruff",
+            command: "repo:.venv/bin/ruff check pkg/app.py",
+            argv: ["repo:.venv/bin/ruff", "check", "pkg/app.py"],
+            cwd: ".",
+            toolVersion: "0.6.9",
+            toolSource: "project_local_environment",
+            termination: "exited",
+            exitCode: 1,
+            invocations: [{
+              argv: ["repo:.venv/bin/ruff", "check", "pkg/app.py"],
+              termination: "exited",
+              exitCode: 1,
+              durationMs: 9
+            }],
+            durationMs: 9,
+            diagnosticCount: 1
+          }]
+        },
+        {
+          checkId: "python.ruff-format",
+          status: "policy_failure",
+          outcome: "findings",
+          diagnosticCount: 1,
+          pythonCapabilityRuns: [{
+            checkId: "python.ruff-format",
+            capability: "ruff_format",
+            state: "findings",
+            projectKey: `sha256:${"4".repeat(64)}`,
+            contextFingerprint: `sha256:${"5".repeat(64)}`,
+            afterStateManifestFingerprint: `sha256:${"6".repeat(64)}`,
+            sourcePaths: ["pkg/format.py"],
+            configPaths: [],
+            executable: "repo:.venv/bin/ruff",
+            command: "repo:.venv/bin/ruff format --check pkg/format.py",
+            argv: ["repo:.venv/bin/ruff", "format", "--check", "pkg/format.py"],
+            cwd: ".",
+            toolVersion: "0.6.9",
+            toolSource: "project_local_environment",
+            termination: "exited",
+            exitCode: 1,
+            invocations: [{
+              argv: ["repo:.venv/bin/ruff", "format", "--check", "pkg/format.py"],
+              termination: "exited",
+              exitCode: 1,
+              durationMs: 5
+            }],
+            durationMs: 5,
+            diagnosticCount: 1
+          }]
+        }
       ],
       generatedAt: "2026-06-25T00:00:00.000Z"
     }

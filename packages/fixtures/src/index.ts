@@ -606,6 +606,8 @@ export const conformanceFixtureMetadata = [
       checks: [
         "python.syntax",
         "python.source-hygiene",
+        "python.ruff-lint",
+        "python.ruff-format",
         "python.types",
         "python.import-graph",
         "python.dead-code",

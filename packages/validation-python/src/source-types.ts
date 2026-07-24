@@ -1,4 +1,4 @@
-import type { PythonProjectContext } from "@the-open-engine/opcore-contracts";
+import type { PythonProjectContext, PythonProjectToolKind } from "@the-open-engine/opcore-contracts";
 import type { ValidationCheckContext } from "@the-open-engine/opcore-validation";
 import type {
   PythonImportEdge,
@@ -19,7 +19,8 @@ export interface PythonMaterializedSourceSet {
 
 export type PythonProjectContextResolver = (
   context: ValidationCheckContext,
-  targets?: readonly string[]
+  targets?: readonly string[],
+  toolKinds?: readonly Exclude<PythonProjectToolKind, "build">[]
 ) => Promise<readonly PythonProjectContext[]>;
 
 export type PythonSourceRootResolver = (

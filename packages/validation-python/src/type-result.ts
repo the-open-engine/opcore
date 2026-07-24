@@ -49,7 +49,11 @@ export function terminatedTypeResult(
     tool: context.tool,
     status,
     durationMs,
-    execution: nonExitedExecution(result.termination, result.signal, failureMessage),
+    execution: nonExitedExecution(
+      result.termination === "overflow" ? "spawn_error" : result.termination,
+      result.signal,
+      failureMessage
+    ),
     failureMessage
   });
 }

@@ -84,10 +84,17 @@ function comparePythonCapabilityRuns(
   left: PythonValidationCapabilityRun,
   right: PythonValidationCapabilityRun
 ): number {
-  return left.projectKey.localeCompare(right.projectKey) ||
-    left.contextFingerprint.localeCompare(right.contextFingerprint) ||
-    left.afterStateManifestFingerprint.localeCompare(right.afterStateManifestFingerprint) ||
-    (left.authority ?? "").localeCompare(right.authority ?? "");
+  return pythonCapabilitySortKey(left).localeCompare(pythonCapabilitySortKey(right));
+}
+
+function pythonCapabilitySortKey(run: PythonValidationCapabilityRun): string {
+  return JSON.stringify({
+    checkId: run.checkId,
+    capability: run.capability,
+    projectKey: run.projectKey ?? "",
+    contextFingerprint: run.contextFingerprint ?? "",
+    receipt: run
+  });
 }
 
 function deduplicatePythonProjectContexts(contexts: readonly PythonProjectContext[]): readonly PythonProjectContext[] {

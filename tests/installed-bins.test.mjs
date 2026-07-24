@@ -2,7 +2,7 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { spawn, spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { performance } from "node:perf_hooks";
@@ -57,18 +57,20 @@ describe("installed package bins", () => {
       assert.equal(nestedStatusContext.projectRoot, "services/api");
       assert.deepEqual(nestedStatusContext.managers.map((manager) => manager.kind), ["uv"]);
       const aspContext = await evaluateInstalledAspPythonContext(project);
-      assert.deepEqual(pythonContextIdentity(aspContext), pythonContextIdentity(nestedStatusContext));
+      assert.deepEqual(pythonContextProjectIdentity(aspContext), pythonContextProjectIdentity(nestedStatusContext));
       const opcoreScan = assertSmoke(project, ["--json"], 0, "opcore");
       assert.deepEqual(opcoreScan.canonicalCommand, ["opcore", "scan"]);
       assert.equal(Object.hasOwn(opcoreScan, "validationResult"), true);
+      const nestedScanContext = pythonContextFor(opcoreScan.validationResult.pythonProjectContexts, "services/api/src/app.py");
       assert.deepEqual(
-        pythonContextIdentity(pythonContextFor(opcoreScan.validationResult.pythonProjectContexts, "services/api/src/app.py")),
-        pythonContextIdentity(nestedStatusContext)
+        pythonContextProjectIdentity(nestedScanContext),
+        pythonContextProjectIdentity(nestedStatusContext)
       );
+      assert.deepEqual(pythonContextProjectIdentity(aspContext), pythonContextProjectIdentity(nestedScanContext));
       const metricReport = JSON.parse(readFileSync(join(project, ".opcore", "report.json"), "utf8"));
       assert.deepEqual(
         pythonContextIdentity(pythonContextFor(metricReport.validation.pythonProjectContexts, "services/api/src/app.py")),
-        pythonContextIdentity(nestedStatusContext)
+        pythonContextIdentity(nestedScanContext)
       );
       const opcoreCheck = assertSmoke(project, [
         "check",
@@ -80,8 +82,8 @@ describe("installed package bins", () => {
         "--json"
       ], 0, "opcore");
       assert.deepEqual(
-        pythonContextIdentity(pythonContextFor(opcoreCheck.validationResult.pythonProjectContexts, "services/api/src/app.py")),
-        pythonContextIdentity(nestedStatusContext)
+        pythonContextProjectIdentity(pythonContextFor(opcoreCheck.validationResult.pythonProjectContexts, "services/api/src/app.py")),
+        pythonContextProjectIdentity(nestedScanContext)
       );
       const opcoreInit = assertSmoke(project, ["install", "--json"], 0, "opcore");
       assert.deepEqual(opcoreInit.canonicalCommand, ["opcore", "install"]);
@@ -90,8 +92,8 @@ describe("installed package bins", () => {
       assert.equal(Array.isArray(opcoreInit.opcoreInit.settings.languages), true);
       assert.equal(opcoreInit.opcoreInit.timings.scanMs >= 0, true);
       assert.deepEqual(
-        pythonContextIdentity(pythonContextFor(opcoreInit.opcoreInit.settings.python.contexts, "services/api/src/app.py")),
-        pythonContextIdentity(nestedStatusContext)
+        pythonContextProjectIdentity(pythonContextFor(opcoreInit.opcoreInit.settings.python.contexts, "services/api/src/app.py")),
+        pythonContextProjectIdentity(nestedScanContext)
       );
       assert.equal(existsSync(join(project, ".opcore", "config")), false);
       assert.equal(existsSync(join(project, "AGENTS.md")), false);
@@ -162,6 +164,8 @@ describe("installed package bins", () => {
           "rust.function-metrics",
           "python.syntax",
           "python.source-hygiene",
+          "python.ruff-lint",
+          "python.ruff-format",
           "python.types",
           "python.import-graph",
           "python.dead-code",
@@ -349,6 +353,238 @@ describe("installed package bins", () => {
       rmSync(temp, { recursive: true, force: true });
     }
   });
+
+  it("runs packed Opcore with pinned real Ruff without mutating repo state", { timeout: 120000 }, () => {
+    const ruff = pinnedRuffExecutable();
+    const temp = mkdtempSync(join(tmpdir(), "opcore-installed-real-ruff-"));
+    try {
+      const tarball = packWorkspace("opcore", temp);
+      const project = join(temp, "project");
+      mkdirSync(project);
+      run("npm", ["init", "-y"], { cwd: project });
+      run("npm", ["install", "--ignore-scripts", "--no-audit", "--no-fund", tarball], { cwd: project });
+      for (const [path, content] of Object.entries({
+        "src/app.py": "import os\nVALUE=1\n",
+        "src/syntax_error.py": "def broken(\n    return 1\n",
+        "src/ruff.toml": "target-version = \"py38\"\n[lint]\nselect = [\"F401\"]\n",
+        "root.py": "ROOT = 1\n",
+        "ruff.toml": "target-version = \"py38\"\n[lint]\nselect = [\"F401\"]\n",
+        "other/ruff.toml": "extend = \"/outside/does-not-exist.toml\"\n",
+        "malformed-dotted/pyproject.toml": "tool.ruff = { line-length = 88 }\nBROKEN = [\n",
+        "malformed-dotted/app.py": "VALUE = 1\n",
+        "malformed-quoted/pyproject.toml": "\"tool\".\"ruff\" = { line-length = 88 }\nBROKEN = [\n",
+        "malformed-quoted/app.py": "VALUE = 1\n",
+        "malformed-inline/pyproject.toml": "tool = { ruff = { line-length = 88 } }\nBROKEN = [\n",
+        "malformed-inline/app.py": "VALUE = 1\n",
+        "uv.lock": "version = 1\n",
+        ".venv/sentinel": "environment-unchanged\n",
+        ".ruff_cache/sentinel": "cache-unchanged\n"
+      })) {
+        mkdirSync(dirname(join(project, path)), { recursive: true });
+        writeFileSync(join(project, path), content);
+      }
+      const projectRuff = join(project, ".venv", "bin", process.platform === "win32" ? "ruff.exe" : "ruff");
+      mkdirSync(dirname(projectRuff), { recursive: true });
+      copyFileSync(ruff, projectRuff);
+      chmodSync(projectRuff, 0o755);
+      for (const directory of ["malformed-dotted", "malformed-quoted", "malformed-inline"]) {
+        const nestedRuff = join(
+          project,
+          directory,
+          ".venv",
+          "bin",
+          process.platform === "win32" ? "ruff.exe" : "ruff"
+        );
+        mkdirSync(dirname(nestedRuff), { recursive: true });
+        copyFileSync(ruff, nestedRuff);
+        chmodSync(nestedRuff, 0o755);
+      }
+      const protectedPaths = [
+        "src/app.py",
+        "src/syntax_error.py",
+        "src/ruff.toml",
+        "root.py",
+        "ruff.toml",
+        "other/ruff.toml",
+        "malformed-dotted/pyproject.toml",
+        "malformed-dotted/app.py",
+        "malformed-quoted/pyproject.toml",
+        "malformed-quoted/app.py",
+        "malformed-inline/pyproject.toml",
+        "malformed-inline/app.py",
+        `malformed-dotted/.venv/bin/${process.platform === "win32" ? "ruff.exe" : "ruff"}`,
+        `malformed-quoted/.venv/bin/${process.platform === "win32" ? "ruff.exe" : "ruff"}`,
+        `malformed-inline/.venv/bin/${process.platform === "win32" ? "ruff.exe" : "ruff"}`,
+        "uv.lock",
+        ".venv/sentinel",
+        `.venv/bin/${process.platform === "win32" ? "ruff.exe" : "ruff"}`,
+        ".ruff_cache/sentinel"
+      ];
+      const before = snapshotFiles(project, protectedPaths);
+      const tempWorkspacesBefore = pythonExecutionTempWorkspaces();
+      const result = assertCliJson(
+        binPath(project, "opcore"),
+        [
+          "check",
+          "files",
+          "--files",
+          "src/app.py",
+          "--checks",
+          "python.ruff-lint,python.ruff-format",
+          "--json"
+        ],
+        1,
+        project,
+        {
+          env: {
+            ...sourceSafeOpcoreEnv(),
+            PATH: [dirname(process.execPath), dirname(ruff), "/usr/bin", "/bin", "/opt/homebrew/bin"].join(":")
+          }
+        }
+      );
+
+      assertSourceSnapshot(project, before);
+      assert.deepEqual(pythonExecutionTempWorkspaces(), tempWorkspacesBefore);
+      assert.ok(result.validationResult?.manifest?.runs, JSON.stringify(result, null, 2));
+      const runs = new Map(result.validationResult.manifest.runs.map((run) => [run.checkId, run]));
+      const lint = runs.get("python.ruff-lint")?.pythonCapabilityRuns?.[0];
+      const format = runs.get("python.ruff-format")?.pythonCapabilityRuns?.[0];
+      assert.equal(lint?.state, "findings");
+      assert.equal(format?.state, "findings");
+      for (const receipt of [lint, format]) {
+        assert.equal(receipt?.toolVersion, "0.6.9");
+        assert.equal(receipt?.toolSource, "project_local_environment");
+        assert.equal(receipt?.cwd, ".");
+        assert.equal(receipt?.configPath, "src/ruff.toml");
+        assert.deepEqual(receipt?.sourcePaths, ["src/app.py"]);
+        assert.deepEqual(receipt?.configPaths, ["src/ruff.toml"]);
+        assert.match(receipt?.projectKey ?? "", /^sha256:[a-f0-9]{64}$/);
+        assert.match(receipt?.contextFingerprint ?? "", /^sha256:[a-f0-9]{64}$/);
+        assert.match(receipt?.afterStateManifestFingerprint ?? "", /^sha256:[a-f0-9]{64}$/);
+        assert.equal(receipt?.executable, "repo:.venv/bin/ruff");
+        assert.equal(receipt?.argv?.[0], "repo:.venv/bin/ruff");
+        assert.equal(
+          receipt?.invocations?.every((invocation) => invocation.argv[0] === "repo:.venv/bin/ruff"),
+          true
+        );
+        assert.equal(JSON.stringify(receipt).includes(project), false);
+        assert.equal(receipt?.termination, "exited");
+        assert.equal(receipt?.exitCode, 1);
+        assert.equal(receipt?.diagnosticCount, 1);
+        assert.equal((receipt?.command ?? "").includes("opcore-python-check-"), false);
+      }
+      assert.deepEqual(
+        lint?.argv?.slice(1, 8),
+        ["check", "--config", "src/ruff.toml", "--output-format=json", "--no-fix", "--no-cache", "--force-exclude"]
+      );
+      assert.equal(lint?.argv?.includes("--no-cache"), true);
+      assert.equal(format?.argv?.includes("--no-cache"), true);
+      assert.equal(format?.argv?.includes("--check"), true);
+      assert.deepEqual(format?.argv?.slice(1, 4), ["format", "--config", "src/ruff.toml"]);
+
+      const syntaxResult = assertCliJson(
+        binPath(project, "opcore"),
+        [
+          "check",
+          "files",
+          "--files",
+          "src/syntax_error.py",
+          "--checks",
+          "python.ruff-lint",
+          "--json"
+        ],
+        1,
+        project,
+        {
+          env: {
+            ...sourceSafeOpcoreEnv(),
+            PATH: [dirname(process.execPath), dirname(ruff), "/usr/bin", "/bin", "/opt/homebrew/bin"].join(":")
+          }
+        }
+      );
+      assertSourceSnapshot(project, before);
+      assert.deepEqual(pythonExecutionTempWorkspaces(), tempWorkspacesBefore);
+      assert.deepEqual(
+        syntaxResult.validationResult?.diagnostics?.map((diagnostic) => diagnostic.code),
+        ["PY_RUFF_LINT_SYNTAX_ERROR"]
+      );
+      const syntaxRun = syntaxResult.validationResult?.manifest?.runs?.find(
+        (run) => run.checkId === "python.ruff-lint"
+      );
+      assert.equal(syntaxRun?.outcome, "findings");
+      assert.equal(syntaxRun?.pythonCapabilityRuns?.[0]?.state, "findings");
+      assert.equal(syntaxRun?.pythonCapabilityRuns?.[0]?.diagnosticCount, 1);
+
+      const partitionedResult = assertCliJson(
+        binPath(project, "opcore"),
+        [
+          "check",
+          "files",
+          "--files",
+          "src/app.py,root.py",
+          "--checks",
+          "python.ruff-lint",
+          "--json"
+        ],
+        1,
+        project,
+        {
+          env: {
+            ...sourceSafeOpcoreEnv(),
+            PATH: [dirname(process.execPath), dirname(ruff), "/usr/bin", "/bin", "/opt/homebrew/bin"].join(":")
+          }
+        }
+      );
+      assertSourceSnapshot(project, before);
+      assert.deepEqual(pythonExecutionTempWorkspaces(), tempWorkspacesBefore);
+      assert.deepEqual(
+        partitionedResult.validationResult?.diagnostics?.map((diagnostic) => diagnostic.path),
+        ["src/app.py"]
+      );
+      const partitionedRuns = partitionedResult.validationResult?.manifest?.runs?.find(
+        (run) => run.checkId === "python.ruff-lint"
+      )?.pythonCapabilityRuns;
+      assert.deepEqual(
+        partitionedRuns?.map((receipt) => [receipt.configPath, receipt.configPaths, receipt.sourcePaths]),
+        [
+          ["ruff.toml", ["ruff.toml"], ["root.py"]],
+          ["src/ruff.toml", ["src/ruff.toml"], ["src/app.py"]]
+        ]
+      );
+
+      for (const directory of ["malformed-dotted", "malformed-quoted", "malformed-inline"]) {
+        const malformedResult = assertCliJson(
+          binPath(project, "opcore"),
+          [
+            "check",
+            "files",
+            "--files",
+            `${directory}/app.py`,
+            "--checks",
+            "python.ruff-lint",
+            "--json"
+          ],
+          1,
+          project,
+          {
+            env: {
+              ...sourceSafeOpcoreEnv(),
+              PATH: [dirname(process.execPath), dirname(ruff), "/usr/bin", "/bin", "/opt/homebrew/bin"].join(":")
+            }
+          }
+        );
+        assert.equal(malformedResult.validationResult?.manifest?.runs?.[0]?.outcome, "invalid_config");
+        assert.equal(
+          malformedResult.validationResult?.manifest?.runs?.[0]?.pythonCapabilityRuns?.[0]?.configPath,
+          `${directory}/pyproject.toml`
+        );
+      }
+      assertSourceSnapshot(project, before);
+      assert.deepEqual(pythonExecutionTempWorkspaces(), tempWorkspacesBefore);
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
 });
 
 function packWorkspace(packageName, destination) {
@@ -505,6 +741,15 @@ function pythonContextIdentity(context) {
     outcome: context.outcome,
     interpreter: context.interpreter?.argv ?? null,
     tools: context.tools.map((tool) => ({ tool: tool.tool, argv: tool.argv, source: tool.source, available: tool.available }))
+  };
+}
+
+function pythonContextProjectIdentity(context) {
+  return {
+    target: context.target,
+    projectRoot: context.projectRoot,
+    projectKey: context.projectKey,
+    interpreter: context.interpreter?.argv ?? null
   };
 }
 
@@ -891,6 +1136,27 @@ function sourceSafeOpcoreEnv() {
     PATH: [dirname(process.execPath), "/usr/bin", "/bin", "/opt/homebrew/bin"].join(":"),
     NO_COLOR: "1"
   };
+}
+
+function pinnedRuffExecutable() {
+  const locator = process.platform === "win32" ? "where" : "which";
+  const located = spawnSync(locator, ["ruff"], {
+    encoding: "utf8",
+    env: process.env,
+    stdio: ["ignore", "pipe", "pipe"]
+  });
+  assert.equal(located.status, 0, "Pinned Ruff 0.6.9 must be provisioned before installed-bin tests");
+  const executable = located.stdout.trim().split(/\r?\n/u)[0];
+  assert.ok(executable);
+  const version = run(executable, ["--version"]);
+  assert.equal(version.stdout.trim(), "ruff 0.6.9");
+  return executable;
+}
+
+function pythonExecutionTempWorkspaces() {
+  return readdirSync(tmpdir())
+    .filter((entry) => entry.startsWith("opcore-python-check-"))
+    .sort();
 }
 
 function assertFixtureCoverage(repoState, fixture) {

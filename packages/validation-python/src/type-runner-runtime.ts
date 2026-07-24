@@ -34,7 +34,7 @@ export async function withMaterializedTypeExecution<TResult>(
 export function isolatedTypeEnvironmentBase(args: {
   input: Record<string, string | undefined> | undefined;
   executable: string;
-  workspace: MaterializedPythonTypeWorkspace;
+  workspace: Pick<MaterializedPythonTypeWorkspace, "runtimeRoot" | "projectCwd">;
   includeProcessExecPath?: boolean;
   extra?: Record<string, string>;
 }): Record<string, string> {

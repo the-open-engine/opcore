@@ -22,7 +22,7 @@ import {
 
 export const pythonToolConfigPrecedence = {
   pyright: ["pyrightconfig.json", "pyproject.toml"],
-  ruff: ["ruff.toml", ".ruff.toml", "pyproject.toml"],
+  ruff: [".ruff.toml", "ruff.toml", "pyproject.toml"],
   mypy: ["mypy.ini", ".mypy.ini", "pyproject.toml", "setup.cfg", "tox.ini"],
   pytest: ["pytest.ini", "pyproject.toml", "tox.ini", "setup.cfg"]
 } as const;
@@ -42,15 +42,32 @@ interface PythonToolConfigInputs {
   contents: ReadonlyMap<string, string>;
   tomlDocuments: ReadonlyMap<string, TomlTable>;
   iniDocuments: ReadonlyMap<string, PythonIniDocument>;
+  selectedRuffConfig?: string;
+  scopedRuffSelection: boolean;
+}
+
+export interface ReadPythonStaticProjectConfigOptions {
+  target?: string;
+  toolKinds?: readonly ("mypy" | "pyright" | "ruff" | "pytest")[];
 }
 
 export async function readPythonStaticProjectConfig(
   workspace: PythonProjectWorkspace,
   projectRoot: string,
-  visibleFiles: readonly string[]
+  visibleFiles: readonly string[],
+  options: ReadPythonStaticProjectConfigOptions = {}
 ): Promise<PythonStaticProjectConfig> {
   const direct = directChildren(projectRoot, visibleFiles);
-  const relevant = direct.filter(isRelevantPythonConfig);
+  const selectedRuffConfig = options.target === undefined || options.toolKinds !== undefined && !options.toolKinds.includes("ruff")
+    ? undefined
+    : await selectClosestTargetRuffConfig(workspace, options.target, visibleFiles);
+  const relevant = [...new Set([
+    ...direct.filter((path) =>
+      isRelevantPythonConfig(path) &&
+      (!isDedicatedRuffConfig(path) || path === selectedRuffConfig)
+    ),
+    ...(selectedRuffConfig === undefined ? [] : [selectedRuffConfig])
+  ])].sort();
   const contents = new Map<string, string>();
   const jsonDocuments = new Map<string, TomlTable>();
   const tomlDocuments = new Map<string, TomlTable>();
@@ -59,11 +76,21 @@ export async function readPythonStaticProjectConfig(
   for (const path of relevant) {
     const resolved = await workspace.realpath(path);
     if (resolved.unavailable) {
-      reasons.push({ code: "ambiguous_path", path, message: `Python config realpath evidence is unavailable: ${path}` });
+      reasons.push({
+        code: "ambiguous_path",
+        path,
+        ...configReasonTool(path),
+        message: `Python config realpath evidence is unavailable: ${path}`
+      });
       continue;
     }
     if (resolved.symlink || resolved.path !== path) {
-      reasons.push({ code: "symlink_refused", path, message: `Symlinked Python config path is ambiguous: ${path}` });
+      reasons.push({
+        code: "symlink_refused",
+        path,
+        ...configReasonTool(path),
+        message: `Symlinked Python config path is ambiguous: ${path}`
+      });
       continue;
     }
     const value = await workspace.read(path);
@@ -79,14 +106,33 @@ export async function readPythonStaticProjectConfig(
         if (!isTable(parsed)) throw new Error("JSON config root must be an object");
         jsonDocuments.set(path, parsed);
       } catch {
-        reasons.push({ code: "invalid_config", path, message: `Python project config is malformed: ${path}` });
+        reasons.push({
+          code: "invalid_config",
+          path,
+          ...configReasonTool(path),
+          message: `Python project config is malformed: ${path}`
+        });
       }
     }
     if (isTomlConfig(path)) {
       try {
         tomlDocuments.set(path, parsePythonToml(value));
       } catch {
-        reasons.push({ code: "invalid_config", path, message: `Python project config is malformed: ${path}` });
+        reasons.push({
+          code: "invalid_config",
+          path,
+          ...configReasonTool(path),
+          message: `Python project config is malformed: ${path}`
+        });
+        for (const tool of declaredPyprojectTools(path, value)) {
+          if (tool === "ruff" && path !== selectedRuffConfig) continue;
+          reasons.push({
+            code: "invalid_config",
+            path,
+            tool,
+            message: `Python project config is malformed: ${path}`
+          });
+        }
       }
     }
     if (path.endsWith(".ini") || path.endsWith(".cfg")) {
@@ -97,6 +143,7 @@ export async function readPythonStaticProjectConfig(
           reasons.push({
             code: "invalid_config",
             path,
+            ...configReasonTool(path),
             message: `Python project config is malformed: ${path}`
           });
         }
@@ -111,7 +158,15 @@ export async function readPythonStaticProjectConfig(
       message: `Conflicting Python dependency managers at ${projectRoot}: ${managers.map((entry) => entry.kind).join(", ")}`
     });
   }
-  const toolConfigs = selectToolConfigs({ projectRoot, direct, contents, tomlDocuments, iniDocuments }, reasons);
+  const toolConfigs = selectToolConfigs({
+    projectRoot,
+    direct,
+    contents,
+    tomlDocuments,
+    iniDocuments,
+    ...(selectedRuffConfig === undefined ? {} : { selectedRuffConfig }),
+    scopedRuffSelection: options.target !== undefined
+  }, reasons);
   const pyrightTarget = toolConfigs.pyright === undefined
     ? undefined
     : await readSelectedPyrightTarget(workspace, toolConfigs.pyright, contents, reasons);
@@ -391,6 +446,9 @@ function configuredToolPaths(
   input: PythonToolConfigInputs,
   tool: "mypy" | "pyright" | "ruff" | "pytest",
 ): readonly string[] {
+  if (tool === "ruff" && input.scopedRuffSelection) {
+    return input.selectedRuffConfig === undefined ? [] : [input.selectedRuffConfig];
+  }
   const candidates = pythonToolConfigPrecedence[tool];
   const names = new Set(input.direct.map(basename));
   const section = {
@@ -403,7 +461,10 @@ function configuredToolPaths(
     if (!names.has(candidate)) return false;
     const path = joinRoot(input.projectRoot, candidate);
     if (candidate === "pyproject.toml") {
-      return tomlTableAt(input.tomlDocuments.get(path), section.split(".")) !== undefined;
+      const document = input.tomlDocuments.get(path);
+      return document === undefined
+        ? declaresTomlTable(input.contents.get(path), section)
+        : tomlTableAt(document, section.split(".")) !== undefined;
     }
     if (tool === "mypy") {
       return isDedicatedMypyConfig(path) || pythonIniHasSection(input.iniDocuments.get(path), "mypy");
@@ -418,6 +479,271 @@ function configuredToolPaths(
 function isDedicatedMypyConfig(path: string): boolean {
   const name = basename(path);
   return name === "mypy.ini" || name === ".mypy.ini";
+}
+
+function configReasonTool(path: string): Pick<PythonProjectContextReason, "tool"> | Record<never, never> {
+  const name = basename(path);
+  if (name === "ruff.toml" || name === ".ruff.toml") return { tool: "ruff" };
+  if (name === "pyrightconfig.json") return { tool: "pyright" };
+  if (name === "mypy.ini" || name === ".mypy.ini") return { tool: "mypy" };
+  if (name === "pytest.ini") return { tool: "pytest" };
+  return {};
+}
+
+function declaredPyprojectTools(
+  path: string,
+  content: string
+): readonly ("mypy" | "pyright" | "ruff" | "pytest")[] {
+  if (basename(path) !== "pyproject.toml") return [];
+  return ([
+    ["mypy", "tool.mypy"],
+    ["pyright", "tool.pyright"],
+    ["ruff", "tool.ruff"],
+    ["pytest", "tool.pytest.ini_options"]
+  ] as const)
+    .filter(([, section]) => declaresTomlTable(content, section))
+    .map(([tool]) => tool);
+}
+
+function declaresTomlTable(content: string | undefined, section: string): boolean {
+  if (content === undefined) return false;
+  const expected = section.split(".");
+  let currentTable: readonly string[] = [];
+  for (const rawLine of content.split(/\r?\n/u)) {
+    const line = stripTomlComment(rawLine).trim();
+    if (line.length === 0) continue;
+    const table = parseTomlTableHeader(line);
+    if (table !== undefined) {
+      currentTable = table;
+      if (startsWithTomlPath(currentTable, expected)) return true;
+      continue;
+    }
+    const assignment = splitTomlAssignment(line);
+    if (assignment === undefined) continue;
+    const key = parseTomlDottedKey(assignment.key);
+    if (key === undefined) continue;
+    const path = [...currentTable, ...key];
+    if (startsWithTomlPath(path, expected)) return true;
+    if (
+      expected.length === 2 &&
+      path.length === 1 &&
+      path[0] === expected[0] &&
+      inlineTomlTableDeclaresKey(assignment.value, expected[1])
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
+async function selectClosestTargetRuffConfig(
+  workspace: PythonProjectWorkspace,
+  target: string,
+  visibleFiles: readonly string[]
+): Promise<string | undefined> {
+  const visible = new Set(visibleFiles);
+  for (const directory of ancestorDirectories(dirname(target))) {
+    for (const name of pythonToolConfigPrecedence.ruff) {
+      const path = joinRoot(directory, name);
+      if (!visible.has(path)) continue;
+      if (name !== "pyproject.toml") return path;
+      const resolved = await workspace.realpath(path);
+      if (resolved.unavailable || resolved.symlink || resolved.path !== path) continue;
+      const content = await workspace.read(path);
+      if (content === undefined) continue;
+      try {
+        if (tomlTableAt(parsePythonToml(content), ["tool", "ruff"]) !== undefined) return path;
+      } catch {
+        if (declaresTomlTable(content, "tool.ruff")) return path;
+      }
+    }
+  }
+  return undefined;
+}
+
+function ancestorDirectories(start: string): readonly string[] {
+  const directories: string[] = [];
+  let current = start;
+  while (true) {
+    directories.push(current);
+    if (current === ".") break;
+    current = dirname(current);
+  }
+  return directories;
+}
+
+function isDedicatedRuffConfig(path: string): boolean {
+  const name = basename(path);
+  return name === "ruff.toml" || name === ".ruff.toml";
+}
+
+function stripTomlComment(line: string): string {
+  let quote: "'" | "\"" | undefined;
+  let escaped = false;
+  for (let index = 0; index < line.length; index += 1) {
+    const character = line[index];
+    if (quote === "\"") {
+      if (escaped) {
+        escaped = false;
+        continue;
+      }
+      if (character === "\\") {
+        escaped = true;
+        continue;
+      }
+      if (character === quote) quote = undefined;
+      continue;
+    }
+    if (quote === "'") {
+      if (character === quote) quote = undefined;
+      continue;
+    }
+    if (character === "\"" || character === "'") {
+      quote = character;
+      continue;
+    }
+    if (character === "#") return line.slice(0, index);
+  }
+  return line;
+}
+
+function parseTomlTableHeader(line: string): readonly string[] | undefined {
+  if (!line.startsWith("[") || line.startsWith("[[")) return undefined;
+  const closing = findTomlToken(line, "]", 1);
+  if (closing < 0 || line.slice(closing + 1).trim().length > 0) return undefined;
+  return parseTomlDottedKey(line.slice(1, closing));
+}
+
+function splitTomlAssignment(line: string): { key: string; value: string } | undefined {
+  const equals = findTomlToken(line, "=", 0);
+  if (equals < 0) return undefined;
+  return { key: line.slice(0, equals), value: line.slice(equals + 1).trim() };
+}
+
+function findTomlToken(value: string, token: string, start: number): number {
+  let quote: "'" | "\"" | undefined;
+  let escaped = false;
+  for (let index = start; index < value.length; index += 1) {
+    const character = value[index];
+    if (quote === "\"") {
+      if (escaped) {
+        escaped = false;
+        continue;
+      }
+      if (character === "\\") {
+        escaped = true;
+        continue;
+      }
+      if (character === quote) quote = undefined;
+      continue;
+    }
+    if (quote === "'") {
+      if (character === quote) quote = undefined;
+      continue;
+    }
+    if (character === "\"" || character === "'") {
+      quote = character;
+      continue;
+    }
+    if (character === token) return index;
+  }
+  return -1;
+}
+
+function parseTomlDottedKey(value: string): readonly string[] | undefined {
+  const segments: string[] = [];
+  let index = 0;
+  while (index < value.length) {
+    while (/\s/u.test(value[index] ?? "")) index += 1;
+    if (index >= value.length) return undefined;
+    const quote = value[index] === "\"" || value[index] === "'" ? value[index] : undefined;
+    let segment = "";
+    if (quote !== undefined) {
+      index += 1;
+      let closed = false;
+      while (index < value.length) {
+        const character = value[index];
+        if (character === quote) {
+          index += 1;
+          closed = true;
+          break;
+        }
+        if (quote === "\"" && character === "\\" && index + 1 < value.length) {
+          segment += value[index + 1];
+          index += 2;
+          continue;
+        }
+        segment += character;
+        index += 1;
+      }
+      if (!closed) return undefined;
+    } else {
+      const start = index;
+      while (index < value.length && /[A-Za-z0-9_-]/u.test(value[index])) index += 1;
+      segment = value.slice(start, index);
+    }
+    if (segment.length === 0) return undefined;
+    segments.push(segment);
+    while (/\s/u.test(value[index] ?? "")) index += 1;
+    if (index >= value.length) return segments;
+    if (value[index] !== ".") return undefined;
+    index += 1;
+  }
+  return undefined;
+}
+
+function inlineTomlTableDeclaresKey(value: string, expected: string): boolean {
+  const trimmed = value.trim();
+  if (!trimmed.startsWith("{")) return false;
+  let index = 1;
+  while (index < trimmed.length) {
+    while (/[\s,]/u.test(trimmed[index] ?? "")) index += 1;
+    if (trimmed[index] === "}" || index >= trimmed.length) return false;
+    const equals = findTomlToken(trimmed, "=", index);
+    if (equals < 0) return false;
+    const key = parseTomlDottedKey(trimmed.slice(index, equals).trim());
+    if (key?.length === 1 && key[0] === expected) return true;
+    index = skipTomlValue(trimmed, equals + 1);
+  }
+  return false;
+}
+
+function skipTomlValue(value: string, start: number): number {
+  let quote: "'" | "\"" | undefined;
+  let escaped = false;
+  let squareDepth = 0;
+  let curlyDepth = 0;
+  for (let index = start; index < value.length; index += 1) {
+    const character = value[index];
+    if (quote === "\"") {
+      if (escaped) escaped = false;
+      else if (character === "\\") escaped = true;
+      else if (character === quote) quote = undefined;
+      continue;
+    }
+    if (quote === "'") {
+      if (character === quote) quote = undefined;
+      continue;
+    }
+    if (character === "\"" || character === "'") quote = character;
+    else if (character === "[") squareDepth += 1;
+    else if (character === "]") squareDepth -= 1;
+    else if (character === "{") curlyDepth += 1;
+    else if (character === "}") {
+      if (curlyDepth === 0 && squareDepth === 0) return index;
+      curlyDepth -= 1;
+    } else if (character === "," && squareDepth === 0 && curlyDepth === 0) return index + 1;
+  }
+  return value.length;
+}
+
+function startsWithTomlPath(path: readonly string[], expected: readonly string[]): boolean {
+  return expected.every((segment, index) => path[index] === segment);
+}
+
+function dirname(path: string): string {
+  const index = path.lastIndexOf("/");
+  return index < 0 ? "." : path.slice(0, index) || ".";
 }
 
 function isTomlConfig(path: string): boolean {

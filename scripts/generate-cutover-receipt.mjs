@@ -530,7 +530,7 @@ function runPythonToolDegradationNegativeChecks(tempRoot, opcoreBin, env, comman
   if (statusParsed.owner !== "runtime" || statusParsed.validationResult !== undefined || statusParsed.repoState === undefined) {
     throw new Error("python-toolchain-degraded-no-tools did not return read-only repoState status evidence");
   }
-  assertPythonRepoState("python-toolchain-degraded-no-tools", statusParsed.repoState, ["mypy", "pyright", "ruff", "pytest"]);
+  assertPythonRepoState("python-toolchain-degraded-no-tools", statusParsed.repoState, ["mypy", "pyright", "pytest"]);
   return [
     {
       id: "python-types-degraded-no-tools",
@@ -544,7 +544,7 @@ function runPythonToolDegradationNegativeChecks(tempRoot, opcoreBin, env, comman
       command: ["opcore", "check", "files", "src/acme/app.py", "--checks", "python.source-hygiene"],
       status: "passed",
       exitCode: 0,
-      assertion: "source-hygiene check ran built-in policy while status reported ruff absent"
+      assertion: "source hygiene stayed honest without ruff"
     },
     {
       id: "python-relevant-tests-no-pytest",
@@ -558,7 +558,7 @@ function runPythonToolDegradationNegativeChecks(tempRoot, opcoreBin, env, comman
       command: ["opcore", "status"],
       status: "passed",
       exitCode: 0,
-      assertion: "read-only status reported absent mypy, pyright, ruff, and pytest as degraded"
+      assertion: "missing Python toolchain stayed degraded"
     }
   ];
 }
