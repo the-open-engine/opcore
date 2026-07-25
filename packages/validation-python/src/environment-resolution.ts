@@ -235,7 +235,9 @@ async function resolveTools(
       const prefix = candidate.argv.slice(1);
       const probePrefix = tool === "ruff" ? withoutToolConfigOptions(prefix, tool) : prefix;
       const result = await processProbe.run(command, [...probePrefix, "--version"], {
-        cwd: projectCwd(options), env, timeoutMs: options.timeoutMs ?? 10000
+        cwd: projectCwd(options),
+        env: tool === "pytest" ? { ...env, PYTEST_DISABLE_PLUGIN_AUTOLOAD: "1" } : env,
+        timeoutMs: options.timeoutMs ?? 10000
       });
       if (!result.ok) {
         failure = probeFailureReason(result, tool);

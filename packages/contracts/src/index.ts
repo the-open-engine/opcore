@@ -186,7 +186,7 @@ export type PythonValidationAuthoritySource = (typeof pythonValidationAuthorityS
 export const pythonValidationCapabilityTerminationKinds = ["exited", "timeout", "signal", "spawn_error"] as const;
 export type PythonValidationCapabilityTerminationKind = (typeof pythonValidationCapabilityTerminationKinds)[number];
 
-export const pythonValidationCapabilities = ["types", "ruff_lint", "ruff_format"] as const;
+export const pythonValidationCapabilities = ["types", "ruff_lint", "ruff_format", "pytest"] as const;
 export type PythonValidationCapability = (typeof pythonValidationCapabilities)[number];
 
 export const pythonValidationCapabilityStates = [
@@ -1409,7 +1409,8 @@ export interface PythonRuffValidationCapabilityRun {
 
 export type PythonValidationCapabilityRun =
   | PythonTypesValidationCapabilityRun
-  | PythonRuffValidationCapabilityRun;
+  | PythonRuffValidationCapabilityRun
+  | PythonPytestValidationCapabilityRun;
 
 export interface PythonValidationCapabilityInvocation {
   argv: readonly string[];
@@ -1443,6 +1444,70 @@ export interface ValidationResultManifest {
   durationMs?: number;
   runs?: readonly ValidationCheckRunSummary[];
   skippedChecks?: readonly ValidationSkippedCheck[];
+}
+
+export const pythonCapabilityActivations = ["enabled", "disabled", "not_applicable"] as const;
+export type PythonCapabilityActivation = (typeof pythonCapabilityActivations)[number];
+
+export const pythonPytestSelectionModes = ["none", "direct_argv", "manifest"] as const;
+export type PythonPytestSelectionMode = (typeof pythonPytestSelectionModes)[number];
+
+export const pythonCapabilityProcessTerminations = ["exited", "timeout", "signal", "spawn_error", "overflow"] as const;
+export type PythonCapabilityProcessTermination = (typeof pythonCapabilityProcessTerminations)[number];
+
+export interface PythonCapabilityCounts {
+  candidateCount: number;
+  collectedCount: number;
+  executedCount: number;
+  passedCount: number;
+  failedCount: number;
+  skippedCount: number;
+  xfailedCount: number;
+  xpassedCount: number;
+  errorCount: number;
+}
+
+export interface PythonCapabilityCleanupEvidence {
+  attempted: boolean;
+  ok: boolean;
+  failureMessage?: string;
+}
+
+export interface PythonCapabilityInvocation {
+  stage: "collection" | "execution";
+  command: string;
+  argsDigest: string;
+  argCount: number;
+  selectionMode: PythonPytestSelectionMode;
+  selectionDigest?: string;
+  durationMs: number;
+  termination: PythonCapabilityProcessTermination;
+  exitCode?: number;
+  signal?: string;
+  outputBytes: number;
+  stdoutDigest?: string;
+  stderrDigest?: string;
+}
+
+export interface PythonPytestValidationCapabilityRun {
+  capability: "pytest";
+  checkId: string;
+  activation: PythonCapabilityActivation;
+  outcome: string;
+  message: string;
+  projectKey?: string;
+  projectRoot?: string;
+  configFile?: string;
+  targetCount?: number;
+  candidatePaths?: readonly string[];
+  collectedNodeIds?: readonly string[];
+  afterStateFingerprint?: string;
+  selectionMode?: PythonPytestSelectionMode;
+  selectionDigest?: string;
+  counts?: PythonCapabilityCounts;
+  collection?: PythonCapabilityInvocation;
+  execution?: PythonCapabilityInvocation;
+  cleanup?: PythonCapabilityCleanupEvidence;
 }
 
 export interface ValidationResult {
@@ -6744,9 +6809,9 @@ export function validateValidationResultPayload(result: ValidationResult): Valid
 export function validatePythonValidationCapabilityRun(
   run: PythonValidationCapabilityRun
 ): PythonValidationCapabilityRun {
-  return run.capability === "types"
-    ? validatePythonTypesValidationCapabilityRun(run)
-    : validatePythonRuffValidationCapabilityRun(run);
+  if (run.capability === "types") return validatePythonTypesValidationCapabilityRun(run);
+  if (run.capability === "pytest") return validatePythonPytestValidationCapabilityRun(run);
+  return validatePythonRuffValidationCapabilityRun(run);
 }
 
 function validatePythonTypesValidationCapabilityRun(
@@ -6889,6 +6954,130 @@ export function validatePythonValidationCapabilityRuns(
   if (!Array.isArray(runs)) throw new Error("Python validation capability runs must be an array");
   for (const run of runs) validatePythonValidationCapabilityRun(run);
   return runs;
+}
+
+function validatePythonPytestValidationCapabilityRun(
+  run: PythonPytestValidationCapabilityRun
+): PythonPytestValidationCapabilityRun {
+  if (!run || typeof run !== "object") throw new Error("Python pytest capability run is required");
+  validateExactObjectKeys(run, [
+    "capability",
+    "checkId",
+    "activation",
+    "outcome",
+    "message",
+    "projectKey",
+    "projectRoot",
+    "configFile",
+    "targetCount",
+    "candidatePaths",
+    "collectedNodeIds",
+    "afterStateFingerprint",
+    "selectionMode",
+    "selectionDigest",
+    "counts",
+    "collection",
+    "execution",
+    "cleanup"
+  ], "Python pytest capability run");
+  if (run.capability !== "pytest" || run.checkId !== "python.pytest") {
+    throw new Error("Python pytest capability run must describe python.pytest");
+  }
+  if (!includesString(pythonCapabilityActivations, run.activation)) {
+    throw new Error(`Unknown Python pytest capability activation: ${String(run.activation)}`);
+  }
+  validateNonEmptyString(run.outcome, "Python pytest capability run outcome");
+  validateNonEmptyString(run.message, "Python pytest capability run message");
+  if (run.projectKey !== undefined) validateSha256Identity(run.projectKey, "Python pytest capability run projectKey");
+  if (run.projectRoot !== undefined) validatePythonProjectRoot(run.projectRoot, "Python pytest capability run projectRoot");
+  if (run.configFile !== undefined) validateRepoRelativePath(run.configFile);
+  if (run.targetCount !== undefined) validateNonNegativeInteger(run.targetCount, "Python pytest capability run targetCount");
+  if (run.candidatePaths !== undefined) validateRepoPathArray(run.candidatePaths, "Python pytest capability run candidatePaths");
+  if (run.collectedNodeIds !== undefined) {
+    validateStringArray(run.collectedNodeIds, "Python pytest capability run collectedNodeIds", { allowEmpty: true });
+  }
+  if (run.afterStateFingerprint !== undefined) {
+    validateSha256Identity(run.afterStateFingerprint, "Python pytest capability run afterStateFingerprint");
+  }
+  if (run.selectionMode !== undefined && !includesString(pythonPytestSelectionModes, run.selectionMode)) {
+    throw new Error(`Unknown Python pytest capability selection mode: ${String(run.selectionMode)}`);
+  }
+  if (run.selectionDigest !== undefined) {
+    validateSha256Identity(run.selectionDigest, "Python pytest capability run selectionDigest");
+  }
+  if (run.counts !== undefined) validatePythonPytestCapabilityCounts(run.counts);
+  if (run.collection !== undefined) validatePythonPytestCapabilityInvocation(run.collection, "Python pytest capability collection");
+  if (run.execution !== undefined) validatePythonPytestCapabilityInvocation(run.execution, "Python pytest capability execution");
+  if (run.cleanup !== undefined) validatePythonPytestCapabilityCleanupEvidence(run.cleanup);
+  return run;
+}
+
+function validatePythonPytestCapabilityCounts(counts: PythonCapabilityCounts): void {
+  if (!counts || typeof counts !== "object") throw new Error("Python pytest capability counts are required");
+  validateExactObjectKeys(counts, [
+    "candidateCount",
+    "collectedCount",
+    "executedCount",
+    "passedCount",
+    "failedCount",
+    "skippedCount",
+    "xfailedCount",
+    "xpassedCount",
+    "errorCount"
+  ], "Python pytest capability counts");
+  for (const key of Object.keys(counts) as (keyof PythonCapabilityCounts)[]) {
+    validateNonNegativeInteger(counts[key], `Python pytest capability counts ${key}`);
+  }
+}
+
+function validatePythonPytestCapabilityInvocation(invocation: PythonCapabilityInvocation, label: string): void {
+  if (!invocation || typeof invocation !== "object") throw new Error(`${label} is required`);
+  validateExactObjectKeys(invocation, [
+    "stage",
+    "command",
+    "argsDigest",
+    "argCount",
+    "selectionMode",
+    "selectionDigest",
+    "durationMs",
+    "termination",
+    "exitCode",
+    "signal",
+    "outputBytes",
+    "stdoutDigest",
+    "stderrDigest"
+  ], label);
+  if (!includesString(["collection", "execution"] as const, invocation.stage)) {
+    throw new Error(`${label} stage must be collection or execution`);
+  }
+  validateNonEmptyString(invocation.command, `${label} command`);
+  validateSha256Identity(invocation.argsDigest, `${label} argsDigest`);
+  validateNonNegativeInteger(invocation.argCount, `${label} argCount`);
+  if (!includesString(pythonPytestSelectionModes, invocation.selectionMode)) {
+    throw new Error(`Unknown ${label} selectionMode: ${String(invocation.selectionMode)}`);
+  }
+  if (invocation.selectionDigest !== undefined) {
+    validateSha256Identity(invocation.selectionDigest, `${label} selectionDigest`);
+  }
+  validateNonNegativeNumber(invocation.durationMs, `${label} durationMs`);
+  if (!includesString(pythonCapabilityProcessTerminations, invocation.termination)) {
+    throw new Error(`Unknown ${label} termination: ${String(invocation.termination)}`);
+  }
+  if (invocation.exitCode !== undefined) validateNonNegativeInteger(invocation.exitCode, `${label} exitCode`);
+  if (invocation.signal !== undefined) validateNonEmptyString(invocation.signal, `${label} signal`);
+  validateNonNegativeInteger(invocation.outputBytes, `${label} outputBytes`);
+  if (invocation.stdoutDigest !== undefined) validateSha256Identity(invocation.stdoutDigest, `${label} stdoutDigest`);
+  if (invocation.stderrDigest !== undefined) validateSha256Identity(invocation.stderrDigest, `${label} stderrDigest`);
+}
+
+function validatePythonPytestCapabilityCleanupEvidence(cleanup: PythonCapabilityCleanupEvidence): void {
+  if (!cleanup || typeof cleanup !== "object") throw new Error("Python pytest capability cleanup evidence is required");
+  validateExactObjectKeys(cleanup, ["attempted", "ok", "failureMessage"], "Python pytest capability cleanup evidence");
+  if (typeof cleanup.attempted !== "boolean") throw new Error("Python pytest capability cleanup attempted must be boolean");
+  if (typeof cleanup.ok !== "boolean") throw new Error("Python pytest capability cleanup ok must be boolean");
+  if (cleanup.failureMessage !== undefined) {
+    validateNonEmptyString(cleanup.failureMessage, "Python pytest capability cleanup failureMessage");
+  }
 }
 
 function validatePythonValidationCapabilityTool(
@@ -7097,6 +7286,72 @@ export function validatePythonProjectContexts(contexts: readonly PythonProjectCo
     targets.add(context.target);
   }
   return contexts;
+}
+
+function validatePythonCapabilityCounts(counts: PythonCapabilityCounts): void {
+  if (!counts || typeof counts !== "object") throw new Error("Python capability counts are required");
+  validateExactObjectKeys(counts, [
+    "candidateCount",
+    "collectedCount",
+    "executedCount",
+    "passedCount",
+    "failedCount",
+    "skippedCount",
+    "xfailedCount",
+    "xpassedCount",
+    "errorCount"
+  ], "Python capability counts");
+  for (const key of Object.keys(counts) as (keyof PythonCapabilityCounts)[]) {
+    validateNonNegativeInteger(counts[key], `Python capability counts ${key}`);
+  }
+}
+
+function validatePythonCapabilityCleanupEvidence(cleanup: PythonCapabilityCleanupEvidence): void {
+  if (!cleanup || typeof cleanup !== "object") throw new Error("Python capability cleanup evidence is required");
+  validateExactObjectKeys(cleanup, ["attempted", "ok", "failureMessage"], "Python capability cleanup evidence");
+  if (typeof cleanup.attempted !== "boolean") throw new Error("Python capability cleanup attempted must be boolean");
+  if (typeof cleanup.ok !== "boolean") throw new Error("Python capability cleanup ok must be boolean");
+  if (cleanup.failureMessage !== undefined) {
+    validateNonEmptyString(cleanup.failureMessage, "Python capability cleanup failureMessage");
+  }
+}
+
+function validatePythonCapabilityInvocation(invocation: PythonCapabilityInvocation, label: string): void {
+  if (!invocation || typeof invocation !== "object") throw new Error(`${label} is required`);
+  validateExactObjectKeys(invocation, [
+    "stage",
+    "command",
+    "argsDigest",
+    "argCount",
+    "selectionMode",
+    "selectionDigest",
+    "durationMs",
+    "termination",
+    "exitCode",
+    "signal",
+    "outputBytes",
+    "stdoutDigest",
+    "stderrDigest"
+  ], label);
+  if (!includesString(["collection", "execution"] as const, invocation.stage)) {
+    throw new Error(`${label} stage must be collection or execution`);
+  }
+  validateNonEmptyString(invocation.command, `${label} command`);
+  validateSha256Identity(invocation.argsDigest, `${label} argsDigest`);
+  validateNonNegativeInteger(invocation.argCount, `${label} argCount`);
+  if (!includesString(pythonPytestSelectionModes, invocation.selectionMode)) {
+    throw new Error(`Unknown ${label} selectionMode: ${String(invocation.selectionMode)}`);
+  }
+  if (invocation.selectionDigest !== undefined) validateSha256Identity(invocation.selectionDigest, `${label} selectionDigest`);
+  validateNonNegativeInteger(invocation.durationMs, `${label} durationMs`);
+  if (!includesString(pythonCapabilityProcessTerminations, invocation.termination)) {
+    throw new Error(`Unknown ${label} termination: ${String(invocation.termination)}`);
+  }
+  if (invocation.exitCode !== undefined) validateNonNegativeInteger(invocation.exitCode, `${label} exitCode`);
+  if (invocation.signal !== undefined) validateNonEmptyString(invocation.signal, `${label} signal`);
+  validateNonNegativeInteger(invocation.outputBytes, `${label} outputBytes`);
+  if (invocation.stdoutDigest !== undefined) validateSha256Identity(invocation.stdoutDigest, `${label} stdoutDigest`);
+  if (invocation.stderrDigest !== undefined) validateSha256Identity(invocation.stderrDigest, `${label} stderrDigest`);
 }
 
 function validatePythonProjectTarget(target: PythonProjectTarget): void {
@@ -7732,8 +7987,8 @@ function validatePythonRuffValidationCapabilityRun(
   }
   if (run.schemaVersion !== 1) throw new Error("Python validation capability run schemaVersion must be 1");
   validateValidationCheckId(run.checkId, "Python validation capability run checkId");
-  if (!includesString(pythonValidationCapabilities, run.capability)) {
-    throw new Error(`Unknown Python validation capability: ${String(run.capability)}`);
+  if (!includesString(["ruff_lint", "ruff_format"] as const, run.capability)) {
+    throw new Error(`Unknown Python Ruff validation capability: ${String(run.capability)}`);
   }
   if (!includesString(pythonValidationCapabilityStates, run.state)) {
     throw new Error(`Unknown Python validation capability state: ${String(run.state)}`);

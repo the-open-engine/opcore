@@ -10,6 +10,7 @@ import { validationChecksForRepoPolicy } from "../packages/validation-policy/dis
 import {
   PYTHON_DEAD_CODE_CHECK_ID,
   PYTHON_IMPORT_GRAPH_CHECK_ID,
+  PYTHON_PYTEST_CHECK_ID,
   PYTHON_RELEVANT_TESTS_CHECK_ID,
   PYTHON_RUFF_FORMAT_CHECK_ID,
   PYTHON_RUFF_LINT_CHECK_ID,
@@ -78,12 +79,14 @@ describe("validation-python adapter", () => {
         PYTHON_TYPES_CHECK_ID,
         PYTHON_IMPORT_GRAPH_CHECK_ID,
         PYTHON_DEAD_CODE_CHECK_ID,
-        PYTHON_RELEVANT_TESTS_CHECK_ID
+        PYTHON_RELEVANT_TESTS_CHECK_ID,
+        PYTHON_PYTEST_CHECK_ID
       ]
     );
     assert.equal(registry.byId.get(PYTHON_SYNTAX_CHECK_ID)?.requiresGraph, false);
     assert.equal(registry.byId.get(PYTHON_SOURCE_HYGIENE_CHECK_ID)?.requiresGraph, false);
     assert.equal(registry.byId.get(PYTHON_IMPORT_GRAPH_CHECK_ID)?.requiresGraph, true);
+    assert.deepEqual(registry.byId.get(PYTHON_PYTEST_CHECK_ID)?.defaultScopes, []);
   });
 
   it("places canonical explicit Ruff config overrides after the subcommand", () => {
@@ -4519,7 +4522,7 @@ describe("validation-python adapter", () => {
     assert.equal(result.status, "passed", JSON.stringify(result, null, 2));
     assert.deepEqual(result.diagnostics.map((diagnostic) => diagnostic.code).sort(), [
       "PY_DEAD_CODE_UNSUPPORTED",
-      "PY_RELEVANT_TESTS_ABSENT"
+      "PY_RELEVANT_TEST_CANDIDATES_ABSENT"
     ]);
   });
 
@@ -4759,7 +4762,121 @@ describe("validation-python adapter", () => {
     );
 
     assert.equal(result.status, "passed");
-    assert.deepEqual(result.diagnostics.map((diagnostic) => diagnostic.code), ["PY_RELEVANT_TESTS_FOUND"]);
+    assert.deepEqual(result.diagnostics.map((diagnostic) => diagnostic.code), ["PY_RELEVANT_TEST_CANDIDATES_FOUND"]);
+  });
+
+  it("materializes pytest support files and preserves exact regular-file modes", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-pytest-support-"));
+    try {
+      writePassingPythonProtocolShim(repoRoot);
+      writePytestShim(repoRoot, {
+        collectionShellLines: [
+          "emit '{\"type\":\"collected\",\"nodeid\":\"tests/test_app.py::test_support_files\"}'",
+          "emit '{\"type\":\"session_finish\",\"exitstatus\":0}'"
+        ],
+        executionShellLines: [
+          "node -e \"const fs=require('fs'); const payload=JSON.parse(fs.readFileSync('tests/data/payload.json','utf8')); if(payload.value!==7) { console.error('support file missing'); process.exit(9); } if((fs.statSync('tests/private.txt').mode & 0o777)!==0o640) { console.error('private mode mismatch'); process.exit(10); } if((fs.statSync('tests/run-me.sh').mode & 0o777)!==0o750) { console.error('exec mode mismatch'); process.exit(11); }\"",
+          "emit '{\"type\":\"collected\",\"nodeid\":\"tests/test_app.py::test_support_files\"}'",
+          "emit '{\"type\":\"test_report\",\"nodeid\":\"tests/test_app.py::test_support_files\",\"when\":\"call\",\"outcome\":\"passed\"}'",
+          "emit '{\"type\":\"session_finish\",\"exitstatus\":0}'"
+        ]
+      });
+      const files = {
+        "pyproject.toml": "[project]\nname='fixture'\n",
+        "src/app.py": "VALUE = 7\n",
+        "tests/test_app.py": "def test_support_files():\n    assert True\n",
+        "tests/data/payload.json": "{\"value\":7}\n",
+        "tests/private.txt": "secret\n",
+        "tests/run-me.sh": "#!/bin/sh\nexit 0\n"
+      };
+      writeRepoFiles(repoRoot, files);
+      chmodSync(join(repoRoot, "tests/private.txt"), 0o640);
+      chmodSync(join(repoRoot, "tests/run-me.sh"), 0o750);
+      const result = await runner({
+        files,
+        checks: createPythonValidationChecks({
+          repoRoot,
+          env: { PATH: "" },
+          nodeWorkspace: createNodePythonProjectWorkspace(repoRoot),
+          processProbe: successfulProbe(),
+          toolArgv: { pytest: [join(repoRoot, ".venv", "bin", "pytest")] }
+        }),
+        graphProviderClient: graphClient({
+          factQuery: (query) =>
+            availableFactResult(
+              query,
+              [],
+              query.selector.kind === "edges" && query.selector.edgeKinds?.includes("TESTED_BY")
+                ? [{ kind: "TESTED_BY", from: "file:src/app.py", to: "file:tests/test_app.py" }]
+                : []
+            )
+        })
+      }).runValidation(request({
+        repo: { repoRoot },
+        checks: [PYTHON_PYTEST_CHECK_ID],
+        scope: { kind: "files", files: ["src/app.py"] }
+      }));
+
+      assert.equal(result.status, "passed", JSON.stringify(result, null, 2));
+      assert.equal(result.pythonCapabilityRuns[0]?.outcome, "passed");
+      assert.equal(result.pythonCapabilityRuns[0]?.counts?.passedCount, 1);
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("fails python.pytest when execution hook events do not match the collected node ids", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "opcore-python-pytest-mismatch-"));
+    try {
+      writePassingPythonProtocolShim(repoRoot);
+      writePytestShim(repoRoot, {
+        collectionShellLines: [
+          "emit '{\"type\":\"collected\",\"nodeid\":\"tests/test_app.py::test_expected\"}'",
+          "emit '{\"type\":\"session_finish\",\"exitstatus\":0}'"
+        ],
+        executionShellLines: [
+          "emit '{\"type\":\"collected\",\"nodeid\":\"tests/test_app.py::test_expected\"}'",
+          "emit '{\"type\":\"test_report\",\"nodeid\":\"tests/test_app.py::test_other\",\"when\":\"call\",\"outcome\":\"passed\"}'",
+          "emit '{\"type\":\"session_finish\",\"exitstatus\":0}'"
+        ]
+      });
+      const files = {
+        "pyproject.toml": "[project]\nname='fixture'\n",
+        "src/app.py": "VALUE = 1\n",
+        "tests/test_app.py": "def test_expected():\n    assert True\n"
+      };
+      writeRepoFiles(repoRoot, files);
+      const result = await runner({
+        files,
+        checks: createPythonValidationChecks({
+          repoRoot,
+          env: { PATH: "" },
+          nodeWorkspace: createNodePythonProjectWorkspace(repoRoot),
+          processProbe: successfulProbe(),
+          toolArgv: { pytest: [join(repoRoot, ".venv", "bin", "pytest")] }
+        }),
+        graphProviderClient: graphClient({
+          factQuery: (query) =>
+            availableFactResult(
+              query,
+              [],
+              query.selector.kind === "edges" && query.selector.edgeKinds?.includes("TESTED_BY")
+                ? [{ kind: "TESTED_BY", from: "file:src/app.py", to: "file:tests/test_app.py" }]
+                : []
+            )
+        })
+      }).runValidation(request({
+        repo: { repoRoot },
+        checks: [PYTHON_PYTEST_CHECK_ID],
+        scope: { kind: "files", files: ["src/app.py"] }
+      }));
+
+      assert.equal(result.status, "policy_failure", JSON.stringify(result, null, 2));
+      assert.equal(result.pythonCapabilityRuns[0]?.outcome, "tool_failure");
+      assert.equal(result.diagnostics.every((diagnostic) => diagnostic.code === "PYTHON_PYTEST_PROTOCOL_MISMATCH"), true);
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
   });
 
   it("passes clean Python validation fixture checks", async () => {
@@ -6249,6 +6366,38 @@ function rawPyrightShim(version, body) {
     body,
     ""
   ].join("\n");
+}
+
+function writePytestShim(repoRoot, options) {
+  writeToolShim(
+    repoRoot,
+    "pytest",
+    [
+      "#!/bin/sh",
+      "set -eu",
+      "output=\"$OPCORE_PYTEST_HOOK_OUTPUT\"",
+      "collect=0",
+      "for arg in \"$@\"; do",
+      "  if [ \"$arg\" = \"--version\" ]; then echo 'pytest 8.4.1'; exit 0; fi",
+      "  if [ \"$arg\" = \"--collect-only\" ]; then collect=1; fi",
+      "done",
+      "emit() { printf '%s\\n' \"$1\" >> \"$output\"; }",
+      "if [ \"$collect\" = \"1\" ]; then",
+      ...options.collectionShellLines.map((line) => `  ${line}`),
+      `  exit ${options.collectionExitCode ?? 0}`,
+      "fi",
+      ...options.executionShellLines.map((line) => line),
+      `exit ${options.executionExitCode ?? 0}`,
+      ""
+    ].join("\n")
+  );
+}
+
+function writeRepoFiles(repoRoot, files) {
+  for (const [path, content] of Object.entries(files)) {
+    mkdirSync(dirname(join(repoRoot, path)), { recursive: true });
+    writeFileSync(join(repoRoot, path), content);
+  }
 }
 
 function writePythonProtocolShim(repoRoot, compilerBranch) {

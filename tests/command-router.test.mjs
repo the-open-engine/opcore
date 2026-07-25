@@ -38,7 +38,8 @@ const requiredDefaultCheckIds = [
   "python.types",
   "python.import-graph",
   "python.dead-code",
-  "python.relevant-tests"
+  "python.relevant-tests",
+  "python.pytest"
 ];
 
 describe("Opcore command router", () => {

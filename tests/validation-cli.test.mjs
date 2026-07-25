@@ -41,7 +41,8 @@ const pythonCheckIds = [
   "python.types",
   "python.import-graph",
   "python.dead-code",
-  "python.relevant-tests"
+  "python.relevant-tests",
+  "python.pytest"
 ];
 const optInPythonCheckIds = ["python.ruff-lint", "python.ruff-format"];
 const docsCheckIds = [
@@ -58,7 +59,8 @@ const docsCheckIds = [
 ];
 const cloneCheckIds = ["clone.duplication"];
 const typeScriptExecutableDefaultCheckIds = typeScriptCheckIds.filter((checkId) => checkId !== "typescript.lint");
-const executableDefaultCheckIds = [...typeScriptExecutableDefaultCheckIds, ...rustCheckIds, ...pythonCheckIds, ...cloneCheckIds];
+const pythonExecutableDefaultCheckIds = pythonCheckIds.filter((checkId) => checkId !== "python.pytest");
+const executableDefaultCheckIds = [...typeScriptExecutableDefaultCheckIds, ...rustCheckIds, ...pythonExecutableDefaultCheckIds, ...cloneCheckIds];
 const defaultCheckIds = [...typeScriptCheckIds, ...rustCheckIds, ...pythonCheckIds, ...docsCheckIds, ...cloneCheckIds];
 const availableCheckIds = [
   ...typeScriptCheckIds,
@@ -863,6 +865,40 @@ describe("validation CLI", () => {
         assert.equal(result.validationResult.manifest.checks.includes(checkId), false, checkId);
       }
       assert.equal(result.validationResult.manifest.checks.includes("typescript.syntax"), true);
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("returns a typed disabled python.pytest capability run instead of an unknown check failure", () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-python-pytest-disabled-"));
+    try {
+      mkdirSync(join(temp, "src"), { recursive: true });
+      writeFileSync(join(temp, "src/app.py"), "VALUE = 1\n");
+      writeRepoConfigObject(temp, {
+        schemaVersion: 1,
+        kind: "opcore_init_config",
+        validation: {
+          checks: {
+            disabled: ["python.pytest"]
+          }
+        }
+      });
+
+      const result = JSON.parse(runRaw(["check", "files", "--files", "src/app.py", "--repo", temp, "--checks", "python.pytest", "--json"], [0]).stdout);
+
+      assert.equal(result.validationResult.status, "passed");
+      assert.deepEqual(result.validationResult.manifest.checks, ["python.pytest"]);
+      assert.deepEqual(result.validationResult.pythonCapabilityRuns, [
+        {
+          capability: "pytest",
+          checkId: "python.pytest",
+          activation: "disabled",
+          outcome: "disabled",
+          message: "python.pytest is disabled by repo policy.",
+          selectionMode: "none"
+        }
+      ]);
     } finally {
       rmSync(temp, { recursive: true, force: true });
     }

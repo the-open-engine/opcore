@@ -232,11 +232,11 @@ export function createOpcoreMetricReport(input: CreateOpcoreMetricReportInput): 
   });
   addDiagnosticSignal(signals, {
     id: "python.untested_modules",
-    title: "Python modules without TESTED_BY graph evidence",
+    title: "Python modules without TESTED_BY graph candidate evidence",
     category: "python",
     severity: "warning",
     checkId: pythonRelevantTestsCheckId,
-    diagnostics: diagnostics.filter((diagnostic) => diagnostic.code === "PY_RELEVANT_TESTS_ABSENT" && hasPath(diagnostic))
+    diagnostics: diagnostics.filter((diagnostic) => diagnostic.code === "PY_RELEVANT_TEST_CANDIDATES_ABSENT" && hasPath(diagnostic))
   });
   addReceiptBackedDiagnosticSignal(signals, validationResult, {
     id: "python.ruff_lint_findings",
@@ -808,7 +808,7 @@ function isProvenRuffFindingsRun(
   run: PythonValidationCapabilityRun
 ): run is PythonRuffValidationCapabilityRun {
   const sha256Identity = /^sha256:[a-f0-9]{64}$/u;
-  return run.capability !== "types" &&
+  return (run.capability === "ruff_lint" || run.capability === "ruff_format") &&
     run.state === "findings" &&
     run.checkId === (run.capability === "ruff_lint" ? "python.ruff-lint" : "python.ruff-format") &&
     typeof run.projectKey === "string" &&

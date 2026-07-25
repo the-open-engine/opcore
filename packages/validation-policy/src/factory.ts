@@ -3,7 +3,7 @@ import type { ValidationCheckDefinition } from "@the-open-engine/opcore-validati
 import { createValidationCheckRegistry } from "@the-open-engine/opcore-validation";
 import { createCloneValidationChecks } from "@the-open-engine/opcore-validation-clone";
 import { createDocsValidationChecks, type CreateDocsValidationChecksOptions } from "@the-open-engine/opcore-validation-docs";
-import { createNodePythonProjectWorkspace, createPythonValidationChecks } from "@the-open-engine/opcore-validation-python";
+import { createNodePythonProjectWorkspace, createPythonValidationChecks, disabledPytestRun, PYTHON_PYTEST_CHECK_ID } from "@the-open-engine/opcore-validation-python";
 import { createRustValidationChecks } from "@the-open-engine/opcore-validation-rust";
 import { createTypeScriptValidationChecks } from "@the-open-engine/opcore-validation-typescript";
 import { readOpcoreRepoConfig } from "./config.js";
@@ -98,6 +98,7 @@ function applyValidationPolicy(
   const filteredContexts = new WeakMap<object, Parameters<ValidationCheckDefinition["run"]>[0]>();
   const checks = available
     .filter((check) => adapters === undefined || adapters.has(check.adapter))
+
     .map((check) => applyDefaultScopePolicy(check, defaults))
     .map((check) => applyDisabledPolicy(check, disabled))
     .filter((check): check is ValidationCheckDefinition => check !== undefined)
@@ -175,6 +176,9 @@ function applyDisabledPolicy(
   return {
     ...check,
     defaultScopes: [],
+    requiresGraph: false,
+    graphUsage: "none",
+    graphRequirements: undefined,
     inactiveStateWhenUnselected: "disabled",
     run: (context) => check.inactiveResult?.(context, "disabled")
   };

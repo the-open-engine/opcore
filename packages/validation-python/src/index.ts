@@ -8,6 +8,7 @@ import {
 } from "./check-ids.js";
 import { createDeadCodeCheck } from "./dead-code-check.js";
 import { createImportGraphCheck } from "./import-graph-check.js";
+import { createPytestCheck } from "./pytest-check.js";
 import { createRelevantTestsCheck } from "./relevant-tests-check.js";
 import { createRuffFormatCheck, type PythonRuffFormatCheckOptions } from "./ruff-format-check.js";
 import { createRuffLintCheck, type PythonRuffLintCheckOptions } from "./ruff-lint-check.js";
@@ -20,6 +21,7 @@ import type { PythonImportAnalyzer } from "./import-analysis.js";
 export {
   PYTHON_DEAD_CODE_CHECK_ID,
   PYTHON_IMPORT_GRAPH_CHECK_ID,
+  PYTHON_PYTEST_CHECK_ID,
   PYTHON_RELEVANT_TESTS_CHECK_ID,
   PYTHON_RUFF_FORMAT_CHECK_ID,
   PYTHON_RUFF_LINT_CHECK_ID,
@@ -55,6 +57,7 @@ export {
 } from "./ruff-lint-check.js";
 export { createSyntaxCheck, type PythonSyntaxCheckOptions } from "./syntax-check.js";
 export { createTypeCheck, type PythonTypeCheckOptions } from "./type-check.js";
+export { disabledPytestRun } from "./pytest-check.js";
 
 export interface CreatePythonValidationChecksOptions
   extends PythonTypeCheckOptions, PythonSyntaxCheckOptions, PythonRuffLintCheckOptions, PythonRuffFormatCheckOptions {
@@ -84,7 +87,8 @@ export function createPythonValidationChecks(
     createTypeCheck(options, resolveContexts, resolveSources),
     createImportGraphCheck(resolveSources),
     createDeadCodeCheck(resolveRoots),
-    createRelevantTestsCheck(resolveRoots)
+    createRelevantTestsCheck(resolveRoots),
+    createPytestCheck(options, resolveContexts)
   ].map((check) => withPythonProjectContexts(check, resolveContexts));
 }
 

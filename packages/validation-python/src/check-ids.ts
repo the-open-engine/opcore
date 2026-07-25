@@ -6,6 +6,7 @@ export const PYTHON_TYPES_CHECK_ID = "python.types";
 export const PYTHON_IMPORT_GRAPH_CHECK_ID = "python.import-graph";
 export const PYTHON_DEAD_CODE_CHECK_ID = "python.dead-code";
 export const PYTHON_RELEVANT_TESTS_CHECK_ID = "python.relevant-tests";
+export const PYTHON_PYTEST_CHECK_ID = "python.pytest";
 
 export const pythonValidationCheckIds = [
   PYTHON_SYNTAX_CHECK_ID,
@@ -15,7 +16,8 @@ export const pythonValidationCheckIds = [
   PYTHON_TYPES_CHECK_ID,
   PYTHON_IMPORT_GRAPH_CHECK_ID,
   PYTHON_DEAD_CODE_CHECK_ID,
-  PYTHON_RELEVANT_TESTS_CHECK_ID
+  PYTHON_RELEVANT_TESTS_CHECK_ID,
+  PYTHON_PYTEST_CHECK_ID
 ] as const;
 
 export type PythonValidationCheckId = (typeof pythonValidationCheckIds)[number];

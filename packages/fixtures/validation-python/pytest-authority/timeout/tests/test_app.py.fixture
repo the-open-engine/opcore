@@ -1,0 +1,8 @@
+import time
+
+from src.app import answer
+
+
+def test_answer() -> None:
+    time.sleep(31)
+    assert answer() == 42
