@@ -170,6 +170,7 @@ describe("installed package bins", () => {
           "python.import-graph",
           "python.dead-code",
           "python.relevant-tests",
+          "python.pytest",
           "docs.existence",
           "docs.staleness",
           "docs.freshness",

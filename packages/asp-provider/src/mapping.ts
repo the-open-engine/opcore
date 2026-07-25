@@ -684,6 +684,33 @@ function validationEvidence(result: ValidationResult, selectedIds: readonly stri
       });
       continue;
     }
+    if (run.capability === "pytest") {
+      evidence.push({
+        kind: "python_validation_capability_run",
+        message: `Python pytest capability evidence for ${run.projectRoot ?? run.checkId}.`,
+        data: {
+          capability: run.capability,
+          checkId: run.checkId,
+          activation: run.activation,
+          outcome: run.outcome,
+          message: run.message,
+          ...(run.projectKey === undefined ? {} : { projectKey: run.projectKey }),
+          ...(run.projectRoot === undefined ? {} : { projectRoot: run.projectRoot }),
+          ...(run.configFile === undefined ? {} : { configFile: run.configFile }),
+          ...(run.afterStateFingerprint === undefined ? {} : { afterStateFingerprint: run.afterStateFingerprint }),
+          ...(run.targetCount === undefined ? {} : { targetCount: run.targetCount }),
+          ...(run.candidatePaths === undefined ? {} : { candidatePaths: [...run.candidatePaths] }),
+          ...(run.collectedNodeIds === undefined ? {} : { collectedNodeIds: [...run.collectedNodeIds] }),
+          ...(run.selectionMode === undefined ? {} : { selectionMode: run.selectionMode }),
+          ...(run.selectionDigest === undefined ? {} : { selectionDigest: run.selectionDigest }),
+          ...(run.counts === undefined ? {} : { counts: { ...run.counts } }),
+          ...(run.collection === undefined ? {} : { collection: { ...run.collection } }),
+          ...(run.execution === undefined ? {} : { execution: { ...run.execution } }),
+          ...(run.cleanup === undefined ? {} : { cleanup: { ...run.cleanup } })
+        }
+      });
+      continue;
+    }
     evidence.push({
       kind: "python_validation_capability_run",
       message: `Python ${run.capability} capability evidence for ${run.checkId}.`,

@@ -1,0 +1,6 @@
+from src.app import answer
+from missing_fixture_dependency import NEVER_DEFINED
+
+
+def test_answer() -> None:
+    assert answer() == NEVER_DEFINED

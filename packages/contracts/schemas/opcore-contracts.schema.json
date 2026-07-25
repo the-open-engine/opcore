@@ -3371,6 +3371,10 @@
           "type": "array",
           "items": { "$ref": "#/$defs/PythonProjectContext" }
         },
+        "pythonCapabilityRuns": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/PythonValidationCapabilityRun" }
+        },
         "manifest": {
           "type": "object",
           "additionalProperties": false,

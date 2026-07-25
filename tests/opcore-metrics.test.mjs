@@ -507,8 +507,8 @@ function validationResult() {
         category: "test",
         severity: "info",
         path: "pkg/untested.py",
-        code: "PY_RELEVANT_TESTS_ABSENT",
-        message: "No TESTED_BY graph evidence found."
+        code: "PY_RELEVANT_TEST_CANDIDATES_ABSENT",
+        message: "No TESTED_BY graph candidate evidence found."
       },
       {
         category: "graph",
@@ -577,7 +577,8 @@ function validationResult() {
         "python.types",
         "python.import-graph",
         "python.dead-code",
-        "python.relevant-tests"
+        "python.relevant-tests",
+        "python.pytest"
       ],
       runs: [
         {

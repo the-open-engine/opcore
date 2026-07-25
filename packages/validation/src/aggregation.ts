@@ -92,7 +92,7 @@ function pythonCapabilitySortKey(run: PythonValidationCapabilityRun): string {
     checkId: run.checkId,
     capability: run.capability,
     projectKey: run.projectKey ?? "",
-    contextFingerprint: run.contextFingerprint ?? "",
+    contextFingerprint: run.capability === "pytest" ? "" : run.contextFingerprint ?? "",
     receipt: run
   });
 }
