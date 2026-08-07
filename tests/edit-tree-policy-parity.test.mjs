@@ -15,8 +15,8 @@ test("tree planning refuses duplicate paths, private roots, unsafe paths, and sy
       const workspace = await createNodeEditWorkspace({ repoRoot: root });
       const cases = [
         ["conflict", { files: [{ path: "src/a.ts", content: "one\n" }, { path: "src/a.ts", content: "two\n" }] }],
-        ["unsupported_change", { files: [{ path: ".ace/runtime/state.json", content: "{}\n" }] }],
-        ["unsupported_change", { files: [{ path: ".rox-cache/state.json", content: "{}\n" }] }],
+        ["unsupported_change", { files: [{ path: ".agents/runtime/state.json", content: "{}\n" }] }],
+        ["unsupported_change", { files: [{ path: ".codex/runtime/state.json", content: "{}\n" }] }],
         ["unsupported_change", { files: [{ path: "node_modules/pkg/index.js", content: "module.exports = {}\n" }] }],
         ["unsupported_change", { files: [{ path: "target/debug/out.txt", content: "out\n" }] }],
         ["parent_directory", { files: [{ path: "../escape.ts", content: "x\n" }] }],

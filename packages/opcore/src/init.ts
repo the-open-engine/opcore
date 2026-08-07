@@ -1583,7 +1583,7 @@ function guidanceBlock(): string {
     "- Preserve existing repo lint/test/CI/pre-commit guardrails.",
     "- Treat unsupported stacks and degraded tools honestly.",
     "- For Python repos, require one configured per-project type authority; treat absent, conflicting, unavailable, or deferred authority and missing ruff/pytest as degraded coverage, not a pass.",
-    "- Do not rely on ACE, Rox, CRG, CIX, or ASP host authority for direct Opcore.",
+    "- Use Opcore validation directly; ASP hosts retain their own decision authority.",
     endMarker
   ].join("\n");
 }

@@ -231,7 +231,6 @@ function listWarmSourceFiles(repoRoot: string): string[] {
 }
 
 const excludedDirectories = new Set([
-  ".ace",
   ".agents",
   ".claude",
   ".codex",
@@ -240,8 +239,6 @@ const excludedDirectories = new Set([
   ".lattice",
   ".opencode",
   ".pnpm",
-  ".robustness-engine-cache",
-  ".rox-cache",
   "dist",
   "node_modules",
   "target",

@@ -9,7 +9,7 @@ import {
   statSync,
   writeFileSync
 } from "node:fs";
-import { join, relative, resolve } from "node:path";
+import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   graphCoreNativePackageNameForTarget,
@@ -587,7 +587,9 @@ function parseGitGrepLine(line, commit) {
 }
 
 function isSecretScanPathSkipped(path) {
-  return /(^|\/)(node_modules|dist|target|\.git|\.ace|\.lattice|\.zeroshot)(\/|$)/.test(path) || /\.(png|jpe?g|gif|pdf|tgz|zip|sqlite|db)$/i.test(path);
+  const skippedRoot = /(^|\/)(node_modules|dist|target|\.git|\.lattice|\.zeroshot)(\/|$)/.test(path);
+  const skippedExtension = /\.(png|jpe?g|gif|pdf|tgz|zip|sqlite|db)$/i.test(path);
+  return skippedRoot || skippedExtension;
 }
 
 function isTextFile(path) {
@@ -719,12 +721,6 @@ function readDescriptor() {
 }
 
 function validateNoOldPublicIdentity(packageName, manifest, bins) {
-  if (/(?:^|[-/])(lattice|crg|cix|rox)(?:$|-)/i.test(String(manifest.name))) {
-    throw new Error(`${packageName} exposes forbidden old package identity ${manifest.name}`);
-  }
-  for (const bin of Object.keys(bins)) {
-    if (["lattice", "crg", "cix", "rox"].includes(bin)) throw new Error(`${packageName} exposes forbidden old public bin ${bin}`);
-  }
   if (packageName === "opcore") assertSameSet(Object.keys(bins), ["opcore", "opcore-asp-provider"], `${packageName} bins`);
   else if (Object.keys(bins).length > 0) throw new Error(`${packageName} must not expose public bins`);
 }

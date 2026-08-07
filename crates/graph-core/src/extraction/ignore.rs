@@ -45,7 +45,6 @@ const BUILT_IN_IGNORE_GLOBS: &[&str] = &[
     "**/vendor/**",
     "**/dist/**",
     "**/target/**",
-    "**/.ace/**",
     "**/.agents/**",
     "**/.claude/**",
     "**/.codex/**",
@@ -53,9 +52,6 @@ const BUILT_IN_IGNORE_GLOBS: &[&str] = &[
     "**/.lattice/**",
     "**/.opencode/**",
     "**/.opcore/**",
-    "**/.rox-cache/**",
-    ".robustness-engine-cache/**",
-    "**/.robustness-engine-cache/**",
     ".venv/**",
     "**/.venv/**",
     "venv/**",
@@ -105,7 +101,6 @@ pub(super) fn ignore_matcher(repo_root: &Path) -> Result<IgnoreMatcher, GraphExt
     }
     let mut rules = Vec::new();
     add_ignore_file(&mut rules, repo_root.join(".gitignore"));
-    add_ignore_file(&mut rules, repo_root.join(".code-review-graphignore"));
     Ok(IgnoreMatcher {
         built_in: builder.build().map_err(|source| {
             error(

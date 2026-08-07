@@ -399,7 +399,7 @@
       "value": 2,
       "unit": "ms",
       "baselineIssue": "#19",
-      "baselineReceipt": "packages/fixtures/graph-reference-evidence/baseline-receipts.json",
+      "baselineReceipt": "docs/release/graph-release-receipt.json",
       "comparison": "recorded"
     },
     {
@@ -407,7 +407,7 @@
       "value": 466,
       "unit": "ms",
       "baselineIssue": "#19",
-      "baselineReceipt": "packages/fixtures/graph-reference-evidence/baseline-receipts.json",
+      "baselineReceipt": "docs/release/graph-release-receipt.json",
       "comparison": "recorded"
     },
     {
@@ -415,7 +415,7 @@
       "value": 171,
       "unit": "ms",
       "baselineIssue": "#19",
-      "baselineReceipt": "packages/fixtures/graph-reference-evidence/baseline-receipts.json",
+      "baselineReceipt": "docs/release/graph-release-receipt.json",
       "comparison": "recorded"
     },
     {
@@ -423,7 +423,7 @@
       "value": 174,
       "unit": "ms",
       "baselineIssue": "#19",
-      "baselineReceipt": "packages/fixtures/graph-reference-evidence/baseline-receipts.json",
+      "baselineReceipt": "docs/release/graph-release-receipt.json",
       "comparison": "recorded"
     },
     {
@@ -431,7 +431,7 @@
       "value": 171,
       "unit": "ms",
       "baselineIssue": "#19",
-      "baselineReceipt": "packages/fixtures/graph-reference-evidence/baseline-receipts.json",
+      "baselineReceipt": "docs/release/graph-release-receipt.json",
       "comparison": "recorded"
     },
     {
@@ -439,7 +439,7 @@
       "value": 172,
       "unit": "ms",
       "baselineIssue": "#19",
-      "baselineReceipt": "packages/fixtures/graph-reference-evidence/baseline-receipts.json",
+      "baselineReceipt": "docs/release/graph-release-receipt.json",
       "comparison": "recorded"
     },
     {
@@ -447,7 +447,7 @@
       "value": 175,
       "unit": "ms",
       "baselineIssue": "#19",
-      "baselineReceipt": "packages/fixtures/graph-reference-evidence/baseline-receipts.json",
+      "baselineReceipt": "docs/release/graph-release-receipt.json",
       "comparison": "recorded"
     },
     {
@@ -455,7 +455,7 @@
       "value": 175,
       "unit": "ms",
       "baselineIssue": "#19",
-      "baselineReceipt": "packages/fixtures/graph-reference-evidence/baseline-receipts.json",
+      "baselineReceipt": "docs/release/graph-release-receipt.json",
       "comparison": "recorded"
     },
     {
@@ -463,7 +463,7 @@
       "value": 192512,
       "unit": "bytes",
       "baselineIssue": "#19",
-      "baselineReceipt": "packages/fixtures/graph-reference-evidence/baseline-receipts.json",
+      "baselineReceipt": "docs/release/graph-release-receipt.json",
       "comparison": "recorded"
     },
     {
@@ -471,7 +471,7 @@
       "value": 350232,
       "unit": "bytes",
       "baselineIssue": "#19",
-      "baselineReceipt": "packages/fixtures/graph-reference-evidence/baseline-receipts.json",
+      "baselineReceipt": "docs/release/graph-release-receipt.json",
       "comparison": "recorded"
     }
   ],
@@ -498,19 +498,19 @@
       "dist/sidecar.d.ts",
       "dist/sidecar.d.ts.map"
     ],
-    "forbiddenMarkersAbsent": true,
-    "generatedBuildMetadataAbsent": true,
-    "privatePathsAbsent": true,
-    "pythonCrgSourceAbsent": true,
-    "pythonGraphPackageMetadataAbsent": true,
-    "pythonCrgGitHistoryAbsent": true,
-    "forbiddenImplementationPackageNamesAbsent": true,
     "inspections": [
       "npm-pack-dry-run",
       "package-file-scan",
       "package-content-scan",
       "provenance-marker-scan"
-    ]
+    ],
+    "forbiddenMarkersAbsent": true,
+    "generatedBuildMetadataAbsent": true,
+    "privatePathsAbsent": true,
+    "sourceProvenanceAbsent": true,
+    "packageMetadataAbsent": true,
+    "gitHistoryAbsent": true,
+    "foreignImplementationNamesAbsent": true
   },
   "reportReceipts": [
     {
@@ -598,19 +598,19 @@
       "issue": "#7",
       "receiptPath": "docs/release/graph-release-receipt.payload.json",
       "checksumSha256": "58ab75e806803f02a94286de55a5c625b5173bb476aec6e785d69450cca09315",
-      "rollbackNote": "Keep ACE wrappers on current external tools if receipt regresses."
+      "rollbackNote": "Block release and repair Opcore self-validation if receipt regresses."
     },
     {
       "issue": "#28",
       "receiptPath": "docs/release/graph-release-receipt.payload.json",
       "checksumSha256": "58ab75e806803f02a94286de55a5c625b5173bb476aec6e785d69450cca09315",
-      "rollbackNote": "Keep ACE wrappers on current external tools if receipt regresses."
+      "rollbackNote": "Block release and repair Opcore self-validation if receipt regresses."
     },
     {
       "issue": "#29",
       "receiptPath": "docs/release/graph-release-receipt.payload.json",
       "checksumSha256": "58ab75e806803f02a94286de55a5c625b5173bb476aec6e785d69450cca09315",
-      "rollbackNote": "Keep ACE wrappers on current external tools if receipt regresses."
+      "rollbackNote": "Block release and repair Opcore self-validation if receipt regresses."
     }
   ],
   "supportedNativeTargets": [

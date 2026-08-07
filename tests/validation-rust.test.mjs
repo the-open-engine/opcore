@@ -4,7 +4,6 @@ import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, wr
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
-  calculateValidationFileChecksum,
   createNodeValidationWorkspace,
   createValidationCheckRegistry,
   createValidationRunner
@@ -1567,10 +1566,10 @@ const rustCheckIds = [
       const workspaceRoots = readFileSync(logPath, "utf8")
         .split(/\r?\n/)
         .map((line) => /\tCWD=([^\t]+)$/.exec(line)?.[1])
-        .filter((path) => path?.includes("lattice-validation-rust-"));
+        .filter((path) => path?.includes("opcore-validation-rust-"));
       assert.equal(workspaceRoots.length > 5, true);
       assert.equal(new Set(workspaceRoots).size, 1, workspaceRoots.join("\n"));
-      assert.match(workspaceRoots[0], /lattice-validation-rust-[^/]+\/repo$/);
+      assert.match(workspaceRoots[0], /opcore-validation-rust-[^/]+\/repo$/);
       assert.equal(existsSync(workspaceRoots[0]), false);
     } finally {
       rmSync(temp, { recursive: true, force: true });

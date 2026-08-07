@@ -6,7 +6,6 @@ const skippedDependencyDirs = new Set([
   "node_modules",
   "dist",
   "target",
-  ".ace",
   ".agents",
   ".claude",
   ".codex",

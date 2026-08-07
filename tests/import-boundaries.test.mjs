@@ -203,9 +203,7 @@ describe("package import boundaries", () => {
       /resolveGraphCoreArtifact/i,
       /native artifact loader/i,
       /raw sqlite/i,
-      /graph sqlite/i,
-      /graph-reference-evidence execution/i,
-      /\bcrg\s+(status|serve|query|refresh|build|inspect|impact|search)\b/i
+      /graph sqlite/i
     ];
     for (const packageDir of ["edit", "validation"]) {
       for (const file of sourceFiles(`packages/${packageDir}/src`)) {

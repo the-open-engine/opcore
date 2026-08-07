@@ -3,13 +3,13 @@
 Issue #17 graph-release gate receipt for #7, #28, and #29.
 
 Full receipt: docs/release/graph-release-receipt.json
-Full receipt SHA-256: fee81c57608f2c63ddbfc23d53490760d03a5df49fe69e3849860db0599e852f
+Full receipt SHA-256: dd92c74c58a5f4e039b36de397352e05fecd0a19a127f6a770a299e05bd1832f
 
 | Issue | Checksummed Receipt Path | SHA-256 |
 |-------|--------------------------|---------|
-| #7 | docs/release/graph-release-receipt.payload.json | 2ae48d67a1a908c5418f274c8d6d07843c131c9fc7f11ee1d0bd1f89fbcc628b |
-| #28 | docs/release/graph-release-receipt.payload.json | 2ae48d67a1a908c5418f274c8d6d07843c131c9fc7f11ee1d0bd1f89fbcc628b |
-| #29 | docs/release/graph-release-receipt.payload.json | 2ae48d67a1a908c5418f274c8d6d07843c131c9fc7f11ee1d0bd1f89fbcc628b |
+| #7 | docs/release/graph-release-receipt.payload.json | f6d68bdecc65a83e4e34e2d208f9158c5c83d06957e1da6ef90ab2444dd2891d |
+| #28 | docs/release/graph-release-receipt.payload.json | f6d68bdecc65a83e4e34e2d208f9158c5c83d06957e1da6ef90ab2444dd2891d |
+| #29 | docs/release/graph-release-receipt.payload.json | f6d68bdecc65a83e4e34e2d208f9158c5c83d06957e1da6ef90ab2444dd2891d |
 
 ## Parent #4 Graph Scope
 
@@ -30,5 +30,5 @@ Full receipt SHA-256: fee81c57608f2c63ddbfc23d53490760d03a5df49fe69e3849860db059
 License report: docs/release/license-report.md
 Provenance receipt: docs/release/provenance-receipts.md
 
-Rollback: keep ACE wrappers on current external tools if receipt regresses.
+Rollback: block release and repair Opcore self-validation if this receipt regresses.
 Maintainer note: these graph release checks must pass before publishing alpha artifacts.

@@ -4,7 +4,7 @@ import { existsSync, readFileSync } from "node:fs";
 
 const readJson = (path) => JSON.parse(readFileSync(path, "utf8"));
 
-describe("lattice scaffold", () => {
+describe("Opcore scaffold", () => {
   it("keeps opcore, graph, edit, and validation as separate package tracks", () => {
     const root = readJson("package.json");
     assert.deepEqual(root.workspaces, [
@@ -57,45 +57,17 @@ describe("lattice scaffold", () => {
     ]);
   });
 
-  it("does not publish as code-review-graph or gungnir", () => {
-    for (const name of [
-      "contracts",
-      "opcore",
-      "graph",
-      "edit",
-      "validation",
-      "validation-policy",
-      "validation-clone",
-      "validation-docs",
-      "validation-python",
-      "validation-rust",
-      "validation-typescript",
-      "fixtures"
-    ]) {
-      const manifest = readJson(`packages/${name}/package.json`);
-      assert.equal(manifest.name.includes("code-review-graph"), false);
-      assert.equal(manifest.name.includes("gungnir"), false);
-    }
-  });
-
-  it("keeps agent tooling pointed at current external tools", () => {
+  it("uses Opcore for repository validation", () => {
     assert.equal(readFileSync("AGENTS.md", "utf8"), readFileSync("CLAUDE.md", "utf8"));
-    assert.equal(existsSync("ace.json"), true);
-    assert.equal(existsSync("rox.json"), true);
+    assert.equal(existsSync(".opcore/config"), true);
     assert.equal(existsSync(".zeroshot/settings.json"), true);
-    assert.equal(existsSync("scripts/setup-current-tools.sh"), true);
+    assert.equal(existsSync("scripts/run-opcore-self-check.mjs"), true);
     assert.equal(existsSync("scripts/ci/run-local-ci-equivalent.sh"), true);
 
-    const setupTools = readFileSync("scripts/setup-current-tools.sh", "utf8");
-    assert.match(setupTools, /external ACE-managed tools/);
-    assert.match(setupTools, /implementation_package_dir/);
-    assert.match(setupTools, /use current external tools, not \$\{implementation_path\}/);
-    assert.match(setupTools, /aceTools/);
-    assert.match(setupTools, /binRoot/);
-    assert.match(setupTools, /latticeCurrentTools/);
-
-    const ace = readJson("ace.json");
-    assert.match(ace.mcpServers["code-review-graph"].args.join("\n"), /\.ace\/runtime\/bin\/crg/);
+    const root = readJson("package.json");
+    assert.equal(root.scripts.setup, "npm ci");
+    assert.match(root.scripts["opcore:self-check"], /scripts\/run-opcore-self-check\.mjs/);
+    assert.deepEqual(readJson(".zeroshot/settings.json").worktree.setup, ["npm ci"]);
   });
 
   it("pins runtime CLI decision anchors", () => {

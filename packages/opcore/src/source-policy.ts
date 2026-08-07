@@ -5,7 +5,6 @@ export const commonSkippedPathSegments = [
   "vendor",
   "dist",
   "target",
-  ".ace",
   ".agents",
   ".asp",
   ".claude",
@@ -13,7 +12,5 @@ export const commonSkippedPathSegments = [
   ".gemini",
   ".lattice",
   ".opencode",
-  ".opcore",
-  ".rox-cache",
-  ".robustness-engine-cache"
+  ".opcore"
 ] as const;

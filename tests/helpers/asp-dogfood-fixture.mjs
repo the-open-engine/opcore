@@ -19,12 +19,11 @@ export function validAspDogfoodReceipt() {
     repoEnrollment: repoEnrollmentFixture(),
     hostEvaluation: hostEvaluationFixture(hostDecision),
     providerProbe: providerProbeFixture(),
-    currentToolGuardrails: guardrailsFixture(),
+    selfValidation: selfValidationFixture(),
     unsupportedSurfaces: unsupportedSurfacesFixture(),
-    parityBlockers: [{ source: "docs/planning/old-tool-compatibility-matrix.md:1", detail: "old-tool guardrails retained" }],
+    parityBlockers: [],
     authority: authorityFixture(),
     publicReleaseActions: [],
-    oldToolReplacementClaimed: false,
     forbiddenMarkerScan: { scannedTextCount: 2, findingCount: 0, markersBlocked: aspDogfoodForbiddenProviderMarkers }
   };
 }
@@ -32,21 +31,27 @@ export function validAspDogfoodReceipt() {
 export function invalidAspDogfoodCases(receipt) {
   return [
     ["opcore asp serve entrypoint", { ...receipt, provider: { ...receipt.provider, command: ["opcore", "asp", "serve"] } }, /provider command/],
-    ["ACE runtime provider entrypoint", { ...receipt, provider: { ...receipt.provider, binPath: ".ace/runtime/bin/opcore-asp-provider" } }, /node_modules\/\.bin\/opcore-asp-provider|forbidden marker/],
+    [
+      "private provider entrypoint",
+      {
+        ...receipt,
+        provider: { ...receipt.provider, binPath: "private/runtime/opcore-asp-provider" }
+      },
+      /node_modules\/\.bin\/opcore-asp-provider/
+    ],
     ["failed ASP server add", failedManagerServerAdd(receipt), /manager server add status must be passed/],
     ["failed ASP repo enable", failedRepoEnable(receipt), /repo enable status must be passed/],
     ["failed ASP host check", failedHostCheck(receipt), /host check status must be passed/],
     ["missing host fixture evidence", missingHostFixture(receipt), /host fixture evidence/],
     ["host fixture mutates source repo", sourceMutatingHostFixture(receipt), /source repo/],
     ["failed provider probe", failedProviderProbe(receipt), /provider probe status must be passed/],
-    ["failed required old-tool guardrail", failedRequiredGuardrail(receipt), /required guardrail current-tools-validate-changed must pass/],
+    ["failed self-validation", failedSelfValidation(receipt), /self-validation status must be passed/],
     ["missing host receipt authority evidence", missingHostAuthority(receipt), /authorityEvidence/],
     ["provider output as host decision", providerDecisionLeak(receipt), /host-owned field|host-owned decision|hostOwnedFieldLeak/],
-    ["missing old-tool guardrail", missingGuardrail(receipt), /guardrail ids/],
+    ["missing self-validation", missingSelfValidation(receipt), /self-validation receipt is required/],
     ["unsupported inspect clean coverage", cleanInspectCoverage(receipt), /clean coverage/],
     ["silent local authority weakening", weakenedAuthority(receipt), /weaken shared authority/],
-    ["public publish action", { ...receipt, publicReleaseActions: [{ action: "publish" }] }, /public publish/],
-    ["old-tool replacement claim", { ...receipt, oldToolReplacementClaimed: true }, /old-tool replacement/]
+    ["public publish action", { ...receipt, publicReleaseActions: [{ action: "publish" }] }, /public publish/]
   ];
 }
 
@@ -113,8 +118,7 @@ function aspHomeFixture() {
     temp: true,
     isolated: true,
     sharedStateMutated: false,
-    pathSanitized: true,
-    aceRuntimeBinExcluded: true
+    pathSanitized: true
   };
 }
 
@@ -228,18 +232,22 @@ function assessmentFixture() {
   };
 }
 
-function guardrailsFixture() {
-  return [
-    { ...command("current-tools-validate-changed", ["npm", "run", "current-tools:validate-changed"]), retained: true },
-    { ...command("current-tools-validate-rust-graph", ["npm", "run", "current-tools:validate-rust-graph"]), retained: true },
-    { id: "current-tools-validate-all", command: ["npm", "run", "current-tools:validate-all"], status: "retained-not-run", exitCode: null, stdoutSha256: "0".repeat(64), stderrSha256: "0".repeat(64), retained: true, assertion: "retained by default" }
-  ];
+function selfValidationFixture() {
+  return {
+    id: "opcore-self-check",
+    command: ["npm", "run", "opcore:self-check"],
+    status: "passed",
+    exitCode: 0,
+    stdoutSha256: "0".repeat(64),
+    stderrSha256: "0".repeat(64),
+    assertion: "Opcore self-validation passed"
+  };
 }
 
 function unsupportedSurfacesFixture() {
   return [
     { surface: "inspect", status: "parity-blocker", cleanCoverage: false, blocker: "inspect not mapped into ASP #120" },
-    { surface: "edit", status: "retained-old-tool-gate", cleanCoverage: false, blocker: "edit not mapped into ASP #120" }
+    { surface: "edit", status: "parity-blocker", cleanCoverage: false, blocker: "edit not mapped into ASP #120" }
   ];
 }
 
@@ -300,13 +308,8 @@ function failedProviderProbe(receipt) {
   return { ...receipt, providerProbe: failedCommand(receipt.providerProbe) };
 }
 
-function failedRequiredGuardrail(receipt) {
-  return {
-    ...receipt,
-    currentToolGuardrails: receipt.currentToolGuardrails.map((entry) =>
-      entry.id === "current-tools-validate-changed" ? failedCommand(entry) : entry
-    )
-  };
+function failedSelfValidation(receipt) {
+  return { ...receipt, selfValidation: failedCommand(receipt.selfValidation) };
 }
 
 function missingHostAuthority(receipt) {
@@ -317,8 +320,10 @@ function providerDecisionLeak(receipt) {
   return { ...receipt, providerProbe: { ...receipt.providerProbe, assessment: { ...receipt.providerProbe.assessment, decision: "allow" }, hostOwnedFieldLeak: true } };
 }
 
-function missingGuardrail(receipt) {
-  return { ...receipt, currentToolGuardrails: receipt.currentToolGuardrails.filter((entry) => entry.id !== "current-tools-validate-changed") };
+function missingSelfValidation(receipt) {
+  const { selfValidation, ...withoutSelfValidation } = receipt;
+  void selfValidation;
+  return withoutSelfValidation;
 }
 
 function cleanInspectCoverage(receipt) {

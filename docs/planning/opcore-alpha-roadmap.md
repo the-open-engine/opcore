@@ -55,7 +55,7 @@ Opcore alpha must provide value quickly and honestly:
 - Reports must state coverage before findings: deep TypeScript/JavaScript graph support, Rust validation/toolchain support, experimental Python validation (degraded-honest), and unsupported-language counts.
 - Init JSON includes scan, per-language onboarding settings, interaction state, and timing fields for time-to-first-output checks.
 - Metrics are named, drillable counts and deltas, not a blended quality score.
-- Current Rox/CRG/CIX guardrails remain retained until explicit replacement evidence says otherwise.
+- Opcore validates its own changes through repository-owned checks and `npm run opcore:self-check`.
 
 ## Honest Day-One Signals
 
@@ -71,7 +71,8 @@ Ship only signals the engine can defend:
 - Python `.py`/`.pyi` graph-backed structure, untested modules, dead exports, syntax, source-hygiene, import graph, relevant-test signals, and configured-authority `python.types`; exactly one mypy or Pyright authority runs per project, while absent/conflicting/unavailable authority remains degraded. Opt-in `python.ruff-lint`/`python.ruff-format` add receipt-backed findings and activation-aware degraded status. Python readiness and parity remain gated on later release evidence.
 - Unsupported language census with no fake findings.
 
-Do not ship headline claims for generic complexity, TS complexity, Python code analysis, Go/Java analysis, security, cross-repo percentiles, automatic fixes, or old-tool replacement.
+Do not ship headline claims for generic complexity, TS complexity, Python code analysis, Go/Java analysis, security,
+cross-repo percentiles, or automatic fixes.
 
 ## Release Gate
 
@@ -80,18 +81,19 @@ Do not call the alpha ready until current evidence proves:
 - `npm run build` succeeds from a clean checkout.
 - `npm run release:hygiene` passes with launch-facing docs branded as Opcore.
 - `npm run provenance:check` passes and finds no forbidden public-surface claims.
-- `npm run cutover:check` proves installed `opcore` scan/status/check/measure flows and keeps `oldToolReplacementClaimed: false`.
+- `npm run cutover:check` proves installed `opcore` scan/status/check/measure flows and repository self-validation.
 - `opcore try --json` returns `opcoreTry.published:false`.
 - `opcore --repo . --json` emits the scan artifact allowlist:
   `.opcore/report.json`;
   `.opcore/history.jsonl`;
   bounded `.opcore/telemetry.jsonl` capped at 500 records or 1 MiB.
-- `opcore status --repo . --json` does not build graphs, run checks, run setup, install packages, use ACE/current-tool wrappers, or write files.
+- `opcore status --repo . --json` does not build graphs, run checks, run setup, install packages, or write files.
 - `opcore init --repo . --json` previews setup without writing.
 - TTY `opcore init --repo .` prompts after the scan and setup plan; declining writes nothing.
 - `opcore init --repo . --approve --json` applies additive setup without prompting and still avoids scan artifact writes.
 - `opcore check --changed --json` has stable agent exit codes.
-- Public docs and package output contain no ASP-standard, old-tool replacement, security/SAST, all-stack, AI-authorship, automatic-fix, or blended-score overclaims.
+- Public docs and package output contain no ASP-standard, generic replacement, security/SAST, all-stack,
+  AI-authorship, automatic-fix, or blended-score overclaims.
 
 ## Public Wording Rules
 
@@ -105,7 +107,7 @@ Avoid:
 
 - "ASP is the standard."
 - "Opcore proves the standard."
-- "Opcore replaces Rox/CRG/CIX."
+- "Opcore replaces your existing engineering policy."
 - "Works with every stack."
 - "Python code analysis" as a headline.
 - "Detects AI authorship."
@@ -116,8 +118,7 @@ Avoid:
 ## Non-Goals
 
 - Public ASP standard launch.
-- Old-tool retirement.
-- ACE-managed distribution.
+- External development-tool integration.
 - Source-editing or automatic-fix product claims.
 - A SaaS dashboard.
 - Windows support in `0.2.0`.

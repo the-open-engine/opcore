@@ -5,7 +5,6 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
-import { routeCommand } from "../packages/opcore/dist/advanced/index.js";
 import { routeOpcoreCommand } from "../packages/opcore/dist/index.js";
 import { fakeCargoScript, writeFakeRustToolchain } from "./helpers/validation-rust-fixtures.mjs";
 
@@ -61,7 +60,6 @@ const cloneCheckIds = ["clone.duplication"];
 const typeScriptExecutableDefaultCheckIds = typeScriptCheckIds.filter((checkId) => checkId !== "typescript.lint");
 const pythonExecutableDefaultCheckIds = pythonCheckIds.filter((checkId) => checkId !== "python.pytest");
 const executableDefaultCheckIds = [...typeScriptExecutableDefaultCheckIds, ...rustCheckIds, ...pythonExecutableDefaultCheckIds, ...cloneCheckIds];
-const defaultCheckIds = [...typeScriptCheckIds, ...rustCheckIds, ...pythonCheckIds, ...docsCheckIds, ...cloneCheckIds];
 const availableCheckIds = [
   ...typeScriptCheckIds,
   ...rustCheckIds,
@@ -334,7 +332,7 @@ describe("validation CLI", () => {
           timeoutMs: 120000,
           pathPolicy: {
             include: ["packages/", "scripts/"],
-            exclude: ["dist/**", ".ace"]
+            exclude: ["dist/**", ".agents"]
           },
           checks: {
             packs: ["./checks/policy.cjs"],
@@ -434,7 +432,7 @@ describe("validation CLI", () => {
       assert.equal(config.validation.timeoutMs, 120000);
       assert.deepEqual(config.validation.pathPolicy, {
         include: ["packages/", "scripts/"],
-        exclude: ["dist/**", ".ace"]
+        exclude: ["dist/**", ".agents"]
       });
       assert.deepEqual(config.validation.checks.packs, ["./checks/policy.cjs"]);
       assert.deepEqual(config.validation.checks.disabled, ["typescript.types"]);
@@ -519,14 +517,14 @@ describe("validation CLI", () => {
     const { pathPolicyIncludes } = await import("../packages/opcore/dist/path-policy.js");
     const policy = {
       include: ["packages/", "scripts/"],
-      exclude: ["dist/**", ".ace", ".agents", "packages/generated/**"]
+      exclude: ["dist/**", ".agents", ".codex", "packages/generated/**"]
     };
 
     assert.equal(pathPolicyIncludes("packages/opcore/src/index.ts", policy), true);
     assert.equal(pathPolicyIncludes("scripts/build.mjs", policy), true);
     assert.equal(pathPolicyIncludes("docs/notes.ts", policy), false);
     assert.equal(pathPolicyIncludes("dist/index.js", policy), false);
-    assert.equal(pathPolicyIncludes(".ace/runtime/tool.json", policy), false);
+    assert.equal(pathPolicyIncludes(".codex/runtime/tool.json", policy), false);
     assert.equal(pathPolicyIncludes(".agents/skills/opcore/SKILL.md", policy), false);
     assert.equal(pathPolicyIncludes("packages/generated/output.ts", policy), false);
     assert.equal(pathPolicyIncludes("../outside.ts", policy), false);
@@ -541,7 +539,7 @@ describe("validation CLI", () => {
         scopeFiles: ["packages/src/index.ts", "docs/notes.ts", "dist/index.js"],
         listVisibleFiles: async () => {
           listVisibleFileCalls += 1;
-          return ["packages/src/index.ts", "scripts/build.mjs", "docs/notes.ts", ".ace/runtime.json"];
+          return ["packages/src/index.ts", "scripts/build.mjs", "docs/notes.ts", ".codex/runtime.json"];
         },
         overlays: [
           { path: "packages/src/index.ts", action: "write", content: "export const value = 1;\n" },
@@ -558,7 +556,7 @@ describe("validation CLI", () => {
 
     const filtered = withFilteredFileView(context, {
       include: ["packages/", "scripts/"],
-      exclude: ["dist/**", ".ace", ".agents"]
+      exclude: ["dist/**", ".codex", ".agents"]
     });
     assert.equal(listVisibleFileCalls, 0);
 

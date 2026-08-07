@@ -1,0 +1,25 @@
+{
+  "validation": {
+    "adapters": [
+      "typescript",
+      "rust",
+      "python",
+      "docs",
+      "clone"
+    ],
+    "pathPolicy": {
+      "exclude": [
+        "packages/fixtures/",
+        "tests/fixtures/",
+        "packages/opcore-graph-core-darwin-arm64/",
+        "packages/opcore-graph-core-darwin-x64/",
+        "packages/opcore-graph-core-linux-x64/"
+      ]
+    },
+    "checks": {
+      "packs": [],
+      "disabled": [],
+      "defaults": []
+    }
+  }
+}

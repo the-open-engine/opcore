@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
@@ -21,7 +21,7 @@ import {
   requireObject,
   releaseRuntimeInstallPackageNames,
   runAspCommand,
-  runCurrentToolGuardrails,
+  runOpcoreSelfValidation,
   runRequired,
   sanitizeReceiptForProvenance,
   sha256File,
@@ -35,7 +35,6 @@ const summaryPath = "docs/release/asp-dogfood-receipt.summary.md";
 const args = process.argv.slice(2);
 const writeDocs = args.includes("--write");
 const jsonOutput = args.includes("--json") || !writeDocs;
-const includeCurrentToolsAll = args.includes("--include-current-tools-all");
 
 await main();
 
@@ -64,13 +63,16 @@ async function generateReceipt() {
   try {
     const install = installPackedProject(tempRoot);
     const provider = providerEvidence(tempRoot, install.project);
-    const manager = locateAspManager();
+    const manager = locateAspManager(repoRoot);
     const aspHome = mkdtempSync(join(tempRoot, "asp-home-"));
     const env = aspEnv(install.project, aspHome);
     const fixture = createAspHostFixtureRepo(tempRoot);
     const flow = runAspFlow(manager, env, provider.manifest.manifestPath, fixture);
     const probe = await runProviderProbe(binPath(install.project, "opcore-asp-provider"));
-    return sanitizeReceiptForProvenance(buildReceipt({ install, provider, manager, aspHome, fixture, flow, probe }));
+    return sanitizeReceiptForProvenance(
+      buildReceipt({ install, provider, manager, aspHome, fixture, flow, probe }),
+      manager.aspRepoPath
+    );
   } finally {
     rmSync(tempRoot, { recursive: true, force: true });
   }
@@ -184,12 +186,11 @@ function buildReceipt({ install, provider, manager, aspHome, fixture, flow, prob
       ? flow.hostEvaluation
       : { check: flow.hostEvaluation.check },
     providerProbe: probe,
-    currentToolGuardrails: runCurrentToolGuardrails(repoRoot, includeCurrentToolsAll),
+    selfValidation: runOpcoreSelfValidation(repoRoot),
     unsupportedSurfaces: unsupportedSurfaces(),
     parityBlockers: collectParityBlockers(repoRoot),
     authority: authorityEvidence(),
     publicReleaseActions: [],
-    oldToolReplacementClaimed: false,
     forbiddenMarkerScan: {
       scannedTextCount: providerScanTexts(provider.manifest.manifest).length,
       findingCount: 0,
@@ -205,7 +206,6 @@ function aspHomeEvidence(aspHome) {
     isolated: true,
     sharedStateMutated: false,
     pathSanitized: true,
-    aceRuntimeBinExcluded: true
   };
 }
 
@@ -219,9 +219,11 @@ function unsupportedSurfaces() {
     },
     {
       surface: "edit",
-      status: "retained-old-tool-gate",
+      status: "parity-blocker",
       cleanCoverage: false,
-      blocker: "ASP dogfood does not authorize edits or apply behavior; edit parity remains covered by current old-tool and cutover gates."
+      blocker:
+        "ASP dogfood does not authorize edits or apply behavior; " +
+        "edit parity remains covered by installed cutover evidence."
     }
   ];
 }

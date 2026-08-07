@@ -1815,8 +1815,8 @@ export const commandLatencyTelemetryArtifactPolicy = {
   rotation: "ring_buffer"
 } as const;
 
-export const graphReferenceEvidenceClassifications = ["required", "supporting", "optional", "deferred"] as const;
-export type GraphReferenceEvidenceClassification = (typeof graphReferenceEvidenceClassifications)[number];
+export const graphReleaseSurfaceClassifications = ["required", "supporting", "optional", "deferred"] as const;
+export type GraphReleaseSurfaceClassification = (typeof graphReleaseSurfaceClassifications)[number];
 
 export const graphReleaseCoreCommandIds = [
   "opcore-graph-build",
@@ -2032,43 +2032,14 @@ export const releaseCutoverNegativeCheckIds = [
 ] as const;
 export type ReleaseCutoverNegativeCheckId = (typeof releaseCutoverNegativeCheckIds)[number];
 
-export const releaseCutoverCurrentToolGuardrailIds = [
-  "current-tools-validate-changed",
-  "current-tools-validate-rust-graph"
-] as const;
-export type ReleaseCutoverCurrentToolGuardrailId = (typeof releaseCutoverCurrentToolGuardrailIds)[number];
-
 export const releaseCutoverInputIssues = ["#17", "#29", "#58"] as const;
 export type ReleaseCutoverInputIssue = (typeof releaseCutoverInputIssues)[number];
-
-export const rustOldRoxComparisonSurfaceIds = [
-  "rust.rustdoc",
-  "rust.import-graph",
-  "rust.dead-code",
-  "rust.unused-deps",
-  "rust.function-metrics",
-  "current-tools:validate-rust-graph"
-] as const;
-export type RustOldRoxComparisonSurfaceId = (typeof rustOldRoxComparisonSurfaceIds)[number];
-
-export const rustOldRoxComparisonReplacementStatuses = ["retained", "deferred"] as const;
-export type RustOldRoxComparisonReplacementStatus = (typeof rustOldRoxComparisonReplacementStatuses)[number];
-
-export const aspDogfoodRequiredGuardrailIds = ["current-tools-validate-changed", "current-tools-validate-rust-graph"] as const;
-export type AspDogfoodRequiredGuardrailId = (typeof aspDogfoodRequiredGuardrailIds)[number];
-
-export const aspDogfoodOptionalGuardrailIds = ["current-tools-validate-all"] as const;
-export type AspDogfoodOptionalGuardrailId = (typeof aspDogfoodOptionalGuardrailIds)[number];
-
-export const aspDogfoodGuardrailIds = [...aspDogfoodRequiredGuardrailIds, ...aspDogfoodOptionalGuardrailIds] as const;
-export type AspDogfoodGuardrailId = (typeof aspDogfoodGuardrailIds)[number];
 
 export const aspDogfoodUnsupportedSurfaceIds = ["inspect", "edit"] as const;
 export type AspDogfoodUnsupportedSurfaceId = (typeof aspDogfoodUnsupportedSurfaceIds)[number];
 
-export const aspDogfoodForbiddenProviderMarkers = ["opcore asp serve", "opcore asp", "dist/bin/lattice", ".ace/runtime"] as const;
+export const aspDogfoodForbiddenProviderMarkers = ["opcore asp serve", "opcore asp"] as const;
 export type AspDogfoodForbiddenProviderMarker = (typeof aspDogfoodForbiddenProviderMarkers)[number];
-const legacyAspProviderBinMarker = ["lattice", "asp", "provider"].join("-");
 
 const releaseCutoverRequestFilePlaceholder = "<request-file>";
 const releaseCutoverMissingGraphRepoPlaceholder = "<missing-graph-repo>";
@@ -3095,91 +3066,6 @@ export const commandRouterManifest: CommandRouterManifest = {
   ]
 };
 
-export interface GraphReferenceEvidenceSurfaceBase {
-  id: string;
-  classification: GraphReferenceEvidenceClassification;
-  fixtures: readonly string[];
-}
-
-export interface GraphReferenceEvidenceExitSemantics {
-  success: 0;
-  failure: string;
-}
-
-export interface GraphReferenceEvidenceCommandSurface extends GraphReferenceEvidenceSurfaceBase {
-  referenceTool: string;
-  referenceCommand: readonly string[];
-  canonicalCommand: readonly string[];
-  flags: readonly string[];
-  positionals: readonly string[];
-  exitSemantics: GraphReferenceEvidenceExitSemantics;
-}
-
-export interface GraphReferenceEvidenceJsonOutputSurface extends GraphReferenceEvidenceSurfaceBase {
-  command: string;
-  requiredFields: readonly string[];
-  exitSemantics: GraphReferenceEvidenceExitSemantics;
-}
-
-export interface GraphReferenceEvidenceSqliteFixture extends GraphReferenceEvidenceSurfaceBase {
-  fixture: string;
-  tables: readonly string[];
-  indexes: readonly string[];
-  metadataKeys: readonly string[];
-  nodeKinds: readonly string[];
-  edgeKinds: readonly string[];
-  directReaderQueries: readonly string[];
-}
-
-export interface GraphReferenceEvidenceDaemonFixture extends GraphReferenceEvidenceSurfaceBase {
-  fixture: string;
-  protocol: "opcore.graph.daemon" | "reference-mcp-stdio-baseline-only" | (string & {});
-  envelopes: readonly string[];
-}
-
-export interface GraphReferenceEvidenceBaselineReceipt extends GraphReferenceEvidenceSurfaceBase {
-  metric: string;
-  receipt: string;
-  label: "reference_evidence_non_implementation_input";
-  sourceAvailability: "available" | "unavailable";
-  nonImplementationInput: true;
-}
-
-export interface GraphReferenceEvidenceOptionalAnalysisSurface extends GraphReferenceEvidenceSurfaceBase {
-  issue: GraphReleaseDeferredChild;
-  id: GraphReleaseOptionalAnalysisSurface["id"] | (string & {});
-  status: "deferred";
-}
-
-export interface GraphReferenceEvidenceGoldenCorpusRef extends GraphReferenceEvidenceSurfaceBase {
-  fixture: string;
-  covers: readonly string[];
-}
-
-export interface GraphReferenceEvidenceProvenance {
-  containsPythonCrgSource: false;
-  containsPackageMetadata: false;
-  containsGitHistory: false;
-  referenceReceiptsAreImplementationInput: false;
-  implementationPackageNames: readonly string[];
-  allowedMentionPaths: readonly string[];
-}
-
-export interface GraphReferenceEvidenceManifest {
-  schemaVersion: 1;
-  issue: "#19";
-  origin: "covibes-authored-synthetic";
-  fixtureRefs: readonly string[];
-  commandSurfaces: readonly GraphReferenceEvidenceCommandSurface[];
-  jsonOutputSurfaces: readonly GraphReferenceEvidenceJsonOutputSurface[];
-  sqliteFixtures: readonly GraphReferenceEvidenceSqliteFixture[];
-  daemonFixtures: readonly GraphReferenceEvidenceDaemonFixture[];
-  baselineReceipts: readonly GraphReferenceEvidenceBaselineReceipt[];
-  optionalAnalysisSurfaces: readonly GraphReferenceEvidenceOptionalAnalysisSurface[];
-  goldenCorpus: GraphReferenceEvidenceGoldenCorpusRef;
-  provenance: GraphReferenceEvidenceProvenance;
-}
-
 export interface GraphReleaseCommandCoverage {
   id: GraphReleaseCoreCommandId;
   bin: "opcore";
@@ -3235,10 +3121,10 @@ export interface GraphReleasePackageInspection {
   forbiddenMarkersAbsent: true;
   generatedBuildMetadataAbsent: true;
   privatePathsAbsent: true;
-  pythonCrgSourceAbsent: true;
-  pythonGraphPackageMetadataAbsent: true;
-  pythonCrgGitHistoryAbsent: true;
-  forbiddenImplementationPackageNamesAbsent: true;
+  sourceProvenanceAbsent: true;
+  packageMetadataAbsent: true;
+  gitHistoryAbsent: true;
+  foreignImplementationNamesAbsent: true;
   inspections: readonly string[];
 }
 
@@ -3267,7 +3153,7 @@ export interface GraphReleaseReportReceipt {
 export interface GraphReleaseOptionalSurfaceReceipt {
   issue: GraphReleaseDeferredChild;
   id: GraphReleaseOptionalAnalysisSurface["id"] | (string & {});
-  classification: GraphReferenceEvidenceClassification;
+  classification: GraphReleaseSurfaceClassification;
   status: "unsupported" | "deferred";
 }
 
@@ -3520,18 +3406,9 @@ export interface ReleaseCutoverDescriptorEvidence {
 }
 
 export interface ReleaseCutoverEnvironmentIsolationEvidence {
-  currentToolEnvCleared: true;
-  clearedEnvVarCount: number;
   pathSanitized: true;
-  aceRuntimeBinExcluded: true;
-  siblingCovibesExcluded: true;
-  opcoreBinOnly: true;
-  oldBinsAbsent: {
-    lattice: true;
-    crg: true;
-    cix: true;
-    rox: true;
-  };
+  siblingRepositoriesExcluded: true;
+  opcoreBinsVerified: true;
 }
 
 export interface ReleaseCutoverCommandReceipt {
@@ -3582,16 +3459,14 @@ export interface ReleaseCutoverNegativeCheck {
   assertion: string;
 }
 
-export interface ReleaseCutoverCurrentToolGuardrailReceipt {
-  id: ReleaseCutoverCurrentToolGuardrailId;
-  command: readonly ["npm", "run", "current-tools:validate-changed"] | readonly ["npm", "run", "current-tools:validate-rust-graph"];
+export interface OpcoreSelfValidationReceipt {
+  id: "opcore-self-check";
+  command: readonly ["npm", "run", "opcore:self-check"];
   status: "passed";
   exitCode: 0;
   stdoutSha256: string;
   stderrSha256: string;
-  retained: true;
   assertion: string;
-  oldToolReplacementClaimed: false;
 }
 
 export interface ReleaseCutoverForbiddenMarkerScan {
@@ -3621,37 +3496,9 @@ export interface ReleaseCutoverReceipt {
   rustCommandReceipts: readonly ReleaseCutoverRustCommandReceipt[];
   pythonCommandReceipts: readonly ReleaseCutoverPythonCommandReceipt[];
   negativeChecks: readonly ReleaseCutoverNegativeCheck[];
-  currentToolGuardrails: readonly ReleaseCutoverCurrentToolGuardrailReceipt[];
-  oldToolReplacementClaimed: false;
+  selfValidation: OpcoreSelfValidationReceipt;
   forbiddenMarkerScan: ReleaseCutoverForbiddenMarkerScan;
   inputEvidence: readonly ReleaseCutoverInputEvidence[];
-}
-
-export interface RustOldRoxComparisonSurfaceReceipt {
-  id: RustOldRoxComparisonSurfaceId;
-  graphEvidenceExists: boolean;
-  graphEvidence: readonly string[];
-  stillUniquelyProvidedByCurrentTools: readonly string[];
-  replacementStatus: RustOldRoxComparisonReplacementStatus;
-}
-
-export interface RustOldRoxComparisonGuardrailReceipt {
-  id: "current-tools:validate-rust-graph";
-  command: readonly ["npm", "run", "current-tools:validate-rust-graph"];
-  replacementStatus: "retained";
-  oldToolReplacementClaimed: false;
-}
-
-export interface RustOldRoxComparisonReceipt {
-  schemaVersion: 1;
-  issue: "#29";
-  origin: "covibes-authored-old-rox-comparison";
-  generatedAt: string;
-  privateRepo: true;
-  oldToolReplacementClaimed: false;
-  publicReleaseActions: readonly [];
-  surfaces: readonly RustOldRoxComparisonSurfaceReceipt[];
-  guardrails: readonly RustOldRoxComparisonGuardrailReceipt[];
 }
 
 export interface AspDogfoodManagerEvidence {
@@ -3668,7 +3515,6 @@ export interface AspDogfoodAspHomeEvidence {
   isolated: true;
   sharedStateMutated: false;
   pathSanitized: true;
-  aceRuntimeBinExcluded: true;
 }
 
 export interface AspDogfoodHostFixtureEvidence {
@@ -3747,14 +3593,9 @@ export interface AspDogfoodProviderProbeEvidence extends AspDogfoodCommandRunRec
   hostOwnedFieldLeak: false;
 }
 
-export interface AspDogfoodGuardrailReceipt extends AspDogfoodCommandRunReceipt {
-  id: AspDogfoodGuardrailId;
-  retained: true;
-}
-
 export interface AspDogfoodUnsupportedSurfaceEvidence {
   surface: AspDogfoodUnsupportedSurfaceId;
-  status: "degraded" | "retained-old-tool-gate" | "parity-blocker";
+  status: "degraded" | "parity-blocker";
   cleanCoverage: false;
   blocker: string;
 }
@@ -3797,12 +3638,11 @@ export interface AspDogfoodReceipt {
   repoEnrollment: AspDogfoodRepoEnrollmentEvidence;
   hostEvaluation: AspDogfoodHostEvaluationEvidence;
   providerProbe: AspDogfoodProviderProbeEvidence;
-  currentToolGuardrails: readonly AspDogfoodGuardrailReceipt[];
+  selfValidation: OpcoreSelfValidationReceipt;
   unsupportedSurfaces: readonly AspDogfoodUnsupportedSurfaceEvidence[];
   parityBlockers: readonly AspDogfoodParityBlocker[];
   authority: AspDogfoodAuthorityEvidence;
   publicReleaseActions: readonly [];
-  oldToolReplacementClaimed: false;
   forbiddenMarkerScan: AspDogfoodForbiddenMarkerScan;
 }
 
@@ -4135,11 +3975,6 @@ function validateManagedToolIdentity(descriptor: ManagedToolDescriptor): void {
 
 function validateManagedToolEntrypoints(entrypoints: readonly ManagedToolDescriptorEntrypoint[]): void {
   validateNonEmptyArray(entrypoints, "Managed tool descriptor entrypoints");
-  for (const entrypoint of entrypoints) {
-    if (entrypoint?.bin !== "opcore" && ["lattice", "crg", "cix", "rox"].includes(String(entrypoint?.bin))) {
-      throw new Error("Managed tool descriptor must not reference old public aliases");
-    }
-  }
   validateExactStringSet(
     entrypoints.map((entrypoint) => entrypoint.bin),
     ["opcore"],
@@ -4461,7 +4296,7 @@ function validateManagedToolProvenanceHooks(provenanceHooks: readonly ManagedToo
   }
 }
 
-const managedToolPrivateRuntimePathPattern = /(?:^|\/)(?:\.ace|\.agents|\.claude|\.codex|\.gemini|\.opencode)(?:\/|$)/;
+const managedToolPrivateRuntimePathPattern = /(?:^|\/)(?:\.agents|\.claude|\.codex|\.gemini|\.opencode)(?:\/|$)/;
 
 function normalizeManagedToolDescriptorString(value: string): string {
   return value.replaceAll("\\", "/");
@@ -4475,30 +4310,24 @@ function validateManagedToolPackagePath(path: string, label: string): string {
   if (managedToolPrivateRuntimePathPattern.test(normalized)) {
     throw new Error(`${label} must not reference private runtime paths`);
   }
-  if (normalized.includes("LATTICE_CURRENT_TOOLS_DIR")) {
-    throw new Error(`${label} must not reference current-tool environment variables`);
-  }
   return normalized;
 }
 
 function validateManagedToolCommandTokens(tokens: readonly string[], label: string): void {
   for (const token of tokens) {
     validateNonEmptyString(token, label);
-    if (["lattice", "crg", "cix", "rox"].includes(token)) throw new Error("Managed tool descriptor must not reference old public aliases");
     const normalizedToken = normalizeManagedToolDescriptorString(token);
-    if (managedToolPrivateRuntimePathPattern.test(normalizedToken) || normalizedToken.includes("LATTICE_CURRENT_TOOLS_DIR")) {
-      throw new Error("Managed tool descriptor must not reference current-tool runtime paths");
+    if (managedToolPrivateRuntimePathPattern.test(normalizedToken)) {
+      throw new Error("Managed tool descriptor must not reference private runtime paths");
     }
   }
 }
 
 function validateManagedToolDescriptorForbiddenStrings(value: unknown): void {
-  const oldAliasPattern = /(^|[\\/\s])(?:lattice|crg|cix|rox)(?:$|[\\/\s])/i;
   for (const text of collectStrings(value)) {
-    if (oldAliasPattern.test(text)) throw new Error("Managed tool descriptor must not reference old public aliases");
     const normalizedText = normalizeManagedToolDescriptorString(text);
-    if (managedToolPrivateRuntimePathPattern.test(normalizedText) || normalizedText.includes("LATTICE_CURRENT_TOOLS_DIR")) {
-      throw new Error("Managed tool descriptor must not reference current-tool runtime paths");
+    if (managedToolPrivateRuntimePathPattern.test(normalizedText)) {
+      throw new Error("Managed tool descriptor must not reference private runtime paths");
     }
     if (normalizedText.includes("/Users/tom")) {
       throw new Error("Managed tool descriptor must not reference private paths");
@@ -5779,34 +5608,6 @@ export function validateCommandAdapterRequest(request: CommandAdapterRequest): C
   return request;
 }
 
-export function validateGraphReferenceEvidenceManifest(manifest: GraphReferenceEvidenceManifest): GraphReferenceEvidenceManifest {
-  if (!manifest || typeof manifest !== "object") {
-    throw new Error("Graph reference evidence manifest is required");
-  }
-  if (manifest.schemaVersion !== 1) {
-    throw new Error("Graph reference evidence manifest schemaVersion must be 1");
-  }
-  if (manifest.issue !== "#19") {
-    throw new Error("Graph reference evidence manifest issue must be #19");
-  }
-  if (manifest.origin !== "covibes-authored-synthetic") {
-    throw new Error("Graph reference evidence manifest origin must be covibes-authored-synthetic");
-  }
-
-  validateStringArray(manifest.fixtureRefs, "Graph reference evidence manifest fixtureRefs", { allowEmpty: false });
-  validateGraphReferenceEvidenceCommandSurfaces(manifest.commandSurfaces);
-  validateGraphReferenceEvidenceJsonOutputSurfaces(manifest.jsonOutputSurfaces);
-  validateGraphReferenceEvidenceSqliteFixtures(manifest.sqliteFixtures);
-  validateGraphReferenceEvidenceDaemonFixtures(manifest.daemonFixtures);
-  validateGraphReferenceEvidenceBaselineReceipts(manifest.baselineReceipts);
-  validateGraphReferenceEvidenceOptionalSurfaces(manifest.optionalAnalysisSurfaces);
-  validateGraphReferenceEvidenceGoldenCorpus(manifest.goldenCorpus);
-  validateGraphReferenceEvidenceProvenance(manifest.provenance);
-  validateGraphReferenceEvidenceSourceFreeStrings(manifest);
-
-  return manifest;
-}
-
 export function validateGraphReleaseReceipt(receipt: GraphReleaseReceipt): GraphReleaseReceipt {
   if (!receipt || typeof receipt !== "object") {
     throw new Error("Graph release receipt is required");
@@ -5869,6 +5670,17 @@ export function validateReleaseReceipt(receipt: ReleaseReceipt): ReleaseReceipt 
   return receipt;
 }
 
+const validateOpcoreSelfValidation = (receipt: OpcoreSelfValidationReceipt, label: string): void => {
+  if (!receipt || typeof receipt !== "object") throw new Error(`${label} receipt is required`);
+  if (receipt.id !== "opcore-self-check") throw new Error(`${label} id must be opcore-self-check`);
+  validateExactStringSequence(receipt.command, ["npm", "run", "opcore:self-check"], `${label} command`);
+  if (receipt.status !== "passed") throw new Error(`${label} status must be passed`);
+  if (receipt.exitCode !== 0) throw new Error(`${label} exitCode must be 0`);
+  validateSha256(receipt.stdoutSha256, `${label} stdoutSha256`);
+  validateSha256(receipt.stderrSha256, `${label} stderrSha256`);
+  validateNonEmptyString(receipt.assertion, `${label} assertion`);
+};
+
 export function validateReleaseCutoverReceipt(receipt: ReleaseCutoverReceipt): ReleaseCutoverReceipt {
   if (!receipt || typeof receipt !== "object") throw new Error("Release cutover receipt is required");
   if (receipt.schemaVersion !== 1) throw new Error("Release cutover receipt schemaVersion must be 1");
@@ -5887,30 +5699,9 @@ export function validateReleaseCutoverReceipt(receipt: ReleaseCutoverReceipt): R
   validateReleaseCutoverRustCommandReceipts(receipt.rustCommandReceipts);
   validateReleaseCutoverPythonCommandReceipts(receipt.pythonCommandReceipts);
   validateReleaseCutoverNegativeChecks(receipt.negativeChecks);
-  validateReleaseCutoverCurrentToolGuardrails(receipt.currentToolGuardrails);
-  if (receipt.oldToolReplacementClaimed !== false) {
-    throw new Error("Release cutover receipt must not claim old-tool replacement");
-  }
+  validateOpcoreSelfValidation(receipt.selfValidation, "Release cutover self-validation");
   validateReleaseCutoverForbiddenMarkerScan(receipt.forbiddenMarkerScan);
   validateReleaseCutoverInputEvidence(receipt.inputEvidence);
-  return receipt;
-}
-
-export function validateRustOldRoxComparisonReceipt(receipt: RustOldRoxComparisonReceipt): RustOldRoxComparisonReceipt {
-  if (!receipt || typeof receipt !== "object") throw new Error("Rust old-Rox comparison receipt is required");
-  if (receipt.schemaVersion !== 1) throw new Error("Rust old-Rox comparison receipt schemaVersion must be 1");
-  if (receipt.issue !== "#29") throw new Error("Rust old-Rox comparison receipt issue must be #29");
-  if (receipt.origin !== "covibes-authored-old-rox-comparison") {
-    throw new Error("Rust old-Rox comparison receipt origin must be covibes-authored-old-rox-comparison");
-  }
-  validateNonEmptyString(receipt.generatedAt, "Rust old-Rox comparison generatedAt");
-  if (receipt.privateRepo !== true) throw new Error("Rust old-Rox comparison receipt privateRepo must be true");
-  if (receipt.oldToolReplacementClaimed !== false) throw new Error("Rust old-Rox comparison receipt must not claim old-tool replacement");
-  if (!Array.isArray(receipt.publicReleaseActions) || receipt.publicReleaseActions.length !== 0) {
-    throw new Error("Rust old-Rox comparison receipt public release actions must be empty");
-  }
-  validateRustOldRoxComparisonSurfaces(receipt.surfaces);
-  validateRustOldRoxComparisonGuardrails(receipt.guardrails);
   return receipt;
 }
 
@@ -5935,14 +5726,13 @@ export function validateAspDogfoodReceipt(receipt: AspDogfoodReceipt): AspDogfoo
   validateAspDogfoodRepoEnrollment(receipt.repoEnrollment);
   validateAspDogfoodHostEvaluation(receipt.hostEvaluation);
   validateAspDogfoodProviderProbe(receipt.providerProbe);
-  validateAspDogfoodGuardrails(receipt.currentToolGuardrails);
+  validateOpcoreSelfValidation(receipt.selfValidation, "ASP dogfood self-validation");
   validateAspDogfoodUnsupportedSurfaces(receipt.unsupportedSurfaces);
   validateAspDogfoodParityBlockers(receipt.parityBlockers);
   validateAspDogfoodAuthority(receipt.authority);
   if (!Array.isArray(receipt.publicReleaseActions) || receipt.publicReleaseActions.length !== 0) {
     throw new Error("ASP dogfood receipt must not record public publish, registry, or standard-readiness actions");
   }
-  if (receipt.oldToolReplacementClaimed !== false) throw new Error("ASP dogfood receipt must not claim old-tool replacement");
   validateAspDogfoodForbiddenMarkerScan(receipt.forbiddenMarkerScan);
   validateAspDogfoodForbiddenProviderEntrypoint(receipt);
   return receipt;
@@ -8865,151 +8655,11 @@ function validateCommandRouteStatus(status: unknown): CommandRouteStatus {
   return status;
 }
 
-function validateGraphReferenceEvidenceSurfaceClassification(classification: unknown): GraphReferenceEvidenceClassification {
-  if (!includesString(graphReferenceEvidenceClassifications, classification)) {
-    throw new Error(`Unknown graph reference evidence surface classification: ${String(classification)}`);
+function validateGraphReleaseSurfaceClassification(classification: unknown): GraphReleaseSurfaceClassification {
+  if (!includesString(graphReleaseSurfaceClassifications, classification)) {
+    throw new Error(`Unknown graph release surface classification: ${String(classification)}`);
   }
   return classification;
-}
-
-function validateGraphReferenceEvidenceCommandSurfaces(surfaces: readonly GraphReferenceEvidenceCommandSurface[]): void {
-  validateNonEmptyArray(surfaces, "Graph reference evidence commandSurfaces");
-  for (const surface of surfaces) {
-    validateGraphReferenceEvidenceSurfaceBase(surface, "Graph reference evidence command surface");
-    validateNonEmptyString(surface.referenceTool, "Graph reference evidence command surface referenceTool");
-    validateStringArray(surface.referenceCommand, "Graph reference evidence command surface referenceCommand", { allowEmpty: true });
-    validateStringArray(surface.canonicalCommand, "Graph reference evidence command surface canonicalCommand", { allowEmpty: false });
-    validateStringArray(surface.flags, "Graph reference evidence command surface flags", { allowEmpty: true });
-    validateStringArray(surface.positionals, "Graph reference evidence command surface positionals", { allowEmpty: true });
-    validateGraphReferenceEvidenceExitSemantics(surface.exitSemantics, "Graph reference evidence command surface");
-  }
-}
-
-function validateGraphReferenceEvidenceJsonOutputSurfaces(surfaces: readonly GraphReferenceEvidenceJsonOutputSurface[]): void {
-  validateNonEmptyArray(surfaces, "Graph reference evidence jsonOutputSurfaces");
-  for (const surface of surfaces) {
-    validateGraphReferenceEvidenceSurfaceBase(surface, "Graph reference evidence JSON output surface");
-    validateNonEmptyString(surface.command, "Graph reference evidence JSON output surface command");
-    validateStringArray(surface.requiredFields, "Graph reference evidence JSON output surface requiredFields", { allowEmpty: false });
-    validateGraphReferenceEvidenceExitSemantics(surface.exitSemantics, "Graph reference evidence JSON output surface");
-  }
-}
-
-function validateGraphReferenceEvidenceSqliteFixtures(fixtures: readonly GraphReferenceEvidenceSqliteFixture[]): void {
-  validateNonEmptyArray(fixtures, "Graph reference evidence sqliteFixtures");
-  for (const fixture of fixtures) {
-    validateGraphReferenceEvidenceSurfaceBase(fixture, "Graph reference evidence SQLite fixture");
-    validateNonEmptyString(fixture.fixture, "Graph reference evidence SQLite fixture path");
-    validateStringArray(fixture.tables, "Graph reference evidence SQLite fixture tables", { allowEmpty: false });
-    validateStringArray(fixture.indexes, "Graph reference evidence SQLite fixture indexes", { allowEmpty: false });
-    validateStringArray(fixture.metadataKeys, "Graph reference evidence SQLite fixture metadataKeys", { allowEmpty: false });
-    validateStringArray(fixture.nodeKinds, "Graph reference evidence SQLite fixture nodeKinds", { allowEmpty: false });
-    validateStringArray(fixture.edgeKinds, "Graph reference evidence SQLite fixture edgeKinds", { allowEmpty: false });
-    validateStringArray(fixture.directReaderQueries, "Graph reference evidence SQLite fixture directReaderQueries", { allowEmpty: false });
-  }
-}
-
-function validateGraphReferenceEvidenceDaemonFixtures(fixtures: readonly GraphReferenceEvidenceDaemonFixture[]): void {
-  validateNonEmptyArray(fixtures, "Graph reference evidence daemonFixtures");
-  for (const fixture of fixtures) {
-    validateGraphReferenceEvidenceSurfaceBase(fixture, "Graph reference evidence daemon fixture");
-    validateNonEmptyString(fixture.fixture, "Graph reference evidence daemon fixture path");
-    validateNonEmptyString(fixture.protocol, "Graph reference evidence daemon fixture protocol");
-    validateStringArray(fixture.envelopes, "Graph reference evidence daemon fixture envelopes", { allowEmpty: false });
-  }
-}
-
-function validateGraphReferenceEvidenceBaselineReceipts(receipts: readonly GraphReferenceEvidenceBaselineReceipt[]): void {
-  validateNonEmptyArray(receipts, "Graph reference evidence baselineReceipts");
-  for (const receipt of receipts) {
-    validateGraphReferenceEvidenceSurfaceBase(receipt, "Graph reference evidence baseline receipt");
-    validateNonEmptyString(receipt.metric, "Graph reference evidence baseline receipt metric");
-    validateNonEmptyString(receipt.receipt, "Graph reference evidence baseline receipt path");
-    if (receipt.label !== "reference_evidence_non_implementation_input") {
-      throw new Error("Graph reference evidence baseline receipt label must be reference_evidence_non_implementation_input");
-    }
-    if (receipt.sourceAvailability !== "available" && receipt.sourceAvailability !== "unavailable") {
-      throw new Error("Graph reference evidence baseline receipt sourceAvailability must be available or unavailable");
-    }
-    if (receipt.nonImplementationInput !== true) {
-      throw new Error("Graph reference evidence baseline receipt must be non-implementation input");
-    }
-  }
-}
-
-function validateGraphReferenceEvidenceOptionalSurfaces(surfaces: readonly GraphReferenceEvidenceOptionalAnalysisSurface[]): void {
-  validateNonEmptyArray(surfaces, "Graph reference evidence optionalAnalysisSurfaces");
-  for (const surface of surfaces) {
-    validateGraphReferenceEvidenceSurfaceBase(surface, "Graph reference evidence optional analysis surface");
-    validateGraphReleaseDeferredChild(surface.issue, "Graph reference evidence optional analysis surface issue");
-    if (surface.status !== "deferred") throw new Error("Graph reference evidence optional analysis surface status must be deferred");
-    if (surface.classification === "required") {
-      throw new Error("Graph reference evidence optional analysis surfaces must not mark staged graph release surfaces as required");
-    }
-  }
-  validateGraphReleaseOptionalAnalysisSurfaceSet(
-    surfaces,
-    "Graph reference evidence optional analysis surfaces"
-  );
-}
-
-function validateGraphReferenceEvidenceGoldenCorpus(corpus: GraphReferenceEvidenceGoldenCorpusRef): void {
-  validateGraphReferenceEvidenceSurfaceBase(corpus, "Graph reference evidence golden corpus");
-  validateNonEmptyString(corpus.fixture, "Graph reference evidence golden corpus fixture");
-  validateStringArray(corpus.covers, "Graph reference evidence golden corpus covers", { allowEmpty: false });
-}
-
-function validateGraphReferenceEvidenceSurfaceBase(surface: GraphReferenceEvidenceSurfaceBase, label: string): void {
-  if (!surface || typeof surface !== "object") throw new Error(`${label} is required`);
-  validateNonEmptyString(surface.id, `${label} id`);
-  validateGraphReferenceEvidenceSurfaceClassification(surface.classification);
-  validateStringArray(surface.fixtures, `${label} fixtures`, { allowEmpty: true });
-  if (surface.classification === "required" && surface.fixtures.length === 0) {
-    throw new Error(`${label} required surface must include fixture coverage`);
-  }
-}
-
-function validateGraphReferenceEvidenceExitSemantics(exitSemantics: GraphReferenceEvidenceExitSemantics, label: string): void {
-  if (!exitSemantics || typeof exitSemantics !== "object") {
-    throw new Error(`${label} exitSemantics is required`);
-  }
-  if (exitSemantics.success !== 0) throw new Error(`${label} exitSemantics success must be 0`);
-  validateNonEmptyString(exitSemantics.failure, `${label} exitSemantics failure`);
-}
-
-function validateGraphReferenceEvidenceProvenance(provenance: GraphReferenceEvidenceProvenance): void {
-  if (!provenance || typeof provenance !== "object") {
-    throw new Error("Graph reference evidence provenance is required");
-  }
-  if (provenance.containsPythonCrgSource !== false) {
-    throw new Error("Graph reference evidence manifest must not contain Python CRG source");
-  }
-  if (provenance.containsPackageMetadata !== false) {
-    throw new Error("Graph reference evidence manifest must not contain Python CRG package metadata");
-  }
-  if (provenance.containsGitHistory !== false) {
-    throw new Error("Graph reference evidence manifest must not contain Python CRG git history");
-  }
-  if (provenance.referenceReceiptsAreImplementationInput !== false) {
-    throw new Error("Graph reference evidence receipts must not be implementation input");
-  }
-  validateStringArray(provenance.implementationPackageNames, "Graph reference evidence implementationPackageNames", {
-    allowEmpty: false
-  });
-  for (const name of provenance.implementationPackageNames) {
-    if (/\bcrg\b|code-review-graph|gungnir/i.test(name)) {
-      throw new Error(`Graph reference evidence manifest uses a forbidden implementation package name: ${name}`);
-    }
-  }
-  validateStringArray(provenance.allowedMentionPaths, "Graph reference evidence allowedMentionPaths", { allowEmpty: false });
-}
-
-function validateGraphReferenceEvidenceSourceFreeStrings(value: unknown): void {
-  const forbidden = [/tirth8205/i, /pyproject\.toml/i, /setup\.py/i, /setup\.cfg/i, /Pipfile/i, /git clone/i];
-  for (const text of collectStrings(value)) {
-    const pattern = forbidden.find((entry) => entry.test(text));
-    if (pattern) throw new Error(`Graph reference evidence manifest contains forbidden source provenance: ${text}`);
-  }
 }
 
 function validateGraphReleasePackageVersions(versions: readonly GraphReleasePackageVersion[]): void {
@@ -9175,10 +8825,10 @@ function validateGraphReleasePackageInspection(inspection: GraphReleasePackageIn
     "forbiddenMarkersAbsent",
     "generatedBuildMetadataAbsent",
     "privatePathsAbsent",
-    "pythonCrgSourceAbsent",
-    "pythonGraphPackageMetadataAbsent",
-    "pythonCrgGitHistoryAbsent",
-    "forbiddenImplementationPackageNamesAbsent"
+    "sourceProvenanceAbsent",
+    "packageMetadataAbsent",
+    "gitHistoryAbsent",
+    "foreignImplementationNamesAbsent"
   ] as const) {
     if (inspection[key] !== true) throw new Error(`Graph release packageInspection ${key} must be true`);
   }
@@ -9252,7 +8902,7 @@ function validateGraphReleaseOptionalSurfaces(surfaces: readonly GraphReleaseOpt
     if (!surface || typeof surface !== "object") throw new Error("Graph release optional surface is required");
     validateGraphReleaseDeferredChild(surface.issue, "Graph release optional surface issue");
     validateNonEmptyString(surface.id, "Graph release optional surface id");
-    validateGraphReferenceEvidenceSurfaceClassification(surface.classification);
+    validateGraphReleaseSurfaceClassification(surface.classification);
     if (surface.status !== "unsupported" && surface.status !== "deferred") {
       throw new Error("Graph release optional surface status must be unsupported or deferred");
     }
@@ -9422,9 +9072,6 @@ function validateReleaseReceiptPackageManifest(
 ): void {
   if (!manifest || typeof manifest !== "object") throw new Error("Release receipt package manifest is required");
   if (manifest.name !== packageName) throw new Error(`Release receipt package manifest name must match ${packageName}`);
-  if (manifest.name.includes("lattice") || manifest.name.includes("crg") || manifest.name.includes("cix") || manifest.name.includes("rox")) {
-    throw new Error(`Release receipt package manifest uses old public package identity: ${manifest.name}`);
-  }
   validateNonEmptyString(manifest.version, "Release receipt package manifest version");
   validateNonEmptyString(manifest.license, "Release receipt package manifest license");
   if (isGraphCoreNativePackageName(packageName)) {
@@ -9712,7 +9359,6 @@ function validateReleaseReceiptBins(bins: Readonly<Record<string, string>>, pack
   const binNames = Object.keys(bins);
   for (const bin of binNames) {
     validateNonEmptyString(bin, "Release receipt bin name");
-    if (["lattice", "crg", "cix", "rox"].includes(bin)) throw new Error(`Release receipt package exposes old public bin ${bin}`);
     validateRepoRelativePath(bins[bin]);
   }
   if (packageName === "opcore") {
@@ -9829,17 +9475,12 @@ function validateReleaseCutoverDescriptor(descriptorEvidence: ReleaseCutoverDesc
 
 function validateReleaseCutoverEnvironmentIsolation(environment: ReleaseCutoverEnvironmentIsolationEvidence): void {
   if (!environment || typeof environment !== "object") throw new Error("Release cutover environmentIsolation is required");
-  if (environment.currentToolEnvCleared !== true) throw new Error("Release cutover current-tool environment must be cleared");
-  if (!Number.isInteger(environment.clearedEnvVarCount) || environment.clearedEnvVarCount < 5) {
-    throw new Error("Release cutover clearedEnvVarCount must be at least 5");
-  }
   if (environment.pathSanitized !== true) throw new Error("Release cutover PATH must be sanitized");
-  if (environment.aceRuntimeBinExcluded !== true) throw new Error("Release cutover ACE runtime bin must be excluded");
-  if (environment.siblingCovibesExcluded !== true) throw new Error("Release cutover sibling Covibes paths must be excluded");
-  if (environment.opcoreBinOnly !== true) throw new Error("Release cutover installed project must expose only Opcore-owned bins");
-  const oldBins = environment.oldBinsAbsent;
-  if (!oldBins || oldBins.lattice !== true || oldBins.crg !== true || oldBins.cix !== true || oldBins.rox !== true) {
-    throw new Error("Release cutover old public bins must be absent");
+  if (environment.siblingRepositoriesExcluded !== true) {
+    throw new Error("Release cutover sibling repository paths must be excluded");
+  }
+  if (environment.opcoreBinsVerified !== true) {
+    throw new Error("Release cutover installed project bins must be verified");
   }
 }
 
@@ -10025,34 +9666,6 @@ function validateReleaseCutoverNegativeChecks(checks: readonly ReleaseCutoverNeg
   }
 }
 
-function validateReleaseCutoverCurrentToolGuardrails(guardrails: readonly ReleaseCutoverCurrentToolGuardrailReceipt[]): void {
-  validateNonEmptyArray(guardrails, "Release cutover current-tool guardrails");
-  validateExactStringSet(
-    guardrails.map((entry) => entry.id),
-    releaseCutoverCurrentToolGuardrailIds,
-    "Release cutover current-tool guardrails"
-  );
-  for (const guardrail of guardrails) {
-    if (!guardrail || typeof guardrail !== "object") throw new Error("Release cutover current-tool guardrail is required");
-    if (!includesString(releaseCutoverCurrentToolGuardrailIds, guardrail.id)) {
-      throw new Error(`Unknown release cutover current-tool guardrail id: ${String(guardrail.id)}`);
-    }
-    const expectedCommand = guardrail.id === "current-tools-validate-changed"
-      ? ["npm", "run", "current-tools:validate-changed"] as const
-      : ["npm", "run", "current-tools:validate-rust-graph"] as const;
-    validateExactStringSequence(guardrail.command, expectedCommand, `Release cutover guardrail ${guardrail.id} command`);
-    if (guardrail.status !== "passed") throw new Error("Release cutover current-tool guardrail status must be passed");
-    if (guardrail.exitCode !== 0) throw new Error("Release cutover current-tool guardrail exitCode must be 0");
-    validateSha256(guardrail.stdoutSha256, "Release cutover current-tool guardrail stdoutSha256");
-    validateSha256(guardrail.stderrSha256, "Release cutover current-tool guardrail stderrSha256");
-    if (guardrail.retained !== true) throw new Error("Release cutover current-tool guardrail must be retained");
-    validateNonEmptyString(guardrail.assertion, "Release cutover current-tool guardrail assertion");
-    if (guardrail.oldToolReplacementClaimed !== false) {
-      throw new Error("Release cutover current-tool guardrail must not claim old-tool replacement");
-    }
-  }
-}
-
 function validateReleaseCutoverForbiddenMarkerScan(scan: ReleaseCutoverForbiddenMarkerScan): void {
   if (!scan || typeof scan !== "object") throw new Error("Release cutover forbiddenMarkerScan is required");
   validateNonNegativeInteger(scan.scannedTextCount, "Release cutover forbidden marker scannedTextCount");
@@ -10078,60 +9691,6 @@ function validateReleaseCutoverInputEvidence(evidence: readonly ReleaseCutoverIn
   }
 }
 
-function validateRustOldRoxComparisonSurfaces(surfaces: readonly RustOldRoxComparisonSurfaceReceipt[]): void {
-  validateNonEmptyArray(surfaces, "Rust old-Rox comparison surfaces");
-  validateExactStringSet(
-    surfaces.map((entry) => entry.id),
-    rustOldRoxComparisonSurfaceIds,
-    "Rust old-Rox comparison surfaces"
-  );
-  for (const surface of surfaces) {
-    if (!surface || typeof surface !== "object") throw new Error("Rust old-Rox comparison surface is required");
-    if (!includesString(rustOldRoxComparisonSurfaceIds, surface.id)) {
-      throw new Error(`Unknown Rust old-Rox comparison surface: ${String(surface.id)}`);
-    }
-    if (typeof surface.graphEvidenceExists !== "boolean") {
-      throw new Error("Rust old-Rox comparison graphEvidenceExists must be boolean");
-    }
-    validateStringArray(surface.graphEvidence, "Rust old-Rox comparison graph evidence", { allowEmpty: false });
-    if (surface.graphEvidenceExists && surface.graphEvidence.length === 0) {
-      throw new Error("Rust old-Rox comparison graph evidence must describe existing evidence");
-    }
-    validateStringArray(surface.stillUniquelyProvidedByCurrentTools, "Rust old-Rox comparison current tool evidence", {
-      allowEmpty: false
-    });
-    if (!includesString(rustOldRoxComparisonReplacementStatuses, surface.replacementStatus)) {
-      throw new Error("Rust old-Rox comparison replacementStatus must be retained or deferred");
-    }
-  }
-}
-
-function validateRustOldRoxComparisonGuardrails(guardrails: readonly RustOldRoxComparisonGuardrailReceipt[]): void {
-  validateNonEmptyArray(guardrails, "Rust old-Rox comparison guardrails");
-  validateExactStringSet(
-    guardrails.map((entry) => entry.id),
-    ["current-tools:validate-rust-graph"] as const,
-    "Rust old-Rox comparison guardrails"
-  );
-  for (const guardrail of guardrails) {
-    if (!guardrail || typeof guardrail !== "object") throw new Error("Rust old-Rox comparison guardrail is required");
-    if (guardrail.id !== "current-tools:validate-rust-graph") {
-      throw new Error("Rust old-Rox comparison guardrail id must be current-tools:validate-rust-graph");
-    }
-    validateExactStringSequence(
-      guardrail.command,
-      ["npm", "run", "current-tools:validate-rust-graph"],
-      "Rust old-Rox comparison guardrail command"
-    );
-    if (guardrail.replacementStatus !== "retained") {
-      throw new Error("Rust old-Rox comparison guardrail replacementStatus must be retained");
-    }
-    if (guardrail.oldToolReplacementClaimed !== false) {
-      throw new Error("Rust old-Rox comparison guardrail must not claim old-tool replacement");
-    }
-  }
-}
-
 function validateAspDogfoodManager(manager: AspDogfoodManagerEvidence): void {
   if (!manager || typeof manager !== "object") throw new Error("ASP dogfood manager evidence is required");
   if (manager.bootstrapSource !== "local-sibling") throw new Error("ASP dogfood bootstrapSource must be local-sibling");
@@ -10148,7 +9707,6 @@ function validateAspDogfoodAspHome(aspHome: AspDogfoodAspHomeEvidence): void {
   if (aspHome.isolated !== true) throw new Error("ASP dogfood ASP_HOME must be isolated");
   if (aspHome.sharedStateMutated !== false) throw new Error("ASP dogfood shared ASP state must not be mutated");
   if (aspHome.pathSanitized !== true) throw new Error("ASP dogfood PATH must be sanitized for manager execution");
-  if (aspHome.aceRuntimeBinExcluded !== true) throw new Error("ASP dogfood manager PATH must exclude .ace/runtime");
 }
 
 function validateAspDogfoodHostFixture(fixture: AspDogfoodHostFixtureEvidence): void {
@@ -10287,28 +9845,6 @@ function validateAspDogfoodProviderProbe(probe: AspDogfoodProviderProbeEvidence)
   assertNoAspDogfoodHostOwnedFields(probe.assessment);
 }
 
-function validateAspDogfoodGuardrails(guardrails: readonly AspDogfoodGuardrailReceipt[]): void {
-  validateNonEmptyArray(guardrails, "ASP dogfood current-tool guardrails");
-  validateExactStringSet(
-    guardrails.map((entry) => entry.id),
-    aspDogfoodGuardrailIds,
-    "ASP dogfood current-tool guardrail ids"
-  );
-  for (const guardrail of guardrails) {
-    if (!includesString(aspDogfoodGuardrailIds, guardrail.id)) {
-      throw new Error(`Unknown ASP dogfood guardrail id: ${String(guardrail.id)}`);
-    }
-    validateAspDogfoodCommandRun(guardrail, guardrail.id, `ASP dogfood guardrail ${guardrail.id}`);
-    if (guardrail.retained !== true) throw new Error("ASP dogfood old-tool guardrails must be retained");
-    if (includesString(aspDogfoodRequiredGuardrailIds, guardrail.id) && guardrail.status !== "passed") {
-      throw new Error(`ASP dogfood required guardrail ${guardrail.id} must pass`);
-    }
-    if (guardrail.id === "current-tools-validate-all" && guardrail.status !== "passed" && guardrail.status !== "retained-not-run") {
-      throw new Error("ASP dogfood current-tools-validate-all must pass or be retained-not-run");
-    }
-  }
-}
-
 function validateAspDogfoodUnsupportedSurfaces(surfaces: readonly AspDogfoodUnsupportedSurfaceEvidence[]): void {
   validateNonEmptyArray(surfaces, "ASP dogfood unsupported surfaces");
   validateExactStringSet(
@@ -10321,8 +9857,8 @@ function validateAspDogfoodUnsupportedSurfaces(surfaces: readonly AspDogfoodUnsu
     if (!includesString(aspDogfoodUnsupportedSurfaceIds, entry.surface)) {
       throw new Error(`Unknown ASP dogfood unsupported surface: ${String(entry.surface)}`);
     }
-    if (!includesString(["degraded", "retained-old-tool-gate", "parity-blocker"] as const, entry.status)) {
-      throw new Error("ASP dogfood unsupported surface status must be degraded, retained-old-tool-gate, or parity-blocker");
+    if (!includesString(["degraded", "parity-blocker"] as const, entry.status)) {
+      throw new Error("ASP dogfood unsupported surface status must be degraded or parity-blocker");
     }
     if (entry.cleanCoverage !== false) throw new Error("ASP dogfood unsupported inspect/edit surfaces must not be represented as clean coverage");
     validateNonEmptyString(entry.blocker, "ASP dogfood unsupported surface blocker");
@@ -10330,7 +9866,7 @@ function validateAspDogfoodUnsupportedSurfaces(surfaces: readonly AspDogfoodUnsu
 }
 
 function validateAspDogfoodParityBlockers(blockers: readonly AspDogfoodParityBlocker[]): void {
-  validateNonEmptyArray(blockers, "ASP dogfood parity blockers");
+  if (!Array.isArray(blockers)) throw new Error("ASP dogfood parity blockers must be an array");
   for (const blocker of blockers) {
     if (!blocker || typeof blocker !== "object") throw new Error("ASP dogfood parity blocker is required");
     validateNonEmptyString(blocker.source, "ASP dogfood parity blocker source");
@@ -10385,7 +9921,7 @@ function validateAspDogfoodForbiddenProviderEntrypoint(receipt: AspDogfoodReceip
   const findings: string[] = [];
   for (const text of providerTexts) {
     const normalized = text.replaceAll("\\", "/").toLowerCase();
-    for (const marker of [...aspDogfoodForbiddenProviderMarkers, legacyAspProviderBinMarker]) {
+    for (const marker of aspDogfoodForbiddenProviderMarkers) {
       if (normalized.includes(marker.toLowerCase())) findings.push(marker);
     }
   }
@@ -10501,7 +10037,7 @@ function validateExactStringSequence(actual: readonly string[], expected: readon
 }
 
 function validateGraphReleaseSourceFreeStrings(value: unknown): void {
-  const forbidden = [/tirth8205/i, /pyproject\.toml/i, /setup\.py/i, /setup\.cfg/i, /Pipfile/i, /git clone/i, /code-review-graph/i, /gungnir/i];
+  const forbidden = [/tirth8205/i, /pyproject\.toml/i, /setup\.py/i, /setup\.cfg/i, /Pipfile/i, /git clone/i];
   for (const text of collectStrings(value)) {
     const pattern = forbidden.find((entry) => entry.test(text));
     if (pattern) throw new Error(`Graph release receipt contains forbidden source provenance: ${text}`);

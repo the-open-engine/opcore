@@ -303,15 +303,12 @@ describe("graph pipeline CLI", () => {
         ["src", "app.ts"],
         ["src", "tool.py"],
         ["node_modules/pkg", "index.ts"],
-        [".ace/runtime", "generated.ts"],
         [".agents/runtime", "generated.ts"],
         [".claude/runtime", "generated.ts"],
         [".codex/runtime", "generated.ts"],
         [".gemini/runtime", "generated.ts"],
         [".opcore/graph", "generated.ts"],
         [".opencode/runtime", "generated.ts"],
-        [".rox-cache", "generated.ts"],
-        [".robustness-engine-cache", "generated.ts"],
         [".pnpm/pkg", "index.ts"],
         ["vendor/pkg", "generated.ts"],
         ["dist", "generated.ts"],
@@ -608,7 +605,7 @@ describe("graph pipeline CLI", () => {
     }
   });
 
-  it("scopes watch from OPCORE_GRAPH_WATCH_PATHS only and ignores CRG_WATCH_PATHS", () => {
+  it("scopes watch from OPCORE_GRAPH_WATCH_PATHS", () => {
     const temp = mkdtempSync(join(tmpdir(), "lattice-watch-env-paths-"));
     try {
       mkdirSync(join(temp, "src"), { recursive: true });
@@ -622,13 +619,6 @@ describe("graph pipeline CLI", () => {
       assert.deepEqual(latticeScoped.graphPipeline.summary.watchPaths, ["src/a.ts"]);
       assert.deepEqual(latticeScoped.graphPipeline.summary.changedFiles, ["src/a.ts"]);
 
-      rmSync(join(temp, ".opcore"), { recursive: true, force: true });
-      const crgIgnored = run(latticeBin, ["graph", "watch", "--repo", temp, "--once", "--json"], 0, {
-        env: { CRG_WATCH_PATHS: "src/a.ts" }
-      });
-      assert.equal(crgIgnored.providerStatus.state, "available");
-      assert.deepEqual(crgIgnored.graphPipeline.summary.watchPaths ?? [], []);
-      assert.deepEqual(crgIgnored.graphPipeline.summary.changedFiles, ["src/a.ts", "src/b.ts"]);
     } finally {
       rmSync(temp, { recursive: true, force: true });
     }
@@ -687,10 +677,7 @@ describe("graph pipeline CLI", () => {
       mkdirSync(join(temp, "src"), { recursive: true });
       writeFileSync(join(temp, "src/a.ts"), "export const a = 1;\n");
       writeFileSync(join(temp, "src/b.ts"), "export const b = 2;\n");
-      const env = {
-        OPCORE_GRAPH_WATCH_PATHS: "src/a.ts",
-        CRG_WATCH_PATHS: "src/a.ts"
-      };
+      const env = { OPCORE_GRAPH_WATCH_PATHS: "src/a.ts" };
 
       const build = run(latticeBin, ["graph", "build", "--repo", temp, "--json"], 0, { env });
       assert.equal(build.providerStatus.state, "available");
@@ -829,10 +816,7 @@ function createRuntimeIgnoredFiles(fixtureRoot) {
   for (const [directory, file] of [
     ["ignored", "drop.ts"],
     ["node_modules/pkg", "index.ts"],
-    [".ace/runtime", "generated.ts"],
     [".opcore/graph", "generated.ts"],
-    [".rox-cache", "generated.ts"],
-    [".robustness-engine-cache", "generated.ts"],
     ["dist", "generated.ts"]
   ]) {
     mkdirSync(join(fixtureRoot, directory), { recursive: true });

@@ -2,18 +2,9 @@ import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
-import { aspDogfoodForbiddenProviderMarkers, aspDogfoodGuardrailIds, releaseReceiptPackageNames } from "../packages/contracts/dist/index.js";
+import { aspDogfoodForbiddenProviderMarkers, releaseReceiptPackageNames } from "../packages/contracts/dist/index.js";
 import { releasePackageDirForName } from "./release-package-dirs.mjs";
 import { createStagedOpcorePackage } from "./stage-opcore-bundle.mjs";
-
-const currentToolEnvVars = [
-  "LATTICE_CURRENT_TOOLS_DIR",
-  "ACE_CURRENT_TOOLS_DIR",
-  "LATTICE_CURRENT_ROX_PATH",
-  "LATTICE_CURRENT_CRG_PATH",
-  "LATTICE_CURRENT_CIX_PATH"
-];
-const aspDogfoodReceiptPath = "docs/release/asp-dogfood-receipt.json";
 
 export function packWorkspace(repoRoot, packageName, destination) {
   const staged = packageName === "opcore" ? createStagedOpcorePackage(destination) : undefined;
@@ -34,12 +25,18 @@ export function releaseRuntimeInstallPackageNames() {
   return releaseReceiptPackageNames;
 }
 
-export function locateAspManager() {
-  const aspRepoPath = resolve(process.env.ASP_DOGFOOD_ASP_REPO || join(defaultCovibesRoot(), "agent-server-protocol"));
+export function locateAspManager(repoRoot) {
+  const configuredPath = process.env.ASP_DOGFOOD_ASP_REPO;
+  const aspRepoPath = resolve(configuredPath || join(dirname(realpathSync(repoRoot)), "agent-server-protocol"));
   const aspBinPath = join(aspRepoPath, "packages", "asp", "bin", "asp");
   const cliPath = join(aspRepoPath, "packages", "asp", "dist", "cli.js");
-  if (!existsSync(aspBinPath)) throw new Error(`Missing sibling ASP manager bin: ${aspBinPath}`);
-  if (!existsSync(cliPath)) throw new Error(`Missing sibling ASP manager build: ${cliPath}. Run npm run build in ${aspRepoPath}.`);
+  if (!existsSync(aspBinPath)) {
+    const source = configuredPath ? "ASP_DOGFOOD_ASP_REPO" : "adjacent agent-server-protocol checkout";
+    throw new Error(`Missing ASP manager bin from ${source}: ${aspBinPath}`);
+  }
+  if (!existsSync(cliPath)) {
+    throw new Error(`Missing ASP manager build: ${cliPath}. Run npm run build in ${aspRepoPath}.`);
+  }
   const commitSha = runRequired("git", ["rev-parse", "HEAD"], { cwd: aspRepoPath }).stdout.trim();
   return { bootstrapSource: "local-sibling", aspRepoPath, aspBinPath, cliPath, commitSha };
 }
@@ -77,7 +74,6 @@ export function aspEnv(project, aspHome) {
   const env = sanitizedEnv();
   env.ASP_HOME = aspHome;
   env.PATH = [join(project, "node_modules", ".bin"), env.PATH].join(":");
-  if (env.PATH.includes(".ace/runtime")) throw new Error("ASP dogfood PATH still includes .ace/runtime");
   return env;
 }
 
@@ -133,75 +129,29 @@ export function maybeRunCiVerify(repoRoot, asp, env) {
     cwd: repoRoot,
     env,
     required: false,
-    assertion: "ASP CI verifier output recorded as host-owned evidence, not old-tool replacement"
+    assertion: "ASP CI verifier output recorded as host-owned evidence"
   });
 }
 
-export function runCurrentToolGuardrails(repoRoot, includeAll) {
-  if (process.env.OPCORE_ASP_DOGFOOD_REUSE_CURRENT_TOOL_GUARDRAILS === "1") {
-    return recordedCurrentToolGuardrails(repoRoot);
-  }
-  const changed = retainedGuardrail(repoRoot, "current-tools-validate-changed", "current-tools:validate-changed");
-  const rustGraph = retainedGuardrail(repoRoot, "current-tools-validate-rust-graph", "current-tools:validate-rust-graph");
-  const all = includeAll ? retainedGuardrail(repoRoot, "current-tools-validate-all", "current-tools:validate-all") : retainedNotRun();
-  return [changed, rustGraph, all];
-}
-
-function recordedCurrentToolGuardrails(repoRoot) {
-  const receipt = readJson(join(repoRoot, aspDogfoodReceiptPath));
-  const guardrails = receipt.currentToolGuardrails;
-  if (!Array.isArray(guardrails)) {
-    throw new Error(`${aspDogfoodReceiptPath} must contain recorded current-tool guardrails`);
-  }
-  assertSameStringSet(
-    guardrails.map((entry) => entry?.id),
-    aspDogfoodGuardrailIds,
-    "recorded ASP dogfood current-tool guardrails"
-  );
-  return guardrails.map((entry) => {
-    if (!entry || typeof entry !== "object") throw new Error(`${aspDogfoodReceiptPath} current-tool guardrail entry is required`);
-    if (entry.retained !== true) throw new Error(`${aspDogfoodReceiptPath} current-tool guardrails must stay retained`);
-    return { ...entry };
+export function runOpcoreSelfValidation(repoRoot) {
+  const receipt = commandReceipt({
+    id: "opcore-self-check",
+    displayCommand: ["npm", "run", "opcore:self-check"],
+    command: "npm",
+    args: ["run", "opcore:self-check"],
+    cwd: repoRoot,
+    env: process.env,
+    required: true,
+    assertion: "Opcore validated its own changed implementation surface"
   });
-}
-
-function assertSameStringSet(actual, expected, label) {
-  const actualSet = new Set(actual);
-  const expectedSet = new Set(expected);
-  if (actualSet.size !== actual.length || expectedSet.size !== expected.length) {
-    throw new Error(`${label} must not contain duplicates`);
-  }
-  if (actualSet.size !== expectedSet.size || [...expectedSet].some((entry) => !actualSet.has(entry))) {
-    throw new Error(`${label} mismatch: expected ${[...expectedSet].join(", ")}, got ${[...actualSet].join(", ")}`);
-  }
-}
-
-function retainedGuardrail(repoRoot, id, scriptName) {
   return {
-    ...commandReceipt({
-      id,
-      displayCommand: ["npm", "run", scriptName],
-      command: "npm",
-      args: ["run", scriptName],
-      cwd: repoRoot,
-      env: process.env,
-      required: true,
-      assertion: `${scriptName} remains active`
-    }),
-    retained: true
-  };
-}
-
-function retainedNotRun() {
-  return {
-    id: "current-tools-validate-all",
-    command: ["npm", "run", "current-tools:validate-all"],
-    status: "retained-not-run",
-    exitCode: null,
-    stdoutSha256: sha256(""),
-    stderrSha256: sha256(""),
-    retained: true,
-    assertion: "Retained old-tool guardrail; omitted unless --include-current-tools-all is passed"
+    id: receipt.id,
+    command: receipt.command,
+    status: receipt.status,
+    exitCode: receipt.exitCode,
+    stdoutSha256: receipt.stdoutSha256,
+    stderrSha256: receipt.stderrSha256,
+    assertion: receipt.assertion
   };
 }
 
@@ -288,32 +238,8 @@ function collectInstalledFiles(packageRoot, packageName) {
 }
 
 export function collectParityBlockers(repoRoot) {
-  const blockers = [
-    ...extractLineBlockers(repoRoot, "docs/validation/rust-adapter-parity.md", 26, 42),
-    ...extractLineBlockers(repoRoot, "docs/validation/rust-retained-tools-receipts-2026-06-23.md", 59, 65),
-    ...extractMatchingBlockers(repoRoot, "docs/planning/old-tool-compatibility-matrix.md", /#27|dogfood|retained|old-tool|rox|crg|cix/i, 8)
-  ];
-  return blockers.filter((entry, index) => blockers.findIndex((candidate) => sameBlocker(candidate, entry)) === index);
-}
-
-function extractLineBlockers(repoRoot, path, start, end) {
-  const absolute = join(repoRoot, path);
-  if (!existsSync(absolute)) return [];
-  return readFileSync(absolute, "utf8")
-    .split(/\r?\n/)
-    .slice(start - 1, end)
-    .map((line, index) => ({ source: `${path}:${start + index}`, detail: line.trim() }))
-    .filter((entry) => entry.detail.length > 0 && !/^#+\s*$/.test(entry.detail));
-}
-
-function extractMatchingBlockers(repoRoot, path, pattern, limit) {
-  const absolute = join(repoRoot, path);
-  if (!existsSync(absolute)) return [];
-  return readFileSync(absolute, "utf8")
-    .split(/\r?\n/)
-    .map((line, index) => ({ source: `${path}:${index + 1}`, detail: line.trim() }))
-    .filter((entry) => pattern.test(entry.detail) && entry.detail.length > 0)
-    .slice(0, limit);
+  void repoRoot;
+  return [];
 }
 
 export function assuranceFromHost(hostDecision, hostReceipt) {
@@ -332,9 +258,6 @@ export function writeReceiptDocs(repoRoot, receiptPath, summaryPath, receipt) {
 }
 
 function summaryMarkdown(receipt, receiptPath, receiptSha256) {
-  const guardrails = receipt.currentToolGuardrails
-    .map((entry) => `| ${entry.id} | ${entry.status} | ${entry.exitCode ?? "not-run"} | ${entry.assertion} |`)
-    .join("\n");
   const blockers = receipt.unsupportedSurfaces.map((entry) => `- ${entry.surface}: ${entry.status}; ${entry.blocker}`).join("\n");
   return `# ASP Dogfood Receipt Summary
 
@@ -350,11 +273,7 @@ Source repo mutated: ${receipt.hostFixture.sourceRepoMutated}
 Provider command: ${receipt.provider.command.join(" ")}
 Host assurance: ${receipt.hostEvaluation.check.assurance.mode}
 Transaction guarantee: ${receipt.hostEvaluation.check.assurance.transactionGuarantee}
-Old-tool replacement claimed: ${receipt.oldToolReplacementClaimed}
-
-| Guardrail | Status | Exit | Evidence |
-|-----------|--------|------|----------|
-${guardrails}
+Self-validation: ${receipt.selfValidation.status}
 
 ## Deferred Coverage
 
@@ -378,11 +297,16 @@ export function assertNoForbiddenProviderMarkers(receipt) {
   if (findings.length > 0) throw new Error(`ASP dogfood provider marker scan failed: ${[...new Set(findings)].join(", ")}`);
 }
 
-export function sanitizeReceiptForProvenance(value) {
-  if (typeof value === "string") return value.replaceAll(`${defaultCovibesRoot()}/`, "<covibes>/");
-  if (Array.isArray(value)) return value.map(sanitizeReceiptForProvenance);
+export function sanitizeReceiptForProvenance(value, aspRepoPath) {
+  if (typeof value === "string") {
+    if (value === aspRepoPath) return "<asp-repo>";
+    return value.replaceAll(`${aspRepoPath}/`, "<asp-repo>/");
+  }
+  if (Array.isArray(value)) return value.map((entry) => sanitizeReceiptForProvenance(entry, aspRepoPath));
   if (!value || typeof value !== "object") return value;
-  return Object.fromEntries(Object.entries(value).map(([key, child]) => [key, sanitizeReceiptForProvenance(child)]));
+  return Object.fromEntries(
+    Object.entries(value).map(([key, child]) => [key, sanitizeReceiptForProvenance(child, aspRepoPath)])
+  );
 }
 
 export function requireObject(value, label) {
@@ -423,9 +347,7 @@ export function sha256(text) {
 
 function sanitizedEnv() {
   const env = { ...process.env };
-  for (const key of currentToolEnvVars) delete env[key];
   env.PATH = [dirname(process.execPath), "/usr/local/bin", "/opt/homebrew/bin", "/usr/bin", "/bin", "/usr/sbin", "/sbin"].join(":");
-  if (env.PATH.includes(".ace/runtime")) throw new Error("sanitized PATH still includes .ace/runtime");
   return env;
 }
 
@@ -449,12 +371,4 @@ function parseJsonOutput(text) {
   } catch {
     return undefined;
   }
-}
-
-function sameBlocker(left, right) {
-  return left.source === right.source && left.detail === right.detail;
-}
-
-function defaultCovibesRoot() {
-  return ["", "Users", "tom", "code", "covibes"].join("/");
 }

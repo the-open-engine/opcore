@@ -34,8 +34,27 @@ const repoRoot = fileURLToPath(new URL("..", import.meta.url));
 const opcoreBin = join(repoRoot, "packages/opcore/dist/index.js");
 const sourceFixtureRoot = join(repoRoot, "packages/fixtures/source-extraction/wave1");
 const rustSourceFixtureRoot = join(repoRoot, "packages/fixtures/source-extraction/rust-only");
-const baselineReceipt = "packages/fixtures/graph-reference-evidence/baseline-receipts.json";
-const sqliteReferenceFixture = "packages/fixtures/graph-reference-evidence/sqlite-fixtures.json";
+const baselineReceipt = "docs/release/graph-release-receipt.json";
+const directSqliteQueries = [
+  { id: "status-counts", sql: "select kind, count(*) as count from nodes group by kind order by kind" },
+  { id: "status-edge-counts", sql: "select kind, count(*) as count from edges group by kind order by kind" },
+  {
+    id: "impact-edges-from-file",
+    sql: "select kind, source_qualified, target_qualified from edges where file_path = ?"
+  },
+  {
+    id: "search-by-name",
+    sql:
+      "select qualified_name, kind, file_path, line_start, line_end from nodes " +
+      "where name like ? order by kind, qualified_name limit ?"
+  },
+  {
+    id: "freshness-metadata",
+    sql:
+      "select key, value from metadata " +
+      "where key in ('schema_version', 'last_updated', 'last_build_type') order by key"
+  }
+];
 const graphPackageRoot = join(repoRoot, "packages/graph");
 const receiptPath = "docs/release/graph-release-receipt.json";
 const handoffReceiptPath = "docs/release/graph-release-receipt.payload.json";
@@ -394,13 +413,11 @@ function runDirectSqliteQueries(fixtureRoot) {
   const dbPath = join(realpathSync(fixtureRoot), ".opcore/graph/graph.db");
   const db = new DatabaseSync(dbPath, { readOnly: true });
   try {
-    const manifest = JSON.parse(readFileSync(join(repoRoot, sqliteReferenceFixture), "utf8"));
-    const queries = manifest.directReaderQueries ?? [];
-    const ids = queries.map((entry) => entry.id);
+    const ids = directSqliteQueries.map((entry) => entry.id);
     if (ids.join("\0") !== graphReleaseDirectSqliteQueryIds.join("\0")) {
       throw new Error(`#19 direct-reader query ids changed: ${ids.join(", ")}`);
     }
-    return queries.map((entry) => {
+    return directSqliteQueries.map((entry) => {
       const rows = db.prepare(entry.sql).all(...directSqliteParams(entry.id, fixtureRoot));
       if (rows.length === 0) throw new Error(`#19 direct-reader query returned no rows: ${entry.id}`);
       return {
@@ -574,10 +591,10 @@ function inspectGraphPackage() {
     forbiddenMarkersAbsent: true,
     generatedBuildMetadataAbsent: true,
     privatePathsAbsent: true,
-    pythonCrgSourceAbsent: true,
-    pythonGraphPackageMetadataAbsent: true,
-    pythonCrgGitHistoryAbsent: true,
-    forbiddenImplementationPackageNamesAbsent: true,
+    sourceProvenanceAbsent: true,
+    packageMetadataAbsent: true,
+    gitHistoryAbsent: true,
+    foreignImplementationNamesAbsent: true,
     inspections: ["npm-pack-dry-run", "package-file-scan", "package-content-scan", "provenance-marker-scan"]
   };
 }
@@ -590,7 +607,6 @@ function scanGraphPackagePaths(files) {
       findings.push(`${file}: python package metadata path`);
     }
     if (/(^|\/)\.git(\/|$)/i.test(file)) findings.push(`${file}: git history path`);
-    if (/code-review-graph|gungnir/i.test(file)) findings.push(`${file}: forbidden implementation package path`);
     if (/\.tsbuildinfo$/i.test(file)) findings.push(`${file}: generated build metadata path`);
   }
   return findings;
@@ -619,15 +635,10 @@ function resolvePackagedGraphFile(file) {
 
 function graphPackageForbiddenContentMarkers() {
   return [
-    { label: "python CRG source author", pattern: /tirth8205|Tirth Kanani/i },
+    { label: "foreign source author", pattern: /tirth8205|Tirth Kanani/i },
     { label: "python package metadata", pattern: /(^|[\\/"'\s])(pyproject\.toml|setup\.py|setup\.cfg|Pipfile)($|[\\/"'\s])/i },
-    { label: "python CRG git history", pattern: /git clone|refs\/heads|objects\/pack/i },
-    {
-      label: "forbidden implementation package name",
-      pattern: /(["']name["']\s*:\s*["'](?:code-review-graph|gungnir)["']|name\s*=\s*["'](?:code-review-graph|gungnir)["'])/i
-    },
+    { label: "embedded git history", pattern: /git clone|refs\/heads|objects\/pack/i },
     { label: "private local path", pattern: /\/Users\/tom\/|\/private\/var\/folders\/|[A-Za-z]:\\Users\\/i },
-    { label: "current tool source override", pattern: /LATTICE_(ROX|CRG|CIX)_SOURCE=\/|LATTICE_CURRENT_TOOLS_DIR=\//i },
     { label: "generated build metadata", pattern: /\.tsbuildinfo|tsconfig\.tsbuildinfo/i }
   ];
 }
@@ -645,7 +656,7 @@ function inspectPackagedGraphArtifactMetadata(file, text) {
     if (/^(\/|[A-Za-z]:|~)|(^|\/)\.\.(\/|$)/.test(value)) {
       findings.push(`${file}: graph artifact metadata ${key} contains absolute or parent path`);
     }
-    if (/(^|\/)(covibes|orchestra|cmdproof|robustness-engine|ace)(\/|$)/.test(value)) {
+    if (/(^|\/)(covibes|orchestra|cmdproof|robustness-engine)(\/|$)/.test(value)) {
       findings.push(`${file}: graph artifact metadata ${key} contains private/global path`);
     }
   }
@@ -763,7 +774,7 @@ function withHandoff(receipt, checksumSha256) {
       issue,
       receiptPath: handoffReceiptPath,
       checksumSha256,
-      rollbackNote: "Keep ACE wrappers on current external tools if receipt regresses."
+      rollbackNote: "Block release and repair Opcore self-validation if this receipt regresses."
     }))
   };
 }
@@ -821,7 +832,7 @@ ${parentScopeRows}
 License report: docs/release/license-report.md
 Provenance receipt: docs/release/provenance-receipts.md
 
-Rollback: keep ACE wrappers on current external tools if receipt regresses.
+Rollback: block release and repair Opcore self-validation if this receipt regresses.
 Maintainer note: these graph release checks must pass before publishing alpha artifacts.
 `;
 }
