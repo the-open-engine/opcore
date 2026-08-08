@@ -53,7 +53,7 @@
     "rust:test": "cargo test",
     "setup": "npm ci",
     "setup:check-clean": "bash ./scripts/ci/check-setup-clean-worktree.sh",
-    "test": "node --test tests/*.test.mjs",
+    "test": "node --test tests/*.test.mjs tests/*.test.ts",
     "test:ci": "node scripts/run-test-ci.mjs",
     "verify": "bash ./scripts/ci/run-local-ci-equivalent.sh",
     "lint:eslint": "eslint ."

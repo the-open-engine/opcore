@@ -1,4 +1,28 @@
 {
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@the-open-engine/opcore-contracts": [
+        "packages/contracts/src/index.ts"
+      ],
+      "@the-open-engine/opcore-edit": [
+        "packages/edit/src/index.ts"
+      ],
+      "@the-open-engine/opcore-graph": [
+        "packages/graph/src/index.ts"
+      ],
+      "@the-open-engine/opcore-validation-docs": [
+        "packages/validation-docs/src/index.ts"
+      ],
+      "@the-open-engine/opcore-validation-typescript": [
+        "packages/validation-typescript/src/index.ts"
+      ],
+      "opcore": [
+        "packages/opcore/src/index.ts"
+      ]
+    }
+  },
   "files": [],
   "references": [
     {

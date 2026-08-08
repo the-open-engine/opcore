@@ -76,9 +76,9 @@ export async function createEphemeralGraphSnapshotWithOperations(
 ): Promise<EphemeralGraphSnapshot> {
   const paths = normalizeUniverse(options.sourceUniverse);
   const limits = normalizeLimits(options.limits);
-  const sourcePaths = paths.filter(isSupportedGraphSourcePath);
-  enforcePathLimits(sourcePaths, limits);
-  const materialized = await materializeSnapshotSources(sourcePaths, options.readFile, limits);
+  const materializationPaths = paths.filter(isGraphMaterializationPath);
+  enforcePathLimits(materializationPaths, limits);
+  const materialized = await materializeSnapshotSources(materializationPaths, options.readFile, limits);
   let disposed = false;
   try {
     const build = operations.build(materialized.repo);
@@ -187,8 +187,8 @@ function writeSourceFile(repoRoot: string, path: string, content: string): void 
   writeFileSync(absolutePath, content);
 }
 
-function isSupportedGraphSourcePath(path: string): boolean {
-  return /\.(?:tsx?|[cm]ts|jsx?|pyi?|rs)$/u.test(path);
+function isGraphMaterializationPath(path: string): boolean {
+  return path === "tsconfig.json" || /\.(?:tsx?|[cm]ts|jsx?|pyi?|rs)$/u.test(path);
 }
 
 function bindStatus(status: GraphProviderStatus, mode: GraphProviderMode, logicalRepo: RepoIdentity): GraphProviderStatus {

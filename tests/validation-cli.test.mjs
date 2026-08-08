@@ -1,4 +1,4 @@
-import { describe, it } from "node:test";
+import { it } from "node:test";
 import assert from "node:assert/strict";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -70,8 +70,9 @@ const availableCheckIds = [
   ...docsCheckIds,
   ...cloneCheckIds
 ];
+const repoWideDocsCheckIds = ["docs.existence", "docs.hub-coverage", "docs.subtree-coverage"];
+const rootFileConfiguredCheckIds = availableCheckIds.filter((checkId) => !repoWideDocsCheckIds.includes(checkId));
 
-describe("validation CLI", () => {
   it("keeps opcore status separate from validation execution results", async () => {
     const temp = mkdtempSync(join(tmpdir(), "opcore-validation-status-"));
     try {
@@ -145,7 +146,7 @@ describe("validation CLI", () => {
       const result = run(args, [0, 1]);
       assert.equal(result.owner, "validation");
       assert.equal(result.exitCode === 0 || result.exitCode === 1, true);
-      assert.deepEqual(result.validationResult.manifest.checks, executableDefaultCheckIds);
+      assert.deepEqual(result.validationResult.manifest.checks, rootFileConfiguredCheckIds);
       assert.equal(Object.hasOwn(result.validationResult.manifest, "entries"), false);
       assert.equal(Object.hasOwn(result.validationResult.manifest, "runs"), false);
       assert.equal(Object.hasOwn(result.validationResult.manifest, "skippedChecks"), false);
@@ -319,111 +320,7 @@ describe("validation CLI", () => {
   it("normalizes repo validation config", async () => {
     const temp = mkdtempSync(join(tmpdir(), "opcore-validation-config-"));
     try {
-      writeRepoConfigObject(temp, {
-        schemaVersion: 1,
-        kind: "opcore_init_config",
-        onboarding: {
-          scan: {
-            totalFiles: 1
-          }
-        },
-        validation: {
-          adapters: ["typescript", "rust", "docs", "clone"],
-          timeoutMs: 120000,
-          pathPolicy: {
-            include: ["packages/", "scripts/"],
-            exclude: ["dist/**", ".agents"]
-          },
-          checks: {
-            packs: ["./checks/policy.cjs"],
-            disabled: ["typescript.types"],
-            defaults: ["docs.existence", "docs.freshness"],
-            typescript: {
-              fileLength: {
-                maxFileLines: 600
-              },
-              functionMetrics: {
-                maxFunctionLines: 120,
-                maxComplexity: 10,
-                maxParams: 4
-              },
-              lint: {
-                repoPlugin: "./eslint-local-rules/index.js",
-                cacheDependencyGlobs: ["CLAUDE.md", "**/CLAUDE.md"]
-              },
-              importGraph: {
-                ignoreTypeOnlyImports: true,
-                layerRules: [
-                  {
-                    name: "no-client-to-server",
-                    from: "%/client/src/%",
-                    to: "%/server/%"
-                  }
-                ]
-              },
-              deadCode: {
-                entrypoints: ["scripts/build-package.mjs"]
-              }
-            },
-            rust: {
-              fileLength: {
-                maxFileLines: 500
-              },
-              functionMetrics: {
-                maxFunctionLines: 80,
-                maxComplexity: 10,
-                maxParams: 4
-              },
-              commandGates: [
-                {
-                  id: "rust-gate.test",
-                  command: "cargo",
-                  args: ["test"],
-                  cwd: ".",
-                  timeoutMs: 120000
-                }
-              ]
-            },
-            docs: {
-              enabled: {
-                existence: true,
-                freshness: true,
-                staleness: false,
-                length: true,
-                hubCoverage: true,
-                subtreeCoverage: true
-              },
-              policy: {
-                filenames: ["CLAUDE.md", "AGENTS.md"],
-                requiredPaths: ["."],
-                requireRoot: true,
-                minimumContentLength: 1,
-                maxLines: 220,
-                maxSectionLines: 80
-              },
-              history: {
-                maxStaleDays: 90
-              },
-              hubCoverage: {
-                minFanIn: 5,
-                minFanOut: 5,
-                requireExplicitMention: true
-              },
-              subtreeCoverage: {
-                minLoc: 20000
-              }
-            },
-            clone: {
-              windowSize: 16,
-              minLines: 16,
-              threshold: 5,
-              partitions: [["server", "shared"], ["client"], ["platform-cli"]],
-              exclude: ["docs/**"],
-              modes: ["staged", "changed", "files"]
-            }
-          }
-        }
-      });
+      writeRepoConfigObject(temp, normalizedRepoConfigFixture());
 
       const { readOpcoreRepoConfig } = await import("../packages/opcore/dist/repo-validation-config.js");
       const config = readOpcoreRepoConfig(temp);
@@ -1439,7 +1336,6 @@ describe("validation CLI", () => {
       rmSync(temp, { recursive: true, force: true });
     }
   });
-});
 
 function validRequest(repoRootPath) {
   return {
@@ -1448,6 +1344,116 @@ function validRequest(repoRootPath) {
     graph: { mode: "optional", provider: "opcore-graph" },
     overlays: [],
     checks: ["typescript.syntax"]
+  };
+}
+
+function normalizedRepoConfigFixture() {
+  return {
+    schemaVersion: 1,
+    kind: "opcore_init_config",
+    onboarding: { scan: { totalFiles: 1 } },
+    validation: {
+      adapters: ["typescript", "rust", "docs", "clone"],
+      timeoutMs: 120000,
+      pathPolicy: {
+        include: ["packages/", "scripts/"],
+        exclude: ["dist/**", ".agents"]
+      },
+      checks: normalizedChecksFixture()
+    }
+  };
+}
+
+function normalizedChecksFixture() {
+  return {
+    packs: ["./checks/policy.cjs"],
+    disabled: ["typescript.types"],
+    defaults: ["docs.existence", "docs.freshness"],
+    typescript: normalizedTypeScriptChecksFixture(),
+    rust: normalizedRustChecksFixture(),
+    docs: normalizedDocsChecksFixture(),
+    clone: {
+      windowSize: 16,
+      minLines: 16,
+      threshold: 5,
+      partitions: [["server", "shared"], ["client"], ["platform-cli"]],
+      exclude: ["docs/**"],
+      modes: ["staged", "changed", "files"]
+    }
+  };
+}
+
+function normalizedTypeScriptChecksFixture() {
+  return {
+    fileLength: { maxFileLines: 600 },
+    functionMetrics: {
+      maxFunctionLines: 120,
+      maxComplexity: 10,
+      maxParams: 4
+    },
+    lint: {
+      repoPlugin: "./eslint-local-rules/index.js",
+      cacheDependencyGlobs: ["CLAUDE.md", "**/CLAUDE.md"]
+    },
+    importGraph: {
+      ignoreTypeOnlyImports: true,
+      layerRules: [
+        {
+          name: "no-client-to-server",
+          from: "%/client/src/%",
+          to: "%/server/%"
+        }
+      ]
+    },
+    deadCode: { entrypoints: ["scripts/build-package.mjs"] }
+  };
+}
+
+function normalizedRustChecksFixture() {
+  return {
+    fileLength: { maxFileLines: 500 },
+    functionMetrics: {
+      maxFunctionLines: 80,
+      maxComplexity: 10,
+      maxParams: 4
+    },
+    commandGates: [
+      {
+        id: "rust-gate.test",
+        command: "cargo",
+        args: ["test"],
+        cwd: ".",
+        timeoutMs: 120000
+      }
+    ]
+  };
+}
+
+function normalizedDocsChecksFixture() {
+  return {
+    enabled: {
+      existence: true,
+      freshness: true,
+      staleness: false,
+      length: true,
+      hubCoverage: true,
+      subtreeCoverage: true
+    },
+    policy: {
+      filenames: ["CLAUDE.md", "AGENTS.md"],
+      requiredPaths: ["."],
+      requireRoot: true,
+      minimumContentLength: 1,
+      maxLines: 220,
+      maxSectionLines: 80
+    },
+    history: { maxStaleDays: 90 },
+    hubCoverage: {
+      minFanIn: 5,
+      minFanOut: 5,
+      requireExplicitMention: true
+    },
+    subtreeCoverage: { minLoc: 20000 }
   };
 }
 

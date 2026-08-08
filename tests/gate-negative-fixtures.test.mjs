@@ -1,4 +1,4 @@
-import { describe, it } from "node:test";
+import { afterEach, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -19,6 +19,7 @@ import { externalRuntimePackageDir } from "../scripts/stage-opcore-bundle.mjs";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const releaseDocsLockTimeoutMs = 900000;
+const tempRepoRoots = new Set();
 const copiedRepoSkips = new Set([
   ".git",
   "node_modules",
@@ -33,6 +34,13 @@ const copiedRepoSkips = new Set([
 ]);
 
 describe("negative gate fixtures", () => {
+  afterEach(() => {
+    for (const tempRoot of tempRepoRoots) {
+      rmSync(tempRoot, { recursive: true, force: true });
+    }
+    tempRepoRoots.clear();
+  });
+
   it("rejects tracked TypeScript build info", () => {
     const repo = tempRepo();
     writeFileSync(join(repo, "packages/contracts/tsconfig.tsbuildinfo"), "{}\n");
@@ -320,6 +328,7 @@ describe("negative gate fixtures", () => {
 
 function tempRepo(options = {}) {
   const tempRoot = mkdtempSync(join(tmpdir(), "opcore-gate-"));
+  tempRepoRoots.add(tempRoot);
   const repo = join(tempRoot, "repo");
   withReleaseDocsLock(() => {
     cpSync(repoRoot, repo, {

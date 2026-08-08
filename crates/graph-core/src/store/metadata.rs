@@ -1,14 +1,17 @@
 use super::schema::user_version;
 use super::types::FreshnessState;
-use super::{StoreError, StoreResult};
+use super::{
+    read::{CollectRows, Rows},
+    StoreError, StoreResult,
+};
 use crate::extraction::{
-    collect_source_file_hashes, ExtractionOptions, SourceFileHash, EXTRACTION_GENERATED_AT,
+    collect_source_file_hashes, ExtractionOptions, SourceFileHash, SourcePathOps, SourcePaths,
+    EXTRACTION_GENERATED_AT,
 };
 use crate::protocol::{GraphExtractionDiagnostic, GraphFreshness, GraphSnapshotMetadata};
 use crate::{GRAPH_PROVIDER_NAME, GRAPH_SCHEMA_VERSION};
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::de::DeserializeOwned;
-use std::collections::BTreeMap;
 use std::path::Path;
 use time::format_description::well_known::Rfc3339;
 use time::OffsetDateTime;
@@ -46,7 +49,7 @@ fn validate_metadata_table_json(
         metadata_key,
         diagnostics_key,
     };
-    for (key, value) in collect_rows(rows)? {
+    for (key, value) in Rows::collect(rows)? {
         validate_metadata_row(&check, &key, &value)?;
     }
     Ok(())
@@ -152,17 +155,6 @@ fn parse_json<T: DeserializeOwned>(value: &str) -> Result<T, serde_json::Error> 
     serde_json::from_str(value)
 }
 
-pub(super) fn collect_rows<T, F>(rows: rusqlite::MappedRows<'_, F>) -> StoreResult<Vec<T>>
-where
-    F: FnMut(&rusqlite::Row<'_>) -> rusqlite::Result<T>,
-{
-    let mut values = Vec::new();
-    for row in rows {
-        values.push(row?);
-    }
-    Ok(values)
-}
-
 pub(super) fn optional_json(value: &Option<serde_json::Value>) -> StoreResult<Option<String>> {
     value
         .as_ref()
@@ -227,14 +219,8 @@ pub(super) fn hash_mismatch_reason(
     stored: &[SourceFileHash],
     current: &[SourceFileHash],
 ) -> Option<String> {
-    let stored_by_path = stored
-        .iter()
-        .map(|hash| (hash.relative_path.as_str(), hash.sha256.as_str()))
-        .collect::<BTreeMap<_, _>>();
-    let current_by_path = current
-        .iter()
-        .map(|hash| (hash.relative_path.as_str(), hash.sha256.as_str()))
-        .collect::<BTreeMap<_, _>>();
+    let stored_by_path = SourcePaths::source_hashes_by_path(stored);
+    let current_by_path = SourcePaths::source_hashes_by_path(current);
     for path in stored_by_path.keys() {
         if !current_by_path.contains_key(path) {
             return Some(format!("source file {path} was removed"));

@@ -1,12 +1,15 @@
-import { existsSync, readFileSync, realpathSync, readdirSync } from "node:fs";
-import { join, relative, resolve } from "node:path";
+import { existsSync, readFileSync, realpathSync } from "node:fs";
+import { join, resolve } from "node:path";
 import type { Project, SourceFile } from "ts-morph";
 import type { CommandTimingProcessState } from "@the-open-engine/opcore-contracts";
-import { isSupportedSymbolSourcePath } from "@the-open-engine/opcore-edit";
+import {
+  isPathInside as isInside,
+  listSymbolEditLanguageServiceSourceFiles
+} from "@the-open-engine/opcore-edit";
 import {
   createInspectLanguageServiceProject,
   type InspectLanguageServiceProjectScope
-} from "../inspect-language-service.js";
+} from "../inspect-typescript-project.js";
 
 export type WarmProjectScope = InspectLanguageServiceProjectScope;
 
@@ -203,47 +206,15 @@ function refreshSourceFile(sourceFile: SourceFile): void {
 
 function currentSourceFileFingerprint(repoRoot: string, scope: WarmProjectScope): string {
   if (scope !== "whole_repo") return "scoped";
-  return listWarmSourceFiles(repoRoot).join("\n");
+  return listSymbolEditLanguageServiceSourceFiles(repoRoot).join("\n");
 }
 
 function addWarmEditSourceFiles(project: Project, repoRoot: string, scope: WarmProjectScope): void {
   if (scope !== "whole_repo") return;
-  for (const filePath of listWarmSourceFiles(repoRoot)) {
+  for (const filePath of listSymbolEditLanguageServiceSourceFiles(repoRoot)) {
     if (project.getSourceFile(filePath) === undefined) project.addSourceFileAtPath(filePath);
   }
 }
-
-function listWarmSourceFiles(repoRoot: string): string[] {
-  const files: string[] = [];
-  visit(repoRoot);
-  return files.sort();
-
-  function visit(directory: string): void {
-    for (const entry of readdirSync(directory, { withFileTypes: true }).sort((left, right) => left.name.localeCompare(right.name))) {
-      const path = join(directory, entry.name);
-      if (entry.isDirectory()) {
-        if (!excludedDirectories.has(entry.name)) visit(path);
-      } else if (entry.isFile() && isSupportedSymbolSourcePath(path) && isInside(repoRoot, path)) {
-        files.push(resolve(path));
-      }
-    }
-  }
-}
-
-const excludedDirectories = new Set([
-  ".agents",
-  ".claude",
-  ".codex",
-  ".gemini",
-  ".git",
-  ".lattice",
-  ".opencode",
-  ".pnpm",
-  "dist",
-  "node_modules",
-  "target",
-  "vendor"
-]);
 
 function currentGitEpoch(repoRoot: string): string {
   const gitDir = resolveGitDir(repoRoot);
@@ -278,9 +249,4 @@ function realpathIfPossible(path: string): string {
   } catch {
     return path;
   }
-}
-
-function isInside(root: string, target: string): boolean {
-  const relativePath = relative(resolve(root), resolve(target));
-  return relativePath === "" || (!relativePath.startsWith("..") && !relativePath.startsWith("/") && !/^[A-Za-z]:/.test(relativePath));
 }

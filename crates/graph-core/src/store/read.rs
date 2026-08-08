@@ -1,5 +1,26 @@
 use crate::protocol::{GraphFactEdge, GraphFactNode};
 
+pub(crate) struct Rows;
+
+pub(crate) trait CollectRows {
+    fn collect<T, F>(rows: rusqlite::MappedRows<'_, F>) -> super::StoreResult<Vec<T>>
+    where
+        F: FnMut(&rusqlite::Row<'_>) -> rusqlite::Result<T>;
+}
+
+impl CollectRows for Rows {
+    fn collect<T, F>(rows: rusqlite::MappedRows<'_, F>) -> super::StoreResult<Vec<T>>
+    where
+        F: FnMut(&rusqlite::Row<'_>) -> rusqlite::Result<T>,
+    {
+        let mut values = Vec::new();
+        for row in rows {
+            values.push(row?);
+        }
+        Ok(values)
+    }
+}
+
 pub(super) fn read_node_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<GraphFactNode> {
     if let Some(extra) = row.get::<_, Option<String>>(4)? {
         return parse_canonical_row(&extra, 4);

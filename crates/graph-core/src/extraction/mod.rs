@@ -16,7 +16,8 @@ use crate::protocol::{
 use crate::{GRAPH_PROVIDER_NAME, GRAPH_SCHEMA_VERSION};
 use diagnostics::has_error;
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
+use std::collections::BTreeMap;
+use std::path::{Component, Path, PathBuf};
 use time::format_description::well_known::Rfc3339;
 use time::OffsetDateTime;
 
@@ -110,6 +111,42 @@ pub fn source_file_hashes(sources: &[DiscoveredSource]) -> Vec<SourceFileHash> {
             sha256: source.sha256.clone(),
         })
         .collect()
+}
+
+pub(crate) struct SourcePaths;
+
+pub(crate) trait SourcePathOps {
+    fn source_hashes_by_path(hashes: &[SourceFileHash]) -> BTreeMap<&str, &str>;
+    fn normalize_relative_path(path: &Path) -> Result<String, ()>;
+}
+
+impl SourcePathOps for SourcePaths {
+    fn source_hashes_by_path(hashes: &[SourceFileHash]) -> BTreeMap<&str, &str> {
+        hashes
+            .iter()
+            .map(|hash| (hash.relative_path.as_str(), hash.sha256.as_str()))
+            .collect()
+    }
+
+    fn normalize_relative_path(path: &Path) -> Result<String, ()> {
+        let mut parts = Vec::new();
+        for component in path.components() {
+            match component {
+                Component::CurDir => {}
+                Component::Normal(part) => parts.push(part.to_string_lossy().to_string()),
+                Component::ParentDir => {
+                    if parts.pop().is_none() {
+                        return Err(());
+                    }
+                }
+                Component::RootDir | Component::Prefix(_) => return Err(()),
+            }
+        }
+        if parts.is_empty() {
+            return Err(());
+        }
+        Ok(parts.join("/"))
+    }
 }
 
 fn load_tsconfig_if_ready(

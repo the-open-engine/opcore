@@ -1,5 +1,5 @@
-import { existsSync, readFileSync, realpathSync, readdirSync, statSync } from "node:fs";
-import { dirname, extname, join, relative, resolve } from "node:path";
+import { realpathSync } from "node:fs";
+import { extname, relative, resolve } from "node:path";
 import type {
   GraphFactEdge,
   GraphNodeKind,
@@ -16,17 +16,33 @@ import type {
   InspectSymbolTarget
 } from "@the-open-engine/opcore-contracts";
 import {
+  isPathInside as isInside,
+  isSafeExistingFileInsideRepo,
+  normalizeModulePath,
+  type TypeScriptProjectContext
+} from "@the-open-engine/opcore-edit";
+import {
   Node,
-  Project,
   SyntaxKind,
-  ts,
   type ClassDeclaration,
   type InterfaceDeclaration,
   type ParameterDeclaration,
+  type Project,
   type SourceFile,
   type Symbol as MorphSymbol,
   type TypeParameterDeclaration
 } from "ts-morph";
+import {
+  inspectProjectService,
+  type InspectLanguageServiceOptions,
+  type InspectLanguageServiceProjectScope
+} from "./inspect-typescript-project.js";
+
+export {
+  createInspectLanguageServiceProject,
+  type InspectLanguageServiceOptions,
+  type InspectLanguageServiceProjectScope
+} from "./inspect-typescript-project.js";
 
 export interface InspectReferenceRequest {
   path: string;
@@ -101,35 +117,7 @@ export type InspectImplementationResolution =
       candidates?: readonly InspectSymbolTarget[];
     };
 
-export type InspectLanguageServiceProjectScope = "import_closure" | "whole_repo";
-
-export interface InspectLanguageServiceOptions {
-  project?: Project;
-  projectScope?: InspectLanguageServiceProjectScope;
-  projectTsconfigPath?: string;
-  includeDependents?: boolean;
-  snapshotProject?: (project: Project) => unknown;
-  revertProject?: (project: Project, snapshot: unknown) => void;
-}
-
-const inspectProjectScopes = new WeakMap<Project, InspectLanguageServiceProjectScope>();
-
-const sourceFileExtensions = new Set([".ts", ".tsx", ".js", ".jsx"]);
 const implementationSourceFileExtensions = new Set([".ts", ".tsx"]);
-const excludedDirectories = new Set([
-  ".agents",
-  ".claude",
-  ".codex",
-  ".gemini",
-  ".git",
-  ".lattice",
-  ".opencode",
-  ".pnpm",
-  "dist",
-  "node_modules",
-  "target",
-  "vendor"
-]);
 
 type ReferenceEntry = {
   getNode(): Node;
@@ -147,7 +135,7 @@ type ReferenceFindableNode = Node & {
 };
 
 export function isSupportedInspectSourcePath(path: string): boolean {
-  return sourceFileExtensions.has(extname(path).toLowerCase());
+  return inspectProjectService.isSupportedSourcePath(path);
 }
 
 export function isSupportedInspectImplementationSourcePath(path: string): boolean {
@@ -180,8 +168,11 @@ export function resolveInspectSignatures(
   }
 
   try {
-    for (const context of createProjectContexts(normalizedRepoRoot, request.path, options)) {
-      const resolution = withProjectSnapshot(context, () => resolveInspectSignatureInProject(normalizedRepoRoot, context, absoluteTargetPath, request, baseTarget));
+    for (const context of inspectProjectService.createContexts(normalizedRepoRoot, request.path, options)) {
+      const resolution = inspectProjectService.withSnapshot(
+        context,
+        () => resolveInspectSignatureInProject(normalizedRepoRoot, context, absoluteTargetPath, request, baseTarget)
+      );
       return resolution;
     }
     return {
@@ -284,12 +275,12 @@ export function resolveInspectReferences(
   try {
     const projectScope = options.projectScope ?? "import_closure";
     const includeDependents = projectScope === "whole_repo" ? options.includeDependents === true : true;
-    for (const context of createProjectContexts(normalizedRepoRoot, request.path, {
+    for (const context of inspectProjectService.createContexts(normalizedRepoRoot, request.path, {
       ...options,
       includeDependents,
       projectScope
     })) {
-      const resolution = withProjectSnapshot(context, () => {
+      const resolution = inspectProjectService.withSnapshot(context, () => {
         const sourceFile = context.project.getSourceFile(absoluteTargetPath) ?? context.project.addSourceFileAtPath(absoluteTargetPath);
         const target = findReferenceTarget(normalizedRepoRoot, sourceFile, request);
         if (!target.ok) return target;
@@ -348,8 +339,12 @@ export function resolveInspectImplementations(
 
   try {
     const projectScope: InspectLanguageServiceProjectScope = request.allowGraphless ? "whole_repo" : (options.projectScope ?? "import_closure");
-    for (const context of createProjectContexts(normalizedRepoRoot, preflight.path, { ...options, projectScope })) {
-      const resolution = withProjectSnapshot(context, () => {
+    for (const context of inspectProjectService.createContexts(
+      normalizedRepoRoot,
+      preflight.path,
+      { ...options, projectScope }
+    )) {
+      const resolution = inspectProjectService.withSnapshot(context, () => {
         const targetResolution = resolveImplementationTargetInProject(context.project, normalizedRepoRoot, request, preflight.candidate);
         if (!targetResolution.ok) return targetResolution;
         const targetCandidate = targetResolution.candidate;
@@ -1281,329 +1276,7 @@ function applyLimit(entries: readonly InspectReferenceEntry[], limit: number | u
   return limit === undefined ? entries : entries.slice(0, limit);
 }
 
-type ProjectContext = {
-  project: Project;
-  tsconfigPath?: string;
-  snapshotProject?: (project: Project) => unknown;
-  revertProject?: (project: Project, snapshot: unknown) => void;
-};
-
-export function createInspectLanguageServiceProject(
-  repoRoot: string,
-  preferredRepoPath: string,
-  options: InspectLanguageServiceOptions = {}
-): Project {
-  const preferredTsconfigPath = resolveInspectTsconfigPath(repoRoot, options.projectTsconfigPath) ?? tsconfigForInspectRoot(repoRoot);
-  return createProjectForTsconfig(repoRoot, preferredTsconfigPath, preferredRepoPath, {
-    includeDependents: options.includeDependents === true,
-    scope: options.projectScope ?? "import_closure"
-  });
-}
-
-function createProjectContexts(repoRoot: string, preferredRepoPath: string, options: InspectLanguageServiceOptions = {}): ProjectContext[] {
-  const projectScope = options.projectScope ?? "import_closure";
-  const preferredTsconfigPath = resolveInspectTsconfigPath(repoRoot, options.projectTsconfigPath) ?? tsconfigForInspectRoot(repoRoot);
-  if (options.project !== undefined && canUseInjectedProject(options.project, projectScope)) {
-    if (projectScope === "import_closure") {
-      addScopedSourceFilesToProject(repoRoot, preferredTsconfigPath, options.project, [preferredRepoPath], {
-        includeDependents: options.includeDependents === true
-      });
-    }
-    return [
-      {
-        project: options.project,
-        ...(options.projectTsconfigPath ? { tsconfigPath: options.projectTsconfigPath } : {}),
-        ...(options.snapshotProject ? { snapshotProject: options.snapshotProject } : {}),
-        ...(options.revertProject ? { revertProject: options.revertProject } : {})
-      }
-    ];
-  }
-  return [
-    {
-      project: createProjectForTsconfig(repoRoot, preferredTsconfigPath, preferredRepoPath, {
-        includeDependents: options.includeDependents === true,
-        scope: projectScope
-      }),
-      ...(preferredTsconfigPath ? { tsconfigPath: preferredTsconfigPath } : {})
-    }
-  ];
-}
-
-function canUseInjectedProject(project: Project, requiredScope: InspectLanguageServiceProjectScope): boolean {
-  return requiredScope !== "whole_repo" || inspectProjectScopes.get(project) === "whole_repo";
-}
-
-function withProjectSnapshot<T>(context: ProjectContext, run: () => T): T {
-  if (context.snapshotProject === undefined || context.revertProject === undefined) return run();
-  const snapshot = context.snapshotProject(context.project);
-  try {
-    return run();
-  } finally {
-    context.revertProject(context.project, snapshot);
-  }
-}
-
-function createProjectForTsconfig(
-  repoRoot: string,
-  tsconfigPath: string | undefined,
-  preferredRepoPath: string,
-  options: {
-    includeDependents: boolean;
-    scope: InspectLanguageServiceProjectScope;
-  }
-): Project {
-  const projectOptions = {
-    tsConfigFilePath: tsconfigPath,
-    skipAddingFilesFromTsConfig: true,
-    skipFileDependencyResolution: true,
-    compilerOptions: {
-      allowJs: true,
-      checkJs: false
-    }
-  };
-  const project = new Project(projectOptions);
-  const sourceFiles = options.scope === "whole_repo"
-    ? listSourceFiles(repoRoot)
-    : scopedSourceFiles(repoRoot, tsconfigPath, [preferredRepoPath], { includeDependents: options.includeDependents });
-  for (const filePath of sourceFiles) {
-    if (project.getSourceFile(filePath)) continue;
-    project.addSourceFileAtPath(filePath);
-  }
-  inspectProjectScopes.set(project, options.scope);
-  return project;
-}
-
-function addScopedSourceFilesToProject(
-  repoRoot: string,
-  tsconfigPath: string | undefined,
-  project: Project,
-  rootRepoPaths: readonly string[],
-  options: { includeDependents: boolean }
-): void {
-  for (const filePath of scopedSourceFiles(repoRoot, tsconfigPath, rootRepoPaths, options)) {
-    if (project.getSourceFile(filePath) === undefined) project.addSourceFileAtPath(filePath);
-  }
-}
-
-interface ImportResolutionOptions {
-  baseUrl: string;
-  hasBaseUrl: boolean;
-  paths: Readonly<Record<string, readonly string[]>>;
-}
-
-type TsconfigJson = {
-  compilerOptions?: {
-    baseUrl?: unknown;
-    paths?: unknown;
-  };
-};
-
-const extensionlessCandidates = [".ts", ".tsx", ".js", ".jsx", ".d.ts"] as const;
-
-function scopedSourceFiles(
-  repoRoot: string,
-  tsconfigPath: string | undefined,
-  rootRepoPaths: readonly string[],
-  options: { includeDependents: boolean }
-): string[] {
-  const importOptions = importResolutionOptions(repoRoot, tsconfigPath);
-  const importTargetsByFile = new Map<string, readonly string[]>();
-  const allSourceFiles = options.includeDependents ? listSourceFiles(repoRoot) : [];
-  const roots = rootSourceFiles(repoRoot, rootRepoPaths);
-  const reverseTargets = new Set(roots);
-  const selected = new Set<string>();
-  addForwardClosure(roots, selected);
-
-  if (options.includeDependents) {
-    let changed = true;
-    while (changed) {
-      changed = false;
-      for (const filePath of allSourceFiles) {
-        if (selected.has(filePath)) continue;
-        const importsReverseTarget = importTargets(filePath).some((importedPath) => reverseTargets.has(importedPath));
-        if (!importsReverseTarget) continue;
-        const beforeSize = selected.size;
-        addForwardClosure([filePath], selected);
-        reverseTargets.add(filePath);
-        if (selected.size !== beforeSize) changed = true;
-      }
-    }
-  }
-
-  return [...selected].sort();
-
-  function addForwardClosure(rootFiles: readonly string[], selectedFiles: Set<string>): void {
-    const pending = [...rootFiles].sort();
-    for (let index = 0; index < pending.length; index += 1) {
-      const filePath = pending[index];
-      if (selectedFiles.has(filePath)) continue;
-      selectedFiles.add(filePath);
-      for (const importedPath of importTargets(filePath)) {
-        if (!selectedFiles.has(importedPath) && !pending.includes(importedPath)) pending.push(importedPath);
-      }
-    }
-  }
-
-  function importTargets(filePath: string): readonly string[] {
-    const cached = importTargetsByFile.get(filePath);
-    if (cached !== undefined) return cached;
-    const resolvedTargets = moduleImportSpecifiers(readFileSync(filePath, "utf8"))
-      .flatMap((specifier) => {
-        const resolvedImport = resolveImportSpecifier(repoRoot, filePath, specifier, importOptions);
-        return resolvedImport === undefined ? [] : [resolvedImport];
-      })
-      .sort();
-    importTargetsByFile.set(filePath, resolvedTargets);
-    return resolvedTargets;
-  }
-}
-
-function rootSourceFiles(repoRoot: string, rootRepoPaths: readonly string[]): string[] {
-  return uniqueSorted(
-    rootRepoPaths
-      .map((path) => resolve(repoRoot, path))
-      .filter((path) => isSupportedInspectSourcePath(path) && isSafeExistingFileInsideRepo(repoRoot, path))
-  );
-}
-
-function moduleImportSpecifiers(text: string): readonly string[] {
-  const specifiers = new Set<string>();
-  for (const match of text.matchAll(/\b(?:import|export)\s+(?:type\s+)?(?:[^"'`;]*?\s+from\s+)?["']([^"']+)["']/gu)) {
-    if (match[1]) specifiers.add(match[1]);
-  }
-  for (const match of text.matchAll(/<reference\s+path=["']([^"']+)["']/gu)) {
-    if (match[1]) specifiers.add(match[1]);
-  }
-  for (const match of text.matchAll(/\b(?:import|require)\(\s*["']([^"']+)["']\s*\)/gu)) {
-    if (match[1]) specifiers.add(match[1]);
-  }
-  return [...specifiers].filter(isRepoResolvableSpecifier).sort();
-}
-
-function resolveImportSpecifier(
-  repoRoot: string,
-  fromPath: string,
-  specifier: string,
-  options: ImportResolutionOptions
-): string | undefined {
-  if (isRelativeSpecifier(specifier)) return resolveModulePathFromBase(repoRoot, resolve(dirname(fromPath), specifier));
-  for (const [pattern, targets] of sortedPathMappings(options.paths)) {
-    const wildcard = matchPathPattern(pattern, specifier);
-    if (wildcard === undefined) continue;
-    for (const target of targets) {
-      const resolved = resolveModulePathFromBase(repoRoot, resolve(options.baseUrl, applyPathMappingTarget(target, wildcard)));
-      if (resolved !== undefined) return resolved;
-    }
-  }
-  return options.hasBaseUrl ? resolveModulePathFromBase(repoRoot, resolve(options.baseUrl, specifier)) : undefined;
-}
-
-function resolveModulePathFromBase(repoRoot: string, basePath: string): string | undefined {
-  for (const candidate of modulePathCandidates(basePath)) {
-    if (isSupportedInspectSourcePath(candidate) && isSafeExistingFileInsideRepo(repoRoot, candidate)) return resolve(candidate);
-  }
-  return undefined;
-}
-
-function modulePathCandidates(basePath: string): readonly string[] {
-  const extension = sourceExtension(basePath);
-  if (extension === ".js" || extension === ".jsx") {
-    const candidates = extension === ".jsx"
-      ? [replaceExtension(basePath, ".tsx"), replaceExtension(basePath, ".ts")]
-      : [replaceExtension(basePath, ".ts"), replaceExtension(basePath, ".tsx")];
-    return unique([...candidates, replaceExtension(basePath, ".d.ts"), basePath, replaceExtension(basePath, extension === ".js" ? ".jsx" : ".js")]);
-  }
-  if (extension !== undefined) return [basePath];
-  return unique([
-    ...extensionlessCandidates.map((candidateExtension) => `${basePath}${candidateExtension}`),
-    ...extensionlessCandidates.map((candidateExtension) => join(basePath, `index${candidateExtension}`))
-  ]);
-}
-
-function importResolutionOptions(repoRoot: string, tsconfigPath: string | undefined): ImportResolutionOptions {
-  const configDirectory = tsconfigPath === undefined ? repoRoot : dirname(tsconfigPath);
-  const config = tsconfigPath === undefined ? undefined : parseTsconfigForImports(tsconfigPath);
-  const compilerOptions = config?.compilerOptions;
-  const baseUrl = typeof compilerOptions?.baseUrl === "string" && compilerOptions.baseUrl.length > 0
-    ? resolve(configDirectory, compilerOptions.baseUrl)
-    : configDirectory;
-  return {
-    baseUrl,
-    hasBaseUrl: typeof compilerOptions?.baseUrl === "string" && compilerOptions.baseUrl.length > 0,
-    paths: normalizePathMappings(compilerOptions?.paths)
-  };
-}
-
-function parseTsconfigForImports(tsconfigPath: string): TsconfigJson | undefined {
-  try {
-    const parsed = ts.parseConfigFileTextToJson(tsconfigPath, readFileSync(tsconfigPath, "utf8"));
-    return parsed.error === undefined ? parsed.config as TsconfigJson : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
-function normalizePathMappings(paths: unknown): Readonly<Record<string, readonly string[]>> {
-  if (paths === null || typeof paths !== "object" || Array.isArray(paths)) return {};
-  const normalized: Record<string, readonly string[]> = {};
-  for (const [pattern, targets] of Object.entries(paths)) {
-    if (Array.isArray(targets)) normalized[pattern] = targets.filter((target): target is string => typeof target === "string");
-  }
-  return normalized;
-}
-
-function sortedPathMappings(paths: Readonly<Record<string, readonly string[]>>): readonly [string, readonly string[]][] {
-  return Object.entries(paths)
-    .filter((entry): entry is [string, readonly string[]] => entry[1].length > 0)
-    .sort((left, right) => pathPatternRank(right[0]) - pathPatternRank(left[0]));
-}
-
-function pathPatternRank(pattern: string): number {
-  const starIndex = pattern.indexOf("*");
-  if (starIndex === -1) return pattern.length * 2 + 1;
-  return pattern.length - 1;
-}
-
-function matchPathPattern(pattern: string, specifier: string): string | undefined {
-  const starIndex = pattern.indexOf("*");
-  if (starIndex === -1) return pattern === specifier ? "" : undefined;
-  const prefix = pattern.slice(0, starIndex);
-  const suffix = pattern.slice(starIndex + 1);
-  if (!specifier.startsWith(prefix) || !specifier.endsWith(suffix)) return undefined;
-  return specifier.slice(prefix.length, specifier.length - suffix.length);
-}
-
-function applyPathMappingTarget(target: string, wildcard: string): string {
-  return target.includes("*") ? target.replaceAll("*", wildcard) : target;
-}
-
-function tsconfigForInspectRoot(repoRoot: string): string | undefined {
-  const tsconfigPath = join(repoRoot, "tsconfig.json");
-  return isSafeExistingFileInsideRepo(repoRoot, tsconfigPath) ? resolve(tsconfigPath) : undefined;
-}
-
-function resolveInspectTsconfigPath(repoRoot: string, tsconfigPath: string | undefined): string | undefined {
-  if (tsconfigPath === undefined) return undefined;
-  const absolutePath = resolve(repoRoot, tsconfigPath);
-  return isSafeExistingFileInsideRepo(repoRoot, absolutePath) ? absolutePath : undefined;
-}
-
-function listSourceFiles(repoRoot: string): string[] {
-  const files: string[] = [];
-  visit(repoRoot);
-  return files.sort();
-
-  function visit(directory: string): void {
-    for (const entry of readdirSync(directory, { withFileTypes: true }).sort((left: { name: string }, right: { name: string }) => left.name.localeCompare(right.name))) {
-      const path = join(directory, entry.name);
-      if (entry.isDirectory()) {
-        if (!excludedDirectories.has(entry.name)) visit(path);
-      } else if (entry.isFile() && isSupportedInspectSourcePath(path) && isSafeExistingFileInsideRepo(repoRoot, path)) {
-        files.push(resolve(path));
-      }
-    }
-  }
-}
+type ProjectContext = TypeScriptProjectContext;
 
 function symbolIdentity(node: Node): string {
   const declaration = symbolDeclaration(node.getSymbol()) ?? node;
@@ -1768,51 +1441,6 @@ function compareSignatureEntries(left: InspectSignatureEntry, right: InspectSign
     (left.overloadIndex ?? -1) - (right.overloadIndex ?? -1) ||
     left.signature.localeCompare(right.signature)
   );
-}
-
-function isSafeExistingFileInsideRepo(repoRoot: string, absolutePath: string): boolean {
-  if (!isInside(repoRoot, absolutePath) || !existsSync(absolutePath)) return false;
-  try {
-    return isInside(repoRoot, realpathSync(absolutePath)) && statSync(absolutePath).isFile();
-  } catch {
-    return false;
-  }
-}
-
-function isInside(root: string, target: string): boolean {
-  const relativePath = relative(resolve(root), resolve(target));
-  return relativePath === "" || (!relativePath.startsWith("..") && !relativePath.startsWith("/") && !/^[A-Za-z]:/.test(relativePath));
-}
-
-function normalizeModulePath(path: string): string {
-  return path.replaceAll("\\", "/");
-}
-
-function isRepoResolvableSpecifier(specifier: string): boolean {
-  return specifier.length > 0 && !specifier.startsWith("/") && !specifier.includes("://");
-}
-
-function isRelativeSpecifier(specifier: string): boolean {
-  return specifier.startsWith("./") || specifier.startsWith("../");
-}
-
-function sourceExtension(path: string): string | undefined {
-  if (path.endsWith(".d.ts")) return ".d.ts";
-  const match = /\.[^./]+$/u.exec(path);
-  return match?.[0];
-}
-
-function replaceExtension(path: string, extension: string): string {
-  if (path.endsWith(".d.ts")) return `${path.slice(0, -".d.ts".length)}${extension}`;
-  return path.replace(/\.[^./]+$/u, extension);
-}
-
-function uniqueSorted(values: readonly string[]): string[] {
-  return [...new Set(values)].sort();
-}
-
-function unique(values: readonly string[]): readonly string[] {
-  return [...new Set(values)];
 }
 
 function errorMessage(error: unknown): string {

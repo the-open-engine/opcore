@@ -364,6 +364,21 @@
     ],
     [
       "TESTED_BY",
+      "file:src/components/GreetingCard.tsx",
+      "file:src/__tests__/greeting.test.ts"
+    ],
+    [
+      "TESTED_BY",
+      "file:src/math.js",
+      "file:src/__tests__/greeting.test.ts"
+    ],
+    [
+      "TESTED_BY",
+      "file:src/models.ts",
+      "file:src/__tests__/greeting.test.ts"
+    ],
+    [
+      "TESTED_BY",
       "function:src/components/GreetingCard.tsx#GreetingCard",
       "test:src/__tests__/greeting.test.ts#renders greeting cards"
     ],

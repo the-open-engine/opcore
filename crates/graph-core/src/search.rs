@@ -2,7 +2,10 @@ use crate::protocol::{
     GraphFactEdge, GraphFactNode, GraphSearchMode, GraphSearchRequest, GraphSearchResultEntry,
     GraphSearchSummary,
 };
-use crate::store::{StoreError, StoreResult};
+use crate::store::{
+    read::{CollectRows, Rows},
+    StoreError, StoreResult,
+};
 use rusqlite::{params, Connection, OptionalExtension};
 mod dependents;
 mod scoring;
@@ -348,7 +351,7 @@ fn limit_to_usize(limit: u32) -> usize {
 fn indexed_node_kinds(connection: &Connection) -> StoreResult<Vec<String>> {
     let mut statement = connection.prepare("select distinct kind from nodes_fts order by kind")?;
     let rows = statement.query_map([], |row| row.get::<_, String>(0))?;
-    collect_rows(rows)
+    Rows::collect(rows)
 }
 
 fn project_node(node: &GraphFactNode) -> SearchIndexRow {
@@ -424,17 +427,6 @@ fn sorted_strings(values: Vec<String>) -> Vec<String> {
         .collect::<BTreeSet<_>>()
         .into_iter()
         .collect()
-}
-
-fn collect_rows<T, F>(rows: rusqlite::MappedRows<'_, F>) -> StoreResult<Vec<T>>
-where
-    F: FnMut(&rusqlite::Row<'_>) -> rusqlite::Result<T>,
-{
-    let mut values = Vec::new();
-    for row in rows {
-        values.push(row?);
-    }
-    Ok(values)
 }
 
 pub fn boundary_name() -> &'static str {

@@ -3,6 +3,47 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 
 const readJson = (path) => JSON.parse(readFileSync(path, "utf8"));
+const selfValidationCheckIds = [
+  "typescript.syntax",
+  "typescript.types",
+  "typescript.lint",
+  "typescript.import-graph",
+  "typescript.dead-code",
+  "typescript.function-metrics",
+  "typescript.relevant-tests",
+  "typescript.file-length",
+  "rust.source-hygiene",
+  "rust.fmt",
+  "rust.cargo-check",
+  "rust.clippy",
+  "rust.rustdoc",
+  "rust.import-graph",
+  "rust.dead-code",
+  "rust.graph-signals",
+  "rust.unused-deps",
+  "rust.file-length",
+  "rust.function-metrics",
+  "python.syntax",
+  "python.source-hygiene",
+  "python.ruff-lint",
+  "python.ruff-format",
+  "python.types",
+  "python.import-graph",
+  "python.dead-code",
+  "python.relevant-tests",
+  "python.pytest",
+  "docs.existence",
+  "docs.staleness",
+  "docs.freshness",
+  "docs.length",
+  "docs.dry",
+  "docs.content-quality",
+  "docs.code-blocks",
+  "docs.rules-why",
+  "docs.hub-coverage",
+  "docs.subtree-coverage",
+  "clone.duplication"
+];
 
 describe("Opcore scaffold", () => {
   it("keeps opcore, graph, edit, and validation as separate package tracks", () => {
@@ -102,5 +143,22 @@ describe("Opcore scaffold", () => {
       assert.match(content, /@docs\/architecture\/runtime-cli-ard\.md/);
       assert.match(content, /hybrid/);
     }
+  });
+});
+
+describe("Opcore self-validation policy", () => {
+  it("selects every registered check with strict complexity thresholds", () => {
+    const policy = readJson(".opcore/config").validation;
+    assert.deepEqual(policy.adapters, ["typescript", "rust", "python", "docs", "clone"]);
+    assert.deepEqual(policy.checks.defaults, selfValidationCheckIds);
+    assert.deepEqual(policy.checks.disabled, []);
+    assert.deepEqual(policy.checks.typescript, {
+      fileLength: { maxFileLines: 300 },
+      functionMetrics: { maxFunctionLines: 80, maxComplexity: 10, maxParams: 4 }
+    });
+    assert.deepEqual(policy.checks.rust, {
+      fileLength: { maxFileLines: 500 },
+      functionMetrics: { maxFunctionLines: 80, maxComplexity: 10, maxParams: 4 }
+    });
   });
 });

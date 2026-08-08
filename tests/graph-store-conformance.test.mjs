@@ -70,7 +70,7 @@ describe("GraphProvider SQLite store conformance", () => {
             { kind: "IMPLEMENTS", count: 2 },
             { kind: "IMPORTS_FROM", count: 11 },
             { kind: "INHERITS", count: 2 },
-            { kind: "TESTED_BY", count: 4 }
+            { kind: "TESTED_BY", count: 7 }
           ]
         );
         assert.ok(

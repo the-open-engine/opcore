@@ -151,12 +151,12 @@ describe("graph release readiness receipt", () => {
 function tempGraphPackageInspectionRepo() {
   const tempRoot = mkdtempSync(join(tmpdir(), "opcore-graph-package-test-"));
   mkdirSync(join(tempRoot, "scripts"), { recursive: true });
-  mkdirSync(join(tempRoot, "packages/contracts/dist"), { recursive: true });
+  mkdirSync(join(tempRoot, "packages/contracts"), { recursive: true });
   mkdirSync(join(tempRoot, "packages/graph"), { recursive: true });
   cpSync(join(repoRoot, "package.json"), join(tempRoot, "package.json"));
   cpSync(join(repoRoot, ".npmrc"), join(tempRoot, ".npmrc"));
   cpSync(join(repoRoot, "scripts/generate-graph-release-receipt.mjs"), join(tempRoot, "scripts/generate-graph-release-receipt.mjs"));
-  cpSync(join(repoRoot, "packages/contracts/dist/index.js"), join(tempRoot, "packages/contracts/dist/index.js"));
+  cpSync(join(repoRoot, "packages/contracts/dist"), join(tempRoot, "packages/contracts/dist"), { recursive: true });
   cpSync(join(repoRoot, "packages/graph/package.json"), join(tempRoot, "packages/graph/package.json"));
   cpSync(join(repoRoot, "packages/graph/README.md"), join(tempRoot, "packages/graph/README.md"));
   cpSync(join(repoRoot, "packages/graph/dist"), join(tempRoot, "packages/graph/dist"), { recursive: true });

@@ -17,6 +17,7 @@ import { compactScanValidationResult } from "../packages/opcore/dist/scan-valida
 const repoRoot = fileURLToPath(new URL("..", import.meta.url));
 const opcoreBin = resolve(repoRoot, "packages/opcore/dist/index.js");
 const sourceFixtureRoot = resolve(repoRoot, "packages/fixtures/source-extraction/wave1");
+const systemToolPath = "/usr/bin:/bin:/opt/homebrew/bin";
 
 describe("opcore public facade", () => {
   it("runs zero-command scan with coverage-first output and only .opcore artifacts", () => {
@@ -1469,7 +1470,9 @@ printf '%s\\n' '${JSON.stringify({
         if (fixture.gitInit) run("git", ["init"], temp, 0);
         for (const [path, content] of fixture.files) writeFixtureFile(temp, path, content);
 
-        const result = parseJson(runOpcore(["init", "--repo", temp, "--json"], temp, 0).stdout);
+        const result = parseJson(
+          runOpcore(["init", "--repo", temp, "--json"], temp, 0, { ...process.env, PATH: systemToolPath }).stdout
+        );
         const languages = result.opcoreInit.settings.languages.map((entry) => entry.language).sort();
 
         assert.equal(result.opcoreInit.scan.totalFiles, fixture.expect.totalFiles, fixture.name);

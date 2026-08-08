@@ -6,7 +6,7 @@ import { join } from "node:path";
 const nativePackagingTest = "tests/native-packaging-policy.test.mjs";
 const pythonValidationTest = "tests/validation-python.test.mjs";
 const testFiles = readdirSync("tests")
-  .filter((file) => file.endsWith(".test.mjs"))
+  .filter((file) => file.endsWith(".test.mjs") || file.endsWith(".test.ts"))
   .map((file) => join("tests", file))
   .sort();
 const parallelSafeTests = testFiles.filter((file) => file !== nativePackagingTest && file !== pythonValidationTest);

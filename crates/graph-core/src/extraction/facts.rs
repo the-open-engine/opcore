@@ -11,8 +11,10 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 mod collector;
 mod python;
+mod resolution;
 mod rust;
 
+use resolution::{FactResolution, Resolution};
 use std::collections::{BTreeMap, BTreeSet};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -100,7 +102,7 @@ pub fn file_node(source: &DiscoveredSource) -> GraphFactNode {
         | SourceLanguage::JavaScriptJsx => "oxc_parser",
     };
     GraphFactNode {
-        id: file_id(&source.relative_path),
+        id: Resolution::file_id(&source.relative_path),
         kind: "File".to_string(),
         path: Some(source.relative_path.clone()),
         name: None,
@@ -157,7 +159,7 @@ pub fn finalize_facts(
     tsconfig: Option<&TsConfig>,
     diagnostics: &mut Vec<GraphExtractionDiagnostic>,
 ) -> (Vec<GraphFactNode>, Vec<GraphFactEdge>) {
-    let known_files = known_files(file_facts);
+    let known_files = Resolution::known_files(file_facts);
     let mut imports = ImportResolutionContext {
         known_files: &known_files,
         tsconfig,
@@ -167,7 +169,7 @@ pub fn finalize_facts(
     finalizer.resolve_imports(file_facts, &mut imports);
     finalizer.resolve_re_exports(file_facts);
     finalizer.resolve_links(file_facts);
-    append_path_traversal_blocker(imports.diagnostics);
+    Resolution::append_path_traversal_blocker(imports.diagnostics);
     finalizer.into_parts()
 }
 
@@ -179,9 +181,9 @@ struct ImportResolutionContext<'a> {
 
 impl ImportResolutionContext<'_> {
     fn resolve(&mut self, specifier: &str, path: &str) -> Option<String> {
-        let resolution = if is_python_source_path(path) {
+        let resolution = if Resolution::is_python_source_path(path) {
             python_imports::resolve_import(specifier, path, self.known_files)
-        } else if is_rust_source_path(path) {
+        } else if Resolution::is_rust_source_path(path) {
             rust::resolve_import(specifier, path, self.known_files)
         } else {
             resolve_import(specifier, path, self.known_files, self.tsconfig)
@@ -207,6 +209,36 @@ fn python_submodule_specifier(specifier: &str, imported: &str) -> Option<String>
     }
     let separator = if specifier.ends_with('.') { "" } else { "." };
     Some(format!("{specifier}{separator}{imported}"))
+}
+
+fn is_conventional_script_test_path(path: &str) -> bool {
+    let Some((stem, extension)) = path.rsplit_once('.') else {
+        return false;
+    };
+    let is_script = matches!(
+        extension,
+        "ts" | "tsx" | "mts" | "cts" | "js" | "jsx" | "mjs" | "cjs"
+    );
+    is_script
+        && (path.split('/').any(|segment| segment == "__tests__")
+            || stem.ends_with(".test")
+            || stem.ends_with(".spec"))
+}
+
+fn set_node_attribute(node: &mut GraphFactNode, key: &str, value: Value) {
+    node_attributes_object(node).insert(key.to_string(), value);
+}
+
+fn node_attributes_object(node: &mut GraphFactNode) -> &mut serde_json::Map<String, Value> {
+    let attributes = node
+        .attributes
+        .get_or_insert_with(|| Value::Object(serde_json::Map::new()));
+    loop {
+        if let Value::Object(object) = attributes {
+            return object;
+        }
+        *attributes = Value::Object(serde_json::Map::new());
+    }
 }
 
 struct FactFinalizer {
@@ -246,7 +278,7 @@ impl FactFinalizer {
     fn resolve_imports(&mut self, file_facts: &[FileFacts], imports: &mut ImportResolutionContext) {
         for facts in file_facts {
             for import in &facts.imports {
-                if is_python_source_path(&facts.path)
+                if Resolution::is_python_source_path(&facts.path)
                     && self.register_python_import(facts, import, imports)
                 {
                     continue;
@@ -264,8 +296,10 @@ impl FactFinalizer {
             self.register_import_binding(
                 &facts.path,
                 binding,
-                target_path.clone(),
-                binding.imported.clone(),
+                ImportTarget {
+                    path: target_path.clone(),
+                    imported: binding.imported.clone(),
+                },
             );
         }
     }
@@ -284,7 +318,14 @@ impl FactFinalizer {
                 &binding.imported,
                 &facts.path,
             ) {
-                self.register_import_binding(&facts.path, binding, target_path, "*".to_string());
+                self.register_import_binding(
+                    &facts.path,
+                    binding,
+                    ImportTarget {
+                        path: target_path,
+                        imported: "*".to_string(),
+                    },
+                );
                 handled_submodule = true;
             } else {
                 fallback_bindings.push(binding);
@@ -299,8 +340,10 @@ impl FactFinalizer {
                     self.register_import_binding(
                         &facts.path,
                         binding,
-                        target_path.clone(),
-                        binding.imported.clone(),
+                        ImportTarget {
+                            path: target_path.clone(),
+                            imported: binding.imported.clone(),
+                        },
                     );
                 }
             }
@@ -312,27 +355,25 @@ impl FactFinalizer {
         &mut self,
         facts_path: &str,
         binding: &ImportBinding,
-        target_path: String,
-        imported: String,
+        target: ImportTarget,
     ) {
-        self.register_import_edge(facts_path, &target_path);
+        self.register_import_edge(facts_path, &target.path);
         self.imports_by_file
             .entry(facts_path.to_string())
             .or_default()
-            .insert(
-                binding.local.clone(),
-                ImportTarget {
-                    path: target_path,
-                    imported,
-                },
-            );
+            .insert(binding.local.clone(), target);
     }
 
     fn register_import_edge(&mut self, facts_path: &str, target_path: &str) {
-        let from = file_id(facts_path);
-        let to = file_id(target_path);
-        insert_edge(&mut self.edges, EdgeDraft::new("IMPORTS_FROM", &from, &to));
-        insert_edge(&mut self.edges, EdgeDraft::new("DEPENDS_ON", &from, &to));
+        let from = Resolution::file_id(facts_path);
+        let to = Resolution::file_id(target_path);
+        Resolution::insert_edge(&mut self.edges, EdgeDraft::new("IMPORTS_FROM", &from, &to));
+        Resolution::insert_edge(&mut self.edges, EdgeDraft::new("DEPENDS_ON", &from, &to));
+        if is_conventional_script_test_path(facts_path)
+            && !is_conventional_script_test_path(target_path)
+        {
+            Resolution::insert_edge(&mut self.edges, EdgeDraft::new("TESTED_BY", &to, &from));
+        }
     }
 
     fn resolve_re_exports(&mut self, file_facts: &[FileFacts]) {
@@ -350,7 +391,7 @@ impl FactFinalizer {
                     };
                     let resolved = {
                         let context = self.name_resolution_context();
-                        resolve_imported_name(&target.path, &target.imported, &context)
+                        Resolution::resolve_imported_name(&target.path, &target.imported, &context)
                     };
                     let Some(resolved) = resolved else {
                         continue;
@@ -373,7 +414,7 @@ impl FactFinalizer {
     }
 
     fn mark_file_export_supported(&mut self, path: &str, re_export: &ReExportFact) {
-        let Some(file_node) = self.nodes.get_mut(&file_id(path)) else {
+        let Some(file_node) = self.nodes.get_mut(&Resolution::file_id(path)) else {
             return;
         };
         let Some(attributes) = file_node.attributes.as_mut().and_then(Value::as_object_mut) else {
@@ -407,10 +448,10 @@ impl FactFinalizer {
         for heritage in &facts.heritage {
             let target = {
                 let context = self.name_resolution_context();
-                resolve_name(&facts.path, &heritage.name, &context)
+                Resolution::resolve_name(&facts.path, &heritage.name, &context)
             };
             if let Some(target) = target {
-                insert_edge(
+                Resolution::insert_edge(
                     &mut self.edges,
                     EdgeDraft::new(&heritage.kind, &heritage.from, &target),
                 );
@@ -422,15 +463,15 @@ impl FactFinalizer {
         for reference in &facts.references {
             let target = {
                 let context = self.name_resolution_context();
-                resolve_name(&facts.path, &reference.name, &context)
+                Resolution::resolve_name(&facts.path, &reference.name, &context)
             };
             if let Some(target) = target {
-                insert_edge(
+                Resolution::insert_edge(
                     &mut self.edges,
                     EdgeDraft::new("CALLS", &reference.from, &target),
                 );
                 if reference.is_test || reference.from.starts_with("test:") {
-                    insert_edge(
+                    Resolution::insert_edge(
                         &mut self.edges,
                         EdgeDraft::new("TESTED_BY", &target, &reference.from),
                     );
@@ -453,183 +494,4 @@ impl FactFinalizer {
             self.edges.into_values().collect::<Vec<_>>(),
         )
     }
-}
-
-fn known_files(file_facts: &[FileFacts]) -> BTreeSet<String> {
-    file_facts
-        .iter()
-        .map(|facts| facts.path.clone())
-        .collect::<BTreeSet<_>>()
-}
-
-fn append_path_traversal_blocker(diagnostics: &mut Vec<GraphExtractionDiagnostic>) {
-    let has_path_traversal = diagnostics
-        .iter()
-        .any(|diagnostic| diagnostic.category == GraphExtractionDiagnosticCategory::PathTraversal);
-    if has_path_traversal {
-        diagnostics.push(error(
-            GraphExtractionDiagnosticCategory::PathTraversal,
-            "path traversal diagnostics blocked graph availability",
-            None,
-            None,
-        ));
-    }
-}
-
-pub fn file_id(path: &str) -> String {
-    format!("file:{path}")
-}
-
-fn insert_edge(edges: &mut BTreeMap<String, GraphFactEdge>, edge: EdgeDraft<'_>) {
-    if edge.from == edge.to {
-        return;
-    }
-    let id = format!("edge:{}:{}->{}", edge.kind, edge.from, edge.to);
-    edges.entry(id.clone()).or_insert_with(|| GraphFactEdge {
-        id: Some(id),
-        kind: edge.kind.to_string(),
-        from: edge.from.to_string(),
-        to: edge.to.to_string(),
-        attributes: None,
-    });
-}
-
-fn resolve_name(
-    file_path: &str,
-    name: &str,
-    context: &NameResolutionContext<'_>,
-) -> Option<String> {
-    if let Some(local) = context
-        .declarations_by_file
-        .get(file_path)
-        .and_then(|declarations| declarations.get(name))
-    {
-        return Some(local.clone());
-    }
-    if name.contains('.') {
-        return resolve_dotted_name(file_path, name, context);
-    }
-    if let Some(target) = context
-        .imports_by_file
-        .get(file_path)
-        .and_then(|imports| imports.get(name))
-    {
-        if target.imported != "*" {
-            if let Some(target) = resolve_imported_name(&target.path, &target.imported, context) {
-                return Some(target);
-            }
-        }
-    }
-    None
-}
-
-fn resolve_dotted_name(
-    file_path: &str,
-    name: &str,
-    context: &NameResolutionContext<'_>,
-) -> Option<String> {
-    let parts = name.split('.').collect::<Vec<_>>();
-    let head = parts.first()?;
-    let target = context
-        .imports_by_file
-        .get(file_path)
-        .and_then(|imports| imports.get(*head))?;
-    if target.imported == "*" {
-        for candidate in namespace_import_member_candidates(&parts, &target.path) {
-            if let Some(target) = resolve_imported_name(&target.path, &candidate, context) {
-                return Some(target);
-            }
-        }
-        return None;
-    }
-    resolve_imported_name(&target.path, &target.imported, context)
-}
-
-fn namespace_import_member_candidates(parts: &[&str], target_path: &str) -> Vec<String> {
-    let mut candidates = Vec::new();
-    let module_parts = module_parts_for_path(target_path);
-    if let Some(consumed) = longest_module_prefix_match(parts, &module_parts) {
-        if let Some(candidate) = parts.get(consumed..) {
-            candidates.push(candidate.join("."));
-        }
-    }
-    if let Some(candidate) = parts.get(1..) {
-        candidates.push(candidate.join("."));
-    }
-    if let Some(last) = parts.last() {
-        candidates.push((*last).to_string());
-    }
-    deduplicate(candidates)
-}
-
-fn longest_module_prefix_match(parts: &[&str], module_parts: &[String]) -> Option<usize> {
-    let max_len = parts.len().min(module_parts.len());
-    (1..=max_len).rev().find(|len| {
-        let len = *len;
-        let Some(start) = module_parts.len().checked_sub(len) else {
-            return false;
-        };
-        let Some(module_suffix) = module_parts.get(start..) else {
-            return false;
-        };
-        let Some(parts_prefix) = parts.get(..len) else {
-            return false;
-        };
-        module_suffix
-            .iter()
-            .map(String::as_str)
-            .eq(parts_prefix.iter().copied())
-    })
-}
-
-fn module_parts_for_path(path: &str) -> Vec<String> {
-    let without_extension = path
-        .strip_suffix(".py")
-        .or_else(|| path.strip_suffix(".pyi"))
-        .or_else(|| path.strip_suffix(".mts"))
-        .or_else(|| path.strip_suffix(".cts"))
-        .or_else(|| path.strip_suffix(".ts"))
-        .or_else(|| path.strip_suffix(".tsx"))
-        .or_else(|| path.strip_suffix(".js"))
-        .or_else(|| path.strip_suffix(".jsx"))
-        .or_else(|| path.strip_suffix(".rs"))
-        .unwrap_or(path);
-    let mut parts = without_extension
-        .split('/')
-        .filter(|part| !part.is_empty())
-        .map(ToString::to_string)
-        .collect::<Vec<_>>();
-    if parts.last().is_some_and(|part| part == "__init__") {
-        parts.pop();
-    }
-    parts
-}
-
-fn deduplicate(values: Vec<String>) -> Vec<String> {
-    values.into_iter().fold(Vec::new(), |mut unique, value| {
-        if !value.is_empty() && !unique.contains(&value) {
-            unique.push(value);
-        }
-        unique
-    })
-}
-
-fn resolve_imported_name(
-    target_path: &str,
-    imported: &str,
-    context: &NameResolutionContext<'_>,
-) -> Option<String> {
-    context
-        .export_aliases_by_file
-        .get(target_path)
-        .and_then(|aliases| aliases.get(imported))
-        .cloned()
-}
-
-fn is_python_source_path(path: &str) -> bool {
-    path.ends_with(".py") || path.ends_with(".pyi")
-}
-
-fn is_rust_source_path(path: &str) -> bool {
-    path.ends_with(".rs")
 }
