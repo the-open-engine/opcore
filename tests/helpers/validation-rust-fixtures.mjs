@@ -177,10 +177,12 @@ export function writeFakeRustToolchain(bin, options = {}) {
     join(bin, "rust-code-analysis-cli"),
     fakeVersionedToolScript("rust-code-analysis-cli 0.0.25", options.rustCodeAnalysis)
   );
+  const env = { ...process.env };
+  delete env.OPCORE_RUST_NIGHTLY_TOOLCHAIN;
   return {
     bin,
     env: {
-      ...process.env,
+      ...env,
       PATH: bin
     }
   };
