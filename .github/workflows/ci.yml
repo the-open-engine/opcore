@@ -69,6 +69,12 @@ jobs:
         with:
           targets: x86_64-unknown-linux-musl
 
+      - name: Provision pinned cargo-udeps proof artifact
+        run: |
+          rustup toolchain install nightly-2026-07-27 --profile minimal
+          cargo +nightly-2026-07-27 install cargo-udeps --version 0.1.61 --locked
+          test "$(cargo +nightly-2026-07-27 udeps --version)" = "cargo-udeps 0.1.61"
+
       - name: Setup Linux musl toolchain
         run: sudo apt-get update && sudo apt-get install -y musl-tools
 
@@ -83,6 +89,8 @@ jobs:
 
       - name: Check
         run: npm run ci
+        env:
+          OPCORE_RUST_NIGHTLY_TOOLCHAIN: nightly-2026-07-27
 
       - name: Prove authoritative mypy after-state execution
         run: npm run python:mypy-authority-proof

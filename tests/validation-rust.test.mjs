@@ -1759,6 +1759,33 @@ const rustCheckIds = [
     }
   });
 
+  it("runs cargo-udeps through the configured pinned nightly toolchain", async () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-validation-rust-udeps-pinned-nightly-run-"));
+    try {
+      const logPath = join(temp, "cargo.log");
+      const { env } = writeFakeRustToolchain(join(temp, "bin"), {
+        cargo: {
+          logPath
+        }
+      });
+      const result = await runner({
+        files: rustCrate(),
+        env: {
+          ...env,
+          OPCORE_RUST_NIGHTLY_TOOLCHAIN: "nightly-2026-07-27"
+        }
+      }).runValidation(request({ checks: [RUST_UNUSED_DEPS_CHECK_ID] }));
+
+      assert.equal(result.status, "passed", JSON.stringify(result, null, 2));
+      assert.match(
+        readFileSync(logPath, "utf8"),
+        /\+nightly-2026-07-27 udeps --workspace --all-targets --all-features/
+      );
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
   it("classifies cargo-udeps nightly toolchain failures as unsupported instead of unused dependencies", async () => {
     const temp = mkdtempSync(join(tmpdir(), "lattice-validation-rust-udeps-nightly-"));
     try {

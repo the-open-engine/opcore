@@ -16,72 +16,35 @@ import { runTool } from "./process.js";
 import { skippedRustInputResult } from "./source-files.js";
 import { toolAvailable } from "./toolchain.js";
 
-export function createUnusedDepsCheck(options: { env?: Record<string, string | undefined>; timeoutMs?: number } = {}): ValidationCheckDefinition {
-  return {
-    id: RUST_UNUSED_DEPS_CHECK_ID,
-    owner: rustCheckOwner,
-    adapter: rustCheckAdapter,
-    defaultSeverity: "error",
-    supportedScopes: supportedRustValidationScopes,
-    run: async (context) => {
-      const skipped = skippedRustInputResult(context);
-      if (skipped !== undefined) return skipped;
-      if (!toolAvailable("cargo-udeps", { env: options.env })) {
-        return {
-          status: "unsupported_request",
-          diagnostics: [],
-          failureMessage: "cargo-udeps is unavailable"
-        };
-      }
-      const materialized = await materializeRustWorkspace(context, { env: options.env });
-      const metadata = loadCargoMetadata(materialized.root, {
-        ...options,
-        cargoTargetCacheKey: materialized.cargoTargetCacheKey
-      });
-      if (!metadata.ok) return metadataFailureResult(metadata);
-      const packageScope = resolveCargoPackageScope(metadata.metadata, context.scope);
-      if (!packageScope.ok) return metadataFailureResult(packageScope);
-      const result = runTool("cargo", unusedDepsArgs(packageScope.member, options), {
-        cwd: materialized.root,
-        cargoTargetCacheKey: materialized.cargoTargetCacheKey,
-        env: options.env,
-        timeoutMs: options.timeoutMs,
-        allowedExitCodes: [0, 1, 101]
-      });
-      const infrastructureFailure = commandInfrastructureFailure(result);
-      if (infrastructureFailure !== undefined) return infrastructureFailure;
-      const unsupportedFailure = requiredToolUnsupportedFailure(result, "udeps") ?? requiredToolUnsupportedFailure(result, "cargo-udeps");
-      if (unsupportedFailure !== undefined) return unsupportedFailure;
-      if (result.status !== 0) {
-        const diagnostics = parseUnusedDependencyDiagnostics(result.stderr || result.stdout, packageScope.member);
-        if (diagnostics.length > 0) return { diagnostics };
-        const toolchainFailure = cargoUdepsToolchainFailure(result);
-        if (toolchainFailure !== undefined) return toolchainFailure;
-        return singleStderrPolicyFailure({
-          path: packageScope.member?.manifestPath ?? "Cargo.toml",
-          code: "RUST_UNUSED_DEPS",
-          stderr: result.stderr || result.stdout,
-          fallback: "Unused Rust dependencies found"
-        });
-      }
-      return { diagnostics: [] };
-    }
-  };
+interface UnusedDepsCheckOptions {
+  env?: Record<string, string | undefined>;
+  timeoutMs?: number;
 }
 
-function unusedDepsArgs(member: CargoMetadataPackage | undefined, options: { env?: Record<string, string | undefined>; timeoutMs?: number }): readonly string[] {
-  const args = member === undefined
-    ? ["udeps", "--workspace", "--all-targets", "--all-features"]
-    : ["udeps", "-p", member.name, "--all-targets", "--all-features"];
-  return nightlyCargoUdepsAvailable(options) ? ["+nightly", ...args] : args;
-}
+const defaultNightlyToolchain = "nightly";
+const nightlyToolchainEnvName = "OPCORE_RUST_NIGHTLY_TOOLCHAIN";
 
-function nightlyCargoUdepsAvailable(options: { env?: Record<string, string | undefined>; timeoutMs?: number }): boolean {
-  return runTool("cargo", ["+nightly", "udeps", "--version"], {
+function nightlyCargoUdepsAvailable(options: UnusedDepsCheckOptions): boolean {
+  return runTool("cargo", [nightlyToolchainSelector(options), "udeps", "--version"], {
     env: options.env,
     timeoutMs: options.timeoutMs,
     allowedExitCodes: [0]
   }).ok;
+}
+
+function nightlyToolchainSelector(options: UnusedDepsCheckOptions): string {
+  const configured = (options.env ?? process.env)[nightlyToolchainEnvName]?.trim();
+  return `+${configured || defaultNightlyToolchain}`;
+}
+
+function unusedDepsArgs(
+  member: CargoMetadataPackage | undefined,
+  options: UnusedDepsCheckOptions
+): readonly string[] {
+  const args = member === undefined
+    ? ["udeps", "--workspace", "--all-targets", "--all-features"]
+    : ["udeps", "-p", member.name, "--all-targets", "--all-features"];
+  return nightlyCargoUdepsAvailable(options) ? [nightlyToolchainSelector(options), ...args] : args;
 }
 
 function cargoUdepsToolchainFailure(result: ReturnType<typeof runTool>): ValidationCheckResult | undefined {
@@ -102,7 +65,10 @@ function isNightlyRustToolchainFailure(output: string): boolean {
   ].some((pattern) => pattern.test(output));
 }
 
-function parseUnusedDependencyDiagnostics(output: string, member: CargoMetadataPackage | undefined): readonly ValidationDiagnostic[] {
+function parseUnusedDependencyDiagnostics(
+  output: string,
+  member: CargoMetadataPackage | undefined
+): readonly ValidationDiagnostic[] {
   const names = new Set<string>();
   for (const line of output.split(/\r?\n/)) {
     const trimmed = line.trim();
@@ -121,4 +87,69 @@ function parseUnusedDependencyDiagnostics(output: string, member: CargoMetadataP
       })
     )
   );
+}
+
+async function runUnusedDepsCheck(
+  context: Parameters<ValidationCheckDefinition["run"]>[0],
+  options: UnusedDepsCheckOptions
+): Promise<ValidationCheckResult> {
+  const skipped = skippedRustInputResult(context);
+  if (skipped !== undefined) return skipped;
+  if (!toolAvailable("cargo-udeps", { env: options.env })) {
+    return {
+      status: "unsupported_request",
+      diagnostics: [],
+      failureMessage: "cargo-udeps is unavailable"
+    };
+  }
+  const materialized = await materializeRustWorkspace(context, { env: options.env });
+  const metadata = loadCargoMetadata(materialized.root, {
+    ...options,
+    cargoTargetCacheKey: materialized.cargoTargetCacheKey
+  });
+  if (!metadata.ok) return metadataFailureResult(metadata);
+  const packageScope = resolveCargoPackageScope(metadata.metadata, context.scope);
+  if (!packageScope.ok) return metadataFailureResult(packageScope);
+  const result = runTool("cargo", unusedDepsArgs(packageScope.member, options), {
+    cwd: materialized.root,
+    cargoTargetCacheKey: materialized.cargoTargetCacheKey,
+    env: options.env,
+    timeoutMs: options.timeoutMs,
+    allowedExitCodes: [0, 1, 101]
+  });
+  const infrastructureFailure = commandInfrastructureFailure(result);
+  if (infrastructureFailure !== undefined) return infrastructureFailure;
+  const unsupportedFailure =
+    requiredToolUnsupportedFailure(result, "udeps") ??
+    requiredToolUnsupportedFailure(result, "cargo-udeps");
+  if (unsupportedFailure !== undefined) return unsupportedFailure;
+  return unusedDepsResult(result, packageScope.member);
+}
+
+function unusedDepsResult(
+  result: ReturnType<typeof runTool>,
+  member: CargoMetadataPackage | undefined
+): ValidationCheckResult {
+  if (result.status === 0) return { diagnostics: [] };
+  const diagnostics = parseUnusedDependencyDiagnostics(result.stderr || result.stdout, member);
+  if (diagnostics.length > 0) return { diagnostics };
+  const toolchainFailure = cargoUdepsToolchainFailure(result);
+  if (toolchainFailure !== undefined) return toolchainFailure;
+  return singleStderrPolicyFailure({
+    path: member?.manifestPath ?? "Cargo.toml",
+    code: "RUST_UNUSED_DEPS",
+    stderr: result.stderr || result.stdout,
+    fallback: "Unused Rust dependencies found"
+  });
+}
+
+export function createUnusedDepsCheck(options: UnusedDepsCheckOptions = {}): ValidationCheckDefinition {
+  return {
+    id: RUST_UNUSED_DEPS_CHECK_ID,
+    owner: rustCheckOwner,
+    adapter: rustCheckAdapter,
+    defaultSeverity: "error",
+    supportedScopes: supportedRustValidationScopes,
+    run: (context) => runUnusedDepsCheck(context, options)
+  };
 }
