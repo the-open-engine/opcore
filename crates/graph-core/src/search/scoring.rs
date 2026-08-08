@@ -1,4 +1,4 @@
-use super::{collect_rows, limit_to_usize, searchable_text};
+use super::{limit_to_usize, searchable_text, CollectRows, Rows};
 use crate::store::StoreResult;
 use rusqlite::{params, Connection};
 use std::collections::BTreeSet;
@@ -30,7 +30,7 @@ pub(super) fn search_rows(
         "#,
     )?;
     let rows = statement.query_map(params![spec.fts_query], |row| map_search_row(row, &spec))?;
-    let mut rows = collect_rows(rows)?;
+    let mut rows = Rows::collect(rows)?;
     rows.sort_by(|left, right| {
         right
             .score

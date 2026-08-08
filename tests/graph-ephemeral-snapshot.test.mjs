@@ -68,6 +68,50 @@ describe("ephemeral graph snapshots", () => {
     assert.equal(existsSync(materializedRepo), false);
   });
 
+  it("materializes root tsconfig so exact snapshots resolve source aliases", async () => {
+    const logicalRepo = { repoId: "target", repoRoot: "/target/repo" };
+    const files = new Map([
+      [
+        "tsconfig.json",
+        JSON.stringify({ compilerOptions: { baseUrl: ".", paths: { "@example/pkg": ["src/index.ts"] } } })
+      ],
+      ["src/index.ts", "export const publicValue = 1;\n"],
+      [
+        "tests/package-contract.test.ts",
+        "import { publicValue } from '@example/pkg'; test('public value', () => publicValue);\n"
+      ]
+    ]);
+    const snapshot = await createEphemeralGraphSnapshot({
+      logicalRepo,
+      sourceUniverse: { paths: [...files.keys()], complete: true },
+      readFile: (path) => files.has(path)
+        ? { status: "found", content: files.get(path) }
+        : { status: "missing" }
+    });
+    try {
+      assert.deepEqual(snapshot.materializedPaths, [
+        "src/index.ts",
+        "tests/package-contract.test.ts",
+        "tsconfig.json"
+      ]);
+      const result = snapshot.factQuery({
+        requestId: "exact-test-evidence",
+        repo: logicalRepo,
+        schemaVersion: 1,
+        mode: "required",
+        selector: { kind: "edges", edgeKinds: ["TESTED_BY"] }
+      });
+      assert.equal(result.status.state, "available");
+      assert.ok(result.edges.some((edge) =>
+        edge.kind === "TESTED_BY" &&
+        edge.from === "file:src/index.ts" &&
+        edge.to === "file:tests/package-contract.test.ts"
+      ));
+    } finally {
+      snapshot.dispose();
+    }
+  });
+
   it("rejects incomplete universes and removes materialized state after build errors", async () => {
     await assert.rejects(createEphemeralGraphSnapshotWithOperations({
       logicalRepo: { repoId: "target" },

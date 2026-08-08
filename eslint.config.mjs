@@ -4,9 +4,9 @@ import tseslint from "typescript-eslint";
 // Advisory ESLint config for opcore (TypeScript + JS).
 //
 // Run with `npm run lint:eslint`. This is intentionally NOT wired into `npm run ci`
-// yet: the existing Rox, tsc, clippy `-D warnings`, and `cargo fmt --check` gates remain
-// the blocking guardrails. ESLint is added advisory-first so violations can be measured
-// and cleaned up before any enforcement decision (matches the covibes/orchestra baseline).
+// yet: TypeScript, Rust, workspace, provenance, and Opcore self-validation remain
+// the blocking guardrails. ESLint is advisory-first so violations can be measured
+// and cleaned up before any enforcement decision.
 export default tseslint.config(
   {
     ignores: [
@@ -15,7 +15,6 @@ export default tseslint.config(
       "**/target/**",
       "**/*.d.ts",
       ".claude/**",
-      ".ace/**",
     ],
   },
   js.configs.recommended,

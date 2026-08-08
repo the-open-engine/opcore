@@ -1,0 +1,85 @@
+{
+  "validation": {
+    "adapters": [
+      "typescript",
+      "rust",
+      "python",
+      "docs",
+      "clone"
+    ],
+    "pathPolicy": {
+      "exclude": [
+        "packages/fixtures/",
+        "tests/fixtures/",
+        "packages/opcore-graph-core-darwin-arm64/",
+        "packages/opcore-graph-core-darwin-x64/",
+        "packages/opcore-graph-core-linux-x64/"
+      ]
+    },
+    "checks": {
+      "packs": [],
+      "disabled": [],
+      "defaults": [
+        "typescript.syntax",
+        "typescript.types",
+        "typescript.lint",
+        "typescript.import-graph",
+        "typescript.dead-code",
+        "typescript.function-metrics",
+        "typescript.relevant-tests",
+        "typescript.file-length",
+        "rust.source-hygiene",
+        "rust.fmt",
+        "rust.cargo-check",
+        "rust.clippy",
+        "rust.rustdoc",
+        "rust.import-graph",
+        "rust.dead-code",
+        "rust.graph-signals",
+        "rust.unused-deps",
+        "rust.file-length",
+        "rust.function-metrics",
+        "python.syntax",
+        "python.source-hygiene",
+        "python.ruff-lint",
+        "python.ruff-format",
+        "python.types",
+        "python.import-graph",
+        "python.dead-code",
+        "python.relevant-tests",
+        "python.pytest",
+        "docs.existence",
+        "docs.staleness",
+        "docs.freshness",
+        "docs.length",
+        "docs.dry",
+        "docs.content-quality",
+        "docs.code-blocks",
+        "docs.rules-why",
+        "docs.hub-coverage",
+        "docs.subtree-coverage",
+        "clone.duplication"
+      ],
+      "typescript": {
+        "fileLength": {
+          "maxFileLines": 300
+        },
+        "functionMetrics": {
+          "maxFunctionLines": 80,
+          "maxComplexity": 10,
+          "maxParams": 4
+        }
+      },
+      "rust": {
+        "fileLength": {
+          "maxFileLines": 500
+        },
+        "functionMetrics": {
+          "maxFunctionLines": 80,
+          "maxComplexity": 10,
+          "maxParams": 4
+        }
+      }
+    }
+  }
+}

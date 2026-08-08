@@ -18,8 +18,7 @@ and honest coverage; the ASP host owns the allow/deny/transaction outcome.
 - It is **not** an ASP host, manager, catalog, or authority.
 - It is **not** exposed through aggregate CLI ASP subcommands; there is no ASP router
   command. The provider is launched as its own process.
-- It does **not** use ACE as a carrier or provisioner, does **not** read or write
-  `.ace/runtime`, and does **not** execute `rox`, `crg`, or `cix`.
+- It does not invoke external development toolchains.
 - It makes no ASP-standard, old-tool-replacement, security-scanner, all-stack,
   AI-authorship, automatic-fix, or opaque score-style claim.
 

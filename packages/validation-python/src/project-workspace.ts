@@ -186,8 +186,8 @@ function repoRelativeOrUndefined(repoRoot: string, absolute: string): string | u
 
 function skipPath(path: string): boolean {
   const skipped = new Set([
-    ".git", "node_modules", "target", "dist", ".ace", ".agents", ".claude", ".codex", ".gemini",
-    ".opencode", ".rox-cache", ".robustness-engine-cache", ".venv", "venv", "env", "__pycache__",
+    ".git", "node_modules", "target", "dist", ".agents", ".claude", ".codex", ".gemini",
+    ".opencode", ".venv", "venv", "env", "__pycache__",
     ".eggs", "build", ".tox", ".mypy_cache", ".pytest_cache", ".ruff_cache", "site-packages"
   ]);
   return path.split("/").some((segment) => skipped.has(segment) || segment.endsWith(".egg-info") || segment.endsWith(".dist-info"));

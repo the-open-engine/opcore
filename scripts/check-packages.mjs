@@ -21,7 +21,7 @@ const packlists = JSON.parse(readFileSync("tests/fixtures/package-packlists.json
 const expectedPackageNames = publicReleasePackageNames;
 const forbiddenPathPatterns = [
   /(^|\/)(preview|generated|bundle|bundles)\//,
-  /(^|\/)(\.ace|\.agents|\.claude|\.codex|\.gemini|\.opencode|\.code-review-graph|\.rox-cache|\.robustness-engine-cache)\//,
+  /(^|\/)(\.agents|\.claude|\.codex|\.gemini|\.opencode)\//,
   /\.tsbuildinfo$/,
   /(^|\/)src\//
 ];
@@ -55,9 +55,6 @@ try {
       assertSameSet(manifest.bundleDependencies ?? manifest.bundledDependencies ?? [], bundledOpcorePackageNames, `${packageName} manifest bundled dependencies`);
     }
     else if (Object.keys(bin).length > 0) throw new Error(`${packageName} must not expose CLI bins`);
-    for (const forbiddenBin of ["lattice", "crg", "cix", "rox"]) {
-      if (Object.hasOwn(bin, forbiddenBin)) throw new Error(`${packageName} exposes forbidden old bin ${forbiddenBin}`);
-    }
     const files = parsed[0]?.files?.map((entry) => entry.path).sort() ?? [];
     const allowed = [...expected].sort();
     for (const file of files) {

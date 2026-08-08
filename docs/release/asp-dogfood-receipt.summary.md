@@ -1,26 +1,7 @@
 # ASP Dogfood Receipt Summary
 
-Issue #120 receipt for advisory standalone ASP manager dogfood.
+Issue #120 records advisory standalone ASP manager dogfood over the installed `opcore-asp-provider --stdio` process.
 
-Machine receipt: docs/release/asp-dogfood-receipt.json
-Machine receipt SHA-256: cf3808f44372b2ba4a3180717ea50f107a1c20c7d32772818ea25e524b68d514
-Bootstrap source: local-sibling
-Repo enrollment mode: advisory
-Host fixture repo: temporary
-Host fixture changed paths: src/dogfood.ts
-Source repo mutated: false
-Provider command: opcore-asp-provider --stdio
-Host assurance: gated
-Transaction guarantee: none
-Old-tool replacement claimed: false
-
-| Guardrail | Status | Exit | Evidence |
-|-----------|--------|------|----------|
-| current-tools-validate-changed | passed | 0 | current-tools:validate-changed remains active |
-| current-tools-validate-rust-graph | passed | 0 | current-tools:validate-rust-graph remains active |
-| current-tools-validate-all | retained-not-run | not-run | Retained old-tool guardrail; omitted unless --include-current-tools-all is passed |
-
-## Deferred Coverage
-
-- inspect: parity-blocker; ASP dogfood covers Core check/evaluate only; inspect request/response mapping remains outside #120.
-- edit: retained-old-tool-gate; ASP dogfood does not authorize edits or apply behavior; edit parity remains covered by current old-tool and cutover gates.
+The receipt proves temporary isolated host state, installed provider identity, host-owned decisions, provider
+assessment provenance, and `opcore:self-check`. Inspect and edit remain explicit parity blockers for this check-only
+dogfood receipt.

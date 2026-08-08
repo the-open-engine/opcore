@@ -29,11 +29,6 @@ const expectedIds = [
   "inspect-symbol-parity-v1",
   "validation-contract-v1",
   "installed-artifact-smoke-v1",
-  "graph-reference-evidence-manifest-v1",
-  "graph-reference-evidence-sqlite-fixtures-v1",
-  "graph-reference-evidence-daemon-socket-fixtures-v1",
-  "graph-reference-evidence-golden-corpus-v1",
-  "graph-reference-evidence-baseline-receipts-v1",
   "graph-release-readiness-v1"
 ];
 
@@ -92,9 +87,7 @@ describe("conformance fixture metadata", () => {
                     ? "#17"
                 : fixture.id === "descriptor-discovery-v1" || fixture.id === "installed-artifact-smoke-v1"
                     ? "#28"
-                : fixture.id.startsWith("graph-reference-evidence-")
-                  ? "#19"
-                  : "#3"
+                : "#3"
       );
       assert.equal(fixture.schemaVersion, 1);
       assert.notEqual(fixture.status, "placeholder");
@@ -205,7 +198,7 @@ describe("conformance fixture metadata", () => {
       ["#13", "#14", "#15", "#16"]
     );
     const text = JSON.stringify(descriptor);
-    assert.doesNotMatch(text, /(^|[\\/"'\s])\.ace(?:[\\/"'\s]|$)|LATTICE_CURRENT_TOOLS_DIR|\/Users\/tom|(^|[\\/\s])(?:lattice|crg|cix|rox)(?:$|[\\/\s])/i);
+    assert.doesNotMatch(text, /\/Users\/tom/i);
   });
 
   it("describes canonical router metadata for descriptor planning", () => {
@@ -344,7 +337,7 @@ describe("conformance fixture metadata", () => {
     assert.deepEqual(graphServe.protocols, ["opcore.graph.daemon", "jsonrpc-2.0"]);
     assert.deepEqual(graphServe.operations, ["ping", "status", "query", "search", "shutdown"]);
     assert.ok(graphServe.failureStates.includes("schema_mismatch"));
-    assert.equal(graphServe.dataFile, "packages/fixtures/graph-reference-evidence/daemon-socket-fixtures.json");
+    assert.equal(graphServe.dataFile, "packages/fixtures/graph-serve/serve-fixtures.json");
     assert.ok(serveFixture.envelopes.some((entry) => entry.id === "serve-jsonl-ping"));
     assert.ok(serveFixture.envelopes.some((entry) => entry.id === "mcp-initialize"));
   });
@@ -409,21 +402,6 @@ describe("conformance fixture metadata", () => {
       "python.pytest"
     ]);
     assert.deepEqual(validation.degradedTools, ["mypy", "pyright", "ruff", "pytest"]);
-  });
-
-  it("includes concrete source-free #19 reference evidence data files", () => {
-    for (const id of expectedIds.filter((entry) => entry.startsWith("graph-reference-evidence-"))) {
-      const fixture = fixtureById(id);
-      assert.equal(fixture.issue, "#19");
-      assert.equal(fixture.packageTrack, "fixtures");
-      assert.equal(fixture.containsSourceCode, false);
-      assert.equal(fixture.origin, "covibes-authored-synthetic");
-      assert.ok(fixture.dataFile?.startsWith("packages/fixtures/graph-reference-evidence/"), `bad dataFile ${fixture.dataFile}`);
-      const url = new URL(`../${fixture.dataFile}`, import.meta.url);
-      const content = readFileSync(url, "utf8");
-      assert.ok(JSON.parse(content));
-      assert.doesNotMatch(content, /tirth8205|pyproject\.toml|setup\.py|setup\.cfg|Pipfile|git clone/i);
-    }
   });
 
   it("describes #17 graph release readiness metadata", () => {

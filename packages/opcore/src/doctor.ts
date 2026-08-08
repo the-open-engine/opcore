@@ -12,11 +12,7 @@ declare const process: {
 };
 
 const helpArgs = new Set(["--help", "-h", "help"]);
-const generatedStateIgnores = [
-  ".opcore/",
-  ".rox-cache/",
-  ".robustness-engine-cache/"
-];
+const generatedStateIgnores = [".opcore/"];
 
 export async function routeOpcoreDoctor(argv: readonly string[], parsed: ParsedCommandArgv): Promise<CommandRouterResult> {
   const rest = parsed.args.slice(1);

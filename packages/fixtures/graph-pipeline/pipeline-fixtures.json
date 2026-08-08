@@ -42,8 +42,8 @@
     {
       "id": "graph-pipeline-ignore-file-v1",
       "operation": "build",
-      "ignoreFiles": [".gitignore", ".code-review-graphignore"],
-      "excludedFiles": ["ignored/generated.ts", "ignored/crg.ts"]
+      "ignoreFiles": [".gitignore"],
+      "excludedFiles": ["ignored/generated.ts"]
     },
     {
       "id": "graph-pipeline-schema-mismatch-v1",

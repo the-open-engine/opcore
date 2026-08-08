@@ -233,7 +233,7 @@ mod tests {
 
     #[test]
     fn watch_paths_are_normalized_from_cli_and_env() -> TestResult {
-        with_watch_env(Some("./src:tests\\unit"), None, || {
+        with_watch_env(Some("./src:tests\\unit"), || {
             let env_options = parse(&["watch", "--repo", "."])?;
             assert_eq!(env_options.watch_paths, vec!["src", "tests/unit"]);
             let cli_options = parse(&["watch", "--repo", ".", "--paths", "./src//,tests\\unit"])?;
@@ -243,17 +243,8 @@ mod tests {
     }
 
     #[test]
-    fn crg_watch_paths_do_not_scope_lattice_watch() -> TestResult {
-        with_watch_env(None, Some("src"), || {
-            let options = parse(&["watch", "--repo", "."])?;
-            assert!(options.watch_paths.is_empty());
-            Ok(())
-        })
-    }
-
-    #[test]
     fn unsafe_watch_paths_are_rejected() -> TestResult {
-        with_watch_env(None, None, || {
+        with_watch_env(None, || {
             for path in [
                 "/tmp/src",
                 "C:\\tmp\\src",
@@ -300,28 +291,18 @@ mod tests {
 
     fn with_watch_env<T>(
         opcore_value: Option<&str>,
-        crg_value: Option<&str>,
         run: impl FnOnce() -> Result<T, String>,
     ) -> Result<T, String> {
         let _guard = ENV_LOCK.lock().map_err(|error| error.to_string())?;
         let old_opcore = std::env::var("OPCORE_GRAPH_WATCH_PATHS").ok();
-        let old_crg = std::env::var("CRG_WATCH_PATHS").ok();
         match opcore_value {
             Some(value) => std::env::set_var("OPCORE_GRAPH_WATCH_PATHS", value),
             None => std::env::remove_var("OPCORE_GRAPH_WATCH_PATHS"),
-        }
-        match crg_value {
-            Some(value) => std::env::set_var("CRG_WATCH_PATHS", value),
-            None => std::env::remove_var("CRG_WATCH_PATHS"),
         }
         let result = run();
         match old_opcore {
             Some(value) => std::env::set_var("OPCORE_GRAPH_WATCH_PATHS", value),
             None => std::env::remove_var("OPCORE_GRAPH_WATCH_PATHS"),
-        }
-        match old_crg {
-            Some(value) => std::env::set_var("CRG_WATCH_PATHS", value),
-            None => std::env::remove_var("CRG_WATCH_PATHS"),
         }
         result
     }

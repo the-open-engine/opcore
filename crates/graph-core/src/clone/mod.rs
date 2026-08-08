@@ -257,17 +257,25 @@ fn validate_positive_option(label: &str, value: Option<usize>) -> Result<(), Clo
 }
 
 fn validate_request_paths(request: &CloneAnalysisRequest) -> Result<(), CloneError> {
-    for path in &request.paths {
-        normalize_repo_relative_path(path, "clone request path")
+    validate_normalized_paths(&request.paths, "clone request path")?;
+    if let Some(paths) = &request.source_paths {
+        validate_normalized_paths(paths, "clone request source path")?;
+    }
+    validate_partitions(&request.partitions)?;
+    validate_patterns(&request.exclude, "clone exclude pattern")?;
+    validate_overlay_paths(&request.overlays)
+}
+
+fn validate_normalized_paths(paths: &[String], label: &str) -> Result<(), CloneError> {
+    for path in paths {
+        normalize_repo_relative_path(path, label)
             .map_err(|message| CloneError::InvalidRequest(message.to_string()))?;
     }
-    if let Some(paths) = &request.source_paths {
-        for path in paths {
-            normalize_repo_relative_path(path, "clone request source path")
-                .map_err(|message| CloneError::InvalidRequest(message.to_string()))?;
-        }
-    }
-    for (index, partition) in request.partitions.iter().enumerate() {
+    Ok(())
+}
+
+fn validate_partitions(partitions: &[Vec<String>]) -> Result<(), CloneError> {
+    for (index, partition) in partitions.iter().enumerate() {
         if partition.is_empty() {
             return Err(CloneError::InvalidRequest(format!(
                 "partitions[{index}] must not be empty"
@@ -277,10 +285,18 @@ fn validate_request_paths(request: &CloneAnalysisRequest) -> Result<(), CloneErr
             validate_clone_pattern(pattern, "clone partition pattern")?;
         }
     }
-    for pattern in &request.exclude {
-        validate_clone_pattern(pattern, "clone exclude pattern")?;
+    Ok(())
+}
+
+fn validate_patterns(patterns: &[String], label: &str) -> Result<(), CloneError> {
+    for pattern in patterns {
+        validate_clone_pattern(pattern, label)?;
     }
-    for overlay in &request.overlays {
+    Ok(())
+}
+
+fn validate_overlay_paths(overlays: &[CloneOverlay]) -> Result<(), CloneError> {
+    for overlay in overlays {
         normalize_repo_relative_path(overlay.path(), "clone overlay path")
             .map_err(|message| CloneError::InvalidRequest(message.to_string()))?;
     }

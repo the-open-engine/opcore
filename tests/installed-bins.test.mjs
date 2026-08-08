@@ -16,7 +16,7 @@ import { releasePackageDirForName } from "../scripts/release-package-dirs.mjs";
 import { createStagedOpcorePackage } from "../scripts/stage-opcore-bundle.mjs";
 
 const removedLegacyCommandField = `legacy${"Command"}`;
-const onboardingForbiddenOutput = /(^|[\\/"'\s])(?:lattice|crg|cix|rox)(?:$|[\\/"'\s])|\.ace\/runtime|LATTICE_CURRENT_TOOLS_DIR|\/Users\/tom|oldToolReplacementClaimed"?\s*:\s*true/i;
+const onboardingForbiddenOutput = /(^|[\\/"'\s])lattice(?:$|[\\/"'\s])|\/Users\/tom/i;
 const currentTarget = `${process.platform}-${process.arch}`;
 const currentNativePackage = graphCoreNativePackageNamesByTarget[currentTarget];
 
@@ -45,7 +45,6 @@ describe("installed package bins", () => {
       assert.equal(existsSync(binPath(project, "opcore")), true);
       assert.equal(existsSync(binPath(project, "opcore-asp-provider")), true);
       assert.equal(existsSync(join(project, "node_modules", "opcore", "node_modules", "jsonc-parser", "package.json")), true);
-      for (const oldBin of ["lattice", "crg", "cix", "rox"]) assert.equal(existsSync(binPath(project, oldBin)), false, oldBin);
 
       assertAspProviderInitializeSmoke(project);
       assertSmoke(project, ["status", "--json"], 0);
@@ -218,9 +217,6 @@ describe("installed package bins", () => {
       run("npm", ["install", "--ignore-scripts", "--no-audit", "--no-fund", ...tarballs], { cwd: project });
 
       assert.equal(existsSync(binPath(project, "opcore")), true);
-      for (const forbiddenBin of ["lattice", "crg", "cix", "rox"]) {
-        assert.equal(existsSync(binPath(project, forbiddenBin)), false, forbiddenBin);
-      }
       const status = assertSmoke(project, ["status", "--json"], 0, "opcore");
       assert.deepEqual(status.canonicalCommand, ["opcore", "status"]);
       const tryResult = assertSmoke(project, ["try", "--json"], 0, "opcore");
@@ -693,10 +689,7 @@ function assertManagedDescriptor(project) {
   );
   assert.equal(existsSync(descriptorPath), true, descriptorPath);
   const descriptorText = readFileSync(descriptorPath, "utf8");
-  assert.doesNotMatch(
-    descriptorText,
-    /(^|[\\/"'\s])\.ace(?:[\\/"'\s]|$)|LATTICE_CURRENT_TOOLS_DIR|\/Users\/tom|(^|[\\/\s])(?:lattice|crg|cix|rox)(?:$|[\\/\s])/i
-  );
+  assert.doesNotMatch(descriptorText, /\/Users\/tom/i);
   const descriptor = validateManagedToolDescriptor(JSON.parse(descriptorText));
   assert.deepEqual(descriptor.capabilities.validation.pythonProjectContext, {
     schemaId: "opcore.python.project-context.v1",
@@ -778,7 +771,6 @@ function assertCliJson(command, args, expectedExitCode, cwd, options = {}) {
   );
   assert.equal(Object.hasOwn(parsed, "alias"), false);
   assert.equal(Object.hasOwn(parsed, removedLegacyCommandField), false);
-  assert.notEqual(parsed.oldToolReplacementClaimed, true);
   assert.doesNotMatch(JSON.stringify(parsed), onboardingForbiddenOutput);
   if (options.telemetryPath) {
     writeLatencyRecord(options.telemetryPath, createLatencyRecord(command, parsed, options.fixture, cwd, durationMs));

@@ -1,7 +1,19 @@
 import type { ValidationDiagnostic } from "@the-open-engine/opcore-contracts";
-import type { ValidationCheckContext, ValidationCheckResult } from "@the-open-engine/opcore-validation";
+import type {
+  ValidationCheckContext,
+  ValidationCheckDefinition,
+  ValidationCheckResult
+} from "@the-open-engine/opcore-validation";
+import { supportedDocsValidationScopes } from "./check-constants.js";
+import { DOCS_FRESHNESS_CHECK_ID } from "./check-ids.js";
+import { docsCheck } from "./check-definition.js";
+import {
+  skippedDocsResult,
+  skippedHistoryUnavailableResult
+} from "./check-results.js";
 import { diagnostic, sortDiagnostics } from "./diagnostics.js";
 import { assertGitHistoryAvailable, latestCommitIso } from "./history.js";
+import type { CreateDocsValidationChecksOptions } from "./options.js";
 import {
   isDocsPath,
   materializeDocsSnapshot,
@@ -15,6 +27,17 @@ type FreshnessHistoryOutcome =
   | { status: "diagnostics"; diagnostics: readonly ValidationDiagnostic[] }
   | { status: "skipped"; result: ValidationCheckResult };
 type LatestCommittedPath = { path: string; iso: string };
+
+export function createDocsFreshnessCheck(
+  options: CreateDocsValidationChecksOptions = {}
+): ValidationCheckDefinition {
+  return docsCheck(
+    DOCS_FRESHNESS_CHECK_ID,
+    "warning",
+    supportedDocsValidationScopes,
+    (context) => runDocsFreshnessCheck(context, options)
+  );
+}
 
 export async function runDocsFreshnessCheck(
   context: ValidationCheckContext,
@@ -114,18 +137,6 @@ function freshnessDiagnosticsOutcome(diagnostics: readonly ValidationDiagnostic[
 
 function freshnessSkippedOutcome(message: string): FreshnessHistoryOutcome {
   return { status: "skipped", result: skippedHistoryUnavailableResult(message) };
-}
-
-function skippedDocsResult(message: string): ValidationCheckResult {
-  return {
-    status: "skipped",
-    diagnostics: [],
-    failureMessage: message
-  };
-}
-
-function skippedHistoryUnavailableResult(message: string): ValidationCheckResult {
-  return skippedDocsResult(message.startsWith("Git history is unavailable") ? message : `Git history is unavailable: ${message}`);
 }
 
 function latestCommittedPath(

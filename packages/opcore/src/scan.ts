@@ -31,6 +31,7 @@ import {
   opcorePublicValidationRuntimePolicy
 } from "./validation-composition.js";
 import { validationChecksForRepoPolicyAndCoverage } from "./repo-validation-policy.js";
+import { isMissingPathError, resolveRepoPath } from "./repo-paths.js";
 
 const skippedPathSegments = new Set<string>(commonSkippedPathSegments);
 const cloneDiagnosticsCommand = "opcore check --all --checks clone.duplication --json";
@@ -184,7 +185,7 @@ function createReadOnlyWorkspace(repoRoot: string): ValidationWorkspace {
           content: await readFile(resolveRepoPath(root, path), "utf8")
         };
       } catch (error) {
-        if (isMissingFileError(error)) return { status: "missing" };
+        if (isMissingPathError(error)) return { status: "missing" };
         throw error;
       }
     },
@@ -252,24 +253,6 @@ function formatScanMessage(repoState: OpcoreRepoStatePayload, validationResult: 
   ].join("\n");
 }
 
-function resolveRepoPath(root: string, path: string): string {
-  const absolute = resolve(root, path);
-  const normalized = relative(root, absolute);
-  if (normalized === "" || normalized.startsWith("..") || normalized.split(sep).includes("..")) {
-    throw new Error(`Repo-relative path escapes repository: ${path}`);
-  }
-  return absolute;
-}
-
 function hasSkippedSegment(path: string): boolean {
   return path.split(/[\\/]+/).some((segment) => skippedPathSegments.has(segment));
-}
-
-function isMissingFileError(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    ((error as { code?: unknown }).code === "ENOENT" || (error as { code?: unknown }).code === "ENOTDIR")
-  );
 }

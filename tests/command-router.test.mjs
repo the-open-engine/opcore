@@ -1,8 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
-import { DatabaseSync } from "node:sqlite";
-import { cpSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -100,16 +98,14 @@ describe("Opcore command router", () => {
   });
 
   it("rejects non-Opcore entrypoints without alias metadata", async () => {
-    for (const bin of ["lattice", "crg", "cix", "rox"]) {
-      const routed = await routeCommand(["status", "--json"], bin);
-      assert.equal(routed.status, "unsupported");
-      assert.equal(routed.exitCode, 64);
-      assert.deepEqual(routed.canonicalCommand, ["opcore", "unsupported"]);
-      assert.equal(routed.owner, "runtime");
-      assert.equal(Object.hasOwn(routed, "alias"), false);
-      assert.equal(Object.hasOwn(routed, removedLegacyCommandField), false);
-      assertCommandTiming(routed);
-    }
+    const routed = await routeCommand(["status", "--json"], "other-tool");
+    assert.equal(routed.status, "unsupported");
+    assert.equal(routed.exitCode, 64);
+    assert.deepEqual(routed.canonicalCommand, ["opcore", "unsupported"]);
+    assert.equal(routed.owner, "runtime");
+    assert.equal(Object.hasOwn(routed, "alias"), false);
+    assert.equal(Object.hasOwn(routed, removedLegacyCommandField), false);
+    assertCommandTiming(routed);
   });
 
   it("routes canonical graph status, query, and search through the graph adapter", async () => {
@@ -380,7 +376,7 @@ describe("Opcore command router", () => {
     assert.equal(helpJson.exitCode, 0);
     assert.equal(doctorJson.runtimeInfo.packageName, "opcore");
     assert.equal(doctorJson.opcoreDoctor.schemaVersion, 1);
-    assert.equal(doctorJson.opcoreDoctor.config.state, "missing");
+    assert.equal(doctorJson.opcoreDoctor.config.state, "found");
     assert.equal(doctorJson.opcoreDoctor.checks.count > 0, true);
     assert.match(doctorJson.opcoreDoctor.generatedState.guidance, /\.opcore/);
     assertCommandTiming(statusJson);
@@ -501,17 +497,4 @@ async function withFixtureCopy(runFixture) {
 
 function skipGeneratedStore(source) {
   return !source.includes(`${join(".opcore", "graph")}`);
-}
-
-function corruptSnapshotSchema(fixtureRoot) {
-  const db = new DatabaseSync(join(fixtureRoot, ".opcore/graph/graph.db"));
-  try {
-    const metadata = JSON.parse(db.prepare("select value from metadata where key = 'lattice_snapshot_metadata'").get().value);
-    metadata.schemaVersion = 2;
-    const value = JSON.stringify(metadata);
-    db.prepare("update metadata set value = ? where key = 'lattice_snapshot_metadata'").run(value);
-    db.prepare("update lattice_store set value = ? where key = 'metadata_json'").run(value);
-  } finally {
-    db.close();
-  }
 }

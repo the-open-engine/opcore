@@ -8,7 +8,8 @@ import {
   typeScriptCheckOwner,
   supportedTypeScriptValidationScopes
 } from "./check-constants.js";
-import { scriptKindForPath, sortValidationDiagnostics } from "./diagnostics.js";
+import { sortValidationDiagnostics } from "./diagnostics.js";
+import { scriptKindForPath } from "./script-kind.js";
 import { materializeTypeScriptSources } from "./source-files.js";
 
 export interface TypeScriptFunctionMetricThresholds {

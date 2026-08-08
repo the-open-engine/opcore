@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -135,14 +135,12 @@ describe("canonical CLI surface", () => {
     assert.equal((await run(["graph", "inspect", "--json"], 64)).status, "unsupported");
   });
 
-  it("rejects direct old entrypoint execution through the router", async () => {
-    for (const bin of ["lattice", "crg", "cix", "rox"]) {
-      const result = await run(["status", "--json"], 64, bin);
-      assert.equal(result.status, "unsupported");
-      assert.deepEqual(result.canonicalCommand, ["opcore", "unsupported"]);
-      assert.equal(Object.hasOwn(result, "alias"), false);
-      assert.equal(Object.hasOwn(result, removedLegacyCommandField), false);
-    }
+  it("rejects non-Opcore entrypoint execution through the router", async () => {
+    const result = await run(["status", "--json"], 64, "other-tool");
+    assert.equal(result.status, "unsupported");
+    assert.deepEqual(result.canonicalCommand, ["opcore", "unsupported"]);
+    assert.equal(Object.hasOwn(result, "alias"), false);
+    assert.equal(Object.hasOwn(result, removedLegacyCommandField), false);
   });
 
   it("keeps opcore status on validationStatus without repoState", async () => {

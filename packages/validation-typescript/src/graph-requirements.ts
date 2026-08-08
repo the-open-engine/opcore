@@ -42,7 +42,7 @@ export async function deadCodeGraphRequirements(
 export async function relevantTestsGraphRequirements(
   context: ValidationCheckContext
 ): Promise<readonly ValidationGraphQueryRequirement[]> {
-  return edgeAndScopedFileRequirements(context, ["TESTED_BY"]);
+  return edgeAndScopedFileRequirements(context, ["IMPORTS_FROM", "TESTED_BY"]);
 }
 
 async function edgeAndScopedFileRequirements(

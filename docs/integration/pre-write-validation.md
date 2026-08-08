@@ -1,6 +1,6 @@
 # Pre-Write Validation Integration
 
-Issue #58 defines the hook-safe validation route for ACE and Codex cutover:
+Issue #58 defines the hook-safe validation route for coding-agent integrations:
 
 ```bash
 opcore validate pre-write --request-file <validation-request.json> --timeout-ms 30000 --json

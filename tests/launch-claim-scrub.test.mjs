@@ -15,7 +15,6 @@ const repoRoot = fileURLToPath(new URL("..", import.meta.url));
 // One positive sample per forbidden label. Each must be a phrase the alpha must never ship.
 const overclaimSamples = {
   "public ASP standard claim": "ASP is now the public standard for agent checks.",
-  "old-tool replacement claim": "Opcore replaces Rox, CRG, and CIX in your pipeline.",
   "generic Opcore replacement claim": "Opcore replaces your linters.",
   "universal stack claim": "Full coverage for every language and platform.",
   "universal agent claim": "Works with every agent on the market.",
@@ -26,7 +25,6 @@ const overclaimSamples = {
   "blended score claim": "Get a single robustness score for the whole repo.",
   "asp router command claim": "Run opcore asp serve to start the host.",
   "provider authority claim": "The provider grants gate authority to allow merges.",
-  "ACE-managed distribution claim": "Distributed as an ACE-managed tool.",
   "old product name": "lattice validation complete.",
   "doubled Opcore token": "No Opcore/Opcore issue is open."
 };
@@ -79,7 +77,6 @@ test("scrub allowlists intentional internal transitional markers", () => {
     { label: "graph-package", text: "lattice-graph-core\n" },
     { label: "daemon", text: "lattice.graph.daemon\n" },
     { label: "generated-dist", text: "dist/lattice\n" },
-    { label: "old-bin-policy", text: "oldBinsAbsent: { lattice: true, crg: true, cix: true, rox: true }\n" },
     { label: "roadmap-policy", text: '- "Lattice" as product or launch branding.\n' }
   ]);
 
@@ -94,8 +91,7 @@ test("honest launch wording passes the scrub", () => {
     "Opcore does not blend findings into an opaque score.",
     "Prefer concrete counts and file locations over scores.",
     "Providers assess; ASP hosts decide. Do not treat provider output as a gate decision.",
-    "Opcore is an independently installed ASP Core check provider; the host owns allow/deny decisions.",
-    "Retain your existing Rox, CRG, and CIX guardrails; this is additive."
+    "Opcore is an independently installed ASP Core check provider; the host owns allow/deny decisions."
   ].join("\n");
   assert.deepEqual(scrubLaunchClaims(clean), []);
 });

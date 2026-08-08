@@ -4,6 +4,6 @@
   "targetPlatform": "linux-x64",
   "binaryPath": "opcore-graph-core",
   "checksumPath": "opcore-graph-core.sha256",
-  "checksumSha256": "c3a771435a7a8172a9e5f0bb20b0d111453efc70901e95308094664f77e7bdf1",
+  "checksumSha256": "70402bf42a09c01ea01f72199ee1985684a217da940cd1454bd4614ba63b12cf",
   "buildProfile": "release"
 }

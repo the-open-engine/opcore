@@ -81,12 +81,12 @@ docs_or_agent_only_changes() {
 }
 
 run_docs_or_agent_gate() {
-  run_step npm run setup:tools
   run_step bash -n scripts/ci/run-local-ci-equivalent.sh
   run_step node scripts/check-release-hygiene.mjs
   run_step node scripts/check-workspace.mjs
   run_step node scripts/check-provenance.mjs
-  run_step npm run current-tools:validate-changed
+  run_step npm run build
+  run_step npm run opcore:self-check
 }
 
 changed_file_list="$(mktemp "${TMPDIR:-/tmp}/opcore-local-ci-changed.XXXXXX")"
@@ -98,10 +98,8 @@ if docs_or_agent_only_changes "${changed_file_list}"; then
   exit 0
 fi
 
-run_step npm run setup:tools
 run_step npm run setup:check-clean
 snapshot_generated_artifacts
 run_step npm run ci
 restore_generated_artifacts
-run_step npm run current-tools:validate-all
-run_step npm run current-tools:validate-rust-graph
+run_step npm run opcore:self-check

@@ -1,6 +1,7 @@
 use super::*;
 use crate::extraction::{extract_sources, ExtractionOptions};
 use crate::protocol::{GraphFactQueryKind, GraphFactQuerySelector, GraphPipelineSummary};
+use crate::test_support::wave1_fixture_root;
 use crate::GRAPH_SCHEMA_VERSION;
 use std::fs;
 use std::path::PathBuf;
@@ -428,12 +429,6 @@ fn copied_wave1_fixture() -> Result<TempDir, std::io::Error> {
     let destination = temp_repo()?;
     copy_dir(&wave1_fixture_root()?, destination.path())?;
     Ok(destination)
-}
-
-fn wave1_fixture_root() -> Result<PathBuf, std::io::Error> {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("../../packages/fixtures/source-extraction/wave1")
-        .canonicalize()
 }
 
 fn copy_dir(source: &Path, destination: &Path) -> Result<(), std::io::Error> {

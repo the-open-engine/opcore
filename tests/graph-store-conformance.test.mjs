@@ -70,7 +70,7 @@ describe("GraphProvider SQLite store conformance", () => {
             { kind: "IMPLEMENTS", count: 2 },
             { kind: "IMPORTS_FROM", count: 11 },
             { kind: "INHERITS", count: 2 },
-            { kind: "TESTED_BY", count: 4 }
+            { kind: "TESTED_BY", count: 7 }
           ]
         );
         assert.ok(
@@ -462,7 +462,7 @@ describe("GraphProvider SQLite store conformance", () => {
 
     withFixtureCopy((fixtureRoot) => {
       mkdirSync(join(fixtureRoot, "ignored"), { recursive: true });
-      writeFileSync(join(fixtureRoot, ".code-review-graphignore"), "ignored/\n");
+      writeFileSync(join(fixtureRoot, ".gitignore"), "ignored/\n");
       writeFileSync(join(fixtureRoot, "ignored/generated.ts"), "export const ignored = true;\n");
       const build = graphProviderBuild({ repoRoot: fixtureRoot });
       assert.equal(build.status.state, "available");
@@ -561,14 +561,14 @@ describe("GraphProvider SQLite store conformance", () => {
       assert.equal(build.status.state, "available");
       assertStoreHasPath(build.status.dbPath, "src/generated.ts");
 
-      writeFileSync(join(fixtureRoot, ".code-review-graphignore"), "src/generated.ts\n");
+      writeFileSync(join(fixtureRoot, ".gitignore"), "src/generated.ts\n");
       const update = graphProviderUpdate({ repoRoot: fixtureRoot });
       assert.deepEqual(update.summary.deletedFiles, ["src/generated.ts"]);
       assertStoreMissingPath(update.status.dbPath, "src/generated.ts");
     });
   });
 
-  it("excludes generated, private, dependency, gitignore, and code-review-graphignore paths", () => {
+  it("excludes generated, private, dependency, and gitignore paths", () => {
     withRobustnessFixtureCopy((fixtureRoot) => {
       createRuntimeIgnoredFiles(fixtureRoot);
       const build = graphProviderBuild({ repoRoot: fixtureRoot });
@@ -576,19 +576,16 @@ describe("GraphProvider SQLite store conformance", () => {
       assert.deepEqual(build.summary.changedFiles, ["ignored/keep.ts", "shared/util.ts", "src/app.ts"]);
       for (const excluded of [
         "ignored/drop.ts",
-        "crg-ignored/drop.ts",
+        "policy-ignored/drop.ts",
         "node_modules/pkg/index.ts",
         ".pnpm/pkg/index.ts",
         "vendor/pkg/generated.ts",
-        ".ace/runtime/generated.ts",
         ".agents/runtime/generated.ts",
         ".claude/runtime/generated.ts",
         ".codex/runtime/generated.ts",
         ".gemini/runtime/generated.ts",
         ".opcore/graph/generated.ts",
         ".opencode/runtime/generated.ts",
-        ".rox-cache/generated.ts",
-        ".robustness-engine-cache/generated.ts",
         "dist/generated.ts"
       ]) {
         assertStoreMissingPath(build.status.dbPath, excluded);
@@ -701,21 +698,19 @@ function withRobustnessFixtureCopy(run) {
 }
 
 function createRuntimeIgnoredFiles(fixtureRoot) {
-  writeFileSync(join(fixtureRoot, ".gitignore"), "ignored/drop.ts\n");
+  writeFileSync(join(fixtureRoot, ".gitignore"), "ignored/drop.ts\npolicy-ignored/**\n");
   for (const [directory, file] of [
     ["ignored", "drop.ts"],
+    ["policy-ignored", "drop.ts"],
     ["node_modules/pkg", "index.ts"],
     [".pnpm/pkg", "index.ts"],
     ["vendor/pkg", "generated.ts"],
-    [".ace/runtime", "generated.ts"],
     [".agents/runtime", "generated.ts"],
     [".claude/runtime", "generated.ts"],
     [".codex/runtime", "generated.ts"],
     [".gemini/runtime", "generated.ts"],
     [".opcore/graph", "generated.ts"],
     [".opencode/runtime", "generated.ts"],
-    [".rox-cache", "generated.ts"],
-    [".robustness-engine-cache", "generated.ts"],
     ["dist", "generated.ts"]
   ]) {
     mkdirSync(join(fixtureRoot, directory), { recursive: true });

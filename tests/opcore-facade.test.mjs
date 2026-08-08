@@ -17,6 +17,7 @@ import { compactScanValidationResult } from "../packages/opcore/dist/scan-valida
 const repoRoot = fileURLToPath(new URL("..", import.meta.url));
 const opcoreBin = resolve(repoRoot, "packages/opcore/dist/index.js");
 const sourceFixtureRoot = resolve(repoRoot, "packages/fixtures/source-extraction/wave1");
+const systemToolPath = "/usr/bin:/bin:/opt/homebrew/bin";
 
 describe("opcore public facade", () => {
   it("runs zero-command scan with coverage-first output and only .opcore artifacts", () => {
@@ -27,13 +28,12 @@ describe("opcore public facade", () => {
       assert.equal(human.stderr, "");
       assert.equal(firstNonEmptyLine(human.stdout).startsWith("Coverage"), true);
       assert.equal(human.stdout.indexOf("Coverage") < human.stdout.indexOf("Findings"), true);
-      assert.doesNotMatch(human.stdout, /\blattice\b|\bcrg\b|\bcix\b|\brox\b|ASP setup|ACE setup|sibling checkout/i);
+      assert.doesNotMatch(human.stdout, /\blattice\b|ASP setup|sibling checkout/i);
       assert.equal(existsSync(join(fixtureRoot, ".opcore", "report.json")), true);
       assert.equal(existsSync(join(fixtureRoot, ".opcore", "history.jsonl")), true);
       assert.equal(existsSync(join(fixtureRoot, ".opcore", "telemetry.jsonl")), true);
       assert.deepEqual(readdirSync(join(fixtureRoot, ".opcore")).sort(), ["history.jsonl", "report.json", "telemetry.jsonl"]);
       assert.equal(existsSync(join(fixtureRoot, ".lattice")), false);
-      assert.equal(existsSync(join(fixtureRoot, ".ace")), false);
       assert.equal(existsSync(join(fixtureRoot, ".asp")), false);
       assert.deepEqual(
         collectRepoPaths(fixtureRoot).filter((path) => !before.includes(path) && path !== ".opcore" && !path.startsWith(".opcore/")),
@@ -1093,7 +1093,7 @@ printf '%s\\n' '${JSON.stringify({
       assert.match(agents, /opcore check --changed/);
       assert.match(agents, /preserve existing repo lint\/test\/CI\/pre-commit guardrails/i);
       assert.match(agents, /unsupported stacks and degraded tools/i);
-      assert.match(agents, /Do not rely on ACE, Rox, CRG, CIX, or ASP host authority/i);
+      assert.match(agents, /Use Opcore validation directly; ASP hosts retain their own decision authority/i);
       const undo = JSON.parse(readFileSync(join(temp, ".opcore", "init-undo.json"), "utf8"));
       assert.deepEqual(
         undo.entries.find((entry) => entry.path === ".gitignore"),
@@ -1470,7 +1470,9 @@ printf '%s\\n' '${JSON.stringify({
         if (fixture.gitInit) run("git", ["init"], temp, 0);
         for (const [path, content] of fixture.files) writeFixtureFile(temp, path, content);
 
-        const result = parseJson(runOpcore(["init", "--repo", temp, "--json"], temp, 0).stdout);
+        const result = parseJson(
+          runOpcore(["init", "--repo", temp, "--json"], temp, 0, { ...process.env, PATH: systemToolPath }).stdout
+        );
         const languages = result.opcoreInit.settings.languages.map((entry) => entry.language).sort();
 
         assert.equal(result.opcoreInit.scan.totalFiles, fixture.expect.totalFiles, fixture.name);
@@ -2005,7 +2007,7 @@ printf '%s\\n' '${JSON.stringify({
       assert.match(human, /Findings:\n(?:.*\n)*  typescript\.type_errors:/);
       assert.match(human, /rust\.source_hygiene:/);
       assert.match(human, /coverage\.unsupported_stacks:/);
-      assert.doesNotMatch(human, /score|SAST|security scanner|AI authorship|Rox|CRG|CIX|ACE/i);
+      assert.doesNotMatch(human, /score|SAST|security scanner|AI authorship/i);
     } finally {
       for (const root of cleanupRoots) rmSync(root, { recursive: true, force: true });
       rmSync(temp, { recursive: true, force: true });

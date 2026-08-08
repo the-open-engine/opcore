@@ -16,7 +16,6 @@ import { basename, dirname, join, relative, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import {
-  releaseCutoverCurrentToolGuardrailIds,
   releaseCutoverPythonCommandIds,
   releaseCutoverRustCommandIds,
   releaseCutoverRequiredCommandIds,
@@ -44,19 +43,10 @@ const artifactAttestationPath = "docs/release/artifact-attestation.md";
 const releasePackDestination = ".opcore/release/packages";
 const fixtureRoot = "packages/fixtures/source-extraction/wave1";
 const rustFixtureRoot = "packages/fixtures/source-extraction/rust-only";
-const currentToolEnvVars = [
-  "LATTICE_CURRENT_TOOLS_DIR",
-  "ACE_CURRENT_TOOLS_DIR",
-  "LATTICE_CURRENT_ROX_PATH",
-  "LATTICE_CURRENT_CRG_PATH",
-  "LATTICE_CURRENT_CIX_PATH"
-];
-
 const args = process.argv.slice(2);
 const writeDocs = args.includes("--write");
 const jsonOutput = args.includes("--json") || !writeDocs;
 const reuseReleasePackages = process.env.OPCORE_CUTOVER_REUSE_RELEASE_PACKAGES === "1";
-const reuseCurrentToolGuardrails = process.env.OPCORE_CUTOVER_REUSE_CURRENT_TOOL_GUARDRAILS === "1";
 
 try {
   const validateReceiptFile = valueAfter("--validate-receipt-file");
@@ -372,7 +362,7 @@ function generateReceipt() {
     ];
     const descriptor = collectInstalledDescriptor(project, tarballs);
     const installedPackages = collectInstalledPackages(project, tarballs);
-    const currentToolGuardrails = currentToolGuardrailsForCutover();
+    const selfValidation = runSelfValidation();
     const markerScanEntries = receiptScanTextsWithoutReceipt(project, descriptor, commandTexts, tarballs);
     assertNoForbiddenMarkers(markerScanEntries);
     const receipt = {
@@ -386,24 +376,19 @@ function generateReceipt() {
       installedPackages,
       descriptor,
       environmentIsolation: {
-        currentToolEnvCleared: true,
-        clearedEnvVarCount: currentToolEnvVars.length,
         pathSanitized: true,
-        aceRuntimeBinExcluded: true,
-        siblingCovibesExcluded: true,
-        opcoreBinOnly: true,
-        oldBinsAbsent: { lattice: true, crg: true, cix: true, rox: true }
+        siblingRepositoriesExcluded: true,
+        opcoreBinsVerified: true
       },
       commandReceipts: sortCommandReceipts(commandReceipts),
       rustCommandReceipts: sortRustCommandReceipts(rustCommandReceipts),
       pythonCommandReceipts: sortPythonCommandReceipts(pythonCommandReceipts),
       negativeChecks,
-      currentToolGuardrails,
-      oldToolReplacementClaimed: false,
+      selfValidation,
       forbiddenMarkerScan: {
         scannedTextCount: markerScanEntries.length + 1,
         findingCount: 0,
-        markersBlocked: ["private-runtime", "current-tool-env", "private-home", "old-tool-bins", "old-product-name", "doubled-token"]
+        markersBlocked: ["private-home", "launch-claim"]
       },
       inputEvidence: collectInputEvidence()
     };
@@ -563,58 +548,20 @@ function runPythonToolDegradationNegativeChecks(tempRoot, opcoreBin, env, comman
   ];
 }
 
-function currentToolGuardrailsForCutover() {
-  if (reuseCurrentToolGuardrails) return recordedCurrentToolGuardrailsForCutover();
-  return runCurrentToolGuardrailsForCutover();
-}
-
-function recordedCurrentToolGuardrailsForCutover() {
-  const receipt = readJson(join(repoRoot, cutoverReceiptPath));
-  const guardrails = receipt.currentToolGuardrails;
-  if (!Array.isArray(guardrails)) {
-    throw new Error(`${cutoverReceiptPath} must contain recorded current-tool guardrails`);
-  }
-  assertSameSet(
-    guardrails.map((entry) => entry?.id),
-    releaseCutoverCurrentToolGuardrailIds,
-    "recorded current-tool guardrails"
-  );
-  return guardrails.map((entry) => {
-    if (!entry || typeof entry !== "object") throw new Error(`${cutoverReceiptPath} current-tool guardrail entry is required`);
-    if (entry.retained !== true || entry.oldToolReplacementClaimed !== false) {
-      throw new Error(`${cutoverReceiptPath} current-tool guardrails must stay retained without old-tool replacement claims`);
-    }
-    return { ...entry };
+function runSelfValidation() {
+  const result = run("npm", ["run", "opcore:self-check"], {
+    cwd: repoRoot,
+    env: process.env,
+    expectedStatus: 0
   });
-}
-
-function runCurrentToolGuardrailsForCutover() {
-  return [
-    runCurrentToolGuardrail(
-      "current-tools-validate-changed",
-      ["run", "current-tools:validate-changed"],
-      "retained external changed-file guardrail passed during installed-artifact cutover proof"
-    ),
-    runCurrentToolGuardrail(
-      "current-tools-validate-rust-graph",
-      ["run", "current-tools:validate-rust-graph"],
-      "retained external Rust graph guardrail passed during installed-artifact cutover proof"
-    )
-  ];
-}
-
-function runCurrentToolGuardrail(id, npmArgs, assertion) {
-  const result = run("npm", npmArgs, { cwd: repoRoot, env: process.env, expectedStatus: 0 });
   return {
-    id,
-    command: ["npm", ...npmArgs],
+    id: "opcore-self-check",
+    command: ["npm", "run", "opcore:self-check"],
     status: "passed",
     exitCode: 0,
     stdoutSha256: sha256(result.stdout),
     stderrSha256: sha256(result.stderr),
-    retained: true,
-    assertion,
-    oldToolReplacementClaimed: false
+    assertion: "Opcore validated its own changed implementation surface"
   };
 }
 
@@ -765,9 +712,6 @@ function preparePythonSmokeRepo(tempRoot, name = "python-smoke") {
 function inspectInstalledBins(project) {
   if (!existsSync(binPath(project, "opcore"))) throw new Error("installed project is missing opcore bin");
   if (!existsSync(binPath(project, "opcore-asp-provider"))) throw new Error("installed project is missing opcore-asp-provider bin");
-  for (const oldBin of ["lattice", "crg", "cix", "rox"]) {
-    if (existsSync(binPath(project, oldBin))) throw new Error(`installed project exposes old public bin ${oldBin}`);
-  }
 }
 
 function collectInstalledPackages(project, tarballs) {
@@ -1035,11 +979,10 @@ function writeValidationRequest(project, filename, overrides = {}) {
 
 function sanitizedEnv() {
   const env = { ...process.env };
-  for (const key of currentToolEnvVars) delete env[key];
   env.PATH = [dirname(process.execPath), "/usr/local/bin", "/opt/homebrew/bin", "/usr/bin", "/bin", "/usr/sbin", "/sbin"].join(":");
   env.npm_lifecycle_event = undefined;
-  if (env.PATH.includes(".ace/runtime/bin") || env.PATH.includes("/covibes/")) {
-    throw new Error("sanitized PATH still includes current-tool or sibling Covibes paths");
+  if (env.PATH.includes("/covibes/")) {
+    throw new Error("sanitized PATH still includes sibling repository paths");
   }
   return env;
 }
@@ -1065,10 +1008,7 @@ function receiptScanTexts(receipt) {
 
 function assertNoForbiddenMarkers(entries) {
   const forbidden = [
-    { label: "private runtime", pattern: /(^|[\\/"'\s])\.ace(?:[\\/"'\s]|$)/i },
-    { label: "current-tool env", pattern: /LATTICE_CURRENT_TOOLS_DIR|ACE_CURRENT_TOOLS_DIR|LATTICE_CURRENT_(?:ROX|CRG|CIX)_PATH/i },
-    { label: "private home", pattern: /\/Users\/tom\b/ },
-    { label: "old tool bins", pattern: /(^|[\\/"'\s])(?:crg|cix|rox)(?:$|[\\/"'\s])/i }
+    { label: "private home", pattern: /\/Users\/tom\b/ }
   ];
   const findings = [];
   for (const entry of entries) {
@@ -1078,7 +1018,6 @@ function assertNoForbiddenMarkers(entries) {
         for (let index = 0; index < lines.length; index += 1) {
           const line = lines[index];
           if (!marker.pattern.test(line)) continue;
-          if (isAllowlistedCutoverMarkerLine(line, marker.label)) continue;
           findings.push(`${entry.label}:${index + 1}: ${marker.label}: ${line.trim()}`);
         }
       }
@@ -1090,11 +1029,6 @@ function assertNoForbiddenMarkers(entries) {
 
 function isPackageTextScanEntry(label) {
   return label.startsWith("installed-package:") || label.startsWith("npm-pack:");
-}
-
-function isAllowlistedCutoverMarkerLine(line, label) {
-  if (label !== "old tool bins") return false;
-  return /oldBins(?:Absent)?|old public bin|old tool bins|forbiddenPublicBins|forbiddenBin|oldBin|Release receipt package exposes old public bin|\["lattice",\s*"crg",\s*"cix",\s*"rox"\]|\["crg",\s*"cix",\s*"rox"\]/i.test(line);
 }
 
 function collectStringValues(value) {
@@ -1142,8 +1076,7 @@ Installed packages: ${receipt.installedPackages.length}
 Command receipts: ${receipt.commandReceipts.length}
 Rust command receipts: ${receipt.rustCommandReceipts.length}
 Python command receipts: ${receipt.pythonCommandReceipts.length}
-Current-tool guardrails retained: ${receipt.currentToolGuardrails.length}
-Old-tool replacement claimed: ${receipt.oldToolReplacementClaimed}
+Self-validation: ${receipt.selfValidation.status}
 Forbidden marker findings: ${receipt.forbiddenMarkerScan.findingCount}
 Input evidence: ${receipt.inputEvidence.map((entry) => entry.issue).join(", ")}
 
@@ -1157,9 +1090,18 @@ function appendCutoverAttestation(receipt, receiptSha256) {
   const existing = existsSync(join(repoRoot, artifactAttestationPath))
     ? readFileSync(join(repoRoot, artifactAttestationPath), "utf8")
     : "# Artifact Attestation\n";
-  const block = `\n## Cutover Gate\n\nIssue #30 receipt: ${cutoverReceiptPath}\nCutover receipt SHA-256: ${receiptSha256}\nInstalled command receipts: ${receipt.commandReceipts.length}\nRust command receipts: ${receipt.rustCommandReceipts.length}\nPython command receipts: ${receipt.pythonCommandReceipts.length}\nCurrent-tool guardrails retained: ${receipt.currentToolGuardrails.length}\nOld-tool replacement claimed: ${receipt.oldToolReplacementClaimed}\n`;
-  const withoutOld = existing.replace(/\n## Cutover Gate\n[\s\S]*$/, "");
-  writeFileSync(join(repoRoot, artifactAttestationPath), `${withoutOld.trimEnd()}\n${block}`);
+  const block = `
+## Cutover Gate
+
+Issue #30 receipt: ${cutoverReceiptPath}
+Cutover receipt SHA-256: ${receiptSha256}
+Installed command receipts: ${receipt.commandReceipts.length}
+Rust command receipts: ${receipt.rustCommandReceipts.length}
+Python command receipts: ${receipt.pythonCommandReceipts.length}
+Self-validation: ${receipt.selfValidation.status}
+`;
+  const withoutPrevious = existing.replace(/\n## Cutover Gate\n[\s\S]*$/, "");
+  writeFileSync(join(repoRoot, artifactAttestationPath), `${withoutPrevious.trimEnd()}\n${block}`);
 }
 
 function sortCommandReceipts(receipts) {

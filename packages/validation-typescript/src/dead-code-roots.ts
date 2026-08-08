@@ -9,6 +9,7 @@ import {
 import ts from "typescript";
 import type { TypeScriptDeadCodeOptions } from "./dead-code-entrypoints.js";
 import { isTypeScriptSourcePath, type TypeScriptMaterializedSourceSet } from "./source-files.js";
+import { isConventionalTypeScriptTestPath } from "./test-paths.js";
 
 interface TypeScriptOutputMapping {
   readonly rootDir: string;
@@ -19,7 +20,6 @@ interface PackageEntrypointResolution {
   readonly context: ValidationCheckContext;
   readonly packageRoot: string;
   readonly target: string;
-  readonly sourcePaths: ReadonlySet<string>;
   readonly outputMapping: TypeScriptOutputMapping | undefined;
 }
 
@@ -31,7 +31,7 @@ export async function discoverTypeScriptDeadCodeRoots(
 ): Promise<readonly string[]> {
   if (options.entrypoints !== undefined) return [];
   const sourcePaths = knownSourcePaths(sourceSet, nodes);
-  const testRoots = sourcePaths.filter((path) => isConventionalTestPath(path));
+  const testRoots = sourcePaths.filter((path) => isConventionalTypeScriptTestPath(path));
   const graphTestRoots = nodes.filter(isGraphTestNode).map(graphFactNodePath).filter(isDefined);
   const packageRoots = await discoverPackageEntrypoints(context, sourcePaths);
   return uniqueSortedStrings([...testRoots, ...graphTestRoots, ...packageRoots]);
@@ -51,7 +51,6 @@ async function discoverPackageEntrypoints(
   context: ValidationCheckContext,
   sourcePaths: readonly string[]
 ): Promise<readonly string[]> {
-  const sourcePathSet = new Set(sourcePaths);
   const entrypoints: string[] = [];
   for (const packageRoot of candidatePackageRoots(sourcePaths)) {
     const manifest = await readPackageManifest(context, packageRoot);
@@ -62,7 +61,6 @@ async function discoverPackageEntrypoints(
         context,
         packageRoot,
         target,
-        sourcePaths: sourcePathSet,
         outputMapping
       });
       if (entrypoint !== undefined) entrypoints.push(entrypoint);
@@ -133,7 +131,7 @@ async function resolvePackageEntrypoint(resolution: PackageEntrypointResolution)
   if (targetPath === undefined) return undefined;
   const mappedSource = await resolveOutputSource(resolution.context, targetPath, resolution.outputMapping);
   if (mappedSource !== undefined) return mappedSource;
-  if (!resolution.sourcePaths.has(targetPath) || !isTypeScriptSourcePath(targetPath)) return undefined;
+  if (!isTypeScriptSourcePath(targetPath)) return undefined;
   return (await resolution.context.fileView.exists(targetPath)) ? targetPath : undefined;
 }
 
@@ -201,10 +199,6 @@ function replaceSuffix(path: string, suffix: string, replacement: string): strin
 
 function isGraphTestNode(node: GraphFactNode): boolean {
   return node.kind === "Test" || node.attributes?.isTest === true;
-}
-
-function isConventionalTestPath(path: string): boolean {
-  return /(?:^|\/)__tests__\//u.test(path) || /\.(?:test|spec)\.[cm]?[jt]sx?$/u.test(path);
 }
 
 function isDefined<T>(value: T | undefined): value is T {

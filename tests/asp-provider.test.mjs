@@ -874,7 +874,6 @@ describe("Opcore ASP provider", () => {
     assert.equal(manifest.noGateGrant, true);
     assert.match(manifest.checksums["dist/index.js"].sha256, /^[a-f0-9]{64}$/);
     assertNoForbiddenKeys(manifest);
-    assert.doesNotMatch(JSON.stringify(manifest), /\.ace\/runtime|\b(?:rox|crg|cix)\b|LATTICE_CURRENT_TOOLS_DIR/i);
   });
 
   it("ships a canonical ASP server manifest with read-only access expectations", () => {
@@ -928,7 +927,6 @@ describe("Opcore ASP provider", () => {
     });
     assertNoForbiddenKeys(manifest);
     assert.doesNotMatch(JSON.stringify(manifest.provenance), /\b(?:trust|authority|gate|apply|decision|verdict|assurance)\b/i);
-    assert.doesNotMatch(JSON.stringify(manifest), /\.ace\/runtime|\b(?:rox|crg|cix)\b|LATTICE_CURRENT_TOOLS_DIR/i);
   });
 
   it("removes stale legacy generated manifests before packaging", () => {
@@ -995,7 +993,7 @@ describe("Opcore ASP provider claim scrub", () => {
     assert.match(readme, /\bwrite\b[^.\n]*\bfalse\b/i, "README must state write is false");
     assert.match(readme, /\bnetwork\b[^.\n]*\bfalse\b/i, "README must state network is false");
     assert.match(readme, /degraded|unsupported/i, "README must describe degraded/unsupported coverage honesty");
-    assert.match(readme, /does \*\*not\*\* use ACE|not use ACE as a carrier/i, "README must disclaim ACE as carrier/provisioner");
+    assert.match(readme, /does not invoke external development toolchains/i);
   });
 
   it("rejects forbidden marketing tokens in package.json metadata", () => {

@@ -3,9 +3,10 @@ use crate::protocol::{
     GraphFactQueryKind, GraphFactQueryRequest, GraphFactQuerySelector, GraphImpactRequest,
     GraphProviderMode, GraphSearchRequest, RepoIdentity,
 };
+use crate::test_support::wave1_fixture_root;
 use serde_json::{json, Value};
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::time::Duration;
 use tempfile::TempDir;
 
@@ -381,12 +382,6 @@ fn copied_wave1_fixture() -> Result<TempDir, std::io::Error> {
     let destination = tempfile::tempdir()?;
     copy_dir(&wave1_fixture_root()?, destination.path())?;
     Ok(destination)
-}
-
-fn wave1_fixture_root() -> Result<PathBuf, std::io::Error> {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("../../packages/fixtures/source-extraction/wave1")
-        .canonicalize()
 }
 
 fn copy_dir(source: &Path, destination: &Path) -> Result<(), std::io::Error> {

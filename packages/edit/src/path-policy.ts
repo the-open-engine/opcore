@@ -32,15 +32,11 @@ export interface ValidatedCreatePath {
 
 const patchTreeForbiddenRoots = [
   ".git",
-  ".ace",
   ".agents",
   ".claude",
   ".codex",
   ".gemini",
   ".opencode",
-  ".code-review-graph",
-  ".rox-cache",
-  ".robustness-engine-cache",
   ".opcore/graph",
   "target",
   "node_modules"

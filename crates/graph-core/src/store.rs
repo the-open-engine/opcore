@@ -16,7 +16,7 @@ use time::format_description::well_known::Rfc3339;
 use time::OffsetDateTime;
 
 mod metadata;
-mod read;
+pub(crate) mod read;
 mod schema;
 mod types;
 mod write;
@@ -29,12 +29,12 @@ pub use types::{
 };
 
 use metadata::{
-    collect_rows, current_source_hashes, freshness_age_ms, hash_mismatch_reason,
-    missing_metadata_freshness, missing_watch_root_reason, read_optional_json,
-    scoped_source_hashes, source_hash_discovery_failed, stale_freshness, stale_metadata_freshness,
+    current_source_hashes, freshness_age_ms, hash_mismatch_reason, missing_metadata_freshness,
+    missing_watch_root_reason, read_optional_json, scoped_source_hashes,
+    source_hash_discovery_failed, stale_freshness, stale_metadata_freshness,
     stale_metadata_freshness_with_age,
 };
-use read::{read_edge_row, read_node_row};
+use read::{read_edge_row, read_node_row, CollectRows, Rows};
 use schema::{configure_sqlite, migrate_or_validate, validate_schema};
 #[cfg(test)]
 use schema::{require_index, require_table, STORE_INDEX_NAMES};
@@ -410,7 +410,7 @@ impl GraphStore {
                 sha256: row.get(3)?,
             })
         })?;
-        collect_rows(rows)
+        Rows::collect(rows)
     }
 
     fn read_nodes(&self) -> StoreResult<Vec<GraphFactNode>> {
@@ -418,7 +418,7 @@ impl GraphStore {
             .connection
             .prepare("select id, kind, path, name, extra from nodes order by id")?;
         let rows = statement.query_map([], read_node_row)?;
-        collect_rows(rows)
+        Rows::collect(rows)
     }
 
     fn read_edges(&self) -> StoreResult<Vec<GraphFactEdge>> {
@@ -426,7 +426,7 @@ impl GraphStore {
             "select id, kind, source_qualified, target_qualified, extra from edges order by kind, source_qualified, target_qualified",
         )?;
         let rows = statement.query_map([], read_edge_row)?;
-        collect_rows(rows)
+        Rows::collect(rows)
     }
 
     fn read_kind_counts(&self, table: &str) -> StoreResult<BTreeMap<String, u32>> {
@@ -441,7 +441,7 @@ impl GraphStore {
         };
         let mut statement = self.connection.prepare(sql)?;
         let rows = statement.query_map([], |row| Ok((row.get(0)?, row.get(1)?)))?;
-        Ok(collect_rows(rows)?.into_iter().collect())
+        Ok(Rows::collect(rows)?.into_iter().collect())
     }
 }
 
