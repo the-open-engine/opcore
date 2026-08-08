@@ -94,6 +94,11 @@ describe("native graph-core packaging policy", () => {
     assert.match(checkJob, /rustup toolchain install nightly-2026-07-27 --profile minimal/);
     assert.match(checkJob, /cargo \+nightly-2026-07-27 install cargo-udeps --version 0\.1\.61 --locked/);
     assert.match(checkJob, /test "\$\(cargo \+nightly-2026-07-27 udeps --version\)" = "cargo-udeps 0\.1\.61"/);
+    assert.match(checkJob, /cargo install rust-code-analysis-cli --version 0\.0\.25 --locked/);
+    assert.match(
+      checkJob,
+      /test "\$\(rust-code-analysis-cli --version\)" = "rust-code-analysis-cli 0\.0\.25"/
+    );
     assert.match(checkJob, /OPCORE_RUST_NIGHTLY_TOOLCHAIN:\s*nightly-2026-07-27/);
     const nativeJob = workflow.slice(workflow.indexOf("native-artifact:"), workflow.indexOf("aggregate:"));
     for (const [target, expected] of Object.entries(nativeTargets)) {

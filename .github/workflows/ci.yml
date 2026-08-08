@@ -75,6 +75,11 @@ jobs:
           cargo +nightly-2026-07-27 install cargo-udeps --version 0.1.61 --locked
           test "$(cargo +nightly-2026-07-27 udeps --version)" = "cargo-udeps 0.1.61"
 
+      - name: Provision pinned Rust function-metrics proof artifact
+        run: |
+          cargo install rust-code-analysis-cli --version 0.0.25 --locked
+          test "$(rust-code-analysis-cli --version)" = "rust-code-analysis-cli 0.0.25"
+
       - name: Setup Linux musl toolchain
         run: sudo apt-get update && sudo apt-get install -y musl-tools
 
