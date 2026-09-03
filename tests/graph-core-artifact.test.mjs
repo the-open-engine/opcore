@@ -25,7 +25,7 @@ describe("graph-core native artifact", () => {
     assert.equal(result.ok, false);
     assert.equal(result.status.state, "required_missing");
     assert.equal(result.status.failure.category, "provider_missing");
-    assert.match(result.status.message, /Opcore 0\.2\.1 supports darwin-arm64, darwin-x64, linux-x64/);
+    assert.match(result.status.message, /Opcore 0\.2\.2 supports darwin-arm64, darwin-x64, linux-x64/);
     assert.match(result.status.message, /Windows is not supported/);
     assert.deepEqual(attempted, []);
   });

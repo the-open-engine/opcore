@@ -1,6 +1,6 @@
 {
   "name": "@the-open-engine/opcore-fixtures",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "private": true,
   "description": "Internal fixtures and conformance inputs for Opcore tests and examples.",
   "type": "module",

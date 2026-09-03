@@ -279,7 +279,7 @@ describe("opcore public facade", () => {
     try {
       const human = runOpcore(["--version"], temp, 0);
       assert.equal(human.stderr, "");
-      assert.match(human.stdout, /^opcore 0\.2\.1\b/);
+      assert.match(human.stdout, /^opcore 0\.2\.2\b/);
       assert.equal(existsSync(join(temp, ".opcore")), false);
 
       const json = parseJson(runOpcore(["--version", "--json"], temp, 0).stdout);
@@ -287,7 +287,7 @@ describe("opcore public facade", () => {
       assert.equal(json.owner, "runtime");
       assert.equal(json.runtimeInfo.schemaVersion, 1);
       assert.equal(json.runtimeInfo.packageName, "opcore");
-      assert.equal(json.runtimeInfo.version, "0.2.1");
+      assert.equal(json.runtimeInfo.version, "0.2.2");
       assert.equal(json.runtimeInfo.bin, "opcore");
       assert.match(json.runtimeInfo.artifactSource, /^(source_checkout|installed_package|unknown)$/);
       assert.match(json.runtimeInfo.packageRoot, /packages\/opcore$/);
