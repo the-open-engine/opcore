@@ -23,16 +23,16 @@ export function createRelevantTestsCheck(resolveRoots: PythonSourceRootResolver)
             category: "test",
             severity: "info",
             path,
-            code: "PY_RELEVANT_TESTS_FOUND",
-            message: `TESTED_BY graph evidence exists for ${path}: ${evidence.map(testEndpoint).sort().join(", ")}`
+            code: "PY_RELEVANT_TEST_CANDIDATES_FOUND",
+            message: `TESTED_BY graph candidate evidence for ${path}: ${evidence.map(testEndpoint).sort().join(", ")}`
           };
         }
         return {
           category: "test",
           severity: "info",
           path,
-          code: "PY_RELEVANT_TESTS_ABSENT",
-          message: `No TESTED_BY graph evidence found for ${path}.`
+          code: "PY_RELEVANT_TEST_CANDIDATES_ABSENT",
+          message: `No TESTED_BY graph candidate evidence found for ${path}.`
         };
       });
       return { diagnostics };

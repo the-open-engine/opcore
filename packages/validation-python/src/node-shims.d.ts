@@ -54,18 +54,20 @@ declare module "node:crypto" {
 }
 
 declare module "node:fs" {
+  export function chmodSync(path: string, mode: number): void;
   export function existsSync(path: string): boolean;
+  export function readFileSync(path: string, encoding: "utf8"): string;
   export function realpathSync(path: string): string;
   export function mkdirSync(path: string, options?: { recursive?: boolean }): void;
   export function mkdtempSync(prefix: string): string;
   export function rmSync(path: string, options?: { recursive?: boolean; force?: boolean }): void;
-  export function writeFileSync(path: string, data: string): void;
+  export function writeFileSync(path: string, data: string, encoding?: "utf8"): void;
 }
 
 declare module "node:fs/promises" {
   export function access(path: string): Promise<void>;
   export function copyFile(source: string, destination: string): Promise<void>;
-  export function lstat(path: string): Promise<{ isFile(): boolean; isSymbolicLink(): boolean }>;
+  export function lstat(path: string): Promise<{ mode: number; isFile(): boolean; isSymbolicLink(): boolean }>;
   export function mkdir(path: string, options?: { recursive?: boolean }): Promise<void>;
   export function readFile(path: string, encoding: "utf8"): Promise<string>;
   export function readdir(path: string, options: { recursive: true }): Promise<readonly string[]>;
@@ -119,9 +121,14 @@ declare namespace NodeJS {
   }
 }
 
+declare const Buffer: {
+  byteLength(input: string, encoding?: BufferEncoding): number;
+};
+
 declare const process: {
   env: Record<string, string | undefined>;
   execPath: string;
+  pid: number;
   cwd(): string;
   kill(pid: number, signal?: string): boolean;
   platform: string;

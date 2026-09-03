@@ -3,8 +3,49 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 
 const readJson = (path) => JSON.parse(readFileSync(path, "utf8"));
+const selfValidationCheckIds = [
+  "typescript.syntax",
+  "typescript.types",
+  "typescript.lint",
+  "typescript.import-graph",
+  "typescript.dead-code",
+  "typescript.function-metrics",
+  "typescript.relevant-tests",
+  "typescript.file-length",
+  "rust.source-hygiene",
+  "rust.fmt",
+  "rust.cargo-check",
+  "rust.clippy",
+  "rust.rustdoc",
+  "rust.import-graph",
+  "rust.dead-code",
+  "rust.graph-signals",
+  "rust.unused-deps",
+  "rust.file-length",
+  "rust.function-metrics",
+  "python.syntax",
+  "python.source-hygiene",
+  "python.ruff-lint",
+  "python.ruff-format",
+  "python.types",
+  "python.import-graph",
+  "python.dead-code",
+  "python.relevant-tests",
+  "python.pytest",
+  "docs.existence",
+  "docs.staleness",
+  "docs.freshness",
+  "docs.length",
+  "docs.dry",
+  "docs.content-quality",
+  "docs.code-blocks",
+  "docs.rules-why",
+  "docs.hub-coverage",
+  "docs.subtree-coverage",
+  "clone.duplication"
+];
 
-describe("lattice scaffold", () => {
+describe("Opcore scaffold", () => {
   it("keeps opcore, graph, edit, and validation as separate package tracks", () => {
     const root = readJson("package.json");
     assert.deepEqual(root.workspaces, [
@@ -57,45 +98,17 @@ describe("lattice scaffold", () => {
     ]);
   });
 
-  it("does not publish as code-review-graph or gungnir", () => {
-    for (const name of [
-      "contracts",
-      "opcore",
-      "graph",
-      "edit",
-      "validation",
-      "validation-policy",
-      "validation-clone",
-      "validation-docs",
-      "validation-python",
-      "validation-rust",
-      "validation-typescript",
-      "fixtures"
-    ]) {
-      const manifest = readJson(`packages/${name}/package.json`);
-      assert.equal(manifest.name.includes("code-review-graph"), false);
-      assert.equal(manifest.name.includes("gungnir"), false);
-    }
-  });
-
-  it("keeps agent tooling pointed at current external tools", () => {
+  it("uses Opcore for repository validation", () => {
     assert.equal(readFileSync("AGENTS.md", "utf8"), readFileSync("CLAUDE.md", "utf8"));
-    assert.equal(existsSync("ace.json"), true);
-    assert.equal(existsSync("rox.json"), true);
+    assert.equal(existsSync(".opcore/config"), true);
     assert.equal(existsSync(".zeroshot/settings.json"), true);
-    assert.equal(existsSync("scripts/setup-current-tools.sh"), true);
+    assert.equal(existsSync("scripts/run-opcore-self-check.mjs"), true);
     assert.equal(existsSync("scripts/ci/run-local-ci-equivalent.sh"), true);
 
-    const setupTools = readFileSync("scripts/setup-current-tools.sh", "utf8");
-    assert.match(setupTools, /external ACE-managed tools/);
-    assert.match(setupTools, /implementation_package_dir/);
-    assert.match(setupTools, /use current external tools, not \$\{implementation_path\}/);
-    assert.match(setupTools, /aceTools/);
-    assert.match(setupTools, /binRoot/);
-    assert.match(setupTools, /latticeCurrentTools/);
-
-    const ace = readJson("ace.json");
-    assert.match(ace.mcpServers["code-review-graph"].args.join("\n"), /\.ace\/runtime\/bin\/crg/);
+    const root = readJson("package.json");
+    assert.equal(root.scripts.setup, "npm ci");
+    assert.match(root.scripts["opcore:self-check"], /scripts\/run-opcore-self-check\.mjs/);
+    assert.deepEqual(readJson(".zeroshot/settings.json").worktree.setup, ["npm ci"]);
   });
 
   it("pins runtime CLI decision anchors", () => {
@@ -130,5 +143,22 @@ describe("lattice scaffold", () => {
       assert.match(content, /@docs\/architecture\/runtime-cli-ard\.md/);
       assert.match(content, /hybrid/);
     }
+  });
+});
+
+describe("Opcore self-validation policy", () => {
+  it("selects every registered check with strict complexity thresholds", () => {
+    const policy = readJson(".opcore/config").validation;
+    assert.deepEqual(policy.adapters, ["typescript", "rust", "python", "docs", "clone"]);
+    assert.deepEqual(policy.checks.defaults, selfValidationCheckIds);
+    assert.deepEqual(policy.checks.disabled, []);
+    assert.deepEqual(policy.checks.typescript, {
+      fileLength: { maxFileLines: 300 },
+      functionMetrics: { maxFunctionLines: 80, maxComplexity: 10, maxParams: 4 }
+    });
+    assert.deepEqual(policy.checks.rust, {
+      fileLength: { maxFileLines: 500 },
+      functionMetrics: { maxFunctionLines: 80, maxComplexity: 10, maxParams: 4 }
+    });
   });
 });

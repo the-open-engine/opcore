@@ -31,7 +31,8 @@ import {
 } from "@the-open-engine/opcore-validation";
 import {
   createBuiltInValidationChecks,
-  parseOpcoreRepoConfig
+  parseOpcoreRepoConfig,
+  validationChecksForConfigPolicy
 } from "@the-open-engine/opcore-validation-policy";
 import {
   graphProviderDetectChanges,
@@ -52,16 +53,18 @@ export const defaultAspProviderValidationChecks = createBuiltInValidationChecks(
 export const defaultAspProviderValidationCheckIds = defaultAspProviderValidationChecks.map((check) => check.id);
 export const defaultAspProviderValidationManifest = createValidationCheckManifest(defaultAspProviderValidationChecks);
 
-export function createAspProviderValidationRunner(workspace: ValidationWorkspace, pythonWorkspace: PythonProjectWorkspace): {
+export function createAspProviderValidationRunner(
+  workspace: ValidationWorkspace,
+  checks: readonly ValidationCheckDefinition[]
+): {
   runValidation(request: ValidationRequest): Promise<ValidationResult>;
 } {
   return {
-    async runValidation(request) {
-      const config = await readHostConfig(workspace, request);
+    runValidation(request) {
       const graphProviderClient = createAspValidationGraphProviderClient();
       return createValidationRunner({
         workspace,
-        checks: createBuiltInValidationChecks(config, { ...aspProviderPolicyOptions, pythonWorkspace }),
+        checks,
         graphProviderClient,
         graphSessionFactory: createStateAwareValidationGraphSessionFactory({
           persistentClient: graphProviderClient,
@@ -72,14 +75,28 @@ export function createAspProviderValidationRunner(workspace: ValidationWorkspace
   };
 }
 
-export function selectedValidationChecks(checkIds?: readonly string[]): readonly ValidationCheckDefinition[] {
-  if (checkIds === undefined) return defaultAspProviderValidationChecks;
-  const requested = new Set(checkIds);
-  return defaultAspProviderValidationChecks.filter((check) => requested.has(check.id));
+export async function aspProviderValidationChecks(
+  workspace: ValidationWorkspace,
+  pythonWorkspace: PythonProjectWorkspace,
+  overlays: ValidationRequest["overlays"]
+): Promise<readonly ValidationCheckDefinition[]> {
+  const config = await readHostConfig(workspace, overlays);
+  return validationChecksForConfigPolicy(config, { ...aspProviderPolicyOptions, pythonWorkspace });
 }
 
-async function readHostConfig(workspace: ValidationWorkspace, request: ValidationRequest) {
-  const overlay = request.overlays.find((entry) => entry.path === ".opcore/config");
+export function selectedValidationChecks(
+  checks: readonly ValidationCheckDefinition[],
+  checkIds?: readonly string[]
+): readonly ValidationCheckDefinition[] {
+  if (checkIds === undefined) {
+    return checks.filter((check) => (check.defaultScopes ?? check.supportedScopes).includes("files"));
+  }
+  const requested = new Set(checkIds);
+  return checks.filter((check) => requested.has(check.id));
+}
+
+async function readHostConfig(workspace: ValidationWorkspace, overlays: ValidationRequest["overlays"]) {
+  const overlay = overlays.find((entry) => entry.path === ".opcore/config");
   if (overlay?.action === "write") return parseOpcoreRepoConfig(overlay.content);
   if (overlay?.action === "delete") return parseOpcoreRepoConfig(undefined);
   const result = await workspace.readFile(".opcore/config");

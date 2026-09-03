@@ -18,7 +18,7 @@ const packageTracks = [
   { dir: "asp-provider", name: "@the-open-engine/opcore-asp-provider", bin: "opcore-asp-provider" },
   { dir: "fixtures", name: "@the-open-engine/opcore-fixtures" }
 ];
-const releaseVersion = "0.2.1";
+const releaseVersion = "0.2.2";
 const packageNames = new Set(packageTracks.map((entry) => entry.name));
 const publicPackageNames = new Set(["opcore"]);
 const rootNativeOptionalDependencies = new Map([
@@ -31,20 +31,18 @@ const requiredGitignoreTokens = [
   "node_modules/",
   "dist/",
   "*.tsbuildinfo",
-  ".ace/",
   ".agents/",
   ".claude/",
   ".codex/",
   ".gemini/",
   ".opencode/",
-  ".code-review-graph/",
-  ".rox-cache/",
-  ".robustness-engine-cache/",
   "target/",
+  ".opcore/*",
+  "!.opcore/config",
   ".zeroshot/*",
   "!.zeroshot/settings.json"
 ];
-const siblingRepoTokens = ["covibes", "orchestra", "cmdproof", "robustness-engine", "ace"];
+const siblingRepoTokens = ["covibes", "orchestra", "cmdproof", "robustness-engine"];
 
 const readJson = (path) => JSON.parse(readFileSync(path, "utf8"));
 const hasOwn = (value, key) => Object.prototype.hasOwnProperty.call(value, key);
@@ -67,8 +65,8 @@ for (const scriptName of [
   "ci:local",
   "setup",
   "setup:check-clean",
-  "setup:tools",
   "verify",
+  "opcore:self-check",
   "test:ci",
   "conformance:check",
   "pack:check",
@@ -87,28 +85,16 @@ for (const scriptName of [
   "rust:fmt",
   "rust:clippy",
   "rust:test",
-  "rust:check",
-  "ace:check",
-  "ace:install",
-  "ace:status",
-  "ace:sync",
-  "ace:validate",
-  "current-tools:validate-all",
-  "current-tools:validate-rust-graph",
-  "current-tools:validate-changed",
-  "current-tools:graph-status"
+  "rust:check"
 ]) {
   if (!root.scripts?.[scriptName]) fail(`Root package must expose ${scriptName} script`);
 }
-for (const scriptName of ["ace:check", "ace:install", "ace:status", "ace:sync", "ace:validate"]) {
-  requireIncludes(`package.json scripts.${scriptName}`, root.scripts[scriptName], "scripts/run-ace.sh");
-}
-if (!root.scripts["current-tools:validate-rust-graph"].includes("scripts/check-rust-graph-function-metrics.mjs")) {
-  fail("current-tools:validate-rust-graph must run scoped Rust graph function metrics script");
-}
-if (!root.scripts["current-tools:validate-changed"].includes("scripts/ci/run-rox-clean-changed-gate.mjs")) {
-  fail("current-tools:validate-changed must run the clean changed-file Rox gate script");
-}
+if (root.scripts.setup !== "npm ci") fail("Root setup script must install dependencies only");
+requireIncludes(
+  "package.json scripts.opcore:self-check",
+  root.scripts["opcore:self-check"],
+  "scripts/run-opcore-self-check.mjs"
+);
 for (const ciToken of [
   "lint",
   "rust:check",
@@ -117,8 +103,7 @@ for (const ciToken of [
   "release-receipt:check",
   "graph-release:check",
   "cutover:check",
-  "OPCORE_CUTOVER_REUSE_RELEASE_PACKAGES=1",
-  "OPCORE_CUTOVER_REUSE_CURRENT_TOOL_GUARDRAILS=1"
+  "OPCORE_CUTOVER_REUSE_RELEASE_PACKAGES=1"
 ]) {
   requireIncludes("package.json scripts.ci", root.scripts.ci, ciToken);
 }
@@ -148,13 +133,6 @@ for (const token of ["scripts/check-release-hygiene.mjs", "scripts/check-provena
 }
 const cutoverReceiptScript = readFileSync("scripts/generate-cutover-receipt.mjs", "utf8");
 requireIncludes("scripts/generate-cutover-receipt.mjs", cutoverReceiptScript, "OPCORE_CUTOVER_REUSE_RELEASE_PACKAGES");
-requireIncludes("scripts/generate-cutover-receipt.mjs", cutoverReceiptScript, "OPCORE_CUTOVER_REUSE_CURRENT_TOOL_GUARDRAILS");
-const aspDogfoodReceiptSupportScript = readFileSync("scripts/asp-dogfood-receipt-support.mjs", "utf8");
-requireIncludes(
-  "scripts/asp-dogfood-receipt-support.mjs",
-  aspDogfoodReceiptSupportScript,
-  "OPCORE_ASP_DOGFOOD_REUSE_CURRENT_TOOL_GUARDRAILS"
-);
 validateDependencySpecs("package.json", root);
 assertDeepEqual(root.optionalDependencies ?? {}, Object.fromEntries(rootNativeOptionalDependencies), "Root native optionalDependencies");
 
@@ -258,77 +236,32 @@ for (const token of [
 }
 
 for (const path of [
-  "ace.json",
-  "rox.json",
+  ".opcore/config",
   ".zeroshot/settings.json",
-  "scripts/setup-current-tools.sh",
-  "scripts/dev-env.sh",
-  "scripts/check-rust-graph-function-metrics.mjs",
+  "scripts/run-opcore-self-check.mjs",
   "scripts/build-graph-core-artifact.mjs",
   "scripts/ci/run-local-ci-equivalent.sh"
 ]) {
   if (!existsSync(path)) fail(`Missing agent tooling file: ${path}`);
 }
 
-const ace = readJson("ace.json");
-const mcpArgs = ace.mcpServers?.["code-review-graph"]?.args ?? [];
-if (!mcpArgs.some((arg) => arg.includes(".ace/runtime/bin/crg") && arg.includes("serve --repo"))) {
-  fail("ace.json must route code-review-graph MCP through the generated current crg wrapper");
-}
-
-const rox = readJson("rox.json");
-if (!rox.adapters?.includes("typescript")) fail("rox.json must validate the current TypeScript scaffold");
-if (!rox.adapters?.includes("rust")) fail("rox.json must declare the current Rust scaffold adapter");
-if (!rox.extensions?.includes("scripts/check-rust-graph-function-metrics.mjs")) {
-  fail("rox.json must run scoped Rust graph function metrics during repo-wide Rox checks");
-}
-if (!rox.packages?.includes("crates")) {
-  fail('rox.json packages must include "crates" for all-mode Rust graph-core function metrics');
-}
-for (const includePath of ["packages/", "scripts/", "tests/", "crates/"]) {
-  if (!rox.checks?.codeQuality?.include?.includes(includePath)) {
-    fail(`rox.json checks.codeQuality.include must include "${includePath}"`);
-  }
-}
-for (const mode of ["staged", "changed", "files"]) {
-  if (!rox.checks?.codeQuality?.when?.modes?.includes(mode)) {
-    fail(`rox.json checks.codeQuality.when.modes must include "${mode}"`);
-  }
-}
-const rustGates = rox.extensionConfig?.rustGates;
-if (rustGates?.workspace !== "Cargo.toml" || rustGates?.package !== "opcore-graph-core") {
-  fail("rox.json must include schema-compatible Rust graph-core gate metadata under extensionConfig.rustGates");
-}
-for (const rustCheck of ["cargo fmt --check", "cargo clippy --all-targets --all-features -- -D warnings", "cargo test"]) {
-  if (!rustGates.commands?.includes(rustCheck)) fail(`rox.json rustGates must include ${rustCheck}`);
-}
-
 const zeroshot = readJson(".zeroshot/settings.json");
 if (zeroshot.github?.prBase !== "dev" || zeroshot.worktree?.baseRef !== "origin/dev") {
-  fail("Zeroshot feature runs must target the lattice dev branch");
+  fail("Zeroshot feature runs must target the Opcore dev branch");
 }
-if (!zeroshot.worktree?.setup?.includes("npm run setup")) fail("Zeroshot setup must generate current-tool wrappers");
-
-const setupTools = readFileSync("scripts/setup-current-tools.sh", "utf8");
-for (const token of [
-  "LATTICE_CURRENT_TOOLS_DIR",
-  "external ACE-managed tools",
-  "implementation_package_dir",
-  "packages/graph",
-  "aceTools",
-  "binRoot",
-  "latticeCurrentTools",
-  "rust-code-analysis-cli"
-]) {
-  requireIncludes("scripts/setup-current-tools.sh", setupTools, token);
-}
+assertDeepEqual(zeroshot.worktree?.setup, ["npm ci"], "Zeroshot setup");
+requireIncludes(
+  ".zeroshot/settings.json",
+  JSON.stringify(zeroshot.ship?.commandProofs ?? []),
+  "scripts/ci/run-local-ci-equivalent.sh"
+);
 
 if (!existsSync(".changeset")) fail("Missing .changeset directory");
 
 const gitignore = readFileSync(".gitignore", "utf8");
 for (const token of requiredGitignoreTokens) requireIncludes(".gitignore", gitignore, token);
 if (gitignore.includes("!.claude/skills/")) {
-  fail(".gitignore must not allowlist .claude/skills; ACE-generated provider skills are ignored runtime state");
+  fail(".gitignore must not allowlist .claude/skills; generated provider skills are ignored runtime state");
 }
 
 for (const workflow of [".github/workflows/ci.yml", ".github/workflows/provenance.yml"]) {
@@ -342,8 +275,6 @@ for (const workflow of [".github/workflows/ci.yml", ".github/workflows/provenanc
   }
 }
 
-validateReservedGraphNaming();
-validateRustGraphCoreNaming();
 validateGraphConsumerBoundaries();
 validateLocalCiEquivalent();
 
@@ -386,11 +317,11 @@ function validatePackageManifest(packagePath, manifest, track) {
         "descriptors",
         "graph-search",
         "graph-release",
+        "graph-serve",
         "graph-query",
         "graph-pipeline",
         "validation-contract",
         "validation-python",
-        "graph-reference-evidence",
         "inspect-symbol-parity",
         "source-extraction",
         "README.md"
@@ -414,20 +345,12 @@ function validatePackageManifest(packagePath, manifest, track) {
     if (manifest.private !== true) fail(`${manifest.name} must stay private/internal for ${releaseVersion}`);
     if (hasOwn(manifest, "publishConfig")) fail(`${manifest.name} must not declare publishConfig`);
   }
-  if (manifest.name.includes("code-review-graph") || manifest.name.includes("gungnir")) {
-    fail(`${manifest.name} uses a forbidden public package name`);
-  }
   if (track.dir === "opcore") {
     assertDeepEqual(manifest.bin, { opcore: "dist/index.js", "opcore-asp-provider": "dist/asp-provider-bin.js" }, `${manifest.name} bin`);
   } else if (track.dir === "asp-provider") {
     assertDeepEqual(manifest.bin, { "opcore-asp-provider": "dist/index.js" }, `${manifest.name} bin`);
   } else if (hasOwn(manifest, "bin")) {
     fail(`${manifest.name} must not declare CLI bins`);
-  }
-  for (const forbiddenBin of ["lattice", "crg", "cix", "rox"]) {
-    if (manifest.bin && hasOwn(manifest.bin, forbiddenBin)) {
-      fail(`${manifest.name} exposes forbidden old bin ${forbiddenBin}`);
-    }
   }
 }
 
@@ -454,11 +377,9 @@ function validateRustLintPolicy() {
 function validateLocalCiEquivalent() {
   const localCi = readFileSync("scripts/ci/run-local-ci-equivalent.sh", "utf8");
   for (const token of [
-    "npm run setup:tools",
     "npm run setup:check-clean",
     "npm run ci",
-    "npm run current-tools:validate-all",
-    "npm run current-tools:validate-rust-graph"
+    "npm run opcore:self-check"
   ]) {
     requireIncludes("scripts/ci/run-local-ci-equivalent.sh", localCi, token);
   }
@@ -538,59 +459,6 @@ function requireCommandBefore(path, content, earlier, later, reason) {
   }
 }
 
-function validateReservedGraphNaming() {
-  const legacyPackagePath = ["packages", "crg"].join("/");
-  const legacyPackageName = `@the-open-engine/opcore-${"crg"}`;
-  const legacyProviderName = ["cr", "g"].join("");
-  const quotedLegacyProviderName = `["']${escapeRegExp(legacyProviderName)}["']`;
-  const providerLiteralPattern = new RegExp(
-    `(?:^|[^A-Za-z0-9_$])["']?provider["']?\\s*:\\s*${quotedLegacyProviderName}`
-  );
-  const providerNameMetadataPattern = new RegExp(
-    `(?:^|[^A-Za-z0-9_$])["']?providerName["']?\\s*:\\s*${quotedLegacyProviderName}`
-  );
-  const providerNameConstantPattern = new RegExp(
-    `(?:^|[^A-Za-z0-9_$])(?:[A-Za-z_$][\\w$]*ProviderName|providerName)\\s*(?::\\s*[^=]+)?=\\s*${quotedLegacyProviderName}`
-  );
-  const checks = [
-    { label: "legacy graph package path", token: legacyPackagePath },
-    { label: "legacy graph package name", token: legacyPackageName },
-    { label: "legacy graph provider literal", pattern: providerLiteralPattern },
-    { label: "legacy graph provider name metadata", pattern: providerNameMetadataPattern },
-    { label: "legacy graph provider name constant", pattern: providerNameConstantPattern },
-    { label: "legacy graph product description", token: `code-intelligence monorepo for \`${legacyProviderName}\`` },
-    { label: "legacy graph package-track description", token: `graph production belongs in \`${legacyProviderName}\`` }
-  ];
-  const violations = [];
-  for (const path of scanTextFiles(".")) {
-    if (isReservedGraphNamingAllowlisted(path)) continue;
-    const content = readFileSync(path, "utf8");
-    const lines = content.split(/\r?\n/);
-    for (const [index, line] of lines.entries()) {
-      for (const check of checks) {
-        const matched = check.token ? line.includes(check.token) : check.pattern.test(line);
-        if (matched) violations.push(`${path}:${index + 1}: ${check.label}`);
-      }
-    }
-  }
-  if (violations.length > 0) {
-    fail(`reserved graph naming references must use graph implementation names:\n${violations.join("\n")}`);
-  }
-}
-
-function validateRustGraphCoreNaming() {
-  for (const path of ["Cargo.toml", "crates/graph-core/Cargo.toml"]) {
-    const content = readFileSync(path, "utf8");
-    if (/name\s*=\s*["'][^"']*crg[^"']*["']/i.test(content)) {
-      fail(`${path} must not use crg in Rust package, crate, or native artifact names`);
-    }
-  }
-  const graphPackage = readJson("packages/graph/package.json");
-  if (JSON.stringify(graphPackage).match(/lattice-crg-core|graph-crg-core/i)) {
-    fail("packages/graph/package.json must not use crg in native artifact metadata");
-  }
-}
-
 function validateGraphConsumerBoundaries() {
   const forbidden = [
     /@the-open-engine\/opcore-graph/,
@@ -618,15 +486,11 @@ function scanTextFiles(dir) {
     ".git",
     "node_modules",
     "dist",
-    ".ace",
     ".agents",
     ".claude",
     ".codex",
     ".gemini",
     ".opencode",
-    ".code-review-graph",
-    ".rox-cache",
-    ".robustness-engine-cache",
     "target"
   ]);
   const files = [];
@@ -667,20 +531,6 @@ function isTextFile(path) {
   if (["AGENTS.md", "CLAUDE.md", "README.md", "package-lock.json", "package.json"].includes(path)) return true;
   const dot = path.lastIndexOf(".");
   return dot !== -1 && textExtensions.has(path.slice(dot));
-}
-
-function isReservedGraphNamingAllowlisted(path) {
-  return [
-    /^docs\/graph-reference-evidence\//,
-    /^packages\/fixtures\/graph-pipeline\//,
-    /^packages\/fixtures\/graph-query\//,
-    /^packages\/fixtures\/graph-reference-evidence\//,
-    /^tests\/fixtures\/graph-reference-evidence\//
-  ].some((pattern) => pattern.test(path));
-}
-
-function escapeRegExp(value) {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function extractPushBranches(content) {

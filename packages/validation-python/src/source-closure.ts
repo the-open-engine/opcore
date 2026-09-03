@@ -26,7 +26,11 @@ export async function expandPythonSourceClosure({
   while (true) {
     const unresolvedTargets = selected.filter((path) => !projectContexts.has(path));
     if (unresolvedTargets.length > 0) {
-      for (const projectContext of await resolveContexts(context, unresolvedTargets)) {
+      for (const projectContext of await resolveContexts(
+        context,
+        unresolvedTargets,
+        projectToolKinds(context.selectedCheckIds ?? context.request.checks ?? [])
+      )) {
         projectContexts.set(projectContext.target, projectContext);
       }
     }
@@ -37,6 +41,24 @@ export async function expandPythonSourceClosure({
     if (expanded.length === selected.length && expanded.every((path, index) => path === selected[index])) return expanded;
     selected = expanded;
   }
+}
+
+function projectToolKinds(
+  selectedCheckIds: readonly string[]
+): readonly ("mypy" | "pyright" | "ruff" | "pytest")[] {
+  const kinds = new Set<"mypy" | "pyright" | "ruff" | "pytest">();
+  if (selectedCheckIds.includes("python.types")) {
+    kinds.add("mypy");
+    kinds.add("pyright");
+  }
+  if (
+    selectedCheckIds.includes("python.ruff-lint") ||
+    selectedCheckIds.includes("python.ruff-format")
+  ) {
+    kinds.add("ruff");
+  }
+  if (selectedCheckIds.includes("python.relevant-tests")) kinds.add("pytest");
+  return [...kinds];
 }
 
 function includePackageInitializers(

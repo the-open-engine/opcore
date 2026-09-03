@@ -36,7 +36,7 @@ describe("provenance history policy", () => {
       commitAll(repo);
 
       const result = run(repo, ["scripts/check-provenance.mjs"], { expectFailure: true });
-      assert.match(`${result.stderr}\n${result.stdout}`, /Forbidden Python code-review-graph provenance|refs\/heads\/main/);
+      assert.match(`${result.stderr}\n${result.stdout}`, /Forbidden copied git history provenance|refs\/heads\/main/);
     } finally {
       rmSync(repo, { recursive: true, force: true });
     }
@@ -44,7 +44,7 @@ describe("provenance history policy", () => {
 });
 
 function tempPolicyRepo() {
-  const repo = mkdtempSync(join(tmpdir(), "lattice-provenance-policy-"));
+  const repo = mkdtempSync(join(tmpdir(), "opcore-provenance-policy-"));
   mkdirSync(join(repo, "scripts"), { recursive: true });
   cpSync(join(repoRoot, "scripts/check-provenance.mjs"), join(repo, "scripts/check-provenance.mjs"));
   const init = spawnSync("git", ["init", "--quiet"], { cwd: repo, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });

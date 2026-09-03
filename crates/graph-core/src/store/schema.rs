@@ -1,11 +1,11 @@
-use super::metadata::{collect_rows, validate_metadata_json};
+use super::metadata::validate_metadata_json;
+use super::read::{CollectRows, Rows};
 use super::{
     now_rfc3339, search, StoreError, StoreResult, STORE_SCHEMA_VERSION, WAL_AUTOCHECKPOINT_PAGES,
 };
 use rusqlite::{params, Connection, OptionalExtension};
 use std::collections::BTreeSet;
 
-#[cfg_attr(not(test), allow(dead_code))]
 pub(super) const STORE_INDEX_NAMES: [&str; 8] = [
     "idx_nodes_file",
     "idx_nodes_kind",
@@ -318,7 +318,7 @@ pub(super) fn require_table(connection: &Connection, table: &str) -> StoreResult
 fn require_columns(connection: &Connection, table: &str, required: &[&str]) -> StoreResult<()> {
     let mut statement = connection.prepare(&format!("pragma table_info({table})"))?;
     let rows = statement.query_map([], |row| row.get::<_, String>(1))?;
-    let columns = collect_rows(rows)?.into_iter().collect::<BTreeSet<_>>();
+    let columns = Rows::collect(rows)?.into_iter().collect::<BTreeSet<_>>();
     for column in required {
         if !columns.contains(*column) {
             return Err(StoreError::SchemaMismatch {

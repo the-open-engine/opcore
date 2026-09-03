@@ -1,5 +1,9 @@
 import type { GraphProviderStatus, OpcoreRepoStatePayload } from "@the-open-engine/opcore-contracts";
 import {
+  PYTHON_RELEVANT_TESTS_CHECK_ID,
+  PYTHON_RUFF_FORMAT_CHECK_ID,
+  PYTHON_RUFF_LINT_CHECK_ID,
+  PYTHON_TYPES_CHECK_ID,
   createNodePythonProjectWorkspace,
   isPythonSourcePath,
   resolvePythonProjectContexts
@@ -11,6 +15,7 @@ import {
   readRepoCensus,
   type CensusTraversalFailure
 } from "./status-census.js";
+import { validationChecksForRepoPolicy } from "./repo-validation-policy.js";
 import { computeCoverage } from "./status-coverage.js";
 import type { RepoResolution } from "./status-repo.js";
 import { validationPolicySummary, validationSummary } from "./status-validation.js";
@@ -26,13 +31,19 @@ interface StatusWarningOptions {
 export async function createRepoState(resolution: RepoResolution): Promise<OpcoreRepoStatePayload> {
   const census = readRepoCensus(resolution);
   const coverage = computeCoverage(census.files);
+  const checks = validationChecksForRepoPolicy(resolution.root);
+  const activeCheckIds = checks
+    .filter((check) => (check.defaultScopes ?? check.supportedScopes).length > 0)
+    .map((check) => check.id);
   const pythonTargets = census.files.filter(isPythonSourcePath);
+  const pythonToolKinds = activePythonToolKinds(activeCheckIds);
   const pythonProjectContexts = pythonTargets.length === 0
     ? []
     : await resolvePythonProjectContexts({
         repoRoot: resolution.root,
         targets: pythonTargets,
-        workspace: createNodePythonProjectWorkspace(resolution.root)
+        workspace: createNodePythonProjectWorkspace(resolution.root),
+        toolKinds: pythonToolKinds
       });
   const validationStatus = createDefaultValidationStatusPayload({
     repoRoot: resolution.root,
@@ -40,7 +51,7 @@ export async function createRepoState(resolution: RepoResolution): Promise<Opcor
     pythonProjectContexts
   });
   const graphStatus = validationStatus.graph.status;
-  const policy = validationPolicySummary(resolution.root, validationStatus.adapterRegistry.checkIds);
+  const policy = validationPolicySummary(resolution.root, activeCheckIds);
   const validation = validationSummary(validationStatus, coverage, policy, pythonProjectContexts);
   const blockers = statusBlockers(graphStatus, census.traversalFailures);
   const level = activationLevel(graphStatus, validation.ready, blockers);
@@ -66,6 +77,21 @@ export async function createRepoState(resolution: RepoResolution): Promise<Opcor
     blockers,
     nextActions: nextCommands(resolution.root, graphStatus, census.traversalFailures)
   };
+}
+
+function activePythonToolKinds(activeCheckIds: readonly string[]): ("mypy" | "pyright" | "ruff" | "pytest")[] {
+  const toolKinds = new Set<"mypy" | "pyright" | "ruff" | "pytest">();
+  if (activeCheckIds.includes(PYTHON_TYPES_CHECK_ID)) {
+    toolKinds.add("mypy");
+    toolKinds.add("pyright");
+  }
+  if (activeCheckIds.includes(PYTHON_RUFF_LINT_CHECK_ID) || activeCheckIds.includes(PYTHON_RUFF_FORMAT_CHECK_ID)) {
+    toolKinds.add("ruff");
+  }
+  if (activeCheckIds.includes(PYTHON_RELEVANT_TESTS_CHECK_ID)) {
+    toolKinds.add("pytest");
+  }
+  return [...toolKinds];
 }
 
 function graphSummary(graphStatus: GraphProviderStatus): OpcoreRepoStatePayload["graph"] {

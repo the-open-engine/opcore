@@ -582,6 +582,43 @@ describe("validation command adapters", () => {
     }
   });
 
+  it("scopes changed files and base-tree reads to a nested Git workspace", async () => {
+    const temp = mkdtempSync(join(tmpdir(), "lattice-validation-nested-workspace-"));
+    try {
+      const appRoot = join(temp, "packages/app");
+      mkdirSync(join(appRoot, "src"), { recursive: true });
+      mkdirSync(join(temp, "packages/other/src"), { recursive: true });
+      writeFileSync(join(appRoot, "src/index.ts"), "export const value = 'app-base';\n");
+      writeFileSync(join(temp, "packages/other/src/index.ts"), "export const value = 'other-base';\n");
+      const baseCommit = initializeGitSnapshot(temp, ["packages/app/src/index.ts", "packages/other/src/index.ts"]);
+      writeFileSync(join(appRoot, "src/index.ts"), "export const value = 'app-changed';\n");
+      writeFileSync(join(appRoot, "src/new.ts"), "export const added = true;\n");
+      writeFileSync(join(temp, "packages/other/src/index.ts"), "export const value = 'other-changed';\n");
+
+      const workspace = createNodeValidationWorkspace({ repoRoot: appRoot });
+      const before = await workspace.readFile("src/index.ts", {
+        scope: { kind: "changed", baseRef: baseCommit, files: ["src/index.ts"] },
+        state: "before"
+      });
+      const changed = workspace.listChangedFiles(baseCommit);
+      const beforeFiles = workspace.listFiles({
+        scope: { kind: "changed", baseRef: baseCommit, files: ["src/index.ts"] },
+        state: "before"
+      });
+
+      assert.deepEqual(before, { status: "found", content: "export const value = 'app-base';\n" });
+      assert.deepEqual(changed, {
+        files: [
+          { path: "src/index.ts", status: "modified" },
+          { path: "src/new.ts", status: "added" }
+        ]
+      });
+      assert.deepEqual(beforeFiles, { files: ["src/index.ts", "src/new.ts"] });
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
   it("defaults changed-scope validation to introduced report mode", async () => {
     const temp = mkdtempSync(join(tmpdir(), "lattice-validation-changed-default-introduced-"));
     try {

@@ -10,6 +10,7 @@ export * from "./patch-tree-command.js";
 export * from "./path-policy.js";
 export * from "./planner.js";
 export * from "./language-service.js";
+export * from "./typescript-project/index.js";
 export * from "./symbol-command.js";
 export * from "./symbol-graph.js";
 export * from "./symbol-preview.js";

@@ -1212,6 +1212,64 @@ describe("validation-typescript adapter", () => {
     assert.deepEqual(result.diagnostics, []);
   });
 
+  it("does not report a runtime cycle for pure type-only imports", async () => {
+    const result = await runner({
+      files: {
+        "src/a.ts": "import type { B } from './b';\nexport interface A { child?: B }\n",
+        "src/b.ts": "import type { A } from './a';\nexport interface B { parent?: A }\n",
+        "src/index.ts": "import type { A } from './a';\nexport type Value = A;\n"
+      }
+    }).runValidation(
+      request({
+        checks: [TYPE_SCRIPT_IMPORT_GRAPH_CHECK_ID]
+      })
+    );
+
+    assert.equal(result.status, "passed", JSON.stringify(result.diagnostics, null, 2));
+    assert.deepEqual(result.diagnostics, []);
+  });
+
+  it("reports runtime cycles when a declaration mixes type and value imports", async () => {
+    const result = await runner({
+      files: {
+        "src/a.ts": "import { type B, b } from './b';\nexport type A = B;\nexport const a = b;\n",
+        "src/b.ts": "import { a } from './a';\nexport interface B { value: number }\nexport const b = a;\n",
+        "src/index.ts": "import { a } from './a';\nexport const value = a;\n"
+      }
+    }).runValidation(
+      request({
+        checks: [TYPE_SCRIPT_IMPORT_GRAPH_CHECK_ID]
+      })
+    );
+
+    assert.equal(result.status, "passed", JSON.stringify(result.diagnostics, null, 2));
+    assert.deepEqual(result.diagnostics.map((diagnostic) => diagnostic.code), ["TS_IMPORT_GRAPH_CYCLE"]);
+    assert.equal(result.diagnostics[0].message, "TypeScript import cycle detected: src/a.ts -> src/b.ts -> src/a.ts");
+  });
+
+  it("retains missing graph-edge diagnostics for type-only imports", async () => {
+    const result = await runner({
+      files: {
+        "src/index.ts": "import type { Value } from './types';\nexport type Result = Value;\n",
+        "src/types.ts": "export interface Value { id: string }\n"
+      },
+      graphProviderClient: graphClient({
+        factQuery: (query) => availableFactResult(query, [], [])
+      })
+    }).runValidation(
+      request({
+        checks: [TYPE_SCRIPT_IMPORT_GRAPH_CHECK_ID]
+      })
+    );
+
+    assert.equal(result.status, "passed");
+    assert.deepEqual(result.diagnostics.map((diagnostic) => diagnostic.code), ["TS_IMPORT_GRAPH_MISSING_EDGE"]);
+    assert.equal(
+      result.diagnostics[0].message,
+      "Missing IMPORTS_FROM graph edge for src/index.ts -> src/types.ts"
+    );
+  });
+
   it("reports configured TypeScript import layer rule violations", async () => {
     const result = await runner({
       checks: createTypeScriptValidationChecks({
@@ -1870,105 +1928,46 @@ describe("validation-typescript adapter", () => {
     );
   });
 
-  it("reports unreferenced source files and unused exported types from graph facts", async () => {
+  it("does not report entrypoint-reachable exported types as unsupported", async () => {
     const nodes = [
+      fileNode("src/index.ts"),
+      fileNode("src/types.ts"),
       {
-        id: "file:src/index.ts",
-        kind: "File",
-        path: "src/index.ts",
-        attributes: {
-          language: "typescript"
-        }
-      },
-      {
-        id: "file:src/used.ts",
-        kind: "File",
-        path: "src/used.ts",
-        attributes: {
-          language: "typescript"
-        }
-      },
-      {
-        id: "file:src/orphan.ts",
-        kind: "File",
-        path: "src/orphan.ts",
-        attributes: {
-          language: "typescript"
-        }
-      },
-      {
-        id: "type:src/orphan.ts#ReferencedShape",
+        id: "type:src/types.ts#Shape",
         kind: "Type",
-        path: "src/orphan.ts",
-        name: "ReferencedShape",
-        attributes: {
-          exported: true,
-          exportKind: "named",
-          exportName: "ReferencedShape"
-        }
-      },
-      {
-        id: "type:src/orphan.ts#LocalExtension",
-        kind: "Type",
-        path: "src/orphan.ts",
-        name: "LocalExtension",
-        attributes: {
-          exported: false
-        }
-      },
-      {
-        id: "type:src/orphan.ts#UnusedShape",
-        kind: "Type",
-        path: "src/orphan.ts",
-        name: "UnusedShape",
-        attributes: {
-          exported: true,
-          exportKind: "named",
-          exportName: "UnusedShape"
-        }
-      },
-      {
-        id: "variable:src/used.ts#used",
-        kind: "Variable",
-        path: "src/used.ts",
-        name: "used",
-        attributes: {
-          exported: false
-        }
+        path: "src/types.ts",
+        name: "Shape",
+        attributes: { exported: true, exportKind: "named", exportName: "Shape" }
       }
     ];
     const edges = [
-      {
-        kind: "IMPORTS_FROM",
-        from: "file:src/index.ts",
-        to: "file:src/used.ts"
-      },
-      {
-        kind: "CONTAINS",
-        from: "file:src/used.ts",
-        to: "variable:src/used.ts#used"
-      },
-      {
-        kind: "CONTAINS",
-        from: "file:src/orphan.ts",
-        to: "type:src/orphan.ts#ReferencedShape"
-      },
-      {
-        kind: "CONTAINS",
-        from: "file:src/orphan.ts",
-        to: "type:src/orphan.ts#LocalExtension"
-      },
-      {
-        kind: "CONTAINS",
-        from: "file:src/orphan.ts",
-        to: "type:src/orphan.ts#UnusedShape"
-      },
-      {
-        kind: "INHERITS",
-        from: "type:src/orphan.ts#LocalExtension",
-        to: "type:src/orphan.ts#ReferencedShape"
-      }
+      importEdge("src/index.ts", "src/types.ts"),
+      containsEdge("src/types.ts", "type:src/types.ts#Shape")
     ];
+    const result = await runner({
+      files: {
+        "package.json": JSON.stringify({ main: "./src/index.ts" }),
+        "src/index.ts": "export type { Shape } from './types';\n",
+        "src/types.ts": "export interface Shape { width: number }\n"
+      },
+      graphProviderClient: graphClient({
+        status: (validationRequest) => ({
+          ...availableStatus(validationRequest.graph.mode, validationRequest.repo),
+          handshake: graphHandshake()
+        }),
+        factQuery: (query) => availableFactResult(query, nodes, edges)
+      })
+    }).runValidation(request({
+      checks: [TYPE_SCRIPT_DEAD_CODE_CHECK_ID],
+      scope: { kind: "files", files: ["src/types.ts"] }
+    }));
+
+    assert.equal(result.status, "passed");
+    assert.deepEqual(result.diagnostics, []);
+  });
+
+  it("reports unreferenced source files and unused exported types from graph facts", async () => {
+    const { nodes, edges } = unusedTypeGraphFacts();
 
     const result = await runner({
       files: {
@@ -2502,46 +2501,9 @@ describe("validation-typescript adapter", () => {
   it("does not report used direct re-exported callables as dead exports with the real graph provider", () => {
     const repo = mkdtempSync(join(tmpdir(), "lattice-dead-code-reexport-"));
     try {
-      mkdirSync(join(repo, "src"), { recursive: true });
-      writeFileSync(
-        join(repo, "tsconfig.json"),
-        `${JSON.stringify(
-          {
-            compilerOptions: {
-              target: "ES2022",
-              module: "ESNext",
-              moduleResolution: "Bundler",
-              strict: true
-            },
-            include: ["src/**/*.ts"]
-          },
-          null,
-          2
-        )}\n`
-      );
-      writeFileSync(join(repo, "src/source.ts"), "export function add() { return 1; }\n");
-      writeFileSync(join(repo, "src/barrel.ts"), "export { add as addFromBarrel } from './source';\n");
-      writeFileSync(
-        join(repo, "src/index.ts"),
-        "import { addFromBarrel } from './barrel';\nfunction run() { return addFromBarrel(); }\nrun();\n"
-      );
-
-      const graphBuild = spawnSync(process.execPath, ["packages/opcore/dist/advanced/index.js", "graph", "build", "--repo", repo, "--json"], {
-        cwd: process.cwd(),
-        encoding: "utf8"
-      });
-      assert.equal(graphBuild.status, 0, graphBuild.stderr || graphBuild.stdout);
-
-      const edgeQuery = spawnSync(
-        process.execPath,
-        ["packages/opcore/dist/advanced/index.js", "graph", "query", "--repo", repo, "--kind", "edges", "--json"],
-        {
-          cwd: process.cwd(),
-          encoding: "utf8"
-        }
-      );
-      assert.equal(edgeQuery.status, 0, edgeQuery.stderr || edgeQuery.stdout);
-      const edges = JSON.parse(edgeQuery.stdout).graphQuery.edges;
+      writeDirectReexportFixture(repo);
+      runOpcoreJson(repo, ["graph", "build"]);
+      const edges = runOpcoreJson(repo, ["graph", "query", "--kind", "edges"]).graphQuery.edges;
       assert.equal(
         edges.some(
           (edge) =>
@@ -2550,16 +2512,8 @@ describe("validation-typescript adapter", () => {
         true
       );
 
-      const nodeQuery = spawnSync(
-        process.execPath,
-        ["packages/opcore/dist/advanced/index.js", "graph", "query", "--repo", repo, "--kind", "nodes", "--json"],
-        {
-          cwd: process.cwd(),
-          encoding: "utf8"
-        }
-      );
-      assert.equal(nodeQuery.status, 0, nodeQuery.stderr || nodeQuery.stdout);
-      const fileNode = JSON.parse(nodeQuery.stdout).graphQuery.nodes.find((node) => node.id === "file:src/barrel.ts");
+      const nodes = runOpcoreJson(repo, ["graph", "query", "--kind", "nodes"]).graphQuery.nodes;
+      const fileNode = nodes.find((node) => node.id === "file:src/barrel.ts");
       assert.deepEqual(fileNode?.attributes?.exports, [
         {
           kind: "named",
@@ -2571,30 +2525,17 @@ describe("validation-typescript adapter", () => {
         }
       ]);
 
-      const check = spawnSync(
-        process.execPath,
-        [
-          "packages/opcore/dist/advanced/index.js",
-          "check",
-          "files",
-          "src/source.ts",
-          "src/barrel.ts",
-          "src/index.ts",
-          "--repo",
-          repo,
-          "--checks",
-          TYPE_SCRIPT_DEAD_CODE_CHECK_ID,
-          "--graph-mode",
-          "required",
-          "--json"
-        ],
-        {
-          cwd: process.cwd(),
-          encoding: "utf8"
-        }
-      );
-      assert.equal(check.status, 0, check.stderr || check.stdout);
-      const payload = JSON.parse(check.stdout);
+      const payload = runOpcoreJson(repo, [
+        "check",
+        "files",
+        "src/source.ts",
+        "src/barrel.ts",
+        "src/index.ts",
+        "--checks",
+        TYPE_SCRIPT_DEAD_CODE_CHECK_ID,
+        "--graph-mode",
+        "required"
+      ]);
       assert.deepEqual(
         payload.validationResult.diagnostics.map((diagnostic) => diagnostic.code),
         ["TS_DEAD_CODE_UNUSED_FILE"]
@@ -2608,7 +2549,7 @@ describe("validation-typescript adapter", () => {
     }
   });
 
-  it("finds relevant tests from symbol TESTED_BY endpoints", async () => {
+  it("finds direct relevant tests from symbol TESTED_BY endpoints", async () => {
     const result = await runner({
       files: {
         "src/index.ts": "export const value = 1;"
@@ -2636,7 +2577,131 @@ describe("validation-typescript adapter", () => {
     );
 
     assert.equal(result.status, "passed");
-    assert.deepEqual(result.diagnostics.map((diagnostic) => diagnostic.code), ["TS_RELEVANT_TESTS_FOUND"]);
+    assert.deepEqual(result.diagnostics, []);
+  });
+
+  it("inherits relevant-test evidence through directed reverse importers", async () => {
+    const edges = [
+      importEdge("src/index.ts", "src/implementation.ts"),
+      {
+        kind: "TESTED_BY",
+        from: "function:src/index.ts#value",
+        to: "test:src/index.test.ts#covers value"
+      }
+    ];
+    const result = await runner({
+      files: {
+        "src/implementation.ts": "export const value = 1;",
+        "src/index.ts": "export { value } from './implementation';"
+      },
+      graphProviderClient: graphClient({
+        factQuery: (query) => availableFactResult(query, [], query.selector.kind === "edges" ? edges : [])
+      })
+    }).runValidation(
+      request({
+        checks: [TYPE_SCRIPT_RELEVANT_TESTS_CHECK_ID],
+        scope: { kind: "files", files: ["src/implementation.ts"] }
+      })
+    );
+
+    assert.equal(result.status, "passed");
+    assert.deepEqual(result.diagnostics, []);
+  });
+
+  it("does not inherit relevant-test evidence from unrelated tested files", async () => {
+    const edges = [
+      importEdge("src/index.ts", "src/other.ts"),
+      {
+        kind: "TESTED_BY",
+        from: "file:src/index.ts",
+        to: "test:src/index.test.ts#covers index"
+      }
+    ];
+    const result = await runner({
+      files: {
+        "src/implementation.ts": "export const value = 1;",
+        "src/index.ts": "export { other } from './other';",
+        "src/other.ts": "export const other = 2;"
+      },
+      graphProviderClient: graphClient({
+        factQuery: (query) => availableFactResult(query, [], query.selector.kind === "edges" ? edges : [])
+      })
+    }).runValidation(
+      request({
+        checks: [TYPE_SCRIPT_RELEVANT_TESTS_CHECK_ID],
+        scope: { kind: "files", files: ["src/implementation.ts"] }
+      })
+    );
+
+    assert.equal(result.status, "passed");
+    assert.deepEqual(result.diagnostics.map((diagnostic) => diagnostic.code), ["TS_RELEVANT_TESTS_ABSENT"]);
+  });
+
+  it("traverses cyclic reverse importers once while finding relevant tests", async () => {
+    const edges = [
+      importEdge("src/index.ts", "src/implementation.ts"),
+      importEdge("src/helper.ts", "src/index.ts"),
+      importEdge("src/index.ts", "src/helper.ts"),
+      {
+        kind: "TESTED_BY",
+        from: "function:src/helper.ts#exercise",
+        to: "test:src/helper.test.ts#covers exercise"
+      }
+    ];
+    const result = await runner({
+      files: {
+        "src/implementation.ts": "export const value = 1;",
+        "src/index.ts": "export { value } from './implementation';\nexport { exercise } from './helper';",
+        "src/helper.ts": "export { value } from './index';\nexport const exercise = true;"
+      },
+      graphProviderClient: graphClient({
+        factQuery: (query) => availableFactResult(query, [], query.selector.kind === "edges" ? edges : [])
+      })
+    }).runValidation(
+      request({
+        checks: [TYPE_SCRIPT_RELEVANT_TESTS_CHECK_ID],
+        scope: { kind: "files", files: ["src/implementation.ts"] }
+      })
+    );
+
+    assert.equal(result.status, "passed");
+    assert.deepEqual(result.diagnostics, []);
+  });
+
+  it("fails closed when required relevant-test graph queries fail", async () => {
+    const result = await runner({
+      graphProviderClient: graphClient({
+        status: (validationRequest) => availableStatus(validationRequest.graph.mode, validationRequest.repo),
+        factQuery: () => ({
+          status: graphFailure("error", "query_failed", "required")
+        })
+      })
+    }).runValidation(
+      request({
+        checks: [TYPE_SCRIPT_RELEVANT_TESTS_CHECK_ID],
+        graph: {
+          mode: "required",
+          provider: "opcore-graph"
+        }
+      })
+    );
+
+    assert.equal(result.status, "provider_failure");
+    assert.equal(result.failure.category, "provider_failure");
+  });
+
+  it("does not require relevant-test evidence for test files", async () => {
+    const result = await runner({
+      files: {
+        "src/index.test.ts": "test('works', () => {});\n"
+      }
+    }).runValidation(request({
+      checks: [TYPE_SCRIPT_RELEVANT_TESTS_CHECK_ID],
+      scope: { kind: "files", files: ["src/index.test.ts"] }
+    }));
+
+    assert.equal(result.status, "skipped");
+    assert.deepEqual(result.diagnostics, []);
   });
 
   it("maps graph query failures to runner provider_failure", async () => {
@@ -2724,6 +2789,90 @@ describe("validation-typescript adapter", () => {
     });
   });
 });
+
+function unusedTypeGraphFacts() {
+  const nodes = [
+    fileNode("src/index.ts"),
+    fileNode("src/used.ts"),
+    fileNode("src/orphan.ts"),
+    {
+      id: "type:src/orphan.ts#ReferencedShape",
+      kind: "Type",
+      path: "src/orphan.ts",
+      name: "ReferencedShape",
+      attributes: { exported: true, exportKind: "named", exportName: "ReferencedShape" }
+    },
+    {
+      id: "type:src/orphan.ts#LocalExtension",
+      kind: "Type",
+      path: "src/orphan.ts",
+      name: "LocalExtension",
+      attributes: { exported: false }
+    },
+    {
+      id: "type:src/orphan.ts#UnusedShape",
+      kind: "Type",
+      path: "src/orphan.ts",
+      name: "UnusedShape",
+      attributes: { exported: true, exportKind: "named", exportName: "UnusedShape" }
+    },
+    {
+      id: "variable:src/used.ts#used",
+      kind: "Variable",
+      path: "src/used.ts",
+      name: "used",
+      attributes: { exported: false }
+    }
+  ];
+  const edges = [
+    importEdge("src/index.ts", "src/used.ts"),
+    containsEdge("src/used.ts", "variable:src/used.ts#used"),
+    containsEdge("src/orphan.ts", "type:src/orphan.ts#ReferencedShape"),
+    containsEdge("src/orphan.ts", "type:src/orphan.ts#LocalExtension"),
+    containsEdge("src/orphan.ts", "type:src/orphan.ts#UnusedShape"),
+    {
+      kind: "INHERITS",
+      from: "type:src/orphan.ts#LocalExtension",
+      to: "type:src/orphan.ts#ReferencedShape"
+    }
+  ];
+  return { nodes, edges };
+}
+
+function writeDirectReexportFixture(repo) {
+  mkdirSync(join(repo, "src"), { recursive: true });
+  writeFileSync(
+    join(repo, "tsconfig.json"),
+    `${JSON.stringify({
+      compilerOptions: {
+        target: "ES2022",
+        module: "ESNext",
+        moduleResolution: "Bundler",
+        strict: true
+      },
+      include: ["src/**/*.ts"]
+    })}\n`
+  );
+  writeFileSync(join(repo, "src/source.ts"), "export function add() { return 1; }\n");
+  writeFileSync(join(repo, "src/barrel.ts"), "export { add as addFromBarrel } from './source';\n");
+  writeFileSync(
+    join(repo, "src/index.ts"),
+    "import { addFromBarrel } from './barrel';\nfunction run() { return addFromBarrel(); }\nrun();\n"
+  );
+}
+
+function runOpcoreJson(repo, args) {
+  const result = spawnSync(
+    process.execPath,
+    ["packages/opcore/dist/advanced/index.js", ...args, "--repo", repo, "--json"],
+    {
+      cwd: process.cwd(),
+      encoding: "utf8"
+    }
+  );
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  return JSON.parse(result.stdout);
+}
 
 function runner(options = {}) {
   return createValidationRunner({

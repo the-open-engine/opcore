@@ -251,6 +251,134 @@ describe("validation runner", () => {
     );
   });
 
+  it("finalizes inactive capability receipts after provider, infrastructure, and fail-fast exits", async () => {
+    const inactiveRuff = check("python.ruff-lint", {
+      defaultSeverity: "warning",
+      defaultScopes: [],
+      inactiveResult: (_context, state) => ({
+        diagnostics: [],
+        pythonCapabilityRuns: [{
+          schemaId: "opcore.python.validation-capability-run",
+          schemaVersion: 1,
+          checkId: "python.ruff-lint",
+          capability: "ruff_lint",
+          state,
+          durationMs: 0,
+          diagnosticCount: 0
+        }]
+      })
+    });
+    const assertInactiveReceipt = (result, label) => {
+      const run = result.manifest.runs.find((entry) => entry.checkId === "python.ruff-lint");
+      assert.equal(run?.pythonCapabilityRuns?.[0]?.state, "not_applicable", label);
+    };
+
+    const providerFailure = await runner(
+      [
+        check("imports.no-cycles", {
+          requiresGraph: true,
+          graphRequirements: () => [{ operation: "factQuery", selector: { kind: "nodes" } }]
+        }),
+        inactiveRuff
+      ],
+      {
+        graphProviderClient: graphClient({
+          status: (validationRequest) => availableStatus(validationRequest.graph.mode, validationRequest.repo),
+          factQuery: () => ({ status: graphFailure("error", "query_failed", "required") })
+        })
+      }
+    ).runValidation(request({
+      checks: ["imports.no-cycles"],
+      graph: { mode: "required", provider: "opcore-graph" }
+    }));
+    assert.equal(providerFailure.status, "provider_failure");
+    assertInactiveReceipt(providerFailure, "provider");
+
+    const infrastructureFailure = await runner([
+      check("fixture.infrastructure", {
+        run: () => {
+          throw new Error("fixture infrastructure failure");
+        }
+      }),
+      inactiveRuff
+    ]).runValidation(request({ checks: ["fixture.infrastructure"] }));
+    assert.equal(infrastructureFailure.status, "infrastructure_failure");
+    assertInactiveReceipt(infrastructureFailure, "infrastructure");
+
+    const failFast = await createValidationRunner({
+      workspace: testWorkspace(),
+      failFast: true,
+      checks: [
+        check("fixture.policy", {
+          diagnostics: [{
+            category: "policy",
+            severity: "error",
+            message: "fixture policy finding",
+            path: "src/index.ts"
+          }]
+        }),
+        inactiveRuff
+      ]
+    }).runValidation(request({ checks: ["fixture.policy"] }));
+    assert.equal(failFast.status, "policy_failure");
+    assertInactiveReceipt(failFast, "fail-fast");
+  });
+
+  it("does not synthesize inactive runs for globally selected checks during incremental introduced validation", async () => {
+    const selectedCheckIds = ["python.ruff-lint", "python.ruff-format"];
+    const observedSelections = [];
+    const ruffCheck = (id, capability) => check(id, {
+      defaultSeverity: "warning",
+      defaultScopes: [],
+      inactiveResult: (_context, state) => ({
+        diagnostics: [],
+        pythonCapabilityRuns: [{
+          schemaId: "opcore.python.validation-capability-run",
+          schemaVersion: 1,
+          checkId: id,
+          capability,
+          state,
+          durationMs: 0,
+          diagnosticCount: 0
+        }]
+      }),
+      run: (context) => {
+        observedSelections.push([id, ...context.selectedCheckIds]);
+        return { diagnostics: [] };
+      }
+    });
+    const result = await createValidationRunner({
+      workspace: testWorkspace(),
+      onCheckComplete: () => {},
+      checks: [
+        ruffCheck("python.ruff-lint", "ruff_lint"),
+        ruffCheck("python.ruff-format", "ruff_format")
+      ]
+    }).runValidation(request({
+      checks: selectedCheckIds,
+      reportMode: "introduced",
+      overlays: [{ path: "src/index.ts", action: "write", content: "export const value = 'introduced';" }]
+    }));
+
+    assert.equal(result.status, "passed", JSON.stringify(result, null, 2));
+    assert.deepEqual(
+      result.manifest.runs.map((run) => [run.checkId, run.pythonCapabilityRuns]),
+      [
+        ["python.ruff-lint", undefined],
+        ["python.ruff-format", undefined]
+      ]
+    );
+    assert.deepEqual(
+      observedSelections,
+      [
+        ["python.ruff-lint", ...selectedCheckIds],
+        ["python.ruff-lint", ...selectedCheckIds],
+        ["python.ruff-format", ...selectedCheckIds],
+        ["python.ruff-format", ...selectedCheckIds]
+      ]
+    );
+  });
+
   it("streams each completed check result in order", async () => {
     const events = [];
     const result = await createValidationRunner({

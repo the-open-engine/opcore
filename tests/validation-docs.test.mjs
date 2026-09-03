@@ -139,6 +139,22 @@ const expectedDocsCheckIds = [
     assert.equal(result.diagnostics.every((diagnostic) => ["AGENTS.md", "CLAUDE.md", "docs/guide.md"].includes(diagnostic.path)), true);
   });
 
+  it("accepts an explicit WHY rationale in a context-doc rule", async () => {
+    const result = await runner({
+      files: {
+        "AGENTS.md": validGuidance("rule rationale")
+      }
+    }).runValidation(
+      request({
+        checks: [DOCS_RULES_WHY_CHECK_ID],
+        scope: { kind: "files", files: ["AGENTS.md"] }
+      })
+    );
+
+    assert.equal(result.status, "passed");
+    assert.deepEqual(result.diagnostics, []);
+  });
+
   it("applies docs policy maximum line and section limits", async () => {
     const result = await runner({
       files: {

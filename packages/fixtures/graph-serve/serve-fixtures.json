@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "issue": "#47",
+  "origin": "covibes-authored-synthetic",
+  "protocols": ["opcore.graph.daemon", "jsonrpc-2.0"],
+  "envelopes": [
+    {
+      "id": "serve-jsonl-ping",
+      "direction": "client_to_daemon",
+      "protocol": "opcore.graph.daemon",
+      "payload": {
+        "protocol": "opcore.graph.daemon",
+        "requestId": "serve-ping-1",
+        "schemaVersion": 1,
+        "operation": "ping",
+        "repo": {
+          "repoId": "synthetic"
+        }
+      }
+    },
+    {
+      "id": "mcp-initialize",
+      "direction": "client_to_daemon",
+      "protocol": "jsonrpc-2.0",
+      "payload": {
+        "jsonrpc": "2.0",
+        "id": "mcp-init-1",
+        "method": "initialize",
+        "params": {
+          "protocolVersion": "2024-11-05"
+        }
+      }
+    }
+  ]
+}

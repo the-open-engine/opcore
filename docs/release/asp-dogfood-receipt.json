@@ -4261,8 +4261,7 @@
     "temp": true,
     "isolated": true,
     "sharedStateMutated": false,
-    "pathSanitized": true,
-    "aceRuntimeBinExcluded": true
+    "pathSanitized": true
   },
   "hostFixture": {
     "repo": "/private/var/folders/cd/q981l5pn1l3gylf5_gddbkbw0000gn/T/opcore-asp-dogfood-nKYzZH/asp-host-fixture",
@@ -6889,143 +6888,21 @@
     "diagnosticsCount": 1,
     "hostOwnedFieldLeak": false
   },
-  "currentToolGuardrails": [
-    {
-      "id": "current-tools-validate-changed",
-      "command": [
-        "npm",
-        "run",
-        "current-tools:validate-changed"
-      ],
-      "status": "passed",
-      "exitCode": 0,
-      "stdoutSha256": "c841ab97cd599893cd51807789d41d37c67133d4abd1315aba222fca4c3beae8",
-      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "assertion": "current-tools:validate-changed remains active",
-      "retained": true
-    },
-    {
-      "id": "current-tools-validate-rust-graph",
-      "command": [
-        "npm",
-        "run",
-        "current-tools:validate-rust-graph"
-      ],
-      "status": "passed",
-      "exitCode": 0,
-      "stdoutSha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
-      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "output": [],
-      "assertion": "current-tools:validate-rust-graph remains active",
-      "retained": true
-    },
-    {
-      "id": "current-tools-validate-all",
-      "command": [
-        "npm",
-        "run",
-        "current-tools:validate-all"
-      ],
-      "status": "retained-not-run",
-      "exitCode": null,
-      "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "retained": true,
-      "assertion": "Retained old-tool guardrail; omitted unless --include-current-tools-all is passed"
-    }
-  ],
   "unsupportedSurfaces": [
     {
       "surface": "inspect",
       "status": "parity-blocker",
       "cleanCoverage": false,
-      "blocker": "ASP dogfood covers Core check/evaluate only; inspect request/response mapping remains outside #120."
+      "blocker": "ASP dogfood covers Core check/evaluate only; inspect mapping remains outside this receipt."
     },
     {
       "surface": "edit",
-      "status": "retained-old-tool-gate",
+      "status": "parity-blocker",
       "cleanCoverage": false,
-      "blocker": "ASP dogfood does not authorize edits or apply behavior; edit parity remains covered by current old-tool and cutover gates."
+      "blocker": "ASP dogfood does not authorize edits or apply behavior; installed Opcore evidence covers edit behavior."
     }
   ],
-  "parityBlockers": [
-    {
-      "source": "docs/validation/rust-adapter-parity.md:26",
-      "detail": "command receipts, but it does not include maintainer approval to retire Rust retained-tool rows."
-    },
-    {
-      "source": "docs/validation/rust-adapter-parity.md:28",
-      "detail": "| Surface | Decision | Evidence | Why retirement is not accepted | Current guardrail action |"
-    },
-    {
-      "source": "docs/validation/rust-adapter-parity.md:29",
-      "detail": "|---|---|---|---|---|"
-    },
-    {
-      "source": "docs/validation/rust-adapter-parity.md:30",
-      "detail": "| `rust.rustdoc` | retained | #29 receipt records no graph replacement evidence. | Rustdoc diagnostics, broken intra-doc links, and documentation-policy failures remain unique current-tool evidence. No installed-artifact receipt plus maintainer approval proves exact replacement. | Keep current external Rust guardrails active for rustdoc coverage. |"
-    },
-    {
-      "source": "docs/validation/rust-adapter-parity.md:31",
-      "detail": "| `rust.import-graph` | deferred | #29 records Rust graph `IMPORTS_FROM`/`DEPENDS_ON` facts; #30 records installed Rust graph build/query/impact/review-context/detect-changes/search receipts. | Graph facts are useful parity evidence, but rustdoc and cargo-depgraph-enriched import checks remain retained where graph facts are not sufficient. No maintainer approval flips this row. | Keep current external import-graph guardrails active while native graph evidence complements them. |"
-    },
-    {
-      "source": "docs/validation/rust-adapter-parity.md:32",
-      "detail": "| `rust.dead-code` | retained | #29 records exported symbol metadata and graph-backed dead-public-export signals. | Cargo `dead_code` diagnostics and compiler reachability remain uniquely provided by current tools. Graph dead-public-export evidence is not exact replacement evidence. | Keep current external dead-code guardrails active. |"
-    },
-    {
-      "source": "docs/validation/rust-adapter-parity.md:33",
-      "detail": "| `rust.unused-deps` | retained | #29 records no graph replacement evidence. | Cargo-udeps unused dependency analysis remains the unique evidence source. | Keep current external unused-dependency guardrails active. |"
-    },
-    {
-      "source": "docs/validation/rust-adapter-parity.md:34",
-      "detail": "| `rust.function-metrics` | retained | #29 records Rust function/method spans and signatures; #30 records installed Rust graph receipts. | Rust-code-analysis complexity, line-count, and parameter-threshold metrics remain unique current-tool evidence. Spans/signatures are not exact metric replacement evidence. | Keep current external function-metric guardrails active. |"
-    },
-    {
-      "source": "docs/validation/rust-adapter-parity.md:35",
-      "detail": "| `current-tools:validate-rust-graph` | retained | #29 records the aggregate Rust graph guardrail as retained; #30 Rust receipts are graph-owned installed command receipts. | No receipt proves an exact aggregate replacement for the current-tools Rust graph gate, and no maintainer approval retires it. | Continue running `npm run current-tools:validate-rust-graph`. |"
-    },
-    {
-      "source": "docs/validation/rust-adapter-parity.md:36",
-      "detail": "| Rust portion of `current-tools:validate-changed` | retained | #30 installed `opcore check changed` receipt uses `--checks typescript.syntax`; #29 carries only Rust comparison evidence with `oldToolReplacementClaimed: false`. | The installed changed-check receipt does not exercise Rust retained-tool coverage, and no Tom approval flips Rust changed-file guardrails. | Continue running `npm run current-tools:validate-changed` for changed Rust-owned inputs and mixed changes. |"
-    },
-    {
-      "source": "docs/validation/rust-adapter-parity.md:38",
-      "detail": "## Native Rust Checks"
-    },
-    {
-      "source": "docs/validation/rust-adapter-parity.md:40",
-      "detail": "`@the-open-engine/opcore-validation-rust` exports these provider assessment checks:"
-    },
-    {
-      "source": "docs/validation/rust-adapter-parity.md:42",
-      "detail": "| Check | Native behavior | Retained compatibility |"
-    },
-    {
-      "source": "docs/validation/rust-retained-tools-receipts-2026-06-23.md:59",
-      "detail": "## Guardrails"
-    },
-    {
-      "source": "docs/validation/rust-retained-tools-receipts-2026-06-23.md:61",
-      "detail": "- No validation daemon."
-    },
-    {
-      "source": "docs/validation/rust-retained-tools-receipts-2026-06-23.md:62",
-      "detail": "- No hidden validation cache."
-    },
-    {
-      "source": "docs/validation/rust-retained-tools-receipts-2026-06-23.md:63",
-      "detail": "- No Rox imports, Rox cache reads, or Rox shellouts from native Opcore checks."
-    },
-    {
-      "source": "docs/validation/rust-retained-tools-receipts-2026-06-23.md:64",
-      "detail": "- Current external Rox gates stay active until downstream #27/#28/#29 accept replacement evidence."
-    },
-    {
-      "source": "docs/validation/rust-retained-tools-receipts-2026-06-23.md:65",
-      "detail": "- Results are provider assessments only, not ASP host decisions or release authority."
-    }
-  ],
+  "parityBlockers": [],
   "authority": {
     "hostOwnsDecisions": true,
     "providerOutputIsHostDecision": false,
@@ -7035,15 +6912,25 @@
     }
   },
   "publicReleaseActions": [],
-  "oldToolReplacementClaimed": false,
   "forbiddenMarkerScan": {
     "scannedTextCount": 2,
     "findingCount": 0,
     "markersBlocked": [
       "opcore asp serve",
-      "opcore asp",
-      "dist/bin/lattice",
-      ".ace/runtime"
+      "opcore asp"
     ]
+  },
+  "selfValidation": {
+    "id": "opcore-self-check",
+    "command": [
+      "npm",
+      "run",
+      "opcore:self-check"
+    ],
+    "status": "passed",
+    "exitCode": 0,
+    "stdoutSha256": "98006e4c11c39bfe79e15f629ed3e2f063b9c16f0c7ad5708d7d6e855614c01d",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "assertion": "Opcore validated its own changed implementation surface"
   }
 }

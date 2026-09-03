@@ -32,13 +32,6 @@ export function sortValidationDiagnostics(diagnostics: readonly ValidationDiagno
   return [...diagnostics].sort(compareDiagnostics);
 }
 
-export function scriptKindForPath(path: string): ts.ScriptKind {
-  if (path.endsWith(".tsx")) return ts.ScriptKind.TSX;
-  if (path.endsWith(".jsx")) return ts.ScriptKind.JSX;
-  if (path.endsWith(".js")) return ts.ScriptKind.JS;
-  return ts.ScriptKind.TS;
-}
-
 function compareDiagnostics(left: ValidationDiagnostic, right: ValidationDiagnostic): number {
   return (
     (left.path ?? "").localeCompare(right.path ?? "") ||

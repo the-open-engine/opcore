@@ -7,4 +7,5 @@ declare module "smol-toml" {
   }
 
   export function parse(toml: string, options?: ParseOptions): TomlTable;
+  export function stringify(table: TomlTable): string;
 }

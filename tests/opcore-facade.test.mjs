@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { spawn, spawnSync } from "node:child_process";
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -17,6 +17,7 @@ import { compactScanValidationResult } from "../packages/opcore/dist/scan-valida
 const repoRoot = fileURLToPath(new URL("..", import.meta.url));
 const opcoreBin = resolve(repoRoot, "packages/opcore/dist/index.js");
 const sourceFixtureRoot = resolve(repoRoot, "packages/fixtures/source-extraction/wave1");
+const systemToolPath = "/usr/bin:/bin:/opt/homebrew/bin";
 
 describe("opcore public facade", () => {
   it("runs zero-command scan with coverage-first output and only .opcore artifacts", () => {
@@ -27,13 +28,12 @@ describe("opcore public facade", () => {
       assert.equal(human.stderr, "");
       assert.equal(firstNonEmptyLine(human.stdout).startsWith("Coverage"), true);
       assert.equal(human.stdout.indexOf("Coverage") < human.stdout.indexOf("Findings"), true);
-      assert.doesNotMatch(human.stdout, /\blattice\b|\bcrg\b|\bcix\b|\brox\b|ASP setup|ACE setup|sibling checkout/i);
+      assert.doesNotMatch(human.stdout, /\blattice\b|ASP setup|sibling checkout/i);
       assert.equal(existsSync(join(fixtureRoot, ".opcore", "report.json")), true);
       assert.equal(existsSync(join(fixtureRoot, ".opcore", "history.jsonl")), true);
       assert.equal(existsSync(join(fixtureRoot, ".opcore", "telemetry.jsonl")), true);
       assert.deepEqual(readdirSync(join(fixtureRoot, ".opcore")).sort(), ["history.jsonl", "report.json", "telemetry.jsonl"]);
       assert.equal(existsSync(join(fixtureRoot, ".lattice")), false);
-      assert.equal(existsSync(join(fixtureRoot, ".ace")), false);
       assert.equal(existsSync(join(fixtureRoot, ".asp")), false);
       assert.deepEqual(
         collectRepoPaths(fixtureRoot).filter((path) => !before.includes(path) && path !== ".opcore" && !path.startsWith(".opcore/")),
@@ -279,7 +279,7 @@ describe("opcore public facade", () => {
     try {
       const human = runOpcore(["--version"], temp, 0);
       assert.equal(human.stderr, "");
-      assert.match(human.stdout, /^opcore 0\.2\.1\b/);
+      assert.match(human.stdout, /^opcore 0\.2\.2\b/);
       assert.equal(existsSync(join(temp, ".opcore")), false);
 
       const json = parseJson(runOpcore(["--version", "--json"], temp, 0).stdout);
@@ -287,7 +287,7 @@ describe("opcore public facade", () => {
       assert.equal(json.owner, "runtime");
       assert.equal(json.runtimeInfo.schemaVersion, 1);
       assert.equal(json.runtimeInfo.packageName, "opcore");
-      assert.equal(json.runtimeInfo.version, "0.2.1");
+      assert.equal(json.runtimeInfo.version, "0.2.2");
       assert.equal(json.runtimeInfo.bin, "opcore");
       assert.match(json.runtimeInfo.artifactSource, /^(source_checkout|installed_package|unknown)$/);
       assert.match(json.runtimeInfo.packageRoot, /packages\/opcore$/);
@@ -449,7 +449,89 @@ describe("opcore public facade", () => {
         })),
         []
       );
-      assert.deepEqual(degradedPythonTools, ["mypy", "pyright", "python", "pytest", "ruff"].sort());
+      assert.deepEqual(degradedPythonTools, ["mypy", "pyright", "pytest", "python"].sort());
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("keeps inactive Ruff tooling out of status degradation and missing-tools output", () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-python-inactive-ruff-status-"));
+    try {
+      mkdirSync(join(temp, ".venv", "bin"), { recursive: true });
+      mkdirSync(join(temp, ".opcore"), { recursive: true });
+      writeFileSync(join(temp, ".opcore", "config"), JSON.stringify({
+        validation: {
+          checks: {
+            disabled: ["python.syntax", "python.types", "python.relevant-tests"]
+          }
+        }
+      }, null, 2));
+      writeFileSync(join(temp, "pyproject.toml"), "[project]\nname='fixture'\nrequires-python='>=3.11'\n");
+      writeFileSync(join(temp, "app.py"), "VALUE = 1\n");
+      writeFileSync(join(temp, ".venv", "bin", "python"), `#!/bin/sh
+printf '%s\\n' '${JSON.stringify({
+  protocol: "opcore.python.project-context.interpreter.v1",
+  executable: join(temp, ".venv", "bin", "python"),
+  version: "3.12.13",
+  implementation: "CPython",
+  platform: process.platform,
+  architecture: process.arch,
+  abi: "cpython-312",
+  soabi: "cpython-312"
+})}'
+`);
+      chmodSync(join(temp, ".venv", "bin", "python"), 0o755);
+      writeFileSync(join(temp, ".venv", "bin", "python3"), readFileSync(join(temp, ".venv", "bin", "python"), "utf8"));
+      chmodSync(join(temp, ".venv", "bin", "python3"), 0o755);
+
+      const result = parseJson(runOpcore(["status", "--repo", temp, "--json"], temp, 0, { ...process.env, PATH: "" }).stdout);
+      const pythonAdapter = result.repoState.validation.adapters.find((adapter) => adapter.adapter === "python");
+
+      assert.equal(pythonAdapter.status, "available");
+      assert.equal(pythonAdapter.degradedChecks.includes("python.ruff-lint"), false);
+      assert.equal(pythonAdapter.degradedChecks.includes("python.ruff-format"), false);
+      assert.equal(pythonAdapter.missingTools.includes("ruff"), false);
+      assert.equal(
+        result.repoState.validation.degradedToolchains.some((tool) => tool.adapter === "python" && tool.tool === "ruff"),
+        false
+      );
+
+      writeFileSync(join(temp, ".opcore", "config"), JSON.stringify({
+        validation: {
+          checks: {
+            defaults: ["python.ruff-lint"],
+            disabled: ["python.syntax", "python.types", "python.relevant-tests"]
+          }
+        }
+      }, null, 2));
+      const active = parseJson(runOpcore(["status", "--repo", temp, "--json"], temp, 0, { ...process.env, PATH: "" }).stdout);
+      const activePython = active.repoState.validation.adapters.find((adapter) => adapter.adapter === "python");
+      assert.equal(activePython.status, "degraded");
+      assert.equal(activePython.degradedChecks.includes("python.ruff-lint"), true);
+      assert.equal(activePython.missingTools.includes("ruff"), true);
+      assert.equal(
+        active.repoState.validation.degradedToolchains.some((tool) => tool.adapter === "python" && tool.tool === "ruff"),
+        true
+      );
+
+      rmSync(join(temp, ".venv", "bin", "python"));
+      rmSync(join(temp, ".venv", "bin", "python3"));
+      writeFileSync(join(temp, ".venv", "bin", "ruff"), "#!/bin/sh\necho 'ruff 0.6.9'\n");
+      chmodSync(join(temp, ".venv", "bin", "ruff"), 0o755);
+      const standalone = parseJson(runOpcore(["status", "--repo", temp, "--json"], temp, 0, {
+        ...process.env,
+        PATH: ""
+      }).stdout);
+      const standalonePython = standalone.repoState.validation.adapters.find((adapter) => adapter.adapter === "python");
+      assert.equal(standalonePython.status, "available");
+      assert.deepEqual(standalonePython.degradedChecks, []);
+      assert.deepEqual(standalonePython.missingTools, []);
+      assert.equal(
+        standalone.repoState.validation.degradedToolchains.some((tool) => tool.adapter === "python" && tool.tool === "python"),
+        false
+      );
+      assert.equal(standalone.repoState.warnings.some((warning) => warning.includes("python")), false);
     } finally {
       rmSync(temp, { recursive: true, force: true });
     }
@@ -1011,7 +1093,7 @@ describe("opcore public facade", () => {
       assert.match(agents, /opcore check --changed/);
       assert.match(agents, /preserve existing repo lint\/test\/CI\/pre-commit guardrails/i);
       assert.match(agents, /unsupported stacks and degraded tools/i);
-      assert.match(agents, /Do not rely on ACE, Rox, CRG, CIX, or ASP host authority/i);
+      assert.match(agents, /Use Opcore validation directly; ASP hosts retain their own decision authority/i);
       const undo = JSON.parse(readFileSync(join(temp, ".opcore", "init-undo.json"), "utf8"));
       assert.deepEqual(
         undo.entries.find((entry) => entry.path === ".gitignore"),
@@ -1388,7 +1470,9 @@ describe("opcore public facade", () => {
         if (fixture.gitInit) run("git", ["init"], temp, 0);
         for (const [path, content] of fixture.files) writeFixtureFile(temp, path, content);
 
-        const result = parseJson(runOpcore(["init", "--repo", temp, "--json"], temp, 0).stdout);
+        const result = parseJson(
+          runOpcore(["init", "--repo", temp, "--json"], temp, 0, { ...process.env, PATH: systemToolPath }).stdout
+        );
         const languages = result.opcoreInit.settings.languages.map((entry) => entry.language).sort();
 
         assert.equal(result.opcoreInit.scan.totalFiles, fixture.expect.totalFiles, fixture.name);
@@ -1923,7 +2007,7 @@ describe("opcore public facade", () => {
       assert.match(human, /Findings:\n(?:.*\n)*  typescript\.type_errors:/);
       assert.match(human, /rust\.source_hygiene:/);
       assert.match(human, /coverage\.unsupported_stacks:/);
-      assert.doesNotMatch(human, /score|SAST|security scanner|AI authorship|Rox|CRG|CIX|ACE/i);
+      assert.doesNotMatch(human, /score|SAST|security scanner|AI authorship/i);
     } finally {
       for (const root of cleanupRoots) rmSync(root, { recursive: true, force: true });
       rmSync(temp, { recursive: true, force: true });

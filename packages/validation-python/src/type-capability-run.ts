@@ -3,25 +3,20 @@ import type {
   PythonProjectToolProvenance,
   PythonValidationAuthority,
   PythonValidationAuthoritySource,
-  PythonValidationCapabilityRun,
+  PythonTypesValidationCapabilityRun,
   PythonValidationCapabilityRunStatus,
   PythonValidationCapabilityToolProvenance
 } from "@the-open-engine/opcore-contracts";
-import { normalizeValidationFileViewPath, type ValidationFileReadStatus, type ValidationFileView } from "@the-open-engine/opcore-validation";
-import { createHash } from "node:crypto";
-import { mkdtempSync, rmSync } from "node:fs";
-import { mkdir, realpath, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { dirname, isAbsolute, join, posix, relative, resolve, sep } from "node:path";
+import { normalizeValidationFileViewPath, type ValidationFileView } from "@the-open-engine/opcore-validation";
+import { isAbsolute, posix, relative, resolve } from "node:path";
+import {
+  materializePreparedPythonExecutionWorkspace,
+  preparePythonExecutionWorkspace,
+  readPythonExecutionWorkspaceRecords,
+  type PythonExecutionWorkspaceRecord
+} from "./python-execution-workspace.js";
 
 export const isolatedMypyConfigPath = ".opcore-mypy-isolated.ini";
-
-interface ManifestRecord {
-  path: string;
-  status: ValidationFileReadStatus;
-  checksum?: string;
-  content?: string;
-}
 
 export interface PythonTypeCapabilityPreparation {
   project: PythonProjectContext;
@@ -30,7 +25,7 @@ export interface PythonTypeCapabilityPreparation {
   selectedConfigPaths: readonly string[];
   moduleSearchRoots: readonly string[];
   afterStateManifestFingerprint: string;
-  records: readonly ManifestRecord[];
+  records: readonly PythonExecutionWorkspaceRecord[];
 }
 
 export interface MaterializedPythonTypeWorkspace {
@@ -56,26 +51,17 @@ export async function preparePythonTypeCapability(args: {
   const selectedSourcePaths = uniqueSorted(args.sourcePaths);
   const selectedConfigPaths = uniqueSorted(args.configPaths);
   const manifestConfigPaths = authorityCandidatePaths(args.project.projectRoot);
-  const records: ManifestRecord[] = [];
-  for (const path of uniqueSorted([
+  const records = await readPythonExecutionWorkspaceRecords(args.fileView, [
     ...selectedSourcePaths,
     ...selectedConfigPaths,
     ...manifestConfigPaths
-  ])) {
-    const state = await args.fileView.readAfter(path);
-    records.push({
-      path,
-      status: state.status,
-      ...(state.status === "found" ? { checksum: state.checksum, content: state.content } : {})
-    });
-  }
-  const portableRecords = records.map(({ content: _content, ...record }) => record);
-  const canonical = JSON.stringify({
-    projectKey: args.project.projectKey,
-    contextFingerprint: args.project.contextFingerprint,
-    projectRoot: args.project.projectRoot,
+  ]);
+  const workspacePreparation = preparePythonExecutionWorkspace({
+    project: args.project,
     targets,
-    records: portableRecords
+    sourcePaths: selectedSourcePaths,
+    configPaths: selectedConfigPaths,
+    records
   });
   return {
     project: args.project,
@@ -83,8 +69,8 @@ export async function preparePythonTypeCapability(args: {
     selectedSourcePaths,
     selectedConfigPaths,
     moduleSearchRoots: uniqueSorted(args.moduleSearchRoots ?? args.project.sourceRoots),
-    afterStateManifestFingerprint: `sha256:${createHash("sha256").update(canonical, "utf8").digest("hex")}`,
-    records
+    afterStateManifestFingerprint: workspacePreparation.afterStateFingerprint,
+    records: workspacePreparation.records
   };
 }
 
@@ -96,43 +82,34 @@ function authorityCandidatePaths(projectRoot: string): readonly string[] {
 export async function materializePythonTypeCapability(
   preparation: PythonTypeCapabilityPreparation
 ): Promise<MaterializedPythonTypeWorkspace> {
-  const tempRoot = mkdtempSync(join(tmpdir(), "opcore-python-types-workspace-"));
-  const rawRoot = join(tempRoot, "repo");
+  const workspace = await materializePreparedPythonExecutionWorkspace({
+    project: preparation.project,
+    targets: preparation.targets,
+    sourcePaths: preparation.selectedSourcePaths,
+    configPaths: preparation.selectedConfigPaths,
+    afterStateFingerprint: preparation.afterStateManifestFingerprint,
+    records: preparation.records
+  }, {
+    tempPrefix: `opcore-python-types-workspace-${process.pid}-`,
+    generatedProjectFiles: [{ path: isolatedMypyConfigPath, content: "[mypy]\n" }],
+    runtimeDirectories: ["home", "xdg-config", "xdg-cache", "tmp", "pyright-cache"]
+  });
   try {
-    await mkdir(rawRoot, { recursive: true });
-    const root = await realpath(rawRoot);
-    const runtimeRoot = await realpath(tempRoot);
-    for (const record of preparation.records) {
-      if (record.status !== "found" || record.content === undefined) continue;
-      const absolute = resolveRepoPath(root, record.path);
-      await mkdir(dirname(absolute), { recursive: true });
-      await writeFile(absolute, record.content, "utf8");
-    }
-    const projectCwd = preparation.project.projectRoot === "."
-      ? root
-      : resolveRepoPath(root, preparation.project.projectRoot);
-    await mkdir(projectCwd, { recursive: true });
-    await writeFile(join(projectCwd, isolatedMypyConfigPath), "[mypy]\n", "utf8");
-    for (const name of ["home", "xdg-config", "xdg-cache", "tmp", "pyright-cache"]) {
-      await mkdir(join(tempRoot, name), { recursive: true });
-    }
     const pythonPathEntries = preparation.moduleSearchRoots.map((path) =>
-      path === "." ? root : resolveRepoPath(root, path)
+      path === "." ? workspace.root : resolveRepoPath(workspace.root, path)
     );
     return {
-      root,
-      runtimeRoot,
-      projectCwd,
+      root: workspace.root,
+      runtimeRoot: workspace.runtimeRoot,
+      projectCwd: workspace.projectCwd,
       pythonPathEntries,
-      selectedSourcePaths: preparation.selectedSourcePaths,
-      selectedConfigPaths: preparation.selectedConfigPaths,
-      afterStateContentByPath: new Map(preparation.records.flatMap((record) =>
-        record.status === "found" && record.content !== undefined ? [[record.path, record.content] as const] : []
-      )),
-      cleanup: () => rmSync(tempRoot, { recursive: true, force: true })
+      selectedSourcePaths: workspace.sourcePaths,
+      selectedConfigPaths: workspace.configPaths,
+      afterStateContentByPath: workspace.afterStateContentByPath,
+      cleanup: workspace.cleanup
     };
   } catch (error) {
-    rmSync(tempRoot, { recursive: true, force: true });
+    workspace.cleanup();
     throw error;
   }
 }
@@ -145,8 +122,8 @@ export function createPythonTypeCapabilityRun(args: {
   durationMs: number;
   counts?: { diagnosticCount: number; errorCount: number; warningCount: number; noteCount: number };
   tool?: PythonValidationCapabilityToolProvenance;
-  execution?: PythonValidationCapabilityRun["execution"];
-}): PythonValidationCapabilityRun {
+  execution?: PythonTypesValidationCapabilityRun["execution"];
+}): PythonTypesValidationCapabilityRun {
   const counts = args.counts ?? { diagnosticCount: 0, errorCount: 0, warningCount: 0, noteCount: 0 };
   return {
     schemaId: "opcore.python.validation-capability-run",
@@ -176,14 +153,14 @@ export function portablePythonValidationTool(args: {
   authority: PythonValidationAuthority;
   argv?: readonly string[];
 }): PythonValidationCapabilityToolProvenance {
-  const executable = portableExecutableLocator(
+  const executable = portablePythonExecutableLocator(
     args.checker.executable,
     args.preparation.project.repositoryRoot
   );
   const observedArgv = args.argv ?? args.checker.argv;
   const argv = observedArgv.map((argument, index) => index === 0
     ? executable
-    : portableArgument(argument, args.preparation.project.repositoryRoot));
+    : portablePythonValidationArgument(argument, args.preparation.project.repositoryRoot));
   return {
     name: args.authority,
     executable,
@@ -195,15 +172,15 @@ export function portablePythonValidationTool(args: {
   };
 }
 
-function portableArgument(argument: string, repositoryRoot: string): string {
+export function portablePythonValidationArgument(argument: string, repositoryRoot: string): string {
   const assignment = /^(.*?=)(.*)$/u.exec(argument);
   if (assignment !== null && isHostAbsolutePath(assignment[2])) {
-    return `${assignment[1]}${portableExecutableLocator(assignment[2], repositoryRoot)}`;
+    return `${assignment[1]}${portablePythonExecutableLocator(assignment[2], repositoryRoot)}`;
   }
-  return isHostAbsolutePath(argument) ? portableExecutableLocator(argument, repositoryRoot) : argument;
+  return isHostAbsolutePath(argument) ? portablePythonExecutableLocator(argument, repositoryRoot) : argument;
 }
 
-function portableExecutableLocator(executable: string, repositoryRoot: string): string {
+export function portablePythonExecutableLocator(executable: string, repositoryRoot: string): string {
   if (!isHostAbsolutePath(executable)) {
     if (!executable.includes("/") && !executable.includes("\\")) return `path:${executable}`;
     const normalized = posix.normalize(executable.replaceAll("\\", "/").replace(/^\.\//u, ""));
@@ -243,7 +220,7 @@ export function repoRelativeMaterializedPath(path: string, projectCwd: string, w
 function resolveRepoPath(root: string, path: string): string {
   const absolute = resolve(root, path);
   const relativePath = relative(root, absolute);
-  if (relativePath === "" || relativePath.startsWith("..") || relativePath.split(sep).includes("..")) {
+  if (relativePath === "" || relativePath === ".." || relativePath.startsWith("../") || relativePath.startsWith("..\\")) {
     throw new Error(`Repo-relative path escapes materialized Python workspace: ${path}`);
   }
   return absolute;

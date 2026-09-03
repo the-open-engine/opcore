@@ -17,7 +17,6 @@ import {
   createCommandRouterResult,
   editRefusalCategories,
   aspDogfoodForbiddenProviderMarkers,
-  aspDogfoodGuardrailIds,
   graphReleaseBenchmarkMetrics,
   graphCoreNativePackageNameForTarget,
   graphCoreNativeSupportedTargets,
@@ -31,14 +30,13 @@ import {
   opcoreMeasureLatencyFindingStatuses,
   opcoreMeasureLatencyStatuses,
   releaseReceiptCommandGroups,
-  releaseCutoverCurrentToolGuardrailIds,
   releaseCutoverNegativeCheckIds,
   releaseCutoverPythonCommandIds,
   releaseCutoverRustCommandIds,
   releaseReceiptPackageNames,
   releaseReceiptReportIds,
   requiredContextDocPolicy,
-  rustOldRoxComparisonSurfaceIds,
+  graphReleaseSurfaceClassifications,
   graphDaemonOperations,
   graphExtractionDiagnosticCategories,
   graphFactQueryKinds,
@@ -48,7 +46,6 @@ import {
   graphSnapshotMetadataKeys,
   inspectFailureCategories,
   providerFailureCategories,
-  graphReferenceEvidenceClassifications,
   parseCommandArgv,
   requiredGraphEdgeKinds,
   requiredGraphNodeKinds,
@@ -76,13 +73,11 @@ import {
   validateGraphProviderCapabilityHandshake,
   validateGraphReleaseReceipt,
   validateAspDogfoodReceipt,
-  validateRustOldRoxComparisonReceipt,
   validateReleaseCutoverReceipt,
   validateReleaseReceipt,
   validateGraphSearchRequest,
   validateGraphSearchResult,
   validateGraphServeTransportStatus,
-  validateGraphReferenceEvidenceManifest,
   validateInspectRouteResult,
   validateManagedToolDescriptor,
   validateLatencyBudget,
@@ -301,18 +296,6 @@ describe("Opcore shared contracts", () => {
       "python-relevant-tests-no-pytest",
       "python-toolchain-degraded-no-tools"
     ]);
-    assert.deepEqual(releaseCutoverCurrentToolGuardrailIds, [
-      "current-tools-validate-changed",
-      "current-tools-validate-rust-graph"
-    ]);
-    assert.deepEqual(rustOldRoxComparisonSurfaceIds, [
-      "rust.rustdoc",
-      "rust.import-graph",
-      "rust.dead-code",
-      "rust.unused-deps",
-      "rust.function-metrics",
-      "current-tools:validate-rust-graph"
-    ]);
     assert.deepEqual(graphReleaseBenchmarkMetrics, [
       "install_setup_ms",
       "cold_build_ms",
@@ -338,7 +321,7 @@ describe("Opcore shared contracts", () => {
       "children_of",
       "file_summary"
     ]);
-    assert.deepEqual(graphReferenceEvidenceClassifications, ["required", "supporting", "optional", "deferred"]);
+    assert.deepEqual(graphReleaseSurfaceClassifications, ["required", "supporting", "optional", "deferred"]);
     assert.deepEqual(graphReleaseDeferredChildren, ["#13", "#14", "#15", "#16"]);
     assert.deepEqual(graphReleaseOptionalAnalysisSurfaces, expectedOptionalAnalysisSurfaces());
   });
@@ -1223,6 +1206,297 @@ describe("Opcore shared contracts", () => {
     );
   });
 
+  it("validates portable Python capability receipts on validation runs", () => {
+    const result = validateValidationResultPayload(validValidationResult({
+      status: "policy_failure",
+      diagnostics: [],
+      failure: { category: "policy_failure", message: "finding" },
+      manifest: {
+        schemaVersion: GRAPH_SCHEMA_VERSION,
+        checks: ["python.ruff-lint"],
+        generatedAt: "2026-07-18T00:00:00.000Z",
+        runs: [{
+          checkId: "python.ruff-lint",
+          status: "policy_failure",
+          outcome: "findings",
+          diagnosticCount: 1,
+          pythonCapabilityRuns: [{
+            schemaId: "opcore.python.validation-capability-run",
+            schemaVersion: 1,
+            checkId: "python.ruff-lint",
+            capability: "ruff_lint",
+            state: "findings",
+            projectKey: `sha256:${"1".repeat(64)}`,
+            contextFingerprint: `sha256:${"2".repeat(64)}`,
+            afterStateManifestFingerprint: `sha256:${"3".repeat(64)}`,
+            sourcePaths: ["pkg/app.py"],
+            configPaths: ["ruff.toml"],
+            executable: "repo:.venv/bin/ruff",
+            command: "repo:.venv/bin/ruff check --output-format=json pkg/app.py",
+            argv: ["repo:.venv/bin/ruff", "check", "--output-format=json", "pkg/app.py"],
+            cwd: ".",
+            configPath: "ruff.toml",
+            toolVersion: "0.6.9",
+            toolSource: "project_local_environment",
+            termination: "exited",
+            exitCode: 1,
+            invocations: [{
+              argv: ["repo:.venv/bin/ruff", "check", "--output-format=json", "pkg/app.py"],
+              termination: "exited",
+              exitCode: 1,
+              durationMs: 12
+            }],
+            durationMs: 12,
+            diagnosticCount: 1
+          }]
+        }]
+      }
+    }));
+
+    assert.equal(result.manifest.runs[0].pythonCapabilityRuns[0].capability, "ruff_lint");
+    assert.equal(result.manifest.runs[0].pythonCapabilityRuns[0].termination, "exited");
+    const portableRun = result.manifest.runs[0].pythonCapabilityRuns[0];
+    for (const invalidRun of [
+      { ...portableRun, executable: "/tmp/private/ruff" },
+      { ...portableRun, argv: [portableRun.executable, "--cache-dir=/tmp/private/cache"] },
+      {
+        ...portableRun,
+        invocations: [{
+          ...portableRun.invocations[0],
+          argv: ["/tmp/private/ruff", "check", "pkg/app.py"]
+        }]
+      },
+      { ...portableRun, failureMessage: "Ruff failed in /tmp/private/workspace" }
+    ]) {
+      assert.throws(
+        () => validatePythonValidationCapabilityRun(invalidRun),
+        /portable|host-absolute/
+      );
+    }
+    const legacyFingerprintRun = {
+      ...portableRun,
+      afterStateFingerprint: portableRun.afterStateManifestFingerprint
+    };
+    delete legacyFingerprintRun.afterStateManifestFingerprint;
+    assert.throws(
+      () => validatePythonValidationCapabilityRun(legacyFingerprintRun),
+      /unexpected properties/
+    );
+    assert.throws(
+      () => validateValidationResultPayload(validValidationResult({
+        status: "policy_failure",
+        diagnostics: [],
+        failure: { category: "policy_failure", message: "finding" },
+        manifest: {
+          schemaVersion: GRAPH_SCHEMA_VERSION,
+          checks: ["python.ruff-lint"],
+          generatedAt: "2026-07-18T00:00:00.000Z",
+          runs: [{
+            checkId: "python.ruff-lint",
+            status: "policy_failure",
+            outcome: "findings",
+            diagnosticCount: 1,
+            pythonCapabilityRuns: [{
+              schemaId: "opcore.python.validation-capability-run",
+              schemaVersion: 1,
+              checkId: "python.ruff-lint",
+              capability: "ruff_lint",
+              state: "disabled",
+              argv: ["repo:.venv/bin/ruff"],
+              durationMs: 0,
+              diagnosticCount: 0
+            }]
+          }]
+        }
+      })),
+      /must not record a process invocation/
+    );
+    const unavailableRun = {
+      ...portableRun,
+      state: "tool_unavailable",
+      durationMs: 0,
+      diagnosticCount: 1,
+      failureMessage: "Ruff is unavailable"
+    };
+    for (const field of [
+      "executable", "command", "argv", "configPath", "toolVersion", "toolSource",
+      "termination", "exitCode", "invocations"
+    ]) {
+      delete unavailableRun[field];
+    }
+    assert.equal(validatePythonValidationCapabilityRun(unavailableRun).state, "tool_unavailable");
+    const unsupportedRun = {
+      ...unavailableRun,
+      state: "unsupported_target",
+      failureMessage: "Ruff does not support the selected target"
+    };
+    const unexecutedInvalidConfigRun = {
+      ...unavailableRun,
+      state: "invalid_config",
+      executable: portableRun.executable,
+      toolVersion: portableRun.toolVersion,
+      toolSource: portableRun.toolSource,
+      failureMessage: "Ruff rejected the selected configuration"
+    };
+    const timeoutRun = {
+      ...portableRun,
+      state: "timeout",
+      termination: "timeout",
+      diagnosticCount: 0,
+      failureMessage: "Ruff timed out",
+      invocations: [{
+        argv: portableRun.argv,
+        termination: "timeout",
+        durationMs: 12
+      }]
+    };
+    delete timeoutRun.exitCode;
+    const executedInvalidConfigRun = {
+      ...portableRun,
+      state: "invalid_config",
+      exitCode: 2,
+      diagnosticCount: 1,
+      failureMessage: "Ruff rejected the selected configuration",
+      invocations: [{
+        argv: portableRun.argv,
+        termination: "exited",
+        exitCode: 2,
+        durationMs: 12
+      }]
+    };
+    const toolFailureRun = {
+      ...portableRun,
+      state: "tool_failure",
+      exitCode: 2,
+      diagnosticCount: 0,
+      failureMessage: "Ruff failed",
+      invocations: [{
+        argv: portableRun.argv,
+        termination: "exited",
+        exitCode: 2,
+        durationMs: 12
+      }]
+    };
+    const signalToolFailureRun = {
+      ...portableRun,
+      state: "tool_failure",
+      termination: "signal",
+      signal: "SIGTERM",
+      diagnosticCount: 0,
+      failureMessage: "Ruff was terminated",
+      invocations: [{
+        argv: portableRun.argv,
+        termination: "signal",
+        signal: "SIGTERM",
+        durationMs: 12
+      }]
+    };
+    delete signalToolFailureRun.exitCode;
+    for (const validFailureRun of [
+      unavailableRun,
+      unsupportedRun,
+      unexecutedInvalidConfigRun,
+      timeoutRun,
+      executedInvalidConfigRun,
+      toolFailureRun,
+      signalToolFailureRun
+    ]) {
+      assert.equal(validatePythonValidationCapabilityRun(validFailureRun).state, validFailureRun.state);
+    }
+    for (const [name, invalidFailureRun] of [
+      ["tool_unavailable with process evidence", { ...portableRun, state: "tool_unavailable", failureMessage: "Ruff unavailable" }],
+      ["unsupported_target with process evidence", { ...portableRun, state: "unsupported_target", failureMessage: "Unsupported target" }],
+      ["timeout without execution evidence", { ...unavailableRun, state: "timeout", failureMessage: "Ruff timed out" }],
+      ["timeout with contradictory invocation evidence", {
+        ...timeoutRun,
+        invocations: [{
+          argv: portableRun.argv,
+          termination: "exited",
+          exitCode: 0,
+          durationMs: 12
+        }]
+      }],
+      ["invalid_config with partial execution evidence", {
+        ...unexecutedInvalidConfigRun,
+        command: portableRun.command
+      }],
+      ["tool_failure with partial execution evidence", {
+        ...unavailableRun,
+        state: "tool_failure",
+        argv: portableRun.argv,
+        failureMessage: "Ruff failed"
+      }],
+      ["tool_failure with contradictory invocation evidence", {
+        ...signalToolFailureRun,
+        invocations: [{
+          argv: portableRun.argv,
+          termination: "exited",
+          exitCode: 0,
+          durationMs: 12
+        }]
+      }]
+    ]) {
+      assert.throws(
+        () => validatePythonValidationCapabilityRun(invalidFailureRun),
+        /Ruff capability/,
+        name
+      );
+    }
+    for (const field of [
+      "projectKey", "contextFingerprint", "afterStateManifestFingerprint", "sourcePaths", "configPaths", "cwd"
+    ]) {
+      const incomplete = { ...unavailableRun };
+      delete incomplete[field];
+      assert.throws(
+        () => validatePythonValidationCapabilityRun(incomplete),
+        /Activated Ruff capability run requires/,
+        field
+      );
+    }
+    for (const field of ["projectKey", "contextFingerprint", "afterStateManifestFingerprint", "invocations"]) {
+      const incomplete = { ...result.manifest.runs[0].pythonCapabilityRuns[0] };
+      delete incomplete[field];
+      assert.throws(
+        () => validateValidationResultPayload(validValidationResult({
+          status: "policy_failure",
+          diagnostics: [],
+          failure: { category: "policy_failure", message: "finding" },
+          manifest: {
+            ...result.manifest,
+            runs: [{
+              ...result.manifest.runs[0],
+              pythonCapabilityRuns: [incomplete]
+            }]
+          }
+        })),
+        /Ruff capability run requires/,
+        field
+      );
+    }
+    for (const field of ["projectKey", "contextFingerprint", "afterStateManifestFingerprint"]) {
+      const invalidIdentity = {
+        ...result.manifest.runs[0].pythonCapabilityRuns[0],
+        [field]: "not-a-sha256-identity"
+      };
+      assert.throws(
+        () => validateValidationResultPayload(validValidationResult({
+          status: "policy_failure",
+          diagnostics: [],
+          failure: { category: "policy_failure", message: "finding" },
+          manifest: {
+            ...result.manifest,
+            runs: [{
+              ...result.manifest.runs[0],
+              pythonCapabilityRuns: [invalidIdentity]
+            }]
+          }
+        })),
+        /sha256 identity/,
+        field
+      );
+    }
+  });
+
   it("rejects ambiguous repo identity and untyped provider failures", () => {
     assert.throws(
       () =>
@@ -2010,7 +2284,7 @@ describe("Opcore shared contracts", () => {
     assert.deepEqual(surfaceContracts(descriptor.optionalSurfaces), expectedOptionalAnalysisSurfaces());
   });
 
-  it("rejects managed-tool descriptors with old aliases or unsafe package paths", () => {
+  it("rejects managed-tool descriptors with noncanonical entrypoints or unsafe package paths", () => {
     assert.throws(
       () =>
         validateManagedToolDescriptor({
@@ -2018,11 +2292,11 @@ describe("Opcore shared contracts", () => {
           entrypoints: [
             {
               ...validManagedToolDescriptor().entrypoints[0],
-              bin: ["c", "r", "g"].join("")
+              bin: "unexpected"
             }
           ]
         }),
-      /old public aliases/
+      /entrypoint bins/
     );
     assert.throws(
       () =>
@@ -2031,7 +2305,7 @@ describe("Opcore shared contracts", () => {
           artifacts: [
             {
               ...validManagedToolDescriptor().artifacts[0],
-              path: "/tmp/lattice"
+              path: "/tmp/tool"
             }
           ]
         }),
@@ -2057,7 +2331,7 @@ describe("Opcore shared contracts", () => {
           artifacts: [
             {
               ...validManagedToolDescriptor().artifacts[0],
-              path: ".ace/runtime/bin/lattice"
+              path: ".agents/runtime/bin/tool"
             }
           ]
         }),
@@ -2070,7 +2344,7 @@ describe("Opcore shared contracts", () => {
           artifacts: [
             {
               ...validManagedToolDescriptor().artifacts[0],
-              path: ".ace"
+              path: ".agents"
             }
           ]
         }),
@@ -2083,7 +2357,7 @@ describe("Opcore shared contracts", () => {
           artifacts: [
             {
               ...validManagedToolDescriptor().artifacts[0],
-              path: "dist/.ace"
+              path: "dist/.agents"
             }
           ]
         }),
@@ -2096,12 +2370,12 @@ describe("Opcore shared contracts", () => {
           provenanceHooks: [
             {
               id: "private-runtime-wrapper",
-              command: [".ace\\runtime\\bin\\lattice", "status"],
+              command: [".agents\\runtime\\bin\\tool", "status"],
               expectedExitCode: 0
             }
           ]
         }),
-      /current-tool runtime paths/
+      /private runtime paths/
     );
     assert.throws(
       () =>
@@ -2110,7 +2384,7 @@ describe("Opcore shared contracts", () => {
           artifacts: [
             {
               ...validManagedToolDescriptor().artifacts[0],
-              path: "~/lattice"
+              path: "~/tool"
             }
           ]
         }),
@@ -2394,69 +2668,6 @@ describe("Opcore shared contracts", () => {
     );
   });
 
-  it("accepts graph reference evidence manifests and rejects invalid coverage", () => {
-    const manifest = validGraphReferenceEvidenceManifest();
-    assert.equal(validateGraphReferenceEvidenceManifest(manifest).issue, "#19");
-    assert.deepEqual(surfaceContracts(manifest.optionalAnalysisSurfaces), expectedOptionalAnalysisSurfaces());
-    assert.throws(
-      () =>
-        validateGraphReferenceEvidenceManifest({
-          ...manifest,
-          commandSurfaces: [
-            {
-              ...manifest.commandSurfaces[0],
-              classification: "release_blocking"
-            }
-          ]
-        }),
-      /Unknown graph reference evidence surface classification/
-    );
-    assert.throws(
-      () =>
-        validateGraphReferenceEvidenceManifest({
-          ...manifest,
-          commandSurfaces: [
-            {
-              ...manifest.commandSurfaces[0],
-              fixtures: []
-            }
-          ]
-        }),
-      /required surface must include fixture coverage/
-    );
-    assert.throws(
-      () =>
-        validateGraphReferenceEvidenceManifest({
-          ...manifest,
-          optionalAnalysisSurfaces: manifest.optionalAnalysisSurfaces.map((surface) =>
-            surface.id === "flows" ? { ...surface, issue: "#13" } : surface
-          )
-        }),
-      /optional analysis surfaces must match staged graph release surfaces/
-    );
-    assert.throws(
-      () =>
-        validateGraphReferenceEvidenceManifest({
-          ...manifest,
-          optionalAnalysisSurfaces: manifest.optionalAnalysisSurfaces.map((surface) =>
-            surface.id === "flows" ? { ...surface, classification: "required" } : surface
-          )
-        }),
-      /optional analysis surfaces must not mark staged graph release surfaces as required/
-    );
-    assert.throws(
-      () =>
-        validateGraphReferenceEvidenceManifest({
-          ...manifest,
-          provenance: {
-            ...manifest.provenance,
-            containsPythonCrgSource: true
-          }
-        }),
-      /must not contain Python CRG source/
-    );
-  });
-
   it("accepts graph release receipts and rejects incomplete or tainted release evidence", () => {
     const receipt = validGraphReleaseReceipt();
     assert.equal(validateGraphReleaseReceipt(receipt).issue, "#17");
@@ -2518,6 +2729,10 @@ describe("Opcore shared contracts", () => {
         }),
       /Graph release serve transport ids must exactly match/
     );
+  });
+
+  it("rejects tainted graph release transport, package, and handoff evidence", () => {
+    const receipt = validGraphReleaseReceipt();
     assert.throws(
       () =>
         validateGraphReleaseReceipt({
@@ -2651,13 +2866,13 @@ describe("Opcore shared contracts", () => {
             entry.packageName === "opcore"
               ? {
                   ...entry,
-                  bins: { ...entry.bins, crg: "dist/index.js" },
-                  manifest: { ...entry.manifest, bins: { ...entry.manifest.bins, crg: "dist/index.js" } }
+                  bins: { ...entry.bins, unexpected: "dist/index.js" },
+                  manifest: { ...entry.manifest, bins: { ...entry.manifest.bins, unexpected: "dist/index.js" } }
                 }
               : entry
           )
         }),
-      /old public bin/
+      /Opcore package bins/
     );
     assert.throws(
       () =>
@@ -2710,11 +2925,7 @@ describe("Opcore shared contracts", () => {
       receipt.negativeChecks.map((entry) => entry.id),
       releaseCutoverNegativeCheckIds
     );
-    assert.deepEqual(
-      receipt.currentToolGuardrails.map((entry) => entry.id),
-      releaseCutoverCurrentToolGuardrailIds
-    );
-    assert.equal(receipt.oldToolReplacementClaimed, false);
+    assert.equal(receipt.selfValidation.status, "passed");
     assert.throws(
       () =>
         validateReleaseCutoverReceipt({
@@ -2763,6 +2974,10 @@ describe("Opcore shared contracts", () => {
         }),
       /canonical .* bin/
     );
+  });
+
+  it("rejects incomplete cutover language and command evidence", () => {
+    const receipt = validReleaseCutoverReceipt();
     assert.throws(
       () =>
         validateReleaseCutoverReceipt({
@@ -2812,7 +3027,11 @@ describe("Opcore shared contracts", () => {
           ...receipt,
           pythonCommandReceipts: receipt.pythonCommandReceipts.map((entry) =>
             entry.id === "graph-python-search"
-              ? { ...entry, command: ["lattice", "graph", "search", "Greeting"], canonicalCommand: ["lattice", "graph", "search", "Greeting"] }
+              ? {
+                  ...entry,
+                  command: ["node", "graph", "search", "Greeting"],
+                  canonicalCommand: ["node", "graph", "search", "Greeting"]
+                }
               : entry
           )
         }),
@@ -2830,6 +3049,10 @@ describe("Opcore shared contracts", () => {
         }),
       /graph-python-query evidence/
     );
+  });
+
+  it("rejects incomplete cutover policy and self-validation evidence", () => {
+    const receipt = validReleaseCutoverReceipt();
     assert.throws(
       () =>
         validateReleaseCutoverReceipt({
@@ -2863,7 +3086,7 @@ describe("Opcore shared contracts", () => {
           ...receipt,
           negativeChecks: receipt.negativeChecks.map((entry) =>
             entry.id === "missing-required-graph-check"
-              ? { ...entry, command: ["lattice", "check", "files", "src/index.ts", "--graph-mode", "required"] }
+              ? { ...entry, command: ["node", "check", "files", "src/index.ts", "--graph-mode", "required"] }
               : entry
           )
         }),
@@ -2873,40 +3096,9 @@ describe("Opcore shared contracts", () => {
       () =>
         validateReleaseCutoverReceipt({
           ...receipt,
-          currentToolGuardrails: receipt.currentToolGuardrails.filter((entry) => entry.id !== "current-tools-validate-changed")
+          selfValidation: { ...receipt.selfValidation, status: "failed", exitCode: 1 }
         }),
-      /current-tool guardrails/
-    );
-    assert.throws(
-      () =>
-        validateReleaseCutoverReceipt({
-          ...receipt,
-          currentToolGuardrails: receipt.currentToolGuardrails.map((entry) =>
-            entry.id === "current-tools-validate-changed"
-              ? { ...entry, status: "retained-not-run", exitCode: null }
-              : entry
-          )
-        }),
-      /status must be passed/
-    );
-    assert.throws(
-      () =>
-        validateReleaseCutoverReceipt({
-          ...receipt,
-          environmentIsolation: {
-            ...receipt.environmentIsolation,
-            oldBinsAbsent: { crg: true, cix: true, rox: true }
-          }
-        }),
-      /old public bins/
-    );
-    assert.throws(
-      () =>
-        validateReleaseCutoverReceipt({
-          ...receipt,
-          oldToolReplacementClaimed: true
-        }),
-      /old-tool replacement/
+      /self-validation status must be passed/
     );
     assert.throws(
       () =>
@@ -2918,84 +3110,14 @@ describe("Opcore shared contracts", () => {
     );
   });
 
-  it("accepts old-Rox comparison receipts and rejects replacement overclaims", () => {
-    const receipt = validRustOldRoxComparisonReceipt();
-    assert.equal(validateRustOldRoxComparisonReceipt(receipt).oldToolReplacementClaimed, false);
-    assert.deepEqual(
-      receipt.surfaces.map((entry) => entry.id),
-      rustOldRoxComparisonSurfaceIds
-    );
-    assert.equal(receipt.surfaces.every((entry) => ["retained", "deferred"].includes(entry.replacementStatus)), true);
-    assert.throws(
-      () =>
-        validateRustOldRoxComparisonReceipt({
-          ...receipt,
-          surfaces: receipt.surfaces.filter((entry) => entry.id !== "rust.dead-code")
-        }),
-      /old-Rox comparison surfaces/
-    );
-    assert.throws(
-      () =>
-        validateRustOldRoxComparisonReceipt({
-          ...receipt,
-          oldToolReplacementClaimed: true
-        }),
-      /must not claim old-tool replacement/
-    );
-    assert.throws(
-      () =>
-        validateRustOldRoxComparisonReceipt({
-          ...receipt,
-          publicReleaseActions: ["publish"]
-        }),
-      /public release actions/
-    );
-    assert.throws(
-      () =>
-        validateRustOldRoxComparisonReceipt({
-          ...receipt,
-          surfaces: receipt.surfaces.map((entry) =>
-            entry.id === "rust.function-metrics" ? { ...entry, replacementStatus: "replaced" } : entry
-          )
-        }),
-      /replacementStatus/
-    );
-    assert.throws(
-      () =>
-        validateRustOldRoxComparisonReceipt({
-          ...receipt,
-          surfaces: receipt.surfaces.map((entry) =>
-            entry.id === "rust.import-graph" ? { ...entry, graphEvidenceExists: true, graphEvidence: [] } : entry
-          )
-        }),
-      /graph evidence/
-    );
-    const artifact = JSON.parse(
-      readFileSync(new URL("../docs/validation/rust-old-rox-comparison-receipt-2026-06-27.json", import.meta.url), "utf8")
-    );
-    assert.equal(validateRustOldRoxComparisonReceipt(artifact).oldToolReplacementClaimed, false);
-    assert.deepEqual(
-      artifact.surfaces.map((entry) => entry.id),
-      rustOldRoxComparisonSurfaceIds
-    );
-  });
-
-  it("accepts ASP dogfood receipts and rejects authority, entrypoint, parity, and guardrail overclaims", () => {
+  it("accepts ASP dogfood receipts and rejects authority, entrypoint, and parity overclaims", () => {
     const receipt = validAspDogfoodReceipt();
     assert.equal(validateAspDogfoodReceipt(receipt).issue, "#120");
     assert.equal(receipt.bootstrapSource, "local-sibling");
     assert.deepEqual(receipt.provider.command, ["opcore-asp-provider", "--stdio"]);
     assert.equal(receipt.hostFixture.sourceRepoMutated, false);
     assert.deepEqual(receipt.hostFixture.changedPaths, ["src/dogfood.ts"]);
-    assert.deepEqual(receipt.currentToolGuardrails.map((entry) => entry.id), aspDogfoodGuardrailIds);
-    assert.throws(
-      () =>
-        validateAspDogfoodReceipt({
-          ...receipt,
-          currentToolGuardrails: receipt.currentToolGuardrails.filter((entry) => entry.id !== "current-tools-validate-rust-graph")
-        }),
-      /guardrail ids/
-    );
+    assert.equal(receipt.selfValidation.status, "passed");
     assert.throws(
       () =>
         validateAspDogfoodReceipt({
@@ -3012,12 +3134,9 @@ describe("Opcore shared contracts", () => {
       () =>
         validateAspDogfoodReceipt({
           ...receipt,
-          provider: {
-            ...receipt.provider,
-            binPath: ".ace/runtime/bin/opcore-asp-provider"
-          }
+          provider: { ...receipt.provider, binPath: "private/runtime/opcore-asp-provider" }
         }),
-      /node_modules\/\.bin\/opcore-asp-provider|forbidden marker/
+      /node_modules\/\.bin\/opcore-asp-provider/
     );
     assert.throws(
       () =>
@@ -3061,6 +3180,10 @@ describe("Opcore shared contracts", () => {
         }),
       /host-owned field|host-owned decision|hostOwnedFieldLeak/
     );
+  });
+
+  it("rejects ASP dogfood parity and host-authority overclaims", () => {
+    const receipt = validAspDogfoodReceipt();
     assert.throws(
       () =>
         validateAspDogfoodReceipt({
@@ -4588,130 +4711,6 @@ function validOpcoreDoctor() {
   };
 }
 
-function validGraphReferenceEvidenceManifest() {
-  return {
-    schemaVersion: 1,
-    issue: "#19",
-    origin: "covibes-authored-synthetic",
-    fixtureRefs: [
-      "packages/fixtures/graph-reference-evidence/sqlite-fixtures.json",
-      "packages/fixtures/graph-reference-evidence/daemon-socket-fixtures.json",
-      "packages/fixtures/graph-reference-evidence/golden-corpus.json",
-      "packages/fixtures/graph-reference-evidence/baseline-receipts.json"
-    ],
-    commandSurfaces: [
-      {
-        id: "graph-reference-status",
-        classification: "required",
-        referenceTool: "current external graph dev wrapper",
-        referenceCommand: ["status"],
-        canonicalCommand: ["opcore", "graph", "status"],
-        flags: ["--repo", "--json"],
-        positionals: [],
-        fixtures: ["status-json"],
-        exitSemantics: {
-          success: 0,
-          failure: "nonzero"
-        }
-      }
-    ],
-    jsonOutputSurfaces: [
-      {
-        id: "status-json",
-        command: "status",
-        classification: "required",
-        requiredFields: ["status", "summary"],
-        fixtures: ["status-json"],
-        exitSemantics: {
-          success: 0,
-          failure: "nonzero"
-        }
-      }
-    ],
-    sqliteFixtures: [
-      {
-        id: "sqlite-required-views",
-        classification: "required",
-        fixture: "packages/fixtures/graph-reference-evidence/sqlite-fixtures.json",
-        tables: ["metadata", "nodes", "edges"],
-        indexes: ["idx_nodes_file"],
-        metadataKeys: ["schema_version"],
-        nodeKinds: ["File", "Function", "Test", "Module", "Struct", "Enum", "Trait", "Impl", "Method", "TypeAlias", "Const", "Static", "Macro"],
-        edgeKinds: ["CALLS", "CONTAINS", "IMPORTS_FROM", "TESTED_BY", "IMPLEMENTS", "DEPENDS_ON", "INHERITS"],
-        directReaderQueries: ["status-counts"],
-        fixtures: ["sqlite-fixtures"]
-      }
-    ],
-    daemonFixtures: [
-      {
-        id: "daemon-hot-query",
-        classification: "required",
-        fixture: "packages/fixtures/graph-reference-evidence/daemon-socket-fixtures.json",
-        protocol: "opcore.graph.daemon",
-        envelopes: ["ping-request", "success-response"],
-        fixtures: ["daemon-fixtures"]
-      }
-    ],
-    baselineReceipts: [
-      {
-        id: "install-setup",
-        metric: "install_setup_ms",
-        classification: "required",
-        receipt: "packages/fixtures/graph-reference-evidence/baseline-receipts.json",
-        label: "reference_evidence_non_implementation_input",
-        sourceAvailability: "unavailable",
-        nonImplementationInput: true,
-        fixtures: ["baseline-receipts"]
-      }
-    ],
-    optionalAnalysisSurfaces: [
-      {
-        issue: "#13",
-        id: "coverage",
-        classification: "deferred",
-        status: "deferred",
-        fixtures: ["coverage-deferred-marker"]
-      },
-      {
-        issue: "#14",
-        id: "flows",
-        classification: "optional",
-        status: "deferred",
-        fixtures: ["sqlite-fixtures"]
-      },
-      {
-        issue: "#15",
-        id: "communities",
-        classification: "optional",
-        status: "deferred",
-        fixtures: ["sqlite-fixtures"]
-      },
-      {
-        issue: "#16",
-        id: "read_only_suggestions",
-        classification: "supporting",
-        status: "deferred",
-        fixtures: ["read-only-refactor-baseline"]
-      }
-    ],
-    goldenCorpus: {
-      id: "graph-reference-evidence-golden-corpus-v1",
-      classification: "required",
-      fixture: "packages/fixtures/graph-reference-evidence/golden-corpus.json",
-      covers: ["parser", "store", "query", "search", "freshness", "status"],
-      fixtures: ["golden-corpus"]
-    },
-    provenance: {
-      containsPythonCrgSource: false,
-      containsPackageMetadata: false,
-      containsGitHistory: false,
-      referenceReceiptsAreImplementationInput: false,
-      implementationPackageNames: ["@the-open-engine/opcore-graph"],
-      allowedMentionPaths: ["docs/graph-reference-evidence/", "packages/fixtures/graph-reference-evidence/"]
-    }
-  };
-}
-
 function validGraphReleaseReceipt() {
   const commandCoverage = graphReleaseCoreCommandIds.map((id) => {
     const command = id.replace("opcore-graph-", "");
@@ -4809,7 +4808,7 @@ function validGraphReleaseReceipt() {
       value: 1,
       unit: metric.endsWith("_bytes") ? "bytes" : "ms",
       baselineIssue: "#19",
-      baselineReceipt: "packages/fixtures/graph-reference-evidence/baseline-receipts.json",
+      baselineReceipt: "docs/release/graph-release-receipt.json",
       comparison: "recorded"
     })),
     packageInspection: {
@@ -4820,10 +4819,10 @@ function validGraphReleaseReceipt() {
       forbiddenMarkersAbsent: true,
       generatedBuildMetadataAbsent: true,
       privatePathsAbsent: true,
-      pythonCrgSourceAbsent: true,
-      pythonGraphPackageMetadataAbsent: true,
-      pythonCrgGitHistoryAbsent: true,
-      forbiddenImplementationPackageNamesAbsent: true,
+      sourceProvenanceAbsent: true,
+      packageMetadataAbsent: true,
+      gitHistoryAbsent: true,
+      foreignImplementationNamesAbsent: true,
       inspections: ["npm-pack-dry-run"]
     },
     supportedNativeTargets: graphCoreNativeSupportedTargets,
@@ -4906,7 +4905,7 @@ function validGraphReleaseReceipt() {
       issue,
       receiptPath: "docs/release/graph-release-receipt.payload.json",
       checksumSha256: "b".repeat(64),
-      rollbackNote: "Keep ACE wrappers on current external tools if receipt regresses."
+      rollbackNote: "Block release and repair Opcore self-validation if this receipt regresses."
     }))
   };
 }
@@ -5278,18 +5277,9 @@ function validReleaseCutoverReceipt() {
       resolvedChecksums: descriptor.resolvedChecksums
     },
     environmentIsolation: {
-      currentToolEnvCleared: true,
-      clearedEnvVarCount: 5,
       pathSanitized: true,
-      aceRuntimeBinExcluded: true,
-      siblingCovibesExcluded: true,
-      opcoreBinOnly: true,
-      oldBinsAbsent: {
-        lattice: true,
-        crg: true,
-        cix: true,
-        rox: true
-      }
+      siblingRepositoriesExcluded: true,
+      opcoreBinsVerified: true
     },
     commandReceipts,
     rustCommandReceipts,
@@ -5338,35 +5328,19 @@ function validReleaseCutoverReceipt() {
         assertion: "missing Python toolchain stayed degraded"
       }
     ],
-    currentToolGuardrails: [
-      {
-        id: "current-tools-validate-changed",
-        command: ["npm", "run", "current-tools:validate-changed"],
-        status: "passed",
-        exitCode: 0,
-        stdoutSha256: "7".repeat(64),
-        stderrSha256: "8".repeat(64),
-        retained: true,
-        assertion: "retained changed-file guardrail",
-        oldToolReplacementClaimed: false
-      },
-      {
-        id: "current-tools-validate-rust-graph",
-        command: ["npm", "run", "current-tools:validate-rust-graph"],
-        status: "passed",
-        exitCode: 0,
-        stdoutSha256: "7".repeat(64),
-        stderrSha256: "8".repeat(64),
-        retained: true,
-        assertion: "retained Rust graph guardrail",
-        oldToolReplacementClaimed: false
-      }
-    ],
-    oldToolReplacementClaimed: false,
+    selfValidation: {
+      id: "opcore-self-check",
+      command: ["npm", "run", "opcore:self-check"],
+      status: "passed",
+      exitCode: 0,
+      stdoutSha256: "7".repeat(64),
+      stderrSha256: "8".repeat(64),
+      assertion: "Opcore self-validation passed"
+    },
     forbiddenMarkerScan: {
       scannedTextCount: 12,
       findingCount: 0,
-      markersBlocked: ["private-runtime", "current-tool-env", "private-home", "old-tool-bins"]
+      markersBlocked: ["private-home", "launch-claim"]
     },
     inputEvidence: [
       {
@@ -5399,72 +5373,6 @@ function pythonCutoverEvidence(id) {
     "graph-python-query": ["src/acme/app.py", "Greeter", "build_name"],
     "graph-python-search": ["src/acme/app.py", "Greeter"]
   }[id];
-}
-
-function validRustOldRoxComparisonReceipt() {
-  const surface = (id, graphEvidenceExists, graphEvidence, stillUniquelyProvidedByCurrentTools, replacementStatus = "retained") => ({
-    id,
-    graphEvidenceExists,
-    graphEvidence,
-    stillUniquelyProvidedByCurrentTools,
-    replacementStatus
-  });
-  return {
-    schemaVersion: 1,
-    issue: "#29",
-    origin: "covibes-authored-old-rox-comparison",
-    generatedAt: "2026-06-27T00:00:00.000Z",
-    privateRepo: true,
-    oldToolReplacementClaimed: false,
-    publicReleaseActions: [],
-    surfaces: [
-      surface(
-        "rust.rustdoc",
-        false,
-        ["No graph fact replaces rustdoc diagnostics."],
-        ["rustdoc diagnostics and broken intra-doc link policy remain current-tool evidence."]
-      ),
-      surface(
-        "rust.import-graph",
-        true,
-        ["Rust graph emits IMPORTS_FROM and DEPENDS_ON edges for module files."],
-        ["Rox/current tooling still uniquely provides rustdoc and cargo-depgraph-enriched import checks."],
-        "deferred"
-      ),
-      surface(
-        "rust.dead-code",
-        true,
-        ["Rust graph emits exported symbol metadata and graph-backed dead public export signals."],
-        ["Cargo dead_code diagnostics and retained Rox gate behavior still uniquely cover compiler reachability."]
-      ),
-      surface(
-        "rust.unused-deps",
-        false,
-        ["No graph fact replaces cargo-udeps unused dependency analysis."],
-        ["cargo-udeps/Rox unused dependency detection remains current-tool evidence."]
-      ),
-      surface(
-        "rust.function-metrics",
-        true,
-        ["Rust graph emits symbol spans and signatures for functions and methods."],
-        ["rust-code-analysis complexity and parameter thresholds remain current-tool evidence."]
-      ),
-      surface(
-        "current-tools:validate-rust-graph",
-        false,
-        ["Graph receipts do not replace the aggregate current-tools Rust graph gate."],
-        ["npm run current-tools:validate-rust-graph remains the retained aggregate guardrail."]
-      )
-    ],
-    guardrails: [
-      {
-        id: "current-tools:validate-rust-graph",
-        command: ["npm", "run", "current-tools:validate-rust-graph"],
-        replacementStatus: "retained",
-        oldToolReplacementClaimed: false
-      }
-    ]
-  };
 }
 
 function validAspDogfoodReceipt() {
@@ -5542,8 +5450,7 @@ function validAspDogfoodReceipt() {
       temp: true,
       isolated: true,
       sharedStateMutated: false,
-      pathSanitized: true,
-      aceRuntimeBinExcluded: true
+      pathSanitized: true
     },
     hostFixture: {
       repo: hostFixtureRepo,
@@ -5601,32 +5508,18 @@ function validAspDogfoodReceipt() {
       diagnosticsCount: 0,
       hostOwnedFieldLeak: false
     },
-    currentToolGuardrails: [
-      { ...command("current-tools-validate-changed", ["npm", "run", "current-tools:validate-changed"]), retained: true },
-      { ...command("current-tools-validate-rust-graph", ["npm", "run", "current-tools:validate-rust-graph"]), retained: true },
-      {
-        id: "current-tools-validate-all",
-        command: ["npm", "run", "current-tools:validate-all"],
-        status: "retained-not-run",
-        exitCode: null,
-        stdoutSha256: "0".repeat(64),
-        stderrSha256: "0".repeat(64),
-        retained: true,
-        assertion: "retained by default"
-      }
-    ],
+    selfValidation: cutover.selfValidation,
     unsupportedSurfaces: [
       { surface: "inspect", status: "parity-blocker", cleanCoverage: false, blocker: "inspect not mapped into ASP #120" },
-      { surface: "edit", status: "retained-old-tool-gate", cleanCoverage: false, blocker: "edit not mapped into ASP #120" }
+      { surface: "edit", status: "parity-blocker", cleanCoverage: false, blocker: "edit not mapped into ASP #120" }
     ],
-    parityBlockers: [{ source: "docs/planning/old-tool-compatibility-matrix.md:1", detail: "old-tool guardrails retained" }],
+    parityBlockers: [],
     authority: {
       hostOwnsDecisions: true,
       providerOutputIsHostDecision: false,
       localAuthorityOverride: { present: false, sharedAuthorityWeakened: false }
     },
     publicReleaseActions: [],
-    oldToolReplacementClaimed: false,
     forbiddenMarkerScan: {
       scannedTextCount: 2,
       findingCount: 0,

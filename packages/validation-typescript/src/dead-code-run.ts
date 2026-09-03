@@ -139,7 +139,9 @@ function deadCodeDiagnostics(state: DeadCodeState): readonly ValidationDiagnosti
       !hasReachableSymbol(node, state.reachability.reachableSymbolAliases)
   );
   const typeExports = partitionTypeExportsByReferenceSupport({
-    nodes: typeCoveredExports.filter((node) => !nodeHasPath(node, state.missingGraphImportTargets)),
+    nodes: typeCoveredExports
+      .filter((node) => !hasReachableSymbol(node, state.reachability.reachableSymbolAliases))
+      .filter((node) => !nodeHasPath(node, state.missingGraphImportTargets)),
     typeReferences: state.typeReferences,
     incomingTypeReferences: new Set(state.typeReferences.map((edge) => edge.to)),
     importsFrom: state.importsFrom,

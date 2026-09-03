@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "issue": "#17",
   "origin": "covibes-authored-synthetic",
-  "generatedAt": "2026-07-18T06:29:58.350Z",
-  "commitSha": "2d4e920e0b08a989953486b261327ed7496c328b",
+  "generatedAt": "2026-08-07T17:35:07.549Z",
+  "commitSha": "6ed9e0e5b48acdc298af1a2e1af1a59aae32ac78",
   "graphPackageVersions": [
     {
       "packageName": "@the-open-engine/opcore-graph",
@@ -59,7 +59,7 @@
       "status": "passed",
       "exitCode": 0,
       "fixture": "packages/fixtures/source-extraction/wave1",
-      "durationMs": 997
+      "durationMs": 541
     },
     {
       "id": "opcore-graph-update",
@@ -76,7 +76,7 @@
       "status": "passed",
       "exitCode": 0,
       "fixture": "packages/fixtures/source-extraction/wave1",
-      "durationMs": 681
+      "durationMs": 543
     },
     {
       "id": "opcore-graph-watch",
@@ -93,7 +93,7 @@
       "status": "passed",
       "exitCode": 0,
       "fixture": "packages/fixtures/source-extraction/wave1",
-      "durationMs": 662
+      "durationMs": 533
     },
     {
       "id": "opcore-graph-status",
@@ -110,7 +110,7 @@
       "status": "passed",
       "exitCode": 0,
       "fixture": "packages/fixtures/source-extraction/wave1",
-      "durationMs": 743
+      "durationMs": 550
     },
     {
       "id": "opcore-graph-query",
@@ -127,7 +127,7 @@
       "status": "passed",
       "exitCode": 0,
       "fixture": "packages/fixtures/source-extraction/wave1",
-      "durationMs": 691
+      "durationMs": 531
     },
     {
       "id": "opcore-graph-impact",
@@ -144,7 +144,7 @@
       "status": "passed",
       "exitCode": 0,
       "fixture": "packages/fixtures/source-extraction/wave1",
-      "durationMs": 734
+      "durationMs": 529
     },
     {
       "id": "opcore-graph-search",
@@ -161,7 +161,7 @@
       "status": "passed",
       "exitCode": 0,
       "fixture": "packages/fixtures/source-extraction/wave1",
-      "durationMs": 734
+      "durationMs": 535
     },
     {
       "id": "opcore-graph-serve",
@@ -178,7 +178,7 @@
       "status": "passed",
       "exitCode": 0,
       "fixture": "packages/fixtures/source-extraction/wave1",
-      "durationMs": 745
+      "durationMs": 531
     }
   ],
   "rustCommandCoverage": [
@@ -197,7 +197,7 @@
       "status": "passed",
       "exitCode": 0,
       "fixture": "packages/fixtures/source-extraction/rust-only",
-      "durationMs": 743
+      "durationMs": 535
     },
     {
       "id": "opcore-graph-rust-update",
@@ -214,7 +214,7 @@
       "status": "passed",
       "exitCode": 0,
       "fixture": "packages/fixtures/source-extraction/rust-only",
-      "durationMs": 723
+      "durationMs": 538
     },
     {
       "id": "opcore-graph-rust-watch",
@@ -231,7 +231,7 @@
       "status": "passed",
       "exitCode": 0,
       "fixture": "packages/fixtures/source-extraction/rust-only",
-      "durationMs": 733
+      "durationMs": 539
     },
     {
       "id": "opcore-graph-rust-status",
@@ -248,7 +248,7 @@
       "status": "passed",
       "exitCode": 0,
       "fixture": "packages/fixtures/source-extraction/rust-only",
-      "durationMs": 735
+      "durationMs": 541
     },
     {
       "id": "opcore-graph-rust-query",
@@ -265,7 +265,7 @@
       "status": "passed",
       "exitCode": 0,
       "fixture": "packages/fixtures/source-extraction/rust-only",
-      "durationMs": 784
+      "durationMs": 532
     },
     {
       "id": "opcore-graph-rust-impact",
@@ -282,7 +282,7 @@
       "status": "passed",
       "exitCode": 0,
       "fixture": "packages/fixtures/source-extraction/rust-only",
-      "durationMs": 691
+      "durationMs": 541
     },
     {
       "id": "opcore-graph-rust-search",
@@ -299,7 +299,7 @@
       "status": "passed",
       "exitCode": 0,
       "fixture": "packages/fixtures/source-extraction/rust-only",
-      "durationMs": 724
+      "durationMs": 530
     },
     {
       "id": "opcore-graph-rust-serve",
@@ -316,7 +316,7 @@
       "status": "passed",
       "exitCode": 0,
       "fixture": "packages/fixtures/source-extraction/rust-only",
-      "durationMs": 719
+      "durationMs": 527
     }
   ],
   "directSqliteQueries": [
@@ -396,82 +396,82 @@
   "benchmarks": [
     {
       "metric": "install_setup_ms",
-      "value": 6,
+      "value": 1,
       "unit": "ms",
       "baselineIssue": "#19",
-      "baselineReceipt": "packages/fixtures/graph-reference-evidence/baseline-receipts.json",
+      "baselineReceipt": "docs/release/graph-release-receipt.json",
       "comparison": "recorded"
     },
     {
       "metric": "cold_build_ms",
-      "value": 997,
+      "value": 541,
       "unit": "ms",
       "baselineIssue": "#19",
-      "baselineReceipt": "packages/fixtures/graph-reference-evidence/baseline-receipts.json",
+      "baselineReceipt": "docs/release/graph-release-receipt.json",
       "comparison": "recorded"
     },
     {
       "metric": "incremental_update_ms",
-      "value": 681,
+      "value": 543,
       "unit": "ms",
       "baselineIssue": "#19",
-      "baselineReceipt": "packages/fixtures/graph-reference-evidence/baseline-receipts.json",
+      "baselineReceipt": "docs/release/graph-release-receipt.json",
       "comparison": "recorded"
     },
     {
       "metric": "impact_cold_ms",
-      "value": 734,
+      "value": 529,
       "unit": "ms",
       "baselineIssue": "#19",
-      "baselineReceipt": "packages/fixtures/graph-reference-evidence/baseline-receipts.json",
+      "baselineReceipt": "docs/release/graph-release-receipt.json",
       "comparison": "recorded"
     },
     {
       "metric": "impact_hot_ms",
-      "value": 756,
+      "value": 538,
       "unit": "ms",
       "baselineIssue": "#19",
-      "baselineReceipt": "packages/fixtures/graph-reference-evidence/baseline-receipts.json",
+      "baselineReceipt": "docs/release/graph-release-receipt.json",
       "comparison": "recorded"
     },
     {
       "metric": "search_ms",
-      "value": 734,
+      "value": 535,
       "unit": "ms",
       "baselineIssue": "#19",
-      "baselineReceipt": "packages/fixtures/graph-reference-evidence/baseline-receipts.json",
+      "baselineReceipt": "docs/release/graph-release-receipt.json",
       "comparison": "recorded"
     },
     {
       "metric": "daemon_startup_ms",
-      "value": 1130,
+      "value": 759,
       "unit": "ms",
       "baselineIssue": "#19",
-      "baselineReceipt": "packages/fixtures/graph-reference-evidence/baseline-receipts.json",
+      "baselineReceipt": "docs/release/graph-release-receipt.json",
       "comparison": "recorded"
     },
     {
       "metric": "daemon_query_ms",
-      "value": 1130,
+      "value": 758,
       "unit": "ms",
       "baselineIssue": "#19",
-      "baselineReceipt": "packages/fixtures/graph-reference-evidence/baseline-receipts.json",
+      "baselineReceipt": "docs/release/graph-release-receipt.json",
       "comparison": "recorded"
     },
     {
       "metric": "db_size_bytes",
-      "value": 245760,
+      "value": 241664,
       "unit": "bytes",
       "baselineIssue": "#19",
-      "baselineReceipt": "packages/fixtures/graph-reference-evidence/baseline-receipts.json",
+      "baselineReceipt": "docs/release/graph-release-receipt.json",
       "comparison": "recorded"
     },
     {
       "metric": "wal_size_bytes",
-      "value": 403792,
+      "value": 399672,
       "unit": "bytes",
       "baselineIssue": "#19",
-      "baselineReceipt": "packages/fixtures/graph-reference-evidence/baseline-receipts.json",
+      "baselineReceipt": "docs/release/graph-release-receipt.json",
       "comparison": "recorded"
     }
   ],
@@ -507,10 +507,10 @@
     "forbiddenMarkersAbsent": true,
     "generatedBuildMetadataAbsent": true,
     "privatePathsAbsent": true,
-    "pythonCrgSourceAbsent": true,
-    "pythonGraphPackageMetadataAbsent": true,
-    "pythonCrgGitHistoryAbsent": true,
-    "forbiddenImplementationPackageNamesAbsent": true,
+    "sourceProvenanceAbsent": true,
+    "packageMetadataAbsent": true,
+    "gitHistoryAbsent": true,
+    "foreignImplementationNamesAbsent": true,
     "inspections": [
       "npm-pack-dry-run",
       "package-file-scan",
@@ -652,10 +652,10 @@
   "graphArtifact": {
     "artifactName": "opcore-graph-core",
     "artifactVersion": "0.2.1",
-    "targetPlatform": "darwin-arm64",
+    "targetPlatform": "linux-x64",
     "binaryPath": "opcore-graph-core",
     "checksumPath": "opcore-graph-core.sha256",
-    "checksumSha256": "72acf10de0ece619c3896943addfb0cc1b09dab22000b48a653b033224217bc8",
+    "checksumSha256": "c3a771435a7a8172a9e5f0bb20b0d111453efc70901e95308094664f77e7bdf1",
     "buildProfile": "release"
   },
   "optionalSurfaces": [

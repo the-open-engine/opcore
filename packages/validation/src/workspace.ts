@@ -21,14 +21,18 @@ export interface CreateNodeValidationWorkspaceOptions {
 
 export function createNodeValidationWorkspace(options: CreateNodeValidationWorkspaceOptions): ValidationWorkspace {
   const repoRoot = resolve(options.repoRoot);
+  const gitPrefix = resolveGitPrefix(repoRoot);
   const skippedPathSegments = new Set(options.skippedPathSegments ?? []);
   return {
-    readFile: (path, context) => readWorkspaceFile(repoRoot, path, context),
+    readFile: (path, context) => readWorkspaceFile(repoRoot, gitPrefix, path, context),
     listFiles: (context) => filterFileSet(listWorkspaceFiles(repoRoot, context, skippedPathSegments), skippedPathSegments),
     listChangedFiles: (baseRef) => filterFileSet(listChangedFiles(repoRoot, baseRef), skippedPathSegments),
     listTreeFiles: (treeRef, changedFrom) => filterFileSet(listTreeFiles(repoRoot, treeRef, changedFrom), skippedPathSegments),
     listStagedFiles: () =>
-      filterFileSet(listDiffFiles(repoRoot, ["diff", "--cached", "--name-status", "-z", "--find-renames", "--"]), skippedPathSegments),
+      filterFileSet(
+        listDiffFiles(repoRoot, ["diff", "--relative", "--cached", "--name-status", "-z", "--find-renames", "--", "."]),
+        skippedPathSegments
+      ),
     listRepoFiles: () => filterFileSet(listRepoFiles(repoRoot), skippedPathSegments),
     listPackageFiles: async (_packageName, packageRoot) => {
       const files = filterFileSet(await listRepoFiles(repoRoot), skippedPathSegments);
@@ -47,15 +51,16 @@ export function createNodeValidationWorkspace(options: CreateNodeValidationWorks
 
 async function readWorkspaceFile(
   repoRoot: string,
+  gitPrefix: string,
   path: string,
   context?: ValidationWorkspaceReadContext
 ): Promise<ValidationWorkspaceReadFileResult> {
   const beforeRef = beforeStateTreeRef(repoRoot, context);
-  if (beforeRef !== undefined) return readTreeFile(repoRoot, beforeRef, path);
+  if (beforeRef !== undefined) return readTreeFile(repoRoot, gitPrefix, beforeRef, path);
   if (context?.scope.kind === "tree" && context.scope.treeRef !== undefined) {
-    return readTreeFile(repoRoot, context.scope.treeRef, path);
+    return readTreeFile(repoRoot, gitPrefix, context.scope.treeRef, path);
   }
-  if (context?.scope.kind === "staged") return readStagedFile(repoRoot, path);
+  if (context?.scope.kind === "staged") return readStagedFile(repoRoot, gitPrefix, path);
   return readDiskFile(repoRoot, path);
 }
 
@@ -98,9 +103,9 @@ function hasSkippedSegment(path: string, skippedPathSegments: ReadonlySet<string
   return path.split(/[\\/]+/).some((segment) => skippedPathSegments.has(segment));
 }
 
-function readStagedFile(repoRoot: string, path: string): ValidationWorkspaceReadFileResult {
+function readStagedFile(repoRoot: string, gitPrefix: string, path: string): ValidationWorkspaceReadFileResult {
   const normalized = validateRepoRelativePath(path);
-  const result = git(repoRoot, ["show", `:${normalized}`]);
+  const result = git(repoRoot, ["show", `:${gitRepoPath(gitPrefix, normalized)}`]);
   if (result.ok) return { status: "found", content: result.stdout };
   if (/exists on disk, but not in|Path .* exists, but not|does not exist/.test(result.cause)) {
     return { status: "missing" };
@@ -111,9 +116,9 @@ function readStagedFile(repoRoot: string, path: string): ValidationWorkspaceRead
 function listChangedFiles(repoRoot: string, baseRef: string): ValidationWorkspaceFileSet {
   const base = resolveChangedBase(repoRoot, baseRef);
   if (!base.ok) return unavailable(base);
-  const diff = listDiffFiles(repoRoot, ["diff", "--name-status", "-z", "--find-renames", base.diffBase, "--"]);
+  const diff = listDiffFiles(repoRoot, ["diff", "--relative", "--name-status", "-z", "--find-renames", base.diffBase, "--", "."]);
   if (diff.unavailable) return diff;
-  const untracked = git(repoRoot, ["ls-files", "--others", "--exclude-standard", "-z"]);
+  const untracked = git(repoRoot, ["ls-files", "--others", "--exclude-standard", "-z", "--", "."]);
   if (!untracked.ok) return unavailable(untracked);
   return {
     files: [
@@ -131,7 +136,7 @@ function listTreeFiles(repoRoot: string, treeRef: string, changedFrom: string): 
   if (!tree.ok) return unavailable(tree);
   const base = resolveTreeish(repoRoot, changedFrom);
   if (!base.ok) return unavailable(base);
-  return listDiffFiles(repoRoot, ["diff", "--name-status", "-z", "--find-renames", base.treeSha, tree.treeSha, "--"]);
+  return listDiffFiles(repoRoot, ["diff", "--relative", "--name-status", "-z", "--find-renames", base.treeSha, tree.treeSha, "--", "."]);
 }
 
 function listWorkspaceFiles(
@@ -185,7 +190,7 @@ function listDiskFiles(repoRoot: string, skippedPathSegments: ReadonlySet<string
 function listTreeSnapshotFiles(repoRoot: string, treeRef: string): ValidationWorkspaceFileSet {
   const tree = resolveTreeish(repoRoot, treeRef);
   if (!tree.ok) return unavailable(tree);
-  const result = git(repoRoot, ["ls-tree", "-r", "-z", "--name-only", tree.treeSha, "--"]);
+  const result = git(repoRoot, ["ls-tree", "-r", "-z", "--name-only", tree.treeSha, "--", "."]);
   if (!result.ok) return unavailable(result);
   return {
     files: parseNulRecords(result.stdout).map(normalizeGitPath)
@@ -193,20 +198,20 @@ function listTreeSnapshotFiles(repoRoot: string, treeRef: string): ValidationWor
 }
 
 function listRepoFiles(repoRoot: string): ValidationWorkspaceFileSet {
-  const result = git(repoRoot, ["ls-files", "-co", "--exclude-standard", "-z"]);
+  const result = git(repoRoot, ["ls-files", "-co", "--exclude-standard", "-z", "--", "."]);
   if (!result.ok) return unavailable(result);
   return {
     files: parseNulRecords(result.stdout).map(normalizeGitPath)
   };
 }
 
-function readTreeFile(repoRoot: string, treeRef: string, path: string): ValidationWorkspaceReadFileResult {
+function readTreeFile(repoRoot: string, gitPrefix: string, treeRef: string, path: string): ValidationWorkspaceReadFileResult {
   const normalized = validateRepoRelativePath(path);
   const tree = resolveTreeish(repoRoot, treeRef);
   if (!tree.ok) {
     throw new Error(`${tree.message}: ${tree.cause}`);
   }
-  const result = git(repoRoot, ["show", `${tree.treeSha}:${normalized}`]);
+  const result = git(repoRoot, ["show", `${tree.treeSha}:${gitRepoPath(gitPrefix, normalized)}`]);
   if (result.ok) return { status: "found", content: result.stdout };
   if (/exists on disk, but not in|Path .* exists, but not|does not exist in/.test(result.cause)) {
     return { status: "missing" };
@@ -326,6 +331,18 @@ function resolveRepoPath(repoRoot: string, path: string): string {
 
 function normalizeGitPath(path: string): string {
   return validateRepoRelativePath(path.replaceAll("\\", "/"));
+}
+
+function resolveGitPrefix(repoRoot: string): string {
+  const result = git(repoRoot, ["rev-parse", "--show-prefix"]);
+  if (!result.ok) return "";
+  const prefix = result.stdout.replace(/[\r\n]+$/, "").replace(/\/$/, "");
+  return prefix.length === 0 ? "" : normalizeGitPath(prefix);
+}
+
+function gitRepoPath(gitPrefix: string, path: string): string {
+  const normalized = validateRepoRelativePath(path);
+  return gitPrefix.length === 0 ? normalized : `${gitPrefix}/${normalized}`;
 }
 
 function git(repoRoot: string, args: readonly string[]): { ok: true; stdout: string } | { ok: false; message: string; cause: string } {

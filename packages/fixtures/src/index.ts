@@ -23,11 +23,6 @@ export const fixtureIds = [
   "inspect-symbol-parity-v1",
   "validation-contract-v1",
   "installed-artifact-smoke-v1",
-  "graph-reference-evidence-manifest-v1",
-  "graph-reference-evidence-sqlite-fixtures-v1",
-  "graph-reference-evidence-daemon-socket-fixtures-v1",
-  "graph-reference-evidence-golden-corpus-v1",
-  "graph-reference-evidence-baseline-receipts-v1",
   "graph-release-readiness-v1"
 ] as const;
 
@@ -606,10 +601,13 @@ export const conformanceFixtureMetadata = [
       checks: [
         "python.syntax",
         "python.source-hygiene",
+        "python.ruff-lint",
+        "python.ruff-format",
         "python.types",
         "python.import-graph",
         "python.dead-code",
-        "python.relevant-tests"
+        "python.relevant-tests",
+        "python.pytest"
       ],
       degradedTools: ["mypy", "pyright", "ruff", "pytest"]
     }
@@ -716,13 +714,13 @@ export const conformanceFixtureMetadata = [
     id: "graph-serve-transport-v1",
     packageTrack: "fixtures",
     status: "graph_serve_transport",
-    dataFile: "packages/fixtures/graph-reference-evidence/daemon-socket-fixtures.json",
+    dataFile: "packages/fixtures/graph-serve/serve-fixtures.json",
     graphServe: {
       commands: ["serve"],
       protocols: ["opcore.graph.daemon", "jsonrpc-2.0"],
       operations: ["ping", "status", "query", "search", "shutdown"],
       failureStates: ["required_missing", "stale", "schema_mismatch", "daemon_unavailable", "error"],
-      dataFile: "packages/fixtures/graph-reference-evidence/daemon-socket-fixtures.json"
+      dataFile: "packages/fixtures/graph-serve/serve-fixtures.json"
     }
   },
   {
@@ -834,56 +832,6 @@ export const conformanceFixtureMetadata = [
       validationGraphModes: ["optional", "required"],
       optionalSurfaces: ["#13:coverage:deferred", "#14:flows:deferred", "#15:communities:deferred", "#16:read_only_suggestions:deferred"]
     }
-  },
-  {
-    origin: fixtureOrigin,
-    containsSourceCode: false,
-    issue: "#19",
-    schemaVersion: 1,
-    id: "graph-reference-evidence-manifest-v1",
-    packageTrack: "fixtures",
-    status: "graph_reference_evidence_manifest",
-    dataFile: "packages/fixtures/graph-reference-evidence/manifest.json"
-  },
-  {
-    origin: fixtureOrigin,
-    containsSourceCode: false,
-    issue: "#19",
-    schemaVersion: 1,
-    id: "graph-reference-evidence-sqlite-fixtures-v1",
-    packageTrack: "fixtures",
-    status: "graph_reference_evidence_sqlite_fixture",
-    dataFile: "packages/fixtures/graph-reference-evidence/sqlite-fixtures.json"
-  },
-  {
-    origin: fixtureOrigin,
-    containsSourceCode: false,
-    issue: "#19",
-    schemaVersion: 1,
-    id: "graph-reference-evidence-daemon-socket-fixtures-v1",
-    packageTrack: "fixtures",
-    status: "graph_reference_evidence_daemon_socket_fixture",
-    dataFile: "packages/fixtures/graph-reference-evidence/daemon-socket-fixtures.json"
-  },
-  {
-    origin: fixtureOrigin,
-    containsSourceCode: false,
-    issue: "#19",
-    schemaVersion: 1,
-    id: "graph-reference-evidence-golden-corpus-v1",
-    packageTrack: "fixtures",
-    status: "graph_reference_evidence_golden_corpus",
-    dataFile: "packages/fixtures/graph-reference-evidence/golden-corpus.json"
-  },
-  {
-    origin: fixtureOrigin,
-    containsSourceCode: false,
-    issue: "#19",
-    schemaVersion: 1,
-    id: "graph-reference-evidence-baseline-receipts-v1",
-    packageTrack: "fixtures",
-    status: "graph_reference_evidence_baseline_receipts",
-    dataFile: "packages/fixtures/graph-reference-evidence/baseline-receipts.json"
   },
   {
     origin: fixtureOrigin,

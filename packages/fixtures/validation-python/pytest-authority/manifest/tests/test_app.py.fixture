@@ -1,0 +1,11 @@
+import pytest
+
+from src.app import answer
+
+VALUES = [f"case-{index:03d}-{'x' * 120}" for index in range(180)]
+
+
+@pytest.mark.parametrize("label", VALUES, ids=VALUES)
+def test_answer(label: str) -> None:
+    assert label.startswith("case-")
+    assert answer() == 42

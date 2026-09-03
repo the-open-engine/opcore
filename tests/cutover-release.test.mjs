@@ -8,7 +8,6 @@ import { fileURLToPath } from "node:url";
 import {
   graphCoreNativePackageNameForTarget,
   graphCoreNativeSupportedTargets,
-  releaseCutoverCurrentToolGuardrailIds,
   releaseCutoverNegativeCheckIds,
   releaseCutoverPythonCommandIds,
   releaseCutoverRustCommandIds,
@@ -23,15 +22,17 @@ const receiptGatesRunSeparately = process.env.OPCORE_CI_RECEIPT_GATES_RUN_SEPARA
 const separateReceiptGateSkip = receiptGatesRunSeparately ? "covered by root CI receipt gate" : false;
 
 describe("cutover release receipt", () => {
-  it("proves installed Opcore artifacts without current-tool fallback", { timeout: 180000, skip: separateReceiptGateSkip }, () => {
-    withReleaseDocsLock(() => {
+  it(
+    "proves installed Opcore artifacts with native self-validation",
+    { timeout: 180000, skip: separateReceiptGateSkip },
+    () => {
+      withReleaseDocsLock(() => {
       run(["scripts/generate-release-receipt.mjs", "--inspect-packages-only", "--json"]);
       const result = withCompleteNativeArtifactFixtures(() =>
         run(["scripts/generate-cutover-receipt.mjs", "--json"], {
           env: {
             ...process.env,
-            OPCORE_CUTOVER_REUSE_RELEASE_PACKAGES: "1",
-            OPCORE_CUTOVER_REUSE_CURRENT_TOOL_GUARDRAILS: "1"
+            OPCORE_CUTOVER_REUSE_RELEASE_PACKAGES: "1"
           }
         })
       );
@@ -61,11 +62,9 @@ describe("cutover release receipt", () => {
           target
         );
       }
-      assert.equal(receipt.environmentIsolation.currentToolEnvCleared, true);
-      assert.equal(receipt.environmentIsolation.aceRuntimeBinExcluded, true);
-      assert.equal(receipt.environmentIsolation.siblingCovibesExcluded, true);
-      assert.equal(receipt.environmentIsolation.opcoreBinOnly, true);
-      assert.deepEqual(receipt.environmentIsolation.oldBinsAbsent, { lattice: true, crg: true, cix: true, rox: true });
+      assert.equal(receipt.environmentIsolation.pathSanitized, true);
+      assert.equal(receipt.environmentIsolation.siblingRepositoriesExcluded, true);
+      assert.equal(receipt.environmentIsolation.opcoreBinsVerified, true);
       assert.equal(receipt.commandReceipts.every((entry) => entry.command[0] === "opcore" || entry.command[0] === "opcore"), true);
       assert.deepEqual(
         receipt.commandReceipts.filter((entry) => entry.status === "not_implemented").map((entry) => entry.id),
@@ -81,20 +80,16 @@ describe("cutover release receipt", () => {
         releaseCutoverPythonCommandIds
       );
       assert.equal(receipt.pythonCommandReceipts.every((entry) => entry.status === "ok"), true);
-      assert.deepEqual(
-        receipt.currentToolGuardrails.map((entry) => entry.id),
-        releaseCutoverCurrentToolGuardrailIds
-      );
-      assert.deepEqual(receipt.currentToolGuardrails, recordedReceipt.currentToolGuardrails);
-      assert.equal(receipt.currentToolGuardrails.every((entry) => entry.retained === true && entry.oldToolReplacementClaimed === false), true);
-      assert.equal(receipt.oldToolReplacementClaimed, false);
+      assert.deepEqual(receipt.selfValidation, recordedReceipt.selfValidation);
+      assert.equal(receipt.selfValidation.status, "passed");
       for (const id of ["inspect-symbols", "inspect-definition", "inspect-references", "inspect-signature", "inspect-implementations", "inspect-search"]) {
         assert.equal(receipt.commandReceipts.find((entry) => entry.id === id)?.owner, "inspect", id);
       }
       assert.equal(receipt.forbiddenMarkerScan.findingCount, 0);
       assert.deepEqual(receipt.inputEvidence.map((entry) => entry.issue).sort(), ["#17", "#29", "#58"]);
-    });
-  });
+      });
+    }
+  );
 
   it("rejects cutover receipts with advertised placeholder command evidence", () => {
     const temp = mkdtempSync(join(tmpdir(), "opcore-cutover-negative-"));
@@ -136,13 +131,9 @@ describe("cutover release receipt", () => {
           }))
         },
         environmentIsolation: {
-          currentToolEnvCleared: true,
-          clearedEnvVarCount: 5,
           pathSanitized: true,
-          aceRuntimeBinExcluded: true,
-          siblingCovibesExcluded: true,
-          opcoreBinOnly: true,
-          oldBinsAbsent: { lattice: true, crg: true, cix: true, rox: true }
+          siblingRepositoriesExcluded: true,
+          opcoreBinsVerified: true
         },
         commandReceipts: [
           {
@@ -169,21 +160,15 @@ describe("cutover release receipt", () => {
           exitCode: 0,
           assertion: `${id} rejected the unsafe path`
         })),
-        currentToolGuardrails: releaseCutoverCurrentToolGuardrailIds.map((id) => ({
-          id,
-          command:
-            id === "current-tools-validate-changed"
-              ? ["npm", "run", "current-tools:validate-changed"]
-              : ["npm", "run", "current-tools:validate-rust-graph"],
+        selfValidation: {
+          id: "opcore-self-check",
+          command: ["npm", "run", "opcore:self-check"],
           status: "passed",
           exitCode: 0,
           stdoutSha256: "5".repeat(64),
           stderrSha256: "6".repeat(64),
-          retained: true,
-          assertion: `${id} remains retained`,
-          oldToolReplacementClaimed: false
-        })),
-        oldToolReplacementClaimed: false,
+          assertion: "Opcore self-validation passed"
+        },
         forbiddenMarkerScan: { scannedTextCount: 1, findingCount: 0, markersBlocked: ["private-runtime"] },
         inputEvidence: [
           { issue: "#17", path: "docs/release/graph-release-receipt.json", checksumSha256: "1".repeat(64) },

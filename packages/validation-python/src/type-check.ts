@@ -3,7 +3,7 @@ import type {
   PythonProjectToolProvenance,
   PythonValidationAuthority,
   PythonValidationAuthoritySource,
-  PythonValidationCapabilityRun,
+  PythonTypesValidationCapabilityRun,
   PythonValidationCapabilityRunStatus,
   PythonValidationCapabilityToolProvenance,
   ValidationCheckOutcome,
@@ -21,8 +21,10 @@ import { runMypyCapability } from "./mypy-runner.js";
 import { resolveMypyConfigSemantics, type MypyConfigSemantics } from "./mypy-config.js";
 import { resolvePyrightConfigSemantics, type PyrightConfigSemantics } from "./pyright-config.js";
 import { runPyrightCapability } from "./pyright-runner.js";
+import { missingPythonProjectContextResult } from "./python-context-result.js";
 import {
   pythonInputSet,
+  selectPythonSourceFilesForTargets,
   skippedPythonInputResult,
   type PythonMaterializedSourceSet,
   type PythonProjectContextResolver,
@@ -48,7 +50,7 @@ interface PythonProjectGroup {
 }
 
 interface ProjectAttempt {
-  run?: PythonValidationCapabilityRun;
+  run?: PythonTypesValidationCapabilityRun;
   diagnostics: readonly ValidationDiagnostic[];
   outcome: ValidationCheckOutcome;
   failureMessage?: string;
@@ -68,7 +70,9 @@ export function createTypeCheck(
     run: async (validation) => {
       const skipped = skippedPythonInputResult(validation);
       if (skipped !== undefined) return skipped;
-      if (resolveContexts === undefined) return missingContextResult(pythonInputSet(validation));
+      if (resolveContexts === undefined) {
+        return missingPythonProjectContextResult("PYTHON_CONTEXT_MISSING", pythonInputSet(validation));
+      }
       if (resolveSources === undefined) throw new Error("A shared Python source-set resolver is required for Python type validation");
       const sourceSet = await resolveSources(validation);
       if (sourceSet.rootPaths.length === 0) {
@@ -77,10 +81,10 @@ export function createTypeCheck(
       // Pyright selects files from configuration rather than only the import closure.
       // Resolve every visible source so parent projects cannot materialize sources
       // owned by another project that has its own authority run in this request.
-      const contexts = await resolveContexts(validation, sourceSet.allPaths);
+      const contexts = await resolveContexts(validation, sourceSet.allPaths, ["mypy", "pyright"]);
       const contextByTarget = new Map(contexts.map((context) => [context.target, context]));
       const missing = sourceSet.rootPaths.filter((path) => !contextByTarget.has(path));
-      if (missing.length > 0) return missingContextResult(missing);
+      if (missing.length > 0) return missingPythonProjectContextResult("PYTHON_CONTEXT_MISSING", missing);
       const projects = groupProjectContexts(sourceSet.rootPaths, contextByTarget);
       const activeProjectKeys = new Set(projects.map((project) => project.context.projectKey));
       const attempts: ProjectAttempt[] = [];
@@ -403,19 +407,4 @@ function aggregateOutcome(outcomes: readonly ValidationCheckOutcome[]): Validati
 
 function uniqueSorted(values: readonly string[]): readonly string[] {
   return [...new Set(values)].sort();
-}
-
-function missingContextResult(missing: readonly string[]): ValidationCheckResult {
-  const suffix = missing.length === 0 ? "" : `: ${missing.join(", ")}`;
-  const message = `Canonical Python project context resolution returned no context for selected source${suffix}`;
-  return {
-    outcome: "tool_failure",
-    failureMessage: message,
-    diagnostics: [{
-      category: "infrastructure",
-      severity: "error",
-      code: "PYTHON_CONTEXT_MISSING",
-      message
-    }]
-  };
 }

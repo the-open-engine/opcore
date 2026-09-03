@@ -20,6 +20,7 @@ const diagnosticSeverities = ["info", "warning", "error"] as const;
 
 export interface ValidationCheckContext {
   request: ValidationRequest;
+  selectedCheckIds: readonly string[];
   scope: ResolvedValidationScope;
   graphStatus: GraphProviderStatus;
   graph: ValidationGraphQuerySession;
@@ -29,6 +30,7 @@ export interface ValidationCheckContext {
 }
 
 export type ValidationPersistentCacheMode = "enabled" | "disabled";
+export type ValidationInactiveCheckState = "not_applicable" | "disabled";
 
 export interface ValidationRuntimePolicy {
   persistentCaches: ValidationPersistentCacheMode;
@@ -52,6 +54,11 @@ export interface ValidationCheckDefinition {
   defaultScopes?: readonly ValidationScopeKind[];
   requiresGraph?: boolean;
   graphUsage?: "none" | "optional" | "required";
+  inactiveResult?: (
+    context: ValidationCheckContext,
+    state: ValidationInactiveCheckState
+  ) => ValidationCheckResult | readonly ValidationDiagnostic[] | void | Promise<ValidationCheckResult | readonly ValidationDiagnostic[] | void>;
+  inactiveStateWhenUnselected?: ValidationInactiveCheckState;
   graphRequirements?: (
     context: ValidationCheckContext
   ) => readonly ValidationGraphQueryRequirement[] | Promise<readonly ValidationGraphQueryRequirement[]>;
@@ -183,6 +190,19 @@ function validateValidationCheckDefinition(definition: ValidationCheckDefinition
   }
   if (definition.graphUsage !== undefined && !["none", "optional", "required"].includes(definition.graphUsage)) {
     throw new ValidationCheckRegistryError("Validation check graphUsage must be none, optional, or required");
+  }
+  if (definition.inactiveResult !== undefined && typeof definition.inactiveResult !== "function") {
+    throw new ValidationCheckRegistryError("Validation check inactiveResult must be a function");
+  }
+  if (definition.inactiveStateWhenUnselected !== undefined) {
+    if (definition.inactiveResult === undefined) {
+      throw new ValidationCheckRegistryError("Validation check inactiveStateWhenUnselected requires inactiveResult");
+    }
+    if (definition.inactiveStateWhenUnselected !== "not_applicable" && definition.inactiveStateWhenUnselected !== "disabled") {
+      throw new ValidationCheckRegistryError(
+        `Unknown validation check inactiveStateWhenUnselected: ${String(definition.inactiveStateWhenUnselected)}`
+      );
+    }
   }
   if (definition.graphRequirements !== undefined && typeof definition.graphRequirements !== "function") {
     throw new ValidationCheckRegistryError("Validation check graphRequirements must be a function");

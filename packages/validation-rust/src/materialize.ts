@@ -20,10 +20,7 @@ const excludedParts = new Set([
   ".git",
   "node_modules",
   "dist",
-  "target",
-  ".ace",
-  ".ro" + "x-cache",
-  ".robustness-engine" + "-cache"
+  "target"
 ]);
 
 export async function materializeRustWorkspace(
@@ -48,7 +45,7 @@ async function createMaterializedRustWorkspace(
   context: ValidationCheckContext,
   options: { env?: Record<string, string | undefined> }
 ): Promise<MaterializedRustWorkspace> {
-  const tempRoot = mkdtempSync(join(tmpdir(), "lattice-validation-rust-"));
+  const tempRoot = mkdtempSync(join(tmpdir(), "opcore-validation-rust-"));
   const root = join(tempRoot, "repo");
   mkdirSync(root, { recursive: true });
   const repoRoot = context.request.repo.repoRoot;

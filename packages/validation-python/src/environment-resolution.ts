@@ -28,6 +28,7 @@ export interface PythonProjectEnvironmentOptions {
   env?: Readonly<Record<string, string | undefined>>;
   interpreterArgv?: readonly string[];
   toolArgv?: Partial<Record<PythonProjectToolKind, readonly string[]>>;
+  toolKinds?: readonly Exclude<PythonProjectToolKind, "build">[];
   target: PythonProjectTarget;
   managers: readonly PythonProjectManagerEvidence[];
   toolConfigs: Readonly<Record<"mypy" | "pyright" | "ruff" | "pytest", string | undefined>>;
@@ -205,7 +206,7 @@ async function resolveTools(
   managerCandidates: ManagerExecutableCandidates,
   reasons: PythonProjectContextReason[]
 ): Promise<readonly PythonProjectToolProvenance[]> {
-  const toolKinds: PythonProjectToolKind[] = ["mypy", "pyright", "ruff", "pytest"];
+  const toolKinds = (options.toolKinds ?? ["mypy", "pyright", "ruff", "pytest"]) as readonly Exclude<PythonProjectToolKind, "build">[];
   const tools: PythonProjectToolProvenance[] = [];
   for (const tool of toolKinds) {
     const configFile = tool === "mypy" || tool === "pyright" || tool === "ruff" || tool === "pytest"
@@ -232,8 +233,11 @@ async function resolveTools(
       if (!(await candidateAvailable(options.workspace, candidate.argv[0]))) continue;
       const command = candidate.argv[0];
       const prefix = candidate.argv.slice(1);
-      const result = await processProbe.run(command, [...prefix, "--version"], {
-        cwd: projectCwd(options), env, timeoutMs: options.timeoutMs ?? 10000
+      const probePrefix = tool === "ruff" ? withoutToolConfigOptions(prefix, tool) : prefix;
+      const result = await processProbe.run(command, [...probePrefix, "--version"], {
+        cwd: projectCwd(options),
+        env: tool === "pytest" ? { ...env, PYTEST_DISABLE_PLUGIN_AUTOLOAD: "1" } : env,
+        timeoutMs: options.timeoutMs ?? 10000
       });
       if (!result.ok) {
         failure = probeFailureReason(result, tool);
@@ -696,6 +700,24 @@ function safeToolOptionPrefix(tool: Exclude<PythonProjectToolKind, "build">, arg
     return false;
   }
   return true;
+}
+
+function withoutToolConfigOptions(
+  args: readonly string[],
+  tool: Exclude<PythonProjectToolKind, "build">
+): readonly string[] {
+  const options = toolConfigOptions[tool];
+  const result: string[] = [];
+  for (let index = 0; index < args.length; index += 1) {
+    const argument = args[index];
+    if (options.includes(argument)) {
+      index += 1;
+      continue;
+    }
+    if (options.some((option) => argument.startsWith(`${option}=`))) continue;
+    result.push(argument);
+  }
+  return result;
 }
 
 function safeToolConfigPaths(

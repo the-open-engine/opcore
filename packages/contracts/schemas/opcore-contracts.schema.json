@@ -2766,6 +2766,390 @@
         }
       ]
     },
+    "PythonRuffValidationCapabilityRun": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaId", "schemaVersion", "checkId", "capability", "state", "durationMs", "diagnosticCount"
+      ],
+      "properties": {
+        "schemaId": { "const": "opcore.python.validation-capability-run" },
+        "schemaVersion": { "const": 1 },
+        "checkId": { "enum": ["python.ruff-lint", "python.ruff-format"] },
+        "capability": { "enum": ["ruff_lint", "ruff_format"] },
+        "state": {
+          "enum": [
+            "passed", "findings", "tool_unavailable", "invalid_config", "timeout",
+            "unsupported_target", "tool_failure", "not_applicable", "disabled"
+          ]
+        },
+        "projectKey": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+        "contextFingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+        "afterStateManifestFingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+        "sourcePaths": {
+          "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/RepoRelativePath" }
+        },
+        "configPaths": {
+          "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/RepoRelativePath" }
+        },
+        "executable": {
+          "type": "string",
+          "pattern": "^(?:(?:repo|project):(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._+@-]+(?:/[A-Za-z0-9._+@-]+)*|(?:path|external):[A-Za-z0-9_.+-]+)$"
+        },
+        "command": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^(?!(?:/|\\\\|[A-Za-z]:[\\\\/]))(?!.*[\\s(\\\"'=](?:/|\\\\|[A-Za-z]:[\\\\/]))(?!.*file://).+$"
+        },
+        "argv": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^(?!(?:/|\\\\|[A-Za-z]:[\\\\/]))(?!.*[\\s(\\\"'=](?:/|\\\\|[A-Za-z]:[\\\\/]))(?!.*file://).+$"
+          }
+        },
+        "cwd": { "$ref": "#/$defs/PythonProjectRoot" },
+        "configPath": { "$ref": "#/$defs/RepoRelativePath" },
+        "toolVersion": { "type": "string", "pattern": "^[0-9]+\\.[0-9][-+._A-Za-z0-9]*$" },
+        "toolSource": {
+          "enum": ["explicit_override", "active_environment", "project_local_environment", "manager_environment", "path"]
+        },
+        "termination": { "enum": ["exited", "timeout", "signal", "spawn_error", "overflow"] },
+        "exitCode": { "type": "integer", "minimum": 0 },
+        "signal": { "type": "string", "minLength": 1 },
+        "invocations": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["argv", "termination", "durationMs"],
+            "properties": {
+              "argv": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "pattern": "^(?!(?:/|\\\\|[A-Za-z]:[\\\\/]))(?!.*[\\s(\\\"'=](?:/|\\\\|[A-Za-z]:[\\\\/]))(?!.*file://).+$"
+                }
+              },
+              "termination": { "enum": ["exited", "timeout", "signal", "spawn_error", "overflow"] },
+              "exitCode": { "type": "integer", "minimum": 0 },
+              "signal": { "type": "string", "minLength": 1 },
+              "durationMs": { "type": "number", "minimum": 0 }
+            },
+            "allOf": [
+              {
+                "if": { "required": ["signal"] },
+                "then": { "properties": { "termination": { "const": "signal" } } }
+              },
+              {
+                "if": { "required": ["exitCode"] },
+                "then": { "properties": { "termination": { "const": "exited" } } }
+              },
+              {
+                "if": { "properties": { "termination": { "const": "exited" } }, "required": ["termination"] },
+                "then": { "required": ["exitCode"], "not": { "required": ["signal"] } }
+              },
+              {
+                "if": { "properties": { "termination": { "const": "signal" } }, "required": ["termination"] },
+                "then": { "required": ["signal"], "not": { "required": ["exitCode"] } }
+              },
+              {
+                "if": {
+                  "properties": { "termination": { "enum": ["timeout", "spawn_error", "overflow"] } },
+                  "required": ["termination"]
+                },
+                "then": {
+                  "not": {
+                    "anyOf": [{ "required": ["exitCode"] }, { "required": ["signal"] }]
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "durationMs": { "type": "number", "minimum": 0 },
+        "diagnosticCount": { "type": "integer", "minimum": 0 },
+        "failureMessage": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024,
+          "pattern": "^(?!(?:/|\\\\|[A-Za-z]:[\\\\/]))(?!.*[\\s(\\\"'=](?:/|\\\\|[A-Za-z]:[\\\\/]))(?!.*file://).+$"
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "capability": { "const": "ruff_lint" } }, "required": ["capability"] },
+          "then": { "properties": { "checkId": { "const": "python.ruff-lint" } } }
+        },
+        {
+          "if": { "properties": { "capability": { "const": "ruff_format" } }, "required": ["capability"] },
+          "then": { "properties": { "checkId": { "const": "python.ruff-format" } } }
+        },
+        {
+          "if": {
+            "properties": {
+              "state": { "enum": ["not_applicable", "disabled"] }
+            },
+            "required": ["state"]
+          },
+          "then": {
+            "not": {
+              "anyOf": [
+                { "required": ["termination"] }, { "required": ["exitCode"] }, { "required": ["signal"] },
+                { "required": ["command"] }, { "required": ["argv"] }, { "required": ["invocations"] }
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "enum": [
+                  "passed", "findings", "tool_unavailable", "invalid_config", "timeout",
+                  "unsupported_target", "tool_failure"
+                ]
+              }
+            },
+            "required": ["state"]
+          },
+          "then": {
+            "required": [
+              "projectKey", "contextFingerprint", "afterStateManifestFingerprint",
+              "sourcePaths", "configPaths", "cwd"
+            ],
+            "properties": {
+              "sourcePaths": { "minItems": 1 }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "termination": { "const": "exited" } }, "required": ["termination"] },
+          "then": { "required": ["exitCode"], "not": { "required": ["signal"] } }
+        },
+        {
+          "if": { "properties": { "termination": { "const": "signal" } }, "required": ["termination"] },
+          "then": { "required": ["signal"], "not": { "required": ["exitCode"] } }
+        },
+        {
+          "if": {
+            "properties": { "termination": { "enum": ["timeout", "spawn_error", "overflow"] } },
+            "required": ["termination"]
+          },
+          "then": {
+            "not": {
+              "anyOf": [{ "required": ["exitCode"] }, { "required": ["signal"] }]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "state": { "enum": ["tool_unavailable", "unsupported_target"] } },
+            "required": ["state"]
+          },
+          "then": {
+            "required": ["failureMessage"],
+            "not": {
+              "anyOf": [
+                { "required": ["termination"] }, { "required": ["exitCode"] }, { "required": ["signal"] },
+                { "required": ["command"] }, { "required": ["argv"] }, { "required": ["invocations"] }
+              ]
+            }
+          }
+        },
+        {
+          "if": { "properties": { "state": { "const": "timeout" } }, "required": ["state"] },
+          "then": {
+            "required": [
+              "executable", "command", "argv", "toolVersion", "toolSource", "termination",
+              "invocations", "failureMessage"
+            ],
+            "properties": {
+              "termination": { "const": "timeout" },
+              "durationMs": { "exclusiveMinimum": 0 },
+              "invocations": {
+                "contains": {
+                  "properties": { "termination": { "const": "timeout" } },
+                  "required": ["termination"]
+                },
+                "minContains": 1
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "state": { "const": "invalid_config" } }, "required": ["state"] },
+          "then": {
+            "required": ["failureMessage"],
+            "anyOf": [
+              {
+                "not": {
+                  "anyOf": [
+                    { "required": ["termination"] }, { "required": ["exitCode"] }, { "required": ["signal"] },
+                    { "required": ["command"] }, { "required": ["argv"] }, { "required": ["invocations"] }
+                  ]
+                }
+              },
+              {
+                "required": [
+                  "executable", "command", "argv", "toolVersion", "toolSource", "termination",
+                  "exitCode", "invocations"
+                ],
+                "properties": {
+                  "termination": { "const": "exited" },
+                  "exitCode": { "const": 2 },
+                  "durationMs": { "exclusiveMinimum": 0 },
+                  "invocations": {
+                    "contains": {
+                      "properties": {
+                        "termination": { "const": "exited" },
+                        "exitCode": { "const": 2 }
+                      },
+                      "required": ["termination", "exitCode"]
+                    },
+                    "minContains": 1
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "if": { "properties": { "state": { "const": "tool_failure" } }, "required": ["state"] },
+          "then": {
+            "required": ["failureMessage"],
+            "anyOf": [
+              {
+                "not": {
+                  "anyOf": [
+                    { "required": ["termination"] }, { "required": ["exitCode"] }, { "required": ["signal"] },
+                    { "required": ["command"] }, { "required": ["argv"] }, { "required": ["invocations"] }
+                  ]
+                }
+              },
+              {
+                "required": [
+                  "executable", "command", "argv", "toolVersion", "toolSource", "termination", "invocations"
+                ],
+                "properties": {
+                  "termination": { "enum": ["exited", "signal", "spawn_error", "overflow"] },
+                  "durationMs": { "exclusiveMinimum": 0 }
+                },
+                "allOf": [
+                  {
+                    "if": {
+                      "properties": { "termination": { "const": "exited" } },
+                      "required": ["termination"]
+                    },
+                    "then": {
+                      "properties": {
+                        "invocations": {
+                          "contains": {
+                            "properties": { "termination": { "const": "exited" } },
+                            "required": ["termination", "exitCode"]
+                          },
+                          "minContains": 1
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": { "termination": { "const": "signal" } },
+                      "required": ["termination"]
+                    },
+                    "then": {
+                      "properties": {
+                        "invocations": {
+                          "contains": {
+                            "properties": { "termination": { "const": "signal" } },
+                            "required": ["termination", "signal"]
+                          },
+                          "minContains": 1
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": { "termination": { "const": "spawn_error" } },
+                      "required": ["termination"]
+                    },
+                    "then": {
+                      "properties": {
+                        "invocations": {
+                          "contains": {
+                            "properties": { "termination": { "const": "spawn_error" } },
+                            "required": ["termination"]
+                          },
+                          "minContains": 1
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": { "termination": { "const": "overflow" } },
+                      "required": ["termination"]
+                    },
+                    "then": {
+                      "properties": {
+                        "invocations": {
+                          "contains": {
+                            "properties": { "termination": { "const": "overflow" } },
+                            "required": ["termination"]
+                          },
+                          "minContains": 1
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": { "state": { "enum": ["passed", "findings"] } },
+            "required": ["state"]
+          },
+          "then": {
+            "required": [
+              "executable", "command", "argv", "toolVersion", "toolSource", "termination",
+              "exitCode", "invocations"
+            ],
+            "properties": {
+              "termination": { "const": "exited" },
+              "durationMs": { "exclusiveMinimum": 0 },
+              "invocations": {
+                "items": {
+                  "properties": {
+                    "termination": { "const": "exited" },
+                    "exitCode": { "enum": [0, 1] },
+                    "durationMs": { "exclusiveMinimum": 0 }
+                  },
+                  "required": ["exitCode"]
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "state": { "const": "passed" } }, "required": ["state"] },
+          "then": { "properties": { "exitCode": { "const": 0 }, "diagnosticCount": { "const": 0 } } }
+        },
+        {
+          "if": { "properties": { "state": { "const": "findings" } }, "required": ["state"] },
+          "then": { "properties": { "exitCode": { "const": 1 }, "diagnosticCount": { "minimum": 1 } } }
+        }
+      ]
+    },
     "ValidationResult": {
       "type": "object",
       "additionalProperties": false,
@@ -2915,7 +3299,12 @@
         },
         "pythonCapabilityRuns": {
           "type": "array",
-          "items": { "$ref": "#/$defs/PythonValidationCapabilityRun" }
+          "items": {
+            "oneOf": [
+              { "$ref": "#/$defs/PythonValidationCapabilityRun" },
+              { "$ref": "#/$defs/PythonRuffValidationCapabilityRun" }
+            ]
+          }
         },
         "failure": {
           "type": "object",
@@ -2981,6 +3370,10 @@
         "pythonProjectContexts": {
           "type": "array",
           "items": { "$ref": "#/$defs/PythonProjectContext" }
+        },
+        "pythonCapabilityRuns": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/PythonValidationCapabilityRun" }
         },
         "manifest": {
           "type": "object",
@@ -3106,6 +3499,662 @@
                   "failureMessage": {
                     "type": "string",
                     "minLength": 1
+                  },
+                  "pythonCapabilityRuns": {
+                    "type": "array",
+                    "items": {
+                      "oneOf": [
+                        { "$ref": "#/$defs/PythonValidationCapabilityRun" },
+                        {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "schemaId",
+                        "schemaVersion",
+                        "checkId",
+                        "capability",
+                        "state",
+                        "durationMs",
+                        "diagnosticCount"
+                      ],
+                      "properties": {
+                        "schemaId": {
+                          "const": "opcore.python.validation-capability-run"
+                        },
+                        "schemaVersion": {
+                          "const": 1
+                        },
+                        "checkId": {
+                          "$ref": "#/$defs/ValidationCheckId"
+                        },
+                        "capability": {
+                          "enum": ["ruff_lint", "ruff_format"]
+                        },
+                        "state": {
+                          "enum": [
+                            "passed",
+                            "findings",
+                            "tool_unavailable",
+                            "invalid_config",
+                            "timeout",
+                            "unsupported_target",
+                            "tool_failure",
+                            "not_applicable",
+                            "disabled"
+                          ]
+                        },
+                        "projectKey": {
+                          "type": "string",
+                          "pattern": "^sha256:[a-f0-9]{64}$"
+                        },
+                        "contextFingerprint": {
+                          "type": "string",
+                          "pattern": "^sha256:[a-f0-9]{64}$"
+                        },
+                        "afterStateManifestFingerprint": {
+                          "type": "string",
+                          "pattern": "^sha256:[a-f0-9]{64}$"
+                        },
+                        "sourcePaths": {
+                          "type": "array",
+                          "items": { "$ref": "#/$defs/RepoRelativePath" }
+                        },
+                        "configPaths": {
+                          "type": "array",
+                          "items": { "$ref": "#/$defs/RepoRelativePath" }
+                        },
+                        "executable": {
+                          "type": "string",
+                          "pattern": "^(?:(?:repo|project):(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._+@-]+(?:/[A-Za-z0-9._+@-]+)*|(?:path|external):[A-Za-z0-9_.+-]+)$"
+                        },
+                        "command": {
+                          "type": "string",
+                          "minLength": 1,
+                          "pattern": "^(?!(?:/|\\\\|[A-Za-z]:[\\\\/]))(?!.*[\\s(\\\"'=](?:/|\\\\|[A-Za-z]:[\\\\/]))(?!.*file://).+$"
+                        },
+                        "argv": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "minLength": 1,
+                            "pattern": "^(?!(?:/|\\\\|[A-Za-z]:[\\\\/]))(?!.*[\\s(\\\"'=](?:/|\\\\|[A-Za-z]:[\\\\/]))(?!.*file://).+$"
+                          },
+                          "minItems": 1
+                        },
+                        "cwd": {
+                          "anyOf": [
+                            { "const": "." },
+                            { "$ref": "#/$defs/RepoRelativePath" }
+                          ]
+                        },
+                        "configPath": {
+                          "$ref": "#/$defs/RepoRelativePath"
+                        },
+                        "toolVersion": {
+                          "type": "string",
+                          "pattern": "^[0-9]+\\.[0-9][-+._A-Za-z0-9]*$"
+                        },
+                        "toolSource": {
+                          "enum": [
+                            "explicit_override",
+                            "active_environment",
+                            "project_local_environment",
+                            "manager_environment",
+                            "path"
+                          ]
+                        },
+                        "termination": {
+                          "enum": ["exited", "timeout", "signal", "spawn_error", "overflow"]
+                        },
+                        "exitCode": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "signal": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "invocations": {
+                          "type": "array",
+                          "minItems": 1,
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": ["argv", "termination", "durationMs"],
+                            "properties": {
+                              "argv": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "pattern": "^(?!(?:/|\\\\|[A-Za-z]:[\\\\/]))(?!.*[\\s(\\\"'=](?:/|\\\\|[A-Za-z]:[\\\\/]))(?!.*file://).+$"
+                                },
+                                "minItems": 1
+                              },
+                              "termination": {
+                                "enum": ["exited", "timeout", "signal", "spawn_error", "overflow"]
+                              },
+                              "exitCode": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "signal": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "durationMs": {
+                                "type": "number",
+                                "minimum": 0
+                              }
+                            },
+                            "allOf": [
+                              {
+                                "if": { "required": ["signal"] },
+                                "then": {
+                                  "properties": {
+                                    "termination": { "const": "signal" }
+                                  }
+                                }
+                              },
+                              {
+                                "if": { "required": ["exitCode"] },
+                                "then": {
+                                  "properties": {
+                                    "termination": { "const": "exited" }
+                                  }
+                                }
+                              },
+                              {
+                                "if": {
+                                  "properties": { "termination": { "const": "exited" } },
+                                  "required": ["termination"]
+                                },
+                                "then": {
+                                  "required": ["exitCode"],
+                                  "not": { "required": ["signal"] }
+                                }
+                              },
+                              {
+                                "if": {
+                                  "properties": { "termination": { "const": "signal" } },
+                                  "required": ["termination"]
+                                },
+                                "then": {
+                                  "required": ["signal"],
+                                  "not": { "required": ["exitCode"] }
+                                }
+                              },
+                              {
+                                "if": {
+                                  "properties": {
+                                    "termination": { "enum": ["timeout", "spawn_error", "overflow"] }
+                                  },
+                                  "required": ["termination"]
+                                },
+                                "then": {
+                                  "not": {
+                                    "anyOf": [
+                                      { "required": ["exitCode"] },
+                                      { "required": ["signal"] }
+                                    ]
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        },
+                        "durationMs": {
+                          "type": "number",
+                          "minimum": 0
+                        },
+                        "diagnosticCount": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "failureMessage": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 1024,
+                          "pattern": "^(?!(?:/|\\\\|[A-Za-z]:[\\\\/]))(?!.*[\\s(\\\"'=](?:/|\\\\|[A-Za-z]:[\\\\/]))(?!.*file://).+$"
+                        }
+                      },
+                      "allOf": [
+                        {
+                          "if": {
+                            "properties": {
+                              "state": {
+                                "enum": ["not_applicable", "disabled"]
+                              }
+                            }
+                          },
+                          "then": {
+                            "not": {
+                              "anyOf": [
+                                { "required": ["termination"] },
+                                { "required": ["exitCode"] },
+                                { "required": ["signal"] },
+                                { "required": ["command"] },
+                                { "required": ["argv"] },
+                                { "required": ["invocations"] }
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "if": {
+                            "required": ["signal"]
+                          },
+                          "then": {
+                            "properties": {
+                              "termination": { "const": "signal" }
+                            },
+                            "required": ["termination"]
+                          }
+                        },
+                        {
+                          "if": {
+                            "required": ["exitCode"]
+                          },
+                          "then": {
+                            "properties": {
+                              "termination": { "const": "exited" }
+                            },
+                            "required": ["termination"]
+                          }
+                        },
+                        {
+                          "if": {
+                            "properties": { "termination": { "const": "exited" } },
+                            "required": ["termination"]
+                          },
+                          "then": {
+                            "required": ["exitCode"],
+                            "not": { "required": ["signal"] }
+                          }
+                        },
+                        {
+                          "if": {
+                            "properties": { "termination": { "const": "signal" } },
+                            "required": ["termination"]
+                          },
+                          "then": {
+                            "required": ["signal"],
+                            "not": { "required": ["exitCode"] }
+                          }
+                        },
+                        {
+                          "if": {
+                            "properties": {
+                              "termination": { "enum": ["timeout", "spawn_error", "overflow"] }
+                            },
+                            "required": ["termination"]
+                          },
+                          "then": {
+                            "not": {
+                              "anyOf": [
+                                { "required": ["exitCode"] },
+                                { "required": ["signal"] }
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "if": {
+                            "properties": {
+                              "capability": { "const": "ruff_lint" }
+                            }
+                          },
+                          "then": {
+                            "properties": {
+                              "checkId": { "const": "python.ruff-lint" }
+                            }
+                          }
+                        },
+                        {
+                          "if": {
+                            "properties": {
+                              "state": { "enum": ["tool_unavailable", "unsupported_target"] }
+                            },
+                            "required": ["state"]
+                          },
+                          "then": {
+                            "required": ["failureMessage"],
+                            "not": {
+                              "anyOf": [
+                                { "required": ["termination"] },
+                                { "required": ["exitCode"] },
+                                { "required": ["signal"] },
+                                { "required": ["command"] },
+                                { "required": ["argv"] },
+                                { "required": ["invocations"] }
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "if": {
+                            "properties": { "state": { "const": "timeout" } },
+                            "required": ["state"]
+                          },
+                          "then": {
+                            "required": [
+                              "executable",
+                              "command",
+                              "argv",
+                              "toolVersion",
+                              "toolSource",
+                              "termination",
+                              "invocations",
+                              "failureMessage"
+                            ],
+                            "properties": {
+                              "termination": { "const": "timeout" },
+                              "durationMs": { "exclusiveMinimum": 0 },
+                              "invocations": {
+                                "contains": {
+                                  "properties": {
+                                    "termination": { "const": "timeout" }
+                                  },
+                                  "required": ["termination"]
+                                },
+                                "minContains": 1
+                              }
+                            }
+                          }
+                        },
+                        {
+                          "if": {
+                            "properties": { "state": { "const": "invalid_config" } },
+                            "required": ["state"]
+                          },
+                          "then": {
+                            "required": ["failureMessage"],
+                            "anyOf": [
+                              {
+                                "not": {
+                                  "anyOf": [
+                                    { "required": ["termination"] },
+                                    { "required": ["exitCode"] },
+                                    { "required": ["signal"] },
+                                    { "required": ["command"] },
+                                    { "required": ["argv"] },
+                                    { "required": ["invocations"] }
+                                  ]
+                                }
+                              },
+                              {
+                                "required": [
+                                  "executable",
+                                  "command",
+                                  "argv",
+                                  "toolVersion",
+                                  "toolSource",
+                                  "termination",
+                                  "exitCode",
+                                  "invocations"
+                                ],
+                                "properties": {
+                                  "termination": { "const": "exited" },
+                                  "exitCode": { "const": 2 },
+                                  "durationMs": { "exclusiveMinimum": 0 },
+                                  "invocations": {
+                                    "contains": {
+                                      "properties": {
+                                        "termination": { "const": "exited" },
+                                        "exitCode": { "const": 2 }
+                                      },
+                                      "required": ["termination", "exitCode"]
+                                    },
+                                    "minContains": 1
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        },
+                        {
+                          "if": {
+                            "properties": { "state": { "const": "tool_failure" } },
+                            "required": ["state"]
+                          },
+                          "then": {
+                            "required": ["failureMessage"],
+                            "anyOf": [
+                              {
+                                "not": {
+                                  "anyOf": [
+                                    { "required": ["termination"] },
+                                    { "required": ["exitCode"] },
+                                    { "required": ["signal"] },
+                                    { "required": ["command"] },
+                                    { "required": ["argv"] },
+                                    { "required": ["invocations"] }
+                                  ]
+                                }
+                              },
+                              {
+                                "required": [
+                                  "executable",
+                                  "command",
+                                  "argv",
+                                  "toolVersion",
+                                  "toolSource",
+                                  "termination",
+                                  "invocations"
+                                ],
+                                "properties": {
+                                  "termination": {
+                                    "enum": ["exited", "signal", "spawn_error", "overflow"]
+                                  },
+                                  "durationMs": { "exclusiveMinimum": 0 }
+                                },
+                                "allOf": [
+                                  {
+                                    "if": {
+                                      "properties": { "termination": { "const": "exited" } },
+                                      "required": ["termination"]
+                                    },
+                                    "then": {
+                                      "properties": {
+                                        "invocations": {
+                                          "contains": {
+                                            "properties": { "termination": { "const": "exited" } },
+                                            "required": ["termination", "exitCode"]
+                                          },
+                                          "minContains": 1
+                                        }
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "if": {
+                                      "properties": { "termination": { "const": "signal" } },
+                                      "required": ["termination"]
+                                    },
+                                    "then": {
+                                      "properties": {
+                                        "invocations": {
+                                          "contains": {
+                                            "properties": { "termination": { "const": "signal" } },
+                                            "required": ["termination", "signal"]
+                                          },
+                                          "minContains": 1
+                                        }
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "if": {
+                                      "properties": { "termination": { "const": "spawn_error" } },
+                                      "required": ["termination"]
+                                    },
+                                    "then": {
+                                      "properties": {
+                                        "invocations": {
+                                          "contains": {
+                                            "properties": { "termination": { "const": "spawn_error" } },
+                                            "required": ["termination"]
+                                          },
+                                          "minContains": 1
+                                        }
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "if": {
+                                      "properties": { "termination": { "const": "overflow" } },
+                                      "required": ["termination"]
+                                    },
+                                    "then": {
+                                      "properties": {
+                                        "invocations": {
+                                          "contains": {
+                                            "properties": { "termination": { "const": "overflow" } },
+                                            "required": ["termination"]
+                                          },
+                                          "minContains": 1
+                                        }
+                                      }
+                                    }
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        },
+                        {
+                          "if": {
+                            "properties": {
+                              "capability": { "const": "ruff_format" }
+                            }
+                          },
+                          "then": {
+                            "properties": {
+                              "checkId": { "const": "python.ruff-format" }
+                            }
+                          }
+                        },
+                        {
+                          "if": {
+                            "properties": {
+                              "capability": {
+                                "enum": ["ruff_lint", "ruff_format"]
+                              },
+                              "state": {
+                                "enum": [
+                                  "passed", "findings", "tool_unavailable", "invalid_config", "timeout",
+                                  "unsupported_target", "tool_failure"
+                                ]
+                              }
+                            }
+                          },
+                          "then": {
+                            "required": [
+                              "projectKey",
+                              "contextFingerprint",
+                              "afterStateManifestFingerprint",
+                              "sourcePaths",
+                              "configPaths",
+                              "cwd"
+                            ],
+                            "properties": {
+                              "sourcePaths": {
+                                "minItems": 1
+                              }
+                            }
+                          }
+                        },
+                        {
+                          "if": {
+                            "properties": {
+                              "capability": {
+                                "enum": ["ruff_lint", "ruff_format"]
+                              },
+                              "state": {
+                                "enum": ["passed", "findings"]
+                              }
+                            }
+                          },
+                          "then": {
+                            "required": [
+                              "projectKey",
+                              "contextFingerprint",
+                              "afterStateManifestFingerprint",
+                              "sourcePaths",
+                              "configPaths",
+                              "executable",
+                              "command",
+                              "argv",
+                              "cwd",
+                              "toolVersion",
+                              "toolSource",
+                              "termination",
+                              "exitCode",
+                              "invocations"
+                            ],
+                            "properties": {
+                              "sourcePaths": {
+                                "minItems": 1
+                              },
+                              "termination": {
+                                "const": "exited"
+                              },
+                              "durationMs": {
+                                "exclusiveMinimum": 0
+                              },
+                              "invocations": {
+                                "items": {
+                                  "properties": {
+                                    "termination": { "const": "exited" },
+                                    "exitCode": {
+                                      "enum": [0, 1]
+                                    },
+                                    "durationMs": {
+                                      "exclusiveMinimum": 0
+                                    }
+                                  },
+                                  "required": ["exitCode"]
+                                }
+                              }
+                            }
+                          }
+                        },
+                        {
+                          "if": {
+                            "properties": {
+                              "capability": {
+                                "enum": ["ruff_lint", "ruff_format"]
+                              },
+                              "state": { "const": "passed" }
+                            }
+                          },
+                          "then": {
+                            "properties": {
+                              "exitCode": { "const": 0 },
+                              "diagnosticCount": { "const": 0 }
+                            }
+                          }
+                        },
+                        {
+                          "if": {
+                            "properties": {
+                              "capability": {
+                                "enum": ["ruff_lint", "ruff_format"]
+                              },
+                              "state": { "const": "findings" }
+                            }
+                          },
+                          "then": {
+                            "properties": {
+                              "exitCode": { "const": 1 },
+                              "diagnosticCount": { "minimum": 1 }
+                            }
+                          }
+                        }
+                      ]
+                        }
+                      ]
+                    }
                   }
                 },
                 "allOf": [
@@ -4325,15 +5374,7 @@
                 "minItems": 1,
                 "items": {
                   "type": "string",
-                  "minLength": 1,
-                  "pattern": "^(?!.*(?:^|[\\\\/])\\.ace(?:[\\\\/]|$))(?!.*LATTICE_CURRENT_TOOLS_DIR).+",
-                  "not": {
-                    "enum": [
-                      "crg",
-                      "cix",
-                      "rox"
-                    ]
-                  }
+                  "minLength": 1
                 }
               },
               "expectedExitCode": {
@@ -5484,15 +6525,7 @@
                 "minItems": 1,
                 "items": {
                   "type": "string",
-                  "minLength": 1,
-                  "pattern": "^(?!.*(?:^|[\\\\/])\\.ace(?:[\\\\/]|$))(?!.*LATTICE_CURRENT_TOOLS_DIR).+",
-                  "not": {
-                    "enum": [
-                      "crg",
-                      "cix",
-                      "rox"
-                    ]
-                  }
+                  "minLength": 1
                 }
               },
               "expectedExitCode": {
@@ -5630,7 +6663,7 @@
     "ManagedToolPackagePath": {
       "type": "string",
       "minLength": 1,
-      "pattern": "^(?![\\\\/])(?![A-Za-z]:[\\\\/])(?!~(?:[\\\\/]|$))(?!\\.\\.)(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$))(?!.*(?:^|[\\\\/])(?:\\.ace|\\.agents|\\.claude|\\.codex|\\.gemini|\\.opencode)(?:[\\\\/]|$))(?!.*LATTICE_CURRENT_TOOLS_DIR).+"
+      "pattern": "^(?![\\\\/])(?![A-Za-z]:[\\\\/])(?!~(?:[\\\\/]|$))(?!\\.\\.)(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$))(?!.*(?:^|[\\\\/])(?:\\.agents|\\.claude|\\.codex|\\.gemini|\\.opencode)(?:[\\\\/]|$)).+"
     },
     "InspectReferenceTarget": {
       "$ref": "#/$defs/InspectSymbolTarget"
@@ -10190,10 +11223,10 @@
         "forbiddenMarkersAbsent",
         "generatedBuildMetadataAbsent",
         "privatePathsAbsent",
-        "pythonCrgSourceAbsent",
-        "pythonGraphPackageMetadataAbsent",
-        "pythonCrgGitHistoryAbsent",
-        "forbiddenImplementationPackageNamesAbsent",
+        "sourceProvenanceAbsent",
+        "packageMetadataAbsent",
+        "gitHistoryAbsent",
+        "foreignImplementationNamesAbsent",
         "inspections"
       ],
       "properties": {
@@ -10219,20 +11252,20 @@
         "privatePathsAbsent": {
           "const": true
         },
-        "pythonCrgSourceAbsent": {
-          "const": true
-        },
-        "pythonGraphPackageMetadataAbsent": {
-          "const": true
-        },
-        "pythonCrgGitHistoryAbsent": {
-          "const": true
-        },
-        "forbiddenImplementationPackageNamesAbsent": {
-          "const": true
-        },
         "inspections": {
           "$ref": "#/$defs/GraphReleaseStringArray"
+        },
+        "sourceProvenanceAbsent": {
+          "const": true
+        },
+        "packageMetadataAbsent": {
+          "const": true
+        },
+        "gitHistoryAbsent": {
+          "const": true
+        },
+        "foreignImplementationNamesAbsent": {
+          "const": true
         }
       }
     },
@@ -10298,7 +11331,8 @@
             "supporting",
             "optional",
             "deferred"
-          ]
+          ],
+          "$ref": "#/$defs/GraphReleaseSurfaceClassification"
         },
         "status": {
           "const": "deferred"
@@ -12509,630 +13543,6 @@
         }
       ]
     },
-    "GraphReferenceEvidenceBaselineReceipt": {
-      "type": "object",
-      "additionalProperties": false,
-      "allOf": [
-        {
-          "$ref": "#/$defs/GraphReferenceEvidenceRequiredFixtureCoverage"
-        }
-      ],
-      "required": [
-        "id",
-        "metric",
-        "classification",
-        "receipt",
-        "label",
-        "sourceAvailability",
-        "nonImplementationInput",
-        "fixtures"
-      ],
-      "properties": {
-        "id": {
-          "type": "string",
-          "minLength": 1
-        },
-        "metric": {
-          "type": "string",
-          "minLength": 1
-        },
-        "classification": {
-          "$ref": "#/$defs/GraphReferenceEvidenceClassification"
-        },
-        "receipt": {
-          "type": "string",
-          "minLength": 1
-        },
-        "label": {
-          "const": "reference_evidence_non_implementation_input"
-        },
-        "sourceAvailability": {
-          "enum": [
-            "available",
-            "unavailable"
-          ]
-        },
-        "nonImplementationInput": {
-          "const": true
-        },
-        "fixtures": {
-          "$ref": "#/$defs/GraphReferenceEvidenceCoverageFixtures"
-        }
-      }
-    },
-    "GraphReferenceEvidenceCommandSurface": {
-      "type": "object",
-      "additionalProperties": false,
-      "allOf": [
-        {
-          "$ref": "#/$defs/GraphReferenceEvidenceRequiredFixtureCoverage"
-        }
-      ],
-      "required": [
-        "id",
-        "classification",
-        "referenceTool",
-        "referenceCommand",
-        "canonicalCommand",
-        "flags",
-        "positionals",
-        "fixtures",
-        "exitSemantics"
-      ],
-      "properties": {
-        "id": {
-          "type": "string",
-          "minLength": 1
-        },
-        "classification": {
-          "$ref": "#/$defs/GraphReferenceEvidenceClassification"
-        },
-        "canonicalCommand": {
-          "type": "array",
-          "minItems": 1,
-          "items": {
-            "type": "string",
-            "minLength": 1
-          }
-        },
-        "flags": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "minLength": 1
-          }
-        },
-        "positionals": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "minLength": 1
-          }
-        },
-        "fixtures": {
-          "$ref": "#/$defs/GraphReferenceEvidenceCoverageFixtures"
-        },
-        "exitSemantics": {
-          "$ref": "#/$defs/GraphReferenceEvidenceExitSemantics"
-        },
-        "referenceTool": {
-          "type": "string",
-          "minLength": 1
-        },
-        "referenceCommand": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "minLength": 1
-          }
-        }
-      }
-    },
-    "GraphReferenceEvidenceDaemonFixture": {
-      "type": "object",
-      "additionalProperties": false,
-      "allOf": [
-        {
-          "$ref": "#/$defs/GraphReferenceEvidenceRequiredFixtureCoverage"
-        }
-      ],
-      "required": [
-        "id",
-        "classification",
-        "fixture",
-        "protocol",
-        "envelopes",
-        "fixtures"
-      ],
-      "properties": {
-        "id": {
-          "type": "string",
-          "minLength": 1
-        },
-        "classification": {
-          "$ref": "#/$defs/GraphReferenceEvidenceClassification"
-        },
-        "fixture": {
-          "type": "string",
-          "minLength": 1
-        },
-        "protocol": {
-          "type": "string",
-          "minLength": 1
-        },
-        "envelopes": {
-          "$ref": "#/$defs/GraphReferenceEvidenceStringArray"
-        },
-        "fixtures": {
-          "$ref": "#/$defs/GraphReferenceEvidenceCoverageFixtures"
-        }
-      }
-    },
-    "GraphReferenceEvidenceExitSemantics": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "success",
-        "failure"
-      ],
-      "properties": {
-        "success": {
-          "const": 0
-        },
-        "failure": {
-          "type": "string",
-          "minLength": 1
-        }
-      }
-    },
-    "GraphReferenceEvidenceJsonOutputSurface": {
-      "type": "object",
-      "additionalProperties": false,
-      "allOf": [
-        {
-          "$ref": "#/$defs/GraphReferenceEvidenceRequiredFixtureCoverage"
-        }
-      ],
-      "required": [
-        "id",
-        "command",
-        "classification",
-        "requiredFields",
-        "fixtures",
-        "exitSemantics"
-      ],
-      "properties": {
-        "id": {
-          "type": "string",
-          "minLength": 1
-        },
-        "command": {
-          "type": "string",
-          "minLength": 1
-        },
-        "classification": {
-          "$ref": "#/$defs/GraphReferenceEvidenceClassification"
-        },
-        "requiredFields": {
-          "type": "array",
-          "minItems": 1,
-          "items": {
-            "type": "string",
-            "minLength": 1
-          }
-        },
-        "fixtures": {
-          "$ref": "#/$defs/GraphReferenceEvidenceCoverageFixtures"
-        },
-        "exitSemantics": {
-          "$ref": "#/$defs/GraphReferenceEvidenceExitSemantics"
-        }
-      }
-    },
-    "GraphReferenceEvidenceManifest": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "schemaVersion",
-        "issue",
-        "origin",
-        "fixtureRefs",
-        "commandSurfaces",
-        "jsonOutputSurfaces",
-        "sqliteFixtures",
-        "daemonFixtures",
-        "baselineReceipts",
-        "optionalAnalysisSurfaces",
-        "goldenCorpus",
-        "provenance"
-      ],
-      "properties": {
-        "schemaVersion": {
-          "const": 1
-        },
-        "issue": {
-          "const": "#19"
-        },
-        "origin": {
-          "const": "covibes-authored-synthetic"
-        },
-        "fixtureRefs": {
-          "$ref": "#/$defs/GraphReferenceEvidenceStringArray"
-        },
-        "commandSurfaces": {
-          "type": "array",
-          "minItems": 1,
-          "items": {
-            "$ref": "#/$defs/GraphReferenceEvidenceCommandSurface"
-          }
-        },
-        "jsonOutputSurfaces": {
-          "type": "array",
-          "minItems": 1,
-          "items": {
-            "$ref": "#/$defs/GraphReferenceEvidenceJsonOutputSurface"
-          }
-        },
-        "sqliteFixtures": {
-          "type": "array",
-          "minItems": 1,
-          "items": {
-            "$ref": "#/$defs/GraphReferenceEvidenceSqliteFixture"
-          }
-        },
-        "daemonFixtures": {
-          "type": "array",
-          "minItems": 1,
-          "items": {
-            "$ref": "#/$defs/GraphReferenceEvidenceDaemonFixture"
-          }
-        },
-        "baselineReceipts": {
-          "type": "array",
-          "minItems": 1,
-          "items": {
-            "$ref": "#/$defs/GraphReferenceEvidenceBaselineReceipt"
-          }
-        },
-        "optionalAnalysisSurfaces": {
-          "type": "array",
-          "minItems": 4,
-          "maxItems": 4,
-          "allOf": [
-            {
-              "contains": {
-                "type": "object",
-                "required": [
-                  "issue",
-                  "id",
-                  "classification",
-                  "status"
-                ],
-                "properties": {
-                  "issue": {
-                    "const": "#13"
-                  },
-                  "id": {
-                    "const": "coverage"
-                  },
-                  "classification": {
-                    "const": "deferred"
-                  },
-                  "status": {
-                    "const": "deferred"
-                  }
-                }
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "type": "object",
-                "required": [
-                  "issue",
-                  "id",
-                  "classification",
-                  "status"
-                ],
-                "properties": {
-                  "issue": {
-                    "const": "#14"
-                  },
-                  "id": {
-                    "const": "flows"
-                  },
-                  "classification": {
-                    "const": "optional"
-                  },
-                  "status": {
-                    "const": "deferred"
-                  }
-                }
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "type": "object",
-                "required": [
-                  "issue",
-                  "id",
-                  "classification",
-                  "status"
-                ],
-                "properties": {
-                  "issue": {
-                    "const": "#15"
-                  },
-                  "id": {
-                    "const": "communities"
-                  },
-                  "classification": {
-                    "const": "optional"
-                  },
-                  "status": {
-                    "const": "deferred"
-                  }
-                }
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "type": "object",
-                "required": [
-                  "issue",
-                  "id",
-                  "classification",
-                  "status"
-                ],
-                "properties": {
-                  "issue": {
-                    "const": "#16"
-                  },
-                  "id": {
-                    "const": "read_only_suggestions"
-                  },
-                  "classification": {
-                    "const": "supporting"
-                  },
-                  "status": {
-                    "const": "deferred"
-                  }
-                }
-              },
-              "minContains": 1,
-              "maxContains": 1
-            }
-          ],
-          "items": {
-            "type": "object",
-            "additionalProperties": false,
-            "allOf": [
-              {
-                "$ref": "#/$defs/GraphReferenceEvidenceRequiredFixtureCoverage"
-              }
-            ],
-            "required": [
-              "issue",
-              "id",
-              "classification",
-              "status",
-              "fixtures"
-            ],
-            "properties": {
-              "issue": {
-                "enum": [
-                  "#13",
-                  "#14",
-                  "#15",
-                  "#16"
-                ]
-              },
-              "id": {
-                "type": "string",
-                "minLength": 1
-              },
-              "classification": {
-                "enum": [
-                  "supporting",
-                  "optional",
-                  "deferred"
-                ]
-              },
-              "status": {
-                "const": "deferred"
-              },
-              "fixtures": {
-                "$ref": "#/$defs/GraphReferenceEvidenceCoverageFixtures"
-              }
-            }
-          }
-        },
-        "goldenCorpus": {
-          "type": "object",
-          "additionalProperties": false,
-          "allOf": [
-            {
-              "$ref": "#/$defs/GraphReferenceEvidenceRequiredFixtureCoverage"
-            }
-          ],
-          "required": [
-            "id",
-            "classification",
-            "fixture",
-            "covers",
-            "fixtures"
-          ],
-          "properties": {
-            "id": {
-              "type": "string",
-              "minLength": 1
-            },
-            "classification": {
-              "$ref": "#/$defs/GraphReferenceEvidenceClassification"
-            },
-            "fixture": {
-              "type": "string",
-              "minLength": 1
-            },
-            "covers": {
-              "$ref": "#/$defs/GraphReferenceEvidenceStringArray"
-            },
-            "fixtures": {
-              "$ref": "#/$defs/GraphReferenceEvidenceCoverageFixtures"
-            }
-          }
-        },
-        "provenance": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "containsPythonCrgSource",
-            "containsPackageMetadata",
-            "containsGitHistory",
-            "referenceReceiptsAreImplementationInput",
-            "implementationPackageNames",
-            "allowedMentionPaths"
-          ],
-          "properties": {
-            "containsPythonCrgSource": {
-              "const": false
-            },
-            "containsPackageMetadata": {
-              "const": false
-            },
-            "containsGitHistory": {
-              "const": false
-            },
-            "implementationPackageNames": {
-              "$ref": "#/$defs/GraphReferenceEvidenceStringArray"
-            },
-            "allowedMentionPaths": {
-              "$ref": "#/$defs/GraphReferenceEvidenceStringArray"
-            },
-            "referenceReceiptsAreImplementationInput": {
-              "const": false
-            }
-          }
-        }
-      }
-    },
-    "GraphReferenceEvidenceRequiredFixtureCoverage": {
-      "if": {
-        "required": [
-          "classification"
-        ],
-        "properties": {
-          "classification": {
-            "const": "required"
-          }
-        }
-      },
-      "then": {
-        "properties": {
-          "fixtures": {
-            "allOf": [
-              {
-                "$ref": "#/$defs/GraphReferenceEvidenceCoverageFixtures"
-              },
-              {
-                "minItems": 1
-              }
-            ]
-          }
-        }
-      }
-    },
-    "GraphReferenceEvidenceSqliteFixture": {
-      "type": "object",
-      "additionalProperties": false,
-      "allOf": [
-        {
-          "$ref": "#/$defs/GraphReferenceEvidenceRequiredFixtureCoverage"
-        }
-      ],
-      "required": [
-        "id",
-        "classification",
-        "fixture",
-        "tables",
-        "indexes",
-        "metadataKeys",
-        "nodeKinds",
-        "edgeKinds",
-        "directReaderQueries",
-        "fixtures"
-      ],
-      "properties": {
-        "id": {
-          "type": "string",
-          "minLength": 1
-        },
-        "classification": {
-          "$ref": "#/$defs/GraphReferenceEvidenceClassification"
-        },
-        "fixture": {
-          "type": "string",
-          "minLength": 1
-        },
-        "tables": {
-          "$ref": "#/$defs/GraphReferenceEvidenceStringArray"
-        },
-        "indexes": {
-          "$ref": "#/$defs/GraphReferenceEvidenceStringArray"
-        },
-        "metadataKeys": {
-          "$ref": "#/$defs/GraphReferenceEvidenceStringArray"
-        },
-        "nodeKinds": {
-          "type": "array",
-          "minItems": 1,
-          "items": {
-            "$ref": "#/$defs/GraphNodeKind"
-          }
-        },
-        "edgeKinds": {
-          "type": "array",
-          "minItems": 1,
-          "items": {
-            "$ref": "#/$defs/GraphEdgeKind"
-          }
-        },
-        "directReaderQueries": {
-          "$ref": "#/$defs/GraphReferenceEvidenceStringArray"
-        },
-        "fixtures": {
-          "$ref": "#/$defs/GraphReferenceEvidenceCoverageFixtures"
-        }
-      }
-    },
-    "GraphReferenceEvidenceClassification": {
-      "enum": [
-        "required",
-        "supporting",
-        "optional",
-        "deferred"
-      ]
-    },
-    "GraphReferenceEvidenceCoverageFixtures": {
-      "type": "array",
-      "items": {
-        "type": "string",
-        "minLength": 1
-      }
-    },
-    "GraphReferenceEvidenceStringArray": {
-      "type": "array",
-      "minItems": 1,
-      "items": {
-        "type": "string",
-        "minLength": 1
-      }
-    },
     "Sha256": {
       "type": "string",
       "pattern": "^[a-f0-9]{64}$"
@@ -13234,25 +13644,6 @@
           "type": "object",
           "additionalProperties": {
             "$ref": "#/$defs/RepoRelativePath"
-          },
-          "not": {
-            "anyOf": [
-              {
-                "required": [
-                  "crg"
-                ]
-              },
-              {
-                "required": [
-                  "cix"
-                ]
-              },
-              {
-                "required": [
-                  "rox"
-                ]
-              }
-            ]
           }
         },
         "dependencies": {
@@ -13534,25 +13925,6 @@
           "type": "object",
           "additionalProperties": {
             "$ref": "#/$defs/RepoRelativePath"
-          },
-          "not": {
-            "anyOf": [
-              {
-                "required": [
-                  "crg"
-                ]
-              },
-              {
-                "required": [
-                  "cix"
-                ]
-              },
-              {
-                "required": [
-                  "rox"
-                ]
-              }
-            ]
           }
         },
         "descriptorReferences": {
@@ -14477,25 +14849,6 @@
               "type": "object",
               "additionalProperties": {
                 "$ref": "#/$defs/RepoRelativePath"
-              },
-              "not": {
-                "anyOf": [
-                  {
-                    "required": [
-                      "crg"
-                    ]
-                  },
-                  {
-                    "required": [
-                      "cix"
-                    ]
-                  },
-                  {
-                    "required": [
-                      "rox"
-                    ]
-                  }
-                ]
               }
             }
           }
@@ -14670,57 +15023,19 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "currentToolEnvCleared",
-        "clearedEnvVarCount",
         "pathSanitized",
-        "aceRuntimeBinExcluded",
-        "siblingCovibesExcluded",
-        "opcoreBinOnly",
-        "oldBinsAbsent"
+        "siblingRepositoriesExcluded",
+        "opcoreBinsVerified"
       ],
       "properties": {
-        "currentToolEnvCleared": {
-          "const": true
-        },
-        "clearedEnvVarCount": {
-          "type": "integer",
-          "minimum": 5
-        },
         "pathSanitized": {
           "const": true
         },
-        "aceRuntimeBinExcluded": {
+        "siblingRepositoriesExcluded": {
           "const": true
         },
-        "siblingCovibesExcluded": {
+        "opcoreBinsVerified": {
           "const": true
-        },
-        "opcoreBinOnly": {
-          "const": true
-        },
-        "oldBinsAbsent": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "lattice",
-            "crg",
-            "cix",
-            "rox"
-          ],
-          "properties": {
-            "lattice": {
-              "const": true
-            },
-            "crg": {
-              "const": true
-            },
-            "cix": {
-              "const": true
-            },
-            "rox": {
-              "const": true
-            }
-          }
         }
       }
     },
@@ -17302,240 +17617,6 @@
         }
       ]
     },
-    "RustOldRoxComparisonSurfaceReceipt": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "id",
-        "graphEvidenceExists",
-        "graphEvidence",
-        "stillUniquelyProvidedByCurrentTools",
-        "replacementStatus"
-      ],
-      "properties": {
-        "id": {
-          "enum": [
-            "rust.rustdoc",
-            "rust.import-graph",
-            "rust.dead-code",
-            "rust.unused-deps",
-            "rust.function-metrics",
-            "current-tools:validate-rust-graph"
-          ]
-        },
-        "graphEvidenceExists": {
-          "type": "boolean"
-        },
-        "graphEvidence": {
-          "type": "array",
-          "minItems": 1,
-          "items": {
-            "type": "string",
-            "minLength": 1
-          }
-        },
-        "stillUniquelyProvidedByCurrentTools": {
-          "type": "array",
-          "minItems": 1,
-          "items": {
-            "type": "string",
-            "minLength": 1
-          }
-        },
-        "replacementStatus": {
-          "enum": [
-            "retained",
-            "deferred"
-          ]
-        }
-      }
-    },
-    "RustOldRoxComparisonGuardrailReceipt": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "id",
-        "command",
-        "replacementStatus",
-        "oldToolReplacementClaimed"
-      ],
-      "properties": {
-        "id": {
-          "const": "current-tools:validate-rust-graph"
-        },
-        "command": {
-          "type": "array",
-          "minItems": 3,
-          "maxItems": 3,
-          "prefixItems": [
-            {
-              "const": "npm"
-            },
-            {
-              "const": "run"
-            },
-            {
-              "const": "current-tools:validate-rust-graph"
-            }
-          ],
-          "items": false
-        },
-        "replacementStatus": {
-          "const": "retained"
-        },
-        "oldToolReplacementClaimed": {
-          "const": false
-        }
-      }
-    },
-    "RustOldRoxComparisonReceipt": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "schemaVersion",
-        "issue",
-        "origin",
-        "generatedAt",
-        "privateRepo",
-        "oldToolReplacementClaimed",
-        "publicReleaseActions",
-        "surfaces",
-        "guardrails"
-      ],
-      "properties": {
-        "schemaVersion": {
-          "const": 1
-        },
-        "issue": {
-          "const": "#29"
-        },
-        "origin": {
-          "const": "covibes-authored-old-rox-comparison"
-        },
-        "generatedAt": {
-          "type": "string",
-          "minLength": 1
-        },
-        "privateRepo": {
-          "const": true
-        },
-        "oldToolReplacementClaimed": {
-          "const": false
-        },
-        "publicReleaseActions": {
-          "type": "array",
-          "maxItems": 0
-        },
-        "surfaces": {
-          "type": "array",
-          "minItems": 6,
-          "maxItems": 6,
-          "allOf": [
-            {
-              "contains": {
-                "type": "object",
-                "required": [
-                  "id"
-                ],
-                "properties": {
-                  "id": {
-                    "const": "rust.rustdoc"
-                  }
-                }
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "type": "object",
-                "required": [
-                  "id"
-                ],
-                "properties": {
-                  "id": {
-                    "const": "rust.import-graph"
-                  }
-                }
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "type": "object",
-                "required": [
-                  "id"
-                ],
-                "properties": {
-                  "id": {
-                    "const": "rust.dead-code"
-                  }
-                }
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "type": "object",
-                "required": [
-                  "id"
-                ],
-                "properties": {
-                  "id": {
-                    "const": "rust.unused-deps"
-                  }
-                }
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "type": "object",
-                "required": [
-                  "id"
-                ],
-                "properties": {
-                  "id": {
-                    "const": "rust.function-metrics"
-                  }
-                }
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "type": "object",
-                "required": [
-                  "id"
-                ],
-                "properties": {
-                  "id": {
-                    "const": "current-tools:validate-rust-graph"
-                  }
-                }
-              },
-              "minContains": 1,
-              "maxContains": 1
-            }
-          ],
-          "items": {
-            "$ref": "#/$defs/RustOldRoxComparisonSurfaceReceipt"
-          }
-        },
-        "guardrails": {
-          "type": "array",
-          "minItems": 1,
-          "maxItems": 1,
-          "items": {
-            "$ref": "#/$defs/RustOldRoxComparisonGuardrailReceipt"
-          }
-        }
-      }
-    },
     "AspDogfoodCommandRunReceipt": {
       "type": "object",
       "allOf": [
@@ -17673,93 +17754,6 @@
         }
       ]
     },
-    "AspDogfoodGuardrailReceipt": {
-      "allOf": [
-        {
-          "$ref": "#/$defs/AspDogfoodCommandRunReceipt"
-        },
-        {
-          "type": "object",
-          "required": [
-            "id",
-            "retained"
-          ],
-          "properties": {
-            "id": {
-              "enum": [
-                "current-tools-validate-changed",
-                "current-tools-validate-rust-graph",
-                "current-tools-validate-all"
-              ]
-            },
-            "retained": {
-              "const": true
-            }
-          }
-        },
-        {
-          "if": {
-            "required": [
-              "id"
-            ],
-            "properties": {
-              "id": {
-                "enum": [
-                  "current-tools-validate-changed",
-                  "current-tools-validate-rust-graph"
-                ]
-              }
-            }
-          },
-          "then": {
-            "properties": {
-              "status": {
-                "const": "passed"
-              },
-              "exitCode": {
-                "const": 0
-              }
-            }
-          }
-        },
-        {
-          "if": {
-            "required": [
-              "id"
-            ],
-            "properties": {
-              "id": {
-                "const": "current-tools-validate-all"
-              }
-            }
-          },
-          "then": {
-            "anyOf": [
-              {
-                "properties": {
-                  "status": {
-                    "const": "passed"
-                  },
-                  "exitCode": {
-                    "const": 0
-                  }
-                }
-              },
-              {
-                "properties": {
-                  "status": {
-                    "const": "retained-not-run"
-                  },
-                  "exitCode": {
-                    "const": null
-                  }
-                }
-              }
-            ]
-          }
-        }
-      ]
-    },
     "AspDogfoodUnsupportedSurfaceEvidence": {
       "type": "object",
       "additionalProperties": false,
@@ -17779,7 +17773,6 @@
         "status": {
           "enum": [
             "degraded",
-            "retained-old-tool-gate",
             "parity-blocker"
           ]
         },
@@ -17831,13 +17824,12 @@
         "repoEnrollment",
         "hostEvaluation",
         "providerProbe",
-        "currentToolGuardrails",
         "unsupportedSurfaces",
         "parityBlockers",
         "authority",
         "publicReleaseActions",
-        "oldToolReplacementClaimed",
-        "forbiddenMarkerScan"
+        "forbiddenMarkerScan",
+        "selfValidation"
       ],
       "properties": {
         "schemaVersion": {
@@ -17945,8 +17937,7 @@
             "temp",
             "isolated",
             "sharedStateMutated",
-            "pathSanitized",
-            "aceRuntimeBinExcluded"
+            "pathSanitized"
           ],
           "properties": {
             "path": {
@@ -17963,9 +17954,6 @@
               "const": false
             },
             "pathSanitized": {
-              "const": true
-            },
-            "aceRuntimeBinExcluded": {
               "const": true
             }
           }
@@ -18277,58 +18265,6 @@
             }
           ]
         },
-        "currentToolGuardrails": {
-          "type": "array",
-          "minItems": 3,
-          "maxItems": 3,
-          "items": {
-            "$ref": "#/$defs/AspDogfoodGuardrailReceipt"
-          },
-          "allOf": [
-            {
-              "contains": {
-                "type": "object",
-                "properties": {
-                  "id": {
-                    "const": "current-tools-validate-changed"
-                  },
-                  "status": {
-                    "const": "passed"
-                  }
-                }
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "type": "object",
-                "properties": {
-                  "id": {
-                    "const": "current-tools-validate-rust-graph"
-                  },
-                  "status": {
-                    "const": "passed"
-                  }
-                }
-              },
-              "minContains": 1,
-              "maxContains": 1
-            },
-            {
-              "contains": {
-                "type": "object",
-                "properties": {
-                  "id": {
-                    "const": "current-tools-validate-all"
-                  }
-                }
-              },
-              "minContains": 1,
-              "maxContains": 1
-            }
-          ]
-        },
         "unsupportedSurfaces": {
           "type": "array",
           "minItems": 2,
@@ -18365,7 +18301,7 @@
         },
         "parityBlockers": {
           "type": "array",
-          "minItems": 1,
+          "minItems": 0,
           "items": {
             "$ref": "#/$defs/AspDogfoodParityBlocker"
           }
@@ -18407,9 +18343,6 @@
           "type": "array",
           "maxItems": 0
         },
-        "oldToolReplacementClaimed": {
-          "const": false
-        },
         "forbiddenMarkerScan": {
           "type": "object",
           "additionalProperties": false,
@@ -18428,14 +18361,12 @@
             },
             "markersBlocked": {
               "type": "array",
-              "minItems": 4,
-              "maxItems": 4,
+              "minItems": 2,
+              "maxItems": 2,
               "items": {
                 "enum": [
                   "opcore asp serve",
-                  "opcore asp",
-                  "dist/bin/lattice",
-                  ".ace/runtime"
+                  "opcore asp"
                 ]
               },
               "allOf": [
@@ -18452,24 +18383,13 @@
                   },
                   "minContains": 1,
                   "maxContains": 1
-                },
-                {
-                  "contains": {
-                    "const": "dist/bin/lattice"
-                  },
-                  "minContains": 1,
-                  "maxContains": 1
-                },
-                {
-                  "contains": {
-                    "const": ".ace/runtime"
-                  },
-                  "minContains": 1,
-                  "maxContains": 1
                 }
               ]
             }
           }
+        },
+        "selfValidation": {
+          "$ref": "#/$defs/OpcoreSelfValidationReceipt"
         }
       }
     },
@@ -18491,10 +18411,9 @@
         "rustCommandReceipts",
         "pythonCommandReceipts",
         "negativeChecks",
-        "currentToolGuardrails",
-        "oldToolReplacementClaimed",
         "forbiddenMarkerScan",
-        "inputEvidence"
+        "inputEvidence",
+        "selfValidation"
       ],
       "properties": {
         "schemaVersion": {
@@ -19404,42 +19323,8 @@
             }
           ]
         },
-        "currentToolGuardrails": {
-          "type": "array",
-          "minItems": 2,
-          "maxItems": 2,
-          "items": {
-            "$ref": "#/$defs/ReleaseCutoverCurrentToolGuardrailReceipt"
-          },
-          "allOf": [
-            {
-              "contains": {
-                "properties": {
-                  "id": {
-                    "const": "current-tools-validate-changed"
-                  }
-                },
-                "required": [
-                  "id"
-                ]
-              }
-            },
-            {
-              "contains": {
-                "properties": {
-                  "id": {
-                    "const": "current-tools-validate-rust-graph"
-                  }
-                },
-                "required": [
-                  "id"
-                ]
-              }
-            }
-          ]
-        },
-        "oldToolReplacementClaimed": {
-          "const": false
+        "selfValidation": {
+          "$ref": "#/$defs/OpcoreSelfValidationReceipt"
         }
       }
     },
@@ -21287,7 +21172,7 @@
         }
       ]
     },
-    "ReleaseCutoverCurrentToolGuardrailReceipt": {
+    "OpcoreSelfValidationReceipt": {
       "type": "object",
       "additionalProperties": false,
       "required": [
@@ -21297,16 +21182,11 @@
         "exitCode",
         "stdoutSha256",
         "stderrSha256",
-        "retained",
-        "assertion",
-        "oldToolReplacementClaimed"
+        "assertion"
       ],
       "properties": {
         "id": {
-          "enum": [
-            "current-tools-validate-changed",
-            "current-tools-validate-rust-graph"
-          ]
+          "const": "opcore-self-check"
         },
         "command": {
           "type": "array",
@@ -21320,10 +21200,7 @@
               "const": "run"
             },
             {
-              "enum": [
-                "current-tools:validate-changed",
-                "current-tools:validate-rust-graph"
-              ]
+              "const": "opcore:self-check"
             }
           ],
           "items": false
@@ -21340,103 +21217,18 @@
         "stderrSha256": {
           "$ref": "#/$defs/Sha256"
         },
-        "retained": {
-          "const": true
-        },
         "assertion": {
           "type": "string",
           "minLength": 1
-        },
-        "oldToolReplacementClaimed": {
-          "const": false
         }
-      },
-      "allOf": [
-        {
-          "if": {
-            "required": [
-              "id"
-            ],
-            "properties": {
-              "id": {
-                "const": "current-tools-validate-changed"
-              }
-            }
-          },
-          "then": {
-            "properties": {
-              "command": {
-                "type": "array",
-                "minItems": 3,
-                "maxItems": 3,
-                "prefixItems": [
-                  {
-                    "const": "npm"
-                  },
-                  {
-                    "const": "run"
-                  },
-                  {
-                    "const": "current-tools:validate-changed"
-                  }
-                ],
-                "items": false
-              }
-            }
-          }
-        },
-        {
-          "if": {
-            "required": [
-              "id"
-            ],
-            "properties": {
-              "id": {
-                "const": "current-tools-validate-rust-graph"
-              }
-            }
-          },
-          "then": {
-            "properties": {
-              "command": {
-                "type": "array",
-                "minItems": 3,
-                "maxItems": 3,
-                "prefixItems": [
-                  {
-                    "const": "npm"
-                  },
-                  {
-                    "const": "run"
-                  },
-                  {
-                    "const": "current-tools:validate-rust-graph"
-                  }
-                ],
-                "items": false
-              }
-            }
-          }
-        },
-        {
-          "if": {
-            "required": [
-              "status"
-            ],
-            "properties": {
-              "status": {
-                "const": "passed"
-              }
-            }
-          },
-          "then": {
-            "properties": {
-              "exitCode": {
-                "const": 0
-              }
-            }
-          }
-        }
+      }
+    },
+    "GraphReleaseSurfaceClassification": {
+      "enum": [
+        "required",
+        "supporting",
+        "optional",
+        "deferred"
       ]
     }
   }

@@ -866,6 +866,268 @@ describe("Opcore JSON schema wire constraints", () => {
     );
   });
 
+  it("validates portable Python capability receipts on manifest runs", () => {
+    const manifest = {
+      schemaVersion: 1,
+      checks: ["python.ruff-lint"],
+      generatedAt: "2026-07-18T00:00:00.000Z",
+      runs: [{
+        checkId: "python.ruff-lint",
+        status: "policy_failure",
+        outcome: "findings",
+        diagnosticCount: 1,
+        pythonCapabilityRuns: [{
+          schemaId: "opcore.python.validation-capability-run",
+          schemaVersion: 1,
+          checkId: "python.ruff-lint",
+          capability: "ruff_lint",
+          state: "findings",
+          projectKey: `sha256:${"1".repeat(64)}`,
+          contextFingerprint: `sha256:${"2".repeat(64)}`,
+          afterStateManifestFingerprint: `sha256:${"3".repeat(64)}`,
+          sourcePaths: ["pkg/app.py"],
+          configPaths: ["ruff.toml"],
+          executable: "repo:.venv/bin/ruff",
+          command: "repo:.venv/bin/ruff check --output-format=json pkg/app.py",
+          argv: ["repo:.venv/bin/ruff", "check", "--output-format=json", "pkg/app.py"],
+          cwd: ".",
+          configPath: "ruff.toml",
+          toolVersion: "0.6.9",
+          toolSource: "project_local_environment",
+          termination: "exited",
+          exitCode: 1,
+          invocations: [{
+            argv: ["repo:.venv/bin/ruff", "check", "--output-format=json", "pkg/app.py"],
+            termination: "exited",
+            exitCode: 1,
+            durationMs: 12
+          }],
+          durationMs: 12,
+          diagnosticCount: 1
+        }]
+      }]
+    };
+
+    assert.equal(isValidDefinition("ValidationResult", validationResultWith({ manifest })), true);
+    const portableRun = manifest.runs[0].pythonCapabilityRuns[0];
+    const validNestedRuffRun = (run) => isValidDefinition(
+      "ValidationResult",
+      validationResultWith({
+        manifest: {
+          ...manifest,
+          runs: [{ ...manifest.runs[0], pythonCapabilityRuns: [run] }]
+        }
+      })
+    );
+    const assertRuffSchemaCopies = (run, expected, message) => {
+      assert.equal(isValidDefinition("PythonRuffValidationCapabilityRun", run), expected, `canonical: ${message}`);
+      assert.equal(validNestedRuffRun(run), expected, `nested: ${message}`);
+    };
+    assertRuffSchemaCopies(portableRun, true, "findings");
+    for (const invalidRun of [
+      { ...portableRun, executable: "/tmp/private/ruff" },
+      { ...portableRun, argv: [portableRun.executable, "--cache-dir=/tmp/private/cache"] },
+      {
+        ...portableRun,
+        invocations: [{
+          ...portableRun.invocations[0],
+          argv: ["/tmp/private/ruff", "check", "pkg/app.py"]
+        }]
+      },
+      { ...portableRun, failureMessage: "Ruff failed in /tmp/private/workspace" }
+    ]) {
+      assert.equal(
+        isValidDefinition("ValidationResult", validationResultWith({
+          manifest: {
+            ...manifest,
+            runs: [{ ...manifest.runs[0], pythonCapabilityRuns: [invalidRun] }]
+          }
+        })),
+        false
+      );
+    }
+    assert.equal(
+      isValidDefinition(
+        "ValidationResult",
+        validationResultWith({
+          manifest: {
+            ...manifest,
+            runs: [{
+              ...manifest.runs[0],
+              pythonCapabilityRuns: [{ ...manifest.runs[0].pythonCapabilityRuns[0], state: "disabled", argv: ["repo:.venv/bin/ruff"] }]
+            }]
+          }
+        })
+      ),
+      false
+    );
+    const unavailableRun = {
+      ...manifest.runs[0].pythonCapabilityRuns[0],
+      state: "tool_unavailable",
+      durationMs: 0,
+      diagnosticCount: 1,
+      failureMessage: "Ruff is unavailable"
+    };
+    for (const field of [
+      "executable", "command", "argv", "configPath", "toolVersion", "toolSource",
+      "termination", "exitCode", "invocations"
+    ]) {
+      delete unavailableRun[field];
+    }
+    assertRuffSchemaCopies(unavailableRun, true, "tool_unavailable");
+    const unsupportedRun = {
+      ...unavailableRun,
+      state: "unsupported_target",
+      failureMessage: "Ruff does not support the selected target"
+    };
+    const unexecutedInvalidConfigRun = {
+      ...unavailableRun,
+      state: "invalid_config",
+      executable: portableRun.executable,
+      toolVersion: portableRun.toolVersion,
+      toolSource: portableRun.toolSource,
+      failureMessage: "Ruff rejected the selected configuration"
+    };
+    const timeoutRun = {
+      ...portableRun,
+      state: "timeout",
+      termination: "timeout",
+      diagnosticCount: 0,
+      failureMessage: "Ruff timed out",
+      invocations: [{
+        argv: portableRun.argv,
+        termination: "timeout",
+        durationMs: 12
+      }]
+    };
+    delete timeoutRun.exitCode;
+    const executedInvalidConfigRun = {
+      ...portableRun,
+      state: "invalid_config",
+      exitCode: 2,
+      diagnosticCount: 1,
+      failureMessage: "Ruff rejected the selected configuration",
+      invocations: [{
+        argv: portableRun.argv,
+        termination: "exited",
+        exitCode: 2,
+        durationMs: 12
+      }]
+    };
+    const toolFailureRun = {
+      ...portableRun,
+      state: "tool_failure",
+      exitCode: 2,
+      diagnosticCount: 0,
+      failureMessage: "Ruff failed",
+      invocations: [{
+        argv: portableRun.argv,
+        termination: "exited",
+        exitCode: 2,
+        durationMs: 12
+      }]
+    };
+    const signalToolFailureRun = {
+      ...portableRun,
+      state: "tool_failure",
+      termination: "signal",
+      signal: "SIGTERM",
+      diagnosticCount: 0,
+      failureMessage: "Ruff was terminated",
+      invocations: [{
+        argv: portableRun.argv,
+        termination: "signal",
+        signal: "SIGTERM",
+        durationMs: 12
+      }]
+    };
+    delete signalToolFailureRun.exitCode;
+    for (const validFailureRun of [
+      unsupportedRun,
+      unexecutedInvalidConfigRun,
+      timeoutRun,
+      executedInvalidConfigRun,
+      toolFailureRun,
+      signalToolFailureRun
+    ]) {
+      assertRuffSchemaCopies(validFailureRun, true, validFailureRun.state);
+    }
+    for (const [name, invalidFailureRun] of [
+      ["tool_unavailable with process evidence", { ...portableRun, state: "tool_unavailable", failureMessage: "Ruff unavailable" }],
+      ["unsupported_target with process evidence", { ...portableRun, state: "unsupported_target", failureMessage: "Unsupported target" }],
+      ["timeout without execution evidence", { ...unavailableRun, state: "timeout", failureMessage: "Ruff timed out" }],
+      ["timeout with contradictory invocation evidence", {
+        ...timeoutRun,
+        invocations: [{
+          argv: portableRun.argv,
+          termination: "exited",
+          exitCode: 0,
+          durationMs: 12
+        }]
+      }],
+      ["invalid_config with partial execution evidence", {
+        ...unexecutedInvalidConfigRun,
+        command: portableRun.command
+      }],
+      ["tool_failure with partial execution evidence", {
+        ...unavailableRun,
+        state: "tool_failure",
+        argv: portableRun.argv,
+        failureMessage: "Ruff failed"
+      }],
+      ["tool_failure with contradictory invocation evidence", {
+        ...signalToolFailureRun,
+        invocations: [{
+          argv: portableRun.argv,
+          termination: "exited",
+          exitCode: 0,
+          durationMs: 12
+        }]
+      }]
+    ]) {
+      assertRuffSchemaCopies(invalidFailureRun, false, name);
+    }
+    for (const field of [
+      "projectKey", "contextFingerprint", "afterStateManifestFingerprint", "sourcePaths", "configPaths", "cwd"
+    ]) {
+      const incomplete = { ...unavailableRun };
+      delete incomplete[field];
+      assert.equal(
+        isValidDefinition(
+          "ValidationResult",
+          validationResultWith({
+            manifest: {
+              ...manifest,
+              runs: [{ ...manifest.runs[0], pythonCapabilityRuns: [incomplete] }]
+            }
+          })
+        ),
+        false,
+        field
+      );
+    }
+    for (const field of ["projectKey", "contextFingerprint", "afterStateManifestFingerprint", "invocations"]) {
+      const incomplete = { ...manifest.runs[0].pythonCapabilityRuns[0] };
+      delete incomplete[field];
+      assert.equal(
+        isValidDefinition(
+          "ValidationResult",
+          validationResultWith({
+            manifest: {
+              ...manifest,
+              runs: [{
+                ...manifest.runs[0],
+                pythonCapabilityRuns: [incomplete]
+              }]
+            }
+          })
+        ),
+        false,
+        field
+      );
+    }
+  });
+
   it("validates Python project-context wire identity and typed outcome vocabulary", () => {
     const context = pythonProjectContextWith();
     assert.equal(isValidDefinition("PythonProjectContext", context), true);
@@ -1923,13 +2185,6 @@ describe("Opcore JSON schema wire constraints", () => {
     assert.equal(
       isValidDefinition("ManagedToolDescriptor", {
         ...validManagedToolDescriptor(),
-        entrypoints: [{ ...validManagedToolDescriptor().entrypoints[0], bin: ["r", "o", "x"].join("") }]
-      }),
-      false
-    );
-    assert.equal(
-      isValidDefinition("ManagedToolDescriptor", {
-        ...validManagedToolDescriptor(),
         artifacts: [{ ...validManagedToolDescriptor().artifacts[0], path: "/tmp/lattice" }]
       }),
       false
@@ -1945,40 +2200,6 @@ describe("Opcore JSON schema wire constraints", () => {
       isValidDefinition("ManagedToolDescriptor", {
         ...validManagedToolDescriptor(),
         artifacts: [{ ...validManagedToolDescriptor().artifacts[0], path: "~/dist/index.js" }]
-      }),
-      false
-    );
-    assert.equal(
-      isValidDefinition("ManagedToolDescriptor", {
-        ...validManagedToolDescriptor(),
-        artifacts: [{ ...validManagedToolDescriptor().artifacts[0], path: ".ace\\runtime\\bin\\lattice" }]
-      }),
-      false
-    );
-    assert.equal(
-      isValidDefinition("ManagedToolDescriptor", {
-        ...validManagedToolDescriptor(),
-        artifacts: [{ ...validManagedToolDescriptor().artifacts[0], path: ".ace" }]
-      }),
-      false
-    );
-    assert.equal(
-      isValidDefinition("ManagedToolDescriptor", {
-        ...validManagedToolDescriptor(),
-        artifacts: [{ ...validManagedToolDescriptor().artifacts[0], path: "dist/.ace" }]
-      }),
-      false
-    );
-    assert.equal(
-      isValidDefinition("ManagedToolDescriptor", {
-        ...validManagedToolDescriptor(),
-        provenanceHooks: [
-          {
-            id: "private-runtime-wrapper",
-            command: [".ace\\runtime\\bin\\lattice", "status"],
-            expectedExitCode: 0
-          }
-        ]
       }),
       false
     );
@@ -2282,103 +2503,6 @@ describe("Opcore JSON schema wire constraints", () => {
     );
   });
 
-  it("accepts and rejects graph reference evidence manifest schemas", () => {
-    const manifest = validGraphReferenceEvidenceManifest();
-    assert.equal(isValidDefinition("GraphReferenceEvidenceManifest", manifest), true);
-    assert.equal(
-      isValidDefinition("GraphReferenceEvidenceManifest", {
-        ...manifest,
-        issue: "#18"
-      }),
-      false
-    );
-    assert.equal(
-      isValidDefinition("GraphReferenceEvidenceManifest", {
-        ...manifest,
-        commandSurfaces: []
-      }),
-      false
-    );
-    assert.equal(
-      isValidDefinition("GraphReferenceEvidenceManifest", {
-        ...manifest,
-        commandSurfaces: [
-          {
-            ...manifest.commandSurfaces[0],
-            classification: "release_blocking"
-          }
-        ]
-      }),
-      false
-    );
-    assert.equal(
-      isValidDefinition("GraphReferenceEvidenceManifest", {
-        ...manifest,
-        commandSurfaces: [
-          {
-            ...manifest.commandSurfaces[0],
-            fixtures: []
-          }
-        ]
-      }),
-      false
-    );
-    assert.equal(
-      isValidDefinition("GraphReferenceEvidenceManifest", {
-        ...manifest,
-        optionalAnalysisSurfaces: [
-          {
-            ...manifest.optionalAnalysisSurfaces[0],
-            fixtures: []
-          }
-        ]
-      }),
-      false
-    );
-    assert.equal(
-      isValidDefinition("GraphReferenceEvidenceManifest", {
-        ...manifest,
-        optionalAnalysisSurfaces: manifest.optionalAnalysisSurfaces.map((surface) =>
-          surface.id === "flows" ? { ...surface, issue: "#13" } : surface
-        )
-      }),
-      false
-    );
-    assert.equal(
-      isValidDefinition("GraphReferenceEvidenceManifest", {
-        ...manifest,
-        optionalAnalysisSurfaces: manifest.optionalAnalysisSurfaces.map((surface) =>
-          surface.id === "flows" ? { ...surface, classification: "required" } : surface
-        )
-      }),
-      false
-    );
-    assert.equal(
-      isValidDefinition("GraphReferenceEvidenceManifest", {
-        ...manifest,
-        optionalAnalysisSurfaces: manifest.optionalAnalysisSurfaces.map(({ issue, ...surface }) => surface)
-      }),
-      false
-    );
-    assert.equal(
-      isValidDefinition("GraphReferenceEvidenceManifest", {
-        ...manifest,
-        optionalAnalysisSurfaces: manifest.optionalAnalysisSurfaces.map((surface) => ({ ...surface, fixtures: [] }))
-      }),
-      true
-    );
-    assert.equal(
-      isValidDefinition("GraphReferenceEvidenceManifest", {
-        ...manifest,
-        provenance: {
-          ...manifest.provenance,
-          containsGitHistory: true
-        }
-      }),
-      false
-    );
-  });
-
   it("accepts and rejects graph release receipt schemas", () => {
     const receipt = validGraphReleaseReceipt();
     assert.equal(isValidDefinition("GraphReleaseReceipt", receipt), true);
@@ -2453,6 +2577,10 @@ describe("Opcore JSON schema wire constraints", () => {
       }),
       false
     );
+  });
+
+  it("rejects incomplete graph release query schemas", () => {
+    const receipt = validGraphReleaseReceipt();
     assert.equal(
       isValidDefinition("GraphReleaseReceipt", {
         ...receipt,
@@ -2460,6 +2588,10 @@ describe("Opcore JSON schema wire constraints", () => {
       }),
       false
     );
+  });
+
+  it("rejects incomplete graph release ownership and optional-surface schemas", () => {
+    const receipt = validGraphReleaseReceipt();
     assert.equal(
       isValidDefinition("GraphReleaseReceipt", {
         ...receipt,
@@ -2506,6 +2638,10 @@ describe("Opcore JSON schema wire constraints", () => {
       }),
       false
     );
+  });
+
+  it("rejects incomplete graph release transport, handoff, and package schemas", () => {
+    const receipt = validGraphReleaseReceipt();
     assert.equal(
       isValidDefinition("GraphReleaseReceipt", {
         ...receipt,
@@ -2612,17 +2748,6 @@ describe("Opcore JSON schema wire constraints", () => {
     assert.equal(
       isValidDefinition("ReleaseReceipt", {
         ...receipt,
-        packages: receipt.packages.map((entry) =>
-          entry.packageName === "opcore"
-            ? { ...entry, bins: { ...entry.bins, rox: "dist/index.js" } }
-            : entry
-        )
-      }),
-      false
-    );
-    assert.equal(
-      isValidDefinition("ReleaseReceipt", {
-        ...receipt,
         nativeArtifacts: receipt.nativeArtifacts.map((entry) => ({ ...entry, binarySha256: "not-sha" }))
       }),
       false
@@ -2679,6 +2804,10 @@ describe("Opcore JSON schema wire constraints", () => {
       }),
       false
     );
+  });
+
+  it("rejects invalid cutover command and installed-package schemas", () => {
+    const receipt = validReleaseCutoverReceipt();
     assert.equal(
       isValidDefinition("ReleaseCutoverReceipt", {
         ...receipt,
@@ -2690,6 +2819,10 @@ describe("Opcore JSON schema wire constraints", () => {
       }),
       false
     );
+  });
+
+  it("rejects incomplete cutover language and negative-check schemas", () => {
+    const receipt = validReleaseCutoverReceipt();
     assert.equal(
       isValidDefinition("ReleaseCutoverReceipt", {
         ...receipt,
@@ -2768,14 +2901,22 @@ describe("Opcore JSON schema wire constraints", () => {
     assert.equal(
       isValidDefinition("ReleaseCutoverReceipt", {
         ...receipt,
-        pythonCommandReceipts: receipt.pythonCommandReceipts.map((entry) =>
-          entry.id === "graph-python-search"
-            ? { ...entry, command: ["lattice", "graph", "search", "Greeting"], canonicalCommand: ["lattice", "graph", "search", "Greeting"] }
+          pythonCommandReceipts: receipt.pythonCommandReceipts.map((entry) =>
+            entry.id === "graph-python-search"
+            ? {
+                ...entry,
+                command: ["node", "graph", "search", "Greeting"],
+                canonicalCommand: ["node", "graph", "search", "Greeting"]
+              }
             : entry
         )
       }),
       false
     );
+  });
+
+  it("rejects invalid cutover self-validation and environment schemas", () => {
+    const receipt = validReleaseCutoverReceipt();
     assert.equal(
       isValidDefinition("ReleaseCutoverReceipt", {
         ...receipt,
@@ -2799,7 +2940,7 @@ describe("Opcore JSON schema wire constraints", () => {
         ...receipt,
         negativeChecks: receipt.negativeChecks.map((entry) =>
           entry.id === "missing-required-graph-check"
-            ? { ...entry, command: ["lattice", "check", "files", "src/index.ts", "--graph-mode", "required"] }
+            ? { ...entry, command: ["node", "check", "files", "src/index.ts", "--graph-mode", "required"] }
             : entry
         )
       }),
@@ -2808,28 +2949,16 @@ describe("Opcore JSON schema wire constraints", () => {
     assert.equal(
       isValidDefinition("ReleaseCutoverReceipt", {
         ...receipt,
-        currentToolGuardrails: receipt.currentToolGuardrails.filter((entry) => entry.id !== "current-tools-validate-changed")
+        selfValidation: { ...receipt.selfValidation, status: "failed", exitCode: 1 }
       }),
       false
     );
-    assert.equal(
-      isValidDefinition("ReleaseCutoverReceipt", {
-        ...receipt,
-        currentToolGuardrails: receipt.currentToolGuardrails.map((entry) =>
-          entry.id === "current-tools-validate-changed"
-            ? { ...entry, status: "retained-not-run", exitCode: null }
-            : entry
-        )
-      }),
-      false
-    );
-    assert.equal(isValidDefinition("ReleaseCutoverReceipt", { ...receipt, oldToolReplacementClaimed: true }), false);
     assert.equal(
       isValidDefinition("ReleaseCutoverReceipt", {
         ...receipt,
         installedPackages: receipt.installedPackages.map((entry) =>
           entry.packageName === "opcore"
-            ? { ...entry, installedManifest: { ...entry.installedManifest, bins: { lattice: "dist/index.js", crg: "dist/index.js" } } }
+            ? { ...entry, installedManifest: { ...entry.installedManifest, bins: { unexpected: "dist/index.js" } } }
             : entry
         )
       }),
@@ -2854,39 +2983,7 @@ describe("Opcore JSON schema wire constraints", () => {
     assert.equal(
       isValidDefinition("ReleaseCutoverReceipt", {
         ...receipt,
-        environmentIsolation: { ...receipt.environmentIsolation, opcoreBinOnly: false }
-      }),
-      false
-    );
-  });
-
-  it("accepts and rejects old-Rox comparison receipt schemas", () => {
-    const receipt = validRustOldRoxComparisonReceipt();
-    assert.equal(isValidDefinition("RustOldRoxComparisonReceipt", receipt), true);
-    assert.equal(
-      isValidDefinition("RustOldRoxComparisonReceipt", {
-        ...receipt,
-        surfaces: receipt.surfaces.filter((entry) => entry.id !== "rust.dead-code")
-      }),
-      false
-    );
-    assert.equal(isValidDefinition("RustOldRoxComparisonReceipt", { ...receipt, oldToolReplacementClaimed: true }), false);
-    assert.equal(isValidDefinition("RustOldRoxComparisonReceipt", { ...receipt, publicReleaseActions: ["publish"] }), false);
-    assert.equal(
-      isValidDefinition("RustOldRoxComparisonReceipt", {
-        ...receipt,
-        surfaces: receipt.surfaces.map((entry) =>
-          entry.id === "rust.function-metrics" ? { ...entry, replacementStatus: "replaced" } : entry
-        )
-      }),
-      false
-    );
-    assert.equal(
-      isValidDefinition("RustOldRoxComparisonReceipt", {
-        ...receipt,
-        surfaces: receipt.surfaces.map((entry) =>
-          entry.id === "rust.import-graph" ? { ...entry, graphEvidenceExists: true, graphEvidence: [] } : entry
-        )
+        environmentIsolation: { ...receipt.environmentIsolation, opcoreBinsVerified: false }
       }),
       false
     );
@@ -2904,6 +3001,10 @@ describe("Opcore JSON schema wire constraints", () => {
       }),
       false
     );
+  });
+
+  it("rejects invalid ASP dogfood authority and parity schemas", () => {
+    const receipt = validAspDogfoodReceipt();
     assert.equal(
       isValidDefinition("AspDogfoodReceipt", {
         ...receipt,
@@ -2937,7 +3038,7 @@ describe("Opcore JSON schema wire constraints", () => {
     assert.equal(
       isValidDefinition("AspDogfoodReceipt", {
         ...receipt,
-        currentToolGuardrails: receipt.currentToolGuardrails.filter((entry) => entry.id !== "current-tools-validate-changed")
+        selfValidation: { ...receipt.selfValidation, status: "failed", exitCode: 1 }
       }),
       false
     );
@@ -4070,130 +4171,6 @@ function validCommandAdapterRequest() {
   };
 }
 
-function validGraphReferenceEvidenceManifest() {
-  return {
-    schemaVersion: 1,
-    issue: "#19",
-    origin: "covibes-authored-synthetic",
-    fixtureRefs: [
-      "packages/fixtures/graph-reference-evidence/sqlite-fixtures.json",
-      "packages/fixtures/graph-reference-evidence/daemon-socket-fixtures.json",
-      "packages/fixtures/graph-reference-evidence/golden-corpus.json",
-      "packages/fixtures/graph-reference-evidence/baseline-receipts.json"
-    ],
-    commandSurfaces: [
-      {
-        id: "graph-reference-status",
-        classification: "required",
-        referenceTool: "current external graph dev wrapper",
-        referenceCommand: ["status"],
-        canonicalCommand: ["opcore", "graph", "status"],
-        flags: ["--repo", "--json"],
-        positionals: [],
-        fixtures: ["status-json"],
-        exitSemantics: {
-          success: 0,
-          failure: "nonzero"
-        }
-      }
-    ],
-    jsonOutputSurfaces: [
-      {
-        id: "status-json",
-        command: "status",
-        classification: "required",
-        requiredFields: ["status", "summary"],
-        fixtures: ["status-json"],
-        exitSemantics: {
-          success: 0,
-          failure: "nonzero"
-        }
-      }
-    ],
-    sqliteFixtures: [
-      {
-        id: "sqlite-required-views",
-        classification: "required",
-        fixture: "packages/fixtures/graph-reference-evidence/sqlite-fixtures.json",
-        tables: ["metadata", "nodes", "edges"],
-        indexes: ["idx_nodes_file"],
-        metadataKeys: ["schema_version"],
-        nodeKinds: ["File", "Function", "Test", "Module", "Struct", "Enum", "Trait", "Impl", "Method", "TypeAlias", "Const", "Static", "Macro"],
-        edgeKinds: ["CALLS", "CONTAINS", "IMPORTS_FROM", "TESTED_BY", "IMPLEMENTS", "DEPENDS_ON", "INHERITS"],
-        directReaderQueries: ["status-counts"],
-        fixtures: ["sqlite-fixtures"]
-      }
-    ],
-    daemonFixtures: [
-      {
-        id: "daemon-hot-query",
-        classification: "required",
-        fixture: "packages/fixtures/graph-reference-evidence/daemon-socket-fixtures.json",
-        protocol: "opcore.graph.daemon",
-        envelopes: ["ping-request", "success-response"],
-        fixtures: ["daemon-fixtures"]
-      }
-    ],
-    baselineReceipts: [
-      {
-        id: "install-setup",
-        metric: "install_setup_ms",
-        classification: "required",
-        receipt: "packages/fixtures/graph-reference-evidence/baseline-receipts.json",
-        label: "reference_evidence_non_implementation_input",
-        sourceAvailability: "unavailable",
-        nonImplementationInput: true,
-        fixtures: ["baseline-receipts"]
-      }
-    ],
-    optionalAnalysisSurfaces: [
-      {
-        issue: "#13",
-        id: "coverage",
-        classification: "deferred",
-        status: "deferred",
-        fixtures: ["coverage-deferred-marker"]
-      },
-      {
-        issue: "#14",
-        id: "flows",
-        classification: "optional",
-        status: "deferred",
-        fixtures: ["sqlite-fixtures"]
-      },
-      {
-        issue: "#15",
-        id: "communities",
-        classification: "optional",
-        status: "deferred",
-        fixtures: ["sqlite-fixtures"]
-      },
-      {
-        issue: "#16",
-        id: "read_only_suggestions",
-        classification: "supporting",
-        status: "deferred",
-        fixtures: ["sqlite-fixtures"]
-      }
-    ],
-    goldenCorpus: {
-      id: "graph-reference-evidence-golden-corpus-v1",
-      classification: "required",
-      fixture: "packages/fixtures/graph-reference-evidence/golden-corpus.json",
-      covers: ["parser", "store", "query", "search", "freshness", "status"],
-      fixtures: ["golden-corpus"]
-    },
-    provenance: {
-      containsPythonCrgSource: false,
-      containsPackageMetadata: false,
-      containsGitHistory: false,
-      referenceReceiptsAreImplementationInput: false,
-      implementationPackageNames: ["@the-open-engine/opcore-graph"],
-      allowedMentionPaths: ["docs/graph-reference-evidence/", "packages/fixtures/graph-reference-evidence/"]
-    }
-  };
-}
-
 function validGraphReleaseReceipt() {
   const commandIds = [
     "opcore-graph-build",
@@ -4327,7 +4304,7 @@ function validGraphReleaseReceipt() {
       value: 1,
       unit: metric.endsWith("_bytes") ? "bytes" : "ms",
       baselineIssue: "#19",
-      baselineReceipt: "packages/fixtures/graph-reference-evidence/baseline-receipts.json",
+      baselineReceipt: "docs/release/graph-release-receipt.json",
       comparison: "recorded"
     })),
     packageInspection: {
@@ -4338,10 +4315,10 @@ function validGraphReleaseReceipt() {
       forbiddenMarkersAbsent: true,
       generatedBuildMetadataAbsent: true,
       privatePathsAbsent: true,
-      pythonCrgSourceAbsent: true,
-      pythonGraphPackageMetadataAbsent: true,
-      pythonCrgGitHistoryAbsent: true,
-      forbiddenImplementationPackageNamesAbsent: true,
+      sourceProvenanceAbsent: true,
+      packageMetadataAbsent: true,
+      gitHistoryAbsent: true,
+      foreignImplementationNamesAbsent: true,
       inspections: ["npm-pack-dry-run"]
     },
     supportedNativeTargets: graphCoreNativeSupportedTargets,
@@ -4424,7 +4401,7 @@ function validGraphReleaseReceipt() {
       issue,
       receiptPath: "docs/release/graph-release-receipt.payload.json",
       checksumSha256: "b".repeat(64),
-      rollbackNote: "Keep ACE wrappers on current external tools if receipt regresses."
+      rollbackNote: "Block release and repair Opcore self-validation if this receipt regresses."
     }))
   };
 }
@@ -4803,18 +4780,9 @@ function validReleaseCutoverReceipt() {
       resolvedChecksums: descriptor.resolvedChecksums
     },
     environmentIsolation: {
-      currentToolEnvCleared: true,
-      clearedEnvVarCount: 5,
       pathSanitized: true,
-      aceRuntimeBinExcluded: true,
-      siblingCovibesExcluded: true,
-      opcoreBinOnly: true,
-      oldBinsAbsent: {
-        lattice: true,
-        crg: true,
-        cix: true,
-        rox: true
-      }
+      siblingRepositoriesExcluded: true,
+      opcoreBinsVerified: true
     },
     commandReceipts,
     rustCommandReceipts,
@@ -4863,35 +4831,19 @@ function validReleaseCutoverReceipt() {
         assertion: "missing Python toolchain stayed degraded"
       }
     ],
-    currentToolGuardrails: [
-      {
-        id: "current-tools-validate-changed",
-        command: ["npm", "run", "current-tools:validate-changed"],
-        status: "passed",
-        exitCode: 0,
-        stdoutSha256: "7".repeat(64),
-        stderrSha256: "8".repeat(64),
-        retained: true,
-        assertion: "retained changed-file guardrail",
-        oldToolReplacementClaimed: false
-      },
-      {
-        id: "current-tools-validate-rust-graph",
-        command: ["npm", "run", "current-tools:validate-rust-graph"],
-        status: "passed",
-        exitCode: 0,
-        stdoutSha256: "7".repeat(64),
-        stderrSha256: "8".repeat(64),
-        retained: true,
-        assertion: "retained Rust graph guardrail",
-        oldToolReplacementClaimed: false
-      }
-    ],
-    oldToolReplacementClaimed: false,
+    selfValidation: {
+      id: "opcore-self-check",
+      command: ["npm", "run", "opcore:self-check"],
+      status: "passed",
+      exitCode: 0,
+      stdoutSha256: "7".repeat(64),
+      stderrSha256: "8".repeat(64),
+      assertion: "Opcore self-validation passed"
+    },
     forbiddenMarkerScan: {
       scannedTextCount: 12,
       findingCount: 0,
-      markersBlocked: ["private-runtime", "current-tool-env", "private-home", "old-tool-bins"]
+      markersBlocked: ["private-home", "launch-claim"]
     },
     inputEvidence: [
       {
@@ -4926,75 +4878,9 @@ function pythonCutoverEvidence(id) {
   }[id];
 }
 
-function validRustOldRoxComparisonReceipt() {
-  const surface = (id, graphEvidenceExists, graphEvidence, stillUniquelyProvidedByCurrentTools, replacementStatus = "retained") => ({
-    id,
-    graphEvidenceExists,
-    graphEvidence,
-    stillUniquelyProvidedByCurrentTools,
-    replacementStatus
-  });
-  return {
-    schemaVersion: 1,
-    issue: "#29",
-    origin: "covibes-authored-old-rox-comparison",
-    generatedAt: "2026-06-27T00:00:00.000Z",
-    privateRepo: true,
-    oldToolReplacementClaimed: false,
-    publicReleaseActions: [],
-    surfaces: [
-      surface(
-        "rust.rustdoc",
-        false,
-        ["No graph fact replaces rustdoc diagnostics."],
-        ["rustdoc diagnostics and broken intra-doc link policy remain current-tool evidence."]
-      ),
-      surface(
-        "rust.import-graph",
-        true,
-        ["Rust graph emits IMPORTS_FROM and DEPENDS_ON edges for module files."],
-        ["Rox/current tooling still uniquely provides rustdoc and cargo-depgraph-enriched import checks."],
-        "deferred"
-      ),
-      surface(
-        "rust.dead-code",
-        true,
-        ["Rust graph emits exported symbol metadata and graph-backed dead public export signals."],
-        ["Cargo dead_code diagnostics and retained Rox gate behavior still uniquely cover compiler reachability."]
-      ),
-      surface(
-        "rust.unused-deps",
-        false,
-        ["No graph fact replaces cargo-udeps unused dependency analysis."],
-        ["cargo-udeps/Rox unused dependency detection remains current-tool evidence."]
-      ),
-      surface(
-        "rust.function-metrics",
-        true,
-        ["Rust graph emits symbol spans and signatures for functions and methods."],
-        ["rust-code-analysis complexity and parameter thresholds remain current-tool evidence."]
-      ),
-      surface(
-        "current-tools:validate-rust-graph",
-        false,
-        ["Graph receipts do not replace the aggregate current-tools Rust graph gate."],
-        ["npm run current-tools:validate-rust-graph remains the retained aggregate guardrail."]
-      )
-    ],
-    guardrails: [
-      {
-        id: "current-tools:validate-rust-graph",
-        command: ["npm", "run", "current-tools:validate-rust-graph"],
-        replacementStatus: "retained",
-        oldToolReplacementClaimed: false
-      }
-    ]
-  };
-}
-
 function validAspDogfoodReceipt() {
   const cutover = validReleaseCutoverReceipt();
-  const markers = ["opcore asp serve", "opcore asp", "dist/bin/lattice", ".ace/runtime"];
+  const markers = ["opcore asp serve", "opcore asp"];
   const aspRepo = covibesPath("agent-server-protocol");
   const hostFixtureRepo = "/tmp/opcore-asp-dogfood/asp-host-fixture";
   const command = (id, commandParts, output = {}) => ({
@@ -5058,8 +4944,7 @@ function validAspDogfoodReceipt() {
       temp: true,
       isolated: true,
       sharedStateMutated: false,
-      pathSanitized: true,
-      aceRuntimeBinExcluded: true
+      pathSanitized: true
     },
     hostFixture: {
       repo: hostFixtureRepo,
@@ -5117,32 +5002,18 @@ function validAspDogfoodReceipt() {
       diagnosticsCount: 0,
       hostOwnedFieldLeak: false
     },
-    currentToolGuardrails: [
-      { ...command("current-tools-validate-changed", ["npm", "run", "current-tools:validate-changed"]), retained: true },
-      { ...command("current-tools-validate-rust-graph", ["npm", "run", "current-tools:validate-rust-graph"]), retained: true },
-      {
-        id: "current-tools-validate-all",
-        command: ["npm", "run", "current-tools:validate-all"],
-        status: "retained-not-run",
-        exitCode: null,
-        stdoutSha256: "0".repeat(64),
-        stderrSha256: "0".repeat(64),
-        retained: true,
-        assertion: "retained by default"
-      }
-    ],
+    selfValidation: cutover.selfValidation,
     unsupportedSurfaces: [
       { surface: "inspect", status: "parity-blocker", cleanCoverage: false, blocker: "inspect not mapped into ASP #120" },
-      { surface: "edit", status: "retained-old-tool-gate", cleanCoverage: false, blocker: "edit not mapped into ASP #120" }
+      { surface: "edit", status: "parity-blocker", cleanCoverage: false, blocker: "edit not mapped into ASP #120" }
     ],
-    parityBlockers: [{ source: "docs/planning/old-tool-compatibility-matrix.md:1", detail: "old-tool guardrails retained" }],
+    parityBlockers: [],
     authority: {
       hostOwnsDecisions: true,
       providerOutputIsHostDecision: false,
       localAuthorityOverride: { present: false, sharedAuthorityWeakened: false }
     },
     publicReleaseActions: [],
-    oldToolReplacementClaimed: false,
     forbiddenMarkerScan: {
       scannedTextCount: 2,
       findingCount: 0,

@@ -29,6 +29,14 @@ function compactValidationManifest(manifest: ValidationResultManifest): Validati
     generatedAt: manifest.generatedAt
   };
   if (manifest.durationMs !== undefined) compact.durationMs = manifest.durationMs;
+  const capabilityRuns = (manifest.runs ?? []).filter((run) =>
+    run.pythonCapabilityRuns?.some((capabilityRun) =>
+      (capabilityRun.capability === "ruff_lint" || capabilityRun.capability === "ruff_format") &&
+      capabilityRun.state !== "not_applicable" &&
+      capabilityRun.state !== "disabled"
+    ) === true
+  );
+  if (capabilityRuns.length > 0) compact.runs = capabilityRuns;
   return compact;
 }
 

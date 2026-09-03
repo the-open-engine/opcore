@@ -1,6 +1,6 @@
-import { describe, it } from "node:test";
+import { afterEach, describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -8,7 +8,6 @@ import { spawnSync } from "node:child_process";
 import {
   graphCoreNativePackageNameForTarget,
   graphCoreNativeSupportedTargets,
-  releaseCutoverCurrentToolGuardrailIds,
   releaseCutoverNegativeCheckIds,
   releaseCutoverPythonCommandIds,
   releaseCutoverRequiredCommandIds,
@@ -20,24 +19,28 @@ import { externalRuntimePackageDir } from "../scripts/stage-opcore-bundle.mjs";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const releaseDocsLockTimeoutMs = 900000;
+const tempRepoRoots = new Set();
 const copiedRepoSkips = new Set([
   ".git",
   "node_modules",
   "target",
-  ".ace",
   ".agents",
   ".claude",
   ".codex",
   ".gemini",
   ".opencode",
   ".lattice",
-  ".code-review-graph",
-  ".rox-cache",
-  ".robustness-engine-cache",
   ".receipt-test.lock"
 ]);
 
 describe("negative gate fixtures", () => {
+  afterEach(() => {
+    for (const tempRoot of tempRepoRoots) {
+      rmSync(tempRoot, { recursive: true, force: true });
+    }
+    tempRepoRoots.clear();
+  });
+
   it("rejects tracked TypeScript build info", () => {
     const repo = tempRepo();
     writeFileSync(join(repo, "packages/contracts/tsconfig.tsbuildinfo"), "{}\n");
@@ -45,15 +48,6 @@ describe("negative gate fixtures", () => {
 
     const result = run(repo, "node", ["scripts/check-workspace.mjs"], { expectFailure: true });
     assert.match(stderrAndStdout(result), /Generated TypeScript build info must not be checked in/);
-  });
-
-  it("rejects Python CRG provenance markers", () => {
-    const repo = tempRepo();
-    writeFileSync(join(repo, "pyproject.toml"), "[project]\nname = \"code-review-graph\"\n");
-    run(repo, "git", ["add", "pyproject.toml"]);
-
-    const result = run(repo, "node", ["scripts/check-provenance.mjs"], { expectFailure: true });
-    assert.match(stderrAndStdout(result), /Forbidden Python packaging file/);
   });
 
   it("rejects provenance receipt checks without build artifacts", () => {
@@ -165,15 +159,15 @@ describe("negative gate fixtures", () => {
     assert.match(stderrAndStdout(result), /packed files mismatch|EXTRA\.md/);
   });
 
-  it("rejects old public bins in release package inspection", () => {
+  it("rejects unexpected public bins in release package inspection", () => {
     const repo = tempRepo({ includeDist: true });
     const manifestPath = join(repo, "packages/opcore/package.json");
     const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
-    manifest.bin.crg = "dist/index.js";
+    manifest.bin.unexpected = "dist/index.js";
     writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
 
     const result = run(repo, "node", ["scripts/generate-release-receipt.mjs", "--inspect-packages-only"], { expectFailure: true });
-    assert.match(stderrAndStdout(result), /forbidden old public bin crg/);
+    assert.match(stderrAndStdout(result), /Opcore package bins|unexpected/);
   });
 
   it("rejects canonical ASP server manifest launch claim overreach", () => {
@@ -236,15 +230,15 @@ describe("negative gate fixtures", () => {
     assert.match(stderrAndStdout(result), /packed files mismatch|checksum|sha256/);
   });
 
-  it("rejects current-tool markers in cutover descriptor inspection", () => {
+  it("rejects private runtime paths in cutover descriptor inspection", () => {
     const repo = tempRepo({ includeDist: true });
     const descriptorPath = join(repo, "packages/opcore/dist/descriptors/opcore.managed-tool.json");
     const descriptor = JSON.parse(readFileSync(descriptorPath, "utf8"));
-    descriptor.artifacts[0].path = ".ace/runtime/bin/lattice";
+    descriptor.artifacts[0].path = ".agents/runtime/bin/tool";
     writeFileSync(descriptorPath, `${JSON.stringify(descriptor, null, 2)}\n`);
 
     const result = run(repo, "node", ["scripts/generate-cutover-receipt.mjs", "--inspect-descriptor-only"], { expectFailure: true });
-    assert.match(stderrAndStdout(result), /private runtime|forbidden marker|\.ace/);
+    assert.match(stderrAndStdout(result), /private runtime|forbidden marker/);
   });
 
   it("rejects cutover receipts with advertised not_implemented commands", () => {
@@ -271,21 +265,6 @@ describe("negative gate fixtures", () => {
     assert.match(stderrAndStdout(result), /command receipts.*inspect-search/);
   });
 
-  it("rejects old bin fallback in installed cutover projects", () => {
-    const repo = tempRepo({ includeDist: true });
-    const project = join(repo, "tmp-installed-project");
-    mkdirSync(join(project, "node_modules/.bin"), { recursive: true });
-    writeFileSync(join(project, "node_modules/.bin/lattice"), "#!/bin/sh\n");
-    writeFileSync(join(project, "node_modules/.bin/opcore"), "#!/bin/sh\n");
-    writeFileSync(join(project, "node_modules/.bin/opcore-asp-provider"), "#!/bin/sh\n");
-    writeFileSync(join(project, "node_modules/.bin/crg"), "#!/bin/sh\n");
-
-    const result = run(repo, "node", ["scripts/generate-cutover-receipt.mjs", "--inspect-installed-bin-dir", "tmp-installed-project"], {
-      expectFailure: true
-    });
-    assert.match(stderrAndStdout(result), /old public bin.*lattice/);
-  });
-
   it("rejects sibling file dependencies", () => {
     const repo = tempRepo();
     const manifestPath = join(repo, "packages/graph/package.json");
@@ -308,76 +287,6 @@ describe("negative gate fixtures", () => {
     assert.match(stderrAndStdout(result), /must not reference parent directories or absolute paths/);
   });
 
-  it("rejects reserved graph implementation package paths", () => {
-    const repo = tempRepo();
-    const readmePath = join(repo, "reserved-graph-name.md");
-    writeFileSync(readmePath, `${["packages", "crg"].join("/")} is reserved for removed implementation references\n`);
-
-    const result = run(repo, "node", ["scripts/check-workspace.mjs"], { expectFailure: true });
-    assert.match(stderrAndStdout(result), /reserved graph naming references/);
-  });
-
-  it("rejects reserved graph implementation package names", () => {
-    const repo = tempRepo();
-    const manifestPath = join(repo, "packages/graph/package.json");
-    const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
-    manifest.description = `Reserved ${`@the-open-engine/opcore-${"crg"}`} implementation name`;
-    writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
-
-    const result = run(repo, "node", ["scripts/check-workspace.mjs"], { expectFailure: true });
-    assert.match(stderrAndStdout(result), /reserved graph naming references/);
-  });
-
-  it("rejects reserved graph provider literals", () => {
-    const repo = tempRepo();
-    const sourcePath = join(repo, "packages/graph/src/reserved-provider.ts");
-    writeFileSync(sourcePath, `export const status = { provider: ${JSON.stringify("crg")} };\n`);
-
-    const result = run(repo, "node", ["scripts/check-workspace.mjs"], { expectFailure: true });
-    assert.match(stderrAndStdout(result), /reserved graph naming references/);
-  });
-
-  it("rejects reserved graph providerName metadata", () => {
-    const repo = tempRepo();
-    const sourcePath = join(repo, "packages/graph/src/reserved-provider-name-metadata.ts");
-    writeFileSync(sourcePath, `export const status = { providerName: ${JSON.stringify("crg")} };\n`);
-
-    const result = run(repo, "node", ["scripts/check-workspace.mjs"], { expectFailure: true });
-    assert.match(stderrAndStdout(result), /reserved-provider-name-metadata\.ts/);
-    assert.match(stderrAndStdout(result), /legacy graph provider name metadata/);
-  });
-
-  it("rejects reserved graph provider name constants", () => {
-    const repo = tempRepo();
-    const sourcePath = join(repo, "packages/graph/src/bad-provider-name.ts");
-    const legacyGraphTool = "cr" + "g";
-    writeFileSync(sourcePath, `export const crgProviderName = ${JSON.stringify(legacyGraphTool)};\n`);
-
-    const result = run(repo, "node", ["scripts/check-workspace.mjs"], { expectFailure: true });
-    assert.match(stderrAndStdout(result), /bad-provider-name\.ts/);
-    assert.match(stderrAndStdout(result), /legacy graph provider name constant/);
-  });
-
-  it("rejects stale CONTRIBUTING graph naming", () => {
-    const repo = tempRepo();
-    const contributingPath = join(repo, "CONTRIBUTING.md");
-    const legacyGraphTool = "cr" + "g";
-    const content = readFileSync(contributingPath, "utf8")
-      .replace(
-        "Opcore is a public alpha for local code intelligence, edit planning, and pre-write validation for coding agents.",
-        `Opcore is a public alpha code-intelligence monorepo for \`${legacyGraphTool}\`, edit, and validation.`
-      )
-      .replace(
-        "Graph extraction, persistence, query, search, and impact belong in `@the-open-engine/opcore-graph`.",
-        `Graph extraction, persistence, query, search, and impact graph production belongs in \`${legacyGraphTool}\`.`
-      );
-    writeFileSync(contributingPath, content);
-
-    const result = run(repo, "node", ["scripts/check-workspace.mjs"], { expectFailure: true });
-    assert.match(stderrAndStdout(result), /CONTRIBUTING\.md/);
-    assert.match(stderrAndStdout(result), /reserved graph naming references/);
-  });
-
   it("rejects edit importing graph-core native artifact loaders", () => {
     const repo = tempRepo();
     const sourcePath = join(repo, "packages/edit/src/bad-graph-loader.ts");
@@ -394,85 +303,6 @@ describe("negative gate fixtures", () => {
 
     const result = run(repo, "node", ["scripts/check-workspace.mjs"], { expectFailure: true });
     assert.match(stderrAndStdout(result), /bad-graph-sqlite\.ts/);
-  });
-
-  it("rejects Cargo package names containing crg", () => {
-    const repo = tempRepo();
-    const manifestPath = join(repo, "crates/graph-core/Cargo.toml");
-    const manifest = readFileSync(manifestPath, "utf8").replace(
-      'name = "opcore-graph-core"',
-      `name = "lattice-${"crg"}-core"`
-    );
-    writeFileSync(manifestPath, manifest);
-
-    const result = run(repo, "node", ["scripts/check-workspace.mjs"], { expectFailure: true });
-    assert.match(stderrAndStdout(result), /must not use crg in Rust package/);
-  });
-
-  it("rejects Rox code-quality coverage without all Rust crate paths", () => {
-    const repo = tempRepo();
-    const roxPath = join(repo, "rox.json");
-    const rox = JSON.parse(readFileSync(roxPath, "utf8"));
-    rox.checks.codeQuality.include = rox.checks.codeQuality.include.filter((entry) => entry !== "crates/");
-    writeFileSync(roxPath, `${JSON.stringify(rox, null, 2)}\n`);
-
-    const result = run(repo, "node", ["scripts/check-workspace.mjs"], { expectFailure: true });
-    assert.match(stderrAndStdout(result), /checks\.codeQuality\.include must include "crates\/"/);
-  });
-
-  it("rejects Rox code-quality coverage without existing TypeScript and script scopes", () => {
-    const repo = tempRepo();
-    const roxPath = join(repo, "rox.json");
-    const rox = JSON.parse(readFileSync(roxPath, "utf8"));
-    rox.checks.codeQuality.include = ["crates/"];
-    writeFileSync(roxPath, `${JSON.stringify(rox, null, 2)}\n`);
-
-    const result = run(repo, "node", ["scripts/check-workspace.mjs"], { expectFailure: true });
-    assert.match(stderrAndStdout(result), /checks\.codeQuality\.include must include "packages\/"/);
-  });
-
-  it("rejects scoped Rust quality scripts that run against the whole repo", () => {
-    const repo = tempRepo();
-    const manifestPath = join(repo, "package.json");
-    const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
-    manifest.scripts["current-tools:validate-rust-graph"] = "./.ace/runtime/bin/rox check --all --no-daemon --checks functionMetrics";
-    writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
-
-    const result = run(repo, "node", ["scripts/check-workspace.mjs"], { expectFailure: true });
-    assert.match(stderrAndStdout(result), /must run scoped Rust graph function metrics script/);
-  });
-
-  it("rejects repo-wide Rox without scoped Rust graph metrics", () => {
-    const repo = tempRepo();
-    const roxPath = join(repo, "rox.json");
-    const rox = JSON.parse(readFileSync(roxPath, "utf8"));
-    rox.extensions = rox.extensions.filter((entry) => entry !== "scripts/check-rust-graph-function-metrics.mjs");
-    writeFileSync(roxPath, `${JSON.stringify(rox, null, 2)}\n`);
-
-    const result = run(repo, "node", ["scripts/check-workspace.mjs"], { expectFailure: true });
-    assert.match(stderrAndStdout(result), /must run scoped Rust graph function metrics/);
-  });
-
-  it("rejects Rox all-mode Rust metrics without crate package scope", () => {
-    const repo = tempRepo();
-    const roxPath = join(repo, "rox.json");
-    const rox = JSON.parse(readFileSync(roxPath, "utf8"));
-    rox.packages = rox.packages.filter((entry) => entry !== "crates");
-    writeFileSync(roxPath, `${JSON.stringify(rox, null, 2)}\n`);
-
-    const result = run(repo, "node", ["scripts/check-workspace.mjs"], { expectFailure: true });
-    assert.match(stderrAndStdout(result), /packages must include "crates"/);
-  });
-
-  it("rejects Rox code-quality coverage without changed-file modes", () => {
-    const repo = tempRepo();
-    const roxPath = join(repo, "rox.json");
-    const rox = JSON.parse(readFileSync(roxPath, "utf8"));
-    rox.checks.codeQuality.when.modes = rox.checks.codeQuality.when.modes.filter((entry) => entry !== "changed");
-    writeFileSync(roxPath, `${JSON.stringify(rox, null, 2)}\n`);
-
-    const result = run(repo, "node", ["scripts/check-workspace.mjs"], { expectFailure: true });
-    assert.match(stderrAndStdout(result), /checks\.codeQuality\.when\.modes must include "changed"/);
   });
 
   it("rejects graph-core crates without workspace lint opt-in", () => {
@@ -497,7 +327,8 @@ describe("negative gate fixtures", () => {
 });
 
 function tempRepo(options = {}) {
-  const tempRoot = mkdtempSync(join(tmpdir(), "lattice-gate-"));
+  const tempRoot = mkdtempSync(join(tmpdir(), "opcore-gate-"));
+  tempRepoRoots.add(tempRoot);
   const repo = join(tempRoot, "repo");
   withReleaseDocsLock(() => {
     cpSync(repoRoot, repo, {
@@ -650,11 +481,6 @@ function minimalCutoverReceipt(repo, commandOverrides = {}) {
     negativeChecks.map((entry) => entry.id),
     releaseCutoverNegativeCheckIds
   );
-  const currentToolGuardrails = retainedCutoverGuardrails();
-  assert.deepEqual(
-    currentToolGuardrails.map((entry) => entry.id),
-    releaseCutoverCurrentToolGuardrailIds
-  );
   return {
     schemaVersion: 1,
     issue: "#30",
@@ -689,24 +515,27 @@ function minimalCutoverReceipt(repo, commandOverrides = {}) {
       resolvedChecksums: descriptor.checksums.map((checksum) => ({ ...checksum, packageFile: true, value: "8".repeat(64) }))
     },
     environmentIsolation: {
-      currentToolEnvCleared: true,
-      clearedEnvVarCount: 5,
       pathSanitized: true,
-      aceRuntimeBinExcluded: true,
-      siblingCovibesExcluded: true,
-      opcoreBinOnly: true,
-      oldBinsAbsent: { lattice: true, crg: true, cix: true, rox: true }
+      siblingRepositoriesExcluded: true,
+      opcoreBinsVerified: true
     },
     commandReceipts,
     rustCommandReceipts,
     pythonCommandReceipts,
     negativeChecks,
-    currentToolGuardrails,
-    oldToolReplacementClaimed: false,
+    selfValidation: {
+      id: "opcore-self-check",
+      command: ["npm", "run", "opcore:self-check"],
+      status: "passed",
+      exitCode: 0,
+      stdoutSha256: "1".repeat(64),
+      stderrSha256: "2".repeat(64),
+      assertion: "Opcore self-validation passed"
+    },
     forbiddenMarkerScan: {
       scannedTextCount: 1,
       findingCount: 0,
-      markersBlocked: ["private-runtime", "current-tool-env", "private-home", "old-tool-bins"]
+      markersBlocked: ["private-home", "launch-claim"]
     },
     inputEvidence: [
       { issue: "#17", path: "docs/release/graph-release-receipt.json", checksumSha256: "4".repeat(64) },
@@ -905,31 +734,4 @@ function commandReceipt(expectation, bin = expectation.command[0], assertionSuff
     stderrSha256: "2".repeat(64),
     assertion: `${expectation.id} ${assertionSuffix}`
   };
-}
-
-function retainedCutoverGuardrails() {
-  return [
-    {
-      id: "current-tools-validate-changed",
-      command: ["npm", "run", "current-tools:validate-changed"],
-      status: "passed",
-      exitCode: 0,
-      stdoutSha256: "1".repeat(64),
-      stderrSha256: "2".repeat(64),
-      retained: true,
-      assertion: "retained changed-file guardrail",
-      oldToolReplacementClaimed: false
-    },
-    {
-      id: "current-tools-validate-rust-graph",
-      command: ["npm", "run", "current-tools:validate-rust-graph"],
-      status: "passed",
-      exitCode: 0,
-      stdoutSha256: "1".repeat(64),
-      stderrSha256: "2".repeat(64),
-      retained: true,
-      assertion: "retained Rust graph guardrail",
-      oldToolReplacementClaimed: false
-    }
-  ];
 }

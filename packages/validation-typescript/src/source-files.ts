@@ -1,6 +1,7 @@
 import type { ValidationCheckContext, ValidationFileView } from "@the-open-engine/opcore-validation";
 import { joinRepoRelativePaths, normalizeValidationFileViewPath, uniqueSortedStrings } from "@the-open-engine/opcore-validation";
 import ts from "typescript";
+import { moduleDependencies, type TypeScriptImportKind } from "./module-dependencies.js";
 
 export const typeScriptSourceExtensions = [".ts", ".tsx", ".js", ".jsx", ".mts", ".cts"] as const;
 const jsonModuleExtension = ".json";
@@ -14,6 +15,7 @@ export interface TypeScriptRelativeImport {
   fromPath: string;
   specifier: string;
   resolvedPath: string;
+  kind: TypeScriptImportKind;
 }
 
 export interface TypeScriptMaterializedSourceSet {
@@ -101,10 +103,12 @@ async function materializeTypeScriptSourcesUncached(
     if (rootPathSet.has(path)) materializedRootPaths.push(path);
     if (supportPathSet.has(path)) materializedSupportPaths.push(path);
 
-    for (const specifier of moduleImportSpecifiers(path, result.content)) {
-      const resolvedPath = await resolveRepoImport(context, path, specifier, compilerOptions);
+    for (const dependency of moduleDependencies(path, result.content)) {
+      const resolvedPath = await resolveRepoImport(context, path, dependency.specifier, compilerOptions);
       if (resolvedPath === undefined) continue;
-      if (isRelativeSpecifier(specifier)) relativeImports.push({ fromPath: path, specifier, resolvedPath });
+      if (isRelativeSpecifier(dependency.specifier)) {
+        relativeImports.push({ fromPath: path, specifier: dependency.specifier, resolvedPath, kind: dependency.kind });
+      }
       if (!visited.has(resolvedPath) && !sourceFileByPath.has(resolvedPath)) pending.push(resolvedPath);
     }
   }
@@ -117,20 +121,11 @@ async function materializeTypeScriptSourcesUncached(
     files,
     sourceFileByPath,
     relativeImports: relativeImports.sort((left, right) =>
-      `${left.fromPath}\0${left.resolvedPath}\0${left.specifier}`.localeCompare(
-        `${right.fromPath}\0${right.resolvedPath}\0${right.specifier}`
+      `${left.fromPath}\0${left.resolvedPath}\0${left.specifier}\0${left.kind}`.localeCompare(
+        `${right.fromPath}\0${right.resolvedPath}\0${right.specifier}\0${right.kind}`
       )
     )
   };
-}
-
-function moduleImportSpecifiers(path: string, content: string): readonly string[] {
-  const preprocessed = ts.preProcessFile(content, true, true);
-  return uniqueSortedStrings(
-    [...preprocessed.importedFiles, ...preprocessed.referencedFiles]
-      .map((entry) => entry.fileName)
-      .filter((specifier) => isRelativeSpecifier(specifier) || isPathMappableSpecifier(specifier))
-  );
 }
 
 async function resolveRepoImport(

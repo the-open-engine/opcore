@@ -219,7 +219,9 @@ function treeHash(root, include = () => true) {
 }
 
 function pyrightTempWorkspaces() {
-  return readdirSync(tmpdir()).filter((name) => name.startsWith("opcore-python-types-workspace-")).sort();
+  return readdirSync(tmpdir())
+    .filter((name) => name.startsWith(`opcore-python-types-workspace-${process.pid}-`))
+    .sort();
 }
 
 function normalizedDiagnostic(entry) {

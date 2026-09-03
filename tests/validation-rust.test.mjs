@@ -4,7 +4,6 @@ import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, wr
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
-  calculateValidationFileChecksum,
   createNodeValidationWorkspace,
   createValidationCheckRegistry,
   createValidationRunner
@@ -1567,10 +1566,10 @@ const rustCheckIds = [
       const workspaceRoots = readFileSync(logPath, "utf8")
         .split(/\r?\n/)
         .map((line) => /\tCWD=([^\t]+)$/.exec(line)?.[1])
-        .filter((path) => path?.includes("lattice-validation-rust-"));
+        .filter((path) => path?.includes("opcore-validation-rust-"));
       assert.equal(workspaceRoots.length > 5, true);
       assert.equal(new Set(workspaceRoots).size, 1, workspaceRoots.join("\n"));
-      assert.match(workspaceRoots[0], /lattice-validation-rust-[^/]+\/repo$/);
+      assert.match(workspaceRoots[0], /opcore-validation-rust-[^/]+\/repo$/);
       assert.equal(existsSync(workspaceRoots[0]), false);
     } finally {
       rmSync(temp, { recursive: true, force: true });
@@ -1755,6 +1754,33 @@ const rustCheckIds = [
 
       assert.equal(result.status, "passed", JSON.stringify(result, null, 2));
       assert.match(readFileSync(logPath, "utf8"), /\+nightly udeps --workspace --all-targets --all-features/);
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
+  it("runs cargo-udeps through the configured pinned nightly toolchain", async () => {
+    const temp = mkdtempSync(join(tmpdir(), "opcore-validation-rust-udeps-pinned-nightly-run-"));
+    try {
+      const logPath = join(temp, "cargo.log");
+      const { env } = writeFakeRustToolchain(join(temp, "bin"), {
+        cargo: {
+          logPath
+        }
+      });
+      const result = await runner({
+        files: rustCrate(),
+        env: {
+          ...env,
+          OPCORE_RUST_NIGHTLY_TOOLCHAIN: "nightly-2026-07-27"
+        }
+      }).runValidation(request({ checks: [RUST_UNUSED_DEPS_CHECK_ID] }));
+
+      assert.equal(result.status, "passed", JSON.stringify(result, null, 2));
+      assert.match(
+        readFileSync(logPath, "utf8"),
+        /\+nightly-2026-07-27 udeps --workspace --all-targets --all-features/
+      );
     } finally {
       rmSync(temp, { recursive: true, force: true });
     }

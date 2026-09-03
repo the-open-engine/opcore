@@ -5,7 +5,7 @@
   "worktree": {
     "baseRef": "origin/dev",
     "setup": [
-      "npm run setup"
+      "npm ci"
     ]
   },
   "ship": {

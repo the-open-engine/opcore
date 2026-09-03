@@ -17,6 +17,10 @@ use std::time::Instant;
 use time::format_description::well_known::Rfc3339;
 use time::OffsetDateTime;
 
+mod delta;
+
+use delta::{Delta, SourceDeltaOps};
+
 #[derive(Debug, Clone)]
 pub struct GraphPipelineOptions {
     pub repo_root: PathBuf,
@@ -221,7 +225,7 @@ fn incremental_file_facts(
     diagnostics: &mut Vec<GraphExtractionDiagnostic>,
 ) -> Result<FileFactPlan, StoreError> {
     let store = GraphStore::open(StorePaths::for_repo_root(&context.options.repo_root))?;
-    let delta = source_delta(&store.file_hashes()?, context.current_hashes);
+    let delta = Delta::source_delta(&store.file_hashes()?, context.current_hashes);
     let changed_sources = sources_for_paths(&context.discovery.sources, &delta.changed_files);
     let changed_extractable_sources = graph_extractable_sources(&changed_sources);
     let parsed = timed("extraction", || {
@@ -382,44 +386,6 @@ fn with_file_count(
 ) -> GraphPipelinePhaseTiming {
     timing.file_count = Some(file_count);
     timing
-}
-
-#[derive(Debug)]
-struct SourceDelta {
-    changed_files: Vec<String>,
-    deleted_files: Vec<String>,
-}
-
-fn source_delta(
-    stored: &[crate::extraction::SourceFileHash],
-    current: &[crate::extraction::SourceFileHash],
-) -> SourceDelta {
-    let stored_by_path = stored
-        .iter()
-        .map(|hash| (hash.relative_path.as_str(), hash.sha256.as_str()))
-        .collect::<BTreeMap<_, _>>();
-    let current_by_path = current
-        .iter()
-        .map(|hash| (hash.relative_path.as_str(), hash.sha256.as_str()))
-        .collect::<BTreeMap<_, _>>();
-    let mut changed_files = current_by_path
-        .iter()
-        .filter_map(|(path, sha)| match stored_by_path.get(path) {
-            Some(stored_sha) if stored_sha == sha => None,
-            _ => Some((*path).to_string()),
-        })
-        .collect::<Vec<_>>();
-    let mut deleted_files = stored_by_path
-        .keys()
-        .filter(|path| !current_by_path.contains_key(**path))
-        .map(|path| (*path).to_string())
-        .collect::<Vec<_>>();
-    changed_files.sort();
-    deleted_files.sort();
-    SourceDelta {
-        changed_files,
-        deleted_files,
-    }
 }
 
 fn sources_for_paths(sources: &[DiscoveredSource], paths: &[String]) -> Vec<DiscoveredSource> {

@@ -41,6 +41,7 @@ async function retainedMissingEdgeDiagnostics(
     ) return [];
     throw error;
   }
+  // IMPORTS_FROM represents compiler dependencies, so type-only imports still require graph parity.
   return relativeImports
     .filter((relativeImport) => !edges.some((edge) => matchesDirectedFileEdge(edge, relativeImport.fromPath, relativeImport.resolvedPath)))
     .map((relativeImport): ValidationDiagnostic => ({
@@ -66,7 +67,12 @@ interface ImportGraphEdge {
 }
 
 function cycleDiagnostics(relativeImports: readonly TypeScriptRelativeImport[]): readonly ValidationDiagnostic[] {
-  return findCycles(relativeImports.map((relativeImport) => ({ from: relativeImport.fromPath, to: relativeImport.resolvedPath }))).map(
+  const runtimeImports = relativeImports.filter((relativeImport) => relativeImport.kind === "runtime");
+  const edges = runtimeImports.map((relativeImport) => ({
+    from: relativeImport.fromPath,
+    to: relativeImport.resolvedPath
+  }));
+  return findCycles(edges).map(
     (cycle): ValidationDiagnostic => ({
       category: "graph",
       severity: "warning",

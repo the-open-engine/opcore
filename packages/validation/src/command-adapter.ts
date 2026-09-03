@@ -56,17 +56,19 @@ export function createCheckCommandAdapter(options: ValidationCommandAdapterOptio
   return async (request) => {
     try {
       const parsed = parseCheckCommandOptions(request.args);
+      const repoRoot = repoRootForCommand(parsed, options);
+      const availableChecks = registryChecks(options, repoRoot);
       if (parsed.route === "manifest") {
-        return manifestCommandResult(request, registryChecks(options, repoRootForCommand(parsed, options)), "check manifest");
+        return manifestCommandResult(request, availableChecks, "check manifest");
       }
       const validationRequest = normalizeValidationRequest(
         {
           repo: {
-            repoRoot: repoRootForCommand(parsed, options)
+            repoRoot
           },
           scope: requireScope(parsed),
           graph: {
-            mode: parsed.graphMode,
+            mode: forcedGraphMode(parsed.checks, parsed.graphMode, availableChecks),
             provider: defaultValidationGraphProvider
           },
           overlays: [],
@@ -92,14 +94,15 @@ export function createValidateCommandAdapter(options: ValidationCommandAdapterOp
   return async (request) => {
     try {
       const parsed = parseValidateCommandOptions(request.args);
+      const repoRoot = repoRootForCommand(parsed, options);
       if (parsed.route === "manifest") {
-        return manifestCommandResult(request, registryChecks(options, repoRootForCommand(parsed, options)), "validate manifest");
+        return manifestCommandResult(request, registryChecks(options, repoRoot), "validate manifest");
       }
       if (parsed.route === "pre-write") return preWriteValidationCommandResult(request, parsed, options);
       const payload = await readRequestPayload(parsed.requestFile);
       const validatedPayload = validateValidationRequestPayload(payload);
       const validationRequest = normalizeValidationRequest(
-        applyValidateCommandOverrides(validatedPayload, parsed),
+        applyValidateCommandOverrides(validatedPayload, parsed, options),
         {
           provider: defaultValidationGraphProvider
         }
@@ -123,7 +126,7 @@ async function preWriteValidationCommandResult(
   try {
     const payload = await readRequestPayload(parsed.requestFile);
     const validatedPayload = validateValidationRequestPayload(payload);
-    validationRequest = normalizeValidationRequest(applyValidateCommandOverrides(validatedPayload, parsed), {
+    validationRequest = normalizeValidationRequest(applyValidateCommandOverrides(validatedPayload, parsed, options), {
       provider: defaultValidationGraphProvider
     });
     result = await runRequestWithTimeout(validationRequest, parsed, options, timeoutMs);
@@ -394,7 +397,8 @@ function registryChecks(options: ValidationCommandAdapterOptions, repoRoot: stri
 
 function applyValidateCommandOverrides(
   request: ValidationRequest,
-  parsed: ParsedValidationCommandOptions
+  parsed: ParsedValidationCommandOptions,
+  options: ValidationCommandAdapterOptions
 ): ValidationRequest {
   let next = request;
   if (parsed.repoRoot !== undefined) {
@@ -418,9 +422,15 @@ function applyValidateCommandOverrides(
     };
   }
   if (parsed.checks !== undefined) {
+    const repoRoot = repoRootForRequest(next, parsed, options);
+    const availableChecks = registryChecks(options, repoRoot);
     next = {
       ...next,
-      checks: parsed.checks
+      checks: parsed.checks,
+      graph: {
+        ...next.graph,
+        mode: forcedGraphMode(parsed.checks, next.graph.mode, availableChecks)
+      }
     };
   }
   if (parsed.reportMode !== undefined) {
@@ -430,6 +440,16 @@ function applyValidateCommandOverrides(
     };
   }
   return next;
+}
+
+function forcedGraphMode(
+  checks: readonly string[] | undefined,
+  current: ValidationRequest["graph"]["mode"],
+  availableChecks: readonly ValidationCheckDefinition[]
+): ValidationRequest["graph"]["mode"] {
+  if (checks === undefined) return current;
+  const byId = new Map(availableChecks.map((check) => [check.id, check]));
+  return checks.some((checkId) => byId.get(checkId)?.requiresGraph === true) ? "required" : current;
 }
 
 function repoIdentityForOverride(repo: ValidationRequest["repo"], repoRoot: string): ValidationRequest["repo"] {

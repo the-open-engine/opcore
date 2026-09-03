@@ -106,7 +106,7 @@ try {
 } finally {
   rmSync(attackRoot, { recursive: true, force: true });
 }
-assert.equal(readFileSync(resolve(fixtureRoot, "src/acme/app.py"), "utf8"), originalApp);
+assert.equal(readFileSync(resolve(fixtureRoot, "src/acme/app.py.fixture"), "utf8"), originalApp);
 assert.equal(existsSync(resolve(fixtureRoot, ".mypy_cache")), false);
 assert.equal(existsSync(resolve(fixtureRoot, "__pycache__")), false);
 assert.deepEqual(mypyTempWorkspaces(), tempBefore);
@@ -189,7 +189,9 @@ function walk(directory) {
 }
 
 function mypyTempWorkspaces() {
-  return readdirSync(tmpdir()).filter((name) => name.startsWith("opcore-python-types-workspace-")).sort();
+  return readdirSync(tmpdir())
+    .filter((name) => name.startsWith(`opcore-python-types-workspace-${process.pid}-`))
+    .sort();
 }
 
 function normalizedDiagnostic(entry) {

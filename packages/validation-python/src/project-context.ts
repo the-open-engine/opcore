@@ -27,6 +27,7 @@ export interface ResolvePythonProjectContextsOptions {
   workspace: PythonProjectWorkspace;
   interpreterArgv?: readonly string[];
   toolArgv?: Partial<Record<PythonProjectToolKind, readonly string[]>>;
+  toolKinds?: readonly Exclude<PythonProjectToolKind, "build">[];
   env?: Readonly<Record<string, string | undefined>>;
   platform?: string;
   architecture?: string;
@@ -74,13 +75,20 @@ async function resolveTarget(
   const discovery = await discoverPythonProject(options.workspace, target, visibleFiles);
   let inputs: ResolvedProjectInputs;
   if (discovery.reasons.some(isPathRefusalReason)) {
-    const config = await readPythonStaticProjectConfig(options.workspace, discovery.projectRoot, visibleFiles);
+    const config = filterStaticConfigReasons(
+      await readPythonStaticProjectConfig(options.workspace, discovery.projectRoot, visibleFiles, {
+        target,
+        ...(options.toolKinds === undefined ? {} : { toolKinds: options.toolKinds })
+      }),
+      options.toolKinds
+    );
     inputs = { config, environment: refusedEnvironment() };
   } else {
-    let inputPromise = projectInputs.get(discovery.projectRoot);
+    const inputKey = `${discovery.projectRoot}\0${target}`;
+    let inputPromise = projectInputs.get(inputKey);
     if (inputPromise === undefined) {
-      inputPromise = resolveProjectInputs(options, discovery.projectRoot, visibleFiles);
-      projectInputs.set(discovery.projectRoot, inputPromise);
+      inputPromise = resolveProjectInputs(options, discovery.projectRoot, target, visibleFiles);
+      projectInputs.set(inputKey, inputPromise);
     }
     inputs = await inputPromise;
   }
@@ -140,9 +148,16 @@ interface ResolvedProjectInputs {
 async function resolveProjectInputs(
   options: ResolvePythonProjectContextsOptions,
   projectRoot: string,
+  target: string,
   visibleFiles: readonly string[]
 ): Promise<ResolvedProjectInputs> {
-  const config = await readPythonStaticProjectConfig(options.workspace, projectRoot, visibleFiles);
+  const config = filterStaticConfigReasons(
+    await readPythonStaticProjectConfig(options.workspace, projectRoot, visibleFiles, {
+      target,
+      ...(options.toolKinds === undefined ? {} : { toolKinds: options.toolKinds })
+    }),
+    options.toolKinds
+  );
   const environment = config.reasons.some(isPathRefusalReason)
     ? refusedEnvironment()
     : await resolvePythonProjectEnvironment({
@@ -152,6 +167,7 @@ async function resolveProjectInputs(
     target: config.target,
     managers: config.managers,
     toolConfigs: config.toolConfigs,
+    ...(options.toolKinds === undefined ? {} : { toolKinds: options.toolKinds }),
     ...(config.buildSystem === undefined ? {} : { buildSystem: config.buildSystem }),
     ...(options.interpreterArgv === undefined ? {} : { interpreterArgv: options.interpreterArgv }),
     ...(options.toolArgv === undefined ? {} : { toolArgv: options.toolArgv }),
@@ -162,6 +178,18 @@ async function resolveProjectInputs(
     ...(options.timeoutMs === undefined ? {} : { timeoutMs: options.timeoutMs })
   });
   return { config, environment };
+}
+
+function filterStaticConfigReasons(
+  config: Awaited<ReturnType<typeof readPythonStaticProjectConfig>>,
+  toolKinds: ResolvePythonProjectContextsOptions["toolKinds"]
+): Awaited<ReturnType<typeof readPythonStaticProjectConfig>> {
+  if (toolKinds === undefined) return config;
+  const selected = new Set<string>(["python", "build", ...toolKinds]);
+  return {
+    ...config,
+    reasons: config.reasons.filter((reason) => reason.tool === undefined || selected.has(reason.tool))
+  };
 }
 
 function refusedEnvironment(): Awaited<ReturnType<typeof resolvePythonProjectEnvironment>> {

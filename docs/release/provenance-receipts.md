@@ -1,11 +1,11 @@
 # Provenance Receipts
 
-Maintainer provenance evidence for the Opcore alpha release gate.
+Maintainer provenance evidence for the Opcore release gate.
 
-- Current-tree files scanned: 695
-- Git-history commits scanned: 305
-- Python code-review-graph source findings: 0
-- Python package metadata findings: 0
-- Copied git-history marker findings: 0
+- Current repository and package outputs are scanned.
+- Generated provider/build state is forbidden from tracked source.
+- Package dependencies and TypeScript outputs must remain repository-confined.
+- Native artifact metadata must use package-relative paths.
+- Copied Git-history markers are rejected.
 
-Allowed old-tool mentions are limited to dev current-tool setup, ACE routing, and graph reference evidence fixtures.
+Run `npm run provenance:check` to refresh the executable proof.

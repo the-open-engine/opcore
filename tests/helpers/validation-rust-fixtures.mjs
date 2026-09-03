@@ -113,9 +113,11 @@ export function fakeCargoScript({
   return [
     "#!/bin/sh",
     logLine,
-    'if [ "$1" = "+nightly" ]; then',
+    'case "$1" in',
+    "+nightly*)",
     "  shift",
-    "fi",
+    "  ;;",
+    "esac",
     'if [ "$1" = "--version" ]; then',
     "  printf '%s\\n' 'cargo 1.93.0'",
     "  exit 0",
@@ -175,10 +177,12 @@ export function writeFakeRustToolchain(bin, options = {}) {
     join(bin, "rust-code-analysis-cli"),
     fakeVersionedToolScript("rust-code-analysis-cli 0.0.25", options.rustCodeAnalysis)
   );
+  const env = { ...process.env };
+  delete env.OPCORE_RUST_NIGHTLY_TOOLCHAIN;
   return {
     bin,
     env: {
-      ...process.env,
+      ...env,
       PATH: bin
     }
   };
