@@ -23,16 +23,15 @@ $ opcore check --changed
 
   BLOCKED   exit 1
 
-  FAIL  typescript.types           src/domain/money.ts:18   TS2322
-        Type 'number' is not assignable to type 'string'.
-
   WARN  typescript.dead-code       src/domain/money.ts
-        Exported symbol has no incoming CALLS graph evidence: convertLegacy
+        Exported symbol has no incoming CALLS graph evidence: orphanedHelper
   WARN  typescript.relevant-tests  src/domain/cart.ts
         No TESTED_BY graph evidence found for src/domain/cart.ts
+  FAIL  typescript.types           src/domain/money.ts:24   TS2322
+        Type 'number' is not assignable to type 'string'.
 ```
 
-The type error stops the edit. The other two are things a per-file linter cannot see: a function nobody calls anymore, and a module no test touches.
+A function nobody calls anymore and a module no test touches, neither of which a per-file linter can see. The type error underneath them is what stops the edit.
 
 ## Only what the edit broke
 
