@@ -63,13 +63,13 @@ After `opcore install`, supported Claude Code and Codex write calls run the pre-
 opcore check --changed --json
 ```
 
-Output is stable JSON with the exit codes above. It works in a freshly initialised repo with no commits, treating the empty baseline as the comparison base. Codex coverage follows its current hook interception boundary.
+Output is stable JSON with the exit codes above. It works in a freshly `git init` repo with no commits, treating the empty baseline as the comparison base. Codex coverage follows its current hook interception boundary.
 
 ## What it catches
 
 41 checks. 25 run in the default changed-file gate; the other 16 you turn on.
 
-- **Structure** — exports and files with no incoming edges, import cycles and orphans, fan-in hotspots, god modules.
+- **Structure** — exports and files with no incoming edges, import cycles, and orphan modules.
 - **Untested surface** — symbols and modules no test reaches, resolved through the graph rather than a coverage percentage.
 - **Duplication** — near-duplicate code across the repo.
 - **Size and complexity** — files and functions past configurable thresholds.
@@ -105,7 +105,7 @@ opcore try                      # run the loop on generated sample repos
 
 ## Platforms
 
-`darwin-arm64`, `darwin-x64`, and `linux-x64`. Other platforms return a typed status instead of crashing. Windows is not supported.
+`darwin-arm64`, `darwin-x64`, and `linux-x64`, on Node 22 or newer. Unsupported platforms return typed degraded status instead of crashing. Windows is not supported.
 
 ## ASP provider
 

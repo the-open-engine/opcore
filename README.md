@@ -50,7 +50,7 @@ That distinction is why the gate is usable in a repo with existing debt. Running
 
 41 checks, grouped by the kind of decay they find. 25 run in the default changed-file gate; the other 16 you turn on.
 
-**Structure.** Exports and files with no incoming edges, import cycles and orphans, fan-in hotspots, god modules. `dead-code`, `import-graph`, `import-layer-rules`, `graph-signals`.
+**Structure.** Exports and files with no incoming edges, import cycles, and orphan modules. `dead-code`, `import-graph`, `import-layer-rules`, and on Rust `graph-signals`.
 
 **Untested surface.** Symbols and modules with no test reaching them, resolved through the graph rather than a coverage percentage. `relevant-tests`.
 
@@ -108,7 +108,7 @@ opcore try                      # run the loop on generated sample repos
 
 ## How it works
 
-A Rust core owns extraction, persistence, and the hot queries. TypeScript owns the contracts, the CLI, and the validation adapters.
+Opcore is hybrid: a Rust graph core owns extraction, persistence, and the hot queries, while TypeScript owns the contracts, the CLI, and the validation adapters.
 
 The graph records five edge kinds: `CALLS`, `IMPORTS_FROM`, `INHERITS`, `IMPLEMENTS`, and `TESTED_BY`. Structural findings are read off those edges, so a dead export means nothing points at it, not that a search failed to match.
 
@@ -130,7 +130,7 @@ Python is experimental, and three of its nine checks are opt-in. `python.types` 
 
 ## Platforms
 
-`darwin-arm64`, `darwin-x64`, and `linux-x64`. Other platforms return a typed status instead of crashing. Windows is not supported.
+`darwin-arm64`, `darwin-x64`, and `linux-x64`. Unsupported platforms return typed degraded status instead of crashing. Windows is not supported.
 
 ## Docs
 
