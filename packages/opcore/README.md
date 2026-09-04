@@ -1,96 +1,116 @@
 # Opcore
 
-Deterministic local changed-file validation gate for coding agents.
+**One gate for everything your agent just changed.**
 
-Opcore gives coding agents and maintainers a read-only-first repo check loop: scan the current repo, wire the changed-file write gate into supported agent harnesses, run validation, and track concrete local metric deltas. It is built for local feedback before review, not for remote publishing or opaque ratings.
+41 checks in a single pass over the changed files, answering with an exit code an agent can branch on. Backed by a Rust code graph, so it reads across files instead of one at a time.
+
+```text
+$ opcore check --changed
+
+  BLOCKED   exit 1
+
+  WARN  typescript.dead-code       src/domain/money.ts
+        Exported symbol has no incoming CALLS graph evidence: orphanedHelper
+  WARN  typescript.relevant-tests  src/domain/cart.ts
+        No TESTED_BY graph evidence found for src/domain/cart.ts
+  FAIL  typescript.types           src/domain/money.ts:24   TS2322
+        Type 'number' is not assignable to type 'string'.
+```
+
+The first two are things a per-file linter cannot see. The type error is what stops the edit.
+
+## Only what the edit broke
+
+Changed-file runs report introduced findings. A type error already sitting in a file you touched does not block you; the one your edit just added does. That is what makes the gate usable in a repo that already has debt.
+
+| Exit | Meaning |
+| ---: | --- |
+| `0` | Within tolerance. No findings. |
+| `1` | Findings present, or an error the caller should handle. |
+| `2` | Requested check is not implemented for this stack. |
+| `64` | Unsupported scope. Counted, not failed. |
 
 ## Install
 
 ```bash
-npx opcore install         # repo setup with a plan and approval prompt
-npm install -g opcore   # global CLI, then run opcore install --global
+npx opcore install
 ```
 
-Install scripts do not modify repos or agent settings. The package only prints a setup reminder. Requires Node >=22.
+It scans first, prints the plan, and asks before writing anything. Inside a Git repo it offers the Claude Code and Codex write gate for that repo or globally.
 
-If `opcore` is not found after a global install, check npm's global prefix and put its `bin` directory on `PATH`:
+For a binary that stays on `PATH`:
 
 ```bash
-npm prefix -g
+npm install -g opcore
+opcore install --global
+```
+
+If `opcore` is missing after a global install, put npm's global bin directory on `PATH`:
+
+```bash
 export PATH="$(npm prefix -g)/bin:$PATH"
 ```
 
-## First Run
+Requires Node 22 or newer. Installing the package writes nothing; setup happens only when you run `opcore install` and approve the plan. `--json` and non-TTY runs stay plan-only unless you pass `--yes`.
 
-Run inside the repository you want to protect:
+Approved repo setup writes `.opcore/config`, one delimited guidance block, the agent skill files, a repo-local write-gate adapter, merged Claude Code and Codex hook entries, a managed `.opcore/` line in `.gitignore`, a Git pre-commit hook when no other one exists, and `.opcore/init-undo.json`. Undo it with `opcore uninstall --yes`.
 
-```bash
-opcore install
-```
+## The agent gate
 
-`opcore install` runs a read-only scan first, shows the setup plan, and asks before writing on a TTY. In a Git repo, it asks whether to install the write gate for this repo or globally. `--json` and non-TTY runs stay plan-only unless you pass `--yes`.
-
-Approved repo setup writes additive `.opcore/config`, one delimited guidance block, repo and Claude skill files, a repo-local write-gate adapter, merged Claude Code/Codex hook entries, a managed `.opcore/` line in `.gitignore` for Git repos, an active Git pre-commit hook when safe, and `.opcore/init-undo.json`. Approved global setup writes user-level hook config and skills plus `~/.opcore/init-undo.json`. Undo recorded setup with `opcore uninstall --yes` or `opcore uninstall --global --yes`.
-
-## Changed-File Agent Gate
-
-After `opcore install`, supported Claude Code and Codex write tool calls run the Opcore pre-write gate before the write lands. You can also run the changed-file gate manually before handing edits to a reviewer or merge process:
+After `opcore install`, supported Claude Code and Codex write calls run the pre-write gate before the write lands. You can also run it by hand:
 
 ```bash
 opcore check --changed --json
 ```
 
-The command validates changed source files with stable JSON and agent-friendly exit codes. It is local, deterministic for current worktree inputs, and does not publish, install packages, run wrapper tools, or edit source files. Codex coverage is limited to its current hook interception boundary for supported tool calls.
+Output is stable JSON with the exit codes above. It works in a freshly `git init` repo with no commits, treating the empty baseline as the comparison base. Codex coverage follows its current hook interception boundary.
 
-`opcore check --changed --json` works in a freshly `git init` repo with no commits; it treats the empty baseline as the comparison base.
+## What it catches
 
-## Coverage
+41 checks. 25 run in the default changed-file gate; the other 16 you turn on.
 
-- TypeScript and JavaScript: deep graph-backed and validation signals for syntax, types, imports, relevant tests, dead exports, and graph structure when facts are available.
-- Rust: useful validation and toolchain signals for source hygiene, oversized files, module evidence, cargo, fmt, clippy, rustdoc, and optional-tool evidence when available.
-- Python: experimental degraded-honest validation for graph-backed `.py`/`.pyi` structure, untested modules, dead exports, syntax, and source-hygiene; `python.types` runs one configured mypy or Pyright authority per project and reports absent/conflicting/unavailable authority as degraded.
-- Other non-TS/JS/Rust/Python languages: counted and reported as unsupported; Opcore does not invent findings or ratings for files it cannot assess.
+- **Structure** — exports and files with no incoming edges, import cycles, and orphan modules.
+- **Untested surface** — symbols and modules no test reaches, resolved through the graph rather than a coverage percentage.
+- **Duplication** — near-duplicate code across the repo.
+- **Size and complexity** — files and functions past configurable thresholds.
+- **Documentation** — docs that went stale, went missing, or drifted from the code they describe. Ten checks, all opt-in.
+- **Correctness** — syntax, types, and lint, plus the Rust and Python toolchains, wired to the same exit code.
 
-Metric output is named evidence and deltas.
+| Stack | Checks | Maturity |
+| --- | ---: | --- |
+| TypeScript, JavaScript | 10 | graph-backed |
+| Rust | 11 | graph-backed |
+| Python (`.py`, `.pyi`) | 9 | experimental |
+| Documentation, any repo | 10 | opt-in |
+| Duplication, any repo | 1 | |
 
-## Command Reference
+Files in other languages are counted and reported as unsupported.
+
+Graph-backed checks need a current graph. Build it once with `opcore graph build`; the gate refreshes incrementally after that.
+
+## Commands
 
 ```bash
-opcore
-opcore --repo .
-opcore status
-opcore install
-opcore install --global
-opcore install --repo . --yes
-opcore uninstall --yes
-opcore check --changed --json
-opcore check --staged --json
-opcore measure
-opcore measure --repo .
-opcore try
+opcore --repo .                 # read-only scan: coverage, then findings
+opcore status                   # readiness and coverage; never writes
+opcore graph build --repo .     # build the graph before graph-backed checks
+opcore check --changed --json   # the agent gate; also --staged or explicit <files>
+opcore install                  # scan, then wire repo/global hooks after approval
+opcore uninstall --yes          # remove only what Opcore added
+opcore measure --repo .         # before/after deltas from local history
+opcore try                      # run the loop on generated sample repos
 ```
 
-- `opcore` scans read-only, prints Coverage before Findings, and writes only `.opcore/report.json`, `.opcore/history.jsonl`, and bounded `.opcore/telemetry.jsonl`.
-- `opcore status` reports activation readiness without running scans, installs, setup, checks, wrappers, or writes.
-- `opcore install` is scan-first and ask-before-write on a TTY; approved setup merges Claude Code/Codex write-gate hooks without clobbering existing hooks.
-- `opcore check --changed --json` and `opcore check --staged --json` are manual agent gates for source changes.
-- `opcore measure` reads existing metric artifacts and reports named deltas.
-- `opcore try` creates local sample repos and runs the demo loop without publishing anything.
+`opcore measure` reads existing metric artifacts and reports named deltas. `opcore` writes `.opcore/report.json`, `.opcore/history.jsonl`, and a bounded `.opcore/telemetry.jsonl`.
 
-## Platform Support
+## Platforms
 
-Package artifacts target `darwin-arm64`, `darwin-x64`, and `linux-x64` with Node >=22. Unsupported platforms return typed degraded status instead of crashing.
+`darwin-arm64`, `darwin-x64`, and `linux-x64`, on Node 22 or newer. Unsupported platforms return typed degraded status instead of crashing. Windows is not supported.
 
-## Advanced ASP Provider Note
+## ASP provider
 
-**Providers assess; ASP hosts decide.** The `opcore` package exposes both `opcore` and `opcore-asp-provider`. Provider output is evidence for the host to evaluate, not authority to decide policy, enforce gates, or apply changes.
-
-Private ASP hosts may launch the bundled provider with `opcore-asp-provider --stdio`.
+The `opcore` package exposes both `opcore` and `opcore-asp-provider` as bins, so there is no separate install. Provider output is input for an ASP host to evaluate; the host decides policy and applies changes. Private hosts launch it with `opcore-asp-provider --stdio`.
 
 ## Docs
 
-- [Quickstart](https://github.com/the-open-engine/opcore/blob/main/docs/quickstart.md)
-- [Concepts](https://github.com/the-open-engine/opcore/blob/main/docs/concepts.md)
-- [Agent integration](https://github.com/the-open-engine/opcore/blob/main/docs/agent-integration.md)
-- [Examples](https://github.com/the-open-engine/opcore/blob/main/docs/examples.md)
-- [Demo](https://github.com/the-open-engine/opcore/blob/main/docs/demo.md)
+[Quickstart](https://github.com/the-open-engine/opcore/blob/main/docs/quickstart.md) · [Concepts](https://github.com/the-open-engine/opcore/blob/main/docs/concepts.md) · [Agent integration](https://github.com/the-open-engine/opcore/blob/main/docs/agent-integration.md) · [Examples](https://github.com/the-open-engine/opcore/blob/main/docs/examples.md)

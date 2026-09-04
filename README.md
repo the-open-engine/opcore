@@ -7,27 +7,37 @@
 
 <br><br>
 
-**The changed-file validation gate a coding agent runs before an edit lands.**
+**One gate for everything your agent just changed.**
 
-Backed by a Rust code graph that reads dead exports, untested surface, fan-in hotspots, and Rust module cycles.
+41 checks in a single pass over the changed files, answering with an exit code an agent can branch on. Backed by a Rust code graph, so it reads across files instead of one at a time.
 
 [![license](https://img.shields.io/badge/license-MIT-171411?style=flat-square)](LICENSE)
-[![node](https://img.shields.io/badge/node-%E2%89%A5%2022-171411?style=flat-square)](#install)
+[![node](https://img.shields.io/badge/node-%E2%89%A5%2022-171411?style=flat-square)](#install-and-wire-the-gate)
 [![platforms](https://img.shields.io/badge/platforms-darwin--arm64%20·%20darwin--x64%20·%20linux--x64-171411?style=flat-square)](#platforms)
 [![The Open Engine · Layer 02](https://img.shields.io/badge/The_Open_Engine-Layer_02-C2240C?style=flat-square&labelColor=171411)](#the-open-engine)
 
 </div>
 
-It runs locally, keeps setup approval-gated, and gives agents an exit code they can branch on.
-
 ```text
 $ opcore check --changed
-  1 file changed · checks passed                      CLEARED   exit 0
 
-$ opcore check --changed          # after an agent introduces a type error
-  1 file changed · 1 check failed                     BLOCKED   exit 1
-  FAIL  typescript.types   src/cart.ts:9   TS2322
+  BLOCKED   exit 1
+
+  WARN  typescript.dead-code       src/domain/money.ts
+        Exported symbol has no incoming CALLS graph evidence: orphanedHelper
+  WARN  typescript.relevant-tests  src/domain/cart.ts
+        No TESTED_BY graph evidence found for src/domain/cart.ts
+  FAIL  typescript.types           src/domain/money.ts:24   TS2322
+        Type 'number' is not assignable to type 'string'.
 ```
+
+A function nobody calls anymore and a module no test touches, neither of which a per-file linter can see. The type error underneath them is what stops the edit.
+
+## Only what the edit broke
+
+Changed-file runs report introduced findings. A type error that was already sitting in a file you touched does not block you; the one your edit just added does.
+
+That distinction is why the gate is usable in a repo with existing debt. Running the whole toolchain over a changed file and diffing the noise yourself is the alternative, and it is why most pre-commit setups end up disabled.
 
 | Exit | Meaning |
 | ---: | --- |
@@ -36,59 +46,91 @@ $ opcore check --changed          # after an agent introduces a type error
 | `2` | Requested check is not implemented for this stack. |
 | `64` | Unsupported scope. Counted, not failed. |
 
-## What it checks
+## What it catches
 
-A Rust code graph sees structure that single-file linters cannot: exports with no importer, symbols with no test, and modules that everything depends on.
+41 checks, grouped by the kind of decay they find. 25 run in the default changed-file gate; the other 16 you turn on.
 
-| Stack | Depth | Checks |
-| --- | --- | --- |
-| TypeScript, JavaScript | Deep | Syntax, types, imports, relevant tests, dead exports, fan-in and god-file hotspots. |
-| Rust | Useful | Source hygiene, oversized files, module cycles and orphans, cargo, fmt, clippy, rustdoc. |
-| Python (`.py`, `.pyi`) | Experimental | Structure, untested modules, dead exports, syntax, hygiene. |
+**Structure.** Exports and files with no incoming edges, import cycles, and orphan modules. `dead-code`, `import-graph`, `import-layer-rules`, and on Rust `graph-signals`.
 
-Every finding points to a file, a check ID, and a symbol.
+**Untested surface.** Symbols and modules with no test reaching them, resolved through the graph rather than a coverage percentage. `relevant-tests`.
 
-## Install And Wire The Gate
+**Duplication.** Near-duplicate code across the repo, detected in the Rust core. `clone.duplication`.
+
+**Size and complexity.** Files and functions that outgrew themselves, with configurable thresholds. `file-length`, `function-metrics`.
+
+**Documentation.** Docs that went stale, went missing, or drifted from the code they describe. `docs.existence`, `docs.staleness`, `docs.freshness`, `docs.dry`, `docs.length`, `docs.hub-coverage`, `docs.subtree-coverage`, `docs.code-blocks`, `docs.content-quality`, `docs.rules-why`. All opt-in; enable them in `.opcore/config`.
+
+**Correctness.** The compiler and toolchain, wired to the same exit code so one gate is enough. `syntax`, `types`, `lint`, `lint-plugin`, on Rust `fmt`, `cargo-check`, `clippy`, `rustdoc`, `unused-deps`, and on Python `ruff-lint`, `ruff-format`, `pytest`.
+
+Every finding names a file, a check ID, and a symbol.
+
+| Stack | Checks | Maturity |
+| --- | ---: | --- |
+| TypeScript, JavaScript | 10 | graph-backed |
+| Rust | 11 | graph-backed |
+| Python (`.py`, `.pyi`) | 9 | experimental |
+| Documentation, any repo | 10 | opt-in |
+| Duplication, any repo | 1 | |
+
+Files in other languages are counted and reported as unsupported.
+
+## Install and wire the gate
 
 ```bash
 npx opcore install
 ```
 
-`opcore install` scans first, shows the plan, and asks before writing on a TTY. In a Git repo, it asks whether to install the Claude Code/Codex write gate for this repo or globally. The default repo setup installs the Opcore agent skill, Claude Code/Codex write-gate hooks, and a Git pre-commit hook that runs `opcore check --changed` when no existing pre-commit hook is present.
+It scans first, prints the plan, and asks before writing anything. Inside a Git repo it offers the Claude Code and Codex write gate for that repo or globally. The default repo setup installs the Opcore agent skill, the write-gate hooks, and a Git pre-commit hook running `opcore check --changed` when no pre-commit hook already exists.
 
-For an explicit global install:
+For a binary that stays on `PATH`:
 
 ```bash
 npm install -g opcore
 opcore install --global
 ```
 
-Install scripts do not modify repos or agent settings. The package only prints a setup reminder. Requires Node >= 22.
+Everything it writes is additive and recorded in `.opcore/init-undo.json`, and `opcore uninstall --yes` removes it. `--json` and non-TTY runs stay plan-only unless you pass `--yes`.
+
+Requires Node 22 or newer.
 
 ## Commands
 
 ```bash
 opcore --repo .                 # read-only scan: coverage, then findings
 opcore status                   # readiness and coverage; never writes
+opcore graph build --repo .     # build the graph before graph-backed checks
 opcore check --changed --json   # the agent gate; also --staged or explicit <files>
-opcore install                  # scan, then wire repo/global agent hooks after approval
-opcore install --global         # install the write gate for all repos using global settings
+opcore install                  # scan, then wire repo/global hooks after approval
 opcore uninstall --yes          # remove only what Opcore added
 opcore measure --repo .         # before/after deltas from local history
 opcore try                      # run the loop on generated sample repos
 ```
 
-Only `opcore install` and the compatibility `opcore init` path write setup files, and only after approval. `--json` and non-TTY runs stay plan-only unless you pass `--yes` for install or `--approve` for init.
-
 ## How it works
 
-Opcore is hybrid: a Rust graph core owns extraction, persistence, and hot queries; TypeScript owns the contracts, CLI, and validation adapters. Findings are read off the graph, so they map to real structure instead of a text match.
+Opcore is hybrid: a Rust graph core owns extraction, persistence, and the hot queries, while TypeScript owns the contracts, the CLI, and the validation adapters.
 
-Approved repo setup writes additive `.opcore` config, one guidance block, the Opcore agent skill, a small write-gate adapter, merged Claude Code/Codex hook entries, an active Git pre-commit hook when safe, and undo metadata. Approved global setup writes user-level hook config and skills under the same additive, undoable policy. For the ownership model, see @docs/architecture/runtime-cli-ard.md.
+The graph records five edge kinds: `CALLS`, `IMPORTS_FROM`, `INHERITS`, `IMPLEMENTS`, and `TESTED_BY`. Structural findings are read off those edges, so a dead export means nothing points at it, not that a search failed to match.
+
+Graph-backed checks need a current graph. Build it once with `opcore graph build`; the gate refreshes incrementally after that.
+
+For the ownership model, see @docs/architecture/runtime-cli-ard.md.
+
+## Known limits
+
+Graph-backed checks stay quiet until the graph exists. A fresh repo reports nothing structural until `opcore graph build` runs.
+
+Documentation checks ship with no default scope, so none of the ten fire until you enable them.
+
+Reachability walks `CALLS`, `INHERITS`, and `IMPLEMENTS`. A function passed as a value rather than called, as in `items.map(lineTotal)`, records no edge and can be reported as a dead export. Tracked in [#299](https://github.com/the-open-engine/opcore/issues/299).
+
+Public APIs whose callers live outside the repo need declaring, through `package.json` `exports` or `validation.checks.typescript.deadCode.entrypoints`.
+
+Python is experimental, and three of its nine checks are opt-in. `python.types` needs one configured mypy or Pyright per project and reports absent or conflicting authority as degraded rather than guessing; `python.ruff-lint`, `python.ruff-format`, and `python.pytest` stay off until enabled.
 
 ## Platforms
 
-`darwin-arm64`, `darwin-x64`, and `linux-x64`. Other platforms return a clear status instead of crashing.
+`darwin-arm64`, `darwin-x64`, and `linux-x64`. Unsupported platforms return typed degraded status instead of crashing. Windows is not supported.
 
 ## Docs
 
