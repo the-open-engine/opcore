@@ -141,7 +141,18 @@ jobs:
       - name: Shell scripts
         run: shellcheck --severity=style scripts/*.sh
       - name: Workflows
-        run: actionlint -shellcheck 'shellcheck --severity=style {0}' .github/workflows/*.yml
+        run: |
+          for workflow in .github/workflows/*.yml; do
+            if [[ "$workflow" == .github/workflows/docs.yml ]]; then
+              # actionlint 1.7.12 predates GitHub's documented concurrency queue key.
+              sed '/^  queue: max$/d' "$workflow" | \
+                actionlint -shellcheck 'shellcheck --severity=style {0}' -stdin-filename "$workflow" -
+            else
+              actionlint -shellcheck 'shellcheck --severity=style {0}' "$workflow"
+            fi
+          done
+      - name: Documentation versioning
+        run: python3 -B -m unittest discover -s scripts -p 'test_docs_versions.py'
 
   npm-facade:
     runs-on: ubuntu-24.04
@@ -226,30 +237,6 @@ jobs:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
       - name: Build and check documentation
         run: scripts/build-docs.sh
-      - name: Upload documentation site
-        if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
-        uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4
-        with:
-          path: target/site
-
-  deploy-docs:
-    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
-    needs: [msrv, verify, maintenance, npm-facade, coverage, portability, docs]
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    concurrency:
-      group: github-pages
-      cancel-in-progress: false
-    permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy documentation
-        id: deployment
-        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4
 
   publish:
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
