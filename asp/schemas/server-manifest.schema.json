@@ -1,0 +1,157 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://covibes.dev/asp/schemas/server-manifest.schema.json",
+  "title": "Experimental ASP server manifest",
+  "description": "Experimental installed asp-server.json manifest. It supplies provider metadata and structured launch hints only. Presence on disk, registry metadata, package provenance, or certification labels do not establish trust-root status or authority; hosts still validate identity, integrity, conformance, isolation, and explicit policy authority before launch/enrollment.",
+  "type": "object",
+  "required": ["manifestVersion", "server", "protocolVersions", "capabilities", "entrypoint", "artifact", "provenance", "accessExpectations"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Optional schema pointer for editor and fixture validation. It is not trust, authority, launch permission, or approval evidence."
+    },
+    "manifestVersion": { "const": "asp-server/1.0" },
+    "server": {
+      "type": "object",
+      "required": ["id", "name", "version"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "version": { "type": "string", "minLength": 1 }
+      }
+    },
+    "protocolVersions": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "roles": {
+      "type": "array",
+      "description": "Historical compatibility metadata for the older sense/judge/act role vocabulary.",
+      "items": { "enum": ["sense", "judge", "act"] },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "capabilities": {
+      "type": "array",
+      "items": { "$ref": "https://covibes.dev/asp/schemas/assurance.schema.json#/$defs/capabilityFamily" },
+      "uniqueItems": true
+    },
+    "capabilityProfiles": {
+      "type": "array",
+      "items": { "type": "string" },
+      "uniqueItems": true
+    },
+    "entrypoint": {
+      "type": "object",
+      "description": "Structured launch metadata only. A single shell string is not accepted.",
+      "required": ["transport", "bin", "args"],
+      "additionalProperties": false,
+      "properties": {
+        "transport": { "enum": ["stdio"] },
+        "bin": { "type": "string", "minLength": 1 },
+        "args": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "artifact": {
+      "type": "object",
+      "required": ["fingerprint"],
+      "additionalProperties": false,
+      "properties": {
+        "fingerprint": { "type": "string", "minLength": 1 },
+        "checksums": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["path", "sha256"],
+            "additionalProperties": false,
+            "properties": {
+              "path": { "type": "string", "minLength": 1 },
+              "sha256": { "type": "string", "pattern": "^[a-fA-F0-9]{64}$" }
+            }
+          }
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "required": ["publisher", "source", "license"],
+      "additionalProperties": false,
+      "properties": {
+        "publisher": { "type": "string", "minLength": 1 },
+        "source": { "type": "string", "minLength": 1 },
+        "license": { "type": "string", "minLength": 1 },
+        "signature": { "type": "string" }
+      }
+    },
+    "accessExpectations": {
+      "type": "object",
+      "description": "Declared expectations before a trusted host/environment grants access. Ambient process access is not trusted.",
+      "required": ["filesystem", "network", "secrets", "environment", "dataClasses"],
+      "additionalProperties": false,
+      "properties": {
+        "filesystem": {
+          "type": "object",
+          "description": "Expected filesystem access before trusted host/environment grants. Metadata only; certification never grants gate authority without policy.",
+          "required": ["read", "write"],
+          "additionalProperties": false,
+          "properties": {
+            "read": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "write": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          }
+        },
+        "network": {
+          "type": "object",
+          "required": ["outbound", "allowlist"],
+          "additionalProperties": false,
+          "properties": {
+            "outbound": { "type": "boolean" },
+            "allowlist": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          }
+        },
+        "secrets": {
+          "type": "object",
+          "required": ["names"],
+          "additionalProperties": false,
+          "properties": {
+            "names": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          }
+        },
+        "environment": {
+          "type": "object",
+          "required": ["inherit", "variables"],
+          "additionalProperties": false,
+          "properties": {
+            "inherit": { "const": false },
+            "variables": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          }
+        },
+        "dataClasses": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  }
+}

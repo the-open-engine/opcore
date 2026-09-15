@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://covibes.dev/asp/schemas/deployment-surface-cases.schema.json",
+  "title": "Experimental deployment-surface boundary cases",
+  "description": "Catalog for private ASP deployment-surface cases that must be rejected or deferred by schema, host policy, or release governance.",
+  "type": "object",
+  "required": ["caseSet", "cases"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "caseSet": { "type": "string", "minLength": 1 },
+    "cases": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/case" }
+    }
+  },
+  "$defs": {
+    "case": {
+      "type": "object",
+      "required": ["id", "surface", "targetSchema", "forbiddenFields", "rejection", "reason"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "surface": {
+          "enum": [
+            "repository-policy",
+            "local-override",
+            "server-manifest",
+            "provider-descriptor",
+            "trusted-launch-config",
+            "release-surface"
+          ]
+        },
+        "targetSchema": { "type": "string", "minLength": 1 },
+        "forbiddenFields": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "rejection": {
+          "enum": ["schema-rejected", "policy-rejected", "host-rejected", "deferred"]
+        },
+        "reason": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

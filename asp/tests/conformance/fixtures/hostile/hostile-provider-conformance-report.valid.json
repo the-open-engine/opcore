@@ -1,0 +1,799 @@
+{
+  "target": {
+    "kind": "host",
+    "name": "asp-hostile-provider-matrix",
+    "implementation": "private-black-box-host-fixture",
+    "version": "1.0.0"
+  },
+  "profile": {
+    "id": "asp-hostile-provider-matrix",
+    "name": "ASP hostile provider matrix",
+    "scope": "private-hostile",
+    "coreOnly": false,
+    "exercisedProfiles": [
+      "check",
+      "edit"
+    ],
+    "behaviorOnly": true
+  },
+  "suite": {
+    "id": "asp-hostile-provider-conformance-report",
+    "version": "2026-06-26",
+    "generatedAt": "2026-06-26T00:00:00Z",
+    "runner": "scripts/conformance/run-hostile-suite.ts",
+    "testCommand": "node --experimental-strip-types --test --test-reporter=tap tests/conformance/hostile/hostile-provider-matrix.test.ts"
+  },
+  "summary": {
+    "result": "pass",
+    "total": 19,
+    "passed": 19,
+    "failed": 0,
+    "skipped": 0,
+    "unsupported": 0,
+    "missingRequired": 0
+  },
+  "requirements": [
+    {
+      "id": "HOSTILE-MALFORMED-INITIALIZE",
+      "title": "Malformed provider initialize cannot satisfy required coverage",
+      "required": true,
+      "status": "covered",
+      "assertionIds": [
+        "HOSTILE-MALFORMED-INITIALIZE"
+      ],
+      "sourceSpecSections": [
+        "spec/08-conformance.md:158",
+        "spec/11-core-profile.md:86"
+      ],
+      "fixturePaths": [
+        "tests/conformance/hostile/hostile-provider-matrix.test.ts",
+        "tests/conformance/hostile/helpers/hostile-host-harness.ts",
+        "packages/asp/src/fake-check-provider.ts",
+        "packages/asp/src/provider-runtime.ts"
+      ]
+    },
+    {
+      "id": "HOSTILE-MALFORMED-ASSESSMENT",
+      "title": "Malformed required Assessment cannot satisfy required coverage",
+      "required": true,
+      "status": "covered",
+      "assertionIds": [
+        "HOSTILE-MALFORMED-ASSESSMENT"
+      ],
+      "sourceSpecSections": [
+        "spec/08-conformance.md:81",
+        "spec/11-core-profile.md:69"
+      ],
+      "fixturePaths": [
+        "tests/conformance/hostile/hostile-provider-matrix.test.ts",
+        "packages/asp/src/assessment-validator.ts"
+      ]
+    },
+    {
+      "id": "HOSTILE-FORGED-HOST-FIELDS",
+      "title": "Provider-minted host fields are rejected or degraded",
+      "required": true,
+      "status": "covered",
+      "assertionIds": [
+        "HOSTILE-FORGED-HOST-FIELDS"
+      ],
+      "sourceSpecSections": [
+        "spec/08-conformance.md:81",
+        "spec/09-outer-seam.md:92"
+      ],
+      "fixturePaths": [
+        "tests/conformance/hostile/hostile-provider-matrix.test.ts",
+        "packages/asp/src/provider-host-owned-fields.ts",
+        "packages/asp/src/assessment-validator.ts"
+      ]
+    },
+    {
+      "id": "HOSTILE-STALE-ASSESSMENT",
+      "title": "Stale required Assessment cannot allow a gate",
+      "required": true,
+      "status": "covered",
+      "assertionIds": [
+        "HOSTILE-STALE-ASSESSMENT"
+      ],
+      "sourceSpecSections": [
+        "spec/08-conformance.md:122",
+        "spec/11-core-profile.md:66"
+      ],
+      "fixturePaths": [
+        "tests/conformance/hostile/hostile-provider-matrix.test.ts",
+        "packages/asp/src/assessment-validator.ts"
+      ]
+    },
+    {
+      "id": "HOSTILE-MISSING-REQUIRED-PROVIDER",
+      "title": "Missing required provider cannot allow a gate",
+      "required": true,
+      "status": "covered",
+      "assertionIds": [
+        "HOSTILE-MISSING-REQUIRED-PROVIDER"
+      ],
+      "sourceSpecSections": [
+        "spec/08-conformance.md:158",
+        "spec/11-core-profile.md:87"
+      ],
+      "fixturePaths": [
+        "tests/conformance/hostile/hostile-provider-matrix.test.ts",
+        "packages/asp/src/core-host-support.ts"
+      ]
+    },
+    {
+      "id": "HOSTILE-OPTIONAL-DEGRADED-PROVIDER",
+      "title": "Optional provider degradation remains visible",
+      "required": true,
+      "status": "covered",
+      "assertionIds": [
+        "HOSTILE-OPTIONAL-DEGRADED-PROVIDER"
+      ],
+      "sourceSpecSections": [
+        "spec/08-conformance.md:158",
+        "spec/09-outer-seam.md:120"
+      ],
+      "fixturePaths": [
+        "tests/conformance/hostile/hostile-provider-matrix.test.ts",
+        "tests/conformance/hostile/helpers/hostile-host-harness.ts"
+      ]
+    },
+    {
+      "id": "HOSTILE-UNSUPPORTED-REQUIRED-CAPABILITY",
+      "title": "Missing advertised required capability is unsupported coverage",
+      "required": true,
+      "status": "covered",
+      "assertionIds": [
+        "HOSTILE-UNSUPPORTED-REQUIRED-CAPABILITY"
+      ],
+      "sourceSpecSections": [
+        "spec/08-conformance.md:158",
+        "spec/09-outer-seam.md:119"
+      ],
+      "fixturePaths": [
+        "tests/conformance/hostile/hostile-provider-matrix.test.ts",
+        "packages/asp/src/provider-runtime.ts",
+        "packages/asp/src/fake-check-provider.ts"
+      ]
+    },
+    {
+      "id": "HOSTILE-INCOMPLETE-REQUIRED-COVERAGE",
+      "title": "Incomplete required coverage cannot allow a gate",
+      "required": true,
+      "status": "covered",
+      "assertionIds": [
+        "HOSTILE-INCOMPLETE-REQUIRED-COVERAGE"
+      ],
+      "sourceSpecSections": [
+        "spec/08-conformance.md:158",
+        "spec/11-core-profile.md:103"
+      ],
+      "fixturePaths": [
+        "tests/conformance/hostile/hostile-provider-matrix.test.ts",
+        "packages/asp/src/core-host-evaluation.ts"
+      ]
+    },
+    {
+      "id": "HOSTILE-PROVIDER-ERROR",
+      "title": "Provider error cannot allow a gate",
+      "required": true,
+      "status": "covered",
+      "assertionIds": [
+        "HOSTILE-PROVIDER-ERROR"
+      ],
+      "sourceSpecSections": [
+        "spec/08-conformance.md:140",
+        "spec/11-core-profile.md:86"
+      ],
+      "fixturePaths": [
+        "tests/conformance/hostile/hostile-provider-matrix.test.ts",
+        "packages/asp/src/provider-supervision.ts"
+      ]
+    },
+    {
+      "id": "HOSTILE-CANCELLED-PROVIDER-REQUEST",
+      "title": "Cancelled provider request cannot allow a gate",
+      "required": true,
+      "status": "covered",
+      "assertionIds": [
+        "HOSTILE-CANCELLED-PROVIDER-REQUEST"
+      ],
+      "sourceSpecSections": [
+        "spec/02-transport-and-lifecycle.md:68",
+        "spec/08-conformance.md:140"
+      ],
+      "fixturePaths": [
+        "tests/conformance/hostile/hostile-provider-matrix.test.ts",
+        "packages/asp/src/core-host-evaluation.ts"
+      ]
+    },
+    {
+      "id": "HOSTILE-SLOW-PROVIDER-TIMEOUT",
+      "title": "Slow provider timeout cannot allow a gate",
+      "required": true,
+      "status": "covered",
+      "assertionIds": [
+        "HOSTILE-SLOW-PROVIDER-TIMEOUT"
+      ],
+      "sourceSpecSections": [
+        "spec/08-conformance.md:140",
+        "spec/11-core-profile.md:86"
+      ],
+      "fixturePaths": [
+        "tests/conformance/hostile/hostile-provider-matrix.test.ts",
+        "packages/asp/src/json-rpc-peer.ts",
+        "packages/asp/src/provider-supervision.ts"
+      ]
+    },
+    {
+      "id": "HOSTILE-PROVIDER-CRASH",
+      "title": "Provider crash during initialize or active request cannot allow a gate",
+      "required": true,
+      "status": "covered",
+      "assertionIds": [
+        "HOSTILE-PROVIDER-CRASH"
+      ],
+      "sourceSpecSections": [
+        "spec/08-conformance.md:140",
+        "spec/11-core-profile.md:86"
+      ],
+      "fixturePaths": [
+        "tests/conformance/hostile/hostile-provider-matrix.test.ts",
+        "packages/asp/src/provider-runtime.ts"
+      ]
+    },
+    {
+      "id": "HOSTILE-QUARANTINED-PROVIDER",
+      "title": "Quarantined required provider cannot allow a gate",
+      "required": true,
+      "status": "covered",
+      "assertionIds": [
+        "HOSTILE-QUARANTINED-PROVIDER"
+      ],
+      "sourceSpecSections": [
+        "spec/08-conformance.md:158",
+        "spec/11-core-profile.md:87"
+      ],
+      "fixturePaths": [
+        "tests/conformance/hostile/hostile-provider-matrix.test.ts",
+        "packages/asp/src/provider-supervision.ts"
+      ]
+    },
+    {
+      "id": "HOSTILE-MISSING-AUTHORITY",
+      "title": "Fresh coverage without authority cannot allow a gate",
+      "required": true,
+      "status": "covered",
+      "assertionIds": [
+        "HOSTILE-MISSING-AUTHORITY"
+      ],
+      "sourceSpecSections": [
+        "spec/07-host-obligations.md:53",
+        "spec/08-conformance.md:163"
+      ],
+      "fixturePaths": [
+        "tests/conformance/hostile/hostile-provider-matrix.test.ts",
+        "packages/asp/src/core-host-support.ts"
+      ]
+    },
+    {
+      "id": "HOSTILE-INSUFFICIENT-ASSURANCE",
+      "title": "Coverage below required assurance cannot allow a gate",
+      "required": true,
+      "status": "covered",
+      "assertionIds": [
+        "HOSTILE-INSUFFICIENT-ASSURANCE"
+      ],
+      "sourceSpecSections": [
+        "spec/07-host-obligations.md:70",
+        "spec/08-conformance.md:166"
+      ],
+      "fixturePaths": [
+        "tests/conformance/hostile/hostile-provider-matrix.test.ts",
+        "packages/asp/src/core-host-support.ts"
+      ]
+    },
+    {
+      "id": "HOSTILE-POLICY-SELF-AUTHORIZATION",
+      "title": "Candidate policy self-authorization cannot allow a gate",
+      "required": true,
+      "status": "covered",
+      "assertionIds": [
+        "HOSTILE-POLICY-SELF-AUTHORIZATION"
+      ],
+      "sourceSpecSections": [
+        "spec/10-installation-and-discovery.md:122",
+        "spec/08-conformance.md:175"
+      ],
+      "fixturePaths": [
+        "tests/conformance/hostile/hostile-provider-matrix.test.ts",
+        "packages/asp/src/core-host-support.ts"
+      ]
+    },
+    {
+      "id": "HOSTILE-DIRECT-WRITE-RISK",
+      "title": "Direct-write risk cannot be treated as mediated authority",
+      "required": true,
+      "status": "covered",
+      "assertionIds": [
+        "HOSTILE-DIRECT-WRITE-RISK"
+      ],
+      "sourceSpecSections": [
+        "spec/07-host-obligations.md:93",
+        "spec/09-outer-seam.md:178"
+      ],
+      "fixturePaths": [
+        "tests/conformance/hostile/hostile-provider-matrix.test.ts",
+        "packages/asp/src/core-host-edit-risk.ts"
+      ]
+    },
+    {
+      "id": "HOSTILE-COMMAND-LIKE-EDIT-OUTPUT",
+      "title": "Command-like edit output is rejected before apply",
+      "required": true,
+      "status": "covered",
+      "assertionIds": [
+        "HOSTILE-COMMAND-LIKE-EDIT-OUTPUT"
+      ],
+      "sourceSpecSections": [
+        "spec/06-role-act.md:46",
+        "spec/09-outer-seam.md:165"
+      ],
+      "fixturePaths": [
+        "tests/conformance/hostile/hostile-provider-matrix.test.ts",
+        "packages/asp/src/core-host-edit.ts"
+      ]
+    },
+    {
+      "id": "HOSTILE-NO-OPCORE-FAST-PATH",
+      "title": "Reference-provider fast paths are absent from hostile tests and fixtures",
+      "required": true,
+      "status": "covered",
+      "assertionIds": [
+        "HOSTILE-NO-OPCORE-FAST-PATH"
+      ],
+      "sourceSpecSections": [
+        "spec/08-conformance.md:175",
+        "spec/09-outer-seam.md:35"
+      ],
+      "fixturePaths": [
+        "tests/conformance/hostile/hostile-provider-matrix.test.ts",
+        "scripts/conformance/run-hostile-suite.ts",
+        "tests/conformance/fixtures/hostile/hostile-provider-conformance-report.valid.json"
+      ]
+    }
+  ],
+  "assertions": [
+    {
+      "id": "HOSTILE-MALFORMED-INITIALIZE",
+      "requirementId": "HOSTILE-MALFORMED-INITIALIZE",
+      "testName": "HOSTILE-MALFORMED-INITIALIZE rejects malformed provider initialize without silent allow",
+      "result": "pass",
+      "required": true,
+      "fixturePaths": [
+        "tests/conformance/hostile/hostile-provider-matrix.test.ts",
+        "tests/conformance/hostile/helpers/hostile-host-harness.ts",
+        "packages/asp/src/fake-check-provider.ts",
+        "packages/asp/src/provider-runtime.ts"
+      ]
+    },
+    {
+      "id": "HOSTILE-MALFORMED-ASSESSMENT",
+      "requirementId": "HOSTILE-MALFORMED-ASSESSMENT",
+      "testName": "HOSTILE-MALFORMED-ASSESSMENT rejects malformed provider Assessment without silent allow",
+      "result": "pass",
+      "required": true,
+      "fixturePaths": [
+        "tests/conformance/hostile/hostile-provider-matrix.test.ts",
+        "packages/asp/src/assessment-validator.ts"
+      ]
+    },
+    {
+      "id": "HOSTILE-FORGED-HOST-FIELDS",
+      "requirementId": "HOSTILE-FORGED-HOST-FIELDS",
+      "testName": "HOSTILE-FORGED-HOST-FIELDS rejects provider-minted decision authority assurance and receipt fields",
+      "result": "pass",
+      "required": true,
+      "fixturePaths": [
+        "tests/conformance/hostile/hostile-provider-matrix.test.ts",
+        "packages/asp/src/provider-host-owned-fields.ts",
+        "packages/asp/src/assessment-validator.ts"
+      ]
+    },
+    {
+      "id": "HOSTILE-STALE-ASSESSMENT",
+      "requirementId": "HOSTILE-STALE-ASSESSMENT",
+      "testName": "HOSTILE-STALE-ASSESSMENT rejects stale validAsOf without silent allow",
+      "result": "pass",
+      "required": true,
+      "fixturePaths": [
+        "tests/conformance/hostile/hostile-provider-matrix.test.ts",
+        "packages/asp/src/assessment-validator.ts"
+      ]
+    },
+    {
+      "id": "HOSTILE-MISSING-REQUIRED-PROVIDER",
+      "requirementId": "HOSTILE-MISSING-REQUIRED-PROVIDER",
+      "testName": "HOSTILE-MISSING-REQUIRED-PROVIDER keeps missing required provider non-allow and visible",
+      "result": "pass",
+      "required": true,
+      "fixturePaths": [
+        "tests/conformance/hostile/hostile-provider-matrix.test.ts",
+        "packages/asp/src/core-host-support.ts"
+      ]
+    },
+    {
+      "id": "HOSTILE-OPTIONAL-DEGRADED-PROVIDER",
+      "requirementId": "HOSTILE-OPTIONAL-DEGRADED-PROVIDER",
+      "testName": "HOSTILE-OPTIONAL-DEGRADED-PROVIDER keeps optional degradation visible while required coverage can allow",
+      "result": "pass",
+      "required": true,
+      "fixturePaths": [
+        "tests/conformance/hostile/hostile-provider-matrix.test.ts",
+        "tests/conformance/hostile/helpers/hostile-host-harness.ts"
+      ]
+    },
+    {
+      "id": "HOSTILE-UNSUPPORTED-REQUIRED-CAPABILITY",
+      "requirementId": "HOSTILE-UNSUPPORTED-REQUIRED-CAPABILITY",
+      "testName": "HOSTILE-UNSUPPORTED-REQUIRED-CAPABILITY treats missing advertised required capability as unsupported",
+      "result": "pass",
+      "required": true,
+      "fixturePaths": [
+        "tests/conformance/hostile/hostile-provider-matrix.test.ts",
+        "packages/asp/src/provider-runtime.ts",
+        "packages/asp/src/fake-check-provider.ts"
+      ]
+    },
+    {
+      "id": "HOSTILE-INCOMPLETE-REQUIRED-COVERAGE",
+      "requirementId": "HOSTILE-INCOMPLETE-REQUIRED-COVERAGE",
+      "testName": "HOSTILE-INCOMPLETE-REQUIRED-COVERAGE rejects incomplete required coverage",
+      "result": "pass",
+      "required": true,
+      "fixturePaths": [
+        "tests/conformance/hostile/hostile-provider-matrix.test.ts",
+        "packages/asp/src/core-host-evaluation.ts"
+      ]
+    },
+    {
+      "id": "HOSTILE-PROVIDER-ERROR",
+      "requirementId": "HOSTILE-PROVIDER-ERROR",
+      "testName": "HOSTILE-PROVIDER-ERROR reports provider error as non-allow degraded coverage",
+      "result": "pass",
+      "required": true,
+      "fixturePaths": [
+        "tests/conformance/hostile/hostile-provider-matrix.test.ts",
+        "packages/asp/src/provider-supervision.ts"
+      ]
+    },
+    {
+      "id": "HOSTILE-CANCELLED-PROVIDER-REQUEST",
+      "requirementId": "HOSTILE-CANCELLED-PROVIDER-REQUEST",
+      "testName": "HOSTILE-CANCELLED-PROVIDER-REQUEST reports cancelled provider request as non-allow degraded coverage",
+      "result": "pass",
+      "required": true,
+      "fixturePaths": [
+        "tests/conformance/hostile/hostile-provider-matrix.test.ts",
+        "packages/asp/src/core-host-evaluation.ts"
+      ]
+    },
+    {
+      "id": "HOSTILE-SLOW-PROVIDER-TIMEOUT",
+      "requirementId": "HOSTILE-SLOW-PROVIDER-TIMEOUT",
+      "testName": "HOSTILE-SLOW-PROVIDER-TIMEOUT reports slow provider timeout as non-allow degraded coverage",
+      "result": "pass",
+      "required": true,
+      "fixturePaths": [
+        "tests/conformance/hostile/hostile-provider-matrix.test.ts",
+        "packages/asp/src/json-rpc-peer.ts",
+        "packages/asp/src/provider-supervision.ts"
+      ]
+    },
+    {
+      "id": "HOSTILE-PROVIDER-CRASH",
+      "requirementId": "HOSTILE-PROVIDER-CRASH",
+      "testName": "HOSTILE-PROVIDER-CRASH reports provider crash during initialize and active request",
+      "result": "pass",
+      "required": true,
+      "fixturePaths": [
+        "tests/conformance/hostile/hostile-provider-matrix.test.ts",
+        "packages/asp/src/provider-runtime.ts"
+      ]
+    },
+    {
+      "id": "HOSTILE-QUARANTINED-PROVIDER",
+      "requirementId": "HOSTILE-QUARANTINED-PROVIDER",
+      "testName": "HOSTILE-QUARANTINED-PROVIDER keeps quarantined required provider non-allow and visible",
+      "result": "pass",
+      "required": true,
+      "fixturePaths": [
+        "tests/conformance/hostile/hostile-provider-matrix.test.ts",
+        "packages/asp/src/provider-supervision.ts"
+      ]
+    },
+    {
+      "id": "HOSTILE-MISSING-AUTHORITY",
+      "requirementId": "HOSTILE-MISSING-AUTHORITY",
+      "testName": "HOSTILE-MISSING-AUTHORITY rejects fresh complete coverage without required authority",
+      "result": "pass",
+      "required": true,
+      "fixturePaths": [
+        "tests/conformance/hostile/hostile-provider-matrix.test.ts",
+        "packages/asp/src/core-host-support.ts"
+      ]
+    },
+    {
+      "id": "HOSTILE-INSUFFICIENT-ASSURANCE",
+      "requirementId": "HOSTILE-INSUFFICIENT-ASSURANCE",
+      "testName": "HOSTILE-INSUFFICIENT-ASSURANCE rejects authorized coverage below required assurance",
+      "result": "pass",
+      "required": true,
+      "fixturePaths": [
+        "tests/conformance/hostile/hostile-provider-matrix.test.ts",
+        "packages/asp/src/core-host-support.ts"
+      ]
+    },
+    {
+      "id": "HOSTILE-POLICY-SELF-AUTHORIZATION",
+      "requirementId": "HOSTILE-POLICY-SELF-AUTHORIZATION",
+      "testName": "HOSTILE-POLICY-SELF-AUTHORIZATION rejects candidate policy self-authorization attempts",
+      "result": "pass",
+      "required": true,
+      "fixturePaths": [
+        "tests/conformance/hostile/hostile-provider-matrix.test.ts",
+        "packages/asp/src/core-host-support.ts"
+      ]
+    },
+    {
+      "id": "HOSTILE-DIRECT-WRITE-RISK",
+      "requirementId": "HOSTILE-DIRECT-WRITE-RISK",
+      "testName": "HOSTILE-DIRECT-WRITE-RISK rejects direct-write provider risk and untrusted edit launch",
+      "result": "pass",
+      "required": true,
+      "fixturePaths": [
+        "tests/conformance/hostile/hostile-provider-matrix.test.ts",
+        "packages/asp/src/core-host-edit-risk.ts"
+      ]
+    },
+    {
+      "id": "HOSTILE-COMMAND-LIKE-EDIT-OUTPUT",
+      "requirementId": "HOSTILE-COMMAND-LIKE-EDIT-OUTPUT",
+      "testName": "HOSTILE-COMMAND-LIKE-EDIT-OUTPUT rejects command-like edit output before apply",
+      "result": "pass",
+      "required": true,
+      "fixturePaths": [
+        "tests/conformance/hostile/hostile-provider-matrix.test.ts",
+        "packages/asp/src/core-host-edit.ts"
+      ]
+    },
+    {
+      "id": "HOSTILE-NO-OPCORE-FAST-PATH",
+      "requirementId": "HOSTILE-NO-OPCORE-FAST-PATH",
+      "testName": "HOSTILE-NO-OPCORE-FAST-PATH rejects privileged fast-path tokens in hostile suite artifacts",
+      "result": "pass",
+      "required": true,
+      "fixturePaths": [
+        "tests/conformance/hostile/hostile-provider-matrix.test.ts",
+        "scripts/conformance/run-hostile-suite.ts",
+        "tests/conformance/fixtures/hostile/hostile-provider-conformance-report.valid.json"
+      ]
+    }
+  ],
+  "coverage": {
+    "required": [
+      "HOSTILE-MALFORMED-INITIALIZE",
+      "HOSTILE-MALFORMED-ASSESSMENT",
+      "HOSTILE-FORGED-HOST-FIELDS",
+      "HOSTILE-STALE-ASSESSMENT",
+      "HOSTILE-MISSING-REQUIRED-PROVIDER",
+      "HOSTILE-OPTIONAL-DEGRADED-PROVIDER",
+      "HOSTILE-UNSUPPORTED-REQUIRED-CAPABILITY",
+      "HOSTILE-INCOMPLETE-REQUIRED-COVERAGE",
+      "HOSTILE-PROVIDER-ERROR",
+      "HOSTILE-CANCELLED-PROVIDER-REQUEST",
+      "HOSTILE-SLOW-PROVIDER-TIMEOUT",
+      "HOSTILE-PROVIDER-CRASH",
+      "HOSTILE-QUARANTINED-PROVIDER",
+      "HOSTILE-MISSING-AUTHORITY",
+      "HOSTILE-INSUFFICIENT-ASSURANCE",
+      "HOSTILE-POLICY-SELF-AUTHORIZATION",
+      "HOSTILE-DIRECT-WRITE-RISK",
+      "HOSTILE-COMMAND-LIKE-EDIT-OUTPUT",
+      "HOSTILE-NO-OPCORE-FAST-PATH"
+    ],
+    "ran": [
+      "HOSTILE-MALFORMED-INITIALIZE",
+      "HOSTILE-MALFORMED-ASSESSMENT",
+      "HOSTILE-FORGED-HOST-FIELDS",
+      "HOSTILE-STALE-ASSESSMENT",
+      "HOSTILE-MISSING-REQUIRED-PROVIDER",
+      "HOSTILE-OPTIONAL-DEGRADED-PROVIDER",
+      "HOSTILE-UNSUPPORTED-REQUIRED-CAPABILITY",
+      "HOSTILE-INCOMPLETE-REQUIRED-COVERAGE",
+      "HOSTILE-PROVIDER-ERROR",
+      "HOSTILE-CANCELLED-PROVIDER-REQUEST",
+      "HOSTILE-SLOW-PROVIDER-TIMEOUT",
+      "HOSTILE-PROVIDER-CRASH",
+      "HOSTILE-QUARANTINED-PROVIDER",
+      "HOSTILE-MISSING-AUTHORITY",
+      "HOSTILE-INSUFFICIENT-ASSURANCE",
+      "HOSTILE-POLICY-SELF-AUTHORIZATION",
+      "HOSTILE-DIRECT-WRITE-RISK",
+      "HOSTILE-COMMAND-LIKE-EDIT-OUTPUT",
+      "HOSTILE-NO-OPCORE-FAST-PATH"
+    ],
+    "passed": [
+      "HOSTILE-MALFORMED-INITIALIZE",
+      "HOSTILE-MALFORMED-ASSESSMENT",
+      "HOSTILE-FORGED-HOST-FIELDS",
+      "HOSTILE-STALE-ASSESSMENT",
+      "HOSTILE-MISSING-REQUIRED-PROVIDER",
+      "HOSTILE-OPTIONAL-DEGRADED-PROVIDER",
+      "HOSTILE-UNSUPPORTED-REQUIRED-CAPABILITY",
+      "HOSTILE-INCOMPLETE-REQUIRED-COVERAGE",
+      "HOSTILE-PROVIDER-ERROR",
+      "HOSTILE-CANCELLED-PROVIDER-REQUEST",
+      "HOSTILE-SLOW-PROVIDER-TIMEOUT",
+      "HOSTILE-PROVIDER-CRASH",
+      "HOSTILE-QUARANTINED-PROVIDER",
+      "HOSTILE-MISSING-AUTHORITY",
+      "HOSTILE-INSUFFICIENT-ASSURANCE",
+      "HOSTILE-POLICY-SELF-AUTHORIZATION",
+      "HOSTILE-DIRECT-WRITE-RISK",
+      "HOSTILE-COMMAND-LIKE-EDIT-OUTPUT",
+      "HOSTILE-NO-OPCORE-FAST-PATH"
+    ],
+    "failed": [],
+    "skipped": [],
+    "unsupported": [],
+    "missing": [],
+    "degraded": []
+  },
+  "artifacts": [
+    {
+      "path": "docs/conformance/README.md",
+      "kind": "doc",
+      "sha256": "sha256:1c5b7d308b2e94b1c9c0a4bd1d26d07bc417826a38597361b69bd503c976b9d9"
+    },
+    {
+      "path": "docs/conformance/requirements.md",
+      "kind": "doc",
+      "sha256": "sha256:35b3648de88807147c5a111f87e14fb516e2fee1b0673da55d68863a4f1a8872"
+    },
+    {
+      "path": "docs/conformance/traceability.md",
+      "kind": "doc",
+      "sha256": "sha256:35c8fb3fb6ce44247b6587c3c734dbac42817d896f4dc415e3fa12b12255fae5"
+    },
+    {
+      "path": "scripts/conformance/hostile-report-catalog.ts",
+      "kind": "script",
+      "sha256": "sha256:7b90f49a96788a47e3c185b5a81f06c07da45ece9c694953af0b1d6c9dc278da"
+    },
+    {
+      "path": "scripts/conformance/run-hostile-suite.ts",
+      "kind": "script",
+      "sha256": "sha256:874b16c99d4c0f5cc616696be24924bff0019f9e0bd3b812edd3f7e20b0dd270"
+    },
+    {
+      "path": "tests/conformance/hostile/hostile-provider-matrix.test.ts",
+      "kind": "test",
+      "sha256": "sha256:052662bdbd87fb7640fe18e8b031c25b10ccaacbecd46534560f1345b2759afa"
+    },
+    {
+      "path": "tests/conformance/hostile/hostile-report.test.ts",
+      "kind": "test",
+      "sha256": "sha256:6fe71e41551702a48ae8d07482c2c9de0d00648058e4da1ac6003053cbdd6d6c"
+    },
+    {
+      "path": "tests/conformance/hostile/helpers/hostile-host-harness.ts",
+      "kind": "test",
+      "sha256": "sha256:890bb3f09a3d005e0a02abe82dc19ebf8db9c8b7f896325d37e5262f353bc1e1"
+    },
+    {
+      "path": "tests/conformance/shared/provider-fixtures.ts",
+      "kind": "test",
+      "sha256": "sha256:1a9b4f4613da67c6bf2071974329a9e38e40ba56930c3c39c125cb10404c3f45"
+    },
+    {
+      "path": "packages/asp/src/fake-check-provider.ts",
+      "kind": "artifact",
+      "sha256": "sha256:db37241c51934ec2b7963a8d1f98f49cdbb5377cfc930502b708998c85ad80df"
+    },
+    {
+      "path": "packages/asp/src/provider-runtime.ts",
+      "kind": "artifact",
+      "sha256": "sha256:014fd7ffcf7ee65c13a1b47c8390d6be85f1859e196c884ca52815faed16dd3c"
+    },
+    {
+      "path": "packages/asp/src/core-host.ts",
+      "kind": "artifact",
+      "sha256": "sha256:3eb1f238a3da8c12ee26366835adfbd48d3e17aadb144de877c401a0ada0cd70"
+    },
+    {
+      "path": "packages/asp/src/core-host-evaluation.ts",
+      "kind": "artifact",
+      "sha256": "sha256:0cf9fa9b4cb313a307ce275c6814c5039f67782bc3e884678c8736ccd093c731"
+    },
+    {
+      "path": "packages/asp/src/core-host-edit.ts",
+      "kind": "artifact",
+      "sha256": "sha256:47f5f1431076c5dd571454cb2a748c72cc5cf7616bc8257c9cdcd0b50f14935b"
+    },
+    {
+      "path": "packages/asp/src/core-host-edit-risk.ts",
+      "kind": "artifact",
+      "sha256": "sha256:7a9b06e65ca63a29c8a89af813d0c0f70c99f673aa523f9cd9b6dbb37c100bae"
+    },
+    {
+      "path": "packages/asp/src/core-host-support.ts",
+      "kind": "artifact",
+      "sha256": "sha256:15b2f76d0e1a13f72465240523fb3044f7548eb76d4182bb61ba1ab5bc94b44e"
+    },
+    {
+      "path": "packages/asp/src/assessment-validator.ts",
+      "kind": "artifact",
+      "sha256": "sha256:c2bb63aacb8455f47ba4e7142963ec4eb0b9a56a526cdb6c8c1b79fcc4e87091"
+    },
+    {
+      "path": "packages/asp/src/host-receipts.ts",
+      "kind": "artifact",
+      "sha256": "sha256:f73493cbfc3b04e9d1b1b35567be593a2feed0a7c4c23916a936a3c29a1017c2"
+    },
+    {
+      "path": "packages/asp/src/types.ts",
+      "kind": "artifact",
+      "sha256": "sha256:7bd0ef73f1a403cbc61f93b8198c76b84426d409e753a58de7d1a59d8f6280fb"
+    },
+    {
+      "path": "spec/08-conformance.md",
+      "kind": "doc",
+      "sha256": "sha256:f28188f6aeb86b04361f6ab66f40dfb2541ecfb35786103fa50f12070113cbd5"
+    },
+    {
+      "path": "spec/09-outer-seam.md",
+      "kind": "doc",
+      "sha256": "sha256:f70c3f313a92e10e914c68f2cd52405bdacc6404d1ee786da055b27d41326090"
+    },
+    {
+      "path": "spec/11-core-profile.md",
+      "kind": "doc",
+      "sha256": "sha256:13c230599879d12d7e25d749b61dd4c59ca25909796493a851208663163a28cd"
+    },
+    {
+      "path": "schemas/check-assessment.schema.json",
+      "kind": "schema",
+      "sha256": "sha256:ebafb336560c210bc02a8942bad2c8bec4807324c1ba741d427eada918c70e47"
+    },
+    {
+      "path": "schemas/edit-plan.schema.json",
+      "kind": "schema",
+      "sha256": "sha256:7fe95edd2adba72a99d3f99459b46a90dbc0b550a37346eb2f7570311c05c13f"
+    },
+    {
+      "path": "schemas/outer-host.schema.json",
+      "kind": "schema",
+      "sha256": "sha256:236463d0bad75b14c3e151a31e1e5a29e81d2594c300da1617a2adef2fa29d55"
+    },
+    {
+      "path": "schemas/verdict.schema.json",
+      "kind": "schema",
+      "sha256": "sha256:c483b71ca3c896438fe854fd7abf51798289c8e929b6fc6d5516b95c162aa708"
+    }
+  ],
+  "claims": {
+    "behaviorEvidenceOnly": true,
+    "privateOnly": true,
+    "trustClaim": false,
+    "authorityClaim": false,
+    "certificationClaim": false,
+    "registryInclusionClaim": false,
+    "publicStandardClaim": false,
+    "providerApprovalClaim": false,
+    "stablePublicApiClaim": false,
+    "notes": [
+      "Private hostile provider matrix behavior evidence only."
+    ]
+  }
+}

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Opcore"
+  short_description: "Run repository checks for edits, commits, and CI"
+  default_prompt: "Use $opcore to verify my repository changes and intervene on actionable findings."

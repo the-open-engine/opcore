@@ -1,0 +1,46 @@
+[graph]
+all-features = true
+
+[advisories]
+yanked = "deny"
+unmaintained = "all"
+unsound = "all"
+
+[licenses]
+confidence-threshold = 0.93
+allow = [
+  "Apache-2.0",
+  "Apache-2.0 WITH LLVM-exception",
+  "BSD-2-Clause",
+  "BSL-1.0",
+  "MIT",
+  "Unicode-3.0",
+  "Unicode-DFS-2016",
+  "Unlicense",
+]
+exceptions = [
+  { crate = "option-ext", allow = ["MPL-2.0"] },
+]
+private = { ignore = true }
+unused-allowed-license = "deny"
+unused-license-exception = "deny"
+
+[bans]
+multiple-versions = "deny"
+wildcards = "deny"
+highlight = "all"
+skip = [
+  { crate = "compact_str@0.8.2", reason = "Shuck retains compact_str 0.8 while Oxc uses 0.10" },
+  { crate = "getrandom@0.2.17", reason = "Ruff's Unicode name generator retains rand 0.8" },
+  { crate = "hashbrown@0.14.5", reason = "rowan and Oxc require incompatible APIs" },
+  { crate = "phf@0.11.3", reason = "Ruff's Unicode names and Oxc require incompatible APIs" },
+  { crate = "phf_generator@0.11.3", reason = "Ruff's Unicode names and Oxc require incompatible APIs" },
+  { crate = "phf_shared@0.11.3", reason = "Ruff's Unicode names and Oxc require incompatible APIs" },
+  { crate = "rustc-hash@1.1.0", reason = "rowan retains the pre-2 API" },
+  { crate = "syn@2.0.119", reason = "proc-macro dependencies require both stable major APIs" },
+  { crate = "winnow@0.7.15", reason = "ra_ap_parser retains the pre-1 API while hcl-edit requires winnow 1" },
+]
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"

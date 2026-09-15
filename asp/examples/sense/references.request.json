@@ -1,0 +1,9 @@
+{
+  "jsonrpc": "2.0",
+  "id": 31,
+  "method": "inspect/references",
+  "params": {
+    "symbol": { "id": "src/http.ts::request" },
+    "scope": "workspace"
+  }
+}

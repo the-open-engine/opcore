@@ -1,0 +1,204 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://covibes.dev/asp/schemas/check-assessment.schema.json",
+  "title": "check Assessment",
+  "description": "Canonical provider Assessment for the ASP check capability. ASP Core v1.0 reuses this Assessment shape without a Core-only schema fork. Providers return assessment data only; hosts aggregate it, evaluate policy, and produce the host-owned gate result.",
+  "$ref": "#/$defs/assessment",
+  "$defs": {
+    "scope": {
+      "oneOf": [
+        { "enum": ["changeset", "workspace"] },
+        {
+          "type": "object",
+          "required": ["paths"],
+          "additionalProperties": false,
+          "properties": {
+            "paths": {
+              "type": "array",
+              "items": { "type": "string" },
+              "minItems": 1
+            }
+          }
+        }
+      ]
+    },
+    "comparison": {
+      "enum": ["introduced", "all", "resolved"]
+    },
+    "diagnosticSource": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Declared source namespace requested or covered by the provider."
+    },
+    "rule": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Provider rule id, normally namespaced under a declared diagnostic source."
+    },
+    "coveragePart": {
+      "type": "object",
+      "required": ["scope", "diagnosticSources", "rules", "comparison"],
+      "additionalProperties": false,
+      "properties": {
+        "scope": { "$ref": "#/$defs/scope" },
+        "diagnosticSources": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/diagnosticSource" },
+          "uniqueItems": true
+        },
+        "rules": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/rule" },
+          "uniqueItems": true
+        },
+        "comparison": { "$ref": "#/$defs/comparison" }
+      }
+    },
+    "coverage": {
+      "type": "object",
+      "required": ["requested", "covered", "degraded", "unsupported", "exhaustive", "truncated"],
+      "additionalProperties": false,
+      "properties": {
+        "requested": {
+          "$ref": "#/$defs/coveragePart",
+          "description": "Scope, sources, rules, and comparison requested by the host."
+        },
+        "covered": {
+          "$ref": "#/$defs/coveragePart",
+          "description": "Scope, sources, rules, and comparison actually evaluated by the provider."
+        },
+        "degraded": {
+          "type": "array",
+          "items": { "$ref": "https://covibes.dev/asp/schemas/assurance.schema.json#/$defs/coverageDegradation" }
+        },
+        "unsupported": {
+          "type": "array",
+          "items": { "$ref": "https://covibes.dev/asp/schemas/assurance.schema.json#/$defs/coverageDegradation" },
+          "description": "Unsupported requested sources, scopes, comparisons, capability versions, file kinds, languages, or rule sets."
+        },
+        "exhaustive": { "type": "boolean" },
+        "truncated": { "type": "boolean" }
+      }
+    },
+    "validAsOf": {
+      "type": "object",
+      "required": ["baseline", "changesetDigest", "blobs"],
+      "additionalProperties": false,
+      "properties": {
+        "baseline": {
+          "$ref": "https://covibes.dev/asp/schemas/changeset.schema.json#/$defs/baseline",
+          "description": "Host-issued SnapshotRef/Baseline echoed exactly by the provider."
+        },
+        "changesetDigest": {
+          "type": "string",
+          "description": "Digest of the immutable ChangeSet input the assessment binds to."
+        },
+        "blobs": {
+          "type": "array",
+          "items": { "$ref": "https://covibes.dev/asp/schemas/changeset.schema.json#/$defs/blobRef" },
+          "description": "Blob hashes actually read by the provider. Empty when no blobs were read.",
+          "uniqueItems": true
+        }
+      }
+    },
+    "provider": {
+      "type": "object",
+      "required": ["id", "version", "configDigest", "capabilityVersion"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "version": { "type": "string", "minLength": 1 },
+        "configDigest": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Stable identity of normalized effective provider settings for this request, including documented defaults. The provider documents its canonicalization. Hosts verify the requested identity before accepting any assessment status. Timing, diagnostics, and other evaluation results never enter this digest; captured project configuration remains bound through validAsOf.blobs and tool identities through evidence."
+        },
+        "capabilityVersion": { "type": "string", "minLength": 1 },
+        "buildDigest": { "type": "string" },
+        "artifactDigest": { "type": "string" },
+        "capabilityFamily": {
+          "const": "check",
+          "description": "Provider-declared capability family. This is evidence, not host policy authority."
+        }
+      }
+    },
+    "timing": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "startedAt": { "type": "string", "format": "date-time" },
+        "endedAt": { "type": "string", "format": "date-time" },
+        "elapsedMs": { "type": "integer", "minimum": 0 }
+      },
+      "anyOf": [
+        { "required": ["elapsedMs"] },
+        { "required": ["startedAt", "endedAt"] }
+      ]
+    },
+    "cache": {
+      "type": "object",
+      "required": ["status"],
+      "additionalProperties": false,
+      "properties": {
+        "status": { "enum": ["hit", "miss", "stale", "disabled"] },
+        "key": { "type": "string" },
+        "digest": { "type": "string" },
+        "refreshedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "providerStructuredData": {
+      "oneOf": [
+        { "type": "null" },
+        { "type": "boolean" },
+        { "type": "number" },
+        { "type": "string" },
+        {
+          "type": "array",
+          "items": { "$ref": "#/$defs/providerStructuredData" }
+        },
+        { "$ref": "#/$defs/providerStructuredDataObject" }
+      ]
+    },
+    "providerStructuredDataObject": {
+      "type": "object",
+      "propertyNames": {
+        "not": { "pattern": "^(authority|assurance|decision|disposition|pass|transactionGuarantee|verdict|applyReceipt|receipt|policyDigest|policyRef|policyReference|authorityEvidence|hostDecision|applyAttempt|applyResult)$" }
+      },
+      "additionalProperties": { "$ref": "#/$defs/providerStructuredData" }
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["kind"],
+        "additionalProperties": false,
+        "properties": {
+          "kind": { "enum": ["trace", "artifact", "metric", "message", "reference"] },
+          "id": { "type": "string" },
+          "digest": { "type": "string" },
+          "uri": { "type": "string" },
+          "message": { "type": "string" },
+          "data": { "$ref": "#/$defs/providerStructuredDataObject" }
+        }
+      }
+    },
+    "assessment": {
+      "type": "object",
+      "required": ["status", "diagnostics", "coverage", "validAsOf", "provider", "timing", "cache"],
+      "additionalProperties": false,
+      "properties": {
+        "status": { "$ref": "https://covibes.dev/asp/schemas/assurance.schema.json#/$defs/assessmentStatus" },
+        "diagnostics": {
+          "type": "array",
+          "items": { "$ref": "https://covibes.dev/asp/schemas/diagnostic.schema.json" }
+        },
+        "evidence": { "$ref": "#/$defs/evidence" },
+        "coverage": { "$ref": "#/$defs/coverage" },
+        "validAsOf": { "$ref": "#/$defs/validAsOf" },
+        "provider": { "$ref": "#/$defs/provider" },
+        "timing": { "$ref": "#/$defs/timing" },
+        "cache": { "$ref": "#/$defs/cache" }
+      }
+    }
+  }
+}

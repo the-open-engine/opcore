@@ -1,0 +1,10 @@
+{
+  "jsonrpc": "2.0",
+  "id": 7,
+  "error": {
+    "code": -32010,
+    "message": "index not warm",
+    "data": { "failClass": "health", "retryable": true }
+  },
+  "//": "Not a verdict. On an interactive edit the host fails OPEN (warn+allow); on a commit/ship gate the host fails CLOSED. See spec/07-host-obligations.md."
+}

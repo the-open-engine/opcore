@@ -1,0 +1,15 @@
+{
+  "jsonrpc": "2.0",
+  "id": 9,
+  "method": "inspect/impact",
+  "params": {
+    "changeset": {
+      "baseline": { "rev": "git:tree:9f3a1c", "stampedAt": "2026-06-16T10:00:00Z" },
+      "changes": [
+        { "path": "src/http.ts", "kind": "modify", "before": "blob:sha256:f100", "after": "blob:sha256:f201" }
+      ]
+    },
+    "depth": 2,
+    "scope": "workspace"
+  }
+}

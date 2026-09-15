@@ -1,0 +1,56 @@
+{
+  "$schema": "../../schemas/asp-config.schema.json",
+  "aspVersion": "asp/1.0",
+  "requirements": [
+    {
+      "id": "required-check",
+      "capabilities": [
+        "check"
+      ],
+      "assurance": [
+        "gated"
+      ],
+      "authority": {
+        "providers": [
+          {
+            "id": "example-check-provider",
+            "version": "0.1.0",
+            "identity": "example-check-provider",
+            "integrity": "sha256:example-provider",
+            "conformance": "asp-core-v1.0-private"
+          }
+        ]
+      }
+    }
+  ],
+  "gates": {
+    "interactive": {
+      "requiredRequirements": [],
+      "optionalRequirements": [
+        "required-check"
+      ]
+    },
+    "gate": {
+      "requiredRequirements": [
+        "required-check"
+      ],
+      "optionalRequirements": []
+    },
+    "sweep": {
+      "requiredRequirements": [
+        "required-check"
+      ],
+      "optionalRequirements": []
+    }
+  },
+  "policy": {
+    "authorityModel": "explicit-pinned-provider",
+    "policyChangeActivation": "base-policy-two-phase",
+    "candidatePolicyAuthority": "trusted-base-or-organization-floor",
+    "missingHost": {
+      "interactive": "warn-open",
+      "gate": "fail-closed",
+      "sweep": "fail-closed"
+    }
+  }
+}

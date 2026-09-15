@@ -1,0 +1,172 @@
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "validates": "outer-host.schema.json#/$defs/statusResult",
+  "result": {
+    "host": {
+      "name": "example-host",
+      "version": "0.1.0-private",
+      "outerProtocol": "asp-outer/1.0",
+      "state": "ready",
+      "bindingCandidate": "json-rpc-stdio"
+    },
+    "workspace": {
+      "root": "/workspace/example",
+      "baseline": {
+        "rev": "tree:example-base"
+      },
+      "validAsOf": {
+        "rev": "tree:example-base"
+      }
+    },
+    "policy": {
+      "source": "trusted-environment",
+      "activation": "active",
+      "policyDigest": "sha256:example-policy"
+    },
+    "servers": [
+      {
+        "id": "example-check-provider",
+        "capabilities": [
+          "check"
+        ],
+        "authorityEvidence": {
+          "identity": "example-check-provider",
+          "integrity": "sha256:example-provider",
+          "conformance": "asp-core-v1.0-private",
+          "isolation": "gated",
+          "authority": {
+            "granted": true,
+            "requirement": "required-check",
+            "policyDigest": "sha256:example-policy"
+          }
+        },
+        "state": "ready",
+        "enrollmentState": "enrolled",
+        "requiredFor": [
+          "gate"
+        ]
+      }
+    ],
+    "gates": {
+      "interactive": {
+        "available": true,
+        "requiredProviders": [],
+        "requiredCapabilities": [],
+        "degraded": []
+      },
+      "gate": {
+        "available": true,
+        "requiredProviders": [
+          "example-check-provider"
+        ],
+        "requiredCapabilities": [
+          "check"
+        ],
+        "degraded": []
+      },
+      "sweep": {
+        "available": true,
+        "requiredProviders": [],
+        "requiredCapabilities": [],
+        "degraded": []
+      }
+    },
+    "capabilities": {
+      "inspect": {
+        "available": false,
+        "providers": [],
+        "degraded": []
+      },
+      "check": {
+        "available": true,
+        "providers": [
+          "example-check-provider"
+        ],
+        "requiredFor": [
+          "gate"
+        ],
+        "degraded": []
+      },
+      "edit": {
+        "available": false,
+        "providers": [],
+        "degraded": []
+      }
+    },
+    "assuranceCapabilities": [
+      "advisory",
+      "gated"
+    ],
+    "receipt": {
+      "receiptId": "status-ready-0001",
+      "issuedAt": "2026-06-23T12:00:00Z",
+      "providerProvenance": [
+        {
+          "provider": "example-check-provider",
+          "capability": "check",
+          "identity": "example-check-provider",
+          "integrity": "sha256:example-provider",
+          "conformance": "asp-core-v1.0-private"
+        }
+      ],
+      "policyDigest": "sha256:example-policy",
+      "baseline": {
+        "rev": "tree:example-base"
+      },
+      "validAsOf": {
+        "rev": "tree:example-base"
+      },
+      "coverage": {
+        "exhaustive": true,
+        "required": [
+          "required-check"
+        ],
+        "enrolled": [
+          "required-check"
+        ],
+        "ran": [
+          "required-check"
+        ],
+        "degraded": []
+      },
+      "authorityEvidence": [
+        {
+          "identity": "example-check-provider",
+          "integrity": "sha256:example-provider",
+          "conformance": "asp-core-v1.0-private",
+          "isolation": "gated",
+          "authority": {
+            "granted": true,
+            "requirement": "required-check",
+            "policyDigest": "sha256:example-policy"
+          }
+        }
+      ],
+      "assurance": {
+        "mode": "gated",
+        "transactionGuarantee": "none"
+      },
+      "kind": "status",
+      "host": {
+        "name": "core-host",
+        "version": "0.1.0-private"
+      },
+      "capabilityFamily": "check",
+      "requestDigest": "sha256:examples-canonical-status-ready-json-status-receipt",
+      "providerIds": [
+        "example-check-provider",
+        "required-check"
+      ],
+      "timing": {
+        "startedAt": "2026-06-23T00:00:00Z",
+        "endedAt": "2026-06-23T00:00:00Z",
+        "elapsedMs": 0
+      },
+      "failures": [],
+      "privateOnly": true,
+      "experimental": true,
+      "trustArtifact": false
+    }
+  }
+}

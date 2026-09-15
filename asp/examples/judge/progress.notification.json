@@ -1,0 +1,22 @@
+{
+  "jsonrpc": "2.0",
+  "method": "$/progress",
+  "params": {
+    "token": 7,
+    "value": {
+      "kind": "diagnostics",
+      "diagnostics": [
+        {
+          "code": "acme-secrets/aws-key",
+          "severity": "error",
+          "source": "acme-secrets",
+          "message": "hardcoded AWS access key",
+          "location": { "path": "src/api.ts", "range": { "start": { "line": 41, "char": 2 }, "end": { "line": 41, "char": 40 } } },
+          "fingerprint": "sha256:7c5e",
+          "introduced": true
+        }
+      ]
+    }
+  },
+  "//": "A partial-result batch streamed before the terminal legacy judge/evaluate check assessment on id 7. See spec/02 Streaming and cancellation."
+}

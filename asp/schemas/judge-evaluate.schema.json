@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://covibes.dev/asp/schemas/judge-evaluate.schema.json",
+  "title": "judge/evaluate legacy compatibility shim",
+  "description": "Legacy check-provider request params for judge/evaluate. The success result is the canonical check Assessment; hosts produce decisions. A negative provider assessment is a success result; legacy inability-to-evaluate may still use the JSON-RPC error channel with data.failClass.",
+  "$defs": {
+    "params": {
+      "type": "object",
+      "required": ["changeset", "scope"],
+      "additionalProperties": false,
+      "properties": {
+        "changeset": { "$ref": "https://covibes.dev/asp/schemas/changeset.schema.json" },
+        "scope": {
+          "oneOf": [
+            { "enum": ["changeset", "workspace"] },
+            { "type": "object", "required": ["paths"], "additionalProperties": false,
+              "properties": { "paths": { "type": "array", "items": { "type": "string" } } } }
+          ]
+        },
+        "comparison": { "enum": ["introduced", "all", "resolved"], "default": "introduced" },
+        "diagnosticSources": { "type": "array", "items": { "type": "string" } },
+        "priorDiagnostics": {
+          "type": "array",
+          "items": { "$ref": "https://covibes.dev/asp/schemas/diagnostic.schema.json" },
+          "description": "Host-cached before-state findings for the changeset's before blobs; lets an incremental server evaluate only the after-state (ADR 0011)."
+        }
+      }
+    },
+    "result": {
+      "$ref": "https://covibes.dev/asp/schemas/check-assessment.schema.json#/$defs/assessment"
+    },
+    "error": {
+      "type": "object",
+      "description": "JSON-RPC error.data for an inability to evaluate.",
+      "required": ["failClass"],
+      "additionalProperties": false,
+      "properties": {
+        "failClass": { "enum": ["health", "contract", "policy", "input"] },
+        "retryable": { "type": "boolean" }
+      }
+    }
+  }
+}

@@ -1,0 +1,188 @@
+{
+  "jsonrpc": "2.0",
+  "id": 104,
+  "validates": "outer-host.schema.json#/$defs/evaluateChangesetResult",
+  "result": {
+    "pass": false,
+    "decision": "deny",
+    "callSite": "gate",
+    "changesetDigest": "sha256:core-changeset-deny",
+    "findings": [
+      {
+        "diagnostic": {
+          "code": "core/blocking-rule",
+          "severity": "error",
+          "source": "core-check-provider",
+          "message": "Core required check found a blocking policy violation.",
+          "location": {
+            "path": "src/core.ts",
+            "range": {
+              "start": {
+                "line": 4,
+                "char": 2
+              },
+              "end": {
+                "line": 4,
+                "char": 18
+              }
+            }
+          },
+          "fingerprint": "sha256:core-deny-0001",
+          "introduced": true,
+          "help": "Remove the blocking change."
+        },
+        "authority": {
+          "identity": "core-check-provider",
+          "integrity": "sha256:core-provider",
+          "conformance": "asp-core-v1.0-private",
+          "isolation": "gated",
+          "authority": {
+            "granted": true,
+            "requirement": "core-required-check",
+            "policyDigest": "sha256:core-policy"
+          }
+        },
+        "disposition": "gating",
+        "nextStep": "Remove the blocking change.",
+        "nextStepOrigin": "server"
+      }
+    ],
+    "coverage": {
+      "exhaustive": false,
+      "required": [
+        "core-required-check"
+      ],
+      "enrolled": [
+        "core-required-check"
+      ],
+      "ran": [
+        "core-required-check"
+      ],
+      "degraded": [
+        {
+          "source": "core-required-check",
+          "reason": "blocking-diagnostic",
+          "requirement": "core-required-check",
+          "detail": "Required Core check provider reported a gating diagnostic."
+        }
+      ]
+    },
+    "policyDigest": "sha256:core-policy",
+    "authorityEvidence": [
+      {
+        "identity": "core-check-provider",
+        "integrity": "sha256:core-provider",
+        "conformance": "asp-core-v1.0-private",
+        "isolation": "gated",
+        "authority": {
+          "granted": true,
+          "requirement": "core-required-check",
+          "policyDigest": "sha256:core-policy"
+        }
+      }
+    ],
+    "validAsOf": {
+      "rev": "tree:core-base",
+      "blobs": [
+        "blob:sha256:c0ffee01",
+        "blob:sha256:c0ffee02"
+      ]
+    },
+    "assurance": {
+      "mode": "gated",
+      "transactionGuarantee": "none"
+    },
+    "receipt": {
+      "receiptId": "core-evaluate-deny-0001",
+      "issuedAt": "2026-06-23T12:02:00Z",
+      "providerProvenance": [
+        {
+          "provider": "core-check-provider",
+          "capability": "check",
+          "identity": "core-check-provider",
+          "integrity": "sha256:core-provider",
+          "conformance": "asp-core-v1.0-private"
+        }
+      ],
+      "policyDigest": "sha256:core-policy",
+      "baseline": {
+        "rev": "tree:core-base",
+        "stampedAt": "2026-06-23T12:00:00Z"
+      },
+      "validAsOf": {
+        "rev": "tree:core-base",
+        "blobs": [
+          "blob:sha256:c0ffee01",
+          "blob:sha256:c0ffee02"
+        ]
+      },
+      "coverage": {
+        "exhaustive": false,
+        "required": [
+          "core-required-check"
+        ],
+        "enrolled": [
+          "core-required-check"
+        ],
+        "ran": [
+          "core-required-check"
+        ],
+        "degraded": [
+          {
+            "source": "core-required-check",
+            "reason": "blocking-diagnostic",
+            "requirement": "core-required-check",
+            "detail": "Required Core check provider reported a gating diagnostic."
+          }
+        ]
+      },
+      "authorityEvidence": [
+        {
+          "identity": "core-check-provider",
+          "integrity": "sha256:core-provider",
+          "conformance": "asp-core-v1.0-private",
+          "isolation": "gated",
+          "authority": {
+            "granted": true,
+            "requirement": "core-required-check",
+            "policyDigest": "sha256:core-policy"
+          }
+        }
+      ],
+      "assurance": {
+        "mode": "gated",
+        "transactionGuarantee": "none"
+      },
+      "kind": "evaluate",
+      "host": {
+        "name": "core-host",
+        "version": "0.1.0-private"
+      },
+      "capabilityFamily": "check",
+      "callSite": "gate",
+      "requestDigest": "sha256:examples-core-evaluate-deny-json-request-deny",
+      "changesetDigest": "sha256:core-changeset-deny",
+      "providerIds": [
+        "core-check-provider",
+        "core-required-check"
+      ],
+      "timing": {
+        "startedAt": "2026-06-23T00:00:00Z",
+        "endedAt": "2026-06-23T00:00:00Z",
+        "elapsedMs": 0
+      },
+      "failures": [
+        {
+          "source": "core-required-check",
+          "reason": "blocking-diagnostic",
+          "requirement": "core-required-check",
+          "detail": "Required Core check provider reported a gating diagnostic."
+        }
+      ],
+      "privateOnly": true,
+      "experimental": true,
+      "trustArtifact": false
+    },
+    "requestDigest": "sha256:examples-core-evaluate-deny-json-request-deny"
+  }
+}

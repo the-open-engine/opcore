@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://covibes.dev/asp/schemas/check-evaluate.schema.json",
+  "title": "check/evaluate",
+  "description": "Canonical check provider evaluation request and success result. ASP Core v1.0 reuses check/evaluate without a Core-only schema fork. The result is a provider Assessment, never host-owned gate output.",
+  "$defs": {
+    "priorDiagnostic": {
+      "type": "object",
+      "required": ["diagnostic", "validAsOf"],
+      "additionalProperties": false,
+      "properties": {
+        "diagnostic": { "$ref": "https://covibes.dev/asp/schemas/diagnostic.schema.json" },
+        "validAsOf": { "$ref": "https://covibes.dev/asp/schemas/check-assessment.schema.json#/$defs/validAsOf" }
+      }
+    },
+    "priorAssessment": {
+      "type": "object",
+      "required": ["assessmentId", "validAsOf", "provider"],
+      "additionalProperties": false,
+      "properties": {
+        "assessmentId": { "type": "string" },
+        "validAsOf": { "$ref": "https://covibes.dev/asp/schemas/check-assessment.schema.json#/$defs/validAsOf" },
+        "provider": { "$ref": "https://covibes.dev/asp/schemas/check-assessment.schema.json#/$defs/provider" },
+        "digest": { "type": "string" }
+      }
+    },
+    "params": {
+      "type": "object",
+      "required": ["changeset", "scope", "comparison"],
+      "additionalProperties": false,
+      "properties": {
+        "changeset": { "$ref": "https://covibes.dev/asp/schemas/changeset.schema.json" },
+        "scope": { "$ref": "https://covibes.dev/asp/schemas/check-assessment.schema.json#/$defs/scope" },
+        "comparison": { "$ref": "https://covibes.dev/asp/schemas/check-assessment.schema.json#/$defs/comparison" },
+        "configuration": {
+          "type": "object",
+          "description": "Resolved provider-specific settings. The provider validates its strict configuration schema and rejects unknown or invalid settings; omission selects documented defaults. The same effective settings apply to both comparison views. provider.configDigest identifies the normalized settings. Workflow resolution and execution permissions remain host-owned."
+        },
+        "diagnosticSources": {
+          "type": "array",
+          "items": { "$ref": "https://covibes.dev/asp/schemas/check-assessment.schema.json#/$defs/diagnosticSource" },
+          "uniqueItems": true
+        },
+        "rules": {
+          "type": "array",
+          "items": { "$ref": "https://covibes.dev/asp/schemas/check-assessment.schema.json#/$defs/rule" },
+          "uniqueItems": true
+        },
+        "priorDiagnostics": {
+          "type": "array",
+          "description": "Host-supplied diagnostics bound to exact prior freshness data.",
+          "items": { "$ref": "#/$defs/priorDiagnostic" }
+        },
+        "priorAssessments": {
+          "type": "array",
+          "description": "Host-supplied prior assessment references bound to exact freshness data.",
+          "items": { "$ref": "#/$defs/priorAssessment" }
+        }
+      }
+    },
+    "result": {
+      "$ref": "https://covibes.dev/asp/schemas/check-assessment.schema.json#/$defs/assessment"
+    }
+  }
+}

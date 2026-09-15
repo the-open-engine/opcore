@@ -1,0 +1,101 @@
+{
+  "jsonrpc": "2.0",
+  "id": 3,
+  "validates": "outer-host.schema.json#/$defs/evaluateChangesetResult",
+  "result": {
+    "pass": false,
+    "decision": "indeterminate",
+    "callSite": "gate",
+    "findings": [],
+    "coverage": {
+      "exhaustive": false,
+      "required": [
+        "lattice"
+      ],
+      "enrolled": [
+        "lattice"
+      ],
+      "ran": [],
+      "degraded": [
+        {
+          "source": "lattice",
+          "reason": "missing",
+          "requirement": "lattice-alpha-check",
+          "detail": "Required provider is absent from the trusted base environment."
+        }
+      ]
+    },
+    "validAsOf": {
+      "rev": "tree:abc123"
+    },
+    "assurance": {
+      "mode": "gated",
+      "transactionGuarantee": "none"
+    },
+    "policyDigest": "sha256:policyabc123",
+    "authorityEvidence": [],
+    "receipt": {
+      "receiptId": "evaluate.missing-provider.response-0001",
+      "issuedAt": "2026-06-22T20:03:00Z",
+      "providerProvenance": [],
+      "policyDigest": "sha256:policyabc123",
+      "baseline": {
+        "rev": "tree:abc123"
+      },
+      "validAsOf": {
+        "rev": "tree:abc123"
+      },
+      "coverage": {
+        "exhaustive": false,
+        "required": [
+          "lattice"
+        ],
+        "enrolled": [
+          "lattice"
+        ],
+        "ran": [],
+        "degraded": [
+          {
+            "source": "lattice",
+            "reason": "missing",
+            "requirement": "lattice-alpha-check",
+            "detail": "Required provider is absent from the trusted base environment."
+          }
+        ]
+      },
+      "authorityEvidence": [],
+      "assurance": {
+        "mode": "gated",
+        "transactionGuarantee": "none"
+      },
+      "kind": "evaluate",
+      "host": {
+        "name": "core-host",
+        "version": "0.1.0-private"
+      },
+      "capabilityFamily": "check",
+      "callSite": "gate",
+      "requestDigest": "sha256:examples-outer-evaluate-missing-provider-response-json-request-indeterminate",
+      "changesetDigest": "sha256:examples-outer-evaluate-missing-provider-response-json-changeset-indeterminate",
+      "providerIds": [],
+      "timing": {
+        "startedAt": "2026-06-23T00:00:00Z",
+        "endedAt": "2026-06-23T00:00:00Z",
+        "elapsedMs": 0
+      },
+      "failures": [
+        {
+          "source": "lattice",
+          "reason": "missing",
+          "requirement": "lattice-alpha-check",
+          "detail": "Required provider is absent from the trusted base environment."
+        }
+      ],
+      "privateOnly": true,
+      "experimental": true,
+      "trustArtifact": false
+    },
+    "requestDigest": "sha256:examples-outer-evaluate-missing-provider-response-json-request-indeterminate",
+    "changesetDigest": "sha256:examples-outer-evaluate-missing-provider-response-json-changeset-indeterminate"
+  }
+}

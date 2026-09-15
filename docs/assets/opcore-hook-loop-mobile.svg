@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="390" height="1080" viewBox="0 0 390 1080" role="img" aria-labelledby="hook-mobile-title hook-mobile-desc">
+  <title id="hook-mobile-title">Opcore installed post-write Verify and Project Sense loop for narrow screens</title>
+  <desc id="hook-mobile-desc">A coding agent writes source. The installed PostToolUse hook captures the changed Git snapshot and runs the post-edit Verify and Sense workflow. Findings return evidence for repair. Allowed partial Sense coverage produces one hint. Pre-commit and CI run separate final checks.</desc>
+  <defs>
+    <filter id="hook-mobile-shadow" x="-15%" y="-15%" width="130%" height="145%"><feDropShadow dx="0" dy="5" stdDeviation="7" flood-color="#171411" flood-opacity=".10"/></filter>
+    <style>
+      .bg{fill:#faf7f1}.card{fill:#fffdf9;stroke:#c9c1b6;stroke-width:1.5}.gate{fill:#fffdf9;stroke:#171411;stroke-width:2.5}.soft{fill:#f1ece4;stroke:#c9c1b6;stroke-width:1.2}.result{fill:#fffdf9;stroke:#171411;stroke-width:1.7}.accent{fill:#c2240c}.ink{fill:#171411}.muted{fill:#625b54}.connector{fill:none;stroke:#736b63;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.repair{fill:none;stroke:#736b63;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:5 6}.arrow{fill:#736b63}.eyebrow{font:700 10.5px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.65px}.heading{font:600 21px Georgia,"Times New Roman",serif}.card-title{font:700 18px ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}.gate-title{font:700 29px Georgia,"Times New Roman",serif}.copy{font:14px ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}.micro{font:600 11px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.1px}.route{font:700 10.5px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.2px}.activity{fill:#c2240c;animation:hook-mobile-activity 2.8s ease-in-out infinite}.activity.two{animation-delay:.25s}.activity.three{animation-delay:.5s}@keyframes hook-mobile-activity{0%,22%,100%{opacity:.18}45%{opacity:1}68%{opacity:.35}}@media(prefers-color-scheme:dark){.bg{fill:#14110e}.card,.result,.gate{fill:#1d1915;stroke:#faf7f1}.soft{fill:#29231e;stroke:#5e564e}.ink{fill:#faf7f1}.muted{fill:#c2b9af}.connector,.repair{stroke:#a79e94}.arrow{fill:#a79e94}#hook-mobile-shadow feDropShadow{flood-color:#000;flood-opacity:.32}}@media(prefers-reduced-motion:reduce){.activity{animation:none;opacity:.55}}
+    </style>
+  </defs>
+
+  <rect class="bg" width="390" height="1080" rx="18"/>
+  <text x="24" y="27" class="eyebrow muted">OPCORE ZERO · INSTALLED POST-WRITE CHECK</text>
+  <text x="24" y="59" class="heading ink">Verify and Project Sense stay</text>
+  <text x="24" y="84" class="heading ink">inside the agent's repair loop</text>
+  <rect x="24" y="98" width="54" height="3" rx="1.5" class="accent"/>
+
+  <rect x="32" y="122" width="326" height="88" rx="13" class="card"/>
+  <text x="54" y="150" class="eyebrow muted">01 · SOURCE WRITE</text>
+  <text x="54" y="180" class="card-title ink">Agent writes code</text>
+  <text x="54" y="200" class="copy muted">A file edit finishes.</text>
+
+  <path d="M195 218V224" class="connector"/>
+  <polygon points="189,224 195,236 201,224" class="arrow"/>
+
+  <rect x="32" y="238" width="326" height="96" rx="13" class="card"/>
+  <text x="54" y="267" class="eyebrow muted">02 · AUTOMATIC HOOK</text>
+  <text x="54" y="297" class="card-title ink">PostToolUse fires</text>
+  <text x="54" y="320" class="copy muted">The installer adds it by default.</text>
+
+  <path d="M195 342V354" class="connector"/>
+  <polygon points="189,354 195,366 201,354" class="arrow"/>
+
+  <rect x="32" y="368" width="326" height="96" rx="13" class="card"/>
+  <text x="54" y="397" class="eyebrow muted">03 · EXACT INPUT</text>
+  <text x="54" y="427" class="card-title ink">Changed Git snapshot</text>
+  <text x="54" y="450" class="copy muted">Baseline + candidate bytes.</text>
+
+  <path d="M195 472V492" class="connector"/>
+  <polygon points="189,492 195,504 201,492" class="arrow"/>
+
+  <g filter="url(#hook-mobile-shadow)"><rect x="32" y="506" width="326" height="232" rx="17" class="gate"/></g>
+  <text x="195" y="539" text-anchor="middle" class="eyebrow muted">04 · DETERMINISTIC GATE</text>
+  <text x="195" y="579" text-anchor="middle" class="gate-title ink">VERIFY + SENSE</text>
+  <rect x="53" y="604" width="132" height="34" rx="17" class="soft"/>
+  <rect x="205" y="604" width="132" height="34" rx="17" class="soft"/>
+  <rect x="53" y="650" width="132" height="34" rx="17" class="soft"/>
+  <rect x="205" y="650" width="132" height="34" rx="17" class="soft"/>
+  <text x="119" y="626" text-anchor="middle" class="micro ink">FILE RULES</text>
+  <text x="271" y="626" text-anchor="middle" class="micro ink">CODE SHAPE</text>
+  <text x="119" y="672" text-anchor="middle" class="micro ink">DEPENDENCIES</text>
+  <text x="271" y="672" text-anchor="middle" class="micro ink">DUPLICATION</text>
+  <text x="195" y="708" text-anchor="middle" class="micro muted">PINNED PARSERS · REQUEST-LOCAL GRAPH</text>
+  <text x="195" y="725" text-anchor="middle" class="micro muted">REPOSITORY CODE NEVER RUNS</text>
+  <circle cx="312" cy="536" r="3.5" class="activity"/>
+  <circle cx="324" cy="536" r="3.5" class="activity two"/>
+  <circle cx="336" cy="536" r="3.5" class="activity three"/>
+
+  <path d="M255 746V772H195V782" class="connector"/>
+  <polygon points="189,782 195,794 201,782" class="arrow"/>
+  <text x="266" y="766" class="route muted">NO FINDING</text>
+
+  <rect x="32" y="796" width="326" height="80" rx="13" class="result"/>
+  <circle cx="60" cy="836" r="8" class="accent"/>
+  <text x="82" y="821" class="eyebrow muted">NO FINDINGS · EXIT 0</text>
+  <text x="82" y="846" class="card-title ink">Continue working</text>
+  <text x="82" y="866" class="micro muted">partial evidence → one hint</text>
+
+  <path d="M135 746V762H18V952H18" class="connector"/>
+  <polygon points="18,946 30,952 18,958" class="arrow"/>
+  <text x="9" y="854" transform="rotate(-90 9 854)" text-anchor="middle" class="route muted">FINDING</text>
+
+  <rect x="32" y="898" width="326" height="108" rx="13" class="result"/>
+  <rect x="32" y="898" width="6" height="108" rx="3" class="accent"/>
+  <text x="57" y="928" class="eyebrow muted">REPAIR FEEDBACK · EXIT 2</text>
+  <text x="57" y="958" class="card-title ink">Repair with exact evidence</text>
+  <text x="57" y="983" class="micro muted">file : line · rule · message</text>
+
+  <path d="M366 952H378V166H372" class="repair"/>
+  <polygon points="372,160 360,166 372,172" class="arrow"/>
+  <text x="368" y="568" transform="rotate(-90 368 568)" text-anchor="middle" class="route muted">REPAIR SOURCE · THE HOOK CHECKS AGAIN</text>
+
+  <text x="195" y="1042" text-anchor="middle" class="copy ink">Findings stay in the loop</text>
+  <text x="195" y="1063" text-anchor="middle" class="copy ink">until the changed snapshot is clean.</text>
+</svg>

@@ -1,0 +1,24 @@
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "serverInfo": { "name": "acme-secrets", "version": "1.2.0", "fingerprint": "sha256:dd34" },
+    "capabilityFamilies": ["check"],
+    "roles": ["judge"],
+    "capabilities": {
+      "check": {
+        "capabilityVersion": "check/1.0",
+        "diagnosticSources": ["acme-secrets"],
+        "scopes": ["changeset", "workspace"],
+        "comparisons": ["introduced", "all"],
+        "partialResults": true,
+        "incremental": true,
+        "unsupportedReporting": "assessment-status",
+        "fixes": true
+      },
+      "watch": { "push": true }
+    },
+    "requestedPermissions": { "read": ["**/*"], "write": false, "network": true },
+    "provenance": { "publisher": "acme", "signature": "base64:…" }
+  }
+}

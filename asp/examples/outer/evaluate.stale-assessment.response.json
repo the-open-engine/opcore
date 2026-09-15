@@ -1,0 +1,101 @@
+{
+  "jsonrpc": "2.0",
+  "id": 4,
+  "validates": "outer-host.schema.json#/$defs/evaluateChangesetResult",
+  "result": {
+    "pass": false,
+    "decision": "indeterminate",
+    "callSite": "gate",
+    "findings": [],
+    "coverage": {
+      "exhaustive": false,
+      "required": [
+        "lattice"
+      ],
+      "enrolled": [
+        "lattice"
+      ],
+      "ran": [],
+      "degraded": [
+        {
+          "source": "lattice",
+          "reason": "stale",
+          "requirement": "lattice-alpha-check",
+          "detail": "Check assessment validAsOf baseline tree:def456, changeset digest, or read blob set did not equal the host request for tree:abc123."
+        }
+      ]
+    },
+    "validAsOf": {
+      "rev": "tree:abc123"
+    },
+    "assurance": {
+      "mode": "gated",
+      "transactionGuarantee": "none"
+    },
+    "policyDigest": "sha256:policyabc123",
+    "authorityEvidence": [],
+    "receipt": {
+      "receiptId": "evaluate.stale-assessment.response-0001",
+      "issuedAt": "2026-06-22T20:03:00Z",
+      "providerProvenance": [],
+      "policyDigest": "sha256:policyabc123",
+      "baseline": {
+        "rev": "tree:abc123"
+      },
+      "validAsOf": {
+        "rev": "tree:abc123"
+      },
+      "coverage": {
+        "exhaustive": false,
+        "required": [
+          "lattice"
+        ],
+        "enrolled": [
+          "lattice"
+        ],
+        "ran": [],
+        "degraded": [
+          {
+            "source": "lattice",
+            "reason": "stale",
+            "requirement": "lattice-alpha-check",
+            "detail": "Check assessment validAsOf baseline tree:def456, changeset digest, or read blob set did not equal the host request for tree:abc123."
+          }
+        ]
+      },
+      "authorityEvidence": [],
+      "assurance": {
+        "mode": "gated",
+        "transactionGuarantee": "none"
+      },
+      "kind": "evaluate",
+      "host": {
+        "name": "core-host",
+        "version": "0.1.0-private"
+      },
+      "capabilityFamily": "check",
+      "callSite": "gate",
+      "requestDigest": "sha256:examples-outer-evaluate-stale-assessment-response-json-request-indeterminate",
+      "changesetDigest": "sha256:examples-outer-evaluate-stale-assessment-response-json-changeset-indeterminate",
+      "providerIds": [],
+      "timing": {
+        "startedAt": "2026-06-23T00:00:00Z",
+        "endedAt": "2026-06-23T00:00:00Z",
+        "elapsedMs": 0
+      },
+      "failures": [
+        {
+          "source": "lattice",
+          "reason": "stale",
+          "requirement": "lattice-alpha-check",
+          "detail": "Check assessment validAsOf baseline tree:def456, changeset digest, or read blob set did not equal the host request for tree:abc123."
+        }
+      ],
+      "privateOnly": true,
+      "experimental": true,
+      "trustArtifact": false
+    },
+    "requestDigest": "sha256:examples-outer-evaluate-stale-assessment-response-json-request-indeterminate",
+    "changesetDigest": "sha256:examples-outer-evaluate-stale-assessment-response-json-changeset-indeterminate"
+  }
+}

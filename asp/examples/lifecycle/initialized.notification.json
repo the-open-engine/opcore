@@ -1,0 +1,9 @@
+{
+  "jsonrpc": "2.0",
+  "method": "initialized",
+  "params": {
+    "grantedPermissions": { "read": ["src/**", "!**/.env*"], "write": false, "network": false,
+      "resourceLimits": { "cpuPct": 50, "memoryMb": 512, "wallclockMs": 30000, "fd": 256 } },
+    "baseline": { "rev": "git:tree:9f3a1c", "dirty": "sha256:ab12", "stampedAt": "2026-06-16T10:00:00Z" }
+  }
+}

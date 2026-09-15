@@ -1,0 +1,65 @@
+{
+  "jsonrpc": "2.0",
+  "id": 7,
+  "result": {
+    "status": "complete",
+    "diagnostics": [
+      {
+        "code": "acme-secrets/aws-key",
+        "severity": "error",
+        "source": "acme-secrets",
+        "message": "hardcoded AWS access key",
+        "location": {
+          "path": "src/api.ts",
+          "range": {
+            "start": { "line": 41, "char": 2 },
+            "end": { "line": 41, "char": 40 }
+          }
+        },
+        "fingerprint": "sha256:7c5e",
+        "introduced": true,
+        "fix": {
+          "actRef": "acme-secrets/redact",
+          "args": { "blob": "blob:sha256:bb02" }
+        }
+      }
+    ],
+    "coverage": {
+      "requested": {
+        "scope": "changeset",
+        "diagnosticSources": ["acme-secrets"],
+        "rules": ["acme-secrets/aws-key"],
+        "comparison": "introduced"
+      },
+      "covered": {
+        "scope": "changeset",
+        "diagnosticSources": ["acme-secrets"],
+        "rules": ["acme-secrets/aws-key"],
+        "comparison": "introduced"
+      },
+      "degraded": [],
+      "unsupported": [],
+      "exhaustive": true,
+      "truncated": false
+    },
+    "validAsOf": {
+      "baseline": { "rev": "git:tree:9f3a1c", "stampedAt": "2026-06-16T10:00:00Z" },
+      "changesetDigest": "sha256:changeset-introduced-001",
+      "blobs": ["blob:sha256:aa01", "blob:sha256:bb02", "blob:sha256:cc03"]
+    },
+    "provider": {
+      "id": "acme-secrets",
+      "version": "1.2.0",
+      "configDigest": "sha256:cfg-acme-secrets",
+      "capabilityVersion": "check/1.0",
+      "buildDigest": "sha256:build-acme-secrets",
+      "capabilityFamily": "check"
+    },
+    "timing": { "elapsedMs": 914 },
+    "cache": {
+      "status": "miss",
+      "key": "sha256:cache-key-complete-001",
+      "digest": "sha256:cache-value-complete-001"
+    }
+  }
+}

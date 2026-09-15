@@ -1,0 +1,564 @@
+{
+  "target": {
+    "kind": "server",
+    "name": "core-check-provider",
+    "implementation": "packages/asp/bin/fake-check-provider",
+    "version": "0.1.0-private"
+  },
+  "profile": {
+    "id": "asp-core-v1.0",
+    "name": "ASP v1.0 Core Profile",
+    "scope": "private-core",
+    "coreOnly": true,
+    "nonCoreProfilesDeferred": [
+      "inspect",
+      "edit",
+      "apply",
+      "deployment",
+      "dogfood",
+      "ace",
+      "lattice-parity"
+    ]
+  },
+  "suite": {
+    "id": "asp-core-server-conformance-report",
+    "version": "2026-06-24",
+    "generatedAt": "2026-06-24T00:00:00Z",
+    "runner": "scripts/conformance/run-core-server-suite.ts",
+    "testCommand": "node --experimental-strip-types --test --test-reporter=tap tests/conformance/server/core-check-provider.test.ts"
+  },
+  "summary": {
+    "result": "pass",
+    "total": 12,
+    "passed": 12,
+    "failed": 0,
+    "skipped": 0,
+    "missingRequired": 0
+  },
+  "requirements": [
+    {
+      "id": "CORE-SERVER-INITIALIZE",
+      "title": "Check provider initialize returns Core identity and read-only request",
+      "required": true,
+      "status": "covered",
+      "assertionIds": [
+        "CORE-SERVER-INITIALIZE"
+      ],
+      "sourceSpecSections": [
+        "spec/11-core-profile.md:28",
+        "spec/08-conformance.md:54"
+      ],
+      "fixturePaths": [
+        "packages/asp/bin/fake-check-provider",
+        "packages/asp/src/fake-check-provider.ts"
+      ]
+    },
+    {
+      "id": "CORE-SERVER-UNSUPPORTED-PROTOCOL",
+      "title": "Unsupported initialize protocol version is refused before Core coverage",
+      "required": true,
+      "status": "covered",
+      "assertionIds": [
+        "CORE-SERVER-UNSUPPORTED-PROTOCOL"
+      ],
+      "sourceSpecSections": [
+        "spec/08-conformance.md:209",
+        "schemas/error.schema.json"
+      ],
+      "fixturePaths": [
+        "packages/asp/src/fake-check-provider.ts",
+        "tests/conformance/server/core-check-provider.test.ts",
+        "tests/conformance/server/helpers/core-server-harness.ts",
+        "schemas/error.schema.json"
+      ]
+    },
+    {
+      "id": "CORE-SERVER-PREINITIALIZED",
+      "title": "Check provider cannot satisfy Core before initialized",
+      "required": true,
+      "status": "covered",
+      "assertionIds": [
+        "CORE-SERVER-PREINITIALIZED"
+      ],
+      "sourceSpecSections": [
+        "spec/11-core-profile.md:55",
+        "spec/08-conformance.md:59"
+      ],
+      "fixturePaths": [
+        "tests/conformance/server/core-check-provider.test.ts"
+      ]
+    },
+    {
+      "id": "CORE-SERVER-INITIALIZED-GRANT",
+      "title": "Initialized grant is narrowed and read-only",
+      "required": true,
+      "status": "covered",
+      "assertionIds": [
+        "CORE-SERVER-INITIALIZED-GRANT"
+      ],
+      "sourceSpecSections": [
+        "spec/11-core-profile.md:55",
+        "spec/08-conformance.md:59"
+      ],
+      "fixturePaths": [
+        "tests/conformance/server/core-check-provider.test.ts"
+      ]
+    },
+    {
+      "id": "CORE-SERVER-CALLBACK-CONTENT",
+      "title": "Provider content access goes through host callbacks",
+      "required": true,
+      "status": "covered",
+      "assertionIds": [
+        "CORE-SERVER-CALLBACK-CONTENT"
+      ],
+      "sourceSpecSections": [
+        "spec/11-core-profile.md:56",
+        "spec/08-conformance.md:61"
+      ],
+      "fixturePaths": [
+        "schemas/host-callbacks.schema.json",
+        "tests/conformance/server/helpers/core-server-harness.ts"
+      ]
+    },
+    {
+      "id": "CORE-SERVER-GRANT-SCOPE",
+      "title": "Host callbacks enforce initialized read grant scope",
+      "required": true,
+      "status": "covered",
+      "assertionIds": [
+        "CORE-SERVER-GRANT-SCOPE"
+      ],
+      "sourceSpecSections": [
+        "spec/03-data-model.md:82",
+        "spec/11-core-profile.md:116",
+        "schemas/host-callbacks.schema.json"
+      ],
+      "fixturePaths": [
+        "packages/asp/src/workspace-store.ts",
+        "tests/conformance/server/helpers/core-server-harness.ts",
+        "tests/conformance/fixtures/server/core/workspace/secrets/out-of-grant.txt"
+      ]
+    },
+    {
+      "id": "CORE-SERVER-VALID-RESULTS",
+      "title": "Provider result statuses validate as Assessments",
+      "required": true,
+      "status": "covered",
+      "assertionIds": [
+        "CORE-SERVER-VALID-RESULTS"
+      ],
+      "sourceSpecSections": [
+        "spec/11-core-profile.md:57",
+        "spec/08-conformance.md:74"
+      ],
+      "fixturePaths": [
+        "schemas/check-assessment.schema.json",
+        "schemas/check-evaluate.schema.json"
+      ]
+    },
+    {
+      "id": "CORE-SERVER-TYPED-ERROR",
+      "title": "Provider inability to evaluate uses typed JSON-RPC failure",
+      "required": true,
+      "status": "covered",
+      "assertionIds": [
+        "CORE-SERVER-TYPED-ERROR"
+      ],
+      "sourceSpecSections": [
+        "spec/08-conformance.md:79",
+        "schemas/error.schema.json"
+      ],
+      "fixturePaths": [
+        "packages/asp/src/fake-check-provider.ts"
+      ]
+    },
+    {
+      "id": "CORE-SERVER-REJECTED-MALFORMED-HOST-FIELDS",
+      "title": "Malformed and host-owned provider fields are rejected",
+      "required": true,
+      "status": "covered",
+      "assertionIds": [
+        "CORE-SERVER-REJECTED-MALFORMED-HOST-FIELDS"
+      ],
+      "sourceSpecSections": [
+        "spec/11-core-profile.md:69",
+        "spec/08-conformance.md:81"
+      ],
+      "fixturePaths": [
+        "packages/asp/src/assessment-validator.ts",
+        "packages/asp/src/fake-check-provider.ts"
+      ]
+    },
+    {
+      "id": "CORE-SERVER-REJECTED-FRESHNESS",
+      "title": "Stale provider freshness is rejected",
+      "required": true,
+      "status": "covered",
+      "assertionIds": [
+        "CORE-SERVER-REJECTED-FRESHNESS"
+      ],
+      "sourceSpecSections": [
+        "spec/11-core-profile.md:66",
+        "spec/08-conformance.md:122"
+      ],
+      "fixturePaths": [
+        "packages/asp/src/assessment-validator.ts"
+      ]
+    },
+    {
+      "id": "CORE-SERVER-TIMEOUT",
+      "title": "Hung provider is failed evidence",
+      "required": true,
+      "status": "covered",
+      "assertionIds": [
+        "CORE-SERVER-TIMEOUT"
+      ],
+      "sourceSpecSections": [
+        "spec/11-core-profile.md:86",
+        "spec/08-conformance.md:140"
+      ],
+      "fixturePaths": [
+        "packages/asp/src/fake-check-provider.ts",
+        "tests/conformance/server/core-check-provider.test.ts"
+      ]
+    },
+    {
+      "id": "CORE-SERVER-BEHAVIOR-ONLY",
+      "title": "Provider output remains behavior evidence only",
+      "required": true,
+      "status": "covered",
+      "assertionIds": [
+        "CORE-SERVER-BEHAVIOR-ONLY"
+      ],
+      "sourceSpecSections": [
+        "spec/11-core-profile.md:72",
+        "spec/08-conformance.md:17"
+      ],
+      "fixturePaths": [
+        "tests/conformance/server/core-check-provider.test.ts"
+      ]
+    }
+  ],
+  "assertions": [
+    {
+      "id": "CORE-SERVER-INITIALIZE",
+      "requirementId": "CORE-SERVER-INITIALIZE",
+      "testName": "CORE-SERVER-INITIALIZE returns check identity, provenance, capability, and read-only permission request",
+      "result": "pass",
+      "required": true,
+      "fixturePaths": [
+        "packages/asp/bin/fake-check-provider",
+        "packages/asp/src/fake-check-provider.ts"
+      ]
+    },
+    {
+      "id": "CORE-SERVER-UNSUPPORTED-PROTOCOL",
+      "requirementId": "CORE-SERVER-UNSUPPORTED-PROTOCOL",
+      "testName": "CORE-SERVER-UNSUPPORTED-PROTOCOL rejects unsupported initialize before initialized coverage",
+      "result": "pass",
+      "required": true,
+      "fixturePaths": [
+        "packages/asp/src/fake-check-provider.ts",
+        "tests/conformance/server/core-check-provider.test.ts",
+        "tests/conformance/server/helpers/core-server-harness.ts",
+        "schemas/error.schema.json"
+      ]
+    },
+    {
+      "id": "CORE-SERVER-PREINITIALIZED",
+      "requirementId": "CORE-SERVER-PREINITIALIZED",
+      "testName": "CORE-SERVER-PREINITIALIZED rejects check/evaluate before initialized with typed provider-not-initialized error",
+      "result": "pass",
+      "required": true,
+      "fixturePaths": [
+        "tests/conformance/server/core-check-provider.test.ts"
+      ]
+    },
+    {
+      "id": "CORE-SERVER-INITIALIZED-GRANT",
+      "requirementId": "CORE-SERVER-INITIALIZED-GRANT",
+      "testName": "CORE-SERVER-INITIALIZED-GRANT records narrowed read-only initialized grant without write or network authority",
+      "result": "pass",
+      "required": true,
+      "fixturePaths": [
+        "tests/conformance/server/core-check-provider.test.ts"
+      ]
+    },
+    {
+      "id": "CORE-SERVER-CALLBACK-CONTENT",
+      "requirementId": "CORE-SERVER-CALLBACK-CONTENT",
+      "testName": "CORE-SERVER-CALLBACK-CONTENT reads baseline and changeset blobs only through host callbacks",
+      "result": "pass",
+      "required": true,
+      "fixturePaths": [
+        "schemas/host-callbacks.schema.json",
+        "tests/conformance/server/helpers/core-server-harness.ts"
+      ]
+    },
+    {
+      "id": "CORE-SERVER-GRANT-SCOPE",
+      "requirementId": "CORE-SERVER-GRANT-SCOPE",
+      "testName": "CORE-SERVER-GRANT-SCOPE filters callback tree and blob access to the initialized read grant",
+      "result": "pass",
+      "required": true,
+      "fixturePaths": [
+        "packages/asp/src/workspace-store.ts",
+        "tests/conformance/server/helpers/core-server-harness.ts",
+        "tests/conformance/fixtures/server/core/workspace/secrets/out-of-grant.txt"
+      ]
+    },
+    {
+      "id": "CORE-SERVER-VALID-RESULTS",
+      "requirementId": "CORE-SERVER-VALID-RESULTS",
+      "testName": "CORE-SERVER-VALID-RESULTS returns valid complete, diagnostic, incomplete, unsupported, and cancelled Assessments",
+      "result": "pass",
+      "required": true,
+      "fixturePaths": [
+        "schemas/check-assessment.schema.json",
+        "schemas/check-evaluate.schema.json"
+      ]
+    },
+    {
+      "id": "CORE-SERVER-TYPED-ERROR",
+      "requirementId": "CORE-SERVER-TYPED-ERROR",
+      "testName": "CORE-SERVER-TYPED-ERROR reports inability to evaluate on the JSON-RPC error channel with failClass",
+      "result": "pass",
+      "required": true,
+      "fixturePaths": [
+        "packages/asp/src/fake-check-provider.ts"
+      ]
+    },
+    {
+      "id": "CORE-SERVER-REJECTED-MALFORMED-HOST-FIELDS",
+      "requirementId": "CORE-SERVER-REJECTED-MALFORMED-HOST-FIELDS",
+      "testName": "CORE-SERVER-REJECTED-MALFORMED-HOST-FIELDS rejects malformed and host-owned provider result fields",
+      "result": "pass",
+      "required": true,
+      "fixturePaths": [
+        "packages/asp/src/assessment-validator.ts",
+        "packages/asp/src/fake-check-provider.ts"
+      ]
+    },
+    {
+      "id": "CORE-SERVER-REJECTED-FRESHNESS",
+      "requirementId": "CORE-SERVER-REJECTED-FRESHNESS",
+      "testName": "CORE-SERVER-REJECTED-FRESHNESS rejects stale baseline or changeset freshness",
+      "result": "pass",
+      "required": true,
+      "fixturePaths": [
+        "packages/asp/src/assessment-validator.ts"
+      ]
+    },
+    {
+      "id": "CORE-SERVER-TIMEOUT",
+      "requirementId": "CORE-SERVER-TIMEOUT",
+      "testName": "CORE-SERVER-TIMEOUT reports a hung provider as failed server evidence, not pass",
+      "result": "pass",
+      "required": true,
+      "fixturePaths": [
+        "packages/asp/src/fake-check-provider.ts",
+        "tests/conformance/server/core-check-provider.test.ts"
+      ]
+    },
+    {
+      "id": "CORE-SERVER-BEHAVIOR-ONLY",
+      "requirementId": "CORE-SERVER-BEHAVIOR-ONLY",
+      "testName": "CORE-SERVER-BEHAVIOR-ONLY accepts provider outputs only as Assessments, never host Decisions or authority grants",
+      "result": "pass",
+      "required": true,
+      "fixturePaths": [
+        "tests/conformance/server/core-check-provider.test.ts"
+      ]
+    }
+  ],
+  "coverage": {
+    "required": [
+      "CORE-SERVER-INITIALIZE",
+      "CORE-SERVER-UNSUPPORTED-PROTOCOL",
+      "CORE-SERVER-PREINITIALIZED",
+      "CORE-SERVER-INITIALIZED-GRANT",
+      "CORE-SERVER-CALLBACK-CONTENT",
+      "CORE-SERVER-GRANT-SCOPE",
+      "CORE-SERVER-VALID-RESULTS",
+      "CORE-SERVER-TYPED-ERROR",
+      "CORE-SERVER-REJECTED-MALFORMED-HOST-FIELDS",
+      "CORE-SERVER-REJECTED-FRESHNESS",
+      "CORE-SERVER-TIMEOUT",
+      "CORE-SERVER-BEHAVIOR-ONLY"
+    ],
+    "ran": [
+      "CORE-SERVER-INITIALIZE",
+      "CORE-SERVER-UNSUPPORTED-PROTOCOL",
+      "CORE-SERVER-PREINITIALIZED",
+      "CORE-SERVER-INITIALIZED-GRANT",
+      "CORE-SERVER-CALLBACK-CONTENT",
+      "CORE-SERVER-GRANT-SCOPE",
+      "CORE-SERVER-VALID-RESULTS",
+      "CORE-SERVER-TYPED-ERROR",
+      "CORE-SERVER-REJECTED-MALFORMED-HOST-FIELDS",
+      "CORE-SERVER-REJECTED-FRESHNESS",
+      "CORE-SERVER-TIMEOUT",
+      "CORE-SERVER-BEHAVIOR-ONLY"
+    ],
+    "passed": [
+      "CORE-SERVER-INITIALIZE",
+      "CORE-SERVER-UNSUPPORTED-PROTOCOL",
+      "CORE-SERVER-PREINITIALIZED",
+      "CORE-SERVER-INITIALIZED-GRANT",
+      "CORE-SERVER-CALLBACK-CONTENT",
+      "CORE-SERVER-GRANT-SCOPE",
+      "CORE-SERVER-VALID-RESULTS",
+      "CORE-SERVER-TYPED-ERROR",
+      "CORE-SERVER-REJECTED-MALFORMED-HOST-FIELDS",
+      "CORE-SERVER-REJECTED-FRESHNESS",
+      "CORE-SERVER-TIMEOUT",
+      "CORE-SERVER-BEHAVIOR-ONLY"
+    ],
+    "failed": [],
+    "skipped": [],
+    "missing": [],
+    "degraded": []
+  },
+  "artifacts": [
+    {
+      "path": "docs/conformance/README.md",
+      "kind": "doc",
+      "sha256": "sha256:1c5b7d308b2e94b1c9c0a4bd1d26d07bc417826a38597361b69bd503c976b9d9"
+    },
+    {
+      "path": "docs/conformance/requirements.md",
+      "kind": "doc",
+      "sha256": "sha256:35b3648de88807147c5a111f87e14fb516e2fee1b0673da55d68863a4f1a8872"
+    },
+    {
+      "path": "docs/conformance/traceability.md",
+      "kind": "doc",
+      "sha256": "sha256:35c8fb3fb6ce44247b6587c3c734dbac42817d896f4dc415e3fa12b12255fae5"
+    },
+    {
+      "path": "scripts/conformance/core-server-report-catalog.ts",
+      "kind": "script",
+      "sha256": "sha256:961106bec7a18723168843157126ff088068a2405ab7f8157619024b1d9bbdd3"
+    },
+    {
+      "path": "scripts/conformance/core-report-utils.ts",
+      "kind": "script",
+      "sha256": "sha256:41f7cbf06d507caa699999a47aacbba0cec12145cc083978b934d30b2148d426"
+    },
+    {
+      "path": "scripts/conformance/run-core-server-suite.ts",
+      "kind": "script",
+      "sha256": "sha256:1723487bf920bbf13fa8c679d4b4d1b3cd943b36643a30b406e0ec036f597093"
+    },
+    {
+      "path": "tests/conformance/server/core-check-provider.test.ts",
+      "kind": "test",
+      "sha256": "sha256:ef355df9e0c87f195857aafbf8fa4b4ef192ae576ffd35684b65e6fc06e35dc2"
+    },
+    {
+      "path": "tests/conformance/server/core-server-report.test.ts",
+      "kind": "test",
+      "sha256": "sha256:5bdec51ca919ca5942b46d779bda9c125deed45e3faaf1e35357a0dce2129306"
+    },
+    {
+      "path": "tests/conformance/server/helpers/core-server-harness.ts",
+      "kind": "test",
+      "sha256": "sha256:01810fc1675d6590e4e3ccf8cd917cfd734c7a37bc5eb9f8073fc38b6c590f3c"
+    },
+    {
+      "path": "tests/conformance/fixtures/server/core/workspace/src/core.ts",
+      "kind": "test",
+      "sha256": "sha256:6c6b8516216d15a602d9da602bc10816c147fee39d7732bd2f19e7de481fa8eb"
+    },
+    {
+      "path": "tests/conformance/fixtures/server/core/workspace/README.md",
+      "kind": "test",
+      "sha256": "sha256:bd9bd88185a6cd07b6ced5856481ef40b0e76792078f14105f3dda052f7e3f13"
+    },
+    {
+      "path": "tests/conformance/fixtures/server/core/workspace/secrets/out-of-grant.txt",
+      "kind": "test",
+      "sha256": "sha256:25c532f625c701217e99eda7a33ac962048ad2f55ff76cb47689259cd37c51e2"
+    },
+    {
+      "path": "packages/asp/bin/fake-check-provider",
+      "kind": "artifact",
+      "sha256": "sha256:41d33958091ae4514432636646d7514962a0e306734f42c511073b590f2b8a6f"
+    },
+    {
+      "path": "packages/asp/src/fake-check-provider.ts",
+      "kind": "artifact",
+      "sha256": "sha256:db37241c51934ec2b7963a8d1f98f49cdbb5377cfc930502b708998c85ad80df"
+    },
+    {
+      "path": "packages/asp/src/json-rpc-peer.ts",
+      "kind": "artifact",
+      "sha256": "sha256:e6af1c76899575262fd39fcc891376901e0834385d0def9b2992aa4492f4a65c"
+    },
+    {
+      "path": "packages/asp/src/workspace-store.ts",
+      "kind": "artifact",
+      "sha256": "sha256:13f82363935c046816181c6fd9bc9c70e6d5fb1959cda1519fed0597f2bd64cb"
+    },
+    {
+      "path": "packages/asp/src/core-constants.ts",
+      "kind": "artifact",
+      "sha256": "sha256:3b575812ba15f8e610ae6d396fa69782423a1cb69df7c54872768478a4ebcf2e"
+    },
+    {
+      "path": "packages/asp/src/types.ts",
+      "kind": "artifact",
+      "sha256": "sha256:7bd0ef73f1a403cbc61f93b8198c76b84426d409e753a58de7d1a59d8f6280fb"
+    },
+    {
+      "path": "spec/08-conformance.md",
+      "kind": "doc",
+      "sha256": "sha256:f28188f6aeb86b04361f6ab66f40dfb2541ecfb35786103fa50f12070113cbd5"
+    },
+    {
+      "path": "spec/11-core-profile.md",
+      "kind": "doc",
+      "sha256": "sha256:13c230599879d12d7e25d749b61dd4c59ca25909796493a851208663163a28cd"
+    },
+    {
+      "path": "schemas/check-assessment.schema.json",
+      "kind": "schema",
+      "sha256": "sha256:ebafb336560c210bc02a8942bad2c8bec4807324c1ba741d427eada918c70e47"
+    },
+    {
+      "path": "schemas/check-evaluate.schema.json",
+      "kind": "schema",
+      "sha256": "sha256:8697732ae70f956897cf78e14207ba12d94b28405aa66f3d7302dd5ec5350403"
+    },
+    {
+      "path": "schemas/error.schema.json",
+      "kind": "schema",
+      "sha256": "sha256:ff902113b8ff6dab3a4358078da2571058036dfac90a73dac894457910d69fb1"
+    },
+    {
+      "path": "schemas/host-callbacks.schema.json",
+      "kind": "schema",
+      "sha256": "sha256:1b5c6bfb8fce1fea7bdd9ecdc0b420c182ca51ff57991440ef44443cad5de336"
+    },
+    {
+      "path": "schemas/initialize.schema.json",
+      "kind": "schema",
+      "sha256": "sha256:4e0a49569e41366191044ca0f1721d8e44cda87594d56d7fbbb715aa7d81a106"
+    }
+  ],
+  "claims": {
+    "behaviorEvidenceOnly": true,
+    "privateOnly": true,
+    "trustClaim": false,
+    "authorityClaim": false,
+    "certificationClaim": false,
+    "registryInclusionClaim": false,
+    "publicStandardClaim": false,
+    "providerApprovalClaim": false,
+    "stablePublicApiClaim": false,
+    "notes": [
+      "Private Core check-provider server behavior evidence only."
+    ]
+  }
+}

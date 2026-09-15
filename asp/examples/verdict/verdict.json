@@ -1,0 +1,185 @@
+{
+  "pass": false,
+  "decision": "deny",
+  "callSite": "gate",
+  "findings": [
+    {
+      "diagnostic": {
+        "code": "acme-secrets/aws-key",
+        "severity": "error",
+        "source": "acme-secrets",
+        "message": "hardcoded AWS access key",
+        "location": {
+          "path": "src/api.ts",
+          "range": {
+            "start": {
+              "line": 41,
+              "char": 2
+            },
+            "end": {
+              "line": 41,
+              "char": 40
+            }
+          }
+        },
+        "fingerprint": "sha256:7c5e",
+        "introduced": true,
+        "help": "Load the key from an env var at runtime."
+      },
+      "authority": {
+        "identity": "acme",
+        "integrity": "sha256:dd34000000000000000000000000000000000000000000000000000000000000",
+        "conformance": "asp-check-core/1.0",
+        "isolation": "gated",
+        "authority": {
+          "granted": true,
+          "requirement": "secrets-gate",
+          "policyDigest": "sha256:policy9f3a1c"
+        }
+      },
+      "disposition": "gating",
+      "nextStep": "Load the key from an env var at runtime.",
+      "nextStepOrigin": "server"
+    }
+  ],
+  "coverage": {
+    "exhaustive": false,
+    "required": [
+      "acme-secrets",
+      "covibes-lint"
+    ],
+    "enrolled": [
+      "acme-secrets",
+      "covibes-lint"
+    ],
+    "ran": [
+      "acme-secrets",
+      "covibes-lint"
+    ],
+    "degraded": [
+      {
+        "source": "slow-typecheck",
+        "reason": "unavailable",
+        "detail": "index not warm; timed out at 2s"
+      }
+    ]
+  },
+  "policyDigest": "sha256:policy9f3a1c",
+  "authorityEvidence": [
+    {
+      "identity": "acme",
+      "integrity": "sha256:dd34000000000000000000000000000000000000000000000000000000000000",
+      "conformance": "asp-check-core/1.0",
+      "isolation": "gated",
+      "authority": {
+        "granted": true,
+        "requirement": "secrets-gate",
+        "policyDigest": "sha256:policy9f3a1c"
+      }
+    }
+  ],
+  "validAsOf": {
+    "rev": "git:tree:9f3a1c",
+    "blobs": [
+      "blob:sha256:bb02"
+    ]
+  },
+  "assurance": {
+    "mode": "gated",
+    "transactionGuarantee": "none"
+  },
+  "receipt": {
+    "receiptId": "verdict-deny-0001",
+    "issuedAt": "2026-06-22T20:00:00Z",
+    "providerProvenance": [
+      {
+        "provider": "acme-secrets",
+        "capability": "check",
+        "identity": "acme",
+        "integrity": "sha256:dd34000000000000000000000000000000000000000000000000000000000000",
+        "conformance": "asp-check-core/1.0"
+      }
+    ],
+    "policyDigest": "sha256:policy9f3a1c",
+    "baseline": {
+      "rev": "git:tree:9f3a1c",
+      "stampedAt": "2026-06-22T19:59:00Z"
+    },
+    "validAsOf": {
+      "rev": "git:tree:9f3a1c",
+      "blobs": [
+        "blob:sha256:bb02"
+      ]
+    },
+    "coverage": {
+      "exhaustive": false,
+      "required": [
+        "acme-secrets",
+        "covibes-lint"
+      ],
+      "enrolled": [
+        "acme-secrets",
+        "covibes-lint"
+      ],
+      "ran": [
+        "acme-secrets",
+        "covibes-lint"
+      ],
+      "degraded": [
+        {
+          "source": "slow-typecheck",
+          "reason": "unavailable",
+          "detail": "index not warm; timed out at 2s"
+        }
+      ]
+    },
+    "authorityEvidence": [
+      {
+        "identity": "acme",
+        "integrity": "sha256:dd34000000000000000000000000000000000000000000000000000000000000",
+        "conformance": "asp-check-core/1.0",
+        "isolation": "gated",
+        "authority": {
+          "granted": true,
+          "requirement": "secrets-gate",
+          "policyDigest": "sha256:policy9f3a1c"
+        }
+      }
+    ],
+    "assurance": {
+      "mode": "gated",
+      "transactionGuarantee": "none"
+    },
+    "kind": "evaluate",
+    "host": {
+      "name": "core-host",
+      "version": "0.1.0-private"
+    },
+    "capabilityFamily": "check",
+    "callSite": "gate",
+    "requestDigest": "sha256:examples-verdict-verdict-json-request-deny",
+    "changesetDigest": "sha256:examples-verdict-verdict-json-changeset-deny",
+    "providerIds": [
+      "acme",
+      "acme-secrets",
+      "covibes-lint"
+    ],
+    "timing": {
+      "startedAt": "2026-06-23T00:00:00Z",
+      "endedAt": "2026-06-23T00:00:00Z",
+      "elapsedMs": 0
+    },
+    "failures": [
+      {
+        "source": "slow-typecheck",
+        "reason": "unavailable",
+        "detail": "index not warm; timed out at 2s"
+      }
+    ],
+    "privateOnly": true,
+    "experimental": true,
+    "trustArtifact": false
+  },
+  "requestDigest": "sha256:examples-verdict-verdict-json-request-deny",
+  "changesetDigest": "sha256:examples-verdict-verdict-json-changeset-deny"
+}

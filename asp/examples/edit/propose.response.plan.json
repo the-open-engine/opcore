@@ -1,0 +1,106 @@
+{
+  "jsonrpc": "2.0",
+  "id": 1101,
+  "result": {
+    "proposal": {
+      "proposalId": "proposal:rename-api-fetch",
+      "provider": {
+        "id": "lattice",
+        "version": "0.1.0",
+        "capabilityFamily": "edit",
+        "capabilityVersion": "edit/1.0",
+        "configDigest": "sha256:editcfg001"
+      },
+      "status": "complete",
+      "baseline": {
+        "rev": "git:tree:9f3a1c",
+        "stampedAt": "2026-06-23T12:00:00Z"
+      },
+      "validAsOf": {
+        "baseline": {
+          "rev": "git:tree:9f3a1c",
+          "stampedAt": "2026-06-23T12:00:00Z"
+        },
+        "blobs": [
+          "blob:sha256:aa01",
+          "blob:sha256:f201"
+        ]
+      },
+      "touchedResources": [
+        {
+          "path": "src/api.ts",
+          "kind": "modify",
+          "precondition": {
+            "expectedDigest": "blob:sha256:aa01"
+          }
+        },
+        {
+          "path": "src/server.ts",
+          "kind": "modify",
+          "precondition": {
+            "expectedDigest": "blob:sha256:f201"
+          }
+        }
+      ],
+      "workspaceEdit": {
+        "baseline": {
+          "rev": "git:tree:9f3a1c",
+          "stampedAt": "2026-06-23T12:00:00Z"
+        },
+        "documentChanges": [
+          {
+            "path": "src/api.ts",
+            "kind": "modify",
+            "precondition": {
+              "expectedDigest": "blob:sha256:aa01"
+            },
+            "edits": [
+              {
+                "range": {
+                  "start": {
+                    "line": 12,
+                    "char": 13
+                  },
+                  "end": {
+                    "line": 12,
+                    "char": 18
+                  }
+                },
+                "rangeBasis": "blob:sha256:aa01",
+                "coordinateSystem": "utf16",
+                "newText": "request"
+              }
+            ],
+            "annotations": [
+              {
+                "message": "Renamed Api.fetch declaration.",
+                "data": {
+                  "kind": "declaration"
+                }
+              }
+            ]
+          },
+          {
+            "path": "src/server.ts",
+            "kind": "modify",
+            "precondition": {
+              "expectedDigest": "blob:sha256:f201"
+            },
+            "after": "blob:sha256:9c44"
+          }
+        ]
+      },
+      "annotations": [
+        {
+          "path": "src/api.ts",
+          "message": "Declaration and call sites were included.",
+          "data": {
+            "referencesUpdated": 2
+          }
+        }
+      ],
+      "confidence": 0.94,
+      "rationale": "Resolved the symbol and its direct references before building the proposal."
+    }
+  }
+}
