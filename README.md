@@ -2,6 +2,16 @@
 
 Opcore gives coding agents specific feedback while they edit source. Its installed hook checks the current Git changes and returns the file, location, rule, and evidence when something needs repair.
 
+> [!IMPORTANT]
+> **Opcore 0.3.0 is a full rewrite.** We narrowed the old graph, search, and editing toolkit to focus on dependable verification during agent work:
+>
+> - One Rust engine reuses parsed source facts, removing graph databases and repeated snapshot builds from routine checks.
+> - Feedback follows completed edits, including supported shell and MCP calls, so coverage depends less on tool-specific patch formats.
+> - Rules use explicit evidence and report coverage gaps; documentation ownership no longer depends on filename mentions.
+> - Automatic checks never execute project code. Compiler checks are opt-in for pre-commit and CI.
+>
+> The old `graph`, `inspect`, and `edit` commands are retired. Install `@the-open-engine-company/opcore` and follow the new setup instructions.
+
 ![Opcore post-write loop: an agent edits code, an automatic check finds an issue, and findings return to the agent for repair](docs/assets/opcore-hook-loop.svg)
 
 [Open the phone-sized hook diagram](docs/assets/opcore-hook-loop-mobile.svg)

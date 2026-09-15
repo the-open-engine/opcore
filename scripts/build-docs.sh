@@ -15,5 +15,5 @@ site_dir=${OPCORE_DOCS_DIR:-"$repo_root/target/site"}
 RUSTDOCFLAGS="${RUSTDOCFLAGS:-} -D warnings -D missing_docs" \
   cargo doc --locked --lib --no-deps
 cargo build --locked --example cli-reference
-python3 "$repo_root/scripts/build-docs.py" \
+python3 -B "$repo_root/scripts/build-docs.py" \
   "$target_dir/doc" "$target_dir/debug/examples/cli-reference" "$site_dir"
