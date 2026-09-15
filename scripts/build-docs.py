@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Assemble rustdoc API, source-derived CLI help, and guides into a portable static site."""
 
-import html
 import json
 from html.parser import HTMLParser
 import os
@@ -13,31 +12,10 @@ import sys
 import tempfile
 from urllib.parse import quote, unquote, urlsplit
 
+from docs_theme import ASSETS, render_guide, style_api
+
 
 ROOT = Path(__file__).resolve().parent.parent
-NAVIGATION = (
-    ("Overview", "index.html"),
-    ("Get started", "docs/getting-started.html"),
-    ("Configuration", "docs/configuration.html"),
-    ("Providers", "docs/providers.html"),
-    ("CLI reference", "cli.html"),
-    ("API reference", "api/opcore/api/index.html"),
-    ("Provider reference", "api/opcore/api/enum.ProviderProfile.html"),
-    ("ASP specification", "asp/README.html"),
-)
-STYLES = """
-body { color:#20252b; background:#fff; max-width:76rem; margin:auto; padding:1.5rem;
-       font:17px/1.65 system-ui,sans-serif; overflow-wrap:anywhere; }
-a { color:#1457a3; text-underline-offset:3px; }
-nav { display:flex; flex-wrap:wrap; gap:.35rem 1rem; padding:.75rem 0; border-bottom:1px solid #d8dfe7; }
-nav a { font-size:.9rem; } h1,h2,h3 { line-height:1.25; margin-top:2rem; }
-pre { overflow:auto; padding:1rem; background:#f4f6f8; border:1px solid #d8dfe7; border-radius:6px; }
-code { font-size:.9em; } table { display:block; overflow:auto; border-collapse:collapse; }
-th,td { border:1px solid #d8dfe7; padding:.5rem .75rem; text-align:left; }
-img,svg { max-width:100%; height:auto; } blockquote { border-left:3px solid #ccd5df; margin-left:0; padding-left:1rem; }
-.toc { font-size:.9rem; } details { margin:1rem 0; } summary { cursor:pointer; }
-@media(max-width:600px) { body { padding:1rem; font-size:16px; } }
-"""
 
 
 def rewrite_links(markdown, relative, pages):
@@ -96,16 +74,8 @@ def render_markdown(markdown, destination, site, temporary, notice=""):
         heading, _, body = markdown.partition("\n")
         markdown = heading + "\n\n> " + notice + "\n" + body
     source.write_text(markdown)
-    navigation = temporary / "navigation.html"
-    links = [
-        f'<a href="{html.escape(os.path.relpath(site / path, destination.parent))}">{label}</a>'
-        for label, path in NAVIGATION
-    ]
-    navigation.write_text('<nav aria-label="Documentation">' + "\n".join(links) + "</nav>")
     subprocess.run(
-        ["rustdoc", "--edition", "2024", str(source), "-o", str(temporary / "rendered"),
-         "--markdown-css", os.path.relpath(site / "site.css", destination.parent),
-         "--html-before-content", str(navigation)],
+        ["rustdoc", "--edition", "2024", str(source), "-o", str(temporary / "rendered")],
         check=True,
     )
     rendered = (temporary / "rendered/page.html").read_text()
@@ -113,11 +83,11 @@ def render_markdown(markdown, destination, site, temporary, notice=""):
     # and anchors while presenting the author's unnumbered headings.
     rendered = re.sub(r'(<a class="doc-anchor"[^>]*>§</a>)\d+(?:\.\d+)* ', r'\1', rendered)
     rendered = re.sub(r'(<a href="#[^"]*" title="[^"]*">)\d+(?:\.\d+)* ', r'\1', rendered)
-    destination.write_text(rendered)
+    destination.write_text(render_guide(rendered, destination, site))
 
 
 def prepare_api(api, site):
-    """Add guide navigation and qualify inherited tracing documentation links."""
+    """Apply the shared theme and qualify inherited tracing documentation links."""
     lock = (ROOT / "Cargo.lock").read_text()
     version = re.search(r'name = "tracing"\nversion = "([^"]+)"', lock).group(1)
     root = f"https://docs.rs/tracing/{version}/tracing/"
@@ -125,17 +95,11 @@ def prepare_api(api, site):
         "dispatcher#setting-the-default-subscriber": root + "dispatcher/index.html#setting-the-default-subscriber",
         "super::Subscriber": root + "trait.Subscriber.html",
     }
-    for page in (api / "opcore").rglob("*.html"):
+    for page in api.rglob("*.html"):
         original = page.read_text()
-        updated = original
+        updated = style_api(page, site)
         for relative, absolute in replacements.items():
             updated = updated.replace(f'href="{relative}"', f'href="{absolute}"')
-        guide = html.escape(os.path.relpath(site / "index.html", page.parent))
-        updated = updated.replace(
-            '<div class="sidebar-crate">',
-            f'<div class="sidebar-crate"><p><a href="{guide}">Opcore guide</a></p>',
-            1,
-        )
         if original != updated:
             page.write_text(updated)
 
@@ -245,7 +209,7 @@ def build(api, reference, output):
         sources += sorted((ROOT / "docs").rglob("*.md")) + sorted((ROOT / "asp").rglob("*.md"))
         pages = {source.resolve(): source.relative_to(ROOT).with_suffix(".html") for source in sources}
         pages[(ROOT / "README.md").resolve()] = Path("index.html")
-        (site / "site.css").write_text(STYLES)
+        shutil.copytree(ASSETS, site / "assets")
         for source in sources:
             render_page(source, site / pages[source.resolve()], site, pages, temporary)
         cli = subprocess.check_output([str(reference)], text=True)
