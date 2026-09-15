@@ -1,0 +1,221 @@
+{
+  "jsonrpc": "2.0",
+  "id": 2102,
+  "validates": "outer-host.schema.json#/$defs/applyProposalResult",
+  "result": {
+    "applied": true,
+    "proposalId": "proposal:host-edit-core",
+    "baselineBefore": {
+      "rev": "tree:abc123",
+      "stampedAt": "2026-06-23T12:00:00Z"
+    },
+    "baselineAfter": {
+      "rev": "tree:def456",
+      "stampedAt": "2026-06-23T12:02:00Z"
+    },
+    "assurance": {
+      "mode": "gated",
+      "transactionGuarantee": "none"
+    },
+    "decision": {
+      "pass": true,
+      "decision": "allow",
+      "callSite": "gate",
+      "requestDigest": "sha256:apply-validation-request",
+      "changesetDigest": "sha256:apply-validation-changeset",
+      "findings": [],
+      "coverage": {
+        "exhaustive": true,
+        "required": [
+          "validator/core-required-check"
+        ],
+        "enrolled": [
+          "validator/core-required-check"
+        ],
+        "ran": [
+          "validator/core-required-check"
+        ],
+        "degraded": []
+      },
+      "policyDigest": "sha256:policyabc123",
+      "authorityEvidence": [
+        {
+          "identity": "validator",
+          "integrity": "sha256:validator",
+          "conformance": "asp-core-v1.0-private",
+          "isolation": "gated",
+          "authority": {
+            "granted": true,
+            "requirement": "validator/core-required-check",
+            "callSite": "gate",
+            "policyDigest": "sha256:policyabc123"
+          }
+        }
+      ],
+      "validAsOf": {
+        "rev": "tree:abc123",
+        "blobs": [
+          "blob:sha256:aa01",
+          "blob:sha256:bb02"
+        ]
+      },
+      "assurance": {
+        "mode": "gated",
+        "transactionGuarantee": "none"
+      },
+      "receipt": {
+        "receiptId": "core-evaluate-0001",
+        "issuedAt": "2026-06-23T12:01:30Z",
+        "kind": "evaluate",
+        "host": {
+          "name": "core-host",
+          "version": "0.1.0-private"
+        },
+        "capabilityFamily": "check",
+        "callSite": "gate",
+        "requestDigest": "sha256:apply-validation-request",
+        "changesetDigest": "sha256:apply-validation-changeset",
+        "providerIds": [
+          "validator"
+        ],
+        "providerProvenance": [
+          {
+            "provider": "validator",
+            "capability": "check",
+            "identity": "validator",
+            "integrity": "sha256:validator",
+            "conformance": "asp-core-v1.0-private"
+          }
+        ],
+        "policyDigest": "sha256:policyabc123",
+        "baseline": {
+          "rev": "tree:abc123",
+          "stampedAt": "2026-06-23T12:00:00Z"
+        },
+        "validAsOf": {
+          "rev": "tree:abc123",
+          "blobs": [
+            "blob:sha256:aa01",
+            "blob:sha256:bb02"
+          ]
+        },
+        "coverage": {
+          "exhaustive": true,
+          "required": [
+            "validator/core-required-check"
+          ],
+          "enrolled": [
+            "validator/core-required-check"
+          ],
+          "ran": [
+            "validator/core-required-check"
+          ],
+          "degraded": []
+        },
+        "authorityEvidence": [
+          {
+            "identity": "validator",
+            "integrity": "sha256:validator",
+            "conformance": "asp-core-v1.0-private",
+            "isolation": "gated",
+            "authority": {
+              "granted": true,
+              "requirement": "validator/core-required-check",
+              "callSite": "gate",
+              "policyDigest": "sha256:policyabc123"
+            }
+          }
+        ],
+        "assurance": {
+          "mode": "gated",
+          "transactionGuarantee": "none"
+        },
+        "timing": {
+          "startedAt": "2026-06-23T12:01:00Z",
+          "endedAt": "2026-06-23T12:01:30Z",
+          "elapsedMs": 30
+        },
+        "failures": [],
+        "privateOnly": true,
+        "experimental": true,
+        "trustArtifact": false
+      }
+    },
+    "receipt": {
+      "receiptId": "core-apply-attempt-0001",
+      "issuedAt": "2026-06-23T12:02:00Z",
+      "kind": "apply-attempt",
+      "host": {
+        "name": "core-host",
+        "version": "0.1.0-private"
+      },
+      "capabilityFamily": "edit",
+      "callSite": "interactive",
+      "requestDigest": "sha256:apply-proposal-request",
+      "proposalId": "proposal:host-edit-core",
+      "providerIds": [
+        "lattice"
+      ],
+      "providerProvenance": [
+        {
+          "provider": "lattice",
+          "capability": "edit",
+          "identity": "lattice",
+          "integrity": "sha256:lattice",
+          "conformance": "asp-edit/1.0"
+        }
+      ],
+      "policyDigest": "sha256:policyabc123",
+      "baseline": {
+        "rev": "tree:abc123",
+        "stampedAt": "2026-06-23T12:00:00Z"
+      },
+      "validAsOf": {
+        "rev": "tree:def456",
+        "blobs": [
+          "blob:sha256:aa01"
+        ]
+      },
+      "coverage": {
+        "exhaustive": true,
+        "required": [
+          "lattice/edit"
+        ],
+        "enrolled": [
+          "lattice/edit"
+        ],
+        "ran": [
+          "lattice/edit"
+        ],
+        "degraded": []
+      },
+      "authorityEvidence": [
+        {
+          "identity": "lattice",
+          "integrity": "sha256:lattice",
+          "conformance": "asp-edit/1.0",
+          "isolation": "gated",
+          "authority": {
+            "granted": true,
+            "requirement": "lattice/edit",
+            "callSite": "interactive",
+            "policyDigest": "sha256:policyabc123"
+          }
+        }
+      ],
+      "assurance": {
+        "mode": "gated",
+        "transactionGuarantee": "none"
+      },
+      "timing": {
+        "startedAt": "2026-06-23T12:01:00Z",
+        "endedAt": "2026-06-23T12:02:00Z",
+        "elapsedMs": 60
+      },
+      "failures": [],
+      "privateOnly": true,
+      "experimental": true,
+      "trustArtifact": false
+    }
+  }
+}

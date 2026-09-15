@@ -1,6 +1,6 @@
 ---
 name: Feature request
-about: Suggest a Lattice capability or integration
+about: Suggest a Opcore capability or integration
 title: "[feature] "
 labels: enhancement
 ---

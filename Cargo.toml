@@ -1,27 +1,80 @@
-[workspace]
-members = ["crates/graph-core"]
-resolver = "2"
-
-[workspace.package]
-version = "0.2.2"
-edition = "2021"
-license = "MIT"
+[package]
+name = "opcore"
+version = "0.3.0"
+edition = "2024"
+rust-version = "1.95"
+description = "Lean ASP check providers and deterministic agent verification"
+license = "Apache-2.0"
 repository = "https://github.com/the-open-engine/opcore"
+publish = false
+build = "build.rs"
 
-[workspace.dependencies]
-serde = { version = "1.0.203", features = ["derive"] }
-serde_json = "1.0.117"
+[lib]
+name = "opcore"
+path = "src/lib.rs"
 
-[workspace.lints.rust]
+[[bin]]
+name = "opcore"
+path = "src/main.rs"
+
+[[bench]]
+name = "performance"
+harness = false
+
+[[bench]]
+name = "token_windows"
+harness = false
+
+[dependencies]
+anyhow = "1.0.100"
+async-trait = "0.1.89"
+base64 = "0.22.1"
+clap = { version = "4.5.54", default-features = false, features = ["derive", "std", "help", "usage", "error-context"] }
+directories = "6.0.0"
+fs2 = "0.4.3"
+hcl-edit = "=0.9.6"
+hex = "0.4.3"
+libc = "0.2.180"
+parking_lot = "0.12.5"
+oxc_allocator = "=0.142.0"
+oxc_ast = "=0.142.0"
+oxc_ast_visit = "=0.142.0"
+oxc_parser = "=0.142.0"
+oxc_span = "=0.142.0"
+ra_ap_syntax = "=0.0.344"
+ra-ap-rustc_lexer = "=0.165.0"
+rayon = "1.11.0"
+rustix = { version = "1.1.4", features = ["process"] }
+ruff_python_ast = "=0.0.7"
+ruff_python_parser = "=0.0.7"
+ruff_text_size = "=0.0.7"
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "=1.0.151"
+sha2 = "0.10.9"
+shuck-parser = "=0.1.1"
+tempfile = "3.24.0"
+thiserror = "2.0.17"
+tokio = { version = "1.49.0", features = ["io-std", "io-util", "macros", "rt", "sync", "time"] }
+tree-sitter = "=0.26.12"
+tree-sitter-go = "=0.25.0"
+tree-sitter-proto = "=0.6.0"
+
+[dev-dependencies]
+assert_cmd = "2.1.2"
+
+[build-dependencies]
+hex = "0.4.3"
+sha2 = "0.10.9"
+
+[profile.release]
+codegen-units = 1
+lto = "thin"
+strip = "symbols"
+
+[lints.rust]
 unsafe_code = "forbid"
 
-[workspace.lints.clippy]
-unwrap_used = "deny"
-expect_used = "deny"
-panic = "deny"
-todo = "deny"
-unimplemented = "deny"
-unreachable = "deny"
-indexing_slicing = "deny"
-cast_possible_truncation = "deny"
-cast_sign_loss = "deny"
+[lints.clippy]
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+module_name_repetitions = "allow"

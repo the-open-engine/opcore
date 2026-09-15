@@ -1,0 +1,39 @@
+{
+  "name": "@the-open-engine-company/opcore",
+  "version": "0.0.0-development",
+  "description": "Verified native installer for Opcore",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/the-open-engine/opcore.git"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "bin": {
+    "opcore": "bin/opcore.js"
+  },
+  "scripts": {
+    "postinstall": "node install.js",
+    "test": "node --test test/*.test.js",
+    "pack:smoke": "node test/pack-smoke.js"
+  },
+  "files": [
+    "bin/",
+    "lib/",
+    "install.js",
+    "release-assets.json",
+    "targets.json",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true,
+    "registry": "https://registry.npmjs.org/"
+  },
+  "homepage": "https://the-open-engine.github.io/opcore/",
+  "bugs": {
+    "url": "https://github.com/the-open-engine/opcore/issues"
+  }
+}

@@ -1,0 +1,211 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://covibes.dev/asp/schemas/conformance-report.schema.json",
+  "title": "ASP Core conformance report",
+  "description": "Private behavior-only report for the ASP v1.0 Core Profile smoke suite. This report records evidence; it does not grant trust, authority, certification, registry inclusion, public-standard readiness, provider approval, or stable public API status.",
+  "type": "object",
+  "required": ["target", "profile", "suite", "summary", "requirements", "assertions", "coverage", "artifacts", "claims"],
+  "additionalProperties": false,
+  "properties": {
+    "target": {
+      "type": "object",
+      "required": ["kind", "name", "implementation", "version"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "const": "host" },
+        "name": { "type": "string", "minLength": 1 },
+        "implementation": { "type": "string", "minLength": 1 },
+        "version": { "type": "string", "minLength": 1 }
+      }
+    },
+    "profile": {
+      "type": "object",
+      "required": ["id", "name", "scope", "coreOnly", "nonCoreProfilesDeferred"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "const": "asp-core-v1.0" },
+        "name": { "type": "string", "minLength": 1 },
+        "scope": { "const": "private-core" },
+        "coreOnly": { "const": true },
+        "nonCoreProfilesDeferred": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        }
+      }
+    },
+    "suite": {
+      "type": "object",
+      "required": ["id", "version", "generatedAt", "runner", "testCommand"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "const": "asp-core-conformance-report" },
+        "version": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+        "generatedAt": { "type": "string", "format": "date-time" },
+        "runner": { "const": "scripts/conformance/run-core-suite.ts" },
+        "testCommand": { "type": "string", "minLength": 1 }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": ["result", "total", "passed", "failed", "skipped", "missingRequired"],
+      "additionalProperties": false,
+      "properties": {
+        "result": { "enum": ["pass", "fail"] },
+        "total": { "type": "integer", "minimum": 0 },
+        "passed": { "type": "integer", "minimum": 0 },
+        "failed": { "type": "integer", "minimum": 0 },
+        "skipped": { "type": "integer", "minimum": 0 },
+        "missingRequired": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "requirements": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/requirement" },
+      "minItems": 1
+    },
+    "assertions": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/assertionResult" },
+      "minItems": 1
+    },
+    "coverage": {
+      "type": "object",
+      "required": ["required", "ran", "passed", "failed", "skipped", "missing", "degraded"],
+      "additionalProperties": false,
+      "properties": {
+        "required": { "$ref": "#/$defs/idArray" },
+        "ran": { "$ref": "#/$defs/idArray" },
+        "passed": { "$ref": "#/$defs/idArray" },
+        "failed": { "$ref": "#/$defs/idArray" },
+        "skipped": { "$ref": "#/$defs/idArray" },
+        "missing": { "$ref": "#/$defs/idArray" },
+        "degraded": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/degradedCoverage" }
+        }
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/artifact" }
+    },
+    "claims": {
+      "type": "object",
+      "required": [
+        "behaviorEvidenceOnly",
+        "privateOnly",
+        "trustClaim",
+        "authorityClaim",
+        "certificationClaim",
+        "registryInclusionClaim",
+        "publicStandardClaim",
+        "providerApprovalClaim",
+        "stablePublicApiClaim",
+        "notes"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "behaviorEvidenceOnly": { "const": true },
+        "privateOnly": { "const": true },
+        "trustClaim": { "const": false },
+        "authorityClaim": { "const": false },
+        "certificationClaim": { "const": false },
+        "registryInclusionClaim": { "const": false },
+        "publicStandardClaim": { "const": false },
+        "providerApprovalClaim": { "const": false },
+        "stablePublicApiClaim": { "const": false },
+        "notes": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "coreRequirementId": {
+      "enum": [
+        "CORE-HOST-STATUS",
+        "CORE-HOST-CAPABILITIES",
+        "CORE-HOST-EVALUATE",
+        "CORE-CHECK-ASSESSMENT",
+        "CORE-PROVIDER-FORBIDDEN-FIELDS",
+        "CORE-STALE-VALID-AS-OF",
+        "CORE-MISSING-REQUIRED-PROVIDER",
+        "CORE-MISSING-AUTHORITY",
+        "CORE-INSUFFICIENT-ASSURANCE",
+        "CORE-PROVIDER-QUARANTINED",
+        "CORE-PROVIDER-SKEWED",
+        "CORE-HOST-INITIALIZE-CONTRACT-REFUSAL",
+        "CORE-PROVIDER-FAIL-OPEN",
+        "CORE-MALFORMED-REQUIRED-PROVIDER",
+        "CORE-REQUIRED-COVERAGE-VISIBLE",
+        "CORE-HOST-DECISION-AUTHORITATIVE",
+        "CORE-NO-LATTICE-FAST-PATH"
+      ]
+    },
+    "idArray": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/coreRequirementId" },
+      "uniqueItems": true
+    },
+    "requirement": {
+      "type": "object",
+      "required": ["id", "title", "required", "status", "assertionIds", "sourceSpecSections", "fixturePaths"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/$defs/coreRequirementId" },
+        "title": { "type": "string", "minLength": 1 },
+        "required": { "const": true },
+        "status": { "enum": ["covered", "missing"] },
+        "assertionIds": { "$ref": "#/$defs/idArray" },
+        "sourceSpecSections": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "minItems": 1
+        },
+        "fixturePaths": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "minItems": 1
+        }
+      }
+    },
+    "assertionResult": {
+      "type": "object",
+      "required": ["id", "requirementId", "testName", "result", "required", "fixturePaths"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/$defs/coreRequirementId" },
+        "requirementId": { "$ref": "#/$defs/coreRequirementId" },
+        "testName": { "type": "string", "minLength": 1 },
+        "result": { "enum": ["pass", "fail", "skipped", "missing"] },
+        "required": { "const": true },
+        "fixturePaths": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "degradedCoverage": {
+      "type": "object",
+      "required": ["requirementId", "reason", "detail"],
+      "additionalProperties": false,
+      "properties": {
+        "requirementId": { "$ref": "#/$defs/coreRequirementId" },
+        "reason": { "type": "string", "minLength": 1 },
+        "detail": { "type": "string", "minLength": 1 }
+      }
+    },
+    "artifact": {
+      "type": "object",
+      "required": ["path", "kind"],
+      "additionalProperties": false,
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "kind": { "enum": ["doc", "schema", "test", "script", "artifact"] },
+        "sha256": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+      }
+    }
+  }
+}

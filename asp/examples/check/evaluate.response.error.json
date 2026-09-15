@@ -1,0 +1,57 @@
+{
+  "jsonrpc": "2.0",
+  "id": 10,
+  "result": {
+    "status": "error",
+    "diagnostics": [],
+    "evidence": [
+      {
+        "kind": "message",
+        "message": "provider runtime failed after accepting the request"
+      }
+    ],
+    "coverage": {
+      "requested": {
+        "scope": "changeset",
+        "diagnosticSources": ["acme-secrets"],
+        "rules": ["acme-secrets/aws-key"],
+        "comparison": "introduced"
+      },
+      "covered": {
+        "scope": "changeset",
+        "diagnosticSources": [],
+        "rules": [],
+        "comparison": "introduced"
+      },
+      "degraded": [
+        {
+          "source": "acme-secrets",
+          "reason": "error",
+          "requirement": "lattice-alpha-check",
+          "detail": "Provider attempted evaluation but failed while reading its rule index."
+        }
+      ],
+      "unsupported": [],
+      "exhaustive": false,
+      "truncated": false
+    },
+    "validAsOf": {
+      "baseline": { "rev": "git:tree:9f3a1c", "stampedAt": "2026-06-16T10:00:00Z" },
+      "changesetDigest": "sha256:changeset-error-001",
+      "blobs": []
+    },
+    "provider": {
+      "id": "acme-secrets",
+      "version": "1.2.0",
+      "configDigest": "sha256:cfg-acme-secrets",
+      "capabilityVersion": "check/1.0",
+      "capabilityFamily": "check"
+    },
+    "timing": { "elapsedMs": 87 },
+    "cache": {
+      "status": "stale",
+      "key": "sha256:cache-key-error-001",
+      "digest": "sha256:cache-value-error-001"
+    }
+  }
+}

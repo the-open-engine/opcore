@@ -1,0 +1,423 @@
+{
+  "target": {
+    "kind": "host",
+    "name": "asp-assurance-host",
+    "implementation": "private-black-box-host-fixture",
+    "version": "1.0.0"
+  },
+  "profile": {
+    "id": "asp-assurance-host",
+    "name": "ASP assurance honesty profile",
+    "scope": "private-assurance-host",
+    "coreOnly": false,
+    "exercisedProfiles": [
+      "check",
+      "edit"
+    ],
+    "behaviorOnly": true
+  },
+  "suite": {
+    "id": "asp-assurance-conformance-report",
+    "version": "2026-06-26",
+    "generatedAt": "2026-06-26T00:00:00Z",
+    "runner": "scripts/conformance/run-assurance-suite.ts",
+    "testCommand": "node --experimental-strip-types --test --test-reporter=tap tests/conformance/assurance/assurance-mode-honesty.test.ts"
+  },
+  "summary": {
+    "result": "pass",
+    "total": 7,
+    "passed": 7,
+    "failed": 0,
+    "skipped": 0,
+    "unsupported": 0,
+    "missingRequired": 0
+  },
+  "requirements": [
+    {
+      "id": "ASSURANCE-ADVISORY-REPORTING",
+      "title": "Advisory mode reports advisory and cannot imply blocking authority",
+      "required": true,
+      "status": "covered",
+      "assertionIds": [
+        "ASSURANCE-ADVISORY-REPORTING"
+      ],
+      "sourceSpecSections": [
+        "spec/07-host-obligations.md:70",
+        "spec/08-conformance.md:166"
+      ],
+      "fixturePaths": [
+        "tests/conformance/assurance/assurance-mode-honesty.test.ts",
+        "tests/conformance/edit/helpers/edit-host-harness.ts",
+        "packages/asp/src/core-host-edit.ts",
+        "schemas/assurance.schema.json"
+      ]
+    },
+    {
+      "id": "ASSURANCE-GATED-BOUNDARY",
+      "title": "Gated mode reports the controlled gate and interactive apply boundaries",
+      "required": true,
+      "status": "covered",
+      "assertionIds": [
+        "ASSURANCE-GATED-BOUNDARY"
+      ],
+      "sourceSpecSections": [
+        "spec/07-host-obligations.md:53",
+        "spec/09-outer-seam.md:178"
+      ],
+      "fixturePaths": [
+        "tests/conformance/assurance/assurance-mode-honesty.test.ts",
+        "tests/conformance/edit/helpers/edit-host-harness.ts",
+        "packages/asp/src/core-host-edit.ts",
+        "packages/asp/src/core-host-evaluation.ts"
+      ]
+    },
+    {
+      "id": "ASSURANCE-MEDIATED-WRITE-DOWNGRADE",
+      "title": "Mediated-write is refused or downgraded without enforced host-mediated evidence",
+      "required": true,
+      "status": "covered",
+      "assertionIds": [
+        "ASSURANCE-MEDIATED-WRITE-DOWNGRADE"
+      ],
+      "sourceSpecSections": [
+        "spec/07-host-obligations.md:93",
+        "spec/08-conformance.md:166"
+      ],
+      "fixturePaths": [
+        "tests/conformance/assurance/assurance-mode-honesty.test.ts",
+        "tests/conformance/shared/provider-fixtures.ts",
+        "packages/asp/src/core-host-edit.ts"
+      ]
+    },
+    {
+      "id": "ASSURANCE-ISOLATED-DOWNGRADE",
+      "title": "Isolated mode is refused or downgraded without enforced process write isolation",
+      "required": true,
+      "status": "covered",
+      "assertionIds": [
+        "ASSURANCE-ISOLATED-DOWNGRADE"
+      ],
+      "sourceSpecSections": [
+        "spec/07-host-obligations.md:93",
+        "spec/08-conformance.md:166"
+      ],
+      "fixturePaths": [
+        "tests/conformance/assurance/assurance-mode-honesty.test.ts",
+        "tests/conformance/shared/provider-fixtures.ts",
+        "packages/asp/src/core-host-edit.ts"
+      ]
+    },
+    {
+      "id": "ASSURANCE-DIRECT-WRITE-REFUSAL",
+      "title": "Direct-write provider output and untrusted edit launch cannot pass as strong assurance",
+      "required": true,
+      "status": "covered",
+      "assertionIds": [
+        "ASSURANCE-DIRECT-WRITE-REFUSAL"
+      ],
+      "sourceSpecSections": [
+        "spec/07-host-obligations.md:93",
+        "spec/09-outer-seam.md:178"
+      ],
+      "fixturePaths": [
+        "tests/conformance/assurance/assurance-mode-honesty.test.ts",
+        "packages/asp/src/core-host-edit-risk.ts",
+        "packages/asp/src/edit-plan-validator.ts"
+      ]
+    },
+    {
+      "id": "ASSURANCE-TRANSACTION-GUARANTEE-BOUND",
+      "title": "Observed transaction guarantees are accepted and no stronger than none",
+      "required": true,
+      "status": "covered",
+      "assertionIds": [
+        "ASSURANCE-TRANSACTION-GUARANTEE-BOUND"
+      ],
+      "sourceSpecSections": [
+        "spec/07-host-obligations.md:93",
+        "schemas/assurance.schema.json"
+      ],
+      "fixturePaths": [
+        "tests/conformance/assurance/assurance-mode-honesty.test.ts",
+        "packages/asp/src/core-host-support.ts",
+        "packages/asp/src/host-receipts.ts"
+      ]
+    },
+    {
+      "id": "ASSURANCE-FAILED-APPLY-NO-SUCCESSFUL-RECEIPT",
+      "title": "Failed apply paths cannot produce misleading successful apply receipts",
+      "required": true,
+      "status": "covered",
+      "assertionIds": [
+        "ASSURANCE-FAILED-APPLY-NO-SUCCESSFUL-RECEIPT"
+      ],
+      "sourceSpecSections": [
+        "spec/08-conformance.md:158",
+        "spec/09-outer-seam.md:178"
+      ],
+      "fixturePaths": [
+        "tests/conformance/assurance/assurance-mode-honesty.test.ts",
+        "packages/asp/src/fake-check-provider.ts",
+        "packages/asp/src/core-host-edit.ts"
+      ]
+    }
+  ],
+  "assertions": [
+    {
+      "id": "ASSURANCE-ADVISORY-REPORTING",
+      "requirementId": "ASSURANCE-ADVISORY-REPORTING",
+      "testName": "ASSURANCE-ADVISORY-REPORTING reports advisory refusal without blocking authority",
+      "result": "pass",
+      "required": true,
+      "fixturePaths": [
+        "tests/conformance/assurance/assurance-mode-honesty.test.ts",
+        "tests/conformance/edit/helpers/edit-host-harness.ts",
+        "packages/asp/src/core-host-edit.ts",
+        "schemas/assurance.schema.json"
+      ]
+    },
+    {
+      "id": "ASSURANCE-GATED-BOUNDARY",
+      "requirementId": "ASSURANCE-GATED-BOUNDARY",
+      "testName": "ASSURANCE-GATED-BOUNDARY reports gated apply and the controlled gate and interactive boundaries",
+      "result": "pass",
+      "required": true,
+      "fixturePaths": [
+        "tests/conformance/assurance/assurance-mode-honesty.test.ts",
+        "tests/conformance/edit/helpers/edit-host-harness.ts",
+        "packages/asp/src/core-host-edit.ts",
+        "packages/asp/src/core-host-evaluation.ts"
+      ]
+    },
+    {
+      "id": "ASSURANCE-MEDIATED-WRITE-DOWNGRADE",
+      "requirementId": "ASSURANCE-MEDIATED-WRITE-DOWNGRADE",
+      "testName": "ASSURANCE-MEDIATED-WRITE-DOWNGRADE refuses mediated-write claims without host-mediated evidence",
+      "result": "pass",
+      "required": true,
+      "fixturePaths": [
+        "tests/conformance/assurance/assurance-mode-honesty.test.ts",
+        "tests/conformance/shared/provider-fixtures.ts",
+        "packages/asp/src/core-host-edit.ts"
+      ]
+    },
+    {
+      "id": "ASSURANCE-ISOLATED-DOWNGRADE",
+      "requirementId": "ASSURANCE-ISOLATED-DOWNGRADE",
+      "testName": "ASSURANCE-ISOLATED-DOWNGRADE refuses isolated claims without enforced write isolation",
+      "result": "pass",
+      "required": true,
+      "fixturePaths": [
+        "tests/conformance/assurance/assurance-mode-honesty.test.ts",
+        "tests/conformance/shared/provider-fixtures.ts",
+        "packages/asp/src/core-host-edit.ts"
+      ]
+    },
+    {
+      "id": "ASSURANCE-DIRECT-WRITE-REFUSAL",
+      "requirementId": "ASSURANCE-DIRECT-WRITE-REFUSAL",
+      "testName": "ASSURANCE-DIRECT-WRITE-REFUSAL rejects direct-write provider output and untrusted edit launch",
+      "result": "pass",
+      "required": true,
+      "fixturePaths": [
+        "tests/conformance/assurance/assurance-mode-honesty.test.ts",
+        "packages/asp/src/core-host-edit-risk.ts",
+        "packages/asp/src/edit-plan-validator.ts"
+      ]
+    },
+    {
+      "id": "ASSURANCE-TRANSACTION-GUARANTEE-BOUND",
+      "requirementId": "ASSURANCE-TRANSACTION-GUARANTEE-BOUND",
+      "testName": "ASSURANCE-TRANSACTION-GUARANTEE-BOUND only observes accepted none transaction guarantees",
+      "result": "pass",
+      "required": true,
+      "fixturePaths": [
+        "tests/conformance/assurance/assurance-mode-honesty.test.ts",
+        "packages/asp/src/core-host-support.ts",
+        "packages/asp/src/host-receipts.ts"
+      ]
+    },
+    {
+      "id": "ASSURANCE-FAILED-APPLY-NO-SUCCESSFUL-RECEIPT",
+      "requirementId": "ASSURANCE-FAILED-APPLY-NO-SUCCESSFUL-RECEIPT",
+      "testName": "ASSURANCE-FAILED-APPLY-NO-SUCCESSFUL-RECEIPT prevents false successful apply receipts",
+      "result": "pass",
+      "required": true,
+      "fixturePaths": [
+        "tests/conformance/assurance/assurance-mode-honesty.test.ts",
+        "packages/asp/src/fake-check-provider.ts",
+        "packages/asp/src/core-host-edit.ts"
+      ]
+    }
+  ],
+  "coverage": {
+    "required": [
+      "ASSURANCE-ADVISORY-REPORTING",
+      "ASSURANCE-GATED-BOUNDARY",
+      "ASSURANCE-MEDIATED-WRITE-DOWNGRADE",
+      "ASSURANCE-ISOLATED-DOWNGRADE",
+      "ASSURANCE-DIRECT-WRITE-REFUSAL",
+      "ASSURANCE-TRANSACTION-GUARANTEE-BOUND",
+      "ASSURANCE-FAILED-APPLY-NO-SUCCESSFUL-RECEIPT"
+    ],
+    "ran": [
+      "ASSURANCE-ADVISORY-REPORTING",
+      "ASSURANCE-GATED-BOUNDARY",
+      "ASSURANCE-MEDIATED-WRITE-DOWNGRADE",
+      "ASSURANCE-ISOLATED-DOWNGRADE",
+      "ASSURANCE-DIRECT-WRITE-REFUSAL",
+      "ASSURANCE-TRANSACTION-GUARANTEE-BOUND",
+      "ASSURANCE-FAILED-APPLY-NO-SUCCESSFUL-RECEIPT"
+    ],
+    "passed": [
+      "ASSURANCE-ADVISORY-REPORTING",
+      "ASSURANCE-GATED-BOUNDARY",
+      "ASSURANCE-MEDIATED-WRITE-DOWNGRADE",
+      "ASSURANCE-ISOLATED-DOWNGRADE",
+      "ASSURANCE-DIRECT-WRITE-REFUSAL",
+      "ASSURANCE-TRANSACTION-GUARANTEE-BOUND",
+      "ASSURANCE-FAILED-APPLY-NO-SUCCESSFUL-RECEIPT"
+    ],
+    "failed": [],
+    "skipped": [],
+    "unsupported": [],
+    "missing": [],
+    "degraded": []
+  },
+  "artifacts": [
+    {
+      "path": "docs/conformance/README.md",
+      "kind": "doc",
+      "sha256": "sha256:171b9d128c8752f15b0746b7a9734f88e5e5e007e2fa782a3b88665c0dbe862b"
+    },
+    {
+      "path": "docs/conformance/requirements.md",
+      "kind": "doc",
+      "sha256": "sha256:6a1d6bcf50e59a01a1bfd3a193aafa2c28021d823a0ed25a5519d20b081b750d"
+    },
+    {
+      "path": "docs/conformance/traceability.md",
+      "kind": "doc",
+      "sha256": "sha256:3572957c80045245f1a25b0d3b6870e4230033ebdb76a2d248fd8f18bd519708"
+    },
+    {
+      "path": "scripts/conformance/assurance-report-catalog.ts",
+      "kind": "script",
+      "sha256": "sha256:9c686231a120987079c134fa7850f4f63d19f25cad8cdae13b999475222f9c30"
+    },
+    {
+      "path": "scripts/conformance/run-assurance-suite.ts",
+      "kind": "script",
+      "sha256": "sha256:3c641104d294c0a931413c2e6a52b2771eceaf16b759e874a3991f56ad8272bf"
+    },
+    {
+      "path": "tests/conformance/assurance/assurance-mode-honesty.test.ts",
+      "kind": "test",
+      "sha256": "sha256:49544eb2ffbc91006f7eb04e75b0eb6bae233aaa4cfcbc2d5c85cdba335b0cbe"
+    },
+    {
+      "path": "tests/conformance/assurance/assurance-report.test.ts",
+      "kind": "test",
+      "sha256": "sha256:c99a72bf7c91c589207aeb320ae83158ac79b2c96b23956fec749e251790e76b"
+    },
+    {
+      "path": "tests/conformance/edit/helpers/edit-host-harness.ts",
+      "kind": "test",
+      "sha256": "sha256:9ec26c905c8953479666384891b9004080cf45dcd6de68a0ab59eaaaaaf80322"
+    },
+    {
+      "path": "tests/conformance/shared/provider-fixtures.ts",
+      "kind": "test",
+      "sha256": "sha256:1a9b4f4613da67c6bf2071974329a9e38e40ba56930c3c39c125cb10404c3f45"
+    },
+    {
+      "path": "packages/asp/src/core-host.ts",
+      "kind": "artifact",
+      "sha256": "sha256:3eb1f238a3da8c12ee26366835adfbd48d3e17aadb144de877c401a0ada0cd70"
+    },
+    {
+      "path": "packages/asp/src/core-host-edit.ts",
+      "kind": "artifact",
+      "sha256": "sha256:47f5f1431076c5dd571454cb2a748c72cc5cf7616bc8257c9cdcd0b50f14935b"
+    },
+    {
+      "path": "packages/asp/src/core-host-edit-risk.ts",
+      "kind": "artifact",
+      "sha256": "sha256:7a9b06e65ca63a29c8a89af813d0c0f70c99f673aa523f9cd9b6dbb37c100bae"
+    },
+    {
+      "path": "packages/asp/src/core-host-evaluation.ts",
+      "kind": "artifact",
+      "sha256": "sha256:0cf9fa9b4cb313a307ce275c6814c5039f67782bc3e884678c8736ccd093c731"
+    },
+    {
+      "path": "packages/asp/src/core-host-support.ts",
+      "kind": "artifact",
+      "sha256": "sha256:15b2f76d0e1a13f72465240523fb3044f7548eb76d4182bb61ba1ab5bc94b44e"
+    },
+    {
+      "path": "packages/asp/src/host-receipts.ts",
+      "kind": "artifact",
+      "sha256": "sha256:f73493cbfc3b04e9d1b1b35567be593a2feed0a7c4c23916a936a3c29a1017c2"
+    },
+    {
+      "path": "packages/asp/src/receipt-validator.ts",
+      "kind": "artifact",
+      "sha256": "sha256:4c09de8f2269e7c1aae13aab4302d020994e777b8ed60bc92884f438a75cae8f"
+    },
+    {
+      "path": "packages/asp/src/workspace-edit-apply.ts",
+      "kind": "artifact",
+      "sha256": "sha256:57a6d1c9ee18b84121f4cd2eaaf32c0cc1162d2dffa8b47402069f62ac22751e"
+    },
+    {
+      "path": "packages/asp/src/types.ts",
+      "kind": "artifact",
+      "sha256": "sha256:7bd0ef73f1a403cbc61f93b8198c76b84426d409e753a58de7d1a59d8f6280fb"
+    },
+    {
+      "path": "spec/07-host-obligations.md",
+      "kind": "doc",
+      "sha256": "sha256:337c7fdd53e00238535da621a2757a963be4c870944de8323c056c96427bd3bf"
+    },
+    {
+      "path": "spec/08-conformance.md",
+      "kind": "doc",
+      "sha256": "sha256:f28188f6aeb86b04361f6ab66f40dfb2541ecfb35786103fa50f12070113cbd5"
+    },
+    {
+      "path": "spec/09-outer-seam.md",
+      "kind": "doc",
+      "sha256": "sha256:f70c3f313a92e10e914c68f2cd52405bdacc6404d1ee786da055b27d41326090"
+    },
+    {
+      "path": "schemas/assurance.schema.json",
+      "kind": "schema",
+      "sha256": "sha256:eb18deee1266fc2320221b455fec473529dcdda4fa7272bb2af198ce64c883d1"
+    },
+    {
+      "path": "schemas/outer-host.schema.json",
+      "kind": "schema",
+      "sha256": "sha256:236463d0bad75b14c3e151a31e1e5a29e81d2594c300da1617a2adef2fa29d55"
+    },
+    {
+      "path": "schemas/verdict.schema.json",
+      "kind": "schema",
+      "sha256": "sha256:c483b71ca3c896438fe854fd7abf51798289c8e929b6fc6d5516b95c162aa708"
+    }
+  ],
+  "claims": {
+    "behaviorEvidenceOnly": true,
+    "privateOnly": true,
+    "trustClaim": false,
+    "authorityClaim": false,
+    "certificationClaim": false,
+    "registryInclusionClaim": false,
+    "publicStandardClaim": false,
+    "providerApprovalClaim": false,
+    "stablePublicApiClaim": false,
+    "notes": [
+      "Private assurance behavior evidence only."
+    ]
+  }
+}

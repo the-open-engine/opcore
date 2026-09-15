@@ -1,0 +1,101 @@
+{
+  "jsonrpc": "2.0",
+  "id": 6,
+  "validates": "outer-host.schema.json#/$defs/evaluateChangesetResult",
+  "result": {
+    "pass": false,
+    "decision": "indeterminate",
+    "callSite": "gate",
+    "changesetDigest": "sha256:policy-changeset",
+    "findings": [],
+    "coverage": {
+      "exhaustive": false,
+      "required": [
+        "core-required-check"
+      ],
+      "enrolled": [
+        "core-required-check"
+      ],
+      "ran": [],
+      "degraded": [
+        {
+          "source": ".asp/asp.json",
+          "reason": "policy-self-authorization",
+          "requirement": "core-required-check",
+          "detail": "Candidate policy/config changes cannot authorize, select, or weaken the gate that evaluates the same changeset."
+        }
+      ]
+    },
+    "policyDigest": "sha256:policyabc123",
+    "authorityEvidence": [],
+    "validAsOf": {
+      "rev": "tree:abc123"
+    },
+    "assurance": {
+      "mode": "gated",
+      "transactionGuarantee": "none"
+    },
+    "receipt": {
+      "receiptId": "core-evaluate-indeterminate-0001",
+      "issuedAt": "2026-06-22T20:03:00Z",
+      "providerProvenance": [],
+      "policyDigest": "sha256:policyabc123",
+      "baseline": {
+        "rev": "tree:abc123"
+      },
+      "validAsOf": {
+        "rev": "tree:abc123"
+      },
+      "coverage": {
+        "exhaustive": false,
+        "required": [
+          "core-required-check"
+        ],
+        "enrolled": [
+          "core-required-check"
+        ],
+        "ran": [],
+        "degraded": [
+          {
+            "source": ".asp/asp.json",
+            "reason": "policy-self-authorization",
+            "requirement": "core-required-check",
+            "detail": "Candidate policy/config changes cannot authorize, select, or weaken the gate that evaluates the same changeset."
+          }
+        ]
+      },
+      "authorityEvidence": [],
+      "assurance": {
+        "mode": "gated",
+        "transactionGuarantee": "none"
+      },
+      "kind": "evaluate",
+      "host": {
+        "name": "core-host",
+        "version": "0.1.0-private"
+      },
+      "capabilityFamily": "check",
+      "callSite": "gate",
+      "requestDigest": "sha256:examples-outer-evaluate-policy-self-authorization-response-json-request-indeterminate",
+      "changesetDigest": "sha256:policy-changeset",
+      "providerIds": [],
+      "timing": {
+        "startedAt": "2026-06-23T00:00:00Z",
+        "endedAt": "2026-06-23T00:00:00Z",
+        "elapsedMs": 0
+      },
+      "failures": [
+        {
+          "source": ".asp/asp.json",
+          "reason": "policy-self-authorization",
+          "requirement": "core-required-check",
+          "detail": "Candidate policy/config changes cannot authorize, select, or weaken the gate that evaluates the same changeset."
+        }
+      ],
+      "privateOnly": true,
+      "experimental": true,
+      "trustArtifact": false
+    },
+    "requestDigest": "sha256:examples-outer-evaluate-policy-self-authorization-response-json-request-indeterminate"
+  }
+}

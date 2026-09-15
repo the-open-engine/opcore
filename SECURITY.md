@@ -12,13 +12,13 @@ Include:
 
 ## Supported Versions
 
-After the first public release, the supported security line is:
+The replacement engine receives security fixes in the following release line:
 
 | Version | Supported |
 |---|---|
-| `0.1.x` | yes |
-| earlier snapshots | no |
+| `0.3.x` | yes |
+| legacy releases and earlier snapshots | no |
 
 ## Scope
 
-Security-sensitive areas include the native graph artifact resolver, graph sidecar process execution, edit plan path policy, atomic writes, validation overlays, package contents, and release automation.
+Security-sensitive areas include Git and ASP input capture, bounded parsers, native-provider subprocess execution, installer path and ownership checks, npm archive verification, and release automation.

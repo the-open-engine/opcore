@@ -1,50 +1,44 @@
 # Contributing
 
-Opcore is a public alpha for local code intelligence, edit planning, and pre-write validation for coding agents.
+## Report a problem
 
-## Setup
+Use [GitHub Issues](https://github.com/the-open-engine/opcore/issues) for reproducible bugs and feature requests. Include the Opcore version, operating system and architecture, and installation method. For check failures, give the exact command, selected workflow, and a small Git fixture; attach relevant JSON and `status --workflow <name> --json` output. Include configuration and whether its changes were staged. For setup failures, include `opcore doctor --repo . --json` and the installer's error; npm diagnostics work even when native setup is incomplete. Review output for private paths or source before posting.
 
-```bash
-npm ci
-npm run build
-npm test
+If automatic checks aren't firing, say which agent and editing tool you used and whether the [activation smoke test](docs/getting-started.md#confirm-hook-activation) reached the hook. Doctor's configuration check alone doesn't establish host activation.
+
+## Work on the source
+
+Read the checkout's [AGENTS.md](https://github.com/the-open-engine/opcore/blob/main/AGENTS.md) before changing implementation. It records the product boundary and required checks. [Architecture](docs/architecture.md) and [acceptance criteria](docs/acceptance.md) explain the implementation contracts; the [user guides](README.md) cover expected behavior.
+
+The checkout pins its development toolchain in `rust-toolchain.toml`. It also needs a C compiler/linker and Git. Format changes and run the relevant tests while working:
+
+```sh
+cargo fmt --all -- --check
+cargo test --workspace --all-features --locked
 ```
 
-## Before A Pull Request
+Before handoff, complete the applicable verification in AGENTS.md, including the Rust 1.95 compatibility check, Clippy, dependency policy, and installer/provider tests when affected. Missing cargo-deny or another required tool is a prerequisite to resolve. Use the existing test infrastructure; a documentation correction usually needs its examples and links checked rather than a new implementation-mirroring test.
 
-Run:
+Open a pull request that states the user-visible problem, resulting behavior, and validation. Keep unrelated changes separate. Changes to architecture, protocol behavior, language coverage, cache identity, or verification conventions also require an AGENTS.md update.
 
-```bash
-npm run ci
+## Build the documentation
+
+This local build needs the repository's Rust toolchain and Python 3.9 or newer. The Python helper uses only the standard library.
+
+```sh
+./scripts/build-docs.sh
 ```
 
-For packaging or release changes, also run:
+Open `target/site/index.html` locally. The build renders the overview and guides, derives the CLI reference from the Rust command definitions, and includes rustdoc for the public API and every provider profile. CI runs this build for pull requests and release tags. After all CI gates pass on `main`, it deploys the same artifact to [GitHub Pages](https://the-open-engine.github.io/opcore/). Local builds do not deploy.
 
-```bash
-npm run release:dry-run
-npm run release:hygiene
-npm run pack:check
-```
+Edit command and API documentation beside the Rust definitions, then regenerate the site. Keep setup and workflow explanations in the Markdown guides. `opcore rules --schema` generates the repository configuration's editor schema from the implementation; keep its constraints consistent with runtime validation. Generated site files stay under `target/` and don't belong in a commit. For the protocol's wire definition, follow [asp/README.md](asp/README.md).
 
-Maintainers may also run:
+## Publish a release
 
-```bash
-npm run ci:local
-```
+The repository is `the-open-engine/opcore`, and the public npm package is `@the-open-engine-company/opcore`. Preserve the `legacy` branch and published tags. The first replacement release is `v0.3.0`; never reuse an earlier tag or package version.
 
-`ci:local` includes maintainer-only current-tool validation and should not be required for ordinary downstream users.
+Before the first npm release, an npm organization owner must reserve the package or supply the one-time bootstrap credential through the GitHub `release` environment's `NPM_TOKEN` secret. Configure the package's GitHub trusted publisher with organization `the-open-engine`, repository `opcore`, workflow filename `ci.yml`, environment `release`, and permission for direct `npm publish`. A normal release uses OIDC; remove the bootstrap token after that setup succeeds. Keep immutable GitHub releases enabled and protect release tags against modification and deletion.
 
-## Package Boundaries
+Set the Cargo package and lockfile version, merge the reviewed change after CI passes, then push the matching stable `vX.Y.Z` tag. CI builds both platforms, stages matching npm metadata and checksums, and tests the packed artifact. It uploads all assets to a draft before publishing the immutable GitHub Release, then exercises the packed install against those assets and publishes that exact npm tarball. If publication fails after the GitHub Release exists, preserve its assets and diagnose the failed step before retrying; the job refuses to replace an existing release.
 
-- Graph extraction, persistence, query, search, and impact belong in `@the-open-engine/opcore-graph`.
-- Edit planning, patch/tree planning, symbol edit previews, and validation-gated apply belong in `@the-open-engine/lattice-edit`.
-- Validation scopes, overlays, graph-provider policy, and check/validate adapters belong in `@the-open-engine/lattice-validation`.
-- TypeScript-specific checks belong in `@the-open-engine/lattice-validation-typescript`.
-- Shared types, schemas, command envelopes, and validation helpers belong in `@the-open-engine/opcore-contracts`.
-- CLI composition, help, status, doctor, and descriptor output belong in `@the-open-engine/lattice-cli`.
-
-Do not expose old command aliases or new bins. The public CLI bin is `lattice`.
-
-## Release Line
-
-The first public line is `0.1.x`. Pre-1.0 releases may change contracts, but changes should be documented in `CHANGELOG.md` and reflected in JSON schema tests.
+GitHub Pages must use the GitHub Actions publishing source. Restrict the `github-pages` environment to `main`. The docs deployment waits for every CI gate, and the npm release also requires the docs build. To republish docs, dispatch `ci.yml` on `main`; this runs the checks and documentation deployment without creating a release tag. Verify the overview, a guide, the CLI reference, and the public API at the deployed URL.

@@ -1,0 +1,211 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://covibes.dev/asp/schemas/verdict.schema.json",
+  "title": "Verdict object",
+  "description": "The host-produced decision envelope that carries an evaluation or apply validation result to the harness/user. 'Verdict' is a transitional envelope name; provider assessments and edit plans are host inputs, while pass, decision, finding disposition, authority evidence, assurance, and transaction reporting stay host-owned.",
+  "type": "object",
+  "required": [
+    "pass",
+    "decision",
+    "callSite",
+    "requestDigest",
+    "findings",
+    "coverage",
+    "policyDigest",
+    "authorityEvidence",
+    "validAsOf",
+    "assurance",
+    "receipt"
+  ],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "required": ["decision"],
+        "properties": { "decision": { "const": "allow" } }
+      },
+      "then": {
+        "required": ["pass"],
+        "properties": { "pass": { "const": true } }
+      }
+    },
+    {
+      "if": {
+        "required": ["decision"],
+        "properties": { "decision": { "enum": ["deny", "indeterminate"] } }
+      },
+      "then": {
+        "required": ["pass"],
+        "properties": { "pass": { "const": false } }
+      }
+    }
+  ],
+  "properties": {
+    "pass": { "type": "boolean", "description": "Legacy boolean projection of decision: true iff decision is allow." },
+    "decision": { "$ref": "https://covibes.dev/asp/schemas/assurance.schema.json#/$defs/decision" },
+    "callSite": { "enum": ["interactive", "gate", "sweep"], "description": "The canonical call-site; drives the fail-policy matrix (spec/07 §2). Required so the developer can tell a hard block from a warn-allow." },
+    "requestDigest": { "type": "string", "description": "Host-stamped digest of the method and parameters that produced this decision." },
+    "findings": { "type": "array", "items": { "$ref": "#/$defs/verdictFinding" } },
+    "coverage": { "$ref": "#/$defs/coverage" },
+    "changesetDigest": { "type": "string", "description": "Host-stamped digest of the immutable ChangeSet evaluated for this decision." },
+    "policyDigest": { "type": "string", "description": "Host-stamped immutable identity for the policy used to compute this decision." },
+    "authorityEvidence": {
+      "type": "array",
+      "description": "Authority evidence for providers whose assessments contributed to the host decision.",
+      "items": { "$ref": "https://covibes.dev/asp/schemas/assurance.schema.json#/$defs/authorityEvidence" }
+    },
+    "assurance": { "$ref": "https://covibes.dev/asp/schemas/assurance.schema.json#/$defs/applyAssurance" },
+    "receipt": { "$ref": "#/$defs/auditReceipt" },
+    "validAsOf": {
+      "type": "object",
+      "required": ["rev"],
+      "additionalProperties": false,
+      "properties": {
+        "rev": { "type": "string" },
+        "blobs": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  },
+  "$defs": {
+    "verdictFinding": {
+      "type": "object",
+      "required": ["diagnostic", "authority", "disposition"],
+      "additionalProperties": false,
+      "description": "A diagnostic plus the host-stamped fields that make it actionable. nextStep is required when disposition = gating.",
+      "properties": {
+        "diagnostic": { "$ref": "https://covibes.dev/asp/schemas/diagnostic.schema.json" },
+        "authority": { "$ref": "https://covibes.dev/asp/schemas/assurance.schema.json#/$defs/authorityEvidence" },
+        "disposition": { "enum": ["gating", "advisory"], "description": "Whether this finding blocked (gating) or only informs (advisory)." },
+        "nextStep": { "type": "string", "description": "Required on a gating finding: the server's help/fix, or a host-synthesized fallback when the server gave none." },
+        "nextStepOrigin": { "enum": ["server", "synthesized"], "description": "Whether nextStep came from provider output or was host-authored. Lets the renderer treat them differently." },
+        "severityNote": { "type": "string", "description": "Set by the host whenever effective severity differs from the diagnostic's self-reported severity (e.g. 'author marked error; source lacks authority, capped to warning'), so a downgrade is legible." }
+      },
+      "if": { "properties": { "disposition": { "const": "gating" } } },
+      "then": { "required": ["nextStep"] }
+    },
+    "coverage": {
+      "type": "object",
+      "required": ["exhaustive", "required", "enrolled", "ran", "degraded"],
+      "additionalProperties": false,
+      "properties": {
+        "exhaustive": { "type": "boolean", "description": "True iff every required gating server ran to completion with no entry in degraded. A non-empty degraded on a gate call-site forces this false." },
+        "required": { "type": "array", "items": { "type": "string" }, "description": "Canonical required diagnosticSources/requirements for this call-site. Every entry MUST appear in ran or degraded." },
+        "enrolled": { "type": "array", "items": { "type": "string" }, "description": "Transitional alias for required. Until #7 migrates field names, enrolled MUST equal required." },
+        "ran": { "type": "array", "items": { "type": "string" }, "description": "diagnosticSources that actually ran to completion." },
+        "degraded": {
+          "type": "array",
+          "description": "Providers, requirements, policies, or adapter paths that could not satisfy required coverage.",
+          "items": { "$ref": "https://covibes.dev/asp/schemas/assurance.schema.json#/$defs/coverageDegradation" }
+        }
+      }
+    },
+    "providerProvenance": {
+      "type": "object",
+      "required": ["provider", "capability", "identity", "integrity"],
+      "additionalProperties": false,
+      "properties": {
+        "provider": { "type": "string" },
+        "capability": { "$ref": "https://covibes.dev/asp/schemas/assurance.schema.json#/$defs/capabilityFamily" },
+        "identity": { "type": "string" },
+        "integrity": { "type": "string" },
+        "conformance": { "type": "string" }
+      }
+    },
+    "auditReceipt": {
+      "type": "object",
+      "required": [
+        "receiptId",
+        "issuedAt",
+        "kind",
+        "host",
+        "capabilityFamily",
+        "requestDigest",
+        "providerIds",
+        "providerProvenance",
+        "policyDigest",
+        "baseline",
+        "validAsOf",
+        "coverage",
+        "authorityEvidence",
+        "assurance",
+        "timing",
+        "failures",
+        "privateOnly",
+        "experimental",
+        "trustArtifact"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "receiptId": { "type": "string" },
+        "issuedAt": { "type": "string", "format": "date-time" },
+        "kind": { "enum": ["status", "capabilities", "evaluate", "inspect", "edit-request", "apply-attempt", "authority-status", "provider-failure"] },
+        "host": {
+          "type": "object",
+          "required": ["name", "version"],
+          "additionalProperties": false,
+          "properties": {
+            "name": { "type": "string" },
+            "version": { "type": "string" }
+          }
+        },
+        "capabilityFamily": { "$ref": "https://covibes.dev/asp/schemas/assurance.schema.json#/$defs/capabilityFamily" },
+        "callSite": { "enum": ["interactive", "gate", "sweep"] },
+        "requestDigest": { "type": "string" },
+        "changesetDigest": { "type": "string" },
+        "proposalId": { "type": "string" },
+        "providerIds": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        },
+        "providerProvenance": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/providerProvenance" }
+        },
+        "policyDigest": { "type": "string" },
+        "baseline": {
+          "type": "object",
+          "required": ["rev"],
+          "additionalProperties": false,
+          "properties": {
+            "rev": { "type": "string" },
+            "dirty": { "type": "string" },
+            "stampedAt": { "type": "string", "format": "date-time" }
+          }
+        },
+        "validAsOf": {
+          "type": "object",
+          "required": ["rev"],
+          "additionalProperties": false,
+          "properties": {
+            "rev": { "type": "string" },
+            "blobs": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "coverage": { "$ref": "#/$defs/coverage" },
+        "authorityEvidence": {
+          "type": "array",
+          "items": { "$ref": "https://covibes.dev/asp/schemas/assurance.schema.json#/$defs/authorityEvidence" }
+        },
+        "assurance": { "$ref": "https://covibes.dev/asp/schemas/assurance.schema.json#/$defs/applyAssurance" },
+        "timing": {
+          "type": "object",
+          "required": ["startedAt", "endedAt", "elapsedMs"],
+          "additionalProperties": false,
+          "properties": {
+            "startedAt": { "type": "string", "format": "date-time" },
+            "endedAt": { "type": "string", "format": "date-time" },
+            "elapsedMs": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "failures": {
+          "type": "array",
+          "items": { "$ref": "https://covibes.dev/asp/schemas/assurance.schema.json#/$defs/coverageDegradation" }
+        },
+        "privateOnly": { "const": true },
+        "experimental": { "const": true },
+        "trustArtifact": { "const": false }
+      }
+    }
+  }
+}

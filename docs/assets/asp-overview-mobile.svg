@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="390" height="1210" viewBox="0 0 390 1210" role="img" aria-labelledby="asp-mobile-title asp-mobile-desc">
+  <title id="asp-mobile-title">Agent Server Protocol version 1.0 overview for narrow screens</title>
+  <desc id="asp-mobile-desc">Agent Server Protocol, or ASP, defines how a coding agent asks an independent checker about a proposed code change. The calling tool freezes the change and prepares a check request. The checker returns findings, coverage, and evidence without deciding. The calling tool checks the evidence, makes the decision, and returns the result to the agent with a receipt.</desc>
+  <defs>
+    <filter id="asp-mobile-shadow" x="-15%" y="-15%" width="130%" height="145%"><feDropShadow dx="0" dy="5" stdDeviation="7" flood-color="#171411" flood-opacity=".10"/></filter>
+    <style>
+      .bg{fill:#faf7f1}.card{fill:#fffdf9;stroke:#c9c1b6;stroke-width:1.5}.caller{fill:#fffdf9;stroke:#171411;stroke-width:2.5}.checker{fill:#f1ece4;stroke:#8b8177;stroke-width:1.7}.strip{fill:#f1ece4}.accent{fill:#c2240c}.ink{fill:#171411}.muted{fill:#625b54}.connector{fill:none;stroke:#736b63;stroke-width:2;stroke-linecap:round}.arrow{fill:#736b63}.eyebrow{font:700 10.5px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.55px}.heading{font:600 21px Georgia,"Times New Roman",serif}.card-title{font:700 18px ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}.caller-title{font:600 26px Georgia,"Times New Roman",serif}.copy{font:14px ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}.micro{font:600 11px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.1px}.route{font:700 11px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.1px}.receipt-pulse{animation:asp-mobile-receipt 3.2s ease-in-out infinite}.receipt-outline,.receipt-lines{stroke:#c2240c;stroke-width:1.8;fill:none}.receipt-outline{stroke-dasharray:4 4}.receipt-lines{stroke-linecap:round}@keyframes asp-mobile-receipt{0%,26%,100%{opacity:.35}55%{opacity:1}76%{opacity:.6}}@media(prefers-color-scheme:dark){.bg{fill:#14110e}.card,.caller{fill:#1d1915;stroke:#faf7f1}.checker,.strip{fill:#29231e;stroke:#7a7168}.ink{fill:#faf7f1}.muted{fill:#c2b9af}.connector{stroke:#a79e94}.arrow{fill:#a79e94}.receipt-outline,.receipt-lines{stroke:#ff5a3d}#asp-mobile-shadow feDropShadow{flood-color:#000;flood-opacity:.32}}@media(prefers-reduced-motion:reduce){.receipt-pulse{animation:none;opacity:.8}}
+    </style>
+  </defs>
+
+  <rect class="bg" width="390" height="1210" rx="18"/>
+  <text x="24" y="27" class="eyebrow muted">AGENT SERVER PROTOCOL (ASP) v1.0</text>
+  <text x="24" y="59" class="heading ink">How an agent asks a checker</text>
+  <text x="24" y="84" class="heading ink">about a proposed code change</text>
+  <rect x="24" y="98" width="54" height="3" rx="1.5" class="accent"/>
+
+  <rect x="32" y="122" width="326" height="100" rx="13" class="card"/>
+  <text x="54" y="151" class="eyebrow muted">STARTS THE REQUEST</text>
+  <text x="54" y="181" class="card-title ink">Coding agent</text>
+  <text x="54" y="205" class="copy muted">Sends a proposed code change.</text>
+
+  <path d="M195 230V246" class="connector"/>
+  <polygon points="189,246 195,258 201,246" class="arrow"/>
+  <text x="209" y="247" class="route muted">PROPOSED CHANGE</text>
+
+  <g filter="url(#asp-mobile-shadow)"><rect x="32" y="262" width="326" height="220" rx="17" class="caller"/></g>
+  <text x="195" y="293" text-anchor="middle" class="eyebrow muted">CALLING TOOL · PREPARES REQUEST</text>
+  <text x="195" y="329" text-anchor="middle" class="caller-title ink">Freeze and choose</text>
+  <rect x="54" y="350" width="282" height="44" rx="9" class="strip"/>
+  <text x="195" y="378" text-anchor="middle" class="copy ink">Freezes the exact change</text>
+  <rect x="54" y="408" width="282" height="56" rx="9" class="strip"/>
+  <text x="195" y="433" text-anchor="middle" class="copy ink">Chooses checker, files,</text>
+  <text x="195" y="454" text-anchor="middle" class="copy ink">and decision rules</text>
+
+  <path d="M195 490V506" class="connector"/>
+  <polygon points="189,506 195,518 201,506" class="arrow"/>
+  <text x="209" y="507" class="route muted">CHECK REQUEST</text>
+
+  <rect x="32" y="522" width="326" height="200" rx="14" class="checker"/>
+  <text x="54" y="552" class="eyebrow muted">ASSESSMENT ONLY</text>
+  <text x="54" y="586" class="card-title ink">Independent checker</text>
+  <text x="54" y="618" class="copy muted">Reads the authorized snapshot.</text>
+  <text x="54" y="644" class="copy muted">Returns findings, coverage,</text>
+  <text x="54" y="668" class="copy muted">and evidence.</text>
+  <rect x="54" y="683" width="190" height="25" rx="12.5" fill="none" stroke="#8b8177" stroke-dasharray="4 4"/>
+  <text x="149" y="701" text-anchor="middle" class="micro muted">CHECKER NEVER DECIDES</text>
+
+  <path d="M195 730V746" class="connector"/>
+  <polygon points="189,746 195,758 201,746" class="arrow"/>
+  <text x="209" y="747" class="route muted">EVIDENCE</text>
+
+  <g filter="url(#asp-mobile-shadow)"><rect x="32" y="762" width="326" height="180" rx="17" class="caller"/></g>
+  <text x="195" y="792" text-anchor="middle" class="eyebrow muted">CALLING TOOL · OWNS THE DECISION</text>
+  <text x="195" y="829" text-anchor="middle" class="caller-title ink">Checks the evidence</text>
+  <rect x="54" y="852" width="282" height="36" rx="9" class="strip"/>
+  <text x="195" y="875" text-anchor="middle" class="copy ink">Confirms the assessment is complete</text>
+  <rect x="54" y="899" width="282" height="35" rx="17.5" class="accent"/>
+  <text x="195" y="922" text-anchor="middle" class="micro" fill="#fffdf9">MAKES THE DECISION</text>
+
+  <path d="M195 950V966" class="connector"/>
+  <polygon points="189,966 195,978 201,966" class="arrow"/>
+  <text x="209" y="967" class="route muted">DECISION + RECEIPT</text>
+
+  <rect x="32" y="982" width="326" height="158" rx="14" class="card"/>
+  <text x="55" y="1012" class="eyebrow muted">AGENT GETS THE RESULT</text>
+  <circle cx="59" cy="1047" r="8" class="accent"/>
+  <text x="80" y="1052" class="card-title ink">Allow · Deny</text>
+  <text x="80" y="1079" class="card-title ink">Unable to decide</text>
+  <text x="55" y="1110" class="copy muted">Receipt: change · rules · evidence</text>
+  <text x="55" y="1132" class="copy muted">checker · decision</text>
+  <g class="receipt-pulse">
+    <rect x="316" y="1097" width="20" height="29" rx="3" class="receipt-outline"/>
+    <path d="M321 1105H331M321 1112H331M321 1119H328" class="receipt-lines"/>
+  </g>
+
+  <text x="195" y="1182" text-anchor="middle" class="micro muted">ASP KEEPS ASSESSMENT AND DECISION SEPARATE</text>
+</svg>

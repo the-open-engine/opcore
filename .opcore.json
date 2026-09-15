@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "documentation": {
+    "bindings": [
+      {
+        "source": "src/analysis/mod.rs",
+        "document": "docs/architecture.md"
+      },
+      {
+        "source": "src/policy.rs",
+        "document": "docs/configuration.md"
+      },
+      {
+        "source": "src/protocol/asp.rs",
+        "document": "docs/architecture.md"
+      },
+      {
+        "source": "src/source/mod.rs",
+        "document": "docs/architecture.md"
+      }
+    ]
+  }
+}

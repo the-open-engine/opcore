@@ -1,0 +1,128 @@
+{
+  "jsonrpc": "2.0",
+  "id": 103,
+  "validates": "outer-host.schema.json#/$defs/evaluateChangesetResult",
+  "result": {
+    "pass": true,
+    "decision": "allow",
+    "callSite": "gate",
+    "changesetDigest": "sha256:core-changeset-allow",
+    "findings": [],
+    "coverage": {
+      "exhaustive": true,
+      "required": [
+        "core-required-check"
+      ],
+      "enrolled": [
+        "core-required-check"
+      ],
+      "ran": [
+        "core-required-check"
+      ],
+      "degraded": []
+    },
+    "policyDigest": "sha256:core-policy",
+    "authorityEvidence": [
+      {
+        "identity": "core-check-provider",
+        "integrity": "sha256:core-provider",
+        "conformance": "asp-core-v1.0-private",
+        "isolation": "gated",
+        "authority": {
+          "granted": true,
+          "requirement": "core-required-check",
+          "policyDigest": "sha256:core-policy"
+        }
+      }
+    ],
+    "validAsOf": {
+      "rev": "tree:core-base",
+      "blobs": [
+        "blob:sha256:c0ffee01",
+        "blob:sha256:c0ffee02"
+      ]
+    },
+    "assurance": {
+      "mode": "gated",
+      "transactionGuarantee": "none"
+    },
+    "receipt": {
+      "receiptId": "core-evaluate-allow-0001",
+      "issuedAt": "2026-06-23T12:01:00Z",
+      "providerProvenance": [
+        {
+          "provider": "core-check-provider",
+          "capability": "check",
+          "identity": "core-check-provider",
+          "integrity": "sha256:core-provider",
+          "conformance": "asp-core-v1.0-private"
+        }
+      ],
+      "policyDigest": "sha256:core-policy",
+      "baseline": {
+        "rev": "tree:core-base",
+        "stampedAt": "2026-06-23T12:00:00Z"
+      },
+      "validAsOf": {
+        "rev": "tree:core-base",
+        "blobs": [
+          "blob:sha256:c0ffee01",
+          "blob:sha256:c0ffee02"
+        ]
+      },
+      "coverage": {
+        "exhaustive": true,
+        "required": [
+          "core-required-check"
+        ],
+        "enrolled": [
+          "core-required-check"
+        ],
+        "ran": [
+          "core-required-check"
+        ],
+        "degraded": []
+      },
+      "authorityEvidence": [
+        {
+          "identity": "core-check-provider",
+          "integrity": "sha256:core-provider",
+          "conformance": "asp-core-v1.0-private",
+          "isolation": "gated",
+          "authority": {
+            "granted": true,
+            "requirement": "core-required-check",
+            "policyDigest": "sha256:core-policy"
+          }
+        }
+      ],
+      "assurance": {
+        "mode": "gated",
+        "transactionGuarantee": "none"
+      },
+      "kind": "evaluate",
+      "host": {
+        "name": "core-host",
+        "version": "0.1.0-private"
+      },
+      "capabilityFamily": "check",
+      "callSite": "gate",
+      "requestDigest": "sha256:examples-core-evaluate-allow-json-request-allow",
+      "changesetDigest": "sha256:core-changeset-allow",
+      "providerIds": [
+        "core-check-provider",
+        "core-required-check"
+      ],
+      "timing": {
+        "startedAt": "2026-06-23T00:00:00Z",
+        "endedAt": "2026-06-23T00:00:00Z",
+        "elapsedMs": 0
+      },
+      "failures": [],
+      "privateOnly": true,
+      "experimental": true,
+      "trustArtifact": false
+    },
+    "requestDigest": "sha256:examples-core-evaluate-allow-json-request-allow"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "changeset": {
+    "baseline": {
+      "rev": "tree:configuration-base"
+    },
+    "changes": []
+  },
+  "scope": "workspace",
+  "comparison": "all",
+  "configuration": null
+}

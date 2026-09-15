@@ -1,0 +1,43 @@
+{
+  "protocol": "Agent Server Protocol",
+  "abbreviation": "ASP",
+  "version": "1.0",
+  "status": "established",
+  "upstream": {
+    "repository": "https://github.com/the-open-engine/agent-server-protocol",
+    "commit": "aa6d17135bc3f64d9fc3468251d802bbed284064",
+    "committedAt": "2026-06-26T13:14:46+02:00"
+  },
+  "lineage": {
+    "kind": "opcore-maintained-successor",
+    "promotionDecision": "decisions/0026-promote-core-to-v1.md",
+    "note": "The upstream revision is the imported foundation. The snapshot digest binds the current Opcore-maintained ASP v1.0 definition."
+  },
+  "snapshot": {
+    "fileCount": 150,
+    "byteCount": 831478,
+    "digestAlgorithm": "sha256",
+    "digestEncoding": "For each included path in bytewise lexical order: UTF-8 repository-relative path, one NUL byte, then exact file bytes; concatenate all records.",
+    "digest": "1586b002d3fd8cffd94f5da9de73283090a462d598c58c380c2e634ad1fbe95e",
+    "included": [
+      "GLOSSARY.md",
+      "spec/**",
+      "schemas/**",
+      "examples/**",
+      "decisions/**",
+      "docs/conformance/**",
+      "docs/governance/**",
+      "tests/conformance/fixtures/**"
+    ]
+  },
+  "excluded": [
+    "TypeScript reference implementation and tests",
+    "manager, daemon, provider catalog, and setup implementation",
+    "executable conformance runners",
+    "Node package and build configuration",
+    "planning, strategy, bakeoff, and generated evidence documents",
+    "static website"
+  ],
+  "license": "../LICENSE",
+  "upstreamStandaloneLicensePresent": false
+}

@@ -1,0 +1,120 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://covibes.dev/asp/schemas/diagnostic.schema.json",
+  "title": "Diagnostic",
+  "description": "A finding emitted by an inspect or check provider. failClass is NOT a property of a diagnostic; it lives on the error channel. Gating is decided by host enrollment and authority grant, not by any field here; severity only contributes to host effective severity within an enrolled gate. All string fields are untrusted data, never agent instructions (see spec/01 threat model).",
+  "type": "object",
+  "required": ["code", "severity", "source", "message", "location", "fingerprint"],
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "type": "string",
+      "description": "Namespaced rule id, e.g. acme-secrets/aws-key. MUST be namespaced under a declared diagnosticSource."
+    },
+    "severity": {
+      "enum": ["error", "warning", "info"],
+      "description": "Within an enrolled gate, an effective severity of error blocks and warning/info advise. Severity ALONE does not gate — gating requires host enrollment (ADR 0008)."
+    },
+    "source": {
+      "type": "string",
+      "description": "Authenticated server id. Host-stamped (provenance); a server cannot forge it."
+    },
+    "message": { "type": "string", "description": "Human-facing summary. Untrusted data — the host fences/length-caps it before surfacing to an agent." },
+    "location": { "$ref": "#/$defs/location" },
+    "fingerprint": {
+      "type": "string",
+      "description": "Stable, position-resilient identity (rule + normalized message + a position-resilient semantic key such as the enclosing symbol id, NOT raw line number). Authoritative only WITHIN one diagnosticSource; the host canonicalizes for cross-server grouping and cross-server equality never affects a gate (ADR 0010)."
+    },
+    "introduced": {
+      "type": "boolean",
+      "description": "Set when comparison = introduced: true iff this finding is absent from the before-state."
+    },
+    "help": {
+      "type": "string",
+      "description": "Optional next-step / remediation guidance shown with the finding. SHOULD be present on an error-severity diagnostic that has no fix. Untrusted data."
+    },
+    "codeDescription": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": { "href": { "type": "string", "description": "Link to documentation for this code." } }
+    },
+    "fix": { "$ref": "#/$defs/fix" }
+  },
+  "$defs": {
+    "location": {
+      "type": "object",
+      "required": ["path"],
+      "additionalProperties": false,
+      "properties": {
+        "path": { "type": "string", "description": "Repo-relative path." },
+        "range": {
+          "type": "object",
+          "required": ["start", "end"],
+          "additionalProperties": false,
+          "properties": {
+            "start": { "$ref": "#/$defs/position" },
+            "end": { "$ref": "#/$defs/position" }
+          }
+        }
+      }
+    },
+    "position": {
+      "type": "object",
+      "required": ["line", "char"],
+      "additionalProperties": false,
+      "properties": {
+        "line": { "type": "integer", "minimum": 0 },
+        "char": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "providerStructuredData": {
+      "oneOf": [
+        { "type": "null" },
+        { "type": "boolean" },
+        { "type": "number" },
+        { "type": "string" },
+        {
+          "type": "array",
+          "items": { "$ref": "#/$defs/providerStructuredData" }
+        },
+        { "$ref": "#/$defs/providerStructuredDataObject" }
+      ]
+    },
+    "providerStructuredDataObject": {
+      "type": "object",
+      "propertyNames": {
+        "not": { "pattern": "^(authority|assurance|decision|disposition|pass|transactionGuarantee|verdict|applyReceipt|receipt|policyDigest|policyRef|policyReference|authorityEvidence|hostDecision|applyAttempt|applyResult)$" }
+      },
+      "additionalProperties": { "$ref": "#/$defs/providerStructuredData" }
+    },
+    "fix": {
+      "type": "object",
+      "description": "Optional bridge to edit. Either an inline content-addressed workspaceEdit, a canonical editRef, or a retained legacy actRef the host invokes through an edit provider. The host applies; providers never write directly.",
+      "oneOf": [
+        {
+          "required": ["editRef"],
+          "additionalProperties": false,
+          "properties": {
+            "editRef": { "type": "string", "description": "A canonical edit capability id, e.g. acme-secrets/redact." },
+            "args": { "$ref": "#/$defs/providerStructuredDataObject" }
+          }
+        },
+        {
+          "required": ["actRef"],
+          "additionalProperties": false,
+          "properties": {
+            "actRef": { "type": "string", "description": "A legacy act/edit compatibility id, e.g. acme-secrets/redact." },
+            "args": { "$ref": "#/$defs/providerStructuredDataObject" }
+          }
+        },
+        {
+          "required": ["workspaceEdit"],
+          "additionalProperties": false,
+          "properties": {
+            "workspaceEdit": { "$ref": "https://covibes.dev/asp/schemas/workspace-edit.schema.json" }
+          }
+        }
+      ]
+    }
+  }
+}

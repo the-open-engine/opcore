@@ -1,0 +1,6 @@
+{
+  "jsonrpc": "2.0",
+  "id": 21,
+  "method": "workspace/readBlob",
+  "params": { "blobs": ["blob:sha256:bb02", "blob:sha256:cc03"] }
+}

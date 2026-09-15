@@ -1,0 +1,62 @@
+{
+  "$schema": "../../schemas/deployment-surface-cases.schema.json",
+  "caseSet": "deployment-surface-boundaries-issue-14",
+  "cases": [
+    {
+      "id": "repo-policy-host-selection",
+      "surface": "repository-policy",
+      "targetSchema": "asp-config.schema.json",
+      "forbiddenFields": ["host", "hostImplementation", "requiredHost", "latticeHost"],
+      "rejection": "schema-rejected",
+      "reason": "Repository policy declares logical ASP requirements only; trusted environment or organization config selects a conforming host."
+    },
+    {
+      "id": "repo-policy-gate-command",
+      "surface": "repository-policy",
+      "targetSchema": "asp-config.schema.json",
+      "forbiddenFields": ["command", "shell", "script", "bash", "npmScript", "makeTarget", "hook", "executable", "launch"],
+      "rejection": "schema-rejected",
+      "reason": "Mutable repository policy cannot choose blocking gate commands or provider launch behavior for the same candidate change."
+    },
+    {
+      "id": "local-override-weakens-gate",
+      "surface": "local-override",
+      "targetSchema": ".asp/local.json",
+      "forbiddenFields": ["authority", "weakenGate", "missingHost", "certifyProvider", "sharedDecision"],
+      "rejection": "policy-rejected",
+      "reason": "Local overrides can add advisory experiments but cannot weaken shared gates, grant shared authority, or produce shared authoritative decisions."
+    },
+    {
+      "id": "manifest-as-trust-root",
+      "surface": "server-manifest",
+      "targetSchema": "server-manifest.schema.json",
+      "forbiddenFields": ["trusted", "authority", "gateAuthority", "trustRoot"],
+      "rejection": "host-rejected",
+      "reason": "Installed manifests are metadata and launch hints; the host still validates identity, integrity, conformance, isolation, and authority."
+    },
+    {
+      "id": "manifest-inherited-environment",
+      "surface": "server-manifest",
+      "targetSchema": "server-manifest.schema.json",
+      "forbiddenFields": ["environment.inherit:true", "ambientFilesystem", "ambientNetwork", "ambientSecrets", "ambientData"],
+      "rejection": "schema-rejected",
+      "reason": "Filesystem, network, secret, environment, and data access must be declared and granted explicitly; inherited process access is not trust evidence."
+    },
+    {
+      "id": "registry-certification-authority",
+      "surface": "provider-descriptor",
+      "targetSchema": "server-manifest.schema.json",
+      "forbiddenFields": ["registry", "registryMembership", "certification", "certified", "firstPartyAuthority"],
+      "rejection": "host-rejected",
+      "reason": "Package scope, provenance, registry membership, first-party labels, and certification cannot grant blocking authority without explicit pinned policy."
+    },
+    {
+      "id": "stable-public-manifest-claim",
+      "surface": "release-surface",
+      "targetSchema": "index.json",
+      "forbiddenFields": ["publicStable", "stableManifest", "stableDescriptor", "stableDeploymentPath", "publicRegistry"],
+      "rejection": "deferred",
+      "reason": "Public release surfaces stay deferred until a later accepted ADR and maintainer approval promote them."
+    }
+  ]
+}

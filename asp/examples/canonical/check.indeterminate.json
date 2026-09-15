@@ -1,0 +1,101 @@
+{
+  "jsonrpc": "2.0",
+  "id": 3,
+  "validates": "outer-host.schema.json#/$defs/evaluateChangesetResult",
+  "result": {
+    "pass": false,
+    "decision": "indeterminate",
+    "callSite": "gate",
+    "findings": [],
+    "coverage": {
+      "exhaustive": false,
+      "required": [
+        "required-check"
+      ],
+      "enrolled": [
+        "required-check"
+      ],
+      "ran": [],
+      "degraded": [
+        {
+          "source": "required-check",
+          "reason": "missing-required-provider",
+          "requirement": "required-check",
+          "detail": "Required check provider is not enrolled."
+        }
+      ]
+    },
+    "policyDigest": "sha256:example-policy",
+    "authorityEvidence": [],
+    "validAsOf": {
+      "rev": "tree:example-base"
+    },
+    "assurance": {
+      "mode": "gated",
+      "transactionGuarantee": "none"
+    },
+    "receipt": {
+      "receiptId": "check-indeterminate-0001",
+      "issuedAt": "2026-06-23T12:02:00Z",
+      "providerProvenance": [],
+      "policyDigest": "sha256:example-policy",
+      "baseline": {
+        "rev": "tree:example-base"
+      },
+      "validAsOf": {
+        "rev": "tree:example-base"
+      },
+      "coverage": {
+        "exhaustive": false,
+        "required": [
+          "required-check"
+        ],
+        "enrolled": [
+          "required-check"
+        ],
+        "ran": [],
+        "degraded": [
+          {
+            "source": "required-check",
+            "reason": "missing-required-provider",
+            "requirement": "required-check",
+            "detail": "Required check provider is not enrolled."
+          }
+        ]
+      },
+      "authorityEvidence": [],
+      "assurance": {
+        "mode": "gated",
+        "transactionGuarantee": "none"
+      },
+      "kind": "evaluate",
+      "host": {
+        "name": "core-host",
+        "version": "0.1.0-private"
+      },
+      "capabilityFamily": "check",
+      "callSite": "gate",
+      "requestDigest": "sha256:examples-canonical-check-indeterminate-json-request-indeterminate",
+      "changesetDigest": "sha256:examples-canonical-check-indeterminate-json-changeset-indeterminate",
+      "providerIds": [],
+      "timing": {
+        "startedAt": "2026-06-23T00:00:00Z",
+        "endedAt": "2026-06-23T00:00:00Z",
+        "elapsedMs": 0
+      },
+      "failures": [
+        {
+          "source": "required-check",
+          "reason": "missing-required-provider",
+          "requirement": "required-check",
+          "detail": "Required check provider is not enrolled."
+        }
+      ],
+      "privateOnly": true,
+      "experimental": true,
+      "trustArtifact": false
+    },
+    "requestDigest": "sha256:examples-canonical-check-indeterminate-json-request-indeterminate",
+    "changesetDigest": "sha256:examples-canonical-check-indeterminate-json-changeset-indeterminate"
+  }
+}

@@ -1,0 +1,208 @@
+{
+  "jsonrpc": "2.0",
+  "id": 10,
+  "validates": "outer-host.schema.json#/$defs/applyProposalResult",
+  "result": {
+    "applied": true,
+    "proposalId": "proposal-redact-secret-0001",
+    "baselineBefore": {
+      "rev": "tree:abc123",
+      "stampedAt": "2026-06-22T20:00:00Z"
+    },
+    "baselineAfter": {
+      "rev": "tree:def456",
+      "stampedAt": "2026-06-22T20:10:00Z"
+    },
+    "assurance": {
+      "mode": "gated",
+      "transactionGuarantee": "none"
+    },
+    "decision": {
+      "pass": true,
+      "decision": "allow",
+      "callSite": "gate",
+      "findings": [],
+      "coverage": {
+        "exhaustive": true,
+        "required": [
+          "lattice"
+        ],
+        "enrolled": [
+          "lattice"
+        ],
+        "ran": [
+          "lattice"
+        ],
+        "degraded": []
+      },
+      "policyDigest": "sha256:policyabc123",
+      "authorityEvidence": [
+        {
+          "identity": "the-open-engine",
+          "integrity": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+          "conformance": "lattice-alpha",
+          "isolation": "gated",
+          "authority": {
+            "granted": true,
+            "requirement": "lattice-alpha-check",
+            "policyDigest": "sha256:policyabc123"
+          }
+        }
+      ],
+      "validAsOf": {
+        "rev": "tree:abc123"
+      },
+      "assurance": {
+        "mode": "gated",
+        "transactionGuarantee": "none"
+      },
+      "receipt": {
+        "receiptId": "apply-validation-0001",
+        "issuedAt": "2026-06-22T20:09:00Z",
+        "providerProvenance": [
+          {
+            "provider": "lattice",
+            "capability": "check",
+            "identity": "the-open-engine",
+            "integrity": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+            "conformance": "lattice-alpha"
+          }
+        ],
+        "policyDigest": "sha256:policyabc123",
+        "baseline": {
+          "rev": "tree:abc123",
+          "stampedAt": "2026-06-22T20:00:00Z"
+        },
+        "validAsOf": {
+          "rev": "tree:abc123"
+        },
+        "coverage": {
+          "exhaustive": true,
+          "required": [
+            "lattice"
+          ],
+          "enrolled": [
+            "lattice"
+          ],
+          "ran": [
+            "lattice"
+          ],
+          "degraded": []
+        },
+        "authorityEvidence": [
+          {
+            "identity": "the-open-engine",
+            "integrity": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+            "conformance": "lattice-alpha",
+            "isolation": "gated",
+            "authority": {
+              "granted": true,
+              "requirement": "lattice-alpha-check",
+              "policyDigest": "sha256:policyabc123"
+            }
+          }
+        ],
+        "assurance": {
+          "mode": "gated",
+          "transactionGuarantee": "none"
+        },
+        "kind": "evaluate",
+        "host": {
+          "name": "core-host",
+          "version": "0.1.0-private"
+        },
+        "capabilityFamily": "check",
+        "callSite": "gate",
+        "requestDigest": "sha256:examples-outer-apply-response-json-request-allow",
+        "changesetDigest": "sha256:examples-outer-apply-response-json-changeset-allow",
+        "providerIds": [
+          "lattice",
+          "the-open-engine"
+        ],
+        "timing": {
+          "startedAt": "2026-06-23T00:00:00Z",
+          "endedAt": "2026-06-23T00:00:00Z",
+          "elapsedMs": 0
+        },
+        "failures": [],
+        "privateOnly": true,
+        "experimental": true,
+        "trustArtifact": false
+      },
+      "requestDigest": "sha256:examples-outer-apply-response-json-request-allow",
+      "changesetDigest": "sha256:examples-outer-apply-response-json-changeset-allow"
+    },
+    "receipt": {
+      "receiptId": "apply-0001",
+      "issuedAt": "2026-06-22T20:10:00Z",
+      "providerProvenance": [
+        {
+          "provider": "lattice",
+          "capability": "edit",
+          "identity": "the-open-engine",
+          "integrity": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+          "conformance": "lattice-alpha"
+        }
+      ],
+      "policyDigest": "sha256:policyabc123",
+      "baseline": {
+        "rev": "tree:abc123",
+        "stampedAt": "2026-06-22T20:00:00Z"
+      },
+      "validAsOf": {
+        "rev": "tree:def456"
+      },
+      "coverage": {
+        "exhaustive": true,
+        "required": [
+          "lattice"
+        ],
+        "enrolled": [
+          "lattice"
+        ],
+        "ran": [
+          "lattice"
+        ],
+        "degraded": []
+      },
+      "authorityEvidence": [
+        {
+          "identity": "the-open-engine",
+          "integrity": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+          "conformance": "lattice-alpha",
+          "isolation": "gated",
+          "authority": {
+            "granted": true,
+            "requirement": "lattice-alpha-check",
+            "policyDigest": "sha256:policyabc123"
+          }
+        }
+      ],
+      "assurance": {
+        "mode": "gated",
+        "transactionGuarantee": "none"
+      },
+      "kind": "apply-attempt",
+      "host": {
+        "name": "core-host",
+        "version": "0.1.0-private"
+      },
+      "capabilityFamily": "edit",
+      "requestDigest": "sha256:examples-outer-apply-response-json-apply-attempt-[object Object]",
+      "proposalId": "proposal-redact-secret-0001",
+      "providerIds": [
+        "lattice",
+        "the-open-engine"
+      ],
+      "timing": {
+        "startedAt": "2026-06-23T00:00:00Z",
+        "endedAt": "2026-06-23T00:00:00Z",
+        "elapsedMs": 0
+      },
+      "failures": [],
+      "privateOnly": true,
+      "experimental": true,
+      "trustArtifact": false
+    }
+  }
+}

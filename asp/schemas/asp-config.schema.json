@@ -1,0 +1,157 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://covibes.dev/asp/schemas/asp-config.schema.json",
+  "title": "Experimental ASP repository policy",
+  "description": "Experimental .asp/asp.json logical-only repository policy. It expresses protocol versions, capability requirements, gate call-sites, budgets, adapter expectations, assurance requirements, explicit pinned provider authority, and authority requirements. Closed objects intentionally leave no host-selection or repo-controlled command, shell, script, executable, launch, trust-root, or self-authorizing candidate-policy escape hatch.",
+  "type": "object",
+  "required": ["aspVersion", "requirements", "gates", "policy"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Optional schema pointer for editor and fixture validation. It is not policy, authority, host selection, or launch metadata."
+    },
+    "aspVersion": {
+      "type": "string",
+      "pattern": "^asp/[0-9]+\\.[0-9]+"
+    },
+    "requirements": {
+      "type": "array",
+      "description": "Logical requirements only. Repository policy cannot select or launch the host/provider implementation that satisfies them.",
+      "items": { "$ref": "#/$defs/requirement" },
+      "minItems": 1
+    },
+    "gates": {
+      "type": "object",
+      "required": ["interactive", "gate", "sweep"],
+      "additionalProperties": false,
+      "properties": {
+        "interactive": { "$ref": "#/$defs/callSiteGate" },
+        "gate": { "$ref": "#/$defs/callSiteGate" },
+        "sweep": { "$ref": "#/$defs/callSiteGate" }
+      }
+    },
+    "policy": {
+      "type": "object",
+      "description": "Shared policy behavior. Candidate policy changes activate only after trusted approval and cannot authorize themselves.",
+      "required": ["policyChangeActivation", "candidatePolicyAuthority", "missingHost", "authorityModel"],
+      "additionalProperties": false,
+      "properties": {
+        "authorityModel": {
+          "const": "explicit-pinned-provider",
+          "description": "Provider conformance or certification never grants authority by itself."
+        },
+        "policyChangeActivation": {
+          "enum": ["base-policy-two-phase"],
+          "description": "Policy edits activate after merge or trusted approval, not for the same change that introduces them."
+        },
+        "candidatePolicyAuthority": {
+          "const": "trusted-base-or-organization-floor",
+          "description": "Candidate policy may be pending, but cannot authorize the same change that introduces or weakens it."
+        },
+        "missingHost": {
+          "type": "object",
+          "required": ["interactive", "gate", "sweep"],
+          "additionalProperties": false,
+          "properties": {
+            "interactive": { "enum": ["warn-open", "fail-closed"] },
+            "gate": { "const": "fail-closed" },
+            "sweep": { "enum": ["warn-open", "fail-closed"] }
+          }
+        }
+      }
+    },
+    "budgets": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "interactiveMs": { "type": "integer", "minimum": 1 },
+        "gateMs": { "type": "integer", "minimum": 1 },
+        "sweepMs": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "adapters": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mcp": { "$ref": "#/$defs/adapterPolicy" },
+        "acp": { "$ref": "#/$defs/adapterPolicy" }
+      }
+    }
+  },
+  "$defs": {
+    "requirement": {
+      "type": "object",
+      "description": "A named logical requirement satisfied only by explicitly pinned provider authority evidence.",
+      "required": ["id", "capabilities", "assurance", "authority"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "capabilities": {
+          "type": "array",
+          "items": { "$ref": "https://covibes.dev/asp/schemas/assurance.schema.json#/$defs/capabilityFamily" },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "assurance": {
+          "type": "array",
+          "items": { "$ref": "https://covibes.dev/asp/schemas/assurance.schema.json#/$defs/assuranceMode" },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "authority": {
+          "type": "object",
+          "required": ["providers"],
+          "additionalProperties": false,
+          "properties": {
+            "providers": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/pinnedProvider" },
+              "minItems": 1
+            }
+          }
+        }
+      }
+    },
+    "pinnedProvider": {
+      "type": "object",
+      "required": ["id", "version", "identity", "integrity", "conformance"],
+      "additionalProperties": false,
+      "description": "Policy-pinned provider identity and artifact metadata. Authority comes from this policy grant for a named requirement, not from an installed manifest, registry, or certification label.",
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "version": { "type": "string", "minLength": 1 },
+        "package": { "type": "string" },
+        "identity": { "type": "string", "minLength": 1 },
+        "integrity": { "type": "string", "minLength": 1 },
+        "conformance": { "type": "string", "minLength": 1 }
+      }
+    },
+    "callSiteGate": {
+      "type": "object",
+      "required": ["requiredRequirements", "optionalRequirements"],
+      "additionalProperties": false,
+      "properties": {
+        "requiredRequirements": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        },
+        "optionalRequirements": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        }
+      }
+    },
+    "adapterPolicy": {
+      "type": "object",
+      "required": ["enabled"],
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "mode": { "enum": ["inspect-status-only", "full-outer-seam", "mcp-extension-candidate"] }
+      }
+    }
+  }
+}

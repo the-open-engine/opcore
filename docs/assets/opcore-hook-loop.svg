@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="720" viewBox="0 0 960 720" role="img" aria-labelledby="hook-title hook-desc">
+  <title id="hook-title">Opcore installed post-write Verify and Project Sense loop</title>
+  <desc id="hook-desc">A coding agent writes source. The installed PostToolUse hook captures the changed Git snapshot and runs the post-edit Verify and Sense workflow. Findings return evidence for repair. Allowed partial Sense coverage produces one hint. Pre-commit and CI run separate final checks.</desc>
+  <defs>
+    <filter id="hook-shadow" x="-15%" y="-20%" width="130%" height="150%">
+      <feDropShadow dx="0" dy="8" stdDeviation="11" flood-color="#171411" flood-opacity=".10"/>
+    </filter>
+    <linearGradient id="hook-gate-fill" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fffdf9"/>
+      <stop offset="1" stop-color="#f3eee6"/>
+    </linearGradient>
+    <style>
+      .bg{fill:#faf7f1}.card{fill:#fffdf9;stroke:#c9c1b6;stroke-width:2}.gate{fill:url(#hook-gate-fill);stroke:#171411;stroke-width:3}.soft{fill:#f1ece4;stroke:#c9c1b6;stroke-width:1.4}.result{fill:#fffdf9;stroke:#171411;stroke-width:2}.accent{fill:#c2240c}.ink{fill:#171411}.muted{fill:#625b54}.connector{fill:none;stroke:#736b63;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}.repair{fill:none;stroke:#736b63;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:7 8}.arrow{fill:#736b63}.eyebrow{font:700 12px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:1.8px}.heading{font:600 29px Georgia,"Times New Roman",serif}.card-title{font:700 19px ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}.gate-title{font:700 36px Georgia,"Times New Roman",serif;letter-spacing:-.4px}.copy{font:15px ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}.micro{font:600 12px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.25px}.route{font:700 10px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.8px}.activity{fill:#c2240c;animation:hook-activity 2.8s ease-in-out infinite}.activity.two{animation-delay:.25s}.activity.three{animation-delay:.5s}@keyframes hook-activity{0%,22%,100%{opacity:.18}45%{opacity:1}68%{opacity:.35}}@media(prefers-color-scheme:dark){.bg{fill:#14110e}.card,.result{fill:#1d1915;stroke:#5e564e}.gate{fill:#1d1915;stroke:#faf7f1}.soft{fill:#29231e;stroke:#5e564e}.ink{fill:#faf7f1}.muted{fill:#c2b9af}.connector,.repair{stroke:#a79e94}.arrow{fill:#a79e94}#hook-shadow feDropShadow{flood-color:#000;flood-opacity:.32}}@media(prefers-reduced-motion:reduce){.activity{animation:none;opacity:.55}}
+    </style>
+  </defs>
+
+  <rect class="bg" width="960" height="720" rx="24"/>
+  <text x="52" y="47" class="eyebrow muted">OPCORE ZERO · INSTALLED POST-WRITE CHECK</text>
+  <text x="52" y="84" class="heading ink">Verify and Project Sense stay inside the agent's repair loop</text>
+  <rect x="52" y="99" width="72" height="4" rx="2" class="accent"/>
+
+  <rect x="52" y="132" width="220" height="112" rx="14" class="card"/>
+  <text x="75" y="163" class="eyebrow muted">01 · SOURCE WRITE</text>
+  <text x="75" y="194" class="card-title ink">Agent writes code</text>
+  <text x="75" y="220" class="copy muted">A file edit finishes.</text>
+
+  <path d="M280 188H352" class="connector"/>
+  <polygon points="352,181 366,188 352,195" class="arrow"/>
+
+  <rect x="368" y="132" width="224" height="112" rx="14" class="card"/>
+  <text x="391" y="163" class="eyebrow muted">02 · AUTOMATIC HOOK</text>
+  <text x="391" y="194" class="card-title ink">PostToolUse fires</text>
+  <text x="391" y="220" class="copy muted">Installed by default.</text>
+
+  <path d="M600 188H672" class="connector"/>
+  <polygon points="672,181 686,188 672,195" class="arrow"/>
+
+  <rect x="688" y="132" width="244" height="112" rx="14" class="card"/>
+  <text x="711" y="163" class="eyebrow muted">03 · EXACT INPUT</text>
+  <text x="711" y="194" class="card-title ink">Changed Git snapshot</text>
+  <text x="711" y="220" class="copy muted">Baseline + candidate bytes.</text>
+
+  <path d="M798 252V272H480V286" class="connector"/>
+  <polygon points="473,286 480,300 487,286" class="arrow"/>
+
+  <g filter="url(#hook-shadow)">
+    <rect x="210" y="302" width="540" height="204" rx="20" class="gate"/>
+  </g>
+  <text x="480" y="338" text-anchor="middle" class="eyebrow muted">04 · DETERMINISTIC GATE</text>
+  <text x="480" y="383" text-anchor="middle" class="gate-title ink">VERIFY + PROJECT SENSE</text>
+  <rect x="246" y="407" width="100" height="36" rx="18" class="soft"/>
+  <rect x="358" y="407" width="100" height="36" rx="18" class="soft"/>
+  <rect x="470" y="407" width="100" height="36" rx="18" class="soft"/>
+  <rect x="582" y="407" width="132" height="36" rx="18" class="soft"/>
+  <text x="296" y="430" text-anchor="middle" class="micro ink">FILE RULES</text>
+  <text x="408" y="430" text-anchor="middle" class="micro ink">CODE SHAPE</text>
+  <text x="520" y="430" text-anchor="middle" class="micro ink">DEPENDENCIES</text>
+  <text x="648" y="430" text-anchor="middle" class="micro ink">DUPLICATION</text>
+  <text x="480" y="473" text-anchor="middle" class="copy muted">Pinned parsers · request-local graph · repository code never runs</text>
+  <circle cx="690" cy="335" r="4" class="activity"/>
+  <circle cx="705" cy="335" r="4" class="activity two"/>
+  <circle cx="720" cy="335" r="4" class="activity three"/>
+
+  <path d="M345 514V538H247V552" class="connector"/>
+  <polygon points="240,552 247,566 254,552" class="arrow"/>
+  <text x="276" y="535" class="route muted">FINDING</text>
+
+  <path d="M615 514V538H713V552" class="connector"/>
+  <polygon points="706,552 713,566 720,552" class="arrow"/>
+  <text x="637" y="535" class="route muted">NO FINDING</text>
+
+  <rect x="52" y="568" width="390" height="104" rx="14" class="result"/>
+  <rect x="52" y="568" width="7" height="104" rx="3.5" class="accent"/>
+  <text x="82" y="600" class="eyebrow muted">REPAIR FEEDBACK · EXIT 2</text>
+  <text x="82" y="631" class="card-title ink">Repair with exact evidence</text>
+  <text x="82" y="655" class="micro muted">file : line · rule · message</text>
+
+  <rect x="518" y="568" width="390" height="104" rx="14" class="result"/>
+  <circle cx="552" cy="620" r="9" class="accent"/>
+  <text x="578" y="600" class="eyebrow muted">NO FINDINGS · EXIT 0</text>
+  <text x="578" y="631" class="card-title ink">Continue working</text>
+  <text x="578" y="655" class="micro muted">partial evidence → one hint</text>
+
+  <path d="M44 620H24V188H36" class="repair"/>
+  <polygon points="36,181 50,188 36,195" class="arrow"/>
+  <text x="15" y="430" transform="rotate(-90 15 430)" text-anchor="middle" class="route muted">REPAIR SOURCE · THE HOOK CHECKS AGAIN</text>
+
+  <text x="480" y="704" text-anchor="middle" class="micro muted">Findings stay in the loop until the changed snapshot is clean.</text>
+</svg>

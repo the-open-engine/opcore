@@ -1,9 +1,0 @@
-{
-  "artifactName": "opcore-graph-core",
-  "artifactVersion": "0.2.2",
-  "targetPlatform": "linux-x64",
-  "binaryPath": "opcore-graph-core",
-  "checksumPath": "opcore-graph-core.sha256",
-  "checksumSha256": "70402bf42a09c01ea01f72199ee1985684a217da940cd1454bd4614ba63b12cf",
-  "buildProfile": "release"
-}

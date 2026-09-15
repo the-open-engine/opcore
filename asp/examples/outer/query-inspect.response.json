@@ -1,0 +1,130 @@
+{
+  "jsonrpc": "2.0",
+  "id": 401,
+  "validates": "outer-host.schema.json#/$defs/queryInspectResult",
+  "result": {
+    "data": {
+      "results": [
+        {
+          "provider": "fake-inspect",
+          "result": {
+            "nodes": [
+              {
+                "id": "file:src/core.ts",
+                "kind": "file",
+                "path": "src/core.ts",
+                "blobId": "blob:sha256:c0ffee01"
+              }
+            ],
+            "edges": [],
+            "data": {
+              "request": {
+                "kind": "fixture/graph"
+              }
+            },
+            "validAsOf": {
+              "rev": "tree:outer-base",
+              "blobs": [
+                "blob:sha256:c0ffee01"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "validAsOf": {
+      "rev": "tree:outer-base",
+      "blobs": [
+        "blob:sha256:c0ffee01"
+      ]
+    },
+    "coverage": {
+      "exhaustive": true,
+      "required": [
+        "fake-inspect/inspect"
+      ],
+      "enrolled": [
+        "fake-inspect/inspect"
+      ],
+      "ran": [
+        "fake-inspect/inspect"
+      ],
+      "degraded": []
+    },
+    "receipt": {
+      "receiptId": "core-inspect-0001",
+      "issuedAt": "2026-06-26T02:45:00Z",
+      "kind": "inspect",
+      "host": {
+        "name": "@the-open-engine/asp",
+        "version": "0.1.0-private"
+      },
+      "capabilityFamily": "inspect",
+      "callSite": "interactive",
+      "requestDigest": "sha256:query-inspect",
+      "providerIds": [
+        "fake-inspect",
+        "fake-inspect/inspect"
+      ],
+      "providerProvenance": [
+        {
+          "provider": "fake-inspect",
+          "capability": "inspect",
+          "identity": "fake-inspect",
+          "integrity": "sha256:fake-inspect",
+          "conformance": "not_claimed"
+        }
+      ],
+      "policyDigest": "sha256:core-policy",
+      "baseline": {
+        "rev": "tree:outer-base"
+      },
+      "validAsOf": {
+        "rev": "tree:outer-base",
+        "blobs": [
+          "blob:sha256:c0ffee01"
+        ]
+      },
+      "coverage": {
+        "exhaustive": true,
+        "required": [
+          "fake-inspect/inspect"
+        ],
+        "enrolled": [
+          "fake-inspect/inspect"
+        ],
+        "ran": [
+          "fake-inspect/inspect"
+        ],
+        "degraded": []
+      },
+      "authorityEvidence": [
+        {
+          "identity": "fake-inspect",
+          "integrity": "sha256:fake-inspect",
+          "conformance": "not_claimed",
+          "isolation": "gated",
+          "authority": {
+            "granted": true,
+            "requirement": "fake-inspect/inspect",
+            "callSite": "interactive",
+            "policyDigest": "sha256:core-policy"
+          }
+        }
+      ],
+      "assurance": {
+        "mode": "gated",
+        "transactionGuarantee": "none"
+      },
+      "timing": {
+        "startedAt": "2026-06-26T02:45:00Z",
+        "endedAt": "2026-06-26T02:45:00Z",
+        "elapsedMs": 0
+      },
+      "failures": [],
+      "privateOnly": true,
+      "experimental": true,
+      "trustArtifact": false
+    }
+  }
+}
