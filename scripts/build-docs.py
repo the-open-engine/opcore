@@ -239,9 +239,9 @@ def build(api, reference, output):
         prepare_api(site / "api", site)
         shutil.copytree(ROOT / "docs", site / "docs")
         shutil.copytree(ROOT / "asp", site / "asp")
-        for name in ("README.md", "CONTRIBUTING.md", "LICENSE"):
+        for name in ("README.md", "CONTRIBUTING.md", "CODE_OF_CONDUCT.md", "SECURITY.md", "LICENSE"):
             shutil.copy2(ROOT / name, site / name)
-        sources = [ROOT / "README.md", ROOT / "CONTRIBUTING.md"]
+        sources = [ROOT / name for name in ("README.md", "CONTRIBUTING.md", "CODE_OF_CONDUCT.md", "SECURITY.md")]
         sources += sorted((ROOT / "docs").rglob("*.md")) + sorted((ROOT / "asp").rglob("*.md"))
         pages = {source.resolve(): source.relative_to(ROOT).with_suffix(".html") for source in sources}
         pages[(ROOT / "README.md").resolve()] = Path("index.html")
