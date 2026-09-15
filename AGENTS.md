@@ -4,6 +4,8 @@ UPDATE THIS FILE when changing architecture, protocols, language coverage, cache
 
 Opcore 0.3 replaces the legacy implementation in `the-open-engine/opcore` with the source snapshot developed in Opcore Zero. Keep `legacy` and existing release tags intact. The public npm package is `@the-open-engine-company/opcore`; executable/crate names, `.opcore.json`, `OPCORE_*` settings, provider identities, cache domains, and installation ownership use `opcore`. Do not adopt legacy or Zero hooks/receipts silently. Parser semantics and the pinned ASP definition remain unchanged by the product rename.
 
+Release publication uploads the complete asset set to a draft before publishing the immutable GitHub Release. Never publish an empty immutable release and try to attach its assets afterward.
+
 Opcore is one Rust package containing the pinned ASP definition, a private bundled-provider harness/composer, fast, Rust-native, Node-native, and Python-native ASP Core v1.0 `check` providers, the local verification CLI, and local dependency Sense. Providers produce assessments; conforming outer hosts own decisions, authority, assurance, receipts, and apply behavior.
 
 ## Product Boundary

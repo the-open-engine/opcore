@@ -346,11 +346,12 @@ jobs:
             exit 1
           fi
           printf 'archive=%s\n' "$package" >> "$GITHUB_OUTPUT"
-      - name: Publish immutable GitHub Release assets
+      - name: Upload GitHub Release assets to a draft
         uses: softprops/action-gh-release@5be0e66d93ac7ed76da52eca8bb058f665c3a5fe # v2.4.2
         with:
           tag_name: ${{ github.ref_name }}
           name: Opcore ${{ github.ref_name }}
+          draft: true
           generate_release_notes: true
           fail_on_unmatched_files: true
           overwrite_files: false
@@ -358,6 +359,11 @@ jobs:
             ${{ runner.temp }}/opcore-publish/opcore-v${{ steps.release.outputs.version }}-linux-x86_64.tar.gz
             ${{ runner.temp }}/opcore-publish/opcore-v${{ steps.release.outputs.version }}-macos-arm64.tar.gz
             ${{ runner.temp }}/opcore-publish/SHA256SUMS
+      - name: Publish the complete immutable GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: gh release edit "$RELEASE_TAG" --draft=false --latest
       - name: Test packed npm lifecycle against the release
         env:
           NPM_PACKAGE: ${{ steps.npm-package.outputs.archive }}
