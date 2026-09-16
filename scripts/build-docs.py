@@ -134,7 +134,7 @@ def is_source_reference(target, site):
     parts = target.relative_to(site).parts
     if parts[:2] == ("api", "src"):
         return True
-    version = parts[0] in ("dev", "stable") or re.fullmatch(r"v[0-9]+\.[0-9]+\.[0-9]+", parts[0])
+    version = parts[0] in ("dev", "stable") or re.fullmatch(r"v[0-9]+\.[0-9]+", parts[0])
     return bool(version) and parts[1:3] == ("api", "src")
 
 

@@ -5,7 +5,7 @@
   if (!control) return;
   const select = control.querySelector('select');
   const siteRoot = new URL(control.dataset.siteRoot, location.href);
-  const versionName = /^(dev|v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*))$/;
+  const versionName = /^(dev|v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*))$/;
 
   async function loadVersions() {
     const response = await fetch(new URL('versions.json', siteRoot));

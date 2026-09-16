@@ -2,18 +2,20 @@
 
 [Overview](../README.md) · [Getting started](getting-started.md) · [Architecture](architecture.md)
 
-Opcore uses the same documentation URLs as Zeroshot. Paths below are relative to
-`https://the-open-engine.github.io/opcore/`.
+Opcore archives documentation by minor version. Each archive follows the latest
+published patch in that series: `v0.3.1` updates `v0.3/`, while `v0.4.0` starts
+`v0.4/`. Patch releases do not create separate directories or selector entries.
+Paths below are relative to `https://the-open-engine.github.io/opcore/`.
 
 | Path | Content | Changes later? |
 | --- | --- | --- |
-| `vX.Y.Z/` | Documentation for one exact release | No |
-| `stable/` | Redirects to the newest published release snapshot | Yes |
+| `vX.Y/` | Documentation for the latest archived patch in one minor series | On a newer patch in that series |
+| `stable/` | Redirects to the newest archived minor series | Yes |
 | `dev/` | Documentation from current `main` | Yes |
 | `versions.json` | Version selector entries, including the stable alias | Yes |
-| `vX.Y.Z/manifest.json` | Source identity and named documentation routes | No |
+| `vX.Y/manifest.json` | Exact patch version, source identity, and named routes | With its archive |
 
-The site root opens `stable` after the first release snapshot is published. Until
+The site root opens `stable` after the first release archive is promoted. Until
 then, it opens `dev`. Existing unversioned HTML links, including
 `docs/getting-started.html`, redirect to the corresponding page in the default
 version and retain query parameters and anchors.
@@ -29,8 +31,8 @@ Every snapshot contains a manifest with this structure:
 ```json
 {
   "schemaVersion": 1,
-  "docsVersion": "v0.3.0",
-  "productVersion": "0.3.0",
+  "docsVersion": "v0.3",
+  "productVersion": "0.3.1",
   "sourceCommit": "FULL_SOURCE_COMMIT",
   "publisherCommit": "FULL_PUBLISHER_COMMIT",
   "contentDigest": "sha256:SNAPSHOT_DIGEST",
@@ -52,10 +54,10 @@ and bundled ASP definition. `publisherCommit` identifies the version selector
 and publication tools. Both are full Git commit IDs. `productVersion` is `null`
 for development documentation.
 
-To link to documentation for an installed release, read its exact manifest,
-check `schemaVersion` and `productVersion`, and resolve a named route against
-that version's base URL. For example, `v0.3.0/` plus `routes.cli` selects
-`v0.3.0/cli.html`.
+To link to documentation for an installed release, use its major and minor
+version and resolve a named route against that archive's base URL. For example,
+`v0.3/` plus `routes.cli` selects `v0.3/cli.html`. The manifest records which patch
+the archive currently describes; it may be newer than the installed patch.
 
 `contentDigest` covers each sorted relative file path and its bytes, excluding
 the manifest itself. Each path and content value has an unsigned 64-bit
@@ -66,10 +68,17 @@ stored snapshots before adding another version.
 
 After a successful push-triggered CI run, **Publish versioned documentation**
 builds the exact source commit. A `main` build updates `dev`; a completed release
-build adds its `vX.Y.Z` snapshot and updates `stable`. The publisher verifies that
+build updates its `vX.Y` archive and selects the newest archived minor for
+`stable`. The publisher verifies that
 the source belongs to `main`, that a release tag resolves to that source, and
-that its version matches the Cargo package. Stable promotion also requires the
-newest release tag.
+that its exact patch version matches the Cargo package. Stable selection uses
+the published archives, so a newer tag whose build has not finished cannot
+block documentation publication.
+
+A patch for an older series updates that series without moving `stable`
+backwards. Version comparisons are numeric: `0.3.10` replaces `0.3.2`. A late
+`0.3.3` publication leaves the `0.3.10` archive untouched. The manifest always
+records the source commit of the patch whose content remains in the archive.
 
 GitHub Pages uses **GitHub Actions** as its publishing source. The publisher
 stores the complete version tree on `gh-pages`, then deploys that tree through
@@ -82,7 +91,8 @@ For development recovery, run:
 gh workflow run docs.yml --repo the-open-engine/opcore --ref main
 ```
 
-To publish or recover an exact release, supply its tag and source commit:
+To update or recover a minor archive, supply the exact release tag and source
+commit to build:
 
 ```sh
 docs_source_commit=$(git rev-parse 'refs/tags/v0.3.0^{commit}')
@@ -92,10 +102,13 @@ gh workflow run docs.yml --repo the-open-engine/opcore --ref main \
   -F stable=true
 ```
 
-Manual recovery repeats the strict documentation build and provenance checks.
-A retry from the same source preserves the stored release pages and can repair
-the stable alias or retry deployment. Another source commit cannot overwrite
-that version. Omit `stable=true` when adding an older release snapshot.
+This creates or updates `v0.3/`; it does not create `v0.3.0/`. Manual recovery
+repeats the strict documentation build and provenance checks. A retry of the
+currently archived release preserves its stored pages and can repair the
+stable alias or retry deployment. Another source commit cannot replace that
+same release, and an older patch cannot roll back the archive. Only a newer
+patch replaces its content. Omit `stable=true` when updating an older minor;
+explicit stable promotion rejects an older series.
 
 Opcore 0.3.0 already contains the static documentation builder, so its exact tag
 can initialize versioned documentation after this publisher lands. Legacy tags

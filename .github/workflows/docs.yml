@@ -7,13 +7,13 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: Exact vX.Y.Z release; omit for dev documentation.
+        description: Exact vX.Y.Z release to update its vX.Y docs; omit for dev.
         type: string
       release_commit:
         description: Full source commit on main; omit for current main.
         type: string
       stable:
-        description: Point stable and the site root at this release.
+        description: Point stable at this minor series; it must be the newest archive.
         type: boolean
         default: false
 
@@ -48,7 +48,8 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       DOCS_VERSION: ${{ inputs.version || (github.event.workflow_run.head_branch != 'main' && github.event.workflow_run.head_branch) || 'dev' }}
       SOURCE_COMMIT: ${{ inputs.release_commit || github.event.workflow_run.head_sha || github.sha }}
-      UPDATE_STABLE: ${{ inputs.stable || (github.event_name == 'workflow_run' && startsWith(github.event.workflow_run.head_branch, 'v')) || false }}
+      UPDATE_STABLE: ${{ inputs.stable || false }}
+      AUTO_STABLE: ${{ github.event_name == 'workflow_run' && startsWith(github.event.workflow_run.head_branch, 'v') }}
     steps:
       - name: Checkout publisher
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
@@ -67,7 +68,7 @@ jobs:
           git fetch origin refs/heads/main:refs/remotes/origin/main --tags
           git merge-base --is-ancestor "$SOURCE_COMMIT" origin/main
           if [[ "$DOCS_VERSION" == dev ]]; then
-            [[ "$UPDATE_STABLE" == false ]] || exit 1
+            [[ "$UPDATE_STABLE" == false && "$AUTO_STABLE" == false ]] || exit 1
             [[ "$SOURCE_COMMIT" == "$(git rev-parse origin/main)" ]] || {
               echo "::error::development documentation must use current main"
               exit 1
@@ -77,13 +78,6 @@ jobs:
             [[ "$(git rev-parse "refs/tags/$DOCS_VERSION^{commit}")" == "$SOURCE_COMMIT" ]] || exit 1
             gh release view "$DOCS_VERSION" --json isDraft,isPrerelease \
               --jq 'select(.isDraft == false and .isPrerelease == false)' | jq -e . >/dev/null
-            if [[ "$UPDATE_STABLE" == true ]]; then
-              latest=$(git tag --list | python3 -c 'import re,sys; tags=[s.strip() for s in sys.stdin if re.fullmatch(r"v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\n?",s)]; print(max(tags,key=lambda s:tuple(map(int,s[1:].split(".")))))')
-              [[ "$DOCS_VERSION" == "$latest" ]] || {
-                echo "::error::stable must use the newest release tag $latest"
-                exit 1
-              }
-            fi
           fi
 
       - name: Checkout exact documentation source
@@ -120,6 +114,7 @@ jobs:
         run: |
           stable_args=()
           if [[ "$UPDATE_STABLE" == true ]]; then stable_args+=(--stable); fi
+          if [[ "$AUTO_STABLE" == true ]]; then stable_args+=(--auto-stable); fi
           python3 -B publisher/scripts/docs_versions.py \
             --snapshot source/target/site --published "$PAGES_DIR" \
             --output "$RUNNER_TEMP/opcore-versioned-site" \

@@ -1,4 +1,4 @@
-"""Regression checks for release immutability and documentation URL compatibility."""
+"""Regression checks for minor archives, exact release identity, and documentation URLs."""
 
 import importlib.util
 import json
@@ -30,7 +30,7 @@ class DocumentationVersions(unittest.TestCase):
         self.published = None
         self.counter = 0
 
-    def options(self, version="dev", commit="a" * 40, stable=False):
+    def options(self, version="dev", commit="a" * 40, stable=False, auto_stable=False):
         self.counter += 1
         return SimpleNamespace(
             snapshot=self.snapshot,
@@ -41,10 +41,11 @@ class DocumentationVersions(unittest.TestCase):
             source_commit=commit,
             publisher_commit="b" * 40,
             stable=stable,
+            auto_stable=auto_stable,
         )
 
-    def publish(self, version="dev", commit="a" * 40, stable=False):
-        options = self.options(version, commit, stable)
+    def publish(self, version="dev", commit="a" * 40, stable=False, auto_stable=False):
+        options = self.options(version, commit, stable, auto_stable)
         compose(options)
         self.published = options.output
         return options.output
@@ -68,22 +69,22 @@ class DocumentationVersions(unittest.TestCase):
     def test_release_and_later_dev_preserve_stable_bytes(self):
         self.publish()
         site = self.publish("v0.3.0", stable=True)
-        original = self.files(site / "v0.3.0")
+        original = self.files(site / "v0.3")
         (self.snapshot / "cli.html").write_text("<html><body>Changed development CLI</body></html>")
         site = self.publish(commit="c" * 40)
-        self.assertEqual(original, self.files(site / "v0.3.0"))
+        self.assertEqual(original, self.files(site / "v0.3"))
         self.assertIn("stable/index.html", (site / "index.html").read_text())
-        self.assertIn("../v0.3.0/index.html", (site / "stable/index.html").read_text())
+        self.assertIn("../v0.3/index.html", (site / "stable/index.html").read_text())
         self.assertIn("Changed development CLI", (site / "dev/cli.html").read_text())
 
     def test_repeat_release_preserves_snapshot_even_with_new_publisher(self):
         site = self.publish("v0.3.0", stable=True)
-        original = self.files(site / "v0.3.0")
+        original = self.files(site / "v0.3")
         (self.snapshot / "index.html").write_text("A changed renderer must not replace the release")
         options = self.options("v0.3.0", stable=True)
         options.publisher_commit = "c" * 40
         compose(options)
-        self.assertEqual(original, self.files(options.output / "v0.3.0"))
+        self.assertEqual(original, self.files(options.output / "v0.3"))
 
     def test_release_rejects_another_source_without_changing_published_tree(self):
         site = self.publish("v0.3.0", stable=True)
@@ -93,27 +94,70 @@ class DocumentationVersions(unittest.TestCase):
         self.assertEqual(original, self.files(site))
 
     def test_stable_recovery_and_numeric_version_order(self):
-        self.publish("v0.3.2", stable=True)
-        site = self.publish("v0.3.10", commit="c" * 40)
-        self.assertIn("../v0.3.2/index.html", (site / "stable/index.html").read_text())
-        site = self.publish("v0.3.10", commit="c" * 40, stable=True)
-        self.assertIn("../v0.3.10/index.html", (site / "stable/index.html").read_text())
+        self.publish("v0.9.2", stable=True)
+        site = self.publish("v0.10.0", commit="c" * 40)
+        self.assertIn("../v0.9/index.html", (site / "stable/index.html").read_text())
+        site = self.publish("v0.10.0", commit="c" * 40, stable=True)
+        self.assertIn("../v0.10/index.html", (site / "stable/index.html").read_text())
         entries = json.loads((site / "versions.json").read_text())
-        self.assertEqual([entry["version"] for entry in entries], ["v0.3.10", "v0.3.2"])
+        self.assertEqual([entry["version"] for entry in entries], ["v0.10", "v0.9"])
         with self.assertRaisesRegex(ValueError, "backwards"):
-            self.publish("v0.3.2", stable=True)
+            self.publish("v0.9.2", stable=True)
+
+    def test_patch_replaces_its_minor_archive_without_adding_a_version(self):
+        self.publish("v0.3.0", stable=True)
+        (self.snapshot / "cli.html").write_text("Patch documentation")
+        site = self.publish("v0.3.1", commit="c" * 40, auto_stable=True)
+        entries = json.loads((site / "versions.json").read_text())
+        self.assertEqual([entry["version"] for entry in entries], ["v0.3"])
+        self.assertEqual((site / "v0.3/cli.html").read_text(), "Patch documentation")
+        self.assertFalse((site / "v0.3.0").exists())
+        self.assertFalse((site / "v0.3.1").exists())
+        manifest = json.loads((site / "v0.3/manifest.json").read_text())
+        self.assertEqual(manifest["docsVersion"], "v0.3")
+        self.assertEqual(manifest["productVersion"], "0.3.1")
+        self.assertEqual(manifest["sourceCommit"], "c" * 40)
+
+    def test_patch_order_is_numeric_and_late_patch_cannot_replace_newer_docs(self):
+        self.publish("v0.3.2", auto_stable=True)
+        (self.snapshot / "cli.html").write_text("Patch ten documentation")
+        site = self.publish("v0.3.10", commit="c" * 40, auto_stable=True)
+        original = self.files(site)
+        (self.snapshot / "cli.html").write_text("Late patch three documentation")
+        site = self.publish("v0.3.3", commit="d" * 40, auto_stable=True)
+        self.assertEqual(original, self.files(site))
+
+    def test_backport_updates_older_minor_without_changing_stable(self):
+        self.publish("v0.3.0", auto_stable=True)
+        site = self.publish("v0.4.0", commit="c" * 40, auto_stable=True)
+        current = self.files(site / "v0.4")
+        (self.snapshot / "cli.html").write_text("Backport documentation")
+        site = self.publish("v0.3.1", commit="d" * 40, auto_stable=True)
+        self.assertEqual(current, self.files(site / "v0.4"))
+        self.assertEqual((site / "v0.3/cli.html").read_text(), "Backport documentation")
+        self.assertIn("../v0.4/index.html", (site / "stable/index.html").read_text())
+        entries = json.loads((site / "versions.json").read_text())
+        self.assertEqual([entry["version"] for entry in entries], ["v0.4", "v0.3"])
+        self.assertEqual([entry["version"] for entry in entries if entry["aliases"]], ["v0.4"])
+
+    def test_major_release_has_its_own_minor_archive(self):
+        self.publish("v0.9.0", auto_stable=True)
+        site = self.publish("v1.0.0", commit="c" * 40, auto_stable=True)
+        self.assertTrue((site / "v0.9/manifest.json").is_file())
+        self.assertTrue((site / "v1.0/manifest.json").is_file())
+        self.assertIn("../v1.0/index.html", (site / "stable/index.html").read_text())
 
     def test_old_deep_links_keep_paths_query_and_fragment(self):
         site = self.publish("v0.3.0", stable=True)
         legacy = (site / "docs/getting-started.html").read_text()
         alias = (site / "stable/docs/getting-started.html").read_text()
         self.assertIn("../stable/docs/getting-started.html", legacy)
-        self.assertIn("../../v0.3.0/docs/getting-started.html", alias)
+        self.assertIn("../../v0.3/docs/getting-started.html", alias)
         self.assertIn("location.search + location.hash", legacy)
         self.assertIn("location.search + location.hash", alias)
         self.assertEqual(
             (site / "stable/manifest.json").read_bytes(),
-            (site / "v0.3.0/manifest.json").read_bytes(),
+            (site / "v0.3/manifest.json").read_bytes(),
         )
 
     def test_rustdoc_source_ranges_work_inside_version_directories(self):
@@ -131,16 +175,18 @@ class DocumentationVersions(unittest.TestCase):
         builder.check_links(self.snapshot)
         site = self.publish("v0.3.0", stable=True)
         builder.check_links(site)
-        (site / "v0.3.0/api/src/opcore/api.rs.html").write_text('<span id="1">one</span>')
+        (site / "v0.3/api/src/opcore/api.rs.html").write_text('<span id="1">one</span>')
         with self.assertRaisesRegex(ValueError, "missing anchor"):
             builder.check_links(site)
 
     def test_development_cannot_be_stable(self):
         with self.assertRaisesRegex(ValueError, "cannot become stable"):
             self.publish(stable=True)
+        with self.assertRaisesRegex(ValueError, "cannot become stable"):
+            self.publish(auto_stable=True)
 
     def test_unsafe_versions_and_wrong_product_are_rejected(self):
-        for version in ("../elsewhere", "v01.2.3", "stable", "v1.2.3-rc.1"):
+        for version in ("../elsewhere", "v01.2.3", "stable", "v1.2.3-rc.1", "v0.3"):
             with self.subTest(version=version), self.assertRaises(ValueError):
                 self.publish(version)
         options = self.options("v0.3.0")
@@ -160,7 +206,7 @@ class DocumentationVersions(unittest.TestCase):
 
     def test_modified_history_is_rejected(self):
         site = self.publish("v0.3.0")
-        (site / "v0.3.0/cli.html").write_text("Modified after publication")
+        (site / "v0.3/cli.html").write_text("Modified after publication")
         with self.assertRaisesRegex(ValueError, "has changed"):
             self.publish()
 
@@ -179,10 +225,29 @@ class DocumentationVersions(unittest.TestCase):
     def test_redirect_state_cannot_delete_a_release_file(self):
         site = self.publish("v0.3.0")
         state = json.loads((site / STATE).read_text())
-        state["rootPages"].append("v0.3.0/index.html")
+        state["rootPages"].append("v0.3/index.html")
         (site / STATE).write_text(json.dumps(state))
         with self.assertRaisesRegex(ValueError, "cannot replace version"):
             self.publish()
+
+    def test_stored_product_version_must_belong_to_the_minor_archive(self):
+        site = self.publish("v0.3.0")
+        path = site / "v0.3/manifest.json"
+        manifest = json.loads(path.read_text())
+        manifest["productVersion"] = "0.4.0"
+        path.write_text(json.dumps(manifest))
+        with self.assertRaisesRegex(ValueError, "does not belong"):
+            self.publish()
+
+    def test_snapshot_paths_cannot_collide_with_minor_or_patch_versions(self):
+        for version in ("v99.2", "v99.2.1"):
+            path = self.snapshot / version / "index.html"
+            path.parent.mkdir()
+            path.write_text("Conflicting route")
+            with self.subTest(version=version), self.assertRaisesRegex(ValueError, "collides"):
+                self.publish("v0.3.0")
+            path.unlink()
+            path.parent.rmdir()
 
 
 if __name__ == "__main__":

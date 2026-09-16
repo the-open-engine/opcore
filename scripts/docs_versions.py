@@ -1,4 +1,4 @@
-"""Compose immutable release docs and mutable aliases without a website framework."""
+"""Publish one documentation archive per minor series and mutable development docs."""
 
 import argparse
 import hashlib
@@ -14,6 +14,7 @@ from urllib.parse import quote
 
 ASSETS = Path(__file__).resolve().parent / "docs"
 RELEASE = re.compile(r"v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\Z")
+MINOR = re.compile(r"v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\Z")
 COMMIT = re.compile(r"[0-9a-f]{40}\Z")
 STATE = ".opcore-pages.json"
 ROUTES = {
@@ -29,12 +30,26 @@ ROUTES = {
 
 
 def version_key(version):
-    match = RELEASE.fullmatch(version)
+    match = MINOR.fullmatch(version)
     if version == "dev":
-        return (-1, -1, -1)
+        return (-1, -1)
     if match is None:
-        raise ValueError("documentation version must be dev or vX.Y.Z")
+        raise ValueError("documentation archive must be dev or vX.Y")
     return tuple(int(part) for part in match.groups())
+
+
+def release_key(version):
+    match = RELEASE.fullmatch(version)
+    if match is None:
+        raise ValueError("release version must be vX.Y.Z")
+    return tuple(int(part) for part in match.groups())
+
+
+def archive_version(release):
+    if release == "dev":
+        return release
+    major, minor, _ = release_key(release)
+    return f"v{major}.{minor}"
 
 
 def read_json(path):
@@ -72,6 +87,8 @@ def verify_snapshot(root, version):
         raise ValueError(f"invalid documentation manifest for {version}")
     if not COMMIT.fullmatch(manifest.get("sourceCommit", "")):
         raise ValueError(f"invalid source commit for {version}")
+    if version != "dev" and archive_version("v" + manifest.get("productVersion", "")) != version:
+        raise ValueError(f"product version does not belong to {version}")
     if manifest.get("contentDigest") != content_digest(root):
         raise ValueError(f"published snapshot {version} has changed")
     return manifest
@@ -120,16 +137,16 @@ def decorate(snapshot, version):
 
 
 def snapshot_identity(options):
-    version_key(options.version)
+    version = archive_version(options.version)
     if not COMMIT.fullmatch(options.source_commit) or not COMMIT.fullmatch(options.publisher_commit):
         raise ValueError("source and publisher commits must be full lowercase Git commits")
     if options.version != "dev" and options.version != "v" + options.product_version:
         raise ValueError("documentation version does not match the product version")
-    if options.stable and options.version == "dev":
+    if (options.stable or options.auto_stable) and options.version == "dev":
         raise ValueError("development documentation cannot become stable")
     return {
         "schemaVersion": 1,
-        "docsVersion": options.version,
+        "docsVersion": version,
         "productVersion": None if options.version == "dev" else options.product_version,
         "sourceCommit": options.source_commit,
         "publisherCommit": options.publisher_commit,
@@ -137,14 +154,22 @@ def snapshot_identity(options):
     }
 
 
+def keep_release(current, identity):
+    previous = release_key("v" + current["productVersion"])
+    incoming = release_key("v" + identity["productVersion"])
+    if incoming == previous and current["sourceCommit"] != identity["sourceCommit"]:
+        raise ValueError(f"release {identity['productVersion']} is immutable and belongs to another source")
+    return incoming <= previous
+
+
 def install_snapshot(site, options):
     identity = snapshot_identity(options)
-    destination = site / options.version
+    version = identity["docsVersion"]
+    destination = site / version
     if destination.exists() and options.version != "dev":
-        current = verify_snapshot(destination, options.version)
-        if any(current.get(key) != identity[key] for key in ("sourceCommit", "productVersion")):
-            raise ValueError(f"{options.version} is immutable and belongs to another source")
-        return
+        current = verify_snapshot(destination, version)
+        if keep_release(current, identity):
+            return
     if destination.exists():
         shutil.rmtree(destination)
     if not (options.snapshot / ".opcore-docs").is_file():
@@ -153,7 +178,7 @@ def install_snapshot(site, options):
         if not (options.snapshot / (route or "index.html")).is_file():
             raise ValueError(f"snapshot is missing required route: {route}")
     shutil.copytree(options.snapshot, destination)
-    decorate(destination, options.version)
+    decorate(destination, version)
     identity["contentDigest"] = content_digest(destination)
     write_json(destination / "manifest.json", identity)
 
@@ -186,17 +211,20 @@ def read_state(site):
 
 
 def update_entries(entries, options):
+    version = archive_version(options.version)
     by_version = {entry["version"]: dict(entry) for entry in entries}
-    by_version.setdefault(options.version, {
-        "version": options.version,
-        "title": "Development" if options.version == "dev" else options.version,
+    by_version.setdefault(version, {
+        "version": version,
+        "title": "Development" if version == "dev" else version,
         "aliases": [],
     })
+    newest = max(by_version, key=version_key)
     if options.stable:
-        if max(by_version, key=version_key) != options.version:
+        if newest != version:
             raise ValueError("stable cannot move backwards")
+    if options.stable or options.auto_stable:
         for entry in by_version.values():
-            entry["aliases"] = ["stable"] if entry["version"] == options.version else []
+            entry["aliases"] = ["stable"] if entry["version"] == newest else []
     return sorted(by_version.values(), key=lambda entry: version_key(entry["version"]), reverse=True)
 
 
@@ -214,7 +242,7 @@ def clear_root_pages(site, state):
         path = Path(name)
         if path.is_absolute() or ".." in path.parts or path.suffix != ".html":
             raise ValueError("invalid compatibility redirect path")
-        if path.parts[0] in ("dev", "stable") or RELEASE.fullmatch(path.parts[0]):
+        if path.parts[0] in ("dev", "stable") or MINOR.fullmatch(path.parts[0]) or RELEASE.fullmatch(path.parts[0]):
             raise ValueError("compatibility redirects cannot replace version snapshots")
         (site / path).unlink(missing_ok=True)
 
@@ -222,7 +250,7 @@ def clear_root_pages(site, state):
 def compatibility_pages(snapshot):
     pages = sorted(path.relative_to(snapshot) for path in snapshot.rglob("*.html"))
     for page in pages:
-        if page.parts[0] in ("dev", "stable") or RELEASE.fullmatch(page.parts[0]):
+        if page.parts[0] in ("dev", "stable") or MINOR.fullmatch(page.parts[0]) or RELEASE.fullmatch(page.parts[0]):
             raise ValueError("snapshot route collides with a documentation version")
     return pages
 
@@ -255,8 +283,8 @@ def versions_page(site, entries):
         '<title>Documentation versions · Opcore</title>'
         f'<link rel="stylesheet" href="{default}/assets/site.css"></head>'
         '<body class="guide-page"><main class="guide-content" style="max-width:50rem;margin:3rem auto;padding:1rem">'
-        '<h1>Documentation versions</h1><p>Stable follows the latest release. '
-        'Development follows main. Release snapshots keep their original source.</p>'
+        '<h1>Documentation versions</h1><p>Each minor version follows its latest published patch. '
+        'Stable opens the newest minor version. Development follows main.</p>'
         f'<ul>{"".join(links)}</ul></main></body></html>\n'
     )
     (site / "versions.html").write_text(page, encoding="utf-8")
@@ -290,11 +318,13 @@ def main():
     parser.add_argument("--snapshot", required=True, type=Path)
     parser.add_argument("--published", type=Path)
     parser.add_argument("--output", required=True, type=Path)
-    parser.add_argument("--version", required=True)
+    parser.add_argument("--version", required=True, help="exact release tag vX.Y.Z, or dev")
     parser.add_argument("--product-version", required=True)
     parser.add_argument("--source-commit", required=True)
     parser.add_argument("--publisher-commit", required=True)
-    parser.add_argument("--stable", action="store_true")
+    promotion = parser.add_mutually_exclusive_group()
+    promotion.add_argument("--stable", action="store_true")
+    promotion.add_argument("--auto-stable", action="store_true", help="select the newest archived minor")
     compose(parser.parse_args())
 
 
