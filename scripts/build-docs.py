@@ -130,10 +130,18 @@ def local_target(page, link):
     return target, url.fragment
 
 
+def is_source_reference(target, site):
+    parts = target.relative_to(site).parts
+    if parts[:2] == ("api", "src"):
+        return True
+    version = parts[0] in ("dev", "stable") or re.fullmatch(r"v[0-9]+\.[0-9]+", parts[0])
+    return bool(version) and parts[1:3] == ("api", "src")
+
+
 def has_anchor(target, fragment, document, site):
     if not {fragment, unquote(fragment)}.isdisjoint(document.anchors):
         return True
-    if not target.is_relative_to(site / "api/src"):
+    if not is_source_reference(target, site):
         return False
     # rustdoc's JavaScript interprets source ranges using the individual line IDs.
     lines = re.fullmatch(r"([1-9][0-9]*)-([1-9][0-9]*)", fragment)

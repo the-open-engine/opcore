@@ -1,0 +1,154 @@
+name: Publish versioned documentation
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Exact vX.Y.Z release to update its vX.Y docs; omit for dev.
+        type: string
+      release_commit:
+        description: Full source commit on main; omit for current main.
+        type: string
+      stable:
+        description: Point stable at this minor series; it must be the newest archive.
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-versioned-documentation
+  cancel-in-progress: false
+  queue: max
+
+jobs:
+  publish:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_repository.full_name == github.repository &&
+      (github.event.workflow_run.head_branch == 'main' ||
+      startsWith(github.event.workflow_run.head_branch, 'v')))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      actions: read
+      contents: write
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      DOCS_VERSION: ${{ inputs.version || (github.event.workflow_run.head_branch != 'main' && github.event.workflow_run.head_branch) || 'dev' }}
+      SOURCE_COMMIT: ${{ inputs.release_commit || github.event.workflow_run.head_sha || github.sha }}
+      UPDATE_STABLE: ${{ inputs.stable || false }}
+      AUTO_STABLE: ${{ github.event_name == 'workflow_run' && startsWith(github.event.workflow_run.head_branch, 'v') }}
+    steps:
+      - name: Checkout publisher
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          path: publisher
+          fetch-depth: 0
+
+      - name: Validate documentation source
+        working-directory: publisher
+        run: |
+          [[ "$GITHUB_REF" == refs/heads/main ]] || {
+            echo "::error::documentation must be published from the main workflow"
+            exit 1
+          }
+          [[ "$SOURCE_COMMIT" =~ ^[0-9a-f]{40}$ ]] || exit 1
+          git fetch origin refs/heads/main:refs/remotes/origin/main --tags
+          git merge-base --is-ancestor "$SOURCE_COMMIT" origin/main
+          if [[ "$DOCS_VERSION" == dev ]]; then
+            [[ "$UPDATE_STABLE" == false && "$AUTO_STABLE" == false ]] || exit 1
+            [[ "$SOURCE_COMMIT" == "$(git rev-parse origin/main)" ]] || {
+              echo "::error::development documentation must use current main"
+              exit 1
+            }
+          else
+            [[ "$DOCS_VERSION" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]] || exit 1
+            [[ "$(git rev-parse "refs/tags/$DOCS_VERSION^{commit}")" == "$SOURCE_COMMIT" ]] || exit 1
+            gh release view "$DOCS_VERSION" --json isDraft,isPrerelease \
+              --jq 'select(.isDraft == false and .isPrerelease == false)' | jq -e . >/dev/null
+          fi
+
+      - name: Checkout exact documentation source
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          path: source
+          ref: ${{ env.SOURCE_COMMIT }}
+          persist-credentials: false
+
+      - name: Build and check the source snapshot
+        working-directory: source
+        run: |
+          [[ "$(git rev-parse HEAD)" == "$SOURCE_COMMIT" ]] || exit 1
+          scripts/build-docs.sh
+          product_version=$(cargo metadata --locked --no-deps --format-version 1 | python3 -c 'import json,sys; print(next(p["version"] for p in json.load(sys.stdin)["packages"] if p["name"] == "opcore"))')
+          printf 'PRODUCT_VERSION=%s\n' "$product_version" >> "$GITHUB_ENV"
+
+      - name: Read the published version tree
+        working-directory: publisher
+        run: |
+          pages="$RUNNER_TEMP/opcore-pages"
+          if git ls-remote --exit-code --heads origin refs/heads/gh-pages > /dev/null; then
+            git fetch origin refs/heads/gh-pages:refs/remotes/origin/gh-pages
+            git worktree add --detach "$pages" refs/remotes/origin/gh-pages
+          else
+            result=$?
+            [[ "$result" == 2 ]] || exit "$result"
+            git worktree add --detach "$pages" HEAD
+            git -C "$pages" switch --orphan docs-pages
+          fi
+          printf 'PAGES_DIR=%s\n' "$pages" >> "$GITHUB_ENV"
+
+      - name: Compose the complete versioned site
+        run: |
+          stable_args=()
+          if [[ "$UPDATE_STABLE" == true ]]; then stable_args+=(--stable); fi
+          if [[ "$AUTO_STABLE" == true ]]; then stable_args+=(--auto-stable); fi
+          python3 -B publisher/scripts/docs_versions.py \
+            --snapshot source/target/site --published "$PAGES_DIR" \
+            --output "$RUNNER_TEMP/opcore-versioned-site" \
+            --version "$DOCS_VERSION" --product-version "$PRODUCT_VERSION" \
+            --source-commit "$SOURCE_COMMIT" --publisher-commit "$GITHUB_SHA" \
+            "${stable_args[@]}"
+          python3 -B - <<'PY'
+          import importlib.util, os
+          from pathlib import Path
+          import sys
+          sys.path.insert(0, "publisher/scripts")
+          spec = importlib.util.spec_from_file_location("docs_builder", "publisher/scripts/build-docs.py")
+          module = importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(module)
+          module.check_links(Path(os.environ["RUNNER_TEMP"]) / "opcore-versioned-site")
+          PY
+
+      - name: Store the version tree
+        run: |
+          rsync -a --delete --exclude=.git "$RUNNER_TEMP/opcore-versioned-site/" "$PAGES_DIR/"
+          git -C "$PAGES_DIR" config user.name 'github-actions[bot]'
+          git -C "$PAGES_DIR" config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git -C "$PAGES_DIR" add --all
+          if ! git -C "$PAGES_DIR" diff --cached --quiet; then
+            git -C "$PAGES_DIR" commit -m "docs: publish $DOCS_VERSION from $SOURCE_COMMIT"
+            git -C "$PAGES_DIR" push origin HEAD:refs/heads/gh-pages
+          fi
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5
+      - name: Upload the complete versioned site
+        uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4
+        with:
+          path: ${{ runner.temp }}/opcore-versioned-site
+      - name: Deploy GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4

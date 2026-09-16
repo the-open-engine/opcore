@@ -24,6 +24,7 @@ NAVIGATION = (
         ("ASP specification", "asp/README.html"),
     )),
     ("Project", (
+        ("Documentation versions", "docs/versioning.html"),
         ("Architecture", "docs/architecture.html"),
         ("Contributing", "CONTRIBUTING.html"),
         ("Code of conduct", "CODE_OF_CONDUCT.html"),
