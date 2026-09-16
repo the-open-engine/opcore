@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Agent Server Protocol definition · Opcore</title><link rel="stylesheet" href="../assets/site.css">
+<script src="../assets/theme.js"></script>
+<script defer src="../assets/site.js"></script>
+<link rel="icon" type="image/svg+xml" href="../assets/oec-favicon.svg"><link rel="stylesheet" href="../assets/versions.css"><script defer src="../assets/versions.js"></script></head>
+<body class="guide-page"><a class="skip-link" href="#main-content">Skip to content</a>
+<header class="site-header"><div class="header-inner">
+<button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-navigation">Menu</button>
+<a class="brand" href="../index.html"><img src="../assets/oec-crow.png" alt="" width="32" height="36"><span>Opcore</span></a>
+<a class="header-label" href="../index.html">Documentation</a>
+<div class="header-actions"><div class="docs-version" data-site-root="../../" data-page-path="asp/README.html" data-version="dev"><a href="../../versions.html">Development ▾</a><select hidden aria-label="Documentation version"><option>Development</option></select></div><button class="theme-toggle" type="button" aria-label="Use dark mode" title="Use dark mode"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20.8 13.1A9 9 0 0 1 10.9 3.2 9 9 0 1 0 20.8 13.1Z"/></svg></button>
+<a class="repository-link" href="https://github.com/the-open-engine/opcore">GitHub <span aria-hidden="true">↗</span></a></div>
+</div></header>
+<div class="docs-layout"><aside class="docs-sidebar"><nav id="site-navigation" aria-label="Documentation"><div class="nav-group"><p>Opcore</p><ul><li><a href="../index.html">Overview</a></li></ul></div><div class="nav-group"><p>Get started</p><ul><li><a href="../docs/getting-started.html">Installation and first check</a></li></ul></div><div class="nav-group"><p>Guides</p><ul><li><a href="../docs/configuration.html">Configuration</a></li><li><a href="../docs/providers.html">Providers</a></li><li><a href="../docs/examples.html">Examples</a></li><li><a href="../docs/sense.html">Project Sense</a></li><li><a href="../docs/agent-signals.html">Agent feedback</a></li></ul></div><div class="nav-group"><p>Reference</p><ul><li><a href="../cli.html">CLI</a></li><li><a href="../api/opcore/api/index.html">Rust API</a></li><li><a href="../api/opcore/api/enum.ProviderProfile.html">Provider profiles</a></li><li><a href="README.html" aria-current="page">ASP specification</a></li></ul></div><div class="nav-group"><p>Project</p><ul><li><a href="../docs/versioning.html">Documentation versions</a></li><li><a href="../docs/architecture.html">Architecture</a></li><li><a href="../CONTRIBUTING.html">Contributing</a></li><li><a href="../CODE_OF_CONDUCT.html">Code of conduct</a></li><li><a href="../SECURITY.html">Security</a></li></ul></div></nav></aside>
+<main id="main-content" class="guide-content" tabindex="-1">
+<p class="docs-kicker">Core documentation</p><h1 class="title">Agent Server Protocol definition</h1>
+    <p>This directory contains the complete ASP <code>1.0</code> definition maintained with
+Opcore. The definition is data and documentation only. Opcore’s Rust
+code implements four providers and a private local composer; this tree fixes
+the wire contract a conforming decision-maker and its providers share.</p>
+<p>ASP keeps one boundary crisp:</p>
+<div class="example-wrap"><pre class="language-text"><code>agent or harness -&gt; host -&gt; provider
+                         &lt;- Assessment
+                 &lt;- Decision and receipt</code></pre></div>
+<p>Providers assess immutable candidate content. The host owns policy, authority,
+freshness, the final decision, receipts, and any apply behavior.</p>
+<h2 id="start-here"><a class="doc-anchor" href="#start-here">§</a>Start here</h2>
+<ul>
+<li><a href="spec/11-core-profile.html"><code>spec/11-core-profile.md</code></a> is the smallest check-only
+profile implemented first by Opcore.</li>
+<li><a href="spec/"><code>spec/</code></a> contains the complete protocol specification.</li>
+<li><a href="schemas/"><code>schemas/</code></a> contains every JSON Schema in the ASP <code>1.0</code>
+surface, including optional non-Core capability families.</li>
+<li><a href="examples/"><code>examples/</code></a> contains the schema-bound wire examples.</li>
+<li><a href="GLOSSARY.html"><code>GLOSSARY.md</code></a> defines normative vocabulary.</li>
+<li><a href="docs/conformance/"><code>docs/conformance/</code></a> and
+<a href="tests/conformance/fixtures/"><code>tests/conformance/fixtures/</code></a> preserve the
+conformance requirements and frozen report fixtures.</li>
+<li><a href="decisions/"><code>decisions/</code></a> and <a href="docs/governance/"><code>docs/governance/</code></a> preserve
+the rationale and governance documents referenced by the specification.</li>
+</ul>
+<p>The definition began with the immutable upstream revision recorded in
+<a href="SOURCE.json"><code>SOURCE.json</code></a>. Opcore now maintains the v1.0 successor in
+this tree. The source record binds both that lineage and the exact current
+definition digest. Protocol changes must update the source record and the
+implementation/conformance tests in the same review.</p>
+<h2 id="intentionally-not-imported"><a class="doc-anchor" href="#intentionally-not-imported">§</a>Intentionally not imported</h2>
+<p>The former repository’s TypeScript reference host, manager/daemon, provider
+catalog, setup wizard, executable conformance runners, package-manager files,
+planning notes, generated evidence, and static website are not part of this
+definition bundle. They are implementation or project-history material, not wire
+contracts. Some preserved conformance traceability links therefore point back to
+the recorded upstream revision for historical implementation evidence.</p>
+<p>This bundle is part of Opcore and is covered by the repository’s root
+<a href="../LICENSE"><code>LICENSE</code></a>. The recorded upstream revision did not contain a
+standalone license file.</p><nav class="page-sequence" aria-label="Adjacent pages"><a href="../api/opcore/api/enum.ProviderProfile.html"><span>Previous</span>Provider profiles</a><a href="../docs/versioning.html"><span>Next</span>Documentation versions</a></nav></main><aside class="page-toc" aria-label="On this page"><p>On this page</p><nav id="rustdoc"><ul>
+<li><a href="#start-here" title="Start here">Start here</a><ul></ul></li>
+<li><a href="#intentionally-not-imported" title="Intentionally not imported">Intentionally not imported</a><ul></ul></li></ul></nav></aside></div>
+<footer class="site-footer"><div>© The Open Engine
+<a href="https://github.com/the-open-engine/opcore">Opcore on GitHub ↗</a></div></footer></body></html>

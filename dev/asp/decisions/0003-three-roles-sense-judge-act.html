@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>3. Three roles — sense, judge, act · Opcore</title><link rel="stylesheet" href="../../assets/site.css">
+<script src="../../assets/theme.js"></script>
+<script defer src="../../assets/site.js"></script>
+<link rel="icon" type="image/svg+xml" href="../../assets/oec-favicon.svg"><link rel="stylesheet" href="../../assets/versions.css"><script defer src="../../assets/versions.js"></script></head>
+<body class="guide-page"><a class="skip-link" href="#main-content">Skip to content</a>
+<header class="site-header"><div class="header-inner">
+<button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-navigation">Menu</button>
+<a class="brand" href="../../index.html"><img src="../../assets/oec-crow.png" alt="" width="32" height="36"><span>Opcore</span></a>
+<a class="header-label" href="../../index.html">Documentation</a>
+<div class="header-actions"><div class="docs-version" data-site-root="../../../" data-page-path="asp/decisions/0003-three-roles-sense-judge-act.html" data-version="dev"><a href="../../../versions.html">Development ▾</a><select hidden aria-label="Documentation version"><option>Development</option></select></div><button class="theme-toggle" type="button" aria-label="Use dark mode" title="Use dark mode"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20.8 13.1A9 9 0 0 1 10.9 3.2 9 9 0 1 0 20.8 13.1Z"/></svg></button>
+<a class="repository-link" href="https://github.com/the-open-engine/opcore">GitHub <span aria-hidden="true">↗</span></a></div>
+</div></header>
+<div class="docs-layout"><aside class="docs-sidebar"><nav id="site-navigation" aria-label="Documentation"><div class="nav-group"><p>Opcore</p><ul><li><a href="../../index.html">Overview</a></li></ul></div><div class="nav-group"><p>Get started</p><ul><li><a href="../../docs/getting-started.html">Installation and first check</a></li></ul></div><div class="nav-group"><p>Guides</p><ul><li><a href="../../docs/configuration.html">Configuration</a></li><li><a href="../../docs/providers.html">Providers</a></li><li><a href="../../docs/examples.html">Examples</a></li><li><a href="../../docs/sense.html">Project Sense</a></li><li><a href="../../docs/agent-signals.html">Agent feedback</a></li></ul></div><div class="nav-group"><p>Reference</p><ul><li><a href="../../cli.html">CLI</a></li><li><a href="../../api/opcore/api/index.html">Rust API</a></li><li><a href="../../api/opcore/api/enum.ProviderProfile.html">Provider profiles</a></li><li><a href="../README.html">ASP specification</a></li></ul></div><div class="nav-group"><p>Project</p><ul><li><a href="../../docs/versioning.html">Documentation versions</a></li><li><a href="../../docs/architecture.html">Architecture</a></li><li><a href="../../CONTRIBUTING.html">Contributing</a></li><li><a href="../../CODE_OF_CONDUCT.html">Code of conduct</a></li><li><a href="../../SECURITY.html">Security</a></li></ul></div></nav></aside>
+<main id="main-content" class="guide-content" tabindex="-1">
+<p class="docs-kicker">Core documentation</p><h1 class="title">3. Three roles — sense, judge, act</h1>
+    <details><summary>Specification metadata</summary>
+<div class="example-wrap"><pre class="language-yaml"><code>adr: 3
+title: Three roles — sense, judge, act
+status: accepted
+date: 2026-06-16</code></pre></div></details>
+<h2 id="context"><a class="doc-anchor" href="#context">§</a>Context</h2>
+<p>Stripping <code>rox</code>/<code>crg</code>/<code>cix</code> to their essence reveals the same three-part machine appearing three
+times: read-only intelligence, pass/fail policy, and safe mutation. We need a role taxonomy that
+third parties register against.</p>
+<h2 id="decision"><a class="doc-anchor" href="#decision">§</a>Decision</h2>
+<p>Three roles:</p>
+<ul>
+<li><strong>sense</strong> — read-only intelligence (“what is true”). Reference: <code>crg</code>.</li>
+<li><strong>judge</strong> — pass/fail policy over a proposed change (“is this slop”). Reference: <code>rox</code>.</li>
+<li><strong>act</strong> — atomic, reference-aware mutation (“change this safely”). Reference: <code>cix</code>.</li>
+</ul>
+<p>A server MAY implement several roles; it declares them at <code>initialize</code>. For sense, the method surface
+is a <strong>typed core</strong> (references, callers, impact) plus a <code>sense/query</code> escape hatch for tool-specific
+verbs — precise capabilities without freezing the whole verb set.</p>
+<h2 id="consequences"><a class="doc-anchor" href="#consequences">§</a>Consequences</h2>
+<ul>
+<li>Clean separation of trust risk: sense (read) and judge (evaluate) are containable; act (mutate) is
+the dangerous one and is opened last, behind propose/host-applies.</li>
+<li>The three roles map onto LSP precedents (navigation, diagnostics, workspaceEdit), aiding adoption.</li>
+<li>Composition (act validated by judge, judge informed by sense) is expressed through the host, never
+peer-to-peer.</li>
+</ul></main><aside class="page-toc" aria-label="On this page"><p>On this page</p><nav id="rustdoc"><ul>
+<li><a href="#context" title="Context">Context</a><ul></ul></li>
+<li><a href="#decision" title="Decision">Decision</a><ul></ul></li>
+<li><a href="#consequences" title="Consequences">Consequences</a><ul></ul></li></ul></nav></aside></div>
+<footer class="site-footer"><div>© The Open Engine
+<a href="https://github.com/the-open-engine/opcore">Opcore on GitHub ↗</a></div></footer></body></html>

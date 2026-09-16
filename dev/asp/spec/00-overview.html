@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Overview · Opcore</title><link rel="stylesheet" href="../../assets/site.css">
+<script src="../../assets/theme.js"></script>
+<script defer src="../../assets/site.js"></script>
+<link rel="icon" type="image/svg+xml" href="../../assets/oec-favicon.svg"><link rel="stylesheet" href="../../assets/versions.css"><script defer src="../../assets/versions.js"></script></head>
+<body class="guide-page"><a class="skip-link" href="#main-content">Skip to content</a>
+<header class="site-header"><div class="header-inner">
+<button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-navigation">Menu</button>
+<a class="brand" href="../../index.html"><img src="../../assets/oec-crow.png" alt="" width="32" height="36"><span>Opcore</span></a>
+<a class="header-label" href="../../index.html">Documentation</a>
+<div class="header-actions"><div class="docs-version" data-site-root="../../../" data-page-path="asp/spec/00-overview.html" data-version="dev"><a href="../../../versions.html">Development ▾</a><select hidden aria-label="Documentation version"><option>Development</option></select></div><button class="theme-toggle" type="button" aria-label="Use dark mode" title="Use dark mode"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20.8 13.1A9 9 0 0 1 10.9 3.2 9 9 0 1 0 20.8 13.1Z"/></svg></button>
+<a class="repository-link" href="https://github.com/the-open-engine/opcore">GitHub <span aria-hidden="true">↗</span></a></div>
+</div></header>
+<div class="docs-layout"><aside class="docs-sidebar"><nav id="site-navigation" aria-label="Documentation"><div class="nav-group"><p>Opcore</p><ul><li><a href="../../index.html">Overview</a></li></ul></div><div class="nav-group"><p>Get started</p><ul><li><a href="../../docs/getting-started.html">Installation and first check</a></li></ul></div><div class="nav-group"><p>Guides</p><ul><li><a href="../../docs/configuration.html">Configuration</a></li><li><a href="../../docs/providers.html">Providers</a></li><li><a href="../../docs/examples.html">Examples</a></li><li><a href="../../docs/sense.html">Project Sense</a></li><li><a href="../../docs/agent-signals.html">Agent feedback</a></li></ul></div><div class="nav-group"><p>Reference</p><ul><li><a href="../../cli.html">CLI</a></li><li><a href="../../api/opcore/api/index.html">Rust API</a></li><li><a href="../../api/opcore/api/enum.ProviderProfile.html">Provider profiles</a></li><li><a href="../README.html">ASP specification</a></li></ul></div><div class="nav-group"><p>Project</p><ul><li><a href="../../docs/versioning.html">Documentation versions</a></li><li><a href="../../docs/architecture.html">Architecture</a></li><li><a href="../../CONTRIBUTING.html">Contributing</a></li><li><a href="../../CODE_OF_CONDUCT.html">Code of conduct</a></li><li><a href="../../SECURITY.html">Security</a></li></ul></div></nav></aside>
+<main id="main-content" class="guide-content" tabindex="-1">
+<p class="docs-kicker">Core documentation</p><h1 class="title">Overview</h1>
+    <details><summary>Specification metadata</summary>
+<div class="example-wrap"><pre class="language-yaml"><code>title: Overview
+status: established
+normative: false
+summary: First-reader primer for ASP boundaries, host/provider responsibilities, capability families, decisions, receipts, and deeper protocol objects.
+updated: 2026-06-23</code></pre></div></details>
+<p>ASP is the code-change assurance boundary for agentic development.</p>
+<div><table><thead><tr><th>Protocol</th><th>Boundary</th><th>What it coordinates</th></tr></thead><tbody>
+<tr><td>LSP</td><td>language tools &lt;-&gt; IDE</td><td>editor language features</td></tr>
+<tr><td>ACP</td><td>IDE/editor &lt;-&gt; agent</td><td>editor-agent collaboration</td></tr>
+<tr><td>ASP</td><td>agent/harness/host &lt;-&gt; robustness engines</td><td>assurance over proposed code changes</td></tr>
+</tbody></table>
+</div>
+<p>An ASP <strong>host</strong> asks <strong>providers/servers</strong> to <strong>inspect</strong>, <strong>check</strong>, or propose <strong>edit</strong> plans, then
+the host returns a <strong>decision</strong> and a <strong>receipt</strong>. Providers/servers produce assessments or edit
+plans. Hosts produce decisions.</p>
+<h2 id="minimal-flow"><a class="doc-anchor" href="#minimal-flow">§</a>Minimal Flow</h2>
+<ol>
+<li>A harness asks the host for status.</li>
+<li>The host reports ready/degraded/unavailable status and which check providers are required.</li>
+<li>The harness sends a candidate change to the host for a gate call-site.</li>
+<li>The host calls the required check provider.</li>
+<li>The provider returns an assessment with diagnostics, evidence, coverage, freshness data, provider
+metadata, timing, and cache metadata.</li>
+<li>The host combines policy, required coverage, provider authority, and assessment results.</li>
+<li>The host returns <code>allow</code>, <code>deny</code>, or <code>indeterminate</code> plus a receipt.</li>
+</ol>
+<p>The receipt is host-authored. It records what ran, which provider evidence contributed, which policy
+digest was used, what coverage was achieved or degraded, and what assurance the host actually
+achieved.</p>
+<h2 id="capability-families"><a class="doc-anchor" href="#capability-families">§</a>Capability Families</h2><div><table><thead><tr><th>Capability</th><th>Provider/server output</th><th>Host responsibility</th></tr></thead><tbody>
+<tr><td><strong>inspect</strong></td><td>read-only code intelligence, such as references, impact, and flows</td><td>route the query, bind freshness, and compose results</td></tr>
+<tr><td><strong>check</strong></td><td>an assessment of a candidate change</td><td>compute the decision for the call-site</td></tr>
+<tr><td><strong>edit</strong></td><td>an edit plan or workspace-edit proposal</td><td>decide whether and how the proposal may be applied</td></tr>
+</tbody></table>
+</div>
+<p>Older documents may use <code>sense</code>, <code>judge</code>, and <code>act</code> as shorthand. Normative conformance attaches to
+<code>inspect</code>, <code>check</code>, and <code>edit</code>.</p>
+<h2 id="hostprovider-split"><a class="doc-anchor" href="#hostprovider-split">§</a>Host/Provider Split</h2>
+<p>ASP uses a star topology:</p>
+<div class="example-wrap"><pre class="language-text"><code>harness or agent -&gt; host -&gt; provider/server</code></pre></div>
+<p>The harness talks to the host. The host talks to providers/servers. Providers/servers do not compose
+directly with one another and do not decide whether a gate passes.</p>
+<p>The host owns capability negotiation, policy, freshness, provider aggregation, decision production,
+receipt production, authority status, and mediated apply. A provider/server owns the capability work
+it advertises: inspect facts, check assessments, or edit plans.</p>
+<h2 id="core-first"><a class="doc-anchor" href="#core-first">§</a>Core First</h2>
+<p>The <a href="11-core-profile.html">ASP v1.0 Core Profile</a> defines the smallest adoption path:</p>
+<ul>
+<li>host status</li>
+<li>host capabilities</li>
+<li>provider initialize/initialized</li>
+<li>host blob/tree callbacks</li>
+<li>provider <code>check/evaluate</code></li>
+<li>host <code>host/evaluateChangeset</code></li>
+<li>host-authored allow/deny/negative decision receipts</li>
+</ul>
+<p>Inspect, edit, apply, deployment surfaces, and implementation-parity work remain optional non-Core
+profiles unless a later ADR promotes them.</p>
+<h2 id="deeper-protocol-objects"><a class="doc-anchor" href="#deeper-protocol-objects">§</a>Deeper Protocol Objects</h2>
+<p>The primer intentionally leaves dense machinery to later chapters:</p>
+<ul>
+<li><a href="03-data-model.html">Data model</a>: SnapshotRef/Baseline, ChangeSet, Assessment, EditPlan,
+Diagnostic, and FailClass.</li>
+<li><a href="07-host-obligations.html">Host obligations</a>: policy, aggregation, freshness, coverage,
+authority, assurance, budgets, and mediated apply.</li>
+<li><a href="09-outer-seam.html">Outer seam</a>: harness-to-host status, evaluation, inspect, edit, apply, and
+receipt payloads.</li>
+<li><a href="11-core-profile.html">Core Profile</a>: the private host/provider/check adoption gate and evidence
+bundle.</li>
+</ul>
+<h2 id="document-status"><a class="doc-anchor" href="#document-status">§</a>Document Status</h2><div><table><thead><tr><th>Area</th><th>Status</th></tr></thead><tbody>
+<tr><td>Overview, architecture, transport+lifecycle, data model</td><td>established</td></tr>
+<tr><td>Inspect/check/edit capability families</td><td>established</td></tr>
+<tr><td>Historical sense/judge/act compatibility chapters</td><td>draft, non-normative</td></tr>
+<tr><td>Host obligations, conformance</td><td>established</td></tr>
+<tr><td>Outer seam, installation and discovery</td><td>draft</td></tr>
+<tr><td>Core Profile</td><td>established</td></tr>
+</tbody></table>
+</div>
+<p>ASP v1.0 centers on host-produced decisions over provider-produced assessments. Binding and
+deployment surfaces remain private draft work.</p></main><aside class="page-toc" aria-label="On this page"><p>On this page</p><nav id="rustdoc"><ul>
+<li><a href="#minimal-flow" title="Minimal Flow">Minimal Flow</a><ul></ul></li>
+<li><a href="#capability-families" title="Capability Families">Capability Families</a><ul></ul></li>
+<li><a href="#hostprovider-split" title="Host/Provider Split">Host/Provider Split</a><ul></ul></li>
+<li><a href="#core-first" title="Core First">Core First</a><ul></ul></li>
+<li><a href="#deeper-protocol-objects" title="Deeper Protocol Objects">Deeper Protocol Objects</a><ul></ul></li>
+<li><a href="#document-status" title="Document Status">Document Status</a><ul></ul></li></ul></nav></aside></div>
+<footer class="site-footer"><div>© The Open Engine
+<a href="https://github.com/the-open-engine/opcore">Opcore on GitHub ↗</a></div></footer></body></html>

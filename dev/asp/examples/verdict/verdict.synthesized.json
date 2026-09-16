@@ -1,0 +1,224 @@
+{
+  "pass": false,
+  "decision": "deny",
+  "callSite": "gate",
+  "findings": [
+    {
+      "diagnostic": {
+        "code": "covibes-secrets/private-key",
+        "severity": "error",
+        "source": "covibes-secrets",
+        "message": "private key committed",
+        "location": {
+          "path": "src/keys.ts",
+          "range": {
+            "start": {
+              "line": 3,
+              "char": 0
+            },
+            "end": {
+              "line": 3,
+              "char": 64
+            }
+          }
+        },
+        "fingerprint": "sha256:9a1b"
+      },
+      "authority": {
+        "identity": "the-open-engine",
+        "integrity": "sha256:aa01000000000000000000000000000000000000000000000000000000000000",
+        "conformance": "asp-check-core/1.0",
+        "isolation": "gated",
+        "authority": {
+          "granted": true,
+          "requirement": "secrets-gate",
+          "policyDigest": "sha256:policy9f3a1c"
+        }
+      },
+      "disposition": "gating",
+      "nextStep": "Blocked by covibes-secrets; no remediation provided. Review src/keys.ts:3 and remove the key.",
+      "nextStepOrigin": "synthesized"
+    },
+    {
+      "diagnostic": {
+        "code": "acme-style/line-length",
+        "severity": "error",
+        "source": "acme-style",
+        "message": "line exceeds 100 chars",
+        "location": {
+          "path": "src/api.ts",
+          "range": {
+            "start": {
+              "line": 8,
+              "char": 0
+            },
+            "end": {
+              "line": 8,
+              "char": 140
+            }
+          }
+        },
+        "fingerprint": "sha256:c4d5"
+      },
+      "authority": {
+        "identity": "acme-style",
+        "integrity": "sha256:c4d5000000000000000000000000000000000000000000000000000000000000",
+        "conformance": "not-tested",
+        "isolation": "advisory",
+        "authority": {
+          "granted": false,
+          "requirement": "style-advisory"
+        }
+      },
+      "disposition": "advisory",
+      "severityNote": "author marked error; source lacks an authority grant and is not enrolled, shown advisory"
+    }
+  ],
+  "coverage": {
+    "exhaustive": true,
+    "required": [
+      "covibes-secrets"
+    ],
+    "enrolled": [
+      "covibes-secrets"
+    ],
+    "ran": [
+      "covibes-secrets",
+      "acme-style"
+    ],
+    "degraded": []
+  },
+  "policyDigest": "sha256:policy9f3a1c",
+  "authorityEvidence": [
+    {
+      "identity": "the-open-engine",
+      "integrity": "sha256:aa01000000000000000000000000000000000000000000000000000000000000",
+      "conformance": "asp-check-core/1.0",
+      "isolation": "gated",
+      "authority": {
+        "granted": true,
+        "requirement": "secrets-gate",
+        "policyDigest": "sha256:policy9f3a1c"
+      }
+    },
+    {
+      "identity": "acme-style",
+      "integrity": "sha256:c4d5000000000000000000000000000000000000000000000000000000000000",
+      "conformance": "not-tested",
+      "isolation": "advisory",
+      "authority": {
+        "granted": false,
+        "requirement": "style-advisory"
+      }
+    }
+  ],
+  "validAsOf": {
+    "rev": "git:tree:9f3a1c",
+    "blobs": [
+      "blob:sha256:9a1b",
+      "blob:sha256:c4d5"
+    ]
+  },
+  "assurance": {
+    "mode": "gated",
+    "transactionGuarantee": "none"
+  },
+  "receipt": {
+    "receiptId": "verdict-synthesized-0001",
+    "issuedAt": "2026-06-22T20:00:00Z",
+    "providerProvenance": [
+      {
+        "provider": "covibes-secrets",
+        "capability": "check",
+        "identity": "the-open-engine",
+        "integrity": "sha256:aa01000000000000000000000000000000000000000000000000000000000000",
+        "conformance": "asp-check-core/1.0"
+      },
+      {
+        "provider": "acme-style",
+        "capability": "check",
+        "identity": "acme-style",
+        "integrity": "sha256:c4d5000000000000000000000000000000000000000000000000000000000000",
+        "conformance": "not-tested"
+      }
+    ],
+    "policyDigest": "sha256:policy9f3a1c",
+    "baseline": {
+      "rev": "git:tree:9f3a1c",
+      "stampedAt": "2026-06-22T19:59:00Z"
+    },
+    "validAsOf": {
+      "rev": "git:tree:9f3a1c",
+      "blobs": [
+        "blob:sha256:9a1b",
+        "blob:sha256:c4d5"
+      ]
+    },
+    "coverage": {
+      "exhaustive": true,
+      "required": [
+        "covibes-secrets"
+      ],
+      "enrolled": [
+        "covibes-secrets"
+      ],
+      "ran": [
+        "covibes-secrets",
+        "acme-style"
+      ],
+      "degraded": []
+    },
+    "authorityEvidence": [
+      {
+        "identity": "the-open-engine",
+        "integrity": "sha256:aa01000000000000000000000000000000000000000000000000000000000000",
+        "conformance": "asp-check-core/1.0",
+        "isolation": "gated",
+        "authority": {
+          "granted": true,
+          "requirement": "secrets-gate",
+          "policyDigest": "sha256:policy9f3a1c"
+        }
+      },
+      {
+        "identity": "acme-style",
+        "integrity": "sha256:c4d5000000000000000000000000000000000000000000000000000000000000",
+        "conformance": "not-tested",
+        "isolation": "advisory",
+        "authority": {
+          "granted": false,
+          "requirement": "style-advisory"
+        }
+      }
+    ],
+    "assurance": {
+      "mode": "gated",
+      "transactionGuarantee": "none"
+    },
+    "kind": "evaluate",
+    "host": {
+      "name": "core-host",
+      "version": "0.1.0-private"
+    },
+    "capabilityFamily": "check",
+    "callSite": "gate",
+    "requestDigest": "sha256:examples-verdict-verdict-synthesized-json-request-deny",
+    "changesetDigest": "sha256:examples-verdict-verdict-synthesized-json-changeset-deny",
+    "providerIds": [
+      "acme-style",
+      "covibes-secrets",
+      "the-open-engine"
+    ],
+    "timing": {
+      "startedAt": "2026-06-23T00:00:00Z",
+      "endedAt": "2026-06-23T00:00:00Z",
+      "elapsedMs": 0
+    },
+    "failures": [],
+    "privateOnly": true,
+    "experimental": true,
+    "trustArtifact": false
+  },
+  "requestDigest": "sha256:examples-verdict-verdict-synthesized-json-request-deny",
+  "changesetDigest": "sha256:examples-verdict-verdict-synthesized-json-changeset-deny"
+}

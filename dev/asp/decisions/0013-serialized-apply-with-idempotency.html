@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>13. Serialized apply path with idempotency keys · Opcore</title><link rel="stylesheet" href="../../assets/site.css">
+<script src="../../assets/theme.js"></script>
+<script defer src="../../assets/site.js"></script>
+<link rel="icon" type="image/svg+xml" href="../../assets/oec-favicon.svg"><link rel="stylesheet" href="../../assets/versions.css"><script defer src="../../assets/versions.js"></script></head>
+<body class="guide-page"><a class="skip-link" href="#main-content">Skip to content</a>
+<header class="site-header"><div class="header-inner">
+<button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-navigation">Menu</button>
+<a class="brand" href="../../index.html"><img src="../../assets/oec-crow.png" alt="" width="32" height="36"><span>Opcore</span></a>
+<a class="header-label" href="../../index.html">Documentation</a>
+<div class="header-actions"><div class="docs-version" data-site-root="../../../" data-page-path="asp/decisions/0013-serialized-apply-with-idempotency.html" data-version="dev"><a href="../../../versions.html">Development ▾</a><select hidden aria-label="Documentation version"><option>Development</option></select></div><button class="theme-toggle" type="button" aria-label="Use dark mode" title="Use dark mode"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20.8 13.1A9 9 0 0 1 10.9 3.2 9 9 0 1 0 20.8 13.1Z"/></svg></button>
+<a class="repository-link" href="https://github.com/the-open-engine/opcore">GitHub <span aria-hidden="true">↗</span></a></div>
+</div></header>
+<div class="docs-layout"><aside class="docs-sidebar"><nav id="site-navigation" aria-label="Documentation"><div class="nav-group"><p>Opcore</p><ul><li><a href="../../index.html">Overview</a></li></ul></div><div class="nav-group"><p>Get started</p><ul><li><a href="../../docs/getting-started.html">Installation and first check</a></li></ul></div><div class="nav-group"><p>Guides</p><ul><li><a href="../../docs/configuration.html">Configuration</a></li><li><a href="../../docs/providers.html">Providers</a></li><li><a href="../../docs/examples.html">Examples</a></li><li><a href="../../docs/sense.html">Project Sense</a></li><li><a href="../../docs/agent-signals.html">Agent feedback</a></li></ul></div><div class="nav-group"><p>Reference</p><ul><li><a href="../../cli.html">CLI</a></li><li><a href="../../api/opcore/api/index.html">Rust API</a></li><li><a href="../../api/opcore/api/enum.ProviderProfile.html">Provider profiles</a></li><li><a href="../README.html">ASP specification</a></li></ul></div><div class="nav-group"><p>Project</p><ul><li><a href="../../docs/versioning.html">Documentation versions</a></li><li><a href="../../docs/architecture.html">Architecture</a></li><li><a href="../../CONTRIBUTING.html">Contributing</a></li><li><a href="../../CODE_OF_CONDUCT.html">Code of conduct</a></li><li><a href="../../SECURITY.html">Security</a></li></ul></div></nav></aside>
+<main id="main-content" class="guide-content" tabindex="-1">
+<p class="docs-kicker">Core documentation</p><h1 class="title">13. Serialized apply path with idempotency keys</h1>
+    <details><summary>Specification metadata</summary>
+<div class="example-wrap"><pre class="language-yaml"><code>adr: 13
+title: Serialized apply path with idempotency keys
+status: accepted
+date: 2026-06-16</code></pre></div></details>
+<blockquote>
+<p>Confirmed by the maintainer 2026-06-16 (was a provisional default).</p>
+</blockquote>
+<h2 id="context"><a class="doc-anchor" href="#context">§</a>Context</h2>
+<p>“The host serializes conflicting acts” was asserted with no mechanism: no lock/queue, no ordering,
+no proposal identity (review HM-7). Multiple harness drivers (agent loop, CI, pre-commit) can race.</p>
+<h2 id="decision"><a class="doc-anchor" href="#decision">§</a>Decision</h2>
+<ul>
+<li><strong>One serialized apply path per workspace</strong> — at most one apply transaction in flight; others queue
+FIFO.</li>
+<li><strong>Idempotency key</strong> — the host assigns a <code>proposalId</code> for every apply (propose and server-initiated
+<code>applyEdit</code>); dedup is on <code>(server, proposalId)</code>. A server-supplied key on the <code>applyEdit</code> path is
+namespaced under the authenticated server and never compared across servers.</li>
+<li><strong>Deterministic winner</strong> — on overlapping-blob conflict, first-committed-wins; the loser is
+re-proposed against the new baseline, bounded to N retries (default 2), then rejected for the caller
+to resolve.</li>
+</ul>
+<h2 id="consequences"><a class="doc-anchor" href="#consequences">§</a>Consequences</h2>
+<ul>
+<li>Deterministic, race-free application; retries are dedupable by key.</li>
+<li>Serialization is per workspace, so independent workspaces still apply concurrently.</li>
+<li>Revisit only if a workspace needs concurrent non-overlapping applies for throughput.</li>
+</ul>
+<h2 id="supersession"><a class="doc-anchor" href="#supersession">§</a>Supersession</h2>
+<p><a href="0024-supersede-server-initiated-apply-edit.html">ADR 0024</a> supersedes the server-initiated
+<code>applyEdit</code> branch while preserving the serialized per-workspace transaction and <code>(server, proposalId)</code> idempotency semantics.</p></main><aside class="page-toc" aria-label="On this page"><p>On this page</p><nav id="rustdoc"><ul>
+<li><a href="#context" title="Context">Context</a><ul></ul></li>
+<li><a href="#decision" title="Decision">Decision</a><ul></ul></li>
+<li><a href="#consequences" title="Consequences">Consequences</a><ul></ul></li>
+<li><a href="#supersession" title="Supersession">Supersession</a><ul></ul></li></ul></nav></aside></div>
+<footer class="site-footer"><div>© The Open Engine
+<a href="https://github.com/the-open-engine/opcore">Opcore on GitHub ↗</a></div></footer></body></html>

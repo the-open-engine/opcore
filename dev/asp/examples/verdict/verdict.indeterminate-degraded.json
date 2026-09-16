@@ -1,0 +1,95 @@
+{
+  "pass": false,
+  "decision": "indeterminate",
+  "callSite": "gate",
+  "findings": [],
+  "coverage": {
+    "exhaustive": false,
+    "required": [
+      "lattice"
+    ],
+    "enrolled": [
+      "lattice"
+    ],
+    "ran": [],
+    "degraded": [
+      {
+        "source": "lattice",
+        "reason": "missing",
+        "detail": "Required provider did not return an assessment before the gate deadline."
+      }
+    ]
+  },
+  "validAsOf": {
+    "rev": "git:tree:9f3a1c",
+    "blobs": []
+  },
+  "assurance": {
+    "mode": "gated",
+    "transactionGuarantee": "none"
+  },
+  "policyDigest": "sha256:policyabc123",
+  "authorityEvidence": [],
+  "receipt": {
+    "receiptId": "verdict.indeterminate-degraded-0001",
+    "issuedAt": "2026-06-22T20:03:00Z",
+    "providerProvenance": [],
+    "policyDigest": "sha256:policyabc123",
+    "baseline": {
+      "rev": "git:tree:9f3a1c"
+    },
+    "validAsOf": {
+      "rev": "git:tree:9f3a1c",
+      "blobs": []
+    },
+    "coverage": {
+      "exhaustive": false,
+      "required": [
+        "lattice"
+      ],
+      "enrolled": [
+        "lattice"
+      ],
+      "ran": [],
+      "degraded": [
+        {
+          "source": "lattice",
+          "reason": "missing",
+          "detail": "Required provider did not return an assessment before the gate deadline."
+        }
+      ]
+    },
+    "authorityEvidence": [],
+    "assurance": {
+      "mode": "gated",
+      "transactionGuarantee": "none"
+    },
+    "kind": "evaluate",
+    "host": {
+      "name": "core-host",
+      "version": "0.1.0-private"
+    },
+    "capabilityFamily": "check",
+    "callSite": "gate",
+    "requestDigest": "sha256:examples-verdict-verdict-indeterminate-degraded-json-request-indeterminate",
+    "changesetDigest": "sha256:examples-verdict-verdict-indeterminate-degraded-json-changeset-indeterminate",
+    "providerIds": [],
+    "timing": {
+      "startedAt": "2026-06-23T00:00:00Z",
+      "endedAt": "2026-06-23T00:00:00Z",
+      "elapsedMs": 0
+    },
+    "failures": [
+      {
+        "source": "lattice",
+        "reason": "missing",
+        "detail": "Required provider did not return an assessment before the gate deadline."
+      }
+    ],
+    "privateOnly": true,
+    "experimental": true,
+    "trustArtifact": false
+  },
+  "requestDigest": "sha256:examples-verdict-verdict-indeterminate-degraded-json-request-indeterminate",
+  "changesetDigest": "sha256:examples-verdict-verdict-indeterminate-degraded-json-changeset-indeterminate"
+}

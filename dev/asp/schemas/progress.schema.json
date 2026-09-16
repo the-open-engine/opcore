@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://covibes.dev/asp/schemas/progress.schema.json",
+  "title": "$/progress",
+  "description": "Partial-result streaming for long check/inspect operations, including legacy judge/sense method names, when partialResults is advertised. The terminal result is still returned on the original request id; progress notifications carry incremental data before it.",
+  "$defs": {
+    "params": {
+      "type": "object",
+      "required": ["token", "value"],
+      "additionalProperties": false,
+      "properties": {
+        "token": { "oneOf": [ { "type": "string" }, { "type": "integer" } ], "description": "Echoes the request id or a workDoneToken." },
+        "value": {
+          "oneOf": [
+            {
+              "type": "object", "required": ["kind"], "additionalProperties": false,
+              "properties": { "kind": { "const": "report" }, "percentage": { "type": "integer", "minimum": 0, "maximum": 100 }, "message": { "type": "string" } }
+            },
+            {
+              "type": "object", "required": ["kind", "diagnostics"], "additionalProperties": false,
+              "properties": { "kind": { "const": "diagnostics" }, "diagnostics": { "type": "array", "items": { "$ref": "https://covibes.dev/asp/schemas/diagnostic.schema.json" } } }
+            },
+            {
+              "type": "object", "required": ["kind"], "additionalProperties": false,
+              "properties": { "kind": { "const": "end" }, "message": { "type": "string" } }
+            }
+          ]
+        }
+      }
+    }
+  }
+}

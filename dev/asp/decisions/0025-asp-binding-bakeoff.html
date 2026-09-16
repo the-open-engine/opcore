@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>25. Choose JSON-RPC stdio as the private ASP dogfood binding floor · Opcore</title><link rel="stylesheet" href="../../assets/site.css">
+<script src="../../assets/theme.js"></script>
+<script defer src="../../assets/site.js"></script>
+<link rel="icon" type="image/svg+xml" href="../../assets/oec-favicon.svg"><link rel="stylesheet" href="../../assets/versions.css"><script defer src="../../assets/versions.js"></script></head>
+<body class="guide-page"><a class="skip-link" href="#main-content">Skip to content</a>
+<header class="site-header"><div class="header-inner">
+<button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-navigation">Menu</button>
+<a class="brand" href="../../index.html"><img src="../../assets/oec-crow.png" alt="" width="32" height="36"><span>Opcore</span></a>
+<a class="header-label" href="../../index.html">Documentation</a>
+<div class="header-actions"><div class="docs-version" data-site-root="../../../" data-page-path="asp/decisions/0025-asp-binding-bakeoff.html" data-version="dev"><a href="../../../versions.html">Development ▾</a><select hidden aria-label="Documentation version"><option>Development</option></select></div><button class="theme-toggle" type="button" aria-label="Use dark mode" title="Use dark mode"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20.8 13.1A9 9 0 0 1 10.9 3.2 9 9 0 1 0 20.8 13.1Z"/></svg></button>
+<a class="repository-link" href="https://github.com/the-open-engine/opcore">GitHub <span aria-hidden="true">↗</span></a></div>
+</div></header>
+<div class="docs-layout"><aside class="docs-sidebar"><nav id="site-navigation" aria-label="Documentation"><div class="nav-group"><p>Opcore</p><ul><li><a href="../../index.html">Overview</a></li></ul></div><div class="nav-group"><p>Get started</p><ul><li><a href="../../docs/getting-started.html">Installation and first check</a></li></ul></div><div class="nav-group"><p>Guides</p><ul><li><a href="../../docs/configuration.html">Configuration</a></li><li><a href="../../docs/providers.html">Providers</a></li><li><a href="../../docs/examples.html">Examples</a></li><li><a href="../../docs/sense.html">Project Sense</a></li><li><a href="../../docs/agent-signals.html">Agent feedback</a></li></ul></div><div class="nav-group"><p>Reference</p><ul><li><a href="../../cli.html">CLI</a></li><li><a href="../../api/opcore/api/index.html">Rust API</a></li><li><a href="../../api/opcore/api/enum.ProviderProfile.html">Provider profiles</a></li><li><a href="../README.html">ASP specification</a></li></ul></div><div class="nav-group"><p>Project</p><ul><li><a href="../../docs/versioning.html">Documentation versions</a></li><li><a href="../../docs/architecture.html">Architecture</a></li><li><a href="../../CONTRIBUTING.html">Contributing</a></li><li><a href="../../CODE_OF_CONDUCT.html">Code of conduct</a></li><li><a href="../../SECURITY.html">Security</a></li></ul></div></nav></aside>
+<main id="main-content" class="guide-content" tabindex="-1">
+<p class="docs-kicker">Core documentation</p><h1 class="title">25. Choose JSON-RPC stdio as the private ASP dogfood binding floor</h1>
+    <blockquote>
+<p>Historical implementation and evidence links on this page point to the original upstream repository and may require repository access. Those files are outside the bundled ASP definition; the specification, schemas, and fixtures are included here.</p>
+</blockquote>
+<details><summary>Specification metadata</summary>
+<div class="example-wrap"><pre class="language-yaml"><code>adr: 25
+title: Choose JSON-RPC stdio as the private ASP dogfood binding floor
+status: accepted
+date: 2026-06-23</code></pre></div></details>
+<h2 id="context"><a class="doc-anchor" href="#context">§</a>Context</h2>
+<p>ADR 0021 separated ASP semantics, wire bindings, and deployment surfaces. It left native JSON-RPC
+stdio and a namespaced MCP extension as private binding candidates. Issue #13 ran the first private
+bake-off against the current v0.1 semantic pack: <code>SnapshotRef</code>/<code>Baseline</code>, content-addressed
+<code>ChangeSet</code>, provider Assessment/EditPlan data, host Decision data, coverage degradation, authority
+evidence, assurance modes, transaction guarantees, and host-owned apply.</p>
+<p>The binding must preserve the corrected topology:</p>
+<ul>
+<li>ASP is the protocol.</li>
+<li>A conforming host owns policy, freshness, capability aggregation, authority, assurance, mediated
+apply, and final decisions.</li>
+<li>Providers produce <code>inspect</code> data, <code>check</code> assessments, or <code>edit</code> plans.</li>
+<li>Lattice is an enrolled reference engine/server behind a conforming host, not ASP and not the host.</li>
+<li><code>@the-open-engine/asp</code> may be the Open Engine reference/default host, but other conforming hosts
+remain valid.</li>
+</ul>
+<h2 id="decision"><a class="doc-anchor" href="#decision">§</a>Decision</h2>
+<p>Native ASP JSON-RPC over stdio is the private dogfood binding floor for v0.1 host/provider and
+harness/host work.</p>
+<p>The private floor means:</p>
+<ul>
+<li>a trusted environment can launch a conforming host over stdio;</li>
+<li>providers can be spawned and supervised through the same JSON-RPC lifecycle;</li>
+<li>host/harness methods use the semantic outer seam: <code>host/status</code>, <code>host/capabilities</code>,
+<code>host/evaluateChangeset</code>, <code>host/queryInspect</code>, <code>host/requestEditPlan</code>, <code>host/applyProposal</code>, and
+<code>host/authority/status</code>;</li>
+<li>progress and cancellation are advisory utility messages; the terminal host result remains
+authoritative;</li>
+<li>domain objects remain transport-neutral and do not fork by binding.</li>
+</ul>
+<p>A namespaced MCP extension remains a private experiment for compatibility/status work. It may become
+authoritative only after a later accepted ADR proves host-driven required invocation, call-site
+preservation, freshness equality, required coverage, authority grants, assurance-mode reporting,
+cancellation receipts, and mediated apply without ordinary-tool ambiguity.</p>
+<p>Ordinary MCP tools are rejected for authoritative gates. They may expose read-only status, inspect,
+or debugging adapters, but they do not by themselves satisfy blocking <code>gate</code> call-sites.</p>
+<p>LSP, SARIF, and BSP remain mapping/reference inputs only:</p>
+<ul>
+<li>LSP for capability negotiation, diagnostics, progress/cancellation, and workspace-edit patterns;</li>
+<li>SARIF for diagnostic/report export;</li>
+<li>BSP for build/task progress and structured diagnostics inspiration.</li>
+</ul>
+<h2 id="evidence"><a class="doc-anchor" href="#evidence">§</a>Evidence</h2>
+<p>The bake-off evidence lives in:</p>
+<ul>
+<li><a href="https://github.com/the-open-engine/agent-server-protocol/blob/aa6d17135bc3f64d9fc3468251d802bbed284064/docs/bakeoffs/asp-binding-bakeoff.md"><code>docs/bakeoffs/asp-binding-bakeoff.md</code></a></li>
+<li><a href="https://github.com/the-open-engine/agent-server-protocol/blob/aa6d17135bc3f64d9fc3468251d802bbed284064/docs/bakeoffs/asp-binding-bakeoff-results.json"><code>docs/bakeoffs/asp-binding-bakeoff-results.json</code></a></li>
+<li><a href="https://github.com/the-open-engine/agent-server-protocol/blob/aa6d17135bc3f64d9fc3468251d802bbed284064/tests/bindings/binding-bakeoff.test.ts"><code>tests/bindings/binding-bakeoff.test.ts</code></a></li>
+</ul>
+<p>The prototype covers both <code>json-rpc-stdio</code> and <code>mcp-extension</code> over shared fake host/provider
+fixtures. It covers allow, deny, stale baseline, malformed provider output, cancellation,
+unsupported capability, missing provider, missing authority, timeout, insufficient assurance,
+Lattice fast-path bypass, edit-plan request, denied apply, and applied proposal.</p>
+<p>Provider outputs are assessment/edit-plan data only. Recursive guards reject host-owned <code>decision</code>,
+<code>pass</code>, <code>verdict</code>, <code>authority</code>, <code>assurance</code>, <code>transactionGuarantee</code>, <code>applyReceipt</code>, <code>shellCommand</code>,
+and <code>disposition</code> fields. Host outputs carry decisions, call-site, policy digest,
+<code>coverage.required</code>/<code>ran</code>/<code>degraded</code>, <code>validAsOf</code>, authority evidence, assurance mode, transaction
+guarantee where relevant, and receipts.</p>
+<h2 id="relationship-to-earlier-adrs"><a class="doc-anchor" href="#relationship-to-earlier-adrs">§</a>Relationship to earlier ADRs</h2>
+<ul>
+<li>ADR 0001 is preserved. JSON-RPC 2.0 remains the private protocol-family base, and stdio is the
+private floor.</li>
+<li>ADR 0016 is preserved. The ASP outer seam remains native and semantic; adapters map to it rather
+than replacing it.</li>
+<li>ADR 0018 is preserved. The first Open Engine reference/default host can keep
+<code>asp host serve --repo &lt;workspace&gt;</code> over JSON-RPC stdio as its implementation target without
+becoming the only conforming host.</li>
+<li>ADR 0021 is preserved and narrowed for dogfood. Semantics, wire binding, and deployment surfaces
+remain separate; this ADR selects the private dogfood floor while leaving public binding and
+deployment standardization deferred.</li>
+</ul>
+<p>This ADR does not supersede ADRs 0001, 0016, 0018, or 0021. It records the evidence-backed dogfood
+choice made under those decisions.</p>
+<h2 id="consequences"><a class="doc-anchor" href="#consequences">§</a>Consequences</h2>
+<ul>
+<li>#8 conformance can keep assertion IDs semantic and add narrow binding adapters.</li>
+<li>#12 should build the reference/default host over JSON-RPC stdio first, with fake/minimal providers
+tested through the same contract as Lattice.</li>
+<li>#24 and #25 should hide binding details behind ACE host-client methods.</li>
+<li>#27, #28, and #29 should report the chosen private binding, latency, stale rejection, provider
+failures, assurance mode, transaction guarantee, and old-tool compatibility.</li>
+<li>MCP config, <code>.asp/asp.json</code>, <code>.asp/local.json</code>, <code>asp-server.json</code>, and Lattice paths remain
+non-authoritative deployment or compatibility surfaces.</li>
+<li>No package publish, public registry, certification program, stable manifest claim, or public ASP
+standard claim is introduced.</li>
+</ul></main><aside class="page-toc" aria-label="On this page"><p>On this page</p><nav id="rustdoc"><ul>
+<li><a href="#context" title="Context">Context</a><ul></ul></li>
+<li><a href="#decision" title="Decision">Decision</a><ul></ul></li>
+<li><a href="#evidence" title="Evidence">Evidence</a><ul></ul></li>
+<li><a href="#relationship-to-earlier-adrs" title="Relationship to earlier ADRs">Relationship to earlier ADRs</a><ul></ul></li>
+<li><a href="#consequences" title="Consequences">Consequences</a><ul></ul></li></ul></nav></aside></div>
+<footer class="site-footer"><div>© The Open Engine
+<a href="https://github.com/the-open-engine/opcore">Opcore on GitHub ↗</a></div></footer></body></html>

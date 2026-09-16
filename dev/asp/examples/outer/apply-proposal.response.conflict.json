@@ -1,0 +1,200 @@
+{
+  "jsonrpc": "2.0",
+  "id": 2104,
+  "validates": "outer-host.schema.json#/$defs/applyProposalResult",
+  "result": {
+    "applied": false,
+    "proposalId": "proposal:rename-api-fetch",
+    "baselineBefore": {
+      "rev": "git:tree:9f3a1c",
+      "stampedAt": "2026-06-23T12:00:00Z"
+    },
+    "baselineAfter": null,
+    "assurance": {
+      "mode": "gated",
+      "transactionGuarantee": "none"
+    },
+    "decision": {
+      "pass": false,
+      "decision": "indeterminate",
+      "callSite": "interactive",
+      "findings": [],
+      "coverage": {
+        "exhaustive": false,
+        "required": [
+          "lattice"
+        ],
+        "enrolled": [
+          "lattice"
+        ],
+        "ran": [],
+        "degraded": [
+          {
+            "source": "lattice",
+            "reason": "stale-baseline",
+            "detail": "Touched path changed after the proposal baseline."
+          }
+        ]
+      },
+      "policyDigest": "sha256:policyabc123",
+      "authorityEvidence": [],
+      "validAsOf": {
+        "rev": "git:tree:9f3a1c",
+        "blobs": [
+          "blob:sha256:aa01"
+        ]
+      },
+      "assurance": {
+        "mode": "gated",
+        "transactionGuarantee": "none"
+      },
+      "receipt": {
+        "receiptId": "apply-validation-conflict-0001",
+        "issuedAt": "2026-06-23T12:02:00Z",
+        "providerProvenance": [],
+        "policyDigest": "sha256:policyabc123",
+        "baseline": {
+          "rev": "git:tree:9f3a1c",
+          "stampedAt": "2026-06-23T12:00:00Z"
+        },
+        "validAsOf": {
+          "rev": "git:tree:9f3a1c",
+          "blobs": [
+            "blob:sha256:aa01"
+          ]
+        },
+        "coverage": {
+          "exhaustive": false,
+          "required": [
+            "lattice"
+          ],
+          "enrolled": [
+            "lattice"
+          ],
+          "ran": [],
+          "degraded": [
+            {
+              "source": "lattice",
+              "reason": "stale-baseline",
+              "detail": "Touched path changed after the proposal baseline."
+            }
+          ]
+        },
+        "authorityEvidence": [],
+        "assurance": {
+          "mode": "gated",
+          "transactionGuarantee": "none"
+        },
+        "kind": "evaluate",
+        "host": {
+          "name": "core-host",
+          "version": "0.1.0-private"
+        },
+        "capabilityFamily": "check",
+        "callSite": "interactive",
+        "requestDigest": "sha256:examples-outer-apply-proposal-response-conflict-json-request-indeterminate",
+        "changesetDigest": "sha256:examples-outer-apply-proposal-response-conflict-json-changeset-indeterminate",
+        "providerIds": [],
+        "timing": {
+          "startedAt": "2026-06-23T00:00:00Z",
+          "endedAt": "2026-06-23T00:00:00Z",
+          "elapsedMs": 0
+        },
+        "failures": [
+          {
+            "source": "lattice",
+            "reason": "stale-baseline",
+            "detail": "Touched path changed after the proposal baseline."
+          }
+        ],
+        "privateOnly": true,
+        "experimental": true,
+        "trustArtifact": false
+      },
+      "requestDigest": "sha256:examples-outer-apply-proposal-response-conflict-json-request-indeterminate",
+      "changesetDigest": "sha256:examples-outer-apply-proposal-response-conflict-json-changeset-indeterminate"
+    },
+    "refusal": {
+      "reason": "conflict",
+      "detail": "The host refused unresolved touched-path drift instead of overwriting local changes.",
+      "conflicts": [
+        {
+          "path": "src/api.ts",
+          "detail": "Expected blob:sha256:aa01 but current content is blob:sha256:bb99."
+        }
+      ]
+    },
+    "receipt": {
+      "receiptId": "apply-conflict-0001",
+      "issuedAt": "2026-06-23T12:03:00Z",
+      "providerProvenance": [
+        {
+          "provider": "lattice",
+          "capability": "edit",
+          "identity": "the-open-engine",
+          "integrity": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+          "conformance": "asp-edit/1.0"
+        }
+      ],
+      "policyDigest": "sha256:policyabc123",
+      "baseline": {
+        "rev": "git:tree:9f3a1c",
+        "stampedAt": "2026-06-23T12:00:00Z"
+      },
+      "validAsOf": {
+        "rev": "git:tree:9f3a1c",
+        "blobs": [
+          "blob:sha256:aa01"
+        ]
+      },
+      "coverage": {
+        "exhaustive": false,
+        "required": [
+          "lattice"
+        ],
+        "enrolled": [
+          "lattice"
+        ],
+        "ran": [],
+        "degraded": [
+          {
+            "source": "lattice",
+            "reason": "stale-baseline",
+            "detail": "Touched path changed after the proposal baseline."
+          }
+        ]
+      },
+      "authorityEvidence": [],
+      "assurance": {
+        "mode": "gated",
+        "transactionGuarantee": "none"
+      },
+      "kind": "apply-attempt",
+      "host": {
+        "name": "core-host",
+        "version": "0.1.0-private"
+      },
+      "capabilityFamily": "edit",
+      "requestDigest": "sha256:examples-outer-apply-proposal-response-conflict-json-apply-attempt-[object Object]",
+      "proposalId": "proposal:rename-api-fetch",
+      "providerIds": [
+        "lattice"
+      ],
+      "timing": {
+        "startedAt": "2026-06-23T00:00:00Z",
+        "endedAt": "2026-06-23T00:00:00Z",
+        "elapsedMs": 0
+      },
+      "failures": [
+        {
+          "source": "lattice",
+          "reason": "stale-baseline",
+          "detail": "Touched path changed after the proposal baseline."
+        }
+      ],
+      "privateOnly": true,
+      "experimental": true,
+      "trustArtifact": false
+    }
+  }
+}

@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Transport and lifecycle · Opcore</title><link rel="stylesheet" href="../../assets/site.css">
+<script src="../../assets/theme.js"></script>
+<script defer src="../../assets/site.js"></script>
+<link rel="icon" type="image/svg+xml" href="../../assets/oec-favicon.svg"><link rel="stylesheet" href="../../assets/versions.css"><script defer src="../../assets/versions.js"></script></head>
+<body class="guide-page"><a class="skip-link" href="#main-content">Skip to content</a>
+<header class="site-header"><div class="header-inner">
+<button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-navigation">Menu</button>
+<a class="brand" href="../../index.html"><img src="../../assets/oec-crow.png" alt="" width="32" height="36"><span>Opcore</span></a>
+<a class="header-label" href="../../index.html">Documentation</a>
+<div class="header-actions"><div class="docs-version" data-site-root="../../../" data-page-path="asp/spec/02-transport-and-lifecycle.html" data-version="dev"><a href="../../../versions.html">Development ▾</a><select hidden aria-label="Documentation version"><option>Development</option></select></div><button class="theme-toggle" type="button" aria-label="Use dark mode" title="Use dark mode"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20.8 13.1A9 9 0 0 1 10.9 3.2 9 9 0 1 0 20.8 13.1Z"/></svg></button>
+<a class="repository-link" href="https://github.com/the-open-engine/opcore">GitHub <span aria-hidden="true">↗</span></a></div>
+</div></header>
+<div class="docs-layout"><aside class="docs-sidebar"><nav id="site-navigation" aria-label="Documentation"><div class="nav-group"><p>Opcore</p><ul><li><a href="../../index.html">Overview</a></li></ul></div><div class="nav-group"><p>Get started</p><ul><li><a href="../../docs/getting-started.html">Installation and first check</a></li></ul></div><div class="nav-group"><p>Guides</p><ul><li><a href="../../docs/configuration.html">Configuration</a></li><li><a href="../../docs/providers.html">Providers</a></li><li><a href="../../docs/examples.html">Examples</a></li><li><a href="../../docs/sense.html">Project Sense</a></li><li><a href="../../docs/agent-signals.html">Agent feedback</a></li></ul></div><div class="nav-group"><p>Reference</p><ul><li><a href="../../cli.html">CLI</a></li><li><a href="../../api/opcore/api/index.html">Rust API</a></li><li><a href="../../api/opcore/api/enum.ProviderProfile.html">Provider profiles</a></li><li><a href="../README.html">ASP specification</a></li></ul></div><div class="nav-group"><p>Project</p><ul><li><a href="../../docs/versioning.html">Documentation versions</a></li><li><a href="../../docs/architecture.html">Architecture</a></li><li><a href="../../CONTRIBUTING.html">Contributing</a></li><li><a href="../../CODE_OF_CONDUCT.html">Code of conduct</a></li><li><a href="../../SECURITY.html">Security</a></li></ul></div></nav></aside>
+<main id="main-content" class="guide-content" tabindex="-1">
+<p class="docs-kicker">Core documentation</p><h1 class="title">Transport and lifecycle</h1>
+    <details><summary>Specification metadata</summary>
+<div class="example-wrap"><pre class="language-yaml"><code>title: Transport and lifecycle
+status: draft
+normative: true
+summary: Private JSON-RPC stdio dogfood floor, optional warm transports, the initialize handshake, and the session state machine.
+updated: 2026-06-23</code></pre></div></details>
+<blockquote>
+<p><strong>2026-06-23 binding decision:</strong> <a href="../decisions/0025-asp-binding-bakeoff.html">ADR 0025</a>
+chooses native JSON-RPC over stdio as the private dogfood binding floor. A namespaced MCP
+extension remains a private compatibility/status experiment; the semantic contract remains
+transport-neutral.</p>
+</blockquote>
+<h2 id="transport"><a class="doc-anchor" href="#transport">§</a>Transport</h2>
+<p>This chapter records the private <strong>JSON-RPC 2.0</strong> dogfood floor, newline-delimited (one JSON object
+per line, no embedded newlines). It is not a public deployment commitment, stable package surface, or
+deployment trust root.</p>
+<ul>
+<li><strong>stdio</strong> is the floor for private dogfood. Every server using this binding MUST speak JSON-RPC
+over stdin/stdout when spawned by the host. This is the simplest path for plug-in authors and
+matches MCP/LSP host models.</li>
+<li><strong>Unix domain socket</strong> is an advertised capability for persistent, warm, shared servers (the
+current <code>rox</code>/<code>cix</code> model). A server MAY advertise <code>transport: ["stdio","socket"]</code>; the host
+chooses only when socket behavior preserves stdio semantics.</li>
+</ul>
+<p>Requests carry an <code>id</code> and expect a response. Notifications omit <code>id</code> and MUST NOT be answered.
+<code>$/</code>-prefixed methods are protocol utilities (progress, cancellation). See
+<a href="../decisions/0001-base-on-json-rpc-2.0.html">decision 0001</a>.</p>
+<h2 id="session-model"><a class="doc-anchor" href="#session-model">§</a>Session model</h2>
+<p>One <strong>stateful session per workspace root</strong>. The server holds its model warm across calls — that
+warmth is the reason these are servers, not CLI shells. The host owns session lifecycle: it spawns,
+initializes, supervises, and shuts down the server.</p>
+<h2 id="state-machine"><a class="doc-anchor" href="#state-machine">§</a>State machine</h2>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code>spawned ──initialize──▶ initializing ──initialized──▶ active ──shutdown──▶ shuttingDown ──exit──▶ exited</code></pre></div>
+<ul>
+<li>Before <code>initialize</code> succeeds, the server MUST NOT perform work and the host MUST NOT send
+capability requests.</li>
+<li>In <code>active</code>, capability requests flow, including retained compatibility method names
+(<code>sense/*</code>, <code>judge/*</code>, <code>act/*</code>) mapped to canonical <code>inspect</code>, <code>check</code>, and <code>edit</code>, plus host
+callbacks. These aliases do not change the semantic rule that providers return assessments or edit
+plans while hosts return decisions.</li>
+<li><code>shutdown</code> (request) tells the server to stop accepting work and flush; <code>exit</code> (notification) ends
+the process.</li>
+</ul>
+<p>The <a href="11-core-profile.html">Core Profile</a> uses only the tiny first host/provider/check path in this
+state machine: <code>initialize</code>, the host’s <code>initialized</code> grant, <code>workspace/readBlob</code>,
+<code>workspace/listTree</code>, and <code>check/evaluate</code> behind <code>host/evaluateChangeset</code>. Inspect, edit, apply,
+deployment surfaces, dogfood, ACE integration, and reference-engine parity remain non-Core.</p>
+<h2 id="the-initialize-handshake"><a class="doc-anchor" href="#the-initialize-handshake">§</a>The initialize handshake</h2>
+<p>Capability negotiation, permission capping, and <code>SnapshotRef</code>/<code>Baseline</code> issuance happen here. Note
+that the host <strong>narrows</strong> what the server requested.</p>
+<div class="example-wrap"><pre class="language-jsonc"><code>// host → server
+{ &quot;jsonrpc&quot;:&quot;2.0&quot;, &quot;id&quot;:1, &quot;method&quot;:&quot;initialize&quot;, &quot;params&quot;:{
+  &quot;protocolVersion&quot;:&quot;asp/1.0&quot;,
+  &quot;host&quot;:{ &quot;name&quot;:&quot;covibes-host&quot;, &quot;version&quot;:&quot;0.1.0&quot; },
+  &quot;hostCapabilities&quot;:{ &quot;progress&quot;:true, &quot;pullDiagnostics&quot;:true, &quot;readBlob&quot;:true, &quot;putBlob&quot;:true },
+  &quot;workspace&quot;:{ &quot;root&quot;:&quot;/repo&quot;,
+    &quot;baseline&quot;:{ &quot;rev&quot;:&quot;git:tree:9f3a1c&quot;, &quot;dirty&quot;:&quot;sha256:ab…&quot;, &quot;stampedAt&quot;:&quot;2026-06-16T10:00:00Z&quot; } },
+  &quot;assuranceMode&quot;:&quot;advisory&quot; } }
+
+// server → host
+{ &quot;jsonrpc&quot;:&quot;2.0&quot;, &quot;id&quot;:1, &quot;result&quot;:{
+  &quot;serverInfo&quot;:{ &quot;name&quot;:&quot;acme-secrets&quot;, &quot;version&quot;:&quot;1.2.0&quot;, &quot;fingerprint&quot;:&quot;sha256:dd…&quot; },
+  &quot;capabilityFamilies&quot;:[&quot;check&quot;],
+  &quot;roles&quot;:[&quot;judge&quot;], // legacy compatibility metadata
+  &quot;capabilities&quot;:{
+    &quot;check&quot;:{ &quot;diagnosticSources&quot;:[&quot;acme-secrets&quot;], &quot;scopes&quot;:[&quot;changeset&quot;,&quot;workspace&quot;],
+              &quot;comparisons&quot;:[&quot;introduced&quot;,&quot;all&quot;], &quot;fixes&quot;:true },
+    &quot;watch&quot;:{ &quot;push&quot;:true } },
+  &quot;requestedPermissions&quot;:{ &quot;read&quot;:[&quot;**/*&quot;], &quot;write&quot;:false, &quot;network&quot;:true },
+  &quot;provenance&quot;:{ &quot;publisher&quot;:&quot;acme&quot;, &quot;signature&quot;:&quot;…&quot; } } }
+
+// host → server  (notification) — read narrowed, network denied
+{ &quot;jsonrpc&quot;:&quot;2.0&quot;, &quot;method&quot;:&quot;initialized&quot;, &quot;params&quot;:{
+  &quot;grantedPermissions&quot;:{ &quot;read&quot;:[&quot;src/**&quot;,&quot;!**/.env*&quot;], &quot;write&quot;:false, &quot;network&quot;:false,
+                         &quot;resourceLimits&quot;:{ &quot;cpuPct&quot;:50, &quot;memoryMb&quot;:512, &quot;wallclockMs&quot;:30000, &quot;fd&quot;:256 } },
+  &quot;baseline&quot;:{ &quot;rev&quot;:&quot;git:tree:9f3a1c&quot;, &quot;dirty&quot;:&quot;sha256:ab…&quot;, &quot;stampedAt&quot;:&quot;2026-06-16T10:00:00Z&quot; } } }</code></pre></div>
+<p>Rules:</p>
+<ul>
+<li>The host MUST reject (<code>initialize</code> error, <code>failClass: contract</code>) a server whose <code>protocolVersion</code>
+it cannot satisfy. There is no silent degradation — negotiate or refuse.</li>
+<li>The server MUST treat <code>grantedPermissions</code> as authoritative and operate within it; the host
+enforces the grant regardless.</li>
+<li>The host builds a mandatory sandbox from the grant (<code>resourceLimits</code> + egress-deny + isolation —
+<a href="../decisions/0009-mandatory-minimal-sandbox.html">ADR 0009</a>); the server runs as an isolated process
+and MUST tolerate resource caps and <code>readBlob</code> refusals.</li>
+<li>The <code>fingerprint</code> is a content hash of the server build. A changed build MUST produce a changed
+fingerprint so the host can detect version skew.</li>
+</ul>
+<h2 id="protocol-utilities"><a class="doc-anchor" href="#protocol-utilities">§</a>Protocol utilities</h2><div><table><thead><tr><th>Method</th><th>Direction</th><th>Purpose</th></tr></thead><tbody>
+<tr><td><code>$/progress</code></td><td>server → host</td><td>Stream progress / partial results for long operations</td></tr>
+<tr><td><code>$/cancelRequest</code></td><td>host → server</td><td>Cancel an in-flight request by <code>id</code></td></tr>
+<tr><td><code>workspace/baselineChanged</code></td><td>host → server</td><td>Advance the session baseline when the tree moves</td></tr>
+<tr><td><code>shutdown</code> / <code>exit</code></td><td>host → server</td><td>End the session</td></tr>
+</tbody></table>
+</div><h2 id="host-callbacks-server--host-requests"><a class="doc-anchor" href="#host-callbacks-server--host-requests">§</a>Host callbacks (server → host requests)</h2>
+<p>These let a server pull or upload content-addressed blobs without filesystem access. The host
+scope-checks every one. They are not write intent; applying a proposal is owned by the harness-facing
+<code>host/applyProposal</code> surface after explicit user, agent, or harness authorization.
+Server-initiated <code>applyEdit</code> is historical and non-conforming; the write path is superseded by
+<a href="../decisions/0024-supersede-server-initiated-apply-edit.html">ADR 0024</a>.</p>
+<div><table><thead><tr><th>Method</th><th>Purpose</th></tr></thead><tbody>
+<tr><td><code>workspace/listTree</code></td><td>Enumerate baseline entries (path → blobId), scope-filtered</td></tr>
+<tr><td><code>workspace/readBlob</code></td><td>Fetch blob bytes by content hash (batched)</td></tr>
+<tr><td><code>workspace/putBlob</code></td><td>Upload bytes for a proposal-introduced blob; host adds it to the referenced set (edit/legacy act)</td></tr>
+<tr><td><code>window/logMessage</code></td><td>Diagnostics / telemetry to the host</td></tr>
+</tbody></table>
+</div>
+<p>See <a href="03-data-model.html">data model</a> for the content-addressed blob protocol and
+<a href="07-host-obligations.html">host obligations</a> for how callbacks are policed.</p>
+<h2 id="errors"><a class="doc-anchor" href="#errors">§</a>Errors</h2>
+<p>A failure-to-evaluate uses the JSON-RPC error object
+(<a href="../schemas/error.schema.json"><code>schemas/error.schema.json</code></a>). <code>error.data.failClass</code>
+(<code>health | contract | policy | input</code>) is <strong>authoritative</strong> — the host keys fail-policy off it.
+<code>error.code</code> is advisory. A deny or indeterminate host decision is never an error; it is a successful
+result carrying diagnostics and coverage evidence. A provider assessment with findings is also never
+an error; it is a successful result carrying diagnostics, status, and coverage.</p>
+<p>ASP reserves the JSON-RPC server-error range <code>-32099..-32000</code>. Registry:</p>
+<div><table><thead><tr><th>code</th><th>name</th><th>failClass</th></tr></thead><tbody>
+<tr><td>-32010</td><td><code>health_not_ready</code></td><td>health</td></tr>
+<tr><td>-32011</td><td><code>stale_baseline</code></td><td>health (retryable)</td></tr>
+<tr><td>-32012</td><td><code>scope_denied</code></td><td>policy</td></tr>
+<tr><td>-32013</td><td><code>invalid_changeset</code></td><td>input</td></tr>
+<tr><td>-32014</td><td><code>unsupported_version</code></td><td>contract</td></tr>
+<tr><td>-32015</td><td><code>blob_unavailable</code></td><td>health</td></tr>
+<tr><td>-32016</td><td><code>cancelled</code></td><td>health (retryable)</td></tr>
+</tbody></table>
+</div><h2 id="streaming-and-cancellation"><a class="doc-anchor" href="#streaming-and-cancellation">§</a>Streaming and cancellation</h2>
+<p>A server that advertised <code>partialResults</code> MAY stream <code>$/progress</code> notifications
+(<a href="../schemas/progress.schema.json"><code>schemas/progress.schema.json</code></a>) before the terminal result: each
+carries an incremental <code>diagnostics</code> batch (<code>kind:"diagnostics"</code>), a <code>report</code>, or an <code>end</code> marker. The
+final result on the original request <code>id</code> is authoritative and supersedes the streamed partials for
+both the JSON-RPC stdio floor and any future binding adapter. Progress is advisory; it cannot allow a
+gate or apply a proposal. On <code>$/cancelRequest</code>, the server SHOULD stop and return an error with
+<code>failClass:"health"</code>, <code>retryable:true</code>, code <code>-32016</code>; the host still reports the terminal
+cancelled/degraded coverage state for <code>gate</code> call-sites.</p></main><aside class="page-toc" aria-label="On this page"><p>On this page</p><nav id="rustdoc"><ul>
+<li><a href="#transport" title="Transport">Transport</a><ul></ul></li>
+<li><a href="#session-model" title="Session model">Session model</a><ul></ul></li>
+<li><a href="#state-machine" title="State machine">State machine</a><ul></ul></li>
+<li><a href="#the-initialize-handshake" title="The initialize handshake">The initialize handshake</a><ul></ul></li>
+<li><a href="#protocol-utilities" title="Protocol utilities">Protocol utilities</a><ul></ul></li>
+<li><a href="#host-callbacks-server--host-requests" title="Host callbacks (server → host requests)">Host callbacks (server → host requests)</a><ul></ul></li>
+<li><a href="#errors" title="Errors">Errors</a><ul></ul></li>
+<li><a href="#streaming-and-cancellation" title="Streaming and cancellation">Streaming and cancellation</a><ul></ul></li></ul></nav></aside></div>
+<footer class="site-footer"><div>© The Open Engine
+<a href="https://github.com/the-open-engine/opcore">Opcore on GitHub ↗</a></div></footer></body></html>

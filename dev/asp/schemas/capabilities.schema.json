@@ -1,0 +1,147 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://covibes.dev/asp/schemas/capabilities.schema.json",
+  "title": "Server capabilities",
+  "description": "The canonical inspect/check/edit capability blocks a provider declares at initialize. ASP Core v1.0 requires only the check path and reuses this shape without a Core-only schema fork. A verb is live only if the provider advertises it and the host supports it. sense/judge/act are legacy compatibility aliases.",
+  "$defs": {
+    "transport": { "type": "array", "items": { "enum": ["stdio", "socket"] } },
+    "watch": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": { "push": { "type": "boolean" } }
+    },
+    "senseCapability": {
+      "type": "object",
+      "description": "Legacy compatibility shape for inspect capability declarations.",
+      "additionalProperties": false,
+      "properties": {
+        "verbs": { "type": "array", "items": { "enum": ["references", "callers", "callees", "symbols", "impact"] } },
+        "query": { "type": "array", "items": { "type": "string" } },
+        "scopes": { "type": "array", "items": { "enum": ["changeset", "workspace"] } },
+        "partialResults": { "type": "boolean" },
+        "graph": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "nodeKinds": { "type": "array", "items": { "type": "string" } },
+            "edgeKinds": { "type": "array", "items": { "type": "string" } }
+          }
+        }
+      }
+    },
+    "judgeCapability": {
+      "description": "Legacy compatibility alias for the canonical check capability declaration.",
+      "allOf": [{ "$ref": "#/$defs/checkCapability" }]
+    },
+    "actCapability": {
+      "description": "Legacy compatibility alias for canonical edit capability declarations.",
+      "allOf": [{ "$ref": "#/$defs/editCapability" }]
+    },
+    "inspectCapability": {
+      "description": "Canonical read-only code intelligence capability family.",
+      "allOf": [{ "$ref": "#/$defs/senseCapability" }]
+    },
+    "checkCapability": {
+      "description": "Canonical provider assessment capability family.",
+      "type": "object",
+      "required": [
+        "capabilityVersion",
+        "diagnosticSources",
+        "scopes",
+        "comparisons",
+        "partialResults",
+        "incremental",
+        "unsupportedReporting"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "capabilityVersion": { "type": "string", "minLength": 1 },
+        "diagnosticSources": { "type": "array", "items": { "type": "string" }, "minItems": 1, "uniqueItems": true },
+        "scopes": { "type": "array", "items": { "enum": ["changeset", "workspace"] }, "minItems": 1, "uniqueItems": true },
+        "comparisons": { "type": "array", "items": { "enum": ["introduced", "all", "resolved"] }, "minItems": 1, "uniqueItems": true },
+        "partialResults": { "type": "boolean" },
+        "incremental": { "type": "boolean" },
+        "unsupportedReporting": {
+          "const": "assessment-status",
+          "description": "Unsupported language, scope, comparison, source, or capability-version cases are returned as Assessment status unsupported, not provider runtime errors."
+        },
+        "fixes": {
+          "type": "boolean",
+          "description": "Compatibility hint that diagnostics may bridge to edit proposals through fix metadata."
+        }
+      }
+    },
+    "editCapability": {
+      "description": "Canonical edit proposal capability family. Providers propose EditPlans only; hosts validate and apply or stage.",
+      "type": "object",
+      "required": [
+        "capabilityVersion",
+        "operations",
+        "operationSupport",
+        "textEditSupport",
+        "wholeResourceSupport",
+        "renameMoveSupport",
+        "preconditionSupport",
+        "blobUploadSupport",
+        "partialProposalSemantics"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "capabilityVersion": { "type": "string", "minLength": 1 },
+        "operations": {
+          "type": "array",
+          "items": { "enum": ["rename", "move", "change-signature", "multi-edit", "organize-imports", "replace-resource", "text-edit"] },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "operationSupport": {
+          "type": "object",
+          "required": ["create", "modify", "delete", "rename", "move"],
+          "additionalProperties": false,
+          "properties": {
+            "create": { "type": "boolean" },
+            "modify": { "type": "boolean" },
+            "delete": { "type": "boolean" },
+            "rename": { "type": "boolean" },
+            "move": { "type": "boolean" }
+          }
+        },
+        "textEditSupport": { "type": "boolean" },
+        "wholeResourceSupport": { "type": "boolean" },
+        "renameMoveSupport": { "type": "boolean" },
+        "preconditionSupport": { "const": "required" },
+        "blobUploadSupport": { "const": "workspace/putBlob" },
+        "partialProposalSemantics": { "const": "status" },
+        "scopes": {
+          "type": "array",
+          "items": { "enum": ["workspace"] },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      }
+    },
+    "capabilities": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "inspect": { "$ref": "#/$defs/inspectCapability" },
+        "check": { "$ref": "#/$defs/checkCapability" },
+        "edit": { "$ref": "#/$defs/editCapability" },
+        "sense": {
+          "description": "Legacy compatibility alias for inspect.",
+          "$ref": "#/$defs/senseCapability"
+        },
+        "judge": {
+          "description": "Legacy compatibility alias for check.",
+          "$ref": "#/$defs/judgeCapability"
+        },
+        "act": {
+          "description": "Legacy compatibility alias for edit.",
+          "$ref": "#/$defs/actCapability"
+        },
+        "watch": { "$ref": "#/$defs/watch" },
+        "transport": { "$ref": "#/$defs/transport" }
+      }
+    }
+  }
+}

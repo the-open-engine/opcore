@@ -1,0 +1,12 @@
+{
+  "jsonrpc": "2.0",
+  "id": 11,
+  "method": "act/propose",
+  "params": {
+    "operation": "rename",
+    "args": { "symbol": { "id": "src/api.ts::Api.fetch" }, "newName": "request" },
+    "baseline": { "rev": "git:tree:9f3a1c", "stampedAt": "2026-06-16T10:00:00Z" },
+    "scope": { "paths": ["src/api.ts", "src/server.ts"], "operationProfile": "typescript-symbol" },
+    "proposalId": "proposal:legacy-rename-api-fetch"
+  }
+}

@@ -1,0 +1,102 @@
+{
+  "jsonrpc": "2.0",
+  "id": 105,
+  "validates": "outer-host.schema.json#/$defs/evaluateChangesetResult",
+  "result": {
+    "pass": false,
+    "decision": "indeterminate",
+    "callSite": "gate",
+    "changesetDigest": "sha256:core-changeset-missing-provider",
+    "findings": [],
+    "coverage": {
+      "exhaustive": false,
+      "required": [
+        "core-required-check"
+      ],
+      "enrolled": [
+        "core-required-check"
+      ],
+      "ran": [],
+      "degraded": [
+        {
+          "source": "core-required-check",
+          "reason": "missing-required-provider",
+          "requirement": "core-required-check",
+          "detail": "Required Core check provider is not enrolled."
+        }
+      ]
+    },
+    "policyDigest": "sha256:core-policy",
+    "authorityEvidence": [],
+    "validAsOf": {
+      "rev": "tree:core-base"
+    },
+    "assurance": {
+      "mode": "gated",
+      "transactionGuarantee": "none"
+    },
+    "receipt": {
+      "receiptId": "core-evaluate-missing-provider-0001",
+      "issuedAt": "2026-06-23T12:03:00Z",
+      "providerProvenance": [],
+      "policyDigest": "sha256:core-policy",
+      "baseline": {
+        "rev": "tree:core-base",
+        "stampedAt": "2026-06-23T12:00:00Z"
+      },
+      "validAsOf": {
+        "rev": "tree:core-base"
+      },
+      "coverage": {
+        "exhaustive": false,
+        "required": [
+          "core-required-check"
+        ],
+        "enrolled": [
+          "core-required-check"
+        ],
+        "ran": [],
+        "degraded": [
+          {
+            "source": "core-required-check",
+            "reason": "missing-required-provider",
+            "requirement": "core-required-check",
+            "detail": "Required Core check provider is not enrolled."
+          }
+        ]
+      },
+      "authorityEvidence": [],
+      "assurance": {
+        "mode": "gated",
+        "transactionGuarantee": "none"
+      },
+      "kind": "evaluate",
+      "host": {
+        "name": "core-host",
+        "version": "0.1.0-private"
+      },
+      "capabilityFamily": "check",
+      "callSite": "gate",
+      "requestDigest": "sha256:examples-core-evaluate-indeterminate-missing-provider-json-request-indeterminate",
+      "changesetDigest": "sha256:core-changeset-missing-provider",
+      "providerIds": [],
+      "timing": {
+        "startedAt": "2026-06-23T00:00:00Z",
+        "endedAt": "2026-06-23T00:00:00Z",
+        "elapsedMs": 0
+      },
+      "failures": [
+        {
+          "source": "core-required-check",
+          "reason": "missing-required-provider",
+          "requirement": "core-required-check",
+          "detail": "Required Core check provider is not enrolled."
+        }
+      ],
+      "privateOnly": true,
+      "experimental": true,
+      "trustArtifact": false
+    },
+    "requestDigest": "sha256:examples-core-evaluate-indeterminate-missing-provider-json-request-indeterminate"
+  }
+}

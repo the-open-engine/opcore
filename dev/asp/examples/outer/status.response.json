@@ -1,0 +1,221 @@
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "validates": "outer-host.schema.json#/$defs/statusResult",
+  "result": {
+    "host": {
+      "name": "@the-open-engine/asp",
+      "version": "0.1.0-alpha.0",
+      "outerProtocol": "asp-outer/1.0",
+      "state": "ready",
+      "bindingCandidate": "json-rpc-stdio"
+    },
+    "workspace": {
+      "root": "/workspace/repo",
+      "baseline": {
+        "rev": "tree:abc123",
+        "stampedAt": "2026-06-22T20:00:00Z"
+      },
+      "validAsOf": {
+        "rev": "tree:abc123",
+        "stampedAt": "2026-06-22T20:00:00Z"
+      }
+    },
+    "policy": {
+      "source": ".asp/asp.json",
+      "activation": "active",
+      "policyDigest": "sha256:policyabc123",
+      "localOverride": {
+        "present": false,
+        "path": null,
+        "authorityEffect": "none",
+        "detail": ".asp/local.json absent; no local advisory overlay is active"
+      }
+    },
+    "servers": [
+      {
+        "id": "lattice",
+        "capabilities": [
+          "inspect",
+          "check",
+          "edit"
+        ],
+        "authorityEvidence": {
+          "identity": "the-open-engine",
+          "integrity": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+          "conformance": "lattice-alpha",
+          "isolation": "gated",
+          "authority": {
+            "granted": true,
+            "requirement": "lattice-alpha-check",
+            "policyDigest": "sha256:policyabc123"
+          }
+        },
+        "state": "ready",
+        "enrollmentState": "enrolled",
+        "requiredFor": [
+          "gate"
+        ],
+        "coverage": {
+          "required": [
+            "lattice"
+          ],
+          "enrolled": [
+            "lattice"
+          ],
+          "ran": [
+            "lattice"
+          ],
+          "degraded": []
+        },
+        "manifest": "node_modules/@the-open-engine/lattice/asp-server.json",
+        "manifestState": "valid",
+        "accessExpectationsDeclared": true,
+        "manifestDetail": {
+          "path": "node_modules/@the-open-engine/lattice/asp-server.json",
+          "trustEffect": "metadata-only",
+          "launchAuthority": false,
+          "gateAuthority": false,
+          "detail": "Host verified pinned authority separately from manifest presence."
+        }
+      }
+    ],
+    "gates": {
+      "interactive": {
+        "available": true,
+        "requiredProviders": [],
+        "requiredCapabilities": [],
+        "degraded": []
+      },
+      "gate": {
+        "available": true,
+        "requiredProviders": [
+          "lattice"
+        ],
+        "requiredCapabilities": [
+          "check"
+        ],
+        "degraded": []
+      },
+      "sweep": {
+        "available": true,
+        "requiredProviders": [],
+        "requiredCapabilities": [],
+        "degraded": []
+      }
+    },
+    "capabilities": {
+      "inspect": {
+        "available": true,
+        "providers": [
+          "lattice"
+        ],
+        "requiredFor": [],
+        "degraded": [],
+        "legacyAliases": [
+          "sense"
+        ]
+      },
+      "check": {
+        "available": true,
+        "providers": [
+          "lattice"
+        ],
+        "requiredFor": [
+          "gate"
+        ],
+        "degraded": [],
+        "legacyAliases": [
+          "judge"
+        ]
+      },
+      "edit": {
+        "available": true,
+        "providers": [
+          "lattice"
+        ],
+        "requiredFor": [],
+        "degraded": [],
+        "legacyAliases": [
+          "act"
+        ]
+      }
+    },
+    "assuranceCapabilities": [
+      "advisory",
+      "gated",
+      "mediated-write"
+    ],
+    "receipt": {
+      "receiptId": "status-2026-06-22T20:00:00Z",
+      "issuedAt": "2026-06-22T20:00:00Z",
+      "providerProvenance": [
+        {
+          "provider": "lattice",
+          "capability": "check",
+          "identity": "the-open-engine",
+          "integrity": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+          "conformance": "lattice-alpha"
+        }
+      ],
+      "policyDigest": "sha256:policyabc123",
+      "baseline": {
+        "rev": "tree:abc123",
+        "stampedAt": "2026-06-22T20:00:00Z"
+      },
+      "validAsOf": {
+        "rev": "tree:abc123"
+      },
+      "coverage": {
+        "exhaustive": true,
+        "required": [
+          "lattice"
+        ],
+        "enrolled": [
+          "lattice"
+        ],
+        "ran": [
+          "lattice"
+        ],
+        "degraded": []
+      },
+      "authorityEvidence": [
+        {
+          "identity": "the-open-engine",
+          "integrity": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+          "conformance": "lattice-alpha",
+          "isolation": "gated",
+          "authority": {
+            "granted": true,
+            "requirement": "lattice-alpha-check",
+            "policyDigest": "sha256:policyabc123"
+          }
+        }
+      ],
+      "assurance": {
+        "mode": "gated",
+        "transactionGuarantee": "none"
+      },
+      "kind": "status",
+      "host": {
+        "name": "core-host",
+        "version": "0.1.0-private"
+      },
+      "capabilityFamily": "check",
+      "requestDigest": "sha256:examples-outer-status-response-json-status-receipt",
+      "providerIds": [
+        "lattice",
+        "the-open-engine"
+      ],
+      "timing": {
+        "startedAt": "2026-06-23T00:00:00Z",
+        "endedAt": "2026-06-23T00:00:00Z",
+        "elapsedMs": 0
+      },
+      "failures": [],
+      "privateOnly": true,
+      "experimental": true,
+      "trustArtifact": false
+    }
+  }
+}

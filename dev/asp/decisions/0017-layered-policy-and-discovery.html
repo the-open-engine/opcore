@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>17. Use layered declarative policy and trusted installed server manifests · Opcore</title><link rel="stylesheet" href="../../assets/site.css">
+<script src="../../assets/theme.js"></script>
+<script defer src="../../assets/site.js"></script>
+<link rel="icon" type="image/svg+xml" href="../../assets/oec-favicon.svg"><link rel="stylesheet" href="../../assets/versions.css"><script defer src="../../assets/versions.js"></script></head>
+<body class="guide-page"><a class="skip-link" href="#main-content">Skip to content</a>
+<header class="site-header"><div class="header-inner">
+<button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-navigation">Menu</button>
+<a class="brand" href="../../index.html"><img src="../../assets/oec-crow.png" alt="" width="32" height="36"><span>Opcore</span></a>
+<a class="header-label" href="../../index.html">Documentation</a>
+<div class="header-actions"><div class="docs-version" data-site-root="../../../" data-page-path="asp/decisions/0017-layered-policy-and-discovery.html" data-version="dev"><a href="../../../versions.html">Development ▾</a><select hidden aria-label="Documentation version"><option>Development</option></select></div><button class="theme-toggle" type="button" aria-label="Use dark mode" title="Use dark mode"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20.8 13.1A9 9 0 0 1 10.9 3.2 9 9 0 1 0 20.8 13.1Z"/></svg></button>
+<a class="repository-link" href="https://github.com/the-open-engine/opcore">GitHub <span aria-hidden="true">↗</span></a></div>
+</div></header>
+<div class="docs-layout"><aside class="docs-sidebar"><nav id="site-navigation" aria-label="Documentation"><div class="nav-group"><p>Opcore</p><ul><li><a href="../../index.html">Overview</a></li></ul></div><div class="nav-group"><p>Get started</p><ul><li><a href="../../docs/getting-started.html">Installation and first check</a></li></ul></div><div class="nav-group"><p>Guides</p><ul><li><a href="../../docs/configuration.html">Configuration</a></li><li><a href="../../docs/providers.html">Providers</a></li><li><a href="../../docs/examples.html">Examples</a></li><li><a href="../../docs/sense.html">Project Sense</a></li><li><a href="../../docs/agent-signals.html">Agent feedback</a></li></ul></div><div class="nav-group"><p>Reference</p><ul><li><a href="../../cli.html">CLI</a></li><li><a href="../../api/opcore/api/index.html">Rust API</a></li><li><a href="../../api/opcore/api/enum.ProviderProfile.html">Provider profiles</a></li><li><a href="../README.html">ASP specification</a></li></ul></div><div class="nav-group"><p>Project</p><ul><li><a href="../../docs/versioning.html">Documentation versions</a></li><li><a href="../../docs/architecture.html">Architecture</a></li><li><a href="../../CONTRIBUTING.html">Contributing</a></li><li><a href="../../CODE_OF_CONDUCT.html">Code of conduct</a></li><li><a href="../../SECURITY.html">Security</a></li></ul></div></nav></aside>
+<main id="main-content" class="guide-content" tabindex="-1">
+<p class="docs-kicker">Core documentation</p><h1 class="title">17. Use layered declarative policy and trusted installed server manifests</h1>
+    <details><summary>Specification metadata</summary>
+<div class="example-wrap"><pre class="language-yaml"><code>adr: 17
+title: Use layered declarative policy and trusted installed server manifests
+status: accepted
+date: 2026-06-21</code></pre></div></details>
+<h2 id="context"><a class="doc-anchor" href="#context">§</a>Context</h2>
+<p>An ASP-enabled repository needs to say which robustness engines are required without letting a pull
+request define arbitrary commands that execute as blocking gates. We also need local development
+escape hatches while protecting shared gates.</p>
+<h2 id="decision"><a class="doc-anchor" href="#decision">§</a>Decision</h2>
+<p>Use three layers:</p>
+<ul>
+<li><code>.asp/asp.json</code> is versioned repository policy. It is declarative and cannot contain arbitrary gate
+commands.</li>
+<li><code>.asp/local.json</code> is ignored local override policy. It can point at local builds and experiments,
+but cannot certify a server or weaken shared gates.</li>
+<li><code>asp-server.json</code> is an installed server manifest. It can name an entrypoint because it belongs to
+an installed artifact with provenance and fingerprint evidence.</li>
+</ul>
+<p>Policy changes are two-phase: a branch is evaluated under the trusted base policy, and new policy
+activates only after merge or explicit trusted approval.</p>
+<h2 id="consequences"><a class="doc-anchor" href="#consequences">§</a>Consequences</h2>
+<ul>
+<li>ACE and other harnesses discover an installed ASP host instead of provisioning Lattice directly.</li>
+<li>A malicious policy edit cannot disable the gate that reviews it.</li>
+<li>Local dogfood can move quickly without turning local commands into shared trust roots.</li>
+</ul></main><aside class="page-toc" aria-label="On this page"><p>On this page</p><nav id="rustdoc"><ul>
+<li><a href="#context" title="Context">Context</a><ul></ul></li>
+<li><a href="#decision" title="Decision">Decision</a><ul></ul></li>
+<li><a href="#consequences" title="Consequences">Consequences</a><ul></ul></li></ul></nav></aside></div>
+<footer class="site-footer"><div>© The Open Engine
+<a href="https://github.com/the-open-engine/opcore">Opcore on GitHub ↗</a></div></footer></body></html>

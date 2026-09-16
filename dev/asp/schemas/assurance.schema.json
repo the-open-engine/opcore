@@ -1,0 +1,148 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://covibes.dev/asp/schemas/assurance.schema.json",
+  "title": "ASP assurance semantics",
+  "description": "Shared semantic vocabulary for provider assessments, host decisions, assurance modes, authority axes, and transaction guarantees. ASP Core v1.0 reuses these decision, coverage, authority, and assurance terms without a Core-only schema fork.",
+  "$defs": {
+    "capabilityFamily": {
+      "enum": ["inspect", "check", "edit"]
+    },
+    "providerLifecycleState": {
+      "enum": [
+        "launched",
+        "initializing",
+        "initialized",
+        "active",
+        "cancelled",
+        "shutting-down",
+        "exited",
+        "crashed",
+        "timed-out",
+        "incompatible",
+        "malformed",
+        "unavailable",
+        "quarantined",
+        "degraded"
+      ]
+    },
+    "assessmentStatus": {
+      "enum": ["complete", "incomplete", "unsupported", "error", "cancelled"]
+    },
+    "decision": {
+      "enum": ["allow", "deny", "indeterminate"]
+    },
+    "assuranceMode": {
+      "enum": ["advisory", "gated", "mediated-write", "isolated"]
+    },
+    "transactionGuarantee": {
+      "enum": ["none", "rollback_attempted", "text_only_transactional", "workspace_transactional", "staged_snapshot"]
+    },
+    "coverageDegradationReason": {
+      "enum": [
+        "fail-open",
+        "quarantined",
+        "crashed",
+        "skewed",
+        "missing",
+        "stale",
+        "missing-required-provider",
+        "stale-baseline",
+        "blocking-diagnostic",
+        "missing-authority",
+        "insufficient-assurance",
+        "incomplete",
+        "unsupported",
+        "error",
+        "cancelled",
+        "malformed",
+        "timed-out",
+        "optional-degraded",
+        "unavailable",
+        "incompatible",
+        "unsupported-assurance",
+        "policy-self-authorization",
+        "direct-write-risk",
+        "lattice-fast-path"
+      ]
+    },
+    "coverageDegradation": {
+      "type": "object",
+      "required": ["source", "reason", "detail"],
+      "additionalProperties": false,
+      "properties": {
+        "source": { "type": "string", "description": "Provider id, requirement id, policy source, or adapter path that caused degraded coverage." },
+        "reason": { "$ref": "#/$defs/coverageDegradationReason" },
+        "requirement": { "type": "string" },
+        "detail": { "type": "string" },
+        "capability": { "$ref": "#/$defs/capabilityFamily" },
+        "providerState": { "$ref": "#/$defs/providerLifecycleState" }
+      }
+    },
+    "degradation": {
+      "$ref": "#/$defs/coverageDegradation"
+    },
+    "assessmentCoverage": {
+      "type": "object",
+      "required": ["exhaustive", "degraded"],
+      "additionalProperties": false,
+      "properties": {
+        "exhaustive": { "type": "boolean" },
+        "degraded": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/coverageDegradation" }
+        }
+      }
+    },
+    "authorityEvidence": {
+      "type": "object",
+      "required": ["identity", "integrity", "conformance", "isolation", "authority"],
+      "additionalProperties": false,
+      "properties": {
+        "identity": { "type": "string", "description": "Publisher, owner, or provider identity authenticated by the host." },
+        "integrity": { "type": "string", "description": "Pinned package, artifact, or digest evidence." },
+        "conformance": { "type": "string", "description": "Conformance suite/profile evidence." },
+        "isolation": { "$ref": "#/$defs/assuranceMode" },
+        "authority": {
+          "type": "object",
+          "required": ["granted", "requirement"],
+          "additionalProperties": false,
+          "properties": {
+            "granted": { "type": "boolean" },
+            "requirement": { "type": "string" },
+            "callSite": { "enum": ["interactive", "gate", "sweep"] },
+            "policyDigest": { "type": "string" }
+          }
+        }
+      }
+    },
+    "providerEvidence": {
+      "type": "object",
+      "description": "Provider-produced build/config/capability evidence attached to assessments and edit plans. This is not gate authority.",
+      "required": ["id", "version", "configDigest", "capabilities", "integrity", "conformance"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string" },
+        "version": { "type": "string" },
+        "configDigest": { "type": "string" },
+        "capabilities": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/capabilityFamily" },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "integrity": { "type": "string" },
+        "conformance": { "type": "string" }
+      }
+    },
+    "applyAssurance": {
+      "type": "object",
+      "required": ["mode", "transactionGuarantee"],
+      "additionalProperties": false,
+      "properties": {
+        "mode": { "$ref": "#/$defs/assuranceMode" },
+        "transactionGuarantee": { "$ref": "#/$defs/transactionGuarantee" },
+        "detail": { "type": "string" }
+      }
+    }
+  }
+}

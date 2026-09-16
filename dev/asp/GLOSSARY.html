@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Glossary · Opcore</title><link rel="stylesheet" href="../assets/site.css">
+<script src="../assets/theme.js"></script>
+<script defer src="../assets/site.js"></script>
+<link rel="icon" type="image/svg+xml" href="../assets/oec-favicon.svg"><link rel="stylesheet" href="../assets/versions.css"><script defer src="../assets/versions.js"></script></head>
+<body class="guide-page"><a class="skip-link" href="#main-content">Skip to content</a>
+<header class="site-header"><div class="header-inner">
+<button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-navigation">Menu</button>
+<a class="brand" href="../index.html"><img src="../assets/oec-crow.png" alt="" width="32" height="36"><span>Opcore</span></a>
+<a class="header-label" href="../index.html">Documentation</a>
+<div class="header-actions"><div class="docs-version" data-site-root="../../" data-page-path="asp/GLOSSARY.html" data-version="dev"><a href="../../versions.html">Development ▾</a><select hidden aria-label="Documentation version"><option>Development</option></select></div><button class="theme-toggle" type="button" aria-label="Use dark mode" title="Use dark mode"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20.8 13.1A9 9 0 0 1 10.9 3.2 9 9 0 1 0 20.8 13.1Z"/></svg></button>
+<a class="repository-link" href="https://github.com/the-open-engine/opcore">GitHub <span aria-hidden="true">↗</span></a></div>
+</div></header>
+<div class="docs-layout"><aside class="docs-sidebar"><nav id="site-navigation" aria-label="Documentation"><div class="nav-group"><p>Opcore</p><ul><li><a href="../index.html">Overview</a></li></ul></div><div class="nav-group"><p>Get started</p><ul><li><a href="../docs/getting-started.html">Installation and first check</a></li></ul></div><div class="nav-group"><p>Guides</p><ul><li><a href="../docs/configuration.html">Configuration</a></li><li><a href="../docs/providers.html">Providers</a></li><li><a href="../docs/examples.html">Examples</a></li><li><a href="../docs/sense.html">Project Sense</a></li><li><a href="../docs/agent-signals.html">Agent feedback</a></li></ul></div><div class="nav-group"><p>Reference</p><ul><li><a href="../cli.html">CLI</a></li><li><a href="../api/opcore/api/index.html">Rust API</a></li><li><a href="../api/opcore/api/enum.ProviderProfile.html">Provider profiles</a></li><li><a href="README.html">ASP specification</a></li></ul></div><div class="nav-group"><p>Project</p><ul><li><a href="../docs/versioning.html">Documentation versions</a></li><li><a href="../docs/architecture.html">Architecture</a></li><li><a href="../CONTRIBUTING.html">Contributing</a></li><li><a href="../CODE_OF_CONDUCT.html">Code of conduct</a></li><li><a href="../SECURITY.html">Security</a></li></ul></div></nav></aside>
+<main id="main-content" class="guide-content" tabindex="-1">
+<p class="docs-kicker">Core documentation</p><h1 class="title">Glossary</h1>
+    <details><summary>Specification metadata</summary>
+<div class="example-wrap"><pre class="language-yaml"><code>title: Glossary
+status: established
+normative: true
+summary: Canonical ASP terminology, including manager, host, server, assessment/decision, capability, assurance, and authority terms.
+updated: 2026-06-25</code></pre></div></details>
+<p>The single source of truth for ASP terminology. Use these exact terms in spec, code, and docs.</p>
+<h2 id="first-reader-glossary"><a class="doc-anchor" href="#first-reader-glossary">§</a>First-reader glossary</h2>
+<ul>
+<li><strong>ASP manager</strong> — the installed <code>asp</code> CLI/daemon that helps users install, enroll, supervise, and
+inspect ASP servers. The manager is a product/distribution layer; it is not the protocol itself.</li>
+<li><strong>Host</strong> — the coordinator the agent or harness calls. It asks providers/servers for work and
+returns decisions and receipts.</li>
+<li><strong>Provider/server</strong> — a robustness engine enrolled behind the host. It produces assessments or edit
+plans; it does not decide whether a gate passes.</li>
+<li><strong>Harness</strong> — the agent loop, editor integration, hook, or CI runner that calls the host.</li>
+<li><strong>inspect</strong> — read-only code intelligence, such as references, impact, and flows.</li>
+<li><strong>check</strong> — evaluation of a candidate change. A check provider returns an assessment.</li>
+<li><strong>edit</strong> — a proposed edit plan. The host decides whether and how it may be applied.</li>
+<li><strong>Assessment</strong> — provider/server output from a check.</li>
+<li><strong>Decision</strong> — host output: <code>allow</code>, <code>deny</code>, or <code>indeterminate</code>.</li>
+<li><strong>Receipt</strong> — host-authored evidence for a status, evaluation, apply, or authority response.</li>
+</ul>
+<p>Stop here if you only need the mental model. The protocol glossary below is for spec,
+implementation, and conformance work.</p>
+<h2 id="protocol-glossary"><a class="doc-anchor" href="#protocol-glossary">§</a>Protocol glossary</h2><h3 id="core-nouns"><a class="doc-anchor" href="#core-nouns">§</a>Core nouns</h3>
+<ul>
+<li><strong>ASP manager</strong> — an implementation and ecosystem layer that installs, discovers, configures,
+supervises, and reports on ASP servers for a developer, organization, or harness. The first Open
+Engine manager is expected to be the installed <code>asp</code> CLI/daemon. A manager may also embed or launch
+a conforming host, but “manager” is not a normative protocol role and other conforming hosts or
+managers remain valid.</li>
+<li><strong>Host</strong> — the conforming coordinator role. It owns capability negotiation, freshness, policy,
+assessment aggregation, decisions, authority status, assurance reporting, transaction guarantees,
+and mediated apply. It can be embedded in a harness/editor/CI system or supplied by the Open Engine
+reference/default host implementation behind the <code>asp</code> manager.</li>
+<li><strong>Server</strong> — a pluggable guardian provider. It advertises capabilities and returns assessments or
+edit plans. A single server can advertise multiple capability families, such as Opcore exposing
+<code>inspect</code>, <code>check</code>, and <code>edit</code>, without becoming the host. We say “server,” not “daemon”:
+“daemon” is the process, “server” is the provider role it plays in the protocol.</li>
+<li><strong>Server catalog</strong> — a manager-facing discovery surface for installable ASP servers. Catalog
+listing can help users find servers, but listing, “official” support, paid distribution, or
+community status never grants gate authority by itself.</li>
+<li><strong>Official-supported server</strong> — an ASP server that Open Engine chooses to document, test, or support
+in the manager. Opcore is expected to be the first such server. Official support is not automatic
+authority for shared gates.</li>
+<li><strong>Community-listed server</strong> — an ASP server referenced by docs or a catalog because it may be useful
+to users. It can be conformant or non-conformant, open or closed, free or paid; it still needs
+explicit identity, integrity, conformance, isolation, and authority evidence before it can satisfy a
+gate.</li>
+<li><strong>Local-dev server</strong> — an unpublished or locally linked ASP server used for experiments. It is
+advisory by default and cannot satisfy shared gates unless trusted policy explicitly grants
+authority.</li>
+<li><strong>Reference engine/server</strong> — a non-mandatory implementation used to prove ASP behavior. Opcore is
+the intended first Open Engine reference engine/server for the provider side and one official
+supported ASP server option. It is not ASP, not the host, not the manager, and not privileged over
+third-party providers.</li>
+<li><strong>Harness</strong> — the agent loop (editor-agent, CI runner, pre-commit) that drives edits and consumes
+host decisions.</li>
+<li><strong>Outer seam</strong> — the harness-to-host ASP semantic contract. It covers host status, composed
+capabilities, changeset evaluation, inspect queries, edit plans, apply intent, apply receipts, and
+authority status. Native JSON-RPC over stdio is the private dogfood binding floor; a namespaced
+MCP extension remains a private compatibility/status experiment.</li>
+<li><strong>Inner seam</strong> — the host-to-server ASP contract for provider capabilities.</li>
+<li><strong>Repository policy</strong> — a versioned logical-only policy file. It declares ASP version, required
+assurances, capabilities, pinned provider identity/version/digest/conformance, gates, budgets, and
+adapters, but it does not choose a host implementation, launch providers, or contain blocking gate
+commands. <code>.asp/asp.json</code> is experimental and is not a trust root or authority grant by itself.</li>
+<li><strong>Local override</strong> — ignored <code>.asp/local.json</code> policy for local advisory experiments, presentation
+preferences, and unpublished builds. It cannot certify a server, weaken shared gates, grant shared
+authority, or produce shared authoritative decisions.</li>
+<li><strong>Server manifest</strong> — installed <code>asp-server.json</code> metadata for a server artifact: id, version,
+capabilities, capability profiles, structured entrypoint, fingerprints, provenance, and explicit
+access expectations. It is a private experimental launch hint, not trust or authority.</li>
+<li><strong>Provider lifecycle state</strong> — host-observed process/protocol state for an enrolled provider:
+launched, initializing, initialized, active, cancelled, shutting down, exited, crashed, timed out,
+incompatible, malformed, unavailable, quarantined, or degraded. Lifecycle state is evidence for
+coverage and status; it is not authority.</li>
+<li><strong>Provider capability health</strong> — per-provider, per-capability availability for <code>inspect</code>, <code>check</code>,
+and <code>edit</code>, including advertised support, lifecycle state, and typed degradation. A failed <code>check</code>
+capability must not be collapsed into vague whole-host failure.</li>
+<li><strong>Deployment surface</strong> — an experimental file, manifest, adapter, or launch context that helps a
+host find policy or providers. Deployment surfaces are not the semantic standard unless a later ADR
+promotes one.</li>
+<li><strong>Core Profile</strong> — the tiny private ASP v1.0 host/provider/check capability profile:
+<code>host/status</code>, <code>host/capabilities</code>, <code>host/evaluateChangeset</code>, <code>initialize</code>/<code>initialized</code>,
+<code>workspace/readBlob</code>, <code>workspace/listTree</code>, <code>check/evaluate</code>, <code>SnapshotRef</code>/<code>Baseline</code>,
+<code>ChangeSet</code>, provider <code>Assessment</code>, host <code>Decision</code>, and decision <code>coverage.required</code>/<code>ran</code>/
+<code>degraded</code>.</li>
+<li><strong>Core adoption gate</strong> — the private evidence gate for claiming “ASP Core v1.0 adopted.” It
+requires host-authored receipts for status, capabilities, initialized grants, and allow/deny/
+negative changeset decisions; it is not certification, registry membership, or a public standard
+claim.</li>
+<li><strong>Core adoption receipt</strong> — the host-authored evidence bundle for Core adoption: policy digest,
+baseline, validAsOf, coverage, authority evidence, achieved assurance mode, transaction guarantee,
+initialized grant evidence, and retained-guardrail statement.</li>
+<li><strong>Optional profile</strong> — any ASP profile outside Core v1.0, including inspect, edit, apply,
+deployment surfaces, manager daemon, server catalog, dogfood, ACE integration, and reference-engine
+parity. Optional profiles do not satisfy Core gates by themselves.</li>
+</ul>
+<h3 id="capability-families"><a class="doc-anchor" href="#capability-families">§</a>Capability Families</h3>
+<ul>
+<li><strong>inspect</strong> — read-only code intelligence (impact, callers, flows, search). Earlier docs may call
+this <code>sense</code>.</li>
+<li><strong>check</strong> — evaluates an immutable <code>SnapshotRef</code>/<code>Baseline</code> plus <code>ChangeSet</code> and emits an
+<strong>Assessment</strong> with status, diagnostics/evidence, coverage, <code>validAsOf</code>, provider metadata,
+timing, and cache metadata. Earlier docs may call this <code>judge</code>.</li>
+<li><strong>edit</strong> — proposes an <code>EditPlan</code> bound to a host-issued snapshot. The provider writes nothing,
+returns no executable mutation contract, and leaves validation/apply decisions to the host. Earlier
+docs may call this <code>act</code>.</li>
+<li><strong>gate</strong> — a named policy requirement at a call-site. A host decision may block because required
+checks are denied or indeterminate.</li>
+</ul>
+<h3 id="borrowed-from-lsp-same-concept-occasionally-renamed"><a class="doc-anchor" href="#borrowed-from-lsp-same-concept-occasionally-renamed">§</a>Borrowed from LSP (same concept, occasionally renamed)</h3>
+<ul>
+<li><strong>Capabilities / capability negotiation</strong> — at <code>initialize</code>, host and server each declare what
+they support; a verb is live only if both advertise it. Gives graceful degradation across vendors.</li>
+<li><strong>Diagnostic</strong> — a finding: <code>severity</code>, <code>code</code>, <code>source</code>, <code>message</code>, <code>location</code>, <code>fingerprint</code>,
+<code>introduced</code>, and optional <code>help</code> / <code>codeDescription</code> / <code>fix</code>.</li>
+<li><strong>Push vs pull diagnostics</strong> — push = background/watch diagnostics a server volunteers; pull = a
+synchronous provider assessment the host requests on a changeset before computing a gate decision.</li>
+<li><strong>Workspace edit</strong> — a structured multi-file edit. The server <em>proposes</em> it; the host <em>applies</em> it.</li>
+<li><strong>Workspace</strong> — repo-level scope (vs changeset- or file-level scope).</li>
+</ul>
+<h3 id="coined-for-asp-no-lsp-equivalent"><a class="doc-anchor" href="#coined-for-asp-no-lsp-equivalent">§</a>Coined for ASP (no LSP equivalent)</h3>
+<ul>
+<li>
+<p><strong>v1.0 semantic object table</strong> — the private semantic pack uses these canonical objects:</p>
+<div><table><thead><tr><th>Object</th><th>Canonical meaning</th><th>v1.0 compatibility names</th></tr></thead><tbody>
+<tr><td><code>SnapshotRef</code></td><td>Host-issued immutable input identity for a tree plus optional dirty overlay.</td><td><code>Baseline</code> and the <code>baseline</code> field are the current schema names for <code>SnapshotRef</code>.</td></tr>
+<tr><td><code>ChangeSet</code></td><td>Candidate delta over a <code>SnapshotRef</code>, expressed only as content-addressed blob transitions.</td><td><code>changeset</code> remains the field name.</td></tr>
+<tr><td><code>Assessment</code></td><td>Provider-produced check output with status, diagnostics/evidence, requested/covered/degraded/unsupported coverage, exact <code>validAsOf</code>, provider metadata, timing, and cache metadata. It never carries host policy, authority grant, assurance, transaction, or decision fields.</td><td>Legacy <code>judge/evaluate</code> results are check assessments.</td></tr>
+<tr><td><code>EditPlan</code></td><td>Provider-produced mutation proposal bound to a base snapshot, with structured operations, touched-resource preconditions, completeness/refusal status, and exact <code>validAsOf</code>.</td><td><code>WorkspaceEdit</code> is the reusable structured operation payload inside an edit plan; legacy <code>act/propose</code> projects the same proposal.</td></tr>
+<tr><td><code>Decision</code></td><td>Host-produced policy result: <code>allow</code>, <code>deny</code>, or <code>indeterminate</code>.</td><td><code>verdict</code> is the transitional host envelope name.</td></tr>
+<tr><td><code>Coverage</code></td><td>Host-visible required, ran, and degraded provider/capability state, including typed provider lifecycle and capability health when degraded.</td><td><code>coverage.enrolled</code> is transitional; it MUST equal <code>coverage.required</code> until #7 migrates names.</td></tr>
+<tr><td><code>AssuranceMode</code></td><td>Achieved enforcement mode: <code>advisory</code>, <code>gated</code>, <code>mediated-write</code>, or <code>isolated</code>.</td><td>Schema field: <code>assurance.mode</code>.</td></tr>
+<tr><td><code>TransactionGuarantee</code></td><td>Apply guarantee actually achieved: <code>none</code>, <code>rollback_attempted</code>, <code>text_only_transactional</code>, <code>workspace_transactional</code>, or <code>staged_snapshot</code>.</td><td>Schema field: <code>assurance.transactionGuarantee</code>.</td></tr>
+<tr><td><code>BasePolicyAuthority</code></td><td>Policy/config changes are evaluated under trusted base policy or a non-weakenable organization floor.</td><td>Candidate policy may be pending; it cannot authorize or weaken its own change.</td></tr>
+</tbody></table>
+</div></li>
+<li>
+<p><strong>SnapshotRef</strong> — the canonical semantic name for the host-stamped tree revision and optional dirty
+overlay a request is evaluated against. It is content-addressed and is the freshness anchor.</p>
+</li>
+<li>
+<p><strong>Baseline</strong> — the v1.0 schema and field alias for <code>SnapshotRef</code>.</p>
+</li>
+<li>
+<p><strong>ChangeSet</strong> — a proposed delta over a <code>SnapshotRef</code>/<code>Baseline</code>, expressed as content-addressed blob
+transitions. Inline bytes are never the authoritative candidate input.</p>
+</li>
+<li>
+<p><strong>Fail-class</strong> — the control-plane classification of a failure: <code>health | contract | policy | input</code>. Drives fail-open vs fail-closed. Distinct from <code>severity</code>, which is presentational.</p>
+</li>
+<li>
+<p><strong>Assessment</strong> — a server-produced check evaluation of a snapshot/changeset. It contains status
+(<code>complete | incomplete | unsupported | error | cancelled</code>), diagnostics/evidence, requested and
+covered scope/source/rule coverage, degraded or unsupported parts, exact <code>validAsOf</code> baseline plus
+changeset digest plus blob hashes read, provider id/version/config digest/capability version,
+timing, and cache metadata. It is not a policy decision, authority grant, assurance claim, or
+transaction guarantee. SARIF is an export/mapping target only, not the native ASP Assessment.</p>
+</li>
+<li>
+<p><strong>EditPlan</strong> — a server-produced mutation proposal bound to a base snapshot. It contains provider
+metadata, status (<code>complete | incomplete | unsupported | error | cancelled</code>), exact <code>validAsOf</code>,
+touched resources, structured operations, preconditions, annotations, and explicit incomplete/
+refusal/unsupported/error data. It is not a command, host decision, authority grant, apply receipt,
+assurance claim, transaction guarantee, or direct write authority.</p>
+</li>
+<li>
+<p><strong>Decision</strong> — a host-produced policy result: <code>allow | deny | indeterminate</code>, plus coverage,
+contributing assessments, policy digest, authority information, degraded coverage, achieved
+assurance mode, and any transaction guarantee.</p>
+</li>
+<li>
+<p><strong>Verdict object</strong> — the transitional host-produced decision envelope carried to harnesses/users.
+It must remain host-produced; servers never return verdicts.</p>
+</li>
+<li>
+<p><strong>Audit receipt</strong> — a host-authored record for status, evaluation, apply, or authority responses. It
+preserves provider provenance, policy digest, baseline/<code>validAsOf</code>, coverage, authority evidence,
+achieved assurance mode, and transaction guarantee.</p>
+</li>
+<li>
+<p><strong>Coverage</strong> — host-visible required, ran, and degraded provider/capability state. Required coverage
+names must appear in <code>coverage.ran[]</code> or <code>coverage.degraded[]</code>; blocking diagnostics, missing,
+stale, incomplete, unsupported, malformed, cancelled, timed out, crashed, unavailable,
+quarantined, incompatible/skewed, or fail-open required coverage cannot silently pass a gate.</p>
+</li>
+<li>
+<p><strong>Degraded coverage</strong> — visible coverage loss, reduced confidence, or non-allow Core gate evidence
+for a provider/capability: blocking diagnostic, missing, stale, incomplete, unsupported, malformed,
+cancelled, timed out, crashed, unavailable, quarantined, incompatible/skewed, fail-open,
+optional-only, missing authority, or lower-than-required assurance. Host degradation entries may
+carry <code>capability</code> and <code>providerState</code> so optional and required failures remain machine-routable.</p>
+</li>
+<li>
+<p><strong>Authority evidence</strong> — independent evidence about a provider: identity, integrity, conformance,
+isolation, and authority. The older labels <code>first-party | certified | untrusted</code> are shorthand only
+and never grant blocking authority by themselves.</p>
+</li>
+<li>
+<p><strong>Provenance</strong> — the authenticated identity of the server that produced a diagnostic. The host
+stamps it; a server cannot forge it.</p>
+</li>
+<li>
+<p><strong>validAsOf</strong> — the baseline rev plus blob hashes a response is valid for. Lets the host detect
+staleness by hash equality, not mtimes.</p>
+</li>
+<li>
+<p><strong>Arbitration</strong> — host resolution when multiple providers with the same capability overlap or
+disagree (dedup by fingerprint, precedence by authority grant).</p>
+</li>
+<li>
+<p><strong>Authority grant</strong> — trusted policy saying a pinned provider identity/version/digest may satisfy a
+named gate requirement at a call-site. Certification, first-party provenance, and local
+installation do not imply authority.</p>
+</li>
+<li>
+<p><strong>Provider pin</strong> — repository or organization policy input naming a provider id plus identity,
+integrity, conformance, isolation, and named authority requirements. It does not choose a host or
+launch a provider by itself.</p>
+</li>
+<li>
+<p><strong>Assurance mode</strong> — the actual enforcement level achieved: <code>advisory</code>, <code>gated</code>,
+<code>mediated-write</code>, or <code>isolated</code>. Hosts must not claim <code>mediated-write</code> or <code>isolated</code> unless the
+deployment can prevent direct provider writes.</p>
+</li>
+<li>
+<p><strong>Graph envelope</strong> — the normalized <code>nodes</code>/<code>edges</code> result shape every inspect verb, including
+retained legacy sense verbs, returns so the host consumes one shape regardless of a server’s
+internal model.</p>
+</li>
+<li>
+<p><strong>Operation</strong> — a named edit mutation a server proposes (<code>rename</code>, <code>move</code>, <code>change-signature</code>, …).</p>
+</li>
+<li>
+<p><strong>Apply intent</strong> — an authorized harness, user, or agent request to <code>host/applyProposal</code>. It is
+sufficient protocol-level authorization for the host to attempt a write transaction; servers still
+cannot write autonomously. Server-initiated <code>applyEdit</code> is historical and superseded by ADR 0024.</p>
+</li>
+<li>
+<p><strong>Edit proposal precondition</strong> — the expected resource state carried by create/update/delete/
+rename/text-edit operations. Existing resources carry an expected blob digest; creates carry
+expected absence. A mismatch is stale/conflict data for the host, not permission to overwrite.</p>
+</li>
+<li>
+<p><strong>Transaction guarantee</strong> — the apply guarantee actually achieved, such as <code>none</code>,
+<code>rollback_attempted</code>, <code>text_only_transactional</code>, <code>workspace_transactional</code>, or <code>staged_snapshot</code>.</p>
+</li>
+<li>
+<p><strong>Capability profile</strong> — a named bundle of required capabilities for a server or implementation
+track. A multi-capability server such as Opcore may satisfy an <code>inspect</code>/<code>check</code>/<code>edit</code> profile,
+but the conforming host still owns policy, authority, decisions, assurance mode, and transaction
+guarantee.</p>
+</li>
+</ul></main><aside class="page-toc" aria-label="On this page"><p>On this page</p><nav id="rustdoc"><ul>
+<li><a href="#first-reader-glossary" title="First-reader glossary">First-reader glossary</a><ul></ul></li>
+<li><a href="#protocol-glossary" title="Protocol glossary">Protocol glossary</a><ul>
+<li><a href="#core-nouns" title="Core nouns">Core nouns</a><ul></ul></li>
+<li><a href="#capability-families" title="Capability Families">Capability Families</a><ul></ul></li>
+<li><a href="#borrowed-from-lsp-same-concept-occasionally-renamed" title="Borrowed from LSP (same concept, occasionally renamed)">Borrowed from LSP (same concept, occasionally renamed)</a><ul></ul></li>
+<li><a href="#coined-for-asp-no-lsp-equivalent" title="Coined for ASP (no LSP equivalent)">Coined for ASP (no LSP equivalent)</a><ul></ul></li></ul></li></ul></nav></aside></div>
+<footer class="site-footer"><div>© The Open Engine
+<a href="https://github.com/the-open-engine/opcore">Opcore on GitHub ↗</a></div></footer></body></html>

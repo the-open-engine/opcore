@@ -1,0 +1,268 @@
+{
+  "jsonrpc": "2.0",
+  "id": 9,
+  "validates": "outer-host.schema.json#/$defs/statusResult",
+  "result": {
+    "host": {
+      "name": "asp",
+      "version": "0.1.0-alpha.0",
+      "outerProtocol": "asp-outer/1.0",
+      "state": "degraded",
+      "bindingCandidate": "json-rpc-stdio"
+    },
+    "workspace": {
+      "root": "/workspace/repo",
+      "baseline": {
+        "rev": "tree:abc123",
+        "stampedAt": "2026-06-22T20:00:00Z"
+      },
+      "validAsOf": {
+        "rev": "tree:abc123",
+        "stampedAt": "2026-06-22T20:00:00Z"
+      }
+    },
+    "policy": {
+      "source": ".asp/asp.json",
+      "activation": "active",
+      "policyDigest": "sha256:policyabc123",
+      "localOverride": "absent"
+    },
+    "servers": [
+      {
+        "id": "lattice",
+        "capabilities": [
+          "check"
+        ],
+        "authorityEvidence": {
+          "identity": "the-open-engine",
+          "integrity": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+          "conformance": "lattice-alpha",
+          "isolation": "gated",
+          "authority": {
+            "granted": true,
+            "requirement": "lattice-alpha-check",
+            "policyDigest": "sha256:policyabc123"
+          }
+        },
+        "state": "ready",
+        "enrollmentState": "enrolled",
+        "requiredFor": [
+          "gate"
+        ],
+        "coverage": {
+          "required": [
+            "lattice"
+          ],
+          "enrolled": [
+            "lattice"
+          ],
+          "ran": [
+            "lattice"
+          ],
+          "degraded": []
+        }
+      },
+      {
+        "id": "style-advisor",
+        "capabilities": [
+          "check"
+        ],
+        "authorityEvidence": {
+          "identity": "acme-style",
+          "integrity": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+          "conformance": "asp-check-core/1.0",
+          "isolation": "advisory",
+          "authority": {
+            "granted": false,
+            "requirement": "style-advisory",
+            "policyDigest": "sha256:policyabc123"
+          }
+        },
+        "state": "degraded",
+        "enrollmentState": "optional",
+        "requiredFor": [],
+        "coverage": {
+          "required": [],
+          "enrolled": [],
+          "ran": [],
+          "degraded": [
+            {
+              "source": "style-advisor",
+              "reason": "optional-degraded",
+              "detail": "optional style provider timed out"
+            }
+          ]
+        },
+        "detail": "optional style provider timed out"
+      }
+    ],
+    "gates": {
+      "interactive": {
+        "available": true,
+        "requiredProviders": [],
+        "requiredCapabilities": [],
+        "degraded": [
+          {
+            "source": "style-advisor",
+            "reason": "optional-degraded",
+            "detail": "optional style provider timed out"
+          }
+        ]
+      },
+      "gate": {
+        "available": true,
+        "requiredProviders": [
+          "lattice"
+        ],
+        "requiredCapabilities": [
+          "check"
+        ],
+        "degraded": [
+          {
+            "source": "style-advisor",
+            "reason": "optional-degraded",
+            "detail": "optional provider unavailable; required coverage remains complete"
+          }
+        ]
+      },
+      "sweep": {
+        "available": true,
+        "requiredProviders": [],
+        "requiredCapabilities": [],
+        "degraded": [
+          {
+            "source": "style-advisor",
+            "reason": "optional-degraded",
+            "detail": "optional style provider timed out"
+          }
+        ]
+      }
+    },
+    "capabilities": {
+      "inspect": {
+        "available": false,
+        "providers": [],
+        "degraded": []
+      },
+      "check": {
+        "available": true,
+        "providers": [
+          "lattice"
+        ],
+        "requiredFor": [
+          "gate"
+        ],
+        "degraded": [
+          {
+            "source": "style-advisor",
+            "reason": "optional-degraded",
+            "detail": "optional style provider timed out"
+          }
+        ],
+        "legacyAliases": [
+          "judge"
+        ]
+      },
+      "edit": {
+        "available": false,
+        "providers": [],
+        "degraded": []
+      }
+    },
+    "assuranceCapabilities": [
+      "advisory",
+      "gated"
+    ],
+    "receipt": {
+      "receiptId": "status-degraded-optional-0001",
+      "issuedAt": "2026-06-22T20:08:00Z",
+      "providerProvenance": [
+        {
+          "provider": "lattice",
+          "capability": "check",
+          "identity": "the-open-engine",
+          "integrity": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+          "conformance": "lattice-alpha"
+        },
+        {
+          "provider": "style-advisor",
+          "capability": "check",
+          "identity": "acme-style",
+          "integrity": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+          "conformance": "asp-check-core/1.0"
+        }
+      ],
+      "policyDigest": "sha256:policyabc123",
+      "baseline": {
+        "rev": "tree:abc123",
+        "stampedAt": "2026-06-22T20:00:00Z"
+      },
+      "validAsOf": {
+        "rev": "tree:abc123"
+      },
+      "coverage": {
+        "exhaustive": false,
+        "required": [
+          "lattice"
+        ],
+        "enrolled": [
+          "lattice"
+        ],
+        "ran": [
+          "lattice"
+        ],
+        "degraded": [
+          {
+            "source": "style-advisor",
+            "reason": "optional-degraded",
+            "detail": "optional style provider timed out"
+          }
+        ]
+      },
+      "authorityEvidence": [
+        {
+          "identity": "the-open-engine",
+          "integrity": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+          "conformance": "lattice-alpha",
+          "isolation": "gated",
+          "authority": {
+            "granted": true,
+            "requirement": "lattice-alpha-check",
+            "policyDigest": "sha256:policyabc123"
+          }
+        }
+      ],
+      "assurance": {
+        "mode": "gated",
+        "transactionGuarantee": "none"
+      },
+      "kind": "status",
+      "host": {
+        "name": "core-host",
+        "version": "0.1.0-private"
+      },
+      "capabilityFamily": "check",
+      "requestDigest": "sha256:examples-outer-status-degraded-optional-provider-json-status-receipt",
+      "providerIds": [
+        "lattice",
+        "style-advisor",
+        "the-open-engine"
+      ],
+      "timing": {
+        "startedAt": "2026-06-23T00:00:00Z",
+        "endedAt": "2026-06-23T00:00:00Z",
+        "elapsedMs": 0
+      },
+      "failures": [
+        {
+          "source": "style-advisor",
+          "reason": "optional-degraded",
+          "detail": "optional style provider timed out"
+        }
+      ],
+      "privateOnly": true,
+      "experimental": true,
+      "trustArtifact": false
+    }
+  }
+}

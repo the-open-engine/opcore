@@ -1,0 +1,148 @@
+{
+  "jsonrpc": "2.0",
+  "id": 2101,
+  "validates": "outer-host.schema.json#/$defs/requestEditPlanResult",
+  "result": {
+    "proposal": {
+      "proposalId": "proposal:host-edit-core",
+      "provider": {
+        "id": "lattice",
+        "version": "0.1.0-private",
+        "capabilityFamily": "edit",
+        "capabilityVersion": "edit/1.0",
+        "configDigest": "sha256:lattice-edit-config"
+      },
+      "status": "complete",
+      "baseline": {
+        "rev": "tree:abc123",
+        "stampedAt": "2026-06-23T12:00:00Z"
+      },
+      "validAsOf": {
+        "baseline": {
+          "rev": "tree:abc123",
+          "stampedAt": "2026-06-23T12:00:00Z"
+        },
+        "blobs": [
+          "blob:sha256:aa01"
+        ]
+      },
+      "touchedResources": [
+        {
+          "path": "src/core.ts",
+          "kind": "modify",
+          "precondition": {
+            "expectedDigest": "blob:sha256:aa01"
+          }
+        }
+      ],
+      "workspaceEdit": {
+        "baseline": {
+          "rev": "tree:abc123",
+          "stampedAt": "2026-06-23T12:00:00Z"
+        },
+        "documentChanges": [
+          {
+            "path": "src/core.ts",
+            "kind": "modify",
+            "precondition": {
+              "expectedDigest": "blob:sha256:aa01"
+            },
+            "edits": [
+              {
+                "range": {
+                  "start": {
+                    "line": 0,
+                    "char": 20
+                  },
+                  "end": {
+                    "line": 0,
+                    "char": 21
+                  }
+                },
+                "rangeBasis": "blob:sha256:aa01",
+                "coordinateSystem": "utf16",
+                "newText": "2"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "receipt": {
+      "receiptId": "core-edit-request-0001",
+      "issuedAt": "2026-06-23T12:01:00Z",
+      "kind": "edit-request",
+      "host": {
+        "name": "core-host",
+        "version": "0.1.0-private"
+      },
+      "capabilityFamily": "edit",
+      "callSite": "interactive",
+      "requestDigest": "sha256:request-edit-plan",
+      "proposalId": "proposal:host-edit-core",
+      "providerIds": [
+        "lattice"
+      ],
+      "providerProvenance": [
+        {
+          "provider": "lattice",
+          "capability": "edit",
+          "identity": "lattice",
+          "integrity": "sha256:lattice",
+          "conformance": "asp-edit/1.0"
+        }
+      ],
+      "policyDigest": "sha256:policyabc123",
+      "baseline": {
+        "rev": "tree:abc123",
+        "stampedAt": "2026-06-23T12:00:00Z"
+      },
+      "validAsOf": {
+        "rev": "tree:abc123",
+        "blobs": [
+          "blob:sha256:aa01"
+        ]
+      },
+      "coverage": {
+        "exhaustive": true,
+        "required": [
+          "lattice/edit"
+        ],
+        "enrolled": [
+          "lattice/edit"
+        ],
+        "ran": [
+          "lattice/edit"
+        ],
+        "degraded": []
+      },
+      "authorityEvidence": [
+        {
+          "identity": "lattice",
+          "integrity": "sha256:lattice",
+          "conformance": "asp-edit/1.0",
+          "isolation": "gated",
+          "authority": {
+            "granted": true,
+            "requirement": "lattice/edit",
+            "callSite": "interactive",
+            "policyDigest": "sha256:policyabc123"
+          }
+        }
+      ],
+      "assurance": {
+        "mode": "gated",
+        "transactionGuarantee": "none"
+      },
+      "timing": {
+        "startedAt": "2026-06-23T12:01:00Z",
+        "endedAt": "2026-06-23T12:01:00Z",
+        "elapsedMs": 0
+      },
+      "failures": [],
+      "privateOnly": true,
+      "experimental": true,
+      "trustArtifact": false
+    }
+  }
+}

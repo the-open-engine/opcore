@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Role: act · Opcore</title><link rel="stylesheet" href="../../assets/site.css">
+<script src="../../assets/theme.js"></script>
+<script defer src="../../assets/site.js"></script>
+<link rel="icon" type="image/svg+xml" href="../../assets/oec-favicon.svg"><link rel="stylesheet" href="../../assets/versions.css"><script defer src="../../assets/versions.js"></script></head>
+<body class="guide-page"><a class="skip-link" href="#main-content">Skip to content</a>
+<header class="site-header"><div class="header-inner">
+<button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-navigation">Menu</button>
+<a class="brand" href="../../index.html"><img src="../../assets/oec-crow.png" alt="" width="32" height="36"><span>Opcore</span></a>
+<a class="header-label" href="../../index.html">Documentation</a>
+<div class="header-actions"><div class="docs-version" data-site-root="../../../" data-page-path="asp/spec/06-role-act.html" data-version="dev"><a href="../../../versions.html">Development ▾</a><select hidden aria-label="Documentation version"><option>Development</option></select></div><button class="theme-toggle" type="button" aria-label="Use dark mode" title="Use dark mode"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20.8 13.1A9 9 0 0 1 10.9 3.2 9 9 0 1 0 20.8 13.1Z"/></svg></button>
+<a class="repository-link" href="https://github.com/the-open-engine/opcore">GitHub <span aria-hidden="true">↗</span></a></div>
+</div></header>
+<div class="docs-layout"><aside class="docs-sidebar"><nav id="site-navigation" aria-label="Documentation"><div class="nav-group"><p>Opcore</p><ul><li><a href="../../index.html">Overview</a></li></ul></div><div class="nav-group"><p>Get started</p><ul><li><a href="../../docs/getting-started.html">Installation and first check</a></li></ul></div><div class="nav-group"><p>Guides</p><ul><li><a href="../../docs/configuration.html">Configuration</a></li><li><a href="../../docs/providers.html">Providers</a></li><li><a href="../../docs/examples.html">Examples</a></li><li><a href="../../docs/sense.html">Project Sense</a></li><li><a href="../../docs/agent-signals.html">Agent feedback</a></li></ul></div><div class="nav-group"><p>Reference</p><ul><li><a href="../../cli.html">CLI</a></li><li><a href="../../api/opcore/api/index.html">Rust API</a></li><li><a href="../../api/opcore/api/enum.ProviderProfile.html">Provider profiles</a></li><li><a href="../README.html">ASP specification</a></li></ul></div><div class="nav-group"><p>Project</p><ul><li><a href="../../docs/versioning.html">Documentation versions</a></li><li><a href="../../docs/architecture.html">Architecture</a></li><li><a href="../../CONTRIBUTING.html">Contributing</a></li><li><a href="../../CODE_OF_CONDUCT.html">Code of conduct</a></li><li><a href="../../SECURITY.html">Security</a></li></ul></div></nav></aside>
+<main id="main-content" class="guide-content" tabindex="-1">
+<p class="docs-kicker">Core documentation</p><h1 class="title">Role: act</h1>
+    <details><summary>Specification metadata</summary>
+<div class="example-wrap"><pre class="language-yaml"><code>title: &quot;Role: act&quot;
+status: draft
+normative: false
+summary: Historical act role text retained as edit compatibility guidance. Servers propose; hosts stage/apply.
+updated: 2026-06-22</code></pre></div></details>
+<blockquote>
+<p><strong>2026-06-22 correction:</strong> <code>act</code> is legacy/product shorthand. The normative capability family is
+<code>edit</code>. Edit-capable servers return edit plans. The host reports the actual assurance mode and
+transaction guarantee; direct-write prevention requires an enforceable sandbox, read-only snapshot,
+content API, or equivalent deployment mechanism.</p>
+</blockquote>
+<h2 id="historical-role-contract"><a class="doc-anchor" href="#historical-role-contract">§</a>Historical role contract</h2>
+<p>An act server performs <strong>reference-aware mutation</strong> — rename, move, change-signature, multi-file
+edit, organize-imports. It <strong>proposes</strong>; it never writes. The host validates the proposal (re-runs
+gating checks) and applies or stages it according to the achieved transaction guarantee. Reference
+impl: <code>cix</code>.</p>
+<p>The propose/host-applies inversion is the core safety property: third-party mutation never touches
+disk, and “validate before apply” is structural, not a convention. See
+<a href="../decisions/0004-host-owns-verdict-and-fail-policy.html">ADR 0004</a>.</p>
+<h2 id="legacy-capability-alias-optional-compatibility-metadata"><a class="doc-anchor" href="#legacy-capability-alias-optional-compatibility-metadata">§</a>Legacy capability alias (optional compatibility metadata)</h2>
+<p>Current provider declarations use canonical <code>edit</code> capability-family vocabulary. The historical wire
+examples below show the retained <code>act</code> compatibility shape for early fixtures and adapters.</p>
+<div class="example-wrap"><pre class="language-jsonc"><code>&quot;capabilities&quot;: {
+  &quot;act&quot;: {
+    &quot;operations&quot;: [&quot;rename&quot;,&quot;move&quot;,&quot;change-signature&quot;,&quot;multi-edit&quot;,&quot;organize-imports&quot;],
+    &quot;scopes&quot;: [&quot;workspace&quot;]
+  }
+}</code></pre></div><h2 id="canonical-editpropose-and-legacy-actpropose"><a class="doc-anchor" href="#canonical-editpropose-and-legacy-actpropose">§</a>Canonical <code>edit/propose</code> and legacy <code>act/propose</code></h2>
+<p>The host asks the server to compute an <code>EditPlan</code> for an operation. Canonical bindings expose
+<code>edit/propose</code>; <code>act/propose</code> is a compatibility shim for older adapters. Both return provider
+proposal data only. The server writes nothing, and its response is neither a host decision nor an
+apply receipt.</p>
+<div class="example-wrap"><pre class="language-jsonc"><code>// host → server
+{ &quot;id&quot;:11, &quot;method&quot;:&quot;edit/propose&quot;, &quot;params&quot;:{
+    &quot;operation&quot;:&quot;rename&quot;,
+    &quot;args&quot;:{ &quot;symbol&quot;:{ &quot;id&quot;:&quot;src/api.ts::Api.fetch&quot; }, &quot;newName&quot;:&quot;request&quot; },
+    &quot;baseline&quot;:{ &quot;rev&quot;:&quot;git:tree:9f3a1c&quot;, &quot;stampedAt&quot;:&quot;2026-06-16T10:00:00Z&quot; },
+    &quot;scope&quot;:{ &quot;paths&quot;:[&quot;src/api.ts&quot;,&quot;src/server.ts&quot;] },
+    &quot;proposalId&quot;:&quot;proposal:rename-api-fetch&quot; } }
+
+// server → host
+{ &quot;id&quot;:11, &quot;result&quot;:{
+    &quot;proposal&quot;:{ &quot;proposalId&quot;:&quot;proposal:rename-api-fetch&quot;,
+      &quot;provider&quot;:{ &quot;id&quot;:&quot;lattice&quot;, &quot;version&quot;:&quot;0.1.0&quot;, &quot;capabilityFamily&quot;:&quot;edit&quot;,
+                   &quot;capabilityVersion&quot;:&quot;edit/1.0&quot;, &quot;configDigest&quot;:&quot;sha256:editcfg&quot; },
+      &quot;status&quot;:&quot;complete&quot;,
+      &quot;baseline&quot;:{ &quot;rev&quot;:&quot;git:tree:9f3a1c&quot; },
+      &quot;validAsOf&quot;:{ &quot;baseline&quot;:{ &quot;rev&quot;:&quot;git:tree:9f3a1c&quot; },
+                    &quot;blobs&quot;:[&quot;blob:sha256:aa01&quot;,&quot;blob:sha256:f1&quot;] },
+      &quot;touchedResources&quot;:[ { &quot;path&quot;:&quot;src/api.ts&quot;, &quot;kind&quot;:&quot;modify&quot;,
+        &quot;precondition&quot;:{ &quot;expectedDigest&quot;:&quot;blob:sha256:aa01&quot; } } ],
+      &quot;workspaceEdit&quot;:{ /* see below */ } } } }</code></pre></div>
+<p><code>status:"incomplete"</code> means the server could not fully represent the operation (for example, a rename
+whose references it could not all resolve). For a provider without authority or sufficient assurance,
+the host MUST reject an incomplete proposal rather than apply a partial mutation. Incomplete,
+unsupported, cancelled, or errored proposals carry explicit data so the host can render the refusal
+or re-propose under bounded policy. Legacy <code>complete:false</code> and <code>incompleteReason</code> are compatibility
+projections only.</p>
+<h2 id="editplan--workspaceedit"><a class="doc-anchor" href="#editplan--workspaceedit">§</a>EditPlan / WorkspaceEdit</h2>
+<p>An <code>EditPlan</code> is a provider-produced mutation proposal. In v1.0 it carries a transitional
+<code>WorkspaceEdit</code> payload anchored to the baseline it was computed against (optimistic concurrency).
+Each file change is either granular text edits or a whole-blob replacement. The plan is a proposal with
+preconditions, not apply authority.</p>
+<div class="example-wrap"><pre class="language-jsonc"><code>{ &quot;baseline&quot;:{ &quot;rev&quot;:&quot;git:tree:9f3a1c&quot;, … },
+  &quot;documentChanges&quot;:[
+    { &quot;path&quot;:&quot;src/api.ts&quot;, &quot;kind&quot;:&quot;modify&quot;,
+      &quot;precondition&quot;:{ &quot;expectedDigest&quot;:&quot;blob:sha256:aa01&quot; },
+      &quot;edits&quot;:[ { &quot;range&quot;:{ &quot;start&quot;:{&quot;line&quot;:12,&quot;char&quot;:13}, &quot;end&quot;:{&quot;line&quot;:12,&quot;char&quot;:18} },
+                 &quot;rangeBasis&quot;:&quot;blob:sha256:aa01&quot;, &quot;coordinateSystem&quot;:&quot;utf16&quot;,
+                 &quot;newText&quot;:&quot;request&quot; } ] },
+    { &quot;path&quot;:&quot;src/server.ts&quot;, &quot;kind&quot;:&quot;modify&quot;,
+      &quot;precondition&quot;:{ &quot;expectedDigest&quot;:&quot;blob:sha256:f201&quot; },
+      &quot;after&quot;:&quot;blob:sha256:9c&quot; },   // whole-blob replace
+    { &quot;path&quot;:&quot;src/legacy.ts&quot;, &quot;kind&quot;:&quot;delete&quot;,
+      &quot;precondition&quot;:{ &quot;expectedDigest&quot;:&quot;blob:sha256:d001&quot; } },
+    { &quot;path&quot;:&quot;src/b.ts&quot;, &quot;kind&quot;:&quot;rename&quot;, &quot;to&quot;:&quot;src/c.ts&quot;,
+      &quot;precondition&quot;:{ &quot;expectedDigest&quot;:&quot;blob:sha256:e001&quot; } },
+    { &quot;path&quot;:&quot;src/new.ts&quot;, &quot;kind&quot;:&quot;create&quot;, &quot;after&quot;:&quot;blob:sha256:cc&quot;,
+      &quot;precondition&quot;:{ &quot;expectedAbsence&quot;:true } } ] }</code></pre></div>
+<ul>
+<li><code>edits</code> (granular <code>TextEdit[]</code>) are for surgical changes and clean 3-way merges; <code>after</code> (a blob
+hash) is for whole-file replacement. A server MAY use either per file; the host normalizes the edit
+to an after-state changeset for validation. A whole-blob <code>after</code> that names a blob the server newly
+computed (not present in the baseline) MUST first be uploaded via the <code>workspace/putBlob</code> callback;
+the host adds proposal blobs to the transaction’s referenced set so it can resolve them.</li>
+<li>The <code>baseline</code> field is the optimistic-concurrency anchor. If the host’s current baseline differs in
+any touched path, the edit is stale (see conflicts).</li>
+<li>Every existing-resource operation MUST carry the expected prior blob digest. Every create MUST carry
+expected absence. A host MUST refuse a mismatch as stale/conflict/precondition data unless a bounded
+re-proposal or clean 3-way merge explicitly resolves it.</li>
+<li>A proposal MUST NOT contain shell commands, arbitrary scripts, command arrays, patch shellouts, or
+provider-owned apply instructions as the mutation contract. Such output is malformed provider data.</li>
+<li>A proposal MUST NOT contain host-owned result fields such as decisions, verdict envelopes, gating
+dispositions, authority grants, achieved assurance modes, or transaction guarantees.</li>
+</ul>
+<h2 id="the-apply-transaction-host-executed"><a class="doc-anchor" href="#the-apply-transaction-host-executed">§</a>The apply transaction (host-executed)</h2>
+<p>Act proposes; the host applies. Application is a transaction, specified in
+<a href="07-host-obligations.html">host obligations §6</a>:</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="number">1. </span>edit/propose or legacy act/propose -&gt; EditPlan/WorkspaceEdit (vs baseline B)
+<span class="number">2. </span>host normalizes to hypothetical changeset = B ⊕ workspaceEdit
+<span class="number">3. </span>host runs gating checks on the hypothetical
+<span class="number">4. </span>allow -&gt; apply/stage according to the host-reported transaction guarantee; issue new baseline B<span class="string">'
+   </span>deny/indeterminate -&gt; reject; <span class="kw">return </span>the blocking diagnostics; nothing intentional is written
+<span class="number">5. </span><span class="kw">if </span>B moved <span class="kw">in </span>a touched path <span class="kw">while </span>proposing → conflict handling (below)</code></pre></div>
+<p>The write is host-executed or staged; serialization, authorization, and conflict handling are
+specified in <a href="07-host-obligations.html#6-mediated-apply">host obligations §6</a>. Server code
+never touches disk; a provider proposal MUST pass validation before applying.</p>
+<h2 id="conflict-handling"><a class="doc-anchor" href="#conflict-handling">§</a>Conflict handling</h2>
+<ul>
+<li><strong>Dirty target.</strong> If <code>workspaceEdit.baseline</code> differs from the host’s current baseline in any
+touched path, the proposal is stale.</li>
+<li><strong>3-way merge.</strong> The host MAY attempt a 3-way merge (base = edit.baseline, ours = current, theirs =
+edit). On a clean merge it proceeds; otherwise it rejects.</li>
+<li><strong>Re-propose.</strong> On rejection the host MAY re-issue the current baseline and call <code>act/propose</code> again,
+up to a bounded retry count (host policy; default 2), then reject for the caller to resolve.
+Re-proposals carry the same host-issued <code>proposalId</code> so retries dedup (on <code>(server, proposalId)</code>),
+and apply is serialized per workspace
+(<a href="../decisions/0013-serialized-apply-with-idempotency.html">ADR 0013</a>,
+<a href="../decisions/0024-supersede-server-initiated-apply-edit.html">ADR 0024</a>).</li>
+<li><strong>No force.</strong> The host MUST NOT overwrite conflicting local changes. Untrusted proposals that do not
+apply cleanly are rejected.</li>
+</ul>
+<h2 id="no-server-owned-apply-surface"><a class="doc-anchor" href="#no-server-owned-apply-surface">§</a>No server-owned apply surface</h2>
+<p>A server MUST NOT request workspace application outside a host-issued edit-plan flow. Ambient watch
+results MAY point to an available edit operation, but they are not write intent. The only conforming
+write path is explicit user, agent, or harness authorization through the host-owned
+<code>host/applyProposal</code> surface, followed by the host validation and apply/stage transaction
+(<a href="../decisions/0012-fix-application-user-initiated.html">ADR 0012</a>,
+<a href="../decisions/0019-apply-intent-authorizes-host-writes.html">ADR 0019</a>,
+<a href="../decisions/0024-supersede-server-initiated-apply-edit.html">ADR 0024</a>).</p>
+<p>The host MUST reject <code>workspace/putBlob</code> from a server lacking the canonical <code>edit</code> capability,
+equivalent legacy <code>act</code> compatibility metadata, or a write grant (<code>scope_denied</code>). Uploaded blobs
+only join the referenced set for a proposal transaction; they never grant filesystem authority or
+apply authority.</p>
+<h2 id="historical-compatibility-checklist"><a class="doc-anchor" href="#historical-compatibility-checklist">§</a>Historical compatibility checklist</h2>
+<p>A conformant edit provider that retains the legacy act surface:</p>
+<ul>
+<li>MUST NOT write to the workspace; it returns a <code>workspaceEdit</code> and lets the host apply.</li>
+<li>MUST compute the edit against the request <code>baseline</code> and echo that baseline in the <code>workspaceEdit</code>.</li>
+<li>MUST set <code>complete:false</code> when it cannot fully represent the operation (e.g. unresolved references).</li>
+<li>MUST produce an edit that applies cleanly to its stated baseline.</li>
+<li>MUST be reference-aware: a <code>rename</code>/<code>change-signature</code> MUST update all call sites or report
+<code>complete:false</code>.</li>
+<li>MUST carry <code>validAsOf</code>.</li>
+<li>MUST include per-resource preconditions and digest-bound text edit ranges.</li>
+<li>SHOULD support every operation it advertises in canonical <code>capabilities.edit.operations</code>; any legacy
+act operation list is compatibility metadata only.</li>
+<li>MAY use granular <code>edits</code> or whole-blob <code>after</code> per file.</li>
+</ul>
+<p>See the schema in <a href="../schemas/workspace-edit.schema.json"><code>schemas/workspace-edit.schema.json</code></a> and
+fixtures in <a href="../examples/act/"><code>examples/act/</code></a>.</p></main><aside class="page-toc" aria-label="On this page"><p>On this page</p><nav id="rustdoc"><ul>
+<li><a href="#historical-role-contract" title="Historical role contract">Historical role contract</a><ul></ul></li>
+<li><a href="#legacy-capability-alias-optional-compatibility-metadata" title="Legacy capability alias (optional compatibility metadata)">Legacy capability alias (optional compatibility metadata)</a><ul></ul></li>
+<li><a href="#canonical-editpropose-and-legacy-actpropose" title="Canonical `edit/propose` and legacy `act/propose`">Canonical <code>edit/propose</code> and legacy <code>act/propose</code></a><ul></ul></li>
+<li><a href="#editplan--workspaceedit" title="EditPlan / WorkspaceEdit">EditPlan / WorkspaceEdit</a><ul></ul></li>
+<li><a href="#the-apply-transaction-host-executed" title="The apply transaction (host-executed)">The apply transaction (host-executed)</a><ul></ul></li>
+<li><a href="#conflict-handling" title="Conflict handling">Conflict handling</a><ul></ul></li>
+<li><a href="#no-server-owned-apply-surface" title="No server-owned apply surface">No server-owned apply surface</a><ul></ul></li>
+<li><a href="#historical-compatibility-checklist" title="Historical compatibility checklist">Historical compatibility checklist</a><ul></ul></li></ul></nav></aside></div>
+<footer class="site-footer"><div>© The Open Engine
+<a href="https://github.com/the-open-engine/opcore">Opcore on GitHub ↗</a></div></footer></body></html>

@@ -1,0 +1,159 @@
+{
+  "jsonrpc": "2.0",
+  "id": 3,
+  "validates": "outer-host.schema.json#/$defs/evaluateChangesetResult",
+  "result": {
+    "pass": false,
+    "decision": "deny",
+    "callSite": "gate",
+    "findings": [
+      {
+        "diagnostic": {
+          "code": "lattice/secrets",
+          "severity": "error",
+          "source": "lattice",
+          "message": "introduced secret literal",
+          "location": {
+            "path": "src/api.ts",
+            "range": {
+              "start": {
+                "line": 12,
+                "char": 10
+              },
+              "end": {
+                "line": 12,
+                "char": 42
+              }
+            }
+          },
+          "fingerprint": "sha256:deny0001",
+          "introduced": true,
+          "help": "Move the secret to runtime configuration."
+        },
+        "authority": {
+          "identity": "the-open-engine",
+          "integrity": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+          "conformance": "lattice-alpha",
+          "isolation": "gated",
+          "authority": {
+            "granted": true,
+            "requirement": "lattice-alpha-check",
+            "policyDigest": "sha256:policyabc123"
+          }
+        },
+        "disposition": "gating",
+        "nextStep": "Move the secret to runtime configuration.",
+        "nextStepOrigin": "server"
+      }
+    ],
+    "coverage": {
+      "exhaustive": true,
+      "required": [
+        "lattice"
+      ],
+      "enrolled": [
+        "lattice"
+      ],
+      "ran": [
+        "lattice"
+      ],
+      "degraded": []
+    },
+    "policyDigest": "sha256:policyabc123",
+    "authorityEvidence": [
+      {
+        "identity": "the-open-engine",
+        "integrity": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+        "conformance": "lattice-alpha",
+        "isolation": "gated",
+        "authority": {
+          "granted": true,
+          "requirement": "lattice-alpha-check",
+          "policyDigest": "sha256:policyabc123"
+        }
+      }
+    ],
+    "validAsOf": {
+      "rev": "tree:abc123"
+    },
+    "assurance": {
+      "mode": "gated",
+      "transactionGuarantee": "none"
+    },
+    "receipt": {
+      "receiptId": "eval-deny-0001",
+      "issuedAt": "2026-06-22T20:02:00Z",
+      "providerProvenance": [
+        {
+          "provider": "lattice",
+          "capability": "check",
+          "identity": "the-open-engine",
+          "integrity": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+          "conformance": "lattice-alpha"
+        }
+      ],
+      "policyDigest": "sha256:policyabc123",
+      "baseline": {
+        "rev": "tree:abc123",
+        "stampedAt": "2026-06-22T20:00:00Z"
+      },
+      "validAsOf": {
+        "rev": "tree:abc123"
+      },
+      "coverage": {
+        "exhaustive": true,
+        "required": [
+          "lattice"
+        ],
+        "enrolled": [
+          "lattice"
+        ],
+        "ran": [
+          "lattice"
+        ],
+        "degraded": []
+      },
+      "authorityEvidence": [
+        {
+          "identity": "the-open-engine",
+          "integrity": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+          "conformance": "lattice-alpha",
+          "isolation": "gated",
+          "authority": {
+            "granted": true,
+            "requirement": "lattice-alpha-check",
+            "policyDigest": "sha256:policyabc123"
+          }
+        }
+      ],
+      "assurance": {
+        "mode": "gated",
+        "transactionGuarantee": "none"
+      },
+      "kind": "evaluate",
+      "host": {
+        "name": "core-host",
+        "version": "0.1.0-private"
+      },
+      "capabilityFamily": "check",
+      "callSite": "gate",
+      "requestDigest": "sha256:examples-outer-evaluate-deny-gating-json-request-deny",
+      "changesetDigest": "sha256:examples-outer-evaluate-deny-gating-json-changeset-deny",
+      "providerIds": [
+        "lattice",
+        "the-open-engine"
+      ],
+      "timing": {
+        "startedAt": "2026-06-23T00:00:00Z",
+        "endedAt": "2026-06-23T00:00:00Z",
+        "elapsedMs": 0
+      },
+      "failures": [],
+      "privateOnly": true,
+      "experimental": true,
+      "trustArtifact": false
+    },
+    "requestDigest": "sha256:examples-outer-evaluate-deny-gating-json-request-deny",
+    "changesetDigest": "sha256:examples-outer-evaluate-deny-gating-json-changeset-deny"
+  }
+}

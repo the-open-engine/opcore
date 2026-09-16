@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://covibes.dev/asp/schemas/error.schema.json",
+  "title": "ASP error",
+  "description": "The JSON-RPC error object for a failure-to-evaluate. data.failClass is authoritative for host fail-policy; code is advisory. Negative assessments and host deny decisions are never errors.",
+  "type": "object",
+  "required": ["code", "message"],
+  "properties": {
+    "code": { "type": "integer", "description": "Advisory. ASP reserves the JSON-RPC server-error range -32099..-32000; see the registry below." },
+    "message": { "type": "string", "description": "Untrusted data (string containment applies)." },
+    "data": { "$ref": "#/$defs/data" }
+  },
+  "$defs": {
+    "data": {
+      "type": "object",
+      "required": ["failClass"],
+      "additionalProperties": false,
+      "properties": {
+        "failClass": { "enum": ["health", "contract", "policy", "input"] },
+        "retryable": { "type": "boolean" },
+        "detail": { "type": "string" }
+      }
+    },
+    "registry": {
+      "description": "Reserved codes and their authoritative failClass. code is advisory; failClass governs fail-policy.",
+      "examples": [
+        { "code": -32010, "name": "health_not_ready", "failClass": "health" },
+        { "code": -32011, "name": "stale_baseline", "failClass": "health", "note": "Index lags the requested baseline; recoverable by reconciliation, so health (retryable). Genuine version/shape skew is unsupported_version (contract)." },
+        { "code": -32012, "name": "scope_denied", "failClass": "policy" },
+        { "code": -32013, "name": "invalid_changeset", "failClass": "input" },
+        { "code": -32014, "name": "unsupported_version", "failClass": "contract" },
+        { "code": -32015, "name": "blob_unavailable", "failClass": "health" },
+        { "code": -32016, "name": "cancelled", "failClass": "health" }
+      ]
+    }
+  }
+}

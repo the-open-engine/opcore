@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Provider setup and usage · Opcore</title><link rel="stylesheet" href="../assets/site.css">
+<script src="../assets/theme.js"></script>
+<script defer src="../assets/site.js"></script>
+<link rel="icon" type="image/svg+xml" href="../assets/oec-favicon.svg"><link rel="stylesheet" href="../assets/versions.css"><script defer src="../assets/versions.js"></script></head>
+<body class="guide-page"><a class="skip-link" href="#main-content">Skip to content</a>
+<header class="site-header"><div class="header-inner">
+<button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-navigation">Menu</button>
+<a class="brand" href="../index.html"><img src="../assets/oec-crow.png" alt="" width="32" height="36"><span>Opcore</span></a>
+<a class="header-label" href="../index.html">Documentation</a>
+<div class="header-actions"><div class="docs-version" data-site-root="../../" data-page-path="docs/providers.html" data-version="dev"><a href="../../versions.html">Development ▾</a><select hidden aria-label="Documentation version"><option>Development</option></select></div><button class="theme-toggle" type="button" aria-label="Use dark mode" title="Use dark mode"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20.8 13.1A9 9 0 0 1 10.9 3.2 9 9 0 1 0 20.8 13.1Z"/></svg></button>
+<a class="repository-link" href="https://github.com/the-open-engine/opcore">GitHub <span aria-hidden="true">↗</span></a></div>
+</div></header>
+<div class="docs-layout"><aside class="docs-sidebar"><nav id="site-navigation" aria-label="Documentation"><div class="nav-group"><p>Opcore</p><ul><li><a href="../index.html">Overview</a></li></ul></div><div class="nav-group"><p>Get started</p><ul><li><a href="getting-started.html">Installation and first check</a></li></ul></div><div class="nav-group"><p>Guides</p><ul><li><a href="configuration.html">Configuration</a></li><li><a href="providers.html" aria-current="page">Providers</a></li><li><a href="examples.html">Examples</a></li><li><a href="sense.html">Project Sense</a></li><li><a href="agent-signals.html">Agent feedback</a></li></ul></div><div class="nav-group"><p>Reference</p><ul><li><a href="../cli.html">CLI</a></li><li><a href="../api/opcore/api/index.html">Rust API</a></li><li><a href="../api/opcore/api/enum.ProviderProfile.html">Provider profiles</a></li><li><a href="../asp/README.html">ASP specification</a></li></ul></div><div class="nav-group"><p>Project</p><ul><li><a href="versioning.html">Documentation versions</a></li><li><a href="architecture.html">Architecture</a></li><li><a href="../CONTRIBUTING.html">Contributing</a></li><li><a href="../CODE_OF_CONDUCT.html">Code of conduct</a></li><li><a href="../SECURITY.html">Security</a></li></ul></div></nav></aside>
+<main id="main-content" class="guide-content" tabindex="-1">
+<p class="docs-kicker">Core documentation</p><h1 class="title">Provider setup and usage</h1>
+    
+<h2 id="start-with-the-default-checks"><a class="doc-anchor" href="#start-with-the-default-checks">§</a>Start with the default checks</h2><div class="example-wrap"><pre class="language-sh"><code>opcore check --repo . --all
+opcore sense --repo .</code></pre></div>
+<p>Default Check uses Fast Verify’s built-in parsers and rules. Sense adds repository relationships. Neither command requires a language toolchain or executes repository code. Both read the shared repository and workflow settings in <a href="configuration.html">Configuration</a>.</p>
+<p>Fast Verify covers syntax and hygiene across all supported language families, with callable metrics for JavaScript/TypeScript, Python, Rust, and Go. Type errors and project-specific compiler rules need the corresponding native provider.</p>
+<h2 id="select-a-native-provider"><a class="doc-anchor" href="#select-a-native-provider">§</a>Select a native provider</h2>
+<p>Native tools can execute repository-controlled build scripts, procedural macros, wrappers, and checker plugins with the current account’s access to host files and the network. Use the bundled runner only for repositories you trust. <code>--allow-unsandboxed-native</code> records consent; it doesn’t isolate execution. Authoritative or automatic native checks require an external host that enforces a sandbox. Installed hooks never select native providers.</p>
+<p>For ongoing use, add applicable native providers to <code>workflows.pre-commit.native</code> and <code>workflows.ci.native</code>, then run those workflows from Git hooks and CI. Configured native checks are required; missing tools or dependencies fail the workflow. See the <a href="getting-started.html#add-pre-commit-and-ci-checks">adoption recipe</a>.</p>
+<p>Use a comma-separated provider list to combine Fast Verify with a native checker:</p>
+<div class="example-wrap"><pre class="language-sh"><code>opcore check --repo . \
+  --providers fast,rust-native \
+  --allow-unsandboxed-native</code></pre></div>
+<p><code>--providers all</code> selects all applicable bundled profiles. An explicitly named provider that doesn’t apply reports unsupported coverage; the convenience <code>all</code> set skips inapplicable profiles. The default comparison reports introduced findings. Add <code>--comparison all</code> to inspect current-tree diagnostics, or <code>--staged</code> to use the Git index.</p>
+<p>Provider-backed checks use the same resolved <code>.opcore.json</code> settings as local checks. <code>--workflow &lt;name&gt;</code> selects overrides; the host sends effective Fast thresholds through ASP and records each provider’s configuration identity. Native compiler settings continue to come from the selected project’s own files. Use <code>--all</code> for all current diagnostics, <code>--staged --all</code> for the full index, or <code>--tree &lt;target&gt; --base &lt;base&gt;</code> for committed comparison. Consult <code>opcore check --help</code> for source-selection combinations.</p>
+<h3 id="rust-native"><a class="doc-anchor" href="#rust-native">§</a>Rust-native</h3>
+<p>Have Cargo and rustc available on <code>PATH</code>, with the project’s dependencies already in Cargo’s cache. The selected project must contain <code>Cargo.toml</code>; root runs check the workspace, and a focused Cargo package retains its surrounding workspace context. An absolute <code>OPCORE_CARGO</code> can select a particular Cargo executable.</p>
+<p>The provider runs fixed Cargo Check commands with all targets, offline mode, and a fresh output directory. It uses <code>--locked</code> when the captured context has a root lockfile. Missing cached dependencies or build inputs produce unavailable or incomplete coverage. For introduced comparison, compiler errors in the baseline can prevent a complete comparison; <code>--comparison all</code> requests current diagnostics without that subtraction.</p>
+<h3 id="node-native"><a class="doc-anchor" href="#node-native">§</a>Node-native</h3>
+<p>The project needs <code>package.json</code>, an npm lockfile, and <code>tsconfig.json</code> or <code>tsconfig.*.json</code>. Install TypeScript as a project dependency and have npm and Node.js on <code>PATH</code>. An absolute <code>OPCORE_NPM</code> can select npm.</p>
+<div class="example-wrap"><pre class="language-sh"><code>opcore check --repo . \
+  --providers fast,node-native \
+  --allow-unsandboxed-native</code></pre></div>
+<p>Populate npm’s dependency cache with the project’s normal dependency-install workflow before using this profile. Opcore runs offline <code>npm ci</code> with lifecycle scripts disabled in its temporary project copy, then invokes only the installed project-local TypeScript compiler. Missing offline dependencies or TypeScript make coverage unavailable; an existing worktree <code>node_modules</code> directory doesn’t replace the cache requirement. Tracked <code>node_modules</code> isn’t supported.</p>
+<p>The TypeScript projects define the files the compiler checks, including JavaScript when their settings admit it. Fast Verify handles source outside those projects. pnpm/yarn-only locks, package scripts, ESLint, and arbitrary compiler commands are outside this provider.</p>
+<h3 id="python-native"><a class="doc-anchor" href="#python-native">§</a>Python-native</h3>
+<p>Install Pyright or mypy on the host and prepare the project’s Python environment using its normal workflow. Opcore prefers Pyright and falls back to mypy. It finds them on <code>PATH</code> or through absolute <code>OPCORE_PYRIGHT</code> and <code>OPCORE_MYPY</code> overrides.</p>
+<div class="example-wrap"><pre class="language-sh"><code>opcore check --repo . \
+  --providers fast,python-native \
+  --allow-unsandboxed-native</code></pre></div>
+<p>The runner selects an interpreter in this order: explicit <code>OPCORE_PYTHON</code>, a <code>.venv</code> under the project context, an active <code>VIRTUAL_ENV</code> contained in that context, then ambient <code>python3</code> or <code>python</code>. For an environment elsewhere, name its interpreter explicitly:</p>
+<div class="example-wrap"><pre class="language-sh"><code>OPCORE_PYTHON=/absolute/path/to/venv/bin/python \
+  opcore check --repo . \
+  --providers python-native \
+  --allow-unsandboxed-native</code></pre></div>
+<p>Opcore passes every selected <code>.py</code> or <code>.pyi</code> path and the interpreter to the checker; it doesn’t create or synchronize environments. Unresolved imports under an ambient interpreter produce incomplete coverage because the project environment is uncertain. With an explicitly selected or project-contained environment, those diagnostics remain findings for that environment.</p>
+<h2 id="work-in-a-monorepo"><a class="doc-anchor" href="#work-in-a-monorepo">§</a>Work in a monorepo</h2>
+<p><code>--roots</code> selects non-overlapping focus directories while retaining the context each provider needs:</p>
+<div class="example-wrap"><pre class="language-sh"><code>opcore check --repo . \
+  --providers all \
+  --roots packages/api,services/worker \
+  --allow-unsandboxed-native</code></pre></div>
+<p>Fast uses the selected source focus. Node and Python keep the nearest applicable ancestor configuration; Rust keeps repository context while selecting the focused Cargo package. Each run reports its focus and context, with elapsed time and repository-relative findings.</p>
+<p>Put shared roots under <code>providers.&lt;name&gt;.roots</code> in <code>.opcore.json</code>, and override them per workflow when needed. Arrays replace inherited roots; explicit <code>--roots</code> replaces configured roots. For example, CI can check all packages while pre-commit selects the packages a team maintains. Whole excluded native roots appear as skipped; excluding every root leaves an indeterminate result. An exclusion affecting inputs within a selected native focus fails before execution with instructions to select project roots or configure the compiler. Context outside that focus remains available when required. Exclusions never suppress a failing compiler diagnostic.</p>
+<p><code>doctor --workflow &lt;name&gt;</code> inspects the selected native prerequisites without running checks. A tool on <code>PATH</code> doesn’t prove its dependencies or project configuration are ready. If a provider fails, inspect its coverage reason; malformed output, timeouts, and incomplete compiler coverage never count as a clean result.</p>
+<p>For ASP integration, the executable exposes each profile as a separate provider identity through <code>serve --stdio --profile &lt;profile&gt;</code>. Generate the command and public Rust API reference with <code>./scripts/build-docs.sh</code> from a checkout; the <a href="../asp/README.html">protocol definition</a> specifies the callback and assessment contracts.</p><nav class="page-sequence" aria-label="Adjacent pages"><a href="configuration.html"><span>Previous</span>Configuration</a><a href="examples.html"><span>Next</span>Examples</a></nav></main><aside class="page-toc" aria-label="On this page"><p>On this page</p><nav id="rustdoc"><ul>
+<li><a href="#start-with-the-default-checks" title="Start with the default checks">Start with the default checks</a><ul></ul></li>
+<li><a href="#select-a-native-provider" title="Select a native provider">Select a native provider</a><ul>
+<li><a href="#rust-native" title="Rust-native">Rust-native</a><ul></ul></li>
+<li><a href="#node-native" title="Node-native">Node-native</a><ul></ul></li>
+<li><a href="#python-native" title="Python-native">Python-native</a><ul></ul></li></ul></li>
+<li><a href="#work-in-a-monorepo" title="Work in a monorepo">Work in a monorepo</a><ul></ul></li></ul></nav></aside></div>
+<footer class="site-footer"><div>© The Open Engine
+<a href="https://github.com/the-open-engine/opcore">Opcore on GitHub ↗</a></div></footer></body></html>

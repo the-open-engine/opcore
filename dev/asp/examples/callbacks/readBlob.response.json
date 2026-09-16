@@ -1,0 +1,10 @@
+{
+  "jsonrpc": "2.0",
+  "id": 21,
+  "result": {
+    "blobs": [
+      { "id": "blob:sha256:bb02", "encoding": "utf-8", "bytes": "export const x = 1\n" },
+      { "id": "blob:sha256:cc03", "encoding": "base64", "bytes": "AAECAw==" }
+    ]
+  }
+}

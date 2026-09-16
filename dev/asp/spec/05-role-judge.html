@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Role: judge · Opcore</title><link rel="stylesheet" href="../../assets/site.css">
+<script src="../../assets/theme.js"></script>
+<script defer src="../../assets/site.js"></script>
+<link rel="icon" type="image/svg+xml" href="../../assets/oec-favicon.svg"><link rel="stylesheet" href="../../assets/versions.css"><script defer src="../../assets/versions.js"></script></head>
+<body class="guide-page"><a class="skip-link" href="#main-content">Skip to content</a>
+<header class="site-header"><div class="header-inner">
+<button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-navigation">Menu</button>
+<a class="brand" href="../../index.html"><img src="../../assets/oec-crow.png" alt="" width="32" height="36"><span>Opcore</span></a>
+<a class="header-label" href="../../index.html">Documentation</a>
+<div class="header-actions"><div class="docs-version" data-site-root="../../../" data-page-path="asp/spec/05-role-judge.html" data-version="dev"><a href="../../../versions.html">Development ▾</a><select hidden aria-label="Documentation version"><option>Development</option></select></div><button class="theme-toggle" type="button" aria-label="Use dark mode" title="Use dark mode"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20.8 13.1A9 9 0 0 1 10.9 3.2 9 9 0 1 0 20.8 13.1Z"/></svg></button>
+<a class="repository-link" href="https://github.com/the-open-engine/opcore">GitHub <span aria-hidden="true">↗</span></a></div>
+</div></header>
+<div class="docs-layout"><aside class="docs-sidebar"><nav id="site-navigation" aria-label="Documentation"><div class="nav-group"><p>Opcore</p><ul><li><a href="../../index.html">Overview</a></li></ul></div><div class="nav-group"><p>Get started</p><ul><li><a href="../../docs/getting-started.html">Installation and first check</a></li></ul></div><div class="nav-group"><p>Guides</p><ul><li><a href="../../docs/configuration.html">Configuration</a></li><li><a href="../../docs/providers.html">Providers</a></li><li><a href="../../docs/examples.html">Examples</a></li><li><a href="../../docs/sense.html">Project Sense</a></li><li><a href="../../docs/agent-signals.html">Agent feedback</a></li></ul></div><div class="nav-group"><p>Reference</p><ul><li><a href="../../cli.html">CLI</a></li><li><a href="../../api/opcore/api/index.html">Rust API</a></li><li><a href="../../api/opcore/api/enum.ProviderProfile.html">Provider profiles</a></li><li><a href="../README.html">ASP specification</a></li></ul></div><div class="nav-group"><p>Project</p><ul><li><a href="../../docs/versioning.html">Documentation versions</a></li><li><a href="../../docs/architecture.html">Architecture</a></li><li><a href="../../CONTRIBUTING.html">Contributing</a></li><li><a href="../../CODE_OF_CONDUCT.html">Code of conduct</a></li><li><a href="../../SECURITY.html">Security</a></li></ul></div></nav></aside>
+<main id="main-content" class="guide-content" tabindex="-1">
+<p class="docs-kicker">Core documentation</p><h1 class="title">Role: judge</h1>
+    <details><summary>Specification metadata</summary>
+<div class="example-wrap"><pre class="language-yaml"><code>title: &quot;Role: judge&quot;
+status: draft
+normative: false
+summary: Historical judge role text retained as check compatibility guidance. Servers return assessments; the host computes decisions.
+updated: 2026-06-22</code></pre></div></details>
+<blockquote>
+<p><strong>2026-06-22 correction:</strong> <code>judge</code> is legacy/product shorthand. The normative capability family is
+<code>check</code>. Check-capable servers return assessments and evidence, not verdicts or final gate
+decisions. The host computes <code>allow | deny | indeterminate</code>.</p>
+</blockquote>
+<blockquote>
+<p><strong>Core Profile:</strong> <a href="11-core-profile.html">ASP v1.0 Core</a> uses this check path as the tiny first
+host/provider/check profile. Inspect, edit, apply, deployment surfaces, dogfood, ACE integration,
+and reference-engine parity remain non-Core.</p>
+</blockquote>
+<h2 id="historical-role-contract"><a class="doc-anchor" href="#historical-role-contract">§</a>Historical role contract</h2>
+<p>A judge/check server evaluates a <strong>changeset against a baseline</strong> and returns an <strong>assessment</strong> containing
+status, diagnostics, coverage, and freshness. It MUST NOT decide pass/fail — the host computes the
+decision envelope (<a href="07-host-obligations.html">host obligations</a>) — and MUST NOT write, which is
+<a href="06-role-act.html">act/edit</a>’s job. It is pure over content it pulls on demand.</p>
+<h2 id="legacy-capability-alias-optional-compatibility-metadata"><a class="doc-anchor" href="#legacy-capability-alias-optional-compatibility-metadata">§</a>Legacy capability alias (optional compatibility metadata)</h2>
+<p>Current provider declarations use canonical <code>check</code> capability-family vocabulary. A retained <code>judge</code>
+object, when present, is compatibility metadata aligned to the canonical check capability.</p>
+<div class="example-wrap"><pre class="language-jsonc"><code>&quot;capabilities&quot;: {
+  &quot;check&quot;: {
+    &quot;capabilityVersion&quot;: &quot;check/1.0&quot;,
+    &quot;diagnosticSources&quot;: [&quot;acme-secrets&quot;],   // &gt;=1; namespaces every diagnostic&#39;s code
+    &quot;scopes&quot;: [&quot;changeset&quot;,&quot;workspace&quot;],      // what it can evaluate
+    &quot;comparisons&quot;: [&quot;introduced&quot;,&quot;all&quot;],      // baseline-diff modes it supports
+    &quot;partialResults&quot;: true,                   // streams diagnostics via $/progress
+    &quot;incremental&quot;: true,                      // can reuse prior evaluation state
+    &quot;unsupportedReporting&quot;: &quot;assessment-status&quot;,
+    &quot;fixes&quot;: true                             // compatibility hint: diagnostics may bridge to edit
+  },
+  &quot;judge&quot;: { /* optional legacy alias with the same check fields */ },
+  &quot;watch&quot;: { &quot;push&quot;: true }                   // optional ambient/background mode
+}</code></pre></div><h2 id="canonical-checkevaluate-and-legacy-judgeevaluate"><a class="doc-anchor" href="#canonical-checkevaluate-and-legacy-judgeevaluate">§</a>Canonical <code>check/evaluate</code> and legacy <code>judge/evaluate</code></h2>
+<p><code>check/evaluate</code> is the canonical provider assessment call. <code>judge/evaluate</code> is a compatibility shim
+with the same request semantics and the same canonical Assessment success result. <code>scope</code> bounds what
+is evaluated; <code>comparison</code> selects the baseline diff.</p>
+<div class="example-wrap"><pre class="language-jsonc"><code>// host → server
+{ &quot;id&quot;:7, &quot;method&quot;:&quot;check/evaluate&quot;, &quot;params&quot;:{
+    &quot;changeset&quot;: { /* content-addressed; see data-model */ },
+    &quot;scope&quot;: &quot;changeset&quot;,                     // changeset | workspace | { &quot;paths&quot;:[…] }
+    &quot;comparison&quot;: &quot;introduced&quot;,               // introduced (default, gating) | all | resolved
+    &quot;diagnosticSources&quot;: [&quot;acme-secrets&quot;] } } // host MAY run a subset
+
+// server → host  (assessment success)
+{ &quot;id&quot;:7, &quot;result&quot;:{
+    &quot;status&quot;:&quot;complete&quot;,
+    &quot;diagnostics&quot;:[
+      { &quot;code&quot;:&quot;acme-secrets/aws-key&quot;, &quot;severity&quot;:&quot;error&quot;,
+        &quot;source&quot;:&quot;acme-secrets&quot;, &quot;message&quot;:&quot;hardcoded AWS key&quot;,
+        &quot;location&quot;:{ &quot;path&quot;:&quot;src/api.ts&quot;, &quot;range&quot;:{ &quot;start&quot;:{&quot;line&quot;:41,&quot;char&quot;:2},&quot;end&quot;:{&quot;line&quot;:41,&quot;char&quot;:40} } },
+        &quot;fingerprint&quot;:&quot;sha256:7c…&quot;, &quot;introduced&quot;:true,
+        &quot;fix&quot;:{ &quot;actRef&quot;:&quot;acme-secrets/redact&quot;, &quot;args&quot;:{ … } } } ],
+    &quot;coverage&quot;:{
+      &quot;requested&quot;:{ &quot;scope&quot;:&quot;changeset&quot;, &quot;diagnosticSources&quot;:[&quot;acme-secrets&quot;], &quot;rules&quot;:[&quot;acme-secrets/aws-key&quot;], &quot;comparison&quot;:&quot;introduced&quot; },
+      &quot;covered&quot;:{ &quot;scope&quot;:&quot;changeset&quot;, &quot;diagnosticSources&quot;:[&quot;acme-secrets&quot;], &quot;rules&quot;:[&quot;acme-secrets/aws-key&quot;], &quot;comparison&quot;:&quot;introduced&quot; },
+      &quot;degraded&quot;:[], &quot;unsupported&quot;:[], &quot;exhaustive&quot;:true, &quot;truncated&quot;:false },
+    &quot;validAsOf&quot;:{
+      &quot;baseline&quot;:{ &quot;rev&quot;:&quot;git:tree:9f3a1c&quot; },
+      &quot;changesetDigest&quot;:&quot;sha256:changeset-introduced-001&quot;,
+      &quot;blobs&quot;:[&quot;blob:sha256:aa01&quot;,&quot;blob:sha256:bb02&quot;,&quot;blob:sha256:cc03&quot;] },
+    &quot;provider&quot;:{
+      &quot;id&quot;:&quot;acme-secrets&quot;, &quot;version&quot;:&quot;1.2.0&quot;, &quot;configDigest&quot;:&quot;sha256:cfg&quot;,
+      &quot;capabilityVersion&quot;:&quot;check/1.0&quot;, &quot;capabilityFamily&quot;:&quot;check&quot; },
+    &quot;timing&quot;:{ &quot;elapsedMs&quot;:914 },
+    &quot;cache&quot;:{ &quot;status&quot;:&quot;miss&quot;, &quot;key&quot;:&quot;sha256:cache-key&quot; } } }
+
+// compatibility method name, same params/result contract
+{ &quot;id&quot;:7, &quot;method&quot;:&quot;judge/evaluate&quot;, &quot;params&quot;:{ /* same as check/evaluate */ } }</code></pre></div><h3 id="request-configuration"><a class="doc-anchor" href="#request-configuration">§</a>Request configuration</h3>
+<p>The optional <code>configuration</code> object carries resolved provider-specific settings. Each provider MUST
+document and strictly validate its configuration schema, rejecting unknown fields, invalid values,
+and explicit <code>null</code> with <code>invalid-input</code> before evaluating source. Omission selects the provider’s
+documented defaults. The provider MUST apply the same effective settings to both comparison views;
+it MUST NOT discover workflow names, override layers, or execution permissions from this object.</p>
+<p>Every Assessment status MUST report <code>provider.configDigest</code> for the normalized effective settings.
+Providers MUST document deterministic canonicalization, and hosts MUST verify the expected digest
+before accepting the assessment. Equivalent omitted and explicit default settings have the same
+identity. Timing, findings, and runtime outcomes MUST NOT enter this digest. Workspace callbacks bind
+compiler/project configuration through <code>validAsOf.blobs</code>; evidence records external tool identities.
+Configuration never widens the initialized read, write, network, or resource grant.</p>
+<p>Opcore Zero Fast accepts <code>{ "verify": { ... } }</code> with the built-in Verify threshold fields. Its native
+profiles accept only <code>{}</code> because their project settings arrive through workspace callbacks. Opcore
+computes SHA-256 over compact UTF-8 JSON with recursively sorted object keys and no insignificant
+whitespace: <code>{ "provider": &lt;provider id&gt;, "capabilityVersion": "check/1.0", "configuration": &lt;effective settings&gt; }</code>.
+Fast includes every effective Verify field; native settings are <code>{}</code>. Hosts send only the settings
+for the selected provider, after resolving repository and workflow overrides.</p>
+<h3 id="assessment-statuses"><a class="doc-anchor" href="#assessment-statuses">§</a>Assessment statuses</h3>
+<ul>
+<li><strong><code>complete</code></strong> — requested evaluation completed for the declared coverage.</li>
+<li><strong><code>incomplete</code></strong> — the provider ran but could not cover the full requested scope.</li>
+<li><strong><code>unsupported</code></strong> — the provider does not support the requested language, scope, comparison,
+capability version, file kind, rule set, or diagnostic source.</li>
+<li><strong><code>error</code></strong> — the provider attempted the evaluation but failed for a provider/runtime reason
+represented as assessment data.</li>
+<li><strong><code>cancelled</code></strong> — evaluation was cancelled before completion.</li>
+</ul>
+<p><code>unsupported</code> is distinct from <code>error</code> so hosts can route capability gaps separately from provider
+failures. Required <code>incomplete</code>, <code>unsupported</code>, <code>error</code>, or <code>cancelled</code> assessments are degraded host
+coverage and cannot silently satisfy a gate.</p>
+<p>Provider assessments MUST NOT contain host-owned fields such as pass/fail projections, decisions,
+verdict envelopes, finding dispositions, authority grants, assurance modes, or transaction
+guarantees. A provider output that includes those fields is malformed and host policy treats it as
+degraded coverage.</p>
+<p>The prohibition applies recursively to structured provider data such as <code>evidence[].data</code> and
+diagnostic <code>fix.args</code>. These fields may carry evidence or edit-provider arguments, but they cannot
+carry host-owned gate results, authority grants, assurance claims, or transaction guarantees.</p>
+<h3 id="comparison-modes"><a class="doc-anchor" href="#comparison-modes">§</a>Comparison modes</h3>
+<ul>
+<li><strong><code>introduced</code></strong> (gating default) = <code>after \ before</code> by <code>fingerprint</code>. Only diagnostics this
+changeset adds. Requires evaluating both before- and after-state of affected files and diffing by
+fingerprint; a server MAY optimize but the <em>contract</em> is set-difference by fingerprint.</li>
+<li><strong><code>all</code></strong> = every diagnostic in the after-state within scope. For full sweeps / CI.</li>
+<li><strong><code>resolved</code></strong> = present in before, gone in after. For credit and metrics.</li>
+</ul>
+<p>For a <code>create</code>d path the before-state is the empty document, so every finding in a new file is
+<code>introduced</code>. For a <code>delete</code>d path the after-state is empty, so its before-findings are <code>resolved</code>.</p>
+<h3 id="negative-assessment--error"><a class="doc-anchor" href="#negative-assessment--error">§</a>Negative assessment ≠ error</h3>
+<p>Finding violations returns a <code>result</code>. Only an <em>inability to evaluate</em> uses the JSON-RPC error
+channel, and that error MUST carry a <code>failClass</code>:</p>
+<div class="example-wrap"><pre class="language-jsonc"><code>{ &quot;id&quot;:7, &quot;error&quot;:{ &quot;code&quot;:-32010, &quot;message&quot;:&quot;index not warm&quot;,
+    &quot;data&quot;:{ &quot;failClass&quot;:&quot;health&quot;, &quot;retryable&quot;:true } } }</code></pre></div>
+<p>The host maps <code>failClass</code> × call-site to fail-open vs fail-closed
+(<a href="07-host-obligations.html">host obligations</a>).</p>
+<h3 id="incremental-evaluation"><a class="doc-anchor" href="#incremental-evaluation">§</a>Incremental evaluation</h3>
+<p><code>judge/evaluate</code> MAY include <code>priorDiagnostics</code> — the host-cached before-state findings for the
+changeset’s <code>before</code> blobs. A server that advertised <code>incremental</code> MAY use these as the before-set and
+evaluate only the after-state, diffing by <code>fingerprint</code>; absent them (a cold call, or a non-incremental
+server) it computes both states (<a href="../decisions/0011-host-supplies-before-state.html">ADR 0011</a>).</p>
+<h2 id="watch-push-mode"><a class="doc-anchor" href="#watch-push-mode">§</a>Watch (push) mode</h2>
+<p>Ambient diagnostics while the agent works — advertised via <code>watch.push</code>, never used for gating.
+Schema: <code>host-callbacks.schema.json#/$defs/publishDiagnostics.params</code>; a new batch for a <code>uri</code>
+supersedes the prior one.</p>
+<div class="example-wrap"><pre class="language-jsonc"><code>// server → host (notification), against the live working baseline
+{ &quot;method&quot;:&quot;judge/publishDiagnostics&quot;, &quot;params&quot;:{
+    &quot;uri&quot;:&quot;src/api.ts&quot;, &quot;validAsOf&quot;:{ &quot;rev&quot;:&quot;git:working:…&quot; }, &quot;diagnostics&quot;:[ … ] } }</code></pre></div><h2 id="fixes--the-check--edit-bridge"><a class="doc-anchor" href="#fixes--the-check--edit-bridge">§</a>Fixes — the check → edit bridge</h2>
+<p>A diagnostic MAY carry <code>fix</code>, which is <em>declared composition</em>: either an inline content-addressed
+<code>workspaceEdit</code>, a canonical <code>editRef</code>, or an <code>actRef</code> naming a legacy act/edit capability plus args.
+Either way the
+<strong>host</strong> mediates it (validate -&gt; apply/stage according to the achieved guarantee); the judge/check
+provider never mutates. Application is user/agent-initiated; the host never auto-applies
+(<a href="../decisions/0012-fix-application-user-initiated.html">ADR 0012</a>).</p>
+<h2 id="historical-compatibility-checklist"><a class="doc-anchor" href="#historical-compatibility-checklist">§</a>Historical compatibility checklist</h2>
+<p>A conformant check provider that retains the legacy judge surface:</p>
+<ul>
+<li>MUST declare canonical <code>check</code> capability support with capability version, diagnostic sources,
+scopes, comparisons, partial-result support, incremental support, and unsupported-reporting
+semantics; it MAY also expose a legacy <code>judge</code> compatibility object with the same shape.</li>
+<li>MUST treat <code>before</code>/<code>after</code> as blob refs and obtain bytes only via <code>workspace/readBlob</code>; MUST NOT
+assume filesystem access.</li>
+<li>MUST echo <code>validAsOf</code> covering the baseline, changeset digest, and every blob it read.</li>
+<li>MUST emit stable, position-resilient <code>fingerprint</code>s.</li>
+<li>MUST return <code>introduced</code> diffs when it advertises that comparison.</li>
+<li>MUST surface an Assessment as a success <code>result</code>; legacy transport errors remain only for
+request/session inability-to-evaluate cases and every such error MUST carry a <code>failClass</code>.</li>
+<li>MUST keep SARIF as export/mapping only; native ASP check results are Assessments.</li>
+<li>MUST NOT write to the workspace or act outside granted permissions.</li>
+<li>SHOULD honor <code>$/cancelRequest</code>; SHOULD set <code>exhaustive:false</code> when it samples or truncates.</li>
+<li>SHOULD carry a <code>fix</code> or a <code>help</code> next-step on an <code>error</code>-severity diagnostic.</li>
+<li>If it advertises <code>incremental</code>, SHOULD consume <code>priorDiagnostics</code> and evaluate only the after-state.</li>
+<li>MAY provide <code>fix</code>es; MAY push <code>watch</code> diagnostics if it advertised <code>watch.push</code>.</li>
+</ul>
+<p>See fixtures in <a href="../examples/judge/"><code>examples/judge/</code></a> and the schema in
+<a href="../schemas/judge-evaluate.schema.json"><code>schemas/judge-evaluate.schema.json</code></a>.</p></main><aside class="page-toc" aria-label="On this page"><p>On this page</p><nav id="rustdoc"><ul>
+<li><a href="#historical-role-contract" title="Historical role contract">Historical role contract</a><ul></ul></li>
+<li><a href="#legacy-capability-alias-optional-compatibility-metadata" title="Legacy capability alias (optional compatibility metadata)">Legacy capability alias (optional compatibility metadata)</a><ul></ul></li>
+<li><a href="#canonical-checkevaluate-and-legacy-judgeevaluate" title="Canonical `check/evaluate` and legacy `judge/evaluate`">Canonical <code>check/evaluate</code> and legacy <code>judge/evaluate</code></a><ul>
+<li><a href="#request-configuration" title="Request configuration">Request configuration</a><ul></ul></li>
+<li><a href="#assessment-statuses" title="Assessment statuses">Assessment statuses</a><ul></ul></li>
+<li><a href="#comparison-modes" title="Comparison modes">Comparison modes</a><ul></ul></li>
+<li><a href="#negative-assessment--error" title="Negative assessment ≠ error">Negative assessment ≠ error</a><ul></ul></li>
+<li><a href="#incremental-evaluation" title="Incremental evaluation">Incremental evaluation</a><ul></ul></li></ul></li>
+<li><a href="#watch-push-mode" title="Watch (push) mode">Watch (push) mode</a><ul></ul></li>
+<li><a href="#fixes--the-check--edit-bridge" title="Fixes — the check → edit bridge">Fixes — the check → edit bridge</a><ul></ul></li>
+<li><a href="#historical-compatibility-checklist" title="Historical compatibility checklist">Historical compatibility checklist</a><ul></ul></li></ul></nav></aside></div>
+<footer class="site-footer"><div>© The Open Engine
+<a href="https://github.com/the-open-engine/opcore">Opcore on GitHub ↗</a></div></footer></body></html>

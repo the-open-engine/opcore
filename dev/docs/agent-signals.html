@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Agent Signals · Opcore</title><link rel="stylesheet" href="../assets/site.css">
+<script src="../assets/theme.js"></script>
+<script defer src="../assets/site.js"></script>
+<link rel="icon" type="image/svg+xml" href="../assets/oec-favicon.svg"><link rel="stylesheet" href="../assets/versions.css"><script defer src="../assets/versions.js"></script></head>
+<body class="guide-page"><a class="skip-link" href="#main-content">Skip to content</a>
+<header class="site-header"><div class="header-inner">
+<button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-navigation">Menu</button>
+<a class="brand" href="../index.html"><img src="../assets/oec-crow.png" alt="" width="32" height="36"><span>Opcore</span></a>
+<a class="header-label" href="../index.html">Documentation</a>
+<div class="header-actions"><div class="docs-version" data-site-root="../../" data-page-path="docs/agent-signals.html" data-version="dev"><a href="../../versions.html">Development ▾</a><select hidden aria-label="Documentation version"><option>Development</option></select></div><button class="theme-toggle" type="button" aria-label="Use dark mode" title="Use dark mode"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20.8 13.1A9 9 0 0 1 10.9 3.2 9 9 0 1 0 20.8 13.1Z"/></svg></button>
+<a class="repository-link" href="https://github.com/the-open-engine/opcore">GitHub <span aria-hidden="true">↗</span></a></div>
+</div></header>
+<div class="docs-layout"><aside class="docs-sidebar"><nav id="site-navigation" aria-label="Documentation"><div class="nav-group"><p>Opcore</p><ul><li><a href="../index.html">Overview</a></li></ul></div><div class="nav-group"><p>Get started</p><ul><li><a href="getting-started.html">Installation and first check</a></li></ul></div><div class="nav-group"><p>Guides</p><ul><li><a href="configuration.html">Configuration</a></li><li><a href="providers.html">Providers</a></li><li><a href="examples.html">Examples</a></li><li><a href="sense.html">Project Sense</a></li><li><a href="agent-signals.html" aria-current="page">Agent feedback</a></li></ul></div><div class="nav-group"><p>Reference</p><ul><li><a href="../cli.html">CLI</a></li><li><a href="../api/opcore/api/index.html">Rust API</a></li><li><a href="../api/opcore/api/enum.ProviderProfile.html">Provider profiles</a></li><li><a href="../asp/README.html">ASP specification</a></li></ul></div><div class="nav-group"><p>Project</p><ul><li><a href="versioning.html">Documentation versions</a></li><li><a href="architecture.html">Architecture</a></li><li><a href="../CONTRIBUTING.html">Contributing</a></li><li><a href="../CODE_OF_CONDUCT.html">Code of conduct</a></li><li><a href="../SECURITY.html">Security</a></li></ul></div></nav></aside>
+<main id="main-content" class="guide-content" tabindex="-1">
+<p class="docs-kicker">Core documentation</p><h1 class="title">Agent Signals</h1>
+    <h2 id="decision"><a class="doc-anchor" href="#decision">§</a>Decision</h2>
+<p>Sense adds three bounded, introduced-only intervention families without adding a
+symbol graph:</p>
+<ol>
+<li>exact nontrivial source, callable-body, and copied-token-region duplication;</li>
+<li>explicit module-boundary breadth;</li>
+<li>documentation ownership for mechanically important modules.</li>
+</ol>
+<p>Language parsers emit only immutable, path-independent facts during their
+existing parse. The shared fact cache may persist those facts. Paths, resolved
+targets, reverse impact, thresholds, comparisons, findings, documentation
+bindings, and dirty views remain request-local. There is no second parser,
+project execution, topology cache, mutable graph, database, daemon, or watcher.</p>
+<h2 id="comparison"><a class="doc-anchor" href="#comparison">§</a>Comparison</h2>
+<p>Policy compares the same path first. A removed and added path are continuous
+only when one-to-one exact-content matching proves a pure rename. An edited move
+is new because no stronger identity exists. A finding is introduced only when
+the after value exceeds its limit and grew relative to the continuous before
+value. Existing debt that is unchanged or reduced does not block.
+An unknown or partial baseline public surface never counts as a confirmed
+zero-width surface for a newly-important documentation transition.</p>
+<h2 id="exact-duplication"><a class="doc-anchor" href="#exact-duplication">§</a>Exact Duplication</h2>
+<p>Whole-file identity uses the source content identity and retains the existing
+256-byte minimum. Callable identity hashes the non-trivia tokens of a callable
+body or expression, excluding the declaration name, parameters, signature, and
+outer body delimiters. Hash domains separate Node, Python, Rust, and Go. Identifiers,
+properties, operators, keywords, and literal spellings are not normalized.</p>
+<p>Only complete parser output is trusted. Callable groups require at least 48
+non-trivia tokens. Extraction retains at most 4,096 callables per file and
+request output retains bounded group and occurrence samples. Comparison uses
+per-path multiplicities so pure renames, copy-and-delete, and pre-existing
+duplicate debt are not fabricated additions. A whole-file duplicate suppresses
+the redundant callable groups caused solely by that copied file.</p>
+<p>Copied regions use 32-token rolling k-grams and a 17-k-gram rightmost-minimum
+winnowing span, guaranteeing an anchor for every exact run of at least 48
+normalized tokens. Cached anchors remain path-independent and carry compact
+exact token-span evidence. Rolling hashes only nominate candidates; request-local
+comparison exact-checks immutable source bytes, extends maximal regions, and
+chooses the region shared by the most occurrences before length. Bounds are
+4,096 anchors per file, 200,000 per request, and 4,000,000 exact token
+comparisons. Truncation emits no partial file facts and makes Sense incomplete.</p>
+<h2 id="module-interface"><a class="doc-anchor" href="#module-interface">§</a>Module Interface</h2>
+<p>The interface projection records only explicit module-boundary syntax:</p>
+<ul>
+<li>Node static import and re-export selectors, explicit exports, and directly
+exported TypeScript interface/type-literal member counts plus bounded,
+whitespace-insensitive shape fingerprints;</li>
+<li>Python selectors on confirmed explicit-relative <code>from</code> imports and exact
+static module-level <code>__all__</code> values;</li>
+<li>Rust structural dependency targets and fan-in from proven conventional module
+trees; Rust selector widths and public-surface facts remain unsupported.</li>
+<li>Go exact local package imports, package-aggregated exported declarations, and
+directly exported struct/interface member counts and fingerprints; import
+selector width remains unknown because Go imports packages, not symbols.</li>
+</ul>
+<p>Runtime, type-only, and structural evidence remain distinct. Namespace, wildcard, CommonJS,
+dynamic, recovered, and truncated forms are coverage gaps, never guessed width.
+Repeated aliases/selectors are deduplicated by their external boundary name.
+Ordinary changed-module observations expose before/after public-surface authority
+and authoritative export or shape-fingerprint churn even when every displayed
+count remains unchanged. This is advisory evidence, never a new blocker.</p>
+<p>Default blocking limits are:</p>
+<div><table><thead><tr><th>Metric</th><th style="text-align: right">Limit</th></tr></thead><tbody>
+<tr><td>confirmed local dependency targets per module</td><td style="text-align: right">20</td></tr>
+<tr><td>explicit selectors on one confirmed edge</td><td style="text-align: right">8</td></tr>
+<tr><td>explicit public exports per module</td><td style="text-align: right">20</td></tr>
+<tr><td>members in one directly exported TypeScript or Go shape</td><td style="text-align: right">20</td></tr>
+</tbody></table>
+</div>
+<p>Defaults may be tightened or relaxed within hard safety bounds through root <code>.opcore.json</code> and its selected workflow overrides. Reports identify the effective settings and configuration digest. The file also selects literal excluded subpaths; it cannot execute plugins or arbitrary commands.</p>
+<p>Go test files and declaration files do not block on module breadth. Pure barrels and
+declaration files do not block on public-surface breadth. Their exact evidence
+remains observable. A confirmed lower bound above a limit is a sound finding
+under partial coverage; truncation makes the report incomplete.</p>
+<h2 id="documentation-ownership"><a class="doc-anchor" href="#documentation-ownership">§</a>Documentation Ownership</h2>
+<p>Documentation ownership is explicit rather than inferred from Markdown prose.
+Root <code>.opcore.json</code> holds the optional exact bindings in its <code>documentation</code> section:</p>
+<div class="example-wrap"><pre class="language-json"><code>{
+  &quot;schemaVersion&quot;: 1,
+  &quot;documentation&quot;: {
+    &quot;bindings&quot;: [
+      { &quot;source&quot;: &quot;src/runtime/router.ts&quot;, &quot;document&quot;: &quot;docs/runtime-router.md&quot; }
+    ]
+  }
+}</code></pre></div>
+<p>Paths are exact normalized repository-relative paths. There are no globs,
+regular expressions, inheritance rules, plugins, or basename matching. The
+configuration is limited to 256 KiB and 4,096 bindings; duplicate sources, unknown
+fields, invalid paths, source-to-self bindings, registry-as-document bindings,
+unsafe files, and required-read truncation fail closed.</p>
+<p>A module is mechanically important when it has at least 10 confirmed direct
+non-type-only importers or more than 20 explicit public exports. A binding and existing
+document are required when a source-changed module newly becomes important.
+Adding an importer does not impose a documentation edit on an otherwise
+unmodified target. When an already-important module’s explicit export set or
+exported TypeScript or Go shape fingerprint changes, the document bound in the after
+view must itself differ from its own HEAD bytes. Rebinding to a pre-existing
+unchanged document does not satisfy the obligation. Rename and deletion handling
+uses the same content continuity and exact binding semantics; stale bindings
+never count as documentation.</p>
+<p>Configuration follows the selected worktree, index, or committed view. Sense
+captures referenced documents from that same view and the selected baseline only
+when documentation policy needs them. Final freshness validation covers source,
+configuration, and referenced documents. Linked worktrees
+share parser facts through their common Git directory, while registry overlays,
+document overlays, policy comparison, and findings remain per worktree.</p>
+<h2 id="release-proof"><a class="doc-anchor" href="#release-proof">§</a>Release Proof</h2>
+<p>Release requires focused parser and policy fixtures, malformed/truncated input,
+baseline-debt and rename/copy cases, divergent linked worktrees, concurrent
+cache publication, deterministic output, output bounds, and dense/10k-file
+stress. Verify and Sense record latency, RSS, and scaling measurements for
+regression investigation; none of those measurements is a release threshold.
+No-trigger documentation policy must perform no referenced-document reads.</p><nav class="page-sequence" aria-label="Adjacent pages"><a href="sense.html"><span>Previous</span>Project Sense</a><a href="../cli.html"><span>Next</span>CLI</a></nav></main><aside class="page-toc" aria-label="On this page"><p>On this page</p><nav id="rustdoc"><ul>
+<li><a href="#decision" title="Decision">Decision</a><ul></ul></li>
+<li><a href="#comparison" title="Comparison">Comparison</a><ul></ul></li>
+<li><a href="#exact-duplication" title="Exact Duplication">Exact Duplication</a><ul></ul></li>
+<li><a href="#module-interface" title="Module Interface">Module Interface</a><ul></ul></li>
+<li><a href="#documentation-ownership" title="Documentation Ownership">Documentation Ownership</a><ul></ul></li>
+<li><a href="#release-proof" title="Release Proof">Release Proof</a><ul></ul></li></ul></nav></aside></div>
+<footer class="site-footer"><div>© The Open Engine
+<a href="https://github.com/the-open-engine/opcore">Opcore on GitHub ↗</a></div></footer></body></html>

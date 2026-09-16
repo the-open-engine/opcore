@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Opcore · Opcore</title><link rel="stylesheet" href="assets/site.css">
+<script src="assets/theme.js"></script>
+<script defer src="assets/site.js"></script>
+<link rel="icon" type="image/svg+xml" href="assets/oec-favicon.svg"><link rel="stylesheet" href="assets/versions.css"><script defer src="assets/versions.js"></script></head>
+<body class="guide-page"><a class="skip-link" href="#main-content">Skip to content</a>
+<header class="site-header"><div class="header-inner">
+<button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-navigation">Menu</button>
+<a class="brand" href="index.html"><img src="assets/oec-crow.png" alt="" width="32" height="36"><span>Opcore</span></a>
+<a class="header-label" href="index.html">Documentation</a>
+<div class="header-actions"><div class="docs-version" data-site-root="../" data-page-path="index.html" data-version="dev"><a href="../versions.html">Development ▾</a><select hidden aria-label="Documentation version"><option>Development</option></select></div><button class="theme-toggle" type="button" aria-label="Use dark mode" title="Use dark mode"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20.8 13.1A9 9 0 0 1 10.9 3.2 9 9 0 1 0 20.8 13.1Z"/></svg></button>
+<a class="repository-link" href="https://github.com/the-open-engine/opcore">GitHub <span aria-hidden="true">↗</span></a></div>
+</div></header>
+<div class="docs-layout"><aside class="docs-sidebar"><nav id="site-navigation" aria-label="Documentation"><div class="nav-group"><p>Opcore</p><ul><li><a href="index.html" aria-current="page">Overview</a></li></ul></div><div class="nav-group"><p>Get started</p><ul><li><a href="docs/getting-started.html">Installation and first check</a></li></ul></div><div class="nav-group"><p>Guides</p><ul><li><a href="docs/configuration.html">Configuration</a></li><li><a href="docs/providers.html">Providers</a></li><li><a href="docs/examples.html">Examples</a></li><li><a href="docs/sense.html">Project Sense</a></li><li><a href="docs/agent-signals.html">Agent feedback</a></li></ul></div><div class="nav-group"><p>Reference</p><ul><li><a href="cli.html">CLI</a></li><li><a href="api/opcore/api/index.html">Rust API</a></li><li><a href="api/opcore/api/enum.ProviderProfile.html">Provider profiles</a></li><li><a href="asp/README.html">ASP specification</a></li></ul></div><div class="nav-group"><p>Project</p><ul><li><a href="docs/versioning.html">Documentation versions</a></li><li><a href="docs/architecture.html">Architecture</a></li><li><a href="CONTRIBUTING.html">Contributing</a></li><li><a href="CODE_OF_CONDUCT.html">Code of conduct</a></li><li><a href="SECURITY.html">Security</a></li></ul></div></nav></aside>
+<main id="main-content" class="guide-content" tabindex="-1">
+<p class="docs-kicker">Core documentation</p><h1 class="title">Opcore</h1>
+    <p>Opcore gives coding agents specific feedback while they edit source. Its installed hook checks the current Git changes and returns the file, location, rule, and evidence when something needs repair.</p>
+<blockquote class="admonition"><p class="admonition-title">Important</p><p><strong>Opcore 0.3.0 is a full rewrite.</strong> We narrowed the old graph, search, and editing toolkit to focus on dependable verification during agent work:</p>
+<ul>
+<li>One Rust engine reuses parsed source facts, removing graph databases and repeated snapshot builds from routine checks.</li>
+<li>Feedback follows completed edits, including supported shell and MCP calls, so coverage depends less on tool-specific patch formats.</li>
+<li>Rules use explicit evidence and report coverage gaps; documentation ownership no longer depends on filename mentions.</li>
+<li>Automatic checks never execute project code. Compiler checks are opt-in for pre-commit and CI.</li>
+</ul>
+<p>The old <code>graph</code>, <code>inspect</code>, and <code>edit</code> commands are retired. Install <code>@the-open-engine-company/opcore</code> and follow the new setup instructions.</p>
+</blockquote>
+<h2 id="examples"><a class="doc-anchor" href="#examples">§</a>Examples</h2><details>
+<summary><strong>See what Opcore catches</strong></summary>
+<p>Expand an example below to see the source and finding. Use a disposable Git project, following <a href="docs/getting-started.html">Getting started</a>. Fast Verify and Project Sense messages below were checked against the current binary; native compiler wording can vary with the installed toolchain.</p>
+<h3 id="fast-verify"><a class="doc-anchor" href="#fast-verify">§</a>Fast Verify</h3>
+<p>Run <code>opcore check --repo . --all</code> to check these examples.</p>
+<details>
+<summary>TypeScript: a function with too many parameters</summary>
+<div class="example-wrap"><pre class="language-ts"><code>export function total(
+  a: number,
+  b: number,
+  c: number,
+  d: number,
+  e: number,
+  f: number,
+) {
+  return a + b + c + d + e + f;
+}</code></pre></div>
+<p><strong>Rule:</strong> <code>complexity.max-parameters</code></p>
+<div class="example-wrap"><pre class="language-text"><code>function parameters: 6; configured maximum is 5</code></pre></div></details>
+<details>
+<summary>JavaScript: decision logic crosses the complexity limit</summary>
+<div class="example-wrap"><pre class="language-js"><code>const allowed = flags =&gt;
+  flags[0] &amp;&amp; flags[1] &amp;&amp; flags[2] &amp;&amp;
+  flags[3] &amp;&amp; flags[4] &amp;&amp; flags[5] &amp;&amp;
+  flags[6] &amp;&amp; flags[7] &amp;&amp; flags[8] &amp;&amp;
+  flags[9] &amp;&amp; flags[10];</code></pre></div>
+<p><strong>Rule:</strong> <code>complexity.max-cyclomatic-complexity</code></p>
+<div class="example-wrap"><pre class="language-text"><code>cyclomatic complexity: 11; configured maximum is 10</code></pre></div></details>
+<details>
+<summary>Python: a function with too many parameters</summary>
+<div class="example-wrap"><pre class="language-python"><code>def total(a, b, c, d, e, f):
+    return a + b + c + d + e + f</code></pre></div>
+<p><strong>Rule:</strong> <code>complexity.max-parameters</code></p>
+<div class="example-wrap"><pre class="language-text"><code>function has 6 parameters; configured maximum is 5</code></pre></div></details>
+<details>
+<summary>Rust: a function with too many parameters</summary>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">fn </span>total(
+    a: u8,
+    b: u8,
+    c: u8,
+    d: u8,
+    e: u8,
+    f: u8,
+) -&gt; u8 {
+    a + b + c + d + e + f
+}</code></pre></div>
+<p><strong>Rule:</strong> <code>complexity.max-parameters</code></p>
+<div class="example-wrap"><pre class="language-text"><code>Rust callable has 6 parameters; configured maximum is 5</code></pre></div></details>
+<details>
+<summary>Go: a function with too many parameters</summary>
+<div class="example-wrap"><pre class="language-go"><code>package metrics
+
+func total(
+    a int,
+    b int,
+    c int,
+    d int,
+    e int,
+    f int,
+) int {
+    return a + b + c + d + e + f
+}</code></pre></div>
+<p><strong>Rule:</strong> <code>complexity.max-parameters</code></p>
+<div class="example-wrap"><pre class="language-text"><code>Go callable has 6 function parameters; configured maximum is 5</code></pre></div></details>
+<details>
+<summary>Terraform JSON: the wrong document shape</summary>
+<p>In <code>main.tf.json</code>:</p>
+<div class="example-wrap"><pre class="language-json"><code>42</code></pre></div>
+<p><strong>Rule:</strong> <code>hcl.syntax</code></p>
+<div class="example-wrap"><pre class="language-text"><code>IaC JSON syntax requires an object at the document root</code></pre></div></details>
+<details>
+<summary>Shell: a block missing its closing fi</summary>
+<div class="example-wrap"><pre class="language-sh"><code>if true; then
+  echo ok</code></pre></div>
+<p><strong>Rule:</strong> <code>shell.syntax</code></p>
+<div class="example-wrap"><pre class="language-text"><code>Invalid Shell syntax: expected &#39;fi&#39;</code></pre></div></details>
+<details>
+<summary>Protocol Buffers: a message missing its closing brace</summary>
+<div class="example-wrap"><pre class="language-proto"><code>syntax = &quot;proto3&quot;;
+message Greeting {</code></pre></div>
+<p><strong>Rule:</strong> <code>protobuf.syntax</code></p>
+<div class="example-wrap"><pre class="language-text"><code>Invalid Protobuf syntax near }</code></pre></div></details>
+<h3 id="project-sense"><a class="doc-anchor" href="#project-sense">§</a>Project Sense</h3>
+<p>Sense compares the described Git baseline with the source change. Run <code>opcore sense --repo .</code> after making the change.</p>
+<details>
+<summary>A TypeScript import introduces a runtime cycle</summary>
+<p><code>src/a.ts</code> already imports <code>src/b.ts</code>. This new import in <code>src/b.ts</code> closes the loop:</p>
+<div class="example-wrap"><pre class="language-ts"><code>import { a } from &quot;./a&quot;;
+export const b = a + 1;</code></pre></div>
+<p><strong>Rule:</strong> <code>sense.runtime_cycle</code></p>
+<div class="example-wrap"><pre class="language-text"><code>cycle: src/b.ts -&gt; src/a.ts (2 files)
+  witness: src/b.ts -&gt; src/a.ts -&gt; src/b.ts</code></pre></div>
+<p>JSON evidence identifies the introduced trigger:</p>
+<div class="example-wrap"><pre class="language-json"><code>{&quot;from&quot;:&quot;src/b.ts&quot;,&quot;to&quot;:&quot;src/a.ts&quot;,&quot;kind&quot;:&quot;runtime&quot;}</code></pre></div></details>
+<details>
+<summary>A copied file introduces exact duplication</summary>
+<p>Suppose <code>src/a.ts</code> is a 667-byte module already in the baseline. Adding byte-for-byte identical content as <code>src/b.ts</code> produces:</p>
+<p><strong>Rule:</strong> <code>sense.duplication.identical_file</code></p>
+<div class="example-wrap"><pre class="language-text"><code>duplicate identical file: src/b.ts (2 occurrences, was 1)</code></pre></div>
+<p>The report lists <code>src/b.ts</code> as changed and <code>src/a.ts</code> as the existing occurrence. The default minimum is 256 bytes, so a tiny shared snippet does not trigger this rule.</p>
+</details>
+<details>
+<summary>A TypeScript module grows past its public-interface limit</summary>
+<p>Suppose <code>src/api.ts</code> already has 20 explicit exports. Adding one more crosses the default boundary:</p>
+<div class="example-wrap"><pre class="language-ts"><code>export const twentyFirstValue = 21;</code></pre></div>
+<p><strong>Rule:</strong> <code>sense.interface.module_exports</code></p>
+<p>The finding records <code>before: 20</code>, <code>after: 21</code>, and <code>limit: 20</code>. Unchanged or reduced interface debt does not block. Any increase above the limit does, including a change from 21 to 22 exports.</p>
+</details>
+<details>
+<summary>An important module changes without its registered documentation</summary>
+<p>Suppose ten modules import <code>src/core.ts</code>, and <code>.opcore.json</code> binds that source to <code>docs/core.md</code> through <code>documentation.bindings</code>. Renaming a public export without updating the document produces:</p>
+<p><strong>Rule:</strong> <code>sense.documentation.document_not_updated</code></p>
+<div class="example-wrap"><pre class="language-text"><code>update the registered document with this source change</code></pre></div>
+<p>Opcore reads only the exact source-to-document binding. It does not guess ownership from filenames or search Markdown for matching words.</p>
+</details>
+<h3 id="native-checks"><a class="doc-anchor" href="#native-checks">§</a>Native checks</h3>
+<p>These opt-in checks also need the project setup and explicit execution authorization described in <a href="docs/providers.html">Providers</a>. The diagnostics below illustrate typical compiler or type-checker output.</p>
+<details>
+<summary>Rust-native: a return value has the wrong type</summary>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">fn </span>count() -&gt; u32 {
+    <span class="string">"one"
+</span>}</code></pre></div>
+<p><strong>Rule:</strong> <code>opcore-rust-native/cargo-check</code></p>
+<div class="example-wrap"><pre class="language-text"><code>E0308: mismatched types</code></pre></div>
+<p>Spans and added help come from the installed Rust toolchain.</p>
+</details>
+<details>
+<summary>Node-native: a number is assigned to a string</summary>
+<div class="example-wrap"><pre class="language-ts"><code>const label: string = 42;</code></pre></div>
+<p><strong>Rule:</strong> <code>opcore-node-native/typescript-check/TS2322</code></p>
+<div class="example-wrap"><pre class="language-text"><code>Type &#39;number&#39; is not assignable to type &#39;string&#39;.</code></pre></div>
+<p>Exact text belongs to the installed project-local <code>tsc</code>.</p>
+</details>
+<details>
+<summary>Python-native: a number is assigned to a string</summary>
+<div class="example-wrap"><pre class="language-python"><code>value: str = 1</code></pre></div>
+<p><strong>Pyright rule:</strong> <code>opcore-python-native/type-check/reportAssignmentType</code></p>
+<p>The parser test form is:</p>
+<div class="example-wrap"><pre class="language-text"><code>number is not assignable to str</code></pre></div>
+<p>With mypy fallback, the rule is <code>opcore-python-native/type-check/assignment</code>, commonly with <code>Incompatible types</code>. Exact wording belongs to the selected checker version.</p>
+</details>
+<p>Run <code>opcore rules</code> to see every built-in rule and its default policy field.</p>
+</details>
+<p><img src="docs/assets/opcore-hook-loop.svg" alt="Opcore post-write loop: an agent edits code, an automatic check finds an issue, and findings return to the agent for repair" /></p>
+<p><a href="docs/assets/opcore-hook-loop-mobile.svg">Open the phone-sized hook diagram</a></p>
+<p><strong>Verify</strong>, available as <code>opcore check</code>, checks syntax and source hygiene for JavaScript and TypeScript, Python, Rust, Go, HCL-based infrastructure code, Shell, and Protocol Buffers. JavaScript, TypeScript, Python, Rust, and Go also receive callable size and complexity checks.</p>
+<p><strong>Project Sense</strong> compares repository relationships with the Git baseline. It reports introduced runtime cycles, exact duplication, growing interface violations, and documentation obligations. Unchanged or reduced baseline debt doesn’t block.</p>
+<p>The default checks read a captured Git view and verify that it stayed unchanged. They don’t execute repository code or alter source and Git state. The installed post-edit hook sends Verify and Sense findings back to the agent for repair. Commit hooks and CI provide the final checks.</p>
+<h2 id="get-started"><a class="doc-anchor" href="#get-started">§</a>Get started</h2>
+<p>Upgrading from <code>opcore</code> 0.2.x or an Opcore Zero development install? Follow the <a href="docs/getting-started.html#upgrade-from-an-earlier-installation">migration instructions</a> before installing.</p>
+<p>The npm release supports Linux x86-64 with glibc 2.39 or newer and Apple silicon macOS. You’ll need Node.js 18 or newer, npm, Bash, and Git. Agent integration requires Codex or Claude.</p>
+<div class="example-wrap"><pre class="language-sh"><code>npm install -g --foreground-scripts @the-open-engine-company/opcore
+opcore --version</code></pre></div>
+<p>From a Git project, run:</p>
+<div class="example-wrap"><pre class="language-sh"><code>opcore doctor --repo .
+opcore check --repo . --all</code></pre></div>
+<p>The installer sets up every detected agent at user scope, so its hooks apply across that agent’s Git projects. After a Codex install, restart Codex, open <code>/hooks</code>, review the command, and trust it. Doctor checks installed configuration; follow the <a href="docs/getting-started.html#confirm-hook-activation">activation smoke test</a> to verify automatic execution.</p>
+<p>If npm skipped lifecycle scripts, run <code>opcore setup</code>. For the CLI without agent integration, use <code>opcore setup --no-hooks</code>; <a href="docs/getting-started.html#project-local-and-ci-installation">project-local and CI setup</a> also works without an agent installation.</p>
+<p>See <a href="docs/getting-started.html">Getting started</a> for source and archive installs, agent selection, prerequisites, and cleanup. Windows, Linux ARM64, and Intel macOS have no published binaries.</p>
+<h2 id="workflows"><a class="doc-anchor" href="#workflows">§</a>Workflows</h2><div class="example-wrap"><pre class="language-sh"><code>opcore run post-edit                         # current changes against HEAD
+opcore run pre-commit                        # full staged Verify and introduced Sense
+opcore run ci --base &lt;base-commit&gt;            # full committed Verify and introduced Sense</code></pre></div>
+<p>Add the pre-commit workflow to your Git hook and require the CI workflow alongside existing tests and linters. Configure the applicable native providers for compiler or type-checker coverage; those runs also require explicit host authorization. The <a href="docs/getting-started.html#add-pre-commit-and-ci-checks">setup guide</a> has recipes.</p>
+<p>One root <code>.opcore.json</code> holds shared settings and workflow overrides. Pre-commit can use stricter thresholds or fewer exclusions than post-edit; monorepos can select different native project roots. See <a href="docs/configuration.html">Configuration</a>.</p>
+<p>Use <code>check</code> or <code>sense</code> to run an individual evaluator. Plain <code>check</code> reports <code>Nothing checked</code> on a clean worktree; <code>check --all</code> checks the current project even when nothing changed. A full check with no selected supported source reports unsupported coverage.</p>
+<div><table><thead><tr><th>Result</th><th>Next step</th></tr></thead><tbody>
+<tr><td><code>Clean</code> or <code>allow</code></td><td>The selected required checks completed with no findings.</td></tr>
+<tr><td><code>Findings</code> or <code>deny</code></td><td>Read the evidence, repair the change, and rerun the same command.</td></tr>
+<tr><td><code>Not checked</code></td><td>No source changes required checking; use <code>check --all</code> for a project check.</td></tr>
+<tr><td><code>Partial</code></td><td>Review the missing Sense coverage. Use <code>--allow-partial</code> only if you accept those gaps.</td></tr>
+<tr><td><code>Unsupported</code></td><td>Choose supported source or a provider that applies to the project.</td></tr>
+<tr><td><code>Incomplete</code> or <code>indeterminate</code></td><td>Resolve the reported setup, capture, or evaluation failure and retry.</td></tr>
+</tbody></table>
+</div>
+<p><code>--advisory</code> makes findings report-only; missing coverage still blocks. Add <code>--json</code> for structured evidence. The <a href="docs/getting-started.html#read-the-result">getting-started guide</a> explains exit statuses and partial-coverage options.</p>
+<p>The <a href="#examples">examples above</a> show findings in every supported language family.</p>
+<h2 id="providers"><a class="doc-anchor" href="#providers">§</a>Providers</h2><div><table><thead><tr><th>Provider</th><th>Checks</th></tr></thead><tbody>
+<tr><td>Fast</td><td>Built-in syntax, hygiene, and code metrics; the default CLI and hook path.</td></tr>
+<tr><td>Rust-native</td><td>Cargo Check against the selected workspace or package.</td></tr>
+<tr><td>Node-native</td><td>Project-local TypeScript checking with an npm lockfile.</td></tr>
+<tr><td>Python-native</td><td>Host Pyright or mypy using the selected Python environment.</td></tr>
+</tbody></table>
+</div>
+<p>Native checks are opt-in. They may execute repository-controlled build scripts, wrappers, or checker plugins with the current account’s access to host files and the network. Their temporary copy doesn’t isolate that execution; automatic hooks always use the default checks. See <a href="docs/providers.html">Provider setup and usage</a> before selecting native profiles.</p>
+<h2 id="agent-server-protocol"><a class="doc-anchor" href="#agent-server-protocol">§</a>Agent Server Protocol</h2>
+<p>Opcore includes the complete Agent Server Protocol (ASP) v1.0 definition and four check providers. A calling tool supplies exact file contents and grants read access. Each provider returns findings, coverage, and evidence; the calling tool owns the decision and any ASP receipt.</p>
+<p><img src="docs/assets/asp-overview.svg" alt="ASP v1.0 flow: the calling tool grants access to selected contents, receives the checker’s assessment, and records its decision" /></p>
+<p><a href="docs/assets/asp-overview-mobile.svg">Open the phone-sized ASP diagram</a></p>
+<p>Opcore’s bundled local runner reports <code>allow</code>, <code>deny</code>, or <code>indeterminate</code> for local use. Its result has advisory assurance and doesn’t issue an ASP receipt. Read the <a href="asp/README.html">protocol definition</a> for integration contracts.</p>
+<h2 id="documentation-and-help"><a class="doc-anchor" href="#documentation-and-help">§</a>Documentation and help</h2>
+<p>Read the <a href="https://the-open-engine.github.io/opcore/">published documentation</a>, including the <a href="https://the-open-engine.github.io/opcore/cli.html">CLI reference</a>, <a href="https://the-open-engine.github.io/opcore/api/opcore/api/index.html">public Rust API</a>, and ASP specification. In a source checkout, generate the same site from the Rust definitions:</p>
+<div class="example-wrap"><pre class="language-sh"><code>./scripts/build-docs.sh</code></pre></div>
+<p>Open <code>target/site/index.html</code> in a browser. CI checks the generated site on every pull request and publishes the passing <code>main</code> build to GitHub Pages. Running the local build only writes <code>target/site/</code>.</p>
+<p>Report reproducible problems in <a href="https://github.com/the-open-engine/opcore/issues">GitHub Issues</a>. <a href="CONTRIBUTING.html">Contributing</a> explains useful report details and the development checks.</p>
+<p>Before removing an npm installation, clean up its agent integrations:</p>
+<div class="example-wrap"><pre class="language-sh"><code>opcore uninstall
+npm uninstall -g @the-open-engine-company/opcore</code></pre></div>
+<p><a href="docs/getting-started.html#update-or-remove">Update and removal instructions</a> cover source installs and recovery after an interrupted setup.</p><nav class="page-sequence" aria-label="Adjacent pages"><a href="docs/getting-started.html"><span>Next</span>Installation and first check</a></nav></main><aside class="page-toc" aria-label="On this page"><p>On this page</p><nav id="rustdoc"><ul>
+<li><a href="#examples" title="Examples">Examples</a><ul>
+<li><a href="#fast-verify" title="Fast Verify">Fast Verify</a><ul></ul></li>
+<li><a href="#project-sense" title="Project Sense">Project Sense</a><ul></ul></li>
+<li><a href="#native-checks" title="Native checks">Native checks</a><ul></ul></li></ul></li>
+<li><a href="#get-started" title="Get started">Get started</a><ul></ul></li>
+<li><a href="#workflows" title="Workflows">Workflows</a><ul></ul></li>
+<li><a href="#providers" title="Providers">Providers</a><ul></ul></li>
+<li><a href="#agent-server-protocol" title="Agent Server Protocol">Agent Server Protocol</a><ul></ul></li>
+<li><a href="#documentation-and-help" title="Documentation and help">Documentation and help</a><ul></ul></li></ul></nav></aside></div>
+<footer class="site-footer"><div>© The Open Engine
+<a href="https://github.com/the-open-engine/opcore">Opcore on GitHub ↗</a></div></footer></body></html>

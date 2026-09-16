@@ -1,0 +1,56 @@
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "serverInfo": {
+      "name": "lattice",
+      "version": "0.1.0",
+      "fingerprint": "sha256:ed17"
+    },
+    "capabilityFamilies": [
+      "edit"
+    ],
+    "roles": [
+      "act"
+    ],
+    "capabilities": {
+      "edit": {
+        "capabilityVersion": "edit/1.0",
+        "operations": [
+          "rename",
+          "move",
+          "multi-edit",
+          "replace-resource",
+          "text-edit"
+        ],
+        "operationSupport": {
+          "create": true,
+          "modify": true,
+          "delete": true,
+          "rename": true,
+          "move": true
+        },
+        "textEditSupport": true,
+        "wholeResourceSupport": true,
+        "renameMoveSupport": true,
+        "preconditionSupport": "required",
+        "blobUploadSupport": "workspace/putBlob",
+        "partialProposalSemantics": "status",
+        "scopes": [
+          "workspace"
+        ]
+      }
+    },
+    "requestedPermissions": {
+      "read": [
+        "**/*"
+      ],
+      "write": false,
+      "network": false
+    },
+    "provenance": {
+      "publisher": "the-open-engine",
+      "signature": "base64:example"
+    }
+  }
+}

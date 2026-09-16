@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Getting started · Opcore</title><link rel="stylesheet" href="../assets/site.css">
+<script src="../assets/theme.js"></script>
+<script defer src="../assets/site.js"></script>
+<link rel="icon" type="image/svg+xml" href="../assets/oec-favicon.svg"><link rel="stylesheet" href="../assets/versions.css"><script defer src="../assets/versions.js"></script></head>
+<body class="guide-page"><a class="skip-link" href="#main-content">Skip to content</a>
+<header class="site-header"><div class="header-inner">
+<button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-navigation">Menu</button>
+<a class="brand" href="../index.html"><img src="../assets/oec-crow.png" alt="" width="32" height="36"><span>Opcore</span></a>
+<a class="header-label" href="../index.html">Documentation</a>
+<div class="header-actions"><div class="docs-version" data-site-root="../../" data-page-path="docs/getting-started.html" data-version="dev"><a href="../../versions.html">Development ▾</a><select hidden aria-label="Documentation version"><option>Development</option></select></div><button class="theme-toggle" type="button" aria-label="Use dark mode" title="Use dark mode"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20.8 13.1A9 9 0 0 1 10.9 3.2 9 9 0 1 0 20.8 13.1Z"/></svg></button>
+<a class="repository-link" href="https://github.com/the-open-engine/opcore">GitHub <span aria-hidden="true">↗</span></a></div>
+</div></header>
+<div class="docs-layout"><aside class="docs-sidebar"><nav id="site-navigation" aria-label="Documentation"><div class="nav-group"><p>Opcore</p><ul><li><a href="../index.html">Overview</a></li></ul></div><div class="nav-group"><p>Get started</p><ul><li><a href="getting-started.html" aria-current="page">Installation and first check</a></li></ul></div><div class="nav-group"><p>Guides</p><ul><li><a href="configuration.html">Configuration</a></li><li><a href="providers.html">Providers</a></li><li><a href="examples.html">Examples</a></li><li><a href="sense.html">Project Sense</a></li><li><a href="agent-signals.html">Agent feedback</a></li></ul></div><div class="nav-group"><p>Reference</p><ul><li><a href="../cli.html">CLI</a></li><li><a href="../api/opcore/api/index.html">Rust API</a></li><li><a href="../api/opcore/api/enum.ProviderProfile.html">Provider profiles</a></li><li><a href="../asp/README.html">ASP specification</a></li></ul></div><div class="nav-group"><p>Project</p><ul><li><a href="versioning.html">Documentation versions</a></li><li><a href="architecture.html">Architecture</a></li><li><a href="../CONTRIBUTING.html">Contributing</a></li><li><a href="../CODE_OF_CONDUCT.html">Code of conduct</a></li><li><a href="../SECURITY.html">Security</a></li></ul></div></nav></aside>
+<main id="main-content" class="guide-content" tabindex="-1">
+<p class="docs-kicker">Core documentation</p><h1 class="title">Getting started</h1>
+    
+<h2 id="choose-an-installation"><a class="doc-anchor" href="#choose-an-installation">§</a>Choose an installation</h2>
+<p>Published binaries support Linux x86-64 with glibc 2.39 or newer and Apple silicon macOS. Linux binaries require glibc; Alpine Linux’s musl environment is outside that release target. Windows, Linux ARM64, and Intel macOS have no published binaries or npm source-build fallback.</p>
+<p>Every installation needs Bash and standard Unix command-line utilities. Git must be on <code>PATH</code> to check projects. The installer detects Codex through <code>CODEX_HOME</code> or <code>$HOME/.codex</code>, and Claude through <code>CLAUDE_CONFIG_DIR</code> or <code>$HOME/.claude</code>. If both exist, it installs both integrations. If neither exists, select an agent explicitly or use CLI-only npm installation.</p>
+<h3 id="npm"><a class="doc-anchor" href="#npm">§</a>npm</h3>
+<p>Use Node.js 18 or newer and npm:</p>
+<div class="example-wrap"><pre class="language-sh"><code>npm install -g --foreground-scripts @the-open-engine-company/opcore
+opcore --version</code></pre></div>
+<p>Postinstall downloads and verifies the native release. <code>--foreground-scripts</code> makes its setup and activation instructions visible. If scripts were skipped, run <code>opcore setup</code>; help, package version, and setup diagnostics remain available before native installation.</p>
+<p>To select only one agent, set <code>OPCORE_AGENT</code>:</p>
+<div class="example-wrap"><pre class="language-sh"><code>OPCORE_AGENT=codex npm install -g --foreground-scripts @the-open-engine-company/opcore</code></pre></div>
+<p>Use <code>claude</code> for Claude. Keep custom agent directory variables set when installing or updating.</p>
+<h3 id="project-local-and-ci-installation"><a class="doc-anchor" href="#project-local-and-ci-installation">§</a>Project-local and CI installation</h3>
+<p>For a pinned project dependency without agent integration:</p>
+<div class="example-wrap"><pre class="language-sh"><code>OPCORE_NO_HOOKS=1 npm install --save-dev --foreground-scripts @the-open-engine-company/opcore
+npx --no-install opcore doctor --repo .</code></pre></div>
+<p>Commit the npm lockfile and keep <code>OPCORE_NO_HOOKS=1</code> on subsequent <code>npm ci</code> and update commands. This mode installs only the verified executable inside the package; it needs no agent directories and creates no skills or hooks. It still requires a supported npm platform.</p>
+<p>If your install skips lifecycle scripts, complete setup explicitly:</p>
+<div class="example-wrap"><pre class="language-sh"><code>npx --no-install opcore setup --no-hooks</code></pre></div>
+<p>Use <code>npx --no-install opcore</code> wherever this guide shows <code>opcore</code> for a project-local installation. For an isolated CI install outside a Node project, use <code>OPCORE_NO_HOOKS=1 npm install -g --foreground-scripts @the-open-engine-company/opcore@&lt;version&gt;</code> and pin the reviewed release version.</p>
+<h3 id="release-archive"><a class="doc-anchor" href="#release-archive">§</a>Release archive</h3>
+<p>Download the archive for your platform and its <code>SHA256SUMS</code> from the same <a href="https://github.com/the-open-engine/opcore/releases">GitHub Release</a>. Check the archive’s SHA-256 digest against its entry in that file, then extract it. The archive contains an installer and binary, so this route doesn’t need Node.js or Cargo.</p>
+<p>From the extracted <code>opcore-linux-x86_64</code> or <code>opcore-macos-arm64</code> directory:</p>
+<div class="example-wrap"><pre class="language-sh"><code>./install.sh</code></pre></div>
+<p>Follow any printed <code>PATH</code> instruction to run <code>opcore</code> by name. <code>./install.sh --agent codex</code> restricts setup to Codex; <code>./install.sh --no-hooks</code> installs the CLI and skill without enrolling hooks.</p>
+<h3 id="source-checkout"><a class="doc-anchor" href="#source-checkout">§</a>Source checkout</h3>
+<p>Install Rust with rustup and a C compiler/linker before building. The package supports Rust 1.95 and newer; ordinary Cargo commands in the checkout select the toolchain and components pinned in <code>rust-toolchain.toml</code>. rustup may download them on the first run.</p>
+<div class="example-wrap"><pre class="language-sh"><code>git clone https://github.com/the-open-engine/opcore.git
+cd opcore
+./scripts/install.sh</code></pre></div>
+<p>The source installer builds a release binary. It accepts the same <code>--agent codex|claude</code> and <code>--no-hooks</code> options as the archive installer. <code>--no-hooks</code> leaves any existing hooks in place. Follow the printed <code>PATH</code> instruction if the install directory isn’t already in your shell’s search path.</p>
+<h2 id="run-the-first-check"><a class="doc-anchor" href="#run-the-first-check">§</a>Run the first check</h2><h3 id="upgrade-from-an-earlier-installation"><a class="doc-anchor" href="#upgrade-from-an-earlier-installation">§</a>Upgrade from an earlier installation</h3>
+<p>Opcore 0.3 replaces the earlier TypeScript/Rust implementation with the verification engine developed in Opcore Zero. The npm package is now <code>@the-open-engine-company/opcore</code>; the command is <code>opcore</code>. Installing or updating the old unscoped package does not switch packages.</p>
+<p>Before replacing <code>opcore</code> 0.2.x, use the old executable to remove the integrations it owns. Run the repository command in each project where you installed it, and the global command if you installed global hooks:</p>
+<div class="example-wrap"><pre class="language-sh"><code>opcore uninstall --repo . --local --yes
+opcore uninstall --global --yes
+npm uninstall -g opcore</code></pre></div>
+<p>For a project dependency, run its installed executable with <code>npx --no-install opcore</code>, then use <code>npm uninstall opcore</code> in that project. Keep any custom configuration roots set during cleanup. Resolve cleanup errors before removing the old package; npm removal alone does not remove its agent hooks.</p>
+<p>For an Opcore Zero development installation, run its <code>opcore-zero uninstall</code> command before removing <code>@the-open-engine-company/opcore-zero</code>. For a source or archive installation, use the standalone uninstaller recorded by that installation. The replacement does not adopt Zero’s receipts or rename existing hooks.</p>
+<p>Then install the new scoped package using the instructions above and run <code>opcore doctor --repo .</code>. Review the <a href="configuration.html">configuration guide</a>: the new engine reads <code>.opcore.json</code> and <code>OPCORE_*</code> environment variables. An old <code>.opcore/config</code> is a different format. An Opcore Zero <code>.opcore-zero.json</code> uses the same configuration schema and can be renamed after review.</p>
+<p>The new engine supplies <code>check</code>, <code>sense</code>, and workflow commands. The old <code>graph</code>, <code>edit</code>, <code>inspect</code>, and <code>opcore-asp-provider</code> interfaces do not carry over; ASP callers launch <code>opcore serve --stdio</code>. Update automation before relying on the new installation, then run the activation smoke test below. The <a href="https://github.com/the-open-engine/opcore/tree/legacy">legacy branch</a> and existing release tags retain the previous implementation.</p>
+<h3 id="verify-the-installation"><a class="doc-anchor" href="#verify-the-installation">§</a>Verify the installation</h3>
+<p>Run these commands from a Git project:</p>
+<div class="example-wrap"><pre class="language-sh"><code>opcore --version
+opcore doctor --repo .
+opcore check --repo . --all</code></pre></div>
+<p>Doctor reads repository configuration, integration state, and native-tool setup without checking source. Use <code>doctor --workflow pre-commit</code> to inspect that workflow’s selected settings and prerequisites. A successful doctor result doesn’t prove an active hook or a complete compiler run; confirm host activation below and run the selected workflow.</p>
+<p><code>check --all</code> inspects the current supported source. It can find existing issues on its first run; that means the checker ran successfully and found work to review. For later edits, plain <code>check</code> compares current worktree changes with HEAD and reports introduced findings. <code>check --staged</code> checks the index while ignoring unstaged edits.</p>
+<h2 id="confirm-hook-activation"><a class="doc-anchor" href="#confirm-hook-activation">§</a>Confirm hook activation</h2>
+<p>The installer enrolls hooks at user scope. They apply across that agent’s Git projects, with each project’s <code>.opcore.json</code> controlling its post-edit thresholds and exclusions. A mixed-language project can report unsupported files; <a href="configuration.html#select-targets">target exclusions</a> let the project make that scope explicit. Use CLI-only installation if you want manual checks without global agent hooks.</p>
+<p>Restart the agent after installation. In the Codex CLI, open <code>/hooks</code>, review the Opcore command, and trust it; see the <a href="https://developers.openai.com/codex/hooks">Codex hook permission model</a>. In the Claude Code CLI, open <code>/hooks</code> and inspect the installed command. Doctor can check the receipt and configuration but can’t determine host trust, feature enablement, or whether a session executed the command.</p>
+<p>Desktop interfaces may not provide <code>/hooks</code>. Review the settings path printed by the installer and use the smoke edit below in that desktop session, accepting its normal workspace and tool permission prompts. CLI activation does not establish desktop activation.</p>
+<p>Use a disposable Git project to test the edit loop:</p>
+<div class="example-wrap"><pre class="language-sh"><code>mkdir opcore-smoke
+cd opcore-smoke
+git init</code></pre></div>
+<p>Open that directory in your agent and ask it to create <code>smoke.ts</code> with its normal file-edit tool:</p>
+<div class="example-wrap"><pre class="language-ts"><code>export function total(a: number, b: number, c: number, d: number, e: number, f: number) {
+  return a + b + c + d + e + f;
+}</code></pre></div>
+<p>The session should receive <code>complexity.max-parameters</code> with <code>function parameters: 6; configured maximum is 5</code>. Ask it to reduce the function to five parameters, then confirm the next check has no finding. If you only see output after manually running <code>opcore check --repo .</code>, the CLI works but automatic activation remains unverified.</p>
+<p>The hook matches supported file-edit tools, Bash, and all MCP tool calls. Reads can trigger it too. It sends feedback after the tool call completes; it doesn’t inspect every filesystem write, undo a commit, or enforce the agent’s final handoff. Run <code>opcore run post-edit</code> before handing work back, and add the following checks before committing and in CI.</p>
+<h2 id="add-pre-commit-and-ci-checks"><a class="doc-anchor" href="#add-pre-commit-and-ci-checks">§</a>Add pre-commit and CI checks</h2>
+<p>Use the built-in workflows alongside the repository’s tests, linters, and existing hooks:</p>
+<div><table><thead><tr><th>Workflow</th><th>Selected view and checks</th></tr></thead><tbody>
+<tr><td><code>post-edit</code></td><td>Worktree changes against HEAD: introduced Verify and Sense findings.</td></tr>
+<tr><td><code>pre-commit</code></td><td>Full staged Verify and configured native checks; introduced Sense against HEAD.</td></tr>
+<tr><td><code>ci</code></td><td>Full target-commit Verify and configured native checks; introduced Sense against an explicit base commit.</td></tr>
+</tbody></table>
+</div>
+<p>The staged workflow also reads staged configuration and documents; unstaged edits cannot change its result. CI defaults to target <code>HEAD</code>, or accepts <code>--tree &lt;target&gt;</code>. Existing Verify/compiler findings can fail these full checks. Review exclusions and the effective policy before adopting them:</p>
+<div class="example-wrap"><pre class="language-sh"><code>opcore status --workflow pre-commit --json
+opcore doctor --workflow pre-commit
+opcore run pre-commit</code></pre></div>
+<p>Ideally, configure the applicable <a href="providers.html">native providers</a> in pre-commit and CI for compiler or type-checker coverage. Prepare each provider’s tools and dependency cache first. Repository settings select the checks; the host must also authorize native execution with <code>--allow-unsandboxed-native</code>. Use trusted repositories or an externally isolated CI environment. Native checks never enter automatic agent hooks.</p>
+<p>Have your existing hook manager run <code>opcore run pre-commit --repo . --allow-unsandboxed-native</code> and propagate its exit status. For a new hook, save the following as <code>.githooks/pre-commit</code>:</p>
+<div class="example-wrap"><pre class="language-sh"><code>#!/bin/sh
+exec opcore run pre-commit --repo . --allow-unsandboxed-native</code></pre></div>
+<p>Then run <code>chmod +x .githooks/pre-commit</code> and <code>git config core.hooksPath .githooks</code>. The latter changes Git’s hook directory; preserve an existing hook manager or hook directory instead of replacing it. A project-local npm installation uses <code>npx --no-install opcore</code> in the hook. Opcore’s installer never changes Git hooks for you.</p>
+<p>In CI, fetch both the target and intended base history, install the pinned CLI, and prepare native tools/dependencies through the project’s normal setup. For example, a branch compared with <code>origin/main</code> can run:</p>
+<div class="example-wrap"><pre class="language-sh"><code>opcore run ci --base &quot;$(git merge-base HEAD origin/main)&quot; --allow-unsandboxed-native</code></pre></div>
+<p>Use your CI provider’s base commit when appropriate. Missing base history, unavailable native tools, and incomplete checks fail with an explanation; none count as successful checks. Make this job required in your repository’s CI settings.</p>
+<h2 id="read-the-result"><a class="doc-anchor" href="#read-the-result">§</a>Read the result</h2><div class="example-wrap"><pre class="language-sh"><code>opcore check --repo . --json
+opcore sense --repo . --json</code></pre></div>
+<p>Workflows, Check, and Sense return exit <code>0</code> when the selected evaluation permits continuation and exit <code>1</code> for blocking findings or evaluation failures. Argument-parsing errors, such as unknown options, return <code>2</code>. The installed hook uses <code>2</code> for intervention feedback; a hook that continues returns <code>0</code>.</p>
+<p>An empty changed or staged Check reports <code>not_checked</code> and exits <code>0</code>; it hasn’t assessed the whole project. Use <code>check --all</code> for that. An empty Sense comparison also exits <code>0</code>, even if the unchanged baseline has partial coverage.</p>
+<p>For a changed project, Sense can report confirmed findings alongside coverage gaps. <code>--advisory</code> accepts findings for reporting purposes, while <code>--allow-partial</code> acknowledges partial Sense coverage. A report with both needs both flags to exit successfully. Neither option accepts incomplete evaluation. Workflows use <code>coverage.allowPartial</code> and <code>coverage.allowNodeBuiltins</code> from their <a href="configuration.html">configuration</a>; pre-commit and CI default to requiring complete coverage. Post-edit defaults to allowing partial Sense coverage while retaining confirmed findings.</p>
+<p>Sense doesn’t inspect external dependency implementations. Imports of known explicit Node built-ins, such as <code>node:fs/promises</code>, have a narrower acknowledgment:</p>
+<div class="example-wrap"><pre class="language-sh"><code>opcore sense --repo . --allow-node-builtins</code></pre></div>
+<p>That flag accepts only explicit <code>node:</code> names in the pinned public built-in list. Unknown names, bare packages, missing relative imports, aliases, and dynamic references remain coverage gaps. Inspect <code>before.resolutionGaps</code> and <code>after.resolutionGaps</code> in JSON; each provides up to five examples, with a truncation marker when more exist. The <a href="sense.html#dependency-envelope">Sense reference</a> describes the language boundaries.</p>
+<h2 id="update-or-remove"><a class="doc-anchor" href="#update-or-remove">§</a>Update or remove</h2>
+<p>For npm:</p>
+<div class="example-wrap"><pre class="language-sh"><code>npm update -g --foreground-scripts @the-open-engine-company/opcore</code></pre></div>
+<p>Keep custom agent directory variables set so the installer can find every integration that shares the executable. A restricted installation refuses an upgrade that would leave another agent on incompatible installed artifacts. CLI-only updates retain <code>OPCORE_NO_HOOKS=1</code>; a repeated <code>setup --no-hooks</code> verifies and reinstalls the same package version.</p>
+<p>Current npm versions don’t run uninstall lifecycle scripts. Remove the integrations first, then the npm package:</p>
+<div class="example-wrap"><pre class="language-sh"><code>opcore uninstall
+npm uninstall -g @the-open-engine-company/opcore</code></pre></div>
+<p>For a project-local package, use <code>npx --no-install opcore uninstall</code> followed by <code>npm uninstall @the-open-engine-company/opcore</code>. To switch an integrated npm installation to CLI-only mode, run the first cleanup command, then <code>opcore setup --no-hooks</code> while the wrapper remains installed.</p>
+<p>For a source installation, run <code>./scripts/install.sh --uninstall</code> from the checkout. For an archive installation, run <code>./install.sh --uninstall</code> from the extracted bundle. Both also print a standalone uninstaller when installed; keep that path if you remove the original checkout or bundle. Add <code>--agent codex</code> or <code>--agent claude</code> to remove one integration while preserving the other.</p>
+<p>Cleanup checks the recorded artifacts before removing them and retains modified files. If a step fails, read the named path and repair the reported conflict before retrying; don’t delete the shared executable while another integration still owns it.</p>
+<h2 id="if-setup-doesnt-work"><a class="doc-anchor" href="#if-setup-doesnt-work">§</a>If setup doesn’t work</h2><div><table><thead><tr><th>Symptom</th><th>Recovery</th></tr></thead><tbody>
+<tr><td><code>command not found</code>, or <code>uninstall</code> is unknown</td><td>For a global npm install, run <code>export PATH="$(npm prefix -g)/bin:$PATH"</code> and <code>hash -r</code>. Check <code>command -v opcore</code>; use the npm wrapper, not the package’s private <code>native</code> directory. Project-local installs use <code>npx --no-install opcore</code>.</td></tr>
+<tr><td><code>NATIVE_SETUP_REQUIRED</code> or missing npm install state</td><td>Run <code>opcore setup</code>, or <code>setup --no-hooks</code> for CLI-only use. <code>doctor --json</code> identifies the package path and setup failure even before a native binary is available.</td></tr>
+<tr><td>Unsupported platform or glibc</td><td>Use the <a href="#source-checkout">source installer</a> on a supported build host; npm has no source fallback.</td></tr>
+<tr><td>Download failed or timed out</td><td>Check access to the named GitHub Release URL, then retry <code>setup</code>. A checksum mismatch requires a fresh verified download; never bypass the digest check.</td></tr>
+<tr><td>No supported agent detected</td><td>Set <code>OPCORE_AGENT=codex</code> or <code>claude</code>, set the intended agent directory, or install with <code>OPCORE_NO_HOOKS=1</code>.</td></tr>
+<tr><td>Permission denied</td><td>Use a writable npm prefix or project-local install. For executable preflight failures, ensure the temporary filesystem permits execution; npm’s <code>TMPDIR</code> can select an appropriate temporary directory.</td></tr>
+<tr><td>CLI checks work but no automatic feedback appears</td><td>Restart the agent, review hook trust and settings, and repeat the edit smoke test in that session.</td></tr>
+<tr><td>Native coverage is unavailable</td><td>Run <code>doctor --workflow &lt;name&gt;</code> and follow the selected <a href="providers.html">provider’s prerequisites</a>. A present compiler can still lack dependencies or usable project configuration.</td></tr>
+</tbody></table>
+</div>
+<p>For a malformed agent settings file, correct the named JSON error while preserving unrelated settings, then retry setup. For a modified owned artifact, compare it with your backup before restoring its expected bytes or moving a reviewed custom file aside. Keep integration receipts and shared ownership records; they identify which files cleanup may remove. A corrupt receipt needs its original backup or a report for manual recovery, because the installer cannot infer ownership from filenames.</p>
+<p>For a damaged CLI-only npm installation with no agent owners, back up its <code>install-state.json</code> and <code>native/opcore</code> outside the package directory, move those two files out, and run <code>setup --no-hooks</code>. Setup downloads and verifies the release again. Use <code>doctor --json</code> to locate the package first.</p>
+<p>If hook setup fails, the installer attempts to remove new, unmodified integrations while the binary is available. It retains existing or modified integrations and reports their paths. After repairing the named conflict, retry <code>setup</code>; if npm already removed the wrapper, reinstall the same package version with <code>--foreground-scripts</code>. Follow the same sequence if npm was removed before <code>opcore uninstall</code>: restore the package at its original prefix and with the original agent directory settings, then run the two-step cleanup. A retained standalone uninstaller may depend on the missing binary.</p>
+<p>An interrupted installer can leave an empty ownership lock directory. Confirm no installation or removal is still running, then use <code>rmdir</code> on the exact reported <code>.lock</code> path and retry. Preserve the adjacent ownership directory. <a href="../CONTRIBUTING.html#report-a-problem">Report a reproducible problem</a> when the retained state cannot be recovered from its receipts or backups.</p><nav class="page-sequence" aria-label="Adjacent pages"><a href="../index.html"><span>Previous</span>Overview</a><a href="configuration.html"><span>Next</span>Configuration</a></nav></main><aside class="page-toc" aria-label="On this page"><p>On this page</p><nav id="rustdoc"><ul>
+<li><a href="#choose-an-installation" title="Choose an installation">Choose an installation</a><ul>
+<li><a href="#npm" title="npm">npm</a><ul></ul></li>
+<li><a href="#project-local-and-ci-installation" title="Project-local and CI installation">Project-local and CI installation</a><ul></ul></li>
+<li><a href="#release-archive" title="Release archive">Release archive</a><ul></ul></li>
+<li><a href="#source-checkout" title="Source checkout">Source checkout</a><ul></ul></li></ul></li>
+<li><a href="#run-the-first-check" title="Run the first check">Run the first check</a><ul>
+<li><a href="#upgrade-from-an-earlier-installation" title="Upgrade from an earlier installation">Upgrade from an earlier installation</a><ul></ul></li>
+<li><a href="#verify-the-installation" title="Verify the installation">Verify the installation</a><ul></ul></li></ul></li>
+<li><a href="#confirm-hook-activation" title="Confirm hook activation">Confirm hook activation</a><ul></ul></li>
+<li><a href="#add-pre-commit-and-ci-checks" title="Add pre-commit and CI checks">Add pre-commit and CI checks</a><ul></ul></li>
+<li><a href="#read-the-result" title="Read the result">Read the result</a><ul></ul></li>
+<li><a href="#update-or-remove" title="Update or remove">Update or remove</a><ul></ul></li>
+<li><a href="#if-setup-doesnt-work" title="If setup doesn’t work">If setup doesn’t work</a><ul></ul></li></ul></nav></aside></div>
+<footer class="site-footer"><div>© The Open Engine
+<a href="https://github.com/the-open-engine/opcore">Opcore on GitHub ↗</a></div></footer></body></html>

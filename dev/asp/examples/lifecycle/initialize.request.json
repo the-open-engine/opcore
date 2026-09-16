@@ -1,0 +1,15 @@
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "initialize",
+  "params": {
+    "protocolVersion": "asp/1.0",
+    "host": { "name": "covibes-host", "version": "0.1.0" },
+    "hostCapabilities": { "progress": true, "pullDiagnostics": true, "readBlob": true, "putBlob": true },
+    "workspace": {
+      "root": "/repo",
+      "baseline": { "rev": "git:tree:9f3a1c", "dirty": "sha256:ab12", "stampedAt": "2026-06-16T10:00:00Z" }
+    },
+    "assuranceMode": "advisory"
+  }
+}

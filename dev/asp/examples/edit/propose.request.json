@@ -1,0 +1,28 @@
+{
+  "jsonrpc": "2.0",
+  "id": 1101,
+  "method": "edit/propose",
+  "params": {
+    "operation": "rename",
+    "baseline": {
+      "rev": "git:tree:9f3a1c",
+      "stampedAt": "2026-06-23T12:00:00Z"
+    },
+    "scope": {
+      "paths": [
+        "src/api.ts",
+        "src/server.ts"
+      ],
+      "operationProfile": "typescript-symbol"
+    },
+    "proposalId": "proposal:rename-api-fetch",
+    "idempotencyKey": "idem:rename-api-fetch:001",
+    "args": {
+      "symbol": "src/api.ts::Api.fetch",
+      "newName": "request"
+    },
+    "priorContext": {
+      "requestedBy": "harness"
+    }
+  }
+}

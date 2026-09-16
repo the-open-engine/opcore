@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Role: sense · Opcore</title><link rel="stylesheet" href="../../assets/site.css">
+<script src="../../assets/theme.js"></script>
+<script defer src="../../assets/site.js"></script>
+<link rel="icon" type="image/svg+xml" href="../../assets/oec-favicon.svg"><link rel="stylesheet" href="../../assets/versions.css"><script defer src="../../assets/versions.js"></script></head>
+<body class="guide-page"><a class="skip-link" href="#main-content">Skip to content</a>
+<header class="site-header"><div class="header-inner">
+<button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-navigation">Menu</button>
+<a class="brand" href="../../index.html"><img src="../../assets/oec-crow.png" alt="" width="32" height="36"><span>Opcore</span></a>
+<a class="header-label" href="../../index.html">Documentation</a>
+<div class="header-actions"><div class="docs-version" data-site-root="../../../" data-page-path="asp/spec/04-role-sense.html" data-version="dev"><a href="../../../versions.html">Development ▾</a><select hidden aria-label="Documentation version"><option>Development</option></select></div><button class="theme-toggle" type="button" aria-label="Use dark mode" title="Use dark mode"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20.8 13.1A9 9 0 0 1 10.9 3.2 9 9 0 1 0 20.8 13.1Z"/></svg></button>
+<a class="repository-link" href="https://github.com/the-open-engine/opcore">GitHub <span aria-hidden="true">↗</span></a></div>
+</div></header>
+<div class="docs-layout"><aside class="docs-sidebar"><nav id="site-navigation" aria-label="Documentation"><div class="nav-group"><p>Opcore</p><ul><li><a href="../../index.html">Overview</a></li></ul></div><div class="nav-group"><p>Get started</p><ul><li><a href="../../docs/getting-started.html">Installation and first check</a></li></ul></div><div class="nav-group"><p>Guides</p><ul><li><a href="../../docs/configuration.html">Configuration</a></li><li><a href="../../docs/providers.html">Providers</a></li><li><a href="../../docs/examples.html">Examples</a></li><li><a href="../../docs/sense.html">Project Sense</a></li><li><a href="../../docs/agent-signals.html">Agent feedback</a></li></ul></div><div class="nav-group"><p>Reference</p><ul><li><a href="../../cli.html">CLI</a></li><li><a href="../../api/opcore/api/index.html">Rust API</a></li><li><a href="../../api/opcore/api/enum.ProviderProfile.html">Provider profiles</a></li><li><a href="../README.html">ASP specification</a></li></ul></div><div class="nav-group"><p>Project</p><ul><li><a href="../../docs/versioning.html">Documentation versions</a></li><li><a href="../../docs/architecture.html">Architecture</a></li><li><a href="../../CONTRIBUTING.html">Contributing</a></li><li><a href="../../CODE_OF_CONDUCT.html">Code of conduct</a></li><li><a href="../../SECURITY.html">Security</a></li></ul></div></nav></aside>
+<main id="main-content" class="guide-content" tabindex="-1">
+<p class="docs-kicker">Core documentation</p><h1 class="title">Role: sense</h1>
+    <details><summary>Specification metadata</summary>
+<div class="example-wrap"><pre class="language-yaml"><code>title: &quot;Role: sense&quot;
+status: draft
+normative: false
+summary: Historical sense role text retained as inspect compatibility guidance.
+updated: 2026-06-22</code></pre></div></details>
+<blockquote>
+<p><strong>2026-06-22 correction:</strong> <code>sense</code> is legacy/product shorthand. The normative capability family is
+<code>inspect</code>. This chapter is compatibility guidance for the initial inspect method vocabulary;
+conformance attaches to canonical <code>inspect</code> capability declarations, not to a server role named
+<code>sense</code>.</p>
+</blockquote>
+<h2 id="historical-role-contract"><a class="doc-anchor" href="#historical-role-contract">§</a>Historical role contract</h2>
+<p>A legacy sense/inspect server provides <strong>read-only</strong> code intelligence over a <code>SnapshotRef</code>/<code>Baseline</code>.
+It answers “what is true / what is connected.” It is side-effect free and MUST NOT mutate. Reference
+impl: <code>crg</code>.</p>
+<p>Sense is not a gate. Its results inform the host and the agent; they never block. A sense server MAY
+emit advisory <a href="03-data-model.html#diagnostic">diagnostics</a> (<code>severity</code> <code>info</code>/<code>warning</code>), but the host
+treats sense diagnostics as advisory always.</p>
+<h2 id="legacy-capability-alias-optional-compatibility-metadata"><a class="doc-anchor" href="#legacy-capability-alias-optional-compatibility-metadata">§</a>Legacy capability alias (optional compatibility metadata)</h2>
+<p>Current provider declarations use canonical <code>inspect</code> capability-family vocabulary. The historical
+wire examples below show the retained <code>sense</code> compatibility shape for early fixtures and adapters.</p>
+<div class="example-wrap"><pre class="language-jsonc"><code>&quot;capabilities&quot;: {
+  &quot;sense&quot;: {
+    &quot;verbs&quot;: [&quot;references&quot;,&quot;callers&quot;,&quot;callees&quot;,&quot;impact&quot;,&quot;symbols&quot;], // typed core it answers
+    &quot;query&quot;: [&quot;tested-by&quot;,&quot;inheritors&quot;,&quot;flows&quot;],                    // tool-specific verbs via sense/query
+    &quot;scopes&quot;: [&quot;changeset&quot;,&quot;workspace&quot;],
+    &quot;graph&quot;: { &quot;nodeKinds&quot;: [&quot;file&quot;,&quot;class&quot;,&quot;function&quot;,&quot;type&quot;,&quot;test&quot;],
+               &quot;edgeKinds&quot;: [&quot;calls&quot;,&quot;imports&quot;,&quot;inherits&quot;,&quot;implements&quot;,&quot;contains&quot;,&quot;tested-by&quot;] }
+  }
+}</code></pre></div><h2 id="graph-envelope"><a class="doc-anchor" href="#graph-envelope">§</a>Graph envelope</h2>
+<p>All typed verbs return a normalized graph envelope, so the host consumes one shape regardless of the
+server’s internal model.</p>
+<div class="example-wrap"><pre class="language-jsonc"><code>// Node
+{ &quot;id&quot;:&quot;src/api.ts::Api.fetch&quot;,  // stable id (qualified name); the addressing key
+  &quot;kind&quot;:&quot;function&quot;,             // file | class | function | type | test | module
+  &quot;name&quot;:&quot;fetch&quot;,
+  &quot;location&quot;:{ &quot;path&quot;:&quot;src/api.ts&quot;, &quot;range&quot;:{ &quot;start&quot;:{&quot;line&quot;:12,&quot;char&quot;:2},&quot;end&quot;:{&quot;line&quot;:20,&quot;char&quot;:3} } },
+  &quot;exported&quot;:true, &quot;test&quot;:false }
+
+// Edge
+{ &quot;kind&quot;:&quot;calls&quot;,                // calls | imports | inherits | implements | contains | tested-by | depends-on
+  &quot;from&quot;:&quot;src/api.ts::Api.fetch&quot;, &quot;to&quot;:&quot;src/http.ts::request&quot;,
+  &quot;location&quot;:{ &quot;path&quot;:&quot;src/api.ts&quot;, &quot;range&quot;:{ … } } }
+
+// SymbolRef — how the host addresses a symbol in a request
+{ &quot;path&quot;:&quot;src/api.ts&quot;, &quot;position&quot;:{ &quot;line&quot;:12,&quot;char&quot;:2 } }   // position form
+// or
+{ &quot;id&quot;:&quot;src/api.ts::Api.fetch&quot; }                              // id form</code></pre></div><h2 id="legacy-methods-typed-core"><a class="doc-anchor" href="#legacy-methods-typed-core">§</a>Legacy methods (typed core)</h2><div><table><thead><tr><th>Method</th><th>Params</th><th>Result</th></tr></thead><tbody>
+<tr><td><code>sense/references</code></td><td><code>{ symbol: SymbolRef, scope }</code></td><td><code>{ nodes, edges, validAsOf }</code></td></tr>
+<tr><td><code>sense/callers</code></td><td><code>{ symbol: SymbolRef, depth? }</code></td><td><code>{ nodes, edges, validAsOf }</code></td></tr>
+<tr><td><code>sense/callees</code></td><td><code>{ symbol: SymbolRef, depth? }</code></td><td><code>{ nodes, edges, validAsOf }</code></td></tr>
+<tr><td><code>sense/symbols</code></td><td><code>{ query: string, kinds? }</code></td><td><code>{ nodes, validAsOf }</code></td></tr>
+<tr><td><code>sense/impact</code></td><td><code>{ changeset, depth?, scope }</code></td><td><code>{ changedNodes, impactedNodes, impactedFiles, edges, truncated, validAsOf }</code></td></tr>
+<tr><td><code>sense/query</code></td><td><code>{ verb: string, args: object }</code></td><td><code>{ nodes?, edges?, data?, validAsOf }</code></td></tr>
+</tbody></table>
+</div>
+<p>Every typed request MAY include an optional <code>baseline</code> override; absent it, the current session
+baseline applies.</p>
+<h3 id="senseimpact--the-integration-point"><a class="doc-anchor" href="#senseimpact--the-integration-point">§</a><code>sense/impact</code> — the integration point</h3>
+<p><code>sense/impact</code> computes the blast radius of a changeset. It is how legacy sense and judge surfaces map
+to canonical inspect and check <strong>through the host</strong>: the host asks inspect providers for impact, then
+passes the resulting <code>impactedFiles</code> to check providers as <code>scope: { "paths": [...] }</code>. This is
+over-inclusive by design (conservative recall), so a check provider sees everything the change could
+affect, not just the edited files.</p>
+<div class="example-wrap"><pre class="language-jsonc"><code>// host → server
+{ &quot;id&quot;:9, &quot;method&quot;:&quot;sense/impact&quot;, &quot;params&quot;:{
+    &quot;changeset&quot;:{ /* content-addressed */ }, &quot;depth&quot;:2, &quot;scope&quot;:&quot;workspace&quot; } }
+// server → host
+{ &quot;id&quot;:9, &quot;result&quot;:{
+    &quot;changedNodes&quot;:[ … ], &quot;impactedNodes&quot;:[ … ],
+    &quot;impactedFiles&quot;:[&quot;src/api.ts&quot;,&quot;src/http.ts&quot;,&quot;src/server.ts&quot;],
+    &quot;edges&quot;:[ … ], &quot;truncated&quot;:false,
+    &quot;validAsOf&quot;:{ &quot;rev&quot;:&quot;git:tree:9f3a1c&quot;, &quot;blobs&quot;:[&quot;blob:sha256:bb02&quot;] } } }</code></pre></div><h3 id="sensequery--the-escape-hatch"><a class="doc-anchor" href="#sensequery--the-escape-hatch">§</a><code>sense/query</code> — the escape hatch</h3>
+<p>For tool-specific intelligence that does not warrant a typed method (e.g. <code>tested-by</code>, <code>inheritors</code>,
+<code>flows</code>, <code>communities</code>). Historically, the verb was advertised in <code>capabilities.sense.query</code>. Current
+providers declare canonical <code>inspect</code> support first and may retain that field as compatibility
+metadata. The result is the normalized envelope plus an optional verb-specific <code>data</code> object.</p>
+<h2 id="freshness--answer-as-of-the-baseline"><a class="doc-anchor" href="#freshness--answer-as-of-the-baseline">§</a>Freshness — answer as-of the baseline</h2>
+<p>Sense verbs answer as-of the <strong>current session baseline</strong> (issued at <code>initialized</code>, advanced by the
+host via a <code>workspace/baselineChanged</code> notification). A request MAY carry an optional <code>baseline</code> to ask
+about a specific revision (<a href="../decisions/0014-sense-session-baseline-with-override.html">ADR 0014</a>).</p>
+<p>A sense server MAY maintain its own persistent index (like <code>crg</code>’s graph) rather than reading
+everything per call. Either way it MUST answer relative to the <strong>effective baseline</strong> (session or
+override):</p>
+<ul>
+<li>On success, <code>validAsOf.rev</code> MUST equal the effective baseline <code>rev</code>. If the server’s index is behind,
+it MUST reconcile first — pulling changed blobs via <code>workspace/readBlob</code> and updating incrementally —
+before answering.</li>
+<li>If it cannot reach the requested baseline (e.g. mid-rebuild), it MUST return a <code>health</code> error rather
+than answer against a stale graph. Stale-but-silent is forbidden.</li>
+</ul>
+<p>This is the freshness-as-correctness rule for stateful sense servers; see
+<a href="../decisions/0007-sense-answers-as-of-baseline.html">ADR 0007</a>.</p>
+<h2 id="reads"><a class="doc-anchor" href="#reads">§</a>Reads</h2>
+<p>Sense obtains content only via <code>workspace/listTree</code> + <code>workspace/readBlob</code>; the same least-privilege
+blob guarantees as judge apply (see <a href="03-data-model.html#blob-protocol">data model</a>).</p>
+<h2 id="historical-compatibility-checklist"><a class="doc-anchor" href="#historical-compatibility-checklist">§</a>Historical compatibility checklist</h2>
+<p>A conformant inspect provider that retains the legacy sense surface:</p>
+<ul>
+<li>MUST declare canonical <code>inspect</code> capability support; it MAY also expose a legacy <code>sense</code>
+compatibility object listing the typed <code>verbs</code> and any <code>query</code> verbs it answers.</li>
+<li>MUST answer relative to the effective baseline (session or override); on success <code>validAsOf.rev</code> MUST
+equal that baseline <code>rev</code>, else it MUST return a <code>health</code> error.</li>
+<li>MUST carry <code>validAsOf</code> on every result.</li>
+<li>MUST return the normalized graph envelope (<code>nodes</code>/<code>edges</code>) for typed verbs; <code>sense/query</code> MAY add a
+<code>data</code> object.</li>
+<li>MUST obtain content only via <code>workspace/readBlob</code>/<code>listTree</code>; MUST NOT assume filesystem access.</li>
+<li>MUST be side-effect free; MUST NOT mutate the workspace.</li>
+<li>SHOULD implement <code>sense/impact</code> (the judge-scoping integration point) and SHOULD honor
+<code>$/cancelRequest</code>.</li>
+<li>MAY expose tool-specific verbs via <code>sense/query</code>; MAY emit advisory diagnostics (never gating).</li>
+</ul>
+<p>See the schema in <a href="../schemas/sense-graph.schema.json"><code>schemas/sense-graph.schema.json</code></a> and fixtures
+in <a href="../examples/sense/"><code>examples/sense/</code></a>.</p></main><aside class="page-toc" aria-label="On this page"><p>On this page</p><nav id="rustdoc"><ul>
+<li><a href="#historical-role-contract" title="Historical role contract">Historical role contract</a><ul></ul></li>
+<li><a href="#legacy-capability-alias-optional-compatibility-metadata" title="Legacy capability alias (optional compatibility metadata)">Legacy capability alias (optional compatibility metadata)</a><ul></ul></li>
+<li><a href="#graph-envelope" title="Graph envelope">Graph envelope</a><ul></ul></li>
+<li><a href="#legacy-methods-typed-core" title="Legacy methods (typed core)">Legacy methods (typed core)</a><ul>
+<li><a href="#senseimpact--the-integration-point" title="`sense/impact` — the integration point"><code>sense/impact</code> — the integration point</a><ul></ul></li>
+<li><a href="#sensequery--the-escape-hatch" title="`sense/query` — the escape hatch"><code>sense/query</code> — the escape hatch</a><ul></ul></li></ul></li>
+<li><a href="#freshness--answer-as-of-the-baseline" title="Freshness — answer as-of the baseline">Freshness — answer as-of the baseline</a><ul></ul></li>
+<li><a href="#reads" title="Reads">Reads</a><ul></ul></li>
+<li><a href="#historical-compatibility-checklist" title="Historical compatibility checklist">Historical compatibility checklist</a><ul></ul></li></ul></nav></aside></div>
+<footer class="site-footer"><div>© The Open Engine
+<a href="https://github.com/the-open-engine/opcore">Opcore on GitHub ↗</a></div></footer></body></html>
