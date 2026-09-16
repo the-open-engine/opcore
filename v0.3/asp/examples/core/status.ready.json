@@ -1,0 +1,207 @@
+{
+  "jsonrpc": "2.0",
+  "id": 101,
+  "validates": "outer-host.schema.json#/$defs/statusResult",
+  "result": {
+    "host": {
+      "name": "core-host",
+      "version": "0.1.0-private",
+      "outerProtocol": "asp-outer/1.0",
+      "state": "ready",
+      "bindingCandidate": "json-rpc-stdio"
+    },
+    "workspace": {
+      "root": "/workspace/core",
+      "baseline": {
+        "rev": "tree:core-base",
+        "stampedAt": "2026-06-23T12:00:00Z"
+      },
+      "validAsOf": {
+        "rev": "tree:core-base",
+        "stampedAt": "2026-06-23T12:00:00Z"
+      }
+    },
+    "policy": {
+      "source": "trusted-environment",
+      "activation": "active",
+      "policyDigest": "sha256:core-policy",
+      "localOverride": {
+        "present": false,
+        "path": null,
+        "authorityEffect": "none",
+        "detail": "No local override affects Core gate authority."
+      }
+    },
+    "servers": [
+      {
+        "id": "core-check-provider",
+        "capabilities": [
+          "check"
+        ],
+        "authorityEvidence": {
+          "identity": "core-check-provider",
+          "integrity": "sha256:core-provider",
+          "conformance": "asp-core-v1.0-private",
+          "isolation": "gated",
+          "authority": {
+            "granted": true,
+            "requirement": "core-required-check",
+            "policyDigest": "sha256:core-policy"
+          }
+        },
+        "state": "ready",
+        "enrollmentState": "enrolled",
+        "requiredFor": [
+          "gate"
+        ],
+        "coverage": {
+          "required": [
+            "core-required-check"
+          ],
+          "enrolled": [
+            "core-required-check"
+          ],
+          "ran": [
+            "core-required-check"
+          ],
+          "degraded": []
+        },
+        "manifestState": "missing",
+        "accessExpectationsDeclared": false,
+        "detail": "Core adoption uses host policy and receipts, not manifest trust."
+      }
+    ],
+    "gates": {
+      "interactive": {
+        "available": true,
+        "requiredProviders": [],
+        "requiredCapabilities": [],
+        "degraded": []
+      },
+      "gate": {
+        "available": true,
+        "requiredProviders": [
+          "core-check-provider"
+        ],
+        "requiredCapabilities": [
+          "check"
+        ],
+        "degraded": []
+      },
+      "sweep": {
+        "available": true,
+        "requiredProviders": [],
+        "requiredCapabilities": [],
+        "degraded": []
+      }
+    },
+    "capabilities": {
+      "inspect": {
+        "available": false,
+        "providers": [],
+        "requiredFor": [],
+        "degraded": [],
+        "legacyAliases": [
+          "sense"
+        ]
+      },
+      "check": {
+        "available": true,
+        "providers": [
+          "core-check-provider"
+        ],
+        "requiredFor": [
+          "gate"
+        ],
+        "degraded": [],
+        "legacyAliases": [
+          "judge"
+        ]
+      },
+      "edit": {
+        "available": false,
+        "providers": [],
+        "requiredFor": [],
+        "degraded": [],
+        "legacyAliases": [
+          "act"
+        ]
+      }
+    },
+    "assuranceCapabilities": [
+      "advisory",
+      "gated"
+    ],
+    "receipt": {
+      "receiptId": "core-status-ready-0001",
+      "issuedAt": "2026-06-23T12:00:00Z",
+      "providerProvenance": [
+        {
+          "provider": "core-check-provider",
+          "capability": "check",
+          "identity": "core-check-provider",
+          "integrity": "sha256:core-provider",
+          "conformance": "asp-core-v1.0-private"
+        }
+      ],
+      "policyDigest": "sha256:core-policy",
+      "baseline": {
+        "rev": "tree:core-base",
+        "stampedAt": "2026-06-23T12:00:00Z"
+      },
+      "validAsOf": {
+        "rev": "tree:core-base"
+      },
+      "coverage": {
+        "exhaustive": true,
+        "required": [
+          "core-required-check"
+        ],
+        "enrolled": [
+          "core-required-check"
+        ],
+        "ran": [
+          "core-required-check"
+        ],
+        "degraded": []
+      },
+      "authorityEvidence": [
+        {
+          "identity": "core-check-provider",
+          "integrity": "sha256:core-provider",
+          "conformance": "asp-core-v1.0-private",
+          "isolation": "gated",
+          "authority": {
+            "granted": true,
+            "requirement": "core-required-check",
+            "policyDigest": "sha256:core-policy"
+          }
+        }
+      ],
+      "assurance": {
+        "mode": "gated",
+        "transactionGuarantee": "none"
+      },
+      "kind": "status",
+      "host": {
+        "name": "core-host",
+        "version": "0.1.0-private"
+      },
+      "capabilityFamily": "check",
+      "requestDigest": "sha256:examples-core-status-ready-json-status-receipt",
+      "providerIds": [
+        "core-check-provider",
+        "core-required-check"
+      ],
+      "timing": {
+        "startedAt": "2026-06-23T00:00:00Z",
+        "endedAt": "2026-06-23T00:00:00Z",
+        "elapsedMs": 0
+      },
+      "failures": [],
+      "privateOnly": true,
+      "experimental": true,
+      "trustArtifact": false
+    }
+  }
+}

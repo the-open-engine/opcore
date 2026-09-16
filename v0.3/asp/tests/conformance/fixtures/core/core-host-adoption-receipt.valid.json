@@ -1,0 +1,2785 @@
+{
+  "profile": {
+    "id": "asp-core-v1.0",
+    "scope": "private-core",
+    "coreOnly": true
+  },
+  "statusReceipt": {
+    "receiptId": "core-host-status-private-adoption-0001",
+    "issuedAt": "2026-06-23T00:00:00Z",
+    "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
+    "baseline": {
+      "rev": "tree:core-host-adoption-baseline"
+    },
+    "validAsOf": {
+      "rev": "tree:core-host-adoption-baseline"
+    },
+    "coverage": {
+      "exhaustive": true,
+      "required": [
+        "core-required-check"
+      ],
+      "enrolled": [
+        "core-required-check"
+      ],
+      "ran": [
+        "core-required-check"
+      ],
+      "degraded": []
+    },
+    "authorityEvidence": [
+      {
+        "identity": "core-check-provider",
+        "integrity": "sha256:core-provider",
+        "conformance": "asp-core-v1.0-private",
+        "isolation": "gated",
+        "authority": {
+          "granted": true,
+          "requirement": "core-required-check",
+          "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29"
+        }
+      }
+    ],
+    "providerProvenance": [
+      {
+        "provider": "core-check-provider",
+        "capability": "check",
+        "identity": "core-check-provider",
+        "integrity": "sha256:core-provider",
+        "conformance": "asp-core-v1.0-private"
+      }
+    ],
+    "assurance": {
+      "mode": "gated",
+      "transactionGuarantee": "none"
+    },
+    "kind": "status",
+    "host": {
+      "name": "core-host",
+      "version": "0.1.0-private"
+    },
+    "capabilityFamily": "check",
+    "requestDigest": "sha256:fixture-status-request",
+    "providerIds": [
+      "core-check-provider",
+      "core-required-check"
+    ],
+    "timing": {
+      "startedAt": "2026-06-23T00:00:00Z",
+      "endedAt": "2026-06-23T00:00:00Z",
+      "elapsedMs": 0
+    },
+    "failures": [],
+    "privateOnly": true,
+    "experimental": true,
+    "trustArtifact": false
+  },
+  "capabilitiesReceipt": {
+    "receiptId": "core-host-capabilities-private-adoption-0001",
+    "issuedAt": "2026-06-23T00:00:00Z",
+    "capabilities": {
+      "inspect": false,
+      "check": true,
+      "edit": false
+    },
+    "coverage": {
+      "required": [
+        "core-required-check"
+      ],
+      "enrolled": [
+        "core-required-check"
+      ],
+      "ran": [
+        "core-required-check"
+      ],
+      "degraded": [],
+      "exhaustive": true
+    },
+    "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
+    "baseline": {
+      "rev": "tree:core-host-adoption-baseline"
+    },
+    "validAsOf": {
+      "rev": "tree:core-host-adoption-baseline"
+    },
+    "authorityEvidence": [
+      {
+        "identity": "core-check-provider",
+        "integrity": "sha256:core-provider",
+        "conformance": "asp-core-v1.0-private",
+        "isolation": "gated",
+        "authority": {
+          "granted": true,
+          "requirement": "core-required-check",
+          "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29"
+        }
+      }
+    ],
+    "providerProvenance": [
+      {
+        "provider": "core-check-provider",
+        "capability": "check",
+        "identity": "core-check-provider",
+        "integrity": "sha256:core-provider",
+        "conformance": "asp-core-v1.0-private"
+      }
+    ],
+    "assurance": {
+      "mode": "gated",
+      "transactionGuarantee": "none"
+    },
+    "kind": "capabilities",
+    "host": {
+      "name": "core-host",
+      "version": "0.1.0-private"
+    },
+    "capabilityFamily": "check",
+    "requestDigest": "sha256:fixture-capabilities-request",
+    "providerIds": [
+      "core-check-provider",
+      "core-required-check"
+    ],
+    "timing": {
+      "startedAt": "2026-06-23T00:00:00Z",
+      "endedAt": "2026-06-23T00:00:00Z",
+      "elapsedMs": 0
+    },
+    "failures": [],
+    "privateOnly": true,
+    "experimental": true,
+    "trustArtifact": false
+  },
+  "initializedGrantEvidence": {
+    "provider": "core-check-provider",
+    "grant": {
+      "read": [
+        "**/*"
+      ],
+      "write": false,
+      "network": false,
+      "resourceLimits": {
+        "cpuPct": 50,
+        "memoryMb": 512,
+        "wallclockMs": 3000,
+        "fd": 128
+      }
+    },
+    "callbacks": [
+      "workspace/listTree",
+      "workspace/readBlob"
+    ]
+  },
+  "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
+  "baseline": {
+    "rev": "tree:core-host-adoption-baseline"
+  },
+  "validAsOf": {
+    "rev": "tree:core-host-adoption-baseline",
+    "blobs": [
+      "blob:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "blob:sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    ]
+  },
+  "coverage": {
+    "required": [
+      "core-required-check"
+    ],
+    "ran": [
+      "core-required-check"
+    ],
+    "degraded": [
+      {
+        "source": "core-required-check",
+        "reason": "blocking-diagnostic",
+        "requirement": "core-required-check",
+        "detail": "Required Core check provider reported a gating diagnostic."
+      },
+      {
+        "source": "core-required-check",
+        "reason": "missing-required-provider",
+        "requirement": "core-required-check",
+        "detail": "Required Core check provider is not enrolled."
+      },
+      {
+        "source": "core-required-check",
+        "reason": "missing-authority",
+        "requirement": "core-required-check",
+        "detail": "Required Core check provider lacks explicit authority for the gate requirement."
+      },
+      {
+        "source": "core-required-check",
+        "reason": "insufficient-assurance",
+        "requirement": "core-required-check",
+        "detail": "Core gate requires gated assurance but host achieved advisory assurance."
+      },
+      {
+        "source": "core-required-check",
+        "reason": "quarantined",
+        "requirement": "core-required-check",
+        "detail": "Required Core check provider is quarantined and cannot satisfy gate readiness."
+      },
+      {
+        "source": "core-required-check",
+        "reason": "skewed",
+        "requirement": "core-required-check",
+        "detail": "Required Core check provider enrollment or manifest is incompatible with Core gate requirements."
+      },
+      {
+        "source": "core-required-check",
+        "reason": "skewed",
+        "requirement": "core-required-check",
+        "detail": "Required Core check provider refused initialize protocol version negotiation."
+      },
+      {
+        "source": "core-required-check",
+        "reason": "fail-open",
+        "requirement": "core-required-check",
+        "detail": "Fake provider reported fail-open Core coverage and cannot satisfy a gate."
+      },
+      {
+        "source": "core-required-check",
+        "reason": "stale",
+        "requirement": "core-required-check",
+        "detail": "Provider Assessment freshness does not match the host-issued baseline."
+      },
+      {
+        "source": "core-required-check",
+        "reason": "malformed",
+        "requirement": "core-required-check",
+        "detail": "Provider output contains host-owned fields or does not satisfy the Assessment contract."
+      },
+      {
+        "source": "core-required-check",
+        "reason": "unsupported",
+        "requirement": "core-required-check",
+        "detail": "Required provider does not support the requested Core check coverage."
+      },
+      {
+        "source": "core-required-check",
+        "reason": "incomplete",
+        "requirement": "core-required-check",
+        "detail": "Required provider did not report complete Core coverage."
+      },
+      {
+        "source": "core-required-check",
+        "reason": "cancelled",
+        "requirement": "core-required-check",
+        "detail": "Required provider evaluation was cancelled before terminal coverage."
+      },
+      {
+        "source": "core-required-check",
+        "reason": "error",
+        "requirement": "core-required-check",
+        "detail": "Required provider reported a typed error."
+      },
+      {
+        "source": "core-required-check",
+        "reason": "timed-out",
+        "requirement": "core-required-check",
+        "detail": "Required provider exceeded the gate budget."
+      }
+    ]
+  },
+  "authorityEvidence": [
+    {
+      "identity": "core-check-provider",
+      "integrity": "sha256:core-provider",
+      "conformance": "asp-core-v1.0-private",
+      "isolation": "gated",
+      "authority": {
+        "granted": true,
+        "requirement": "core-required-check",
+        "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29"
+      }
+    }
+  ],
+  "assurance": {
+    "mode": "gated",
+    "transactionGuarantee": "none"
+  },
+  "decisions": {
+    "allow": {
+      "pass": true,
+      "decision": "allow",
+      "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
+      "coverage": {
+        "exhaustive": true,
+        "required": [
+          "core-required-check"
+        ],
+        "enrolled": [
+          "core-required-check"
+        ],
+        "ran": [
+          "core-required-check"
+        ],
+        "degraded": []
+      },
+      "validAsOf": {
+        "rev": "tree:core-host-adoption-baseline",
+        "blobs": [
+          "blob:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "blob:sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        ]
+      },
+      "authorityEvidence": [
+        {
+          "identity": "core-check-provider",
+          "integrity": "sha256:core-provider",
+          "conformance": "asp-core-v1.0-private",
+          "isolation": "gated",
+          "authority": {
+            "granted": true,
+            "requirement": "core-required-check",
+            "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29"
+          }
+        }
+      ],
+      "assurance": {
+        "mode": "gated",
+        "transactionGuarantee": "none"
+      },
+      "receipt": {
+        "receiptId": "core-evaluate-allow-private-adoption-0001",
+        "issuedAt": "2026-06-23T00:00:00Z",
+        "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
+        "baseline": {
+          "rev": "tree:core-host-adoption-baseline"
+        },
+        "validAsOf": {
+          "rev": "tree:core-host-adoption-baseline",
+          "blobs": [
+            "blob:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "blob:sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          ]
+        },
+        "coverage": {
+          "exhaustive": true,
+          "required": [
+            "core-required-check"
+          ],
+          "enrolled": [
+            "core-required-check"
+          ],
+          "ran": [
+            "core-required-check"
+          ],
+          "degraded": []
+        },
+        "authorityEvidence": [
+          {
+            "identity": "core-check-provider",
+            "integrity": "sha256:core-provider",
+            "conformance": "asp-core-v1.0-private",
+            "isolation": "gated",
+            "authority": {
+              "granted": true,
+              "requirement": "core-required-check",
+              "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29"
+            }
+          }
+        ],
+        "providerProvenance": [
+          {
+            "provider": "core-check-provider",
+            "capability": "check",
+            "identity": "core-check-provider",
+            "integrity": "sha256:core-provider",
+            "conformance": "asp-core-v1.0-private"
+          }
+        ],
+        "assurance": {
+          "mode": "gated",
+          "transactionGuarantee": "none"
+        },
+        "kind": "evaluate",
+        "host": {
+          "name": "core-host",
+          "version": "0.1.0-private"
+        },
+        "capabilityFamily": "check",
+        "callSite": "gate",
+        "requestDigest": "sha256:fixture-evaluate-allow",
+        "changesetDigest": "sha256:fixture-changeset-allow",
+        "providerIds": [
+          "core-check-provider",
+          "core-required-check"
+        ],
+        "timing": {
+          "startedAt": "2026-06-23T00:00:00Z",
+          "endedAt": "2026-06-23T00:00:00Z",
+          "elapsedMs": 0
+        },
+        "failures": [],
+        "privateOnly": true,
+        "experimental": true,
+        "trustArtifact": false
+      },
+      "callSite": "gate",
+      "requestDigest": "sha256:fixture-evaluate-allow",
+      "changesetDigest": "sha256:fixture-changeset-allow"
+    },
+    "deny": {
+      "pass": false,
+      "decision": "deny",
+      "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
+      "findingDisposition": "gating",
+      "coverage": {
+        "exhaustive": false,
+        "required": [
+          "core-required-check"
+        ],
+        "enrolled": [
+          "core-required-check"
+        ],
+        "ran": [
+          "core-required-check"
+        ],
+        "degraded": [
+          {
+            "source": "core-required-check",
+            "reason": "blocking-diagnostic",
+            "requirement": "core-required-check",
+            "detail": "Required Core check provider reported a gating diagnostic."
+          }
+        ]
+      },
+      "receipt": {
+        "receiptId": "core-evaluate-deny-private-adoption-0001",
+        "issuedAt": "2026-06-23T00:00:00Z",
+        "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
+        "baseline": {
+          "rev": "tree:core-host-adoption-baseline"
+        },
+        "validAsOf": {
+          "rev": "tree:core-host-adoption-baseline",
+          "blobs": [
+            "blob:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "blob:sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          ]
+        },
+        "coverage": {
+          "exhaustive": false,
+          "required": [
+            "core-required-check"
+          ],
+          "enrolled": [
+            "core-required-check"
+          ],
+          "ran": [
+            "core-required-check"
+          ],
+          "degraded": [
+            {
+              "source": "core-required-check",
+              "reason": "blocking-diagnostic",
+              "requirement": "core-required-check",
+              "detail": "Required Core check provider reported a gating diagnostic."
+            }
+          ]
+        },
+        "authorityEvidence": [
+          {
+            "identity": "core-check-provider",
+            "integrity": "sha256:core-provider",
+            "conformance": "asp-core-v1.0-private",
+            "isolation": "gated",
+            "authority": {
+              "granted": true,
+              "requirement": "core-required-check",
+              "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29"
+            }
+          }
+        ],
+        "providerProvenance": [
+          {
+            "provider": "core-check-provider",
+            "capability": "check",
+            "identity": "core-check-provider",
+            "integrity": "sha256:core-provider",
+            "conformance": "asp-core-v1.0-private"
+          }
+        ],
+        "assurance": {
+          "mode": "gated",
+          "transactionGuarantee": "none"
+        },
+        "kind": "evaluate",
+        "host": {
+          "name": "core-host",
+          "version": "0.1.0-private"
+        },
+        "capabilityFamily": "check",
+        "callSite": "gate",
+        "requestDigest": "sha256:fixture-evaluate-deny",
+        "changesetDigest": "sha256:fixture-changeset-deny",
+        "providerIds": [
+          "core-check-provider",
+          "core-required-check"
+        ],
+        "timing": {
+          "startedAt": "2026-06-23T00:00:00Z",
+          "endedAt": "2026-06-23T00:00:00Z",
+          "elapsedMs": 0
+        },
+        "failures": [
+          {
+            "source": "core-required-check",
+            "reason": "blocking-diagnostic",
+            "requirement": "core-required-check",
+            "detail": "Required Core check provider reported a gating diagnostic."
+          }
+        ],
+        "privateOnly": true,
+        "experimental": true,
+        "trustArtifact": false
+      },
+      "callSite": "gate",
+      "requestDigest": "sha256:fixture-evaluate-deny",
+      "changesetDigest": "sha256:fixture-changeset-deny",
+      "validAsOf": {
+        "rev": "tree:core-host-adoption-baseline",
+        "blobs": [
+          "blob:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "blob:sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        ]
+      },
+      "authorityEvidence": [
+        {
+          "identity": "core-check-provider",
+          "integrity": "sha256:core-provider",
+          "conformance": "asp-core-v1.0-private",
+          "isolation": "gated",
+          "authority": {
+            "granted": true,
+            "requirement": "core-required-check",
+            "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29"
+          }
+        }
+      ],
+      "assurance": {
+        "mode": "gated",
+        "transactionGuarantee": "none"
+      }
+    },
+    "negative": [
+      {
+        "case": "missing-provider",
+        "pass": false,
+        "decision": "indeterminate",
+        "coverage": {
+          "exhaustive": false,
+          "required": [
+            "core-required-check"
+          ],
+          "enrolled": [
+            "core-required-check"
+          ],
+          "ran": [],
+          "degraded": [
+            {
+              "source": "core-required-check",
+              "reason": "missing-required-provider",
+              "requirement": "core-required-check",
+              "detail": "Required Core check provider is not enrolled."
+            }
+          ]
+        },
+        "receipt": {
+          "receiptId": "core-evaluate-missing-provider-private-adoption-0001",
+          "issuedAt": "2026-06-23T00:00:00Z",
+          "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
+          "baseline": {
+            "rev": "tree:core-host-adoption-baseline"
+          },
+          "validAsOf": {
+            "rev": "tree:core-host-adoption-baseline"
+          },
+          "coverage": {
+            "exhaustive": false,
+            "required": [
+              "core-required-check"
+            ],
+            "enrolled": [
+              "core-required-check"
+            ],
+            "ran": [],
+            "degraded": [
+              {
+                "source": "core-required-check",
+                "reason": "missing-required-provider",
+                "requirement": "core-required-check",
+                "detail": "Required Core check provider is not enrolled."
+              }
+            ]
+          },
+          "authorityEvidence": [],
+          "providerProvenance": [],
+          "assurance": {
+            "mode": "gated",
+            "transactionGuarantee": "none"
+          },
+          "kind": "evaluate",
+          "host": {
+            "name": "core-host",
+            "version": "0.1.0-private"
+          },
+          "capabilityFamily": "check",
+          "callSite": "gate",
+          "requestDigest": "sha256:fixture-evaluate-missing-provider",
+          "changesetDigest": "sha256:fixture-changeset-missing-provider",
+          "providerIds": [],
+          "timing": {
+            "startedAt": "2026-06-23T00:00:00Z",
+            "endedAt": "2026-06-23T00:00:00Z",
+            "elapsedMs": 0
+          },
+          "failures": [
+            {
+              "source": "core-required-check",
+              "reason": "missing-required-provider",
+              "requirement": "core-required-check",
+              "detail": "Required Core check provider is not enrolled."
+            }
+          ],
+          "privateOnly": true,
+          "experimental": true,
+          "trustArtifact": false
+        },
+        "callSite": "gate",
+        "requestDigest": "sha256:fixture-evaluate-missing-provider",
+        "changesetDigest": "sha256:fixture-changeset-missing-provider",
+        "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
+        "validAsOf": {
+          "rev": "tree:core-host-adoption-baseline"
+        },
+        "authorityEvidence": [],
+        "assurance": {
+          "mode": "gated",
+          "transactionGuarantee": "none"
+        }
+      },
+      {
+        "case": "missing-authority",
+        "pass": false,
+        "decision": "indeterminate",
+        "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
+        "validAsOf": {
+          "rev": "tree:core-host-adoption-baseline",
+          "blobs": [
+            "blob:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "blob:sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          ]
+        },
+        "coverage": {
+          "exhaustive": false,
+          "required": [
+            "core-required-check"
+          ],
+          "enrolled": [
+            "core-required-check"
+          ],
+          "ran": [
+            "core-required-check"
+          ],
+          "degraded": [
+            {
+              "source": "core-required-check",
+              "reason": "missing-authority",
+              "requirement": "core-required-check",
+              "detail": "Required Core check provider lacks explicit authority for the gate requirement."
+            }
+          ]
+        },
+        "authorityEvidence": [
+          {
+            "identity": "core-check-provider",
+            "integrity": "sha256:core-provider",
+            "conformance": "asp-core-v1.0-private",
+            "isolation": "gated",
+            "authority": {
+              "granted": false,
+              "requirement": "core-required-check",
+              "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29"
+            }
+          }
+        ],
+        "assurance": {
+          "mode": "gated",
+          "transactionGuarantee": "none"
+        },
+        "receipt": {
+          "receiptId": "core-evaluate-missing-authority-private-adoption-0001",
+          "issuedAt": "2026-06-23T00:00:00Z",
+          "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
+          "baseline": {
+            "rev": "tree:core-host-adoption-baseline"
+          },
+          "validAsOf": {
+            "rev": "tree:core-host-adoption-baseline",
+            "blobs": [
+              "blob:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "blob:sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            ]
+          },
+          "coverage": {
+            "exhaustive": false,
+            "required": [
+              "core-required-check"
+            ],
+            "enrolled": [
+              "core-required-check"
+            ],
+            "ran": [
+              "core-required-check"
+            ],
+            "degraded": [
+              {
+                "source": "core-required-check",
+                "reason": "missing-authority",
+                "requirement": "core-required-check",
+                "detail": "Required Core check provider lacks explicit authority for the gate requirement."
+              }
+            ]
+          },
+          "authorityEvidence": [
+            {
+              "identity": "core-check-provider",
+              "integrity": "sha256:core-provider",
+              "conformance": "asp-core-v1.0-private",
+              "isolation": "gated",
+              "authority": {
+                "granted": false,
+                "requirement": "core-required-check",
+                "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29"
+              }
+            }
+          ],
+          "providerProvenance": [
+            {
+              "provider": "core-check-provider",
+              "capability": "check",
+              "identity": "core-check-provider",
+              "integrity": "sha256:core-provider",
+              "conformance": "asp-core-v1.0-private"
+            }
+          ],
+          "assurance": {
+            "mode": "gated",
+            "transactionGuarantee": "none"
+          },
+          "kind": "evaluate",
+          "host": {
+            "name": "core-host",
+            "version": "0.1.0-private"
+          },
+          "capabilityFamily": "check",
+          "callSite": "gate",
+          "requestDigest": "sha256:fixture-evaluate-missing-authority",
+          "changesetDigest": "sha256:fixture-changeset-missing-authority",
+          "providerIds": [
+            "core-check-provider",
+            "core-required-check"
+          ],
+          "timing": {
+            "startedAt": "2026-06-23T00:00:00Z",
+            "endedAt": "2026-06-23T00:00:00Z",
+            "elapsedMs": 0
+          },
+          "failures": [
+            {
+              "source": "core-required-check",
+              "reason": "missing-authority",
+              "requirement": "core-required-check",
+              "detail": "Required Core check provider lacks explicit authority for the gate requirement."
+            }
+          ],
+          "privateOnly": true,
+          "experimental": true,
+          "trustArtifact": false
+        },
+        "callSite": "gate",
+        "requestDigest": "sha256:fixture-evaluate-missing-authority",
+        "changesetDigest": "sha256:fixture-changeset-missing-authority"
+      },
+      {
+        "case": "insufficient-assurance",
+        "pass": false,
+        "decision": "indeterminate",
+        "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
+        "validAsOf": {
+          "rev": "tree:core-host-adoption-baseline",
+          "blobs": [
+            "blob:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "blob:sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          ]
+        },
+        "coverage": {
+          "exhaustive": false,
+          "required": [
+            "core-required-check"
+          ],
+          "enrolled": [
+            "core-required-check"
+          ],
+          "ran": [
+            "core-required-check"
+          ],
+          "degraded": [
+            {
+              "source": "core-required-check",
+              "reason": "insufficient-assurance",
+              "requirement": "core-required-check",
+              "detail": "Core gate requires gated assurance but host achieved advisory assurance."
+            }
+          ]
+        },
+        "authorityEvidence": [
+          {
+            "identity": "core-check-provider",
+            "integrity": "sha256:core-provider",
+            "conformance": "asp-core-v1.0-private",
+            "isolation": "advisory",
+            "authority": {
+              "granted": true,
+              "requirement": "core-required-check",
+              "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29"
+            }
+          }
+        ],
+        "assurance": {
+          "mode": "advisory",
+          "transactionGuarantee": "none",
+          "detail": "Core gate requires gated assurance but host achieved advisory assurance."
+        },
+        "receipt": {
+          "receiptId": "core-evaluate-insufficient-assurance-private-adoption-0001",
+          "issuedAt": "2026-06-23T00:00:00Z",
+          "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
+          "baseline": {
+            "rev": "tree:core-host-adoption-baseline"
+          },
+          "validAsOf": {
+            "rev": "tree:core-host-adoption-baseline",
+            "blobs": [
+              "blob:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "blob:sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            ]
+          },
+          "coverage": {
+            "exhaustive": false,
+            "required": [
+              "core-required-check"
+            ],
+            "enrolled": [
+              "core-required-check"
+            ],
+            "ran": [
+              "core-required-check"
+            ],
+            "degraded": [
+              {
+                "source": "core-required-check",
+                "reason": "insufficient-assurance",
+                "requirement": "core-required-check",
+                "detail": "Core gate requires gated assurance but host achieved advisory assurance."
+              }
+            ]
+          },
+          "authorityEvidence": [
+            {
+              "identity": "core-check-provider",
+              "integrity": "sha256:core-provider",
+              "conformance": "asp-core-v1.0-private",
+              "isolation": "advisory",
+              "authority": {
+                "granted": true,
+                "requirement": "core-required-check",
+                "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29"
+              }
+            }
+          ],
+          "providerProvenance": [
+            {
+              "provider": "core-check-provider",
+              "capability": "check",
+              "identity": "core-check-provider",
+              "integrity": "sha256:core-provider",
+              "conformance": "asp-core-v1.0-private"
+            }
+          ],
+          "assurance": {
+            "mode": "advisory",
+            "transactionGuarantee": "none",
+            "detail": "Core gate requires gated assurance but host achieved advisory assurance."
+          },
+          "kind": "evaluate",
+          "host": {
+            "name": "core-host",
+            "version": "0.1.0-private"
+          },
+          "capabilityFamily": "check",
+          "callSite": "gate",
+          "requestDigest": "sha256:fixture-evaluate-insufficient-assurance",
+          "changesetDigest": "sha256:fixture-changeset-insufficient-assurance",
+          "providerIds": [
+            "core-check-provider",
+            "core-required-check"
+          ],
+          "timing": {
+            "startedAt": "2026-06-23T00:00:00Z",
+            "endedAt": "2026-06-23T00:00:00Z",
+            "elapsedMs": 0
+          },
+          "failures": [
+            {
+              "source": "core-required-check",
+              "reason": "insufficient-assurance",
+              "requirement": "core-required-check",
+              "detail": "Core gate requires gated assurance but host achieved advisory assurance."
+            }
+          ],
+          "privateOnly": true,
+          "experimental": true,
+          "trustArtifact": false
+        },
+        "callSite": "gate",
+        "requestDigest": "sha256:fixture-evaluate-insufficient-assurance",
+        "changesetDigest": "sha256:fixture-changeset-insufficient-assurance"
+      },
+      {
+        "case": "quarantined",
+        "pass": false,
+        "decision": "indeterminate",
+        "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
+        "validAsOf": {
+          "rev": "tree:core-host-adoption-baseline"
+        },
+        "coverage": {
+          "exhaustive": false,
+          "required": [
+            "core-required-check"
+          ],
+          "enrolled": [
+            "core-required-check"
+          ],
+          "ran": [],
+          "degraded": [
+            {
+              "source": "core-required-check",
+              "reason": "quarantined",
+              "requirement": "core-required-check",
+              "detail": "Required Core check provider is quarantined and cannot satisfy gate readiness."
+            }
+          ]
+        },
+        "authorityEvidence": [],
+        "assurance": {
+          "mode": "gated",
+          "transactionGuarantee": "none"
+        },
+        "receipt": {
+          "receiptId": "core-evaluate-quarantined-private-adoption-0001",
+          "issuedAt": "2026-06-23T00:00:00Z",
+          "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
+          "baseline": {
+            "rev": "tree:core-host-adoption-baseline"
+          },
+          "validAsOf": {
+            "rev": "tree:core-host-adoption-baseline"
+          },
+          "coverage": {
+            "exhaustive": false,
+            "required": [
+              "core-required-check"
+            ],
+            "enrolled": [
+              "core-required-check"
+            ],
+            "ran": [],
+            "degraded": [
+              {
+                "source": "core-required-check",
+                "reason": "quarantined",
+                "requirement": "core-required-check",
+                "detail": "Required Core check provider is quarantined and cannot satisfy gate readiness."
+              }
+            ]
+          },
+          "authorityEvidence": [],
+          "providerProvenance": [],
+          "assurance": {
+            "mode": "gated",
+            "transactionGuarantee": "none"
+          },
+          "kind": "evaluate",
+          "host": {
+            "name": "core-host",
+            "version": "0.1.0-private"
+          },
+          "capabilityFamily": "check",
+          "callSite": "gate",
+          "requestDigest": "sha256:fixture-evaluate-quarantined",
+          "changesetDigest": "sha256:fixture-changeset-quarantined",
+          "providerIds": [],
+          "timing": {
+            "startedAt": "2026-06-23T00:00:00Z",
+            "endedAt": "2026-06-23T00:00:00Z",
+            "elapsedMs": 0
+          },
+          "failures": [
+            {
+              "source": "core-required-check",
+              "reason": "quarantined",
+              "requirement": "core-required-check",
+              "detail": "Required Core check provider is quarantined and cannot satisfy gate readiness."
+            }
+          ],
+          "privateOnly": true,
+          "experimental": true,
+          "trustArtifact": false
+        },
+        "callSite": "gate",
+        "requestDigest": "sha256:fixture-evaluate-quarantined",
+        "changesetDigest": "sha256:fixture-changeset-quarantined"
+      },
+      {
+        "case": "skewed",
+        "pass": false,
+        "decision": "indeterminate",
+        "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
+        "validAsOf": {
+          "rev": "tree:core-host-adoption-baseline"
+        },
+        "coverage": {
+          "exhaustive": false,
+          "required": [
+            "core-required-check"
+          ],
+          "enrolled": [
+            "core-required-check"
+          ],
+          "ran": [],
+          "degraded": [
+            {
+              "source": "core-required-check",
+              "reason": "skewed",
+              "requirement": "core-required-check",
+              "detail": "Required Core check provider enrollment or manifest is incompatible with Core gate requirements."
+            }
+          ]
+        },
+        "authorityEvidence": [],
+        "assurance": {
+          "mode": "gated",
+          "transactionGuarantee": "none"
+        },
+        "receipt": {
+          "receiptId": "core-evaluate-skewed-private-adoption-0001",
+          "issuedAt": "2026-06-23T00:00:00Z",
+          "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
+          "baseline": {
+            "rev": "tree:core-host-adoption-baseline"
+          },
+          "validAsOf": {
+            "rev": "tree:core-host-adoption-baseline"
+          },
+          "coverage": {
+            "exhaustive": false,
+            "required": [
+              "core-required-check"
+            ],
+            "enrolled": [
+              "core-required-check"
+            ],
+            "ran": [],
+            "degraded": [
+              {
+                "source": "core-required-check",
+                "reason": "skewed",
+                "requirement": "core-required-check",
+                "detail": "Required Core check provider enrollment or manifest is incompatible with Core gate requirements."
+              }
+            ]
+          },
+          "authorityEvidence": [],
+          "providerProvenance": [],
+          "assurance": {
+            "mode": "gated",
+            "transactionGuarantee": "none"
+          },
+          "kind": "evaluate",
+          "host": {
+            "name": "core-host",
+            "version": "0.1.0-private"
+          },
+          "capabilityFamily": "check",
+          "callSite": "gate",
+          "requestDigest": "sha256:fixture-evaluate-skewed",
+          "changesetDigest": "sha256:fixture-changeset-skewed",
+          "providerIds": [],
+          "timing": {
+            "startedAt": "2026-06-23T00:00:00Z",
+            "endedAt": "2026-06-23T00:00:00Z",
+            "elapsedMs": 0
+          },
+          "failures": [
+            {
+              "source": "core-required-check",
+              "reason": "skewed",
+              "requirement": "core-required-check",
+              "detail": "Required Core check provider enrollment or manifest is incompatible with Core gate requirements."
+            }
+          ],
+          "privateOnly": true,
+          "experimental": true,
+          "trustArtifact": false
+        },
+        "callSite": "gate",
+        "requestDigest": "sha256:fixture-evaluate-skewed",
+        "changesetDigest": "sha256:fixture-changeset-skewed"
+      },
+      {
+        "case": "initialize-contract-refusal",
+        "pass": false,
+        "decision": "indeterminate",
+        "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
+        "validAsOf": {
+          "rev": "tree:core-host-adoption-baseline"
+        },
+        "coverage": {
+          "exhaustive": false,
+          "required": [
+            "core-required-check"
+          ],
+          "enrolled": [
+            "core-required-check"
+          ],
+          "ran": [],
+          "degraded": [
+            {
+              "source": "core-required-check",
+              "reason": "skewed",
+              "requirement": "core-required-check",
+              "detail": "Required Core check provider refused initialize protocol version negotiation."
+            }
+          ]
+        },
+        "authorityEvidence": [],
+        "assurance": {
+          "mode": "gated",
+          "transactionGuarantee": "none"
+        },
+        "receipt": {
+          "receiptId": "core-evaluate-initialize-contract-refusal-private-adoption-0001",
+          "issuedAt": "2026-06-23T00:00:00Z",
+          "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
+          "baseline": {
+            "rev": "tree:core-host-adoption-baseline"
+          },
+          "validAsOf": {
+            "rev": "tree:core-host-adoption-baseline"
+          },
+          "coverage": {
+            "exhaustive": false,
+            "required": [
+              "core-required-check"
+            ],
+            "enrolled": [
+              "core-required-check"
+            ],
+            "ran": [],
+            "degraded": [
+              {
+                "source": "core-required-check",
+                "reason": "skewed",
+                "requirement": "core-required-check",
+                "detail": "Required Core check provider refused initialize protocol version negotiation."
+              }
+            ]
+          },
+          "authorityEvidence": [],
+          "providerProvenance": [],
+          "assurance": {
+            "mode": "gated",
+            "transactionGuarantee": "none"
+          },
+          "kind": "evaluate",
+          "host": {
+            "name": "core-host",
+            "version": "0.1.0-private"
+          },
+          "capabilityFamily": "check",
+          "callSite": "gate",
+          "requestDigest": "sha256:fixture-evaluate-initialize-contract-refusal",
+          "changesetDigest": "sha256:fixture-changeset-initialize-contract-refusal",
+          "providerIds": [],
+          "timing": {
+            "startedAt": "2026-06-23T00:00:00Z",
+            "endedAt": "2026-06-23T00:00:00Z",
+            "elapsedMs": 0
+          },
+          "failures": [
+            {
+              "source": "core-required-check",
+              "reason": "skewed",
+              "requirement": "core-required-check",
+              "detail": "Required Core check provider refused initialize protocol version negotiation."
+            }
+          ],
+          "privateOnly": true,
+          "experimental": true,
+          "trustArtifact": false
+        },
+        "callSite": "gate",
+        "requestDigest": "sha256:fixture-evaluate-initialize-contract-refusal",
+        "changesetDigest": "sha256:fixture-changeset-initialize-contract-refusal"
+      },
+      {
+        "case": "fail-open",
+        "pass": false,
+        "decision": "indeterminate",
+        "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
+        "validAsOf": {
+          "rev": "tree:core-host-adoption-baseline",
+          "blobs": [
+            "blob:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "blob:sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          ]
+        },
+        "coverage": {
+          "exhaustive": false,
+          "required": [
+            "core-required-check"
+          ],
+          "enrolled": [
+            "core-required-check"
+          ],
+          "ran": [
+            "core-required-check"
+          ],
+          "degraded": [
+            {
+              "source": "core-required-check",
+              "reason": "fail-open",
+              "requirement": "core-required-check",
+              "detail": "Fake provider reported fail-open Core coverage and cannot satisfy a gate."
+            }
+          ]
+        },
+        "authorityEvidence": [
+          {
+            "identity": "core-check-provider",
+            "integrity": "sha256:core-provider",
+            "conformance": "asp-core-v1.0-private",
+            "isolation": "gated",
+            "authority": {
+              "granted": true,
+              "requirement": "core-required-check",
+              "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29"
+            }
+          }
+        ],
+        "assurance": {
+          "mode": "gated",
+          "transactionGuarantee": "none"
+        },
+        "receipt": {
+          "receiptId": "core-evaluate-fail-open-private-adoption-0001",
+          "issuedAt": "2026-06-23T00:00:00Z",
+          "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
+          "baseline": {
+            "rev": "tree:core-host-adoption-baseline"
+          },
+          "validAsOf": {
+            "rev": "tree:core-host-adoption-baseline",
+            "blobs": [
+              "blob:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "blob:sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            ]
+          },
+          "coverage": {
+            "exhaustive": false,
+            "required": [
+              "core-required-check"
+            ],
+            "enrolled": [
+              "core-required-check"
+            ],
+            "ran": [
+              "core-required-check"
+            ],
+            "degraded": [
+              {
+                "source": "core-required-check",
+                "reason": "fail-open",
+                "requirement": "core-required-check",
+                "detail": "Fake provider reported fail-open Core coverage and cannot satisfy a gate."
+              }
+            ]
+          },
+          "authorityEvidence": [
+            {
+              "identity": "core-check-provider",
+              "integrity": "sha256:core-provider",
+              "conformance": "asp-core-v1.0-private",
+              "isolation": "gated",
+              "authority": {
+                "granted": true,
+                "requirement": "core-required-check",
+                "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29"
+              }
+            }
+          ],
+          "providerProvenance": [
+            {
+              "provider": "core-check-provider",
+              "capability": "check",
+              "identity": "core-check-provider",
+              "integrity": "sha256:core-provider",
+              "conformance": "asp-core-v1.0-private"
+            }
+          ],
+          "assurance": {
+            "mode": "gated",
+            "transactionGuarantee": "none"
+          },
+          "kind": "evaluate",
+          "host": {
+            "name": "core-host",
+            "version": "0.1.0-private"
+          },
+          "capabilityFamily": "check",
+          "callSite": "gate",
+          "requestDigest": "sha256:fixture-evaluate-fail-open",
+          "changesetDigest": "sha256:fixture-changeset-fail-open",
+          "providerIds": [
+            "core-check-provider",
+            "core-required-check"
+          ],
+          "timing": {
+            "startedAt": "2026-06-23T00:00:00Z",
+            "endedAt": "2026-06-23T00:00:00Z",
+            "elapsedMs": 0
+          },
+          "failures": [
+            {
+              "source": "core-required-check",
+              "reason": "fail-open",
+              "requirement": "core-required-check",
+              "detail": "Fake provider reported fail-open Core coverage and cannot satisfy a gate."
+            }
+          ],
+          "privateOnly": true,
+          "experimental": true,
+          "trustArtifact": false
+        },
+        "callSite": "gate",
+        "requestDigest": "sha256:fixture-evaluate-fail-open",
+        "changesetDigest": "sha256:fixture-changeset-fail-open"
+      },
+      {
+        "case": "malformed-provider-output",
+        "pass": false,
+        "decision": "indeterminate",
+        "coverage": {
+          "exhaustive": false,
+          "required": [
+            "core-required-check"
+          ],
+          "enrolled": [
+            "core-required-check"
+          ],
+          "ran": [],
+          "degraded": [
+            {
+              "source": "core-required-check",
+              "reason": "malformed",
+              "requirement": "core-required-check",
+              "detail": "Provider output contains host-owned fields."
+            }
+          ]
+        },
+        "receipt": {
+          "receiptId": "core-evaluate-malformed-private-adoption-0001",
+          "issuedAt": "2026-06-23T00:00:00Z",
+          "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
+          "baseline": {
+            "rev": "tree:core-host-adoption-baseline"
+          },
+          "validAsOf": {
+            "rev": "tree:core-host-adoption-baseline"
+          },
+          "coverage": {
+            "exhaustive": false,
+            "required": [
+              "core-required-check"
+            ],
+            "enrolled": [
+              "core-required-check"
+            ],
+            "ran": [],
+            "degraded": [
+              {
+                "source": "core-required-check",
+                "reason": "malformed",
+                "requirement": "core-required-check",
+                "detail": "Provider output contains host-owned fields."
+              }
+            ]
+          },
+          "authorityEvidence": [],
+          "providerProvenance": [],
+          "assurance": {
+            "mode": "gated",
+            "transactionGuarantee": "none"
+          },
+          "kind": "evaluate",
+          "host": {
+            "name": "core-host",
+            "version": "0.1.0-private"
+          },
+          "capabilityFamily": "check",
+          "callSite": "gate",
+          "requestDigest": "sha256:fixture-evaluate-malformed-provider-output",
+          "changesetDigest": "sha256:fixture-changeset-malformed-provider-output",
+          "providerIds": [],
+          "timing": {
+            "startedAt": "2026-06-23T00:00:00Z",
+            "endedAt": "2026-06-23T00:00:00Z",
+            "elapsedMs": 0
+          },
+          "failures": [
+            {
+              "source": "core-required-check",
+              "reason": "malformed",
+              "requirement": "core-required-check",
+              "detail": "Provider output contains host-owned fields."
+            }
+          ],
+          "privateOnly": true,
+          "experimental": true,
+          "trustArtifact": false
+        },
+        "callSite": "gate",
+        "requestDigest": "sha256:fixture-evaluate-malformed-provider-output",
+        "changesetDigest": "sha256:fixture-changeset-malformed-provider-output",
+        "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
+        "validAsOf": {
+          "rev": "tree:core-host-adoption-baseline"
+        },
+        "authorityEvidence": [],
+        "assurance": {
+          "mode": "gated",
+          "transactionGuarantee": "none"
+        }
+      },
+      {
+        "case": "stale",
+        "pass": false,
+        "decision": "indeterminate",
+        "callSite": "gate",
+        "requestDigest": "sha256:fixture-evaluate-stale",
+        "changesetDigest": "sha256:fixture-changeset-stale",
+        "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
+        "validAsOf": {
+          "rev": "tree:core-host-adoption-baseline",
+          "blobs": [
+            "blob:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "blob:sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          ]
+        },
+        "coverage": {
+          "required": [
+            "core-required-check"
+          ],
+          "enrolled": [
+            "core-required-check"
+          ],
+          "ran": [
+            "core-required-check"
+          ],
+          "degraded": [
+            {
+              "source": "core-required-check",
+              "reason": "stale",
+              "requirement": "core-required-check",
+              "detail": "Provider Assessment freshness does not match the host-issued baseline."
+            }
+          ],
+          "exhaustive": false
+        },
+        "authorityEvidence": [
+          {
+            "identity": "core-check-provider",
+            "integrity": "sha256:core-provider",
+            "conformance": "asp-core-v1.0-private",
+            "isolation": "gated",
+            "authority": {
+              "granted": true,
+              "requirement": "core-required-check",
+              "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29"
+            }
+          }
+        ],
+        "assurance": {
+          "mode": "gated",
+          "transactionGuarantee": "none"
+        },
+        "receipt": {
+          "providerProvenance": [
+            {
+              "provider": "core-check-provider",
+              "capability": "check",
+              "identity": "core-check-provider",
+              "integrity": "sha256:core-provider",
+              "conformance": "asp-core-v1.0-private"
+            }
+          ],
+          "kind": "evaluate",
+          "host": {
+            "name": "core-host",
+            "version": "0.1.0-private"
+          },
+          "capabilityFamily": "check",
+          "callSite": "gate",
+          "requestDigest": "sha256:fixture-evaluate-stale",
+          "changesetDigest": "sha256:fixture-changeset-stale",
+          "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
+          "baseline": {
+            "rev": "tree:core-host-adoption-baseline"
+          },
+          "validAsOf": {
+            "rev": "tree:core-host-adoption-baseline",
+            "blobs": [
+              "blob:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "blob:sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            ]
+          },
+          "coverage": {
+            "required": [
+              "core-required-check"
+            ],
+            "enrolled": [
+              "core-required-check"
+            ],
+            "ran": [
+              "core-required-check"
+            ],
+            "degraded": [
+              {
+                "source": "core-required-check",
+                "reason": "stale",
+                "requirement": "core-required-check",
+                "detail": "Provider Assessment freshness does not match the host-issued baseline."
+              }
+            ],
+            "exhaustive": false
+          },
+          "authorityEvidence": [
+            {
+              "identity": "core-check-provider",
+              "integrity": "sha256:core-provider",
+              "conformance": "asp-core-v1.0-private",
+              "isolation": "gated",
+              "authority": {
+                "granted": true,
+                "requirement": "core-required-check",
+                "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29"
+              }
+            }
+          ],
+          "providerIds": [
+            "core-check-provider",
+            "core-required-check"
+          ],
+          "assurance": {
+            "mode": "gated",
+            "transactionGuarantee": "none"
+          },
+          "timing": {
+            "startedAt": "2026-06-23T00:00:00Z",
+            "endedAt": "2026-06-23T00:00:00Z",
+            "elapsedMs": 0
+          },
+          "failures": [
+            {
+              "source": "core-required-check",
+              "reason": "stale",
+              "requirement": "core-required-check",
+              "detail": "Provider Assessment freshness does not match the host-issued baseline."
+            }
+          ],
+          "privateOnly": true,
+          "experimental": true,
+          "trustArtifact": false,
+          "receiptId": "core-evaluate-stale-private-adoption-0001",
+          "issuedAt": "2026-06-23T00:00:00Z"
+        }
+      },
+      {
+        "case": "unsupported",
+        "pass": false,
+        "decision": "indeterminate",
+        "callSite": "gate",
+        "requestDigest": "sha256:fixture-evaluate-unsupported",
+        "changesetDigest": "sha256:fixture-changeset-unsupported",
+        "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
+        "validAsOf": {
+          "rev": "tree:core-host-adoption-baseline",
+          "blobs": [
+            "blob:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "blob:sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          ]
+        },
+        "coverage": {
+          "required": [
+            "core-required-check"
+          ],
+          "enrolled": [
+            "core-required-check"
+          ],
+          "ran": [
+            "core-required-check"
+          ],
+          "degraded": [
+            {
+              "source": "core-required-check",
+              "reason": "unsupported",
+              "requirement": "core-required-check",
+              "detail": "Required provider does not support the requested Core check coverage."
+            }
+          ],
+          "exhaustive": false
+        },
+        "authorityEvidence": [
+          {
+            "identity": "core-check-provider",
+            "integrity": "sha256:core-provider",
+            "conformance": "asp-core-v1.0-private",
+            "isolation": "gated",
+            "authority": {
+              "granted": true,
+              "requirement": "core-required-check",
+              "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29"
+            }
+          }
+        ],
+        "assurance": {
+          "mode": "gated",
+          "transactionGuarantee": "none"
+        },
+        "receipt": {
+          "providerProvenance": [
+            {
+              "provider": "core-check-provider",
+              "capability": "check",
+              "identity": "core-check-provider",
+              "integrity": "sha256:core-provider",
+              "conformance": "asp-core-v1.0-private"
+            }
+          ],
+          "kind": "evaluate",
+          "host": {
+            "name": "core-host",
+            "version": "0.1.0-private"
+          },
+          "capabilityFamily": "check",
+          "callSite": "gate",
+          "requestDigest": "sha256:fixture-evaluate-unsupported",
+          "changesetDigest": "sha256:fixture-changeset-unsupported",
+          "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
+          "baseline": {
+            "rev": "tree:core-host-adoption-baseline"
+          },
+          "validAsOf": {
+            "rev": "tree:core-host-adoption-baseline",
+            "blobs": [
+              "blob:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "blob:sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            ]
+          },
+          "coverage": {
+            "required": [
+              "core-required-check"
+            ],
+            "enrolled": [
+              "core-required-check"
+            ],
+            "ran": [
+              "core-required-check"
+            ],
+            "degraded": [
+              {
+                "source": "core-required-check",
+                "reason": "unsupported",
+                "requirement": "core-required-check",
+                "detail": "Required provider does not support the requested Core check coverage."
+              }
+            ],
+            "exhaustive": false
+          },
+          "authorityEvidence": [
+            {
+              "identity": "core-check-provider",
+              "integrity": "sha256:core-provider",
+              "conformance": "asp-core-v1.0-private",
+              "isolation": "gated",
+              "authority": {
+                "granted": true,
+                "requirement": "core-required-check",
+                "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29"
+              }
+            }
+          ],
+          "providerIds": [
+            "core-check-provider",
+            "core-required-check"
+          ],
+          "assurance": {
+            "mode": "gated",
+            "transactionGuarantee": "none"
+          },
+          "timing": {
+            "startedAt": "2026-06-23T00:00:00Z",
+            "endedAt": "2026-06-23T00:00:00Z",
+            "elapsedMs": 0
+          },
+          "failures": [
+            {
+              "source": "core-required-check",
+              "reason": "unsupported",
+              "requirement": "core-required-check",
+              "detail": "Required provider does not support the requested Core check coverage."
+            }
+          ],
+          "privateOnly": true,
+          "experimental": true,
+          "trustArtifact": false,
+          "receiptId": "core-evaluate-unsupported-private-adoption-0001",
+          "issuedAt": "2026-06-23T00:00:00Z"
+        }
+      },
+      {
+        "case": "incomplete",
+        "pass": false,
+        "decision": "indeterminate",
+        "callSite": "gate",
+        "requestDigest": "sha256:fixture-evaluate-incomplete",
+        "changesetDigest": "sha256:fixture-changeset-incomplete",
+        "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
+        "validAsOf": {
+          "rev": "tree:core-host-adoption-baseline",
+          "blobs": [
+            "blob:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "blob:sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          ]
+        },
+        "coverage": {
+          "required": [
+            "core-required-check"
+          ],
+          "enrolled": [
+            "core-required-check"
+          ],
+          "ran": [
+            "core-required-check"
+          ],
+          "degraded": [
+            {
+              "source": "core-required-check",
+              "reason": "incomplete",
+              "requirement": "core-required-check",
+              "detail": "Required provider did not report complete Core coverage."
+            }
+          ],
+          "exhaustive": false
+        },
+        "authorityEvidence": [
+          {
+            "identity": "core-check-provider",
+            "integrity": "sha256:core-provider",
+            "conformance": "asp-core-v1.0-private",
+            "isolation": "gated",
+            "authority": {
+              "granted": true,
+              "requirement": "core-required-check",
+              "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29"
+            }
+          }
+        ],
+        "assurance": {
+          "mode": "gated",
+          "transactionGuarantee": "none"
+        },
+        "receipt": {
+          "providerProvenance": [
+            {
+              "provider": "core-check-provider",
+              "capability": "check",
+              "identity": "core-check-provider",
+              "integrity": "sha256:core-provider",
+              "conformance": "asp-core-v1.0-private"
+            }
+          ],
+          "kind": "evaluate",
+          "host": {
+            "name": "core-host",
+            "version": "0.1.0-private"
+          },
+          "capabilityFamily": "check",
+          "callSite": "gate",
+          "requestDigest": "sha256:fixture-evaluate-incomplete",
+          "changesetDigest": "sha256:fixture-changeset-incomplete",
+          "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
+          "baseline": {
+            "rev": "tree:core-host-adoption-baseline"
+          },
+          "validAsOf": {
+            "rev": "tree:core-host-adoption-baseline",
+            "blobs": [
+              "blob:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "blob:sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            ]
+          },
+          "coverage": {
+            "required": [
+              "core-required-check"
+            ],
+            "enrolled": [
+              "core-required-check"
+            ],
+            "ran": [
+              "core-required-check"
+            ],
+            "degraded": [
+              {
+                "source": "core-required-check",
+                "reason": "incomplete",
+                "requirement": "core-required-check",
+                "detail": "Required provider did not report complete Core coverage."
+              }
+            ],
+            "exhaustive": false
+          },
+          "authorityEvidence": [
+            {
+              "identity": "core-check-provider",
+              "integrity": "sha256:core-provider",
+              "conformance": "asp-core-v1.0-private",
+              "isolation": "gated",
+              "authority": {
+                "granted": true,
+                "requirement": "core-required-check",
+                "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29"
+              }
+            }
+          ],
+          "providerIds": [
+            "core-check-provider",
+            "core-required-check"
+          ],
+          "assurance": {
+            "mode": "gated",
+            "transactionGuarantee": "none"
+          },
+          "timing": {
+            "startedAt": "2026-06-23T00:00:00Z",
+            "endedAt": "2026-06-23T00:00:00Z",
+            "elapsedMs": 0
+          },
+          "failures": [
+            {
+              "source": "core-required-check",
+              "reason": "incomplete",
+              "requirement": "core-required-check",
+              "detail": "Required provider did not report complete Core coverage."
+            }
+          ],
+          "privateOnly": true,
+          "experimental": true,
+          "trustArtifact": false,
+          "receiptId": "core-evaluate-incomplete-private-adoption-0001",
+          "issuedAt": "2026-06-23T00:00:00Z"
+        }
+      },
+      {
+        "case": "cancelled",
+        "pass": false,
+        "decision": "indeterminate",
+        "callSite": "gate",
+        "requestDigest": "sha256:fixture-evaluate-cancelled",
+        "changesetDigest": "sha256:fixture-changeset-cancelled",
+        "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
+        "validAsOf": {
+          "rev": "tree:core-host-adoption-baseline",
+          "blobs": [
+            "blob:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "blob:sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          ]
+        },
+        "coverage": {
+          "required": [
+            "core-required-check"
+          ],
+          "enrolled": [
+            "core-required-check"
+          ],
+          "ran": [
+            "core-required-check"
+          ],
+          "degraded": [
+            {
+              "source": "core-required-check",
+              "reason": "cancelled",
+              "requirement": "core-required-check",
+              "detail": "Required provider evaluation was cancelled before terminal coverage."
+            }
+          ],
+          "exhaustive": false
+        },
+        "authorityEvidence": [
+          {
+            "identity": "core-check-provider",
+            "integrity": "sha256:core-provider",
+            "conformance": "asp-core-v1.0-private",
+            "isolation": "gated",
+            "authority": {
+              "granted": true,
+              "requirement": "core-required-check",
+              "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29"
+            }
+          }
+        ],
+        "assurance": {
+          "mode": "gated",
+          "transactionGuarantee": "none"
+        },
+        "receipt": {
+          "providerProvenance": [
+            {
+              "provider": "core-check-provider",
+              "capability": "check",
+              "identity": "core-check-provider",
+              "integrity": "sha256:core-provider",
+              "conformance": "asp-core-v1.0-private"
+            }
+          ],
+          "kind": "evaluate",
+          "host": {
+            "name": "core-host",
+            "version": "0.1.0-private"
+          },
+          "capabilityFamily": "check",
+          "callSite": "gate",
+          "requestDigest": "sha256:fixture-evaluate-cancelled",
+          "changesetDigest": "sha256:fixture-changeset-cancelled",
+          "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
+          "baseline": {
+            "rev": "tree:core-host-adoption-baseline"
+          },
+          "validAsOf": {
+            "rev": "tree:core-host-adoption-baseline",
+            "blobs": [
+              "blob:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "blob:sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            ]
+          },
+          "coverage": {
+            "required": [
+              "core-required-check"
+            ],
+            "enrolled": [
+              "core-required-check"
+            ],
+            "ran": [
+              "core-required-check"
+            ],
+            "degraded": [
+              {
+                "source": "core-required-check",
+                "reason": "cancelled",
+                "requirement": "core-required-check",
+                "detail": "Required provider evaluation was cancelled before terminal coverage."
+              }
+            ],
+            "exhaustive": false
+          },
+          "authorityEvidence": [
+            {
+              "identity": "core-check-provider",
+              "integrity": "sha256:core-provider",
+              "conformance": "asp-core-v1.0-private",
+              "isolation": "gated",
+              "authority": {
+                "granted": true,
+                "requirement": "core-required-check",
+                "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29"
+              }
+            }
+          ],
+          "providerIds": [
+            "core-check-provider",
+            "core-required-check"
+          ],
+          "assurance": {
+            "mode": "gated",
+            "transactionGuarantee": "none"
+          },
+          "timing": {
+            "startedAt": "2026-06-23T00:00:00Z",
+            "endedAt": "2026-06-23T00:00:00Z",
+            "elapsedMs": 0
+          },
+          "failures": [
+            {
+              "source": "core-required-check",
+              "reason": "cancelled",
+              "requirement": "core-required-check",
+              "detail": "Required provider evaluation was cancelled before terminal coverage."
+            }
+          ],
+          "privateOnly": true,
+          "experimental": true,
+          "trustArtifact": false,
+          "receiptId": "core-evaluate-cancelled-private-adoption-0001",
+          "issuedAt": "2026-06-23T00:00:00Z"
+        }
+      },
+      {
+        "case": "error",
+        "pass": false,
+        "decision": "indeterminate",
+        "callSite": "gate",
+        "requestDigest": "sha256:fixture-evaluate-error",
+        "changesetDigest": "sha256:fixture-changeset-error",
+        "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
+        "validAsOf": {
+          "rev": "tree:core-host-adoption-baseline"
+        },
+        "coverage": {
+          "required": [
+            "core-required-check"
+          ],
+          "enrolled": [
+            "core-required-check"
+          ],
+          "ran": [],
+          "degraded": [
+            {
+              "source": "core-required-check",
+              "reason": "error",
+              "requirement": "core-required-check",
+              "detail": "Required provider reported a typed error."
+            }
+          ],
+          "exhaustive": false
+        },
+        "authorityEvidence": [],
+        "assurance": {
+          "mode": "gated",
+          "transactionGuarantee": "none"
+        },
+        "receipt": {
+          "providerProvenance": [],
+          "kind": "evaluate",
+          "host": {
+            "name": "core-host",
+            "version": "0.1.0-private"
+          },
+          "capabilityFamily": "check",
+          "callSite": "gate",
+          "requestDigest": "sha256:fixture-evaluate-error",
+          "changesetDigest": "sha256:fixture-changeset-error",
+          "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
+          "baseline": {
+            "rev": "tree:core-host-adoption-baseline"
+          },
+          "validAsOf": {
+            "rev": "tree:core-host-adoption-baseline"
+          },
+          "coverage": {
+            "required": [
+              "core-required-check"
+            ],
+            "enrolled": [
+              "core-required-check"
+            ],
+            "ran": [],
+            "degraded": [
+              {
+                "source": "core-required-check",
+                "reason": "error",
+                "requirement": "core-required-check",
+                "detail": "Required provider reported a typed error."
+              }
+            ],
+            "exhaustive": false
+          },
+          "authorityEvidence": [],
+          "providerIds": [],
+          "assurance": {
+            "mode": "gated",
+            "transactionGuarantee": "none"
+          },
+          "timing": {
+            "startedAt": "2026-06-23T00:00:00Z",
+            "endedAt": "2026-06-23T00:00:00Z",
+            "elapsedMs": 0
+          },
+          "failures": [
+            {
+              "source": "core-required-check",
+              "reason": "error",
+              "requirement": "core-required-check",
+              "detail": "Required provider reported a typed error."
+            }
+          ],
+          "privateOnly": true,
+          "experimental": true,
+          "trustArtifact": false,
+          "receiptId": "core-evaluate-error-private-adoption-0001",
+          "issuedAt": "2026-06-23T00:00:00Z"
+        }
+      },
+      {
+        "case": "timed-out",
+        "pass": false,
+        "decision": "indeterminate",
+        "callSite": "gate",
+        "requestDigest": "sha256:fixture-evaluate-timed-out",
+        "changesetDigest": "sha256:fixture-changeset-timed-out",
+        "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
+        "validAsOf": {
+          "rev": "tree:core-host-adoption-baseline"
+        },
+        "coverage": {
+          "required": [
+            "core-required-check"
+          ],
+          "enrolled": [
+            "core-required-check"
+          ],
+          "ran": [],
+          "degraded": [
+            {
+              "source": "core-required-check",
+              "reason": "timed-out",
+              "requirement": "core-required-check",
+              "detail": "Required provider exceeded the gate budget."
+            }
+          ],
+          "exhaustive": false
+        },
+        "authorityEvidence": [],
+        "assurance": {
+          "mode": "gated",
+          "transactionGuarantee": "none"
+        },
+        "receipt": {
+          "providerProvenance": [],
+          "kind": "evaluate",
+          "host": {
+            "name": "core-host",
+            "version": "0.1.0-private"
+          },
+          "capabilityFamily": "check",
+          "callSite": "gate",
+          "requestDigest": "sha256:fixture-evaluate-timed-out",
+          "changesetDigest": "sha256:fixture-changeset-timed-out",
+          "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
+          "baseline": {
+            "rev": "tree:core-host-adoption-baseline"
+          },
+          "validAsOf": {
+            "rev": "tree:core-host-adoption-baseline"
+          },
+          "coverage": {
+            "required": [
+              "core-required-check"
+            ],
+            "enrolled": [
+              "core-required-check"
+            ],
+            "ran": [],
+            "degraded": [
+              {
+                "source": "core-required-check",
+                "reason": "timed-out",
+                "requirement": "core-required-check",
+                "detail": "Required provider exceeded the gate budget."
+              }
+            ],
+            "exhaustive": false
+          },
+          "authorityEvidence": [],
+          "providerIds": [],
+          "assurance": {
+            "mode": "gated",
+            "transactionGuarantee": "none"
+          },
+          "timing": {
+            "startedAt": "2026-06-23T00:00:00Z",
+            "endedAt": "2026-06-23T00:00:00Z",
+            "elapsedMs": 0
+          },
+          "failures": [
+            {
+              "source": "core-required-check",
+              "reason": "timed-out",
+              "requirement": "core-required-check",
+              "detail": "Required provider exceeded the gate budget."
+            }
+          ],
+          "privateOnly": true,
+          "experimental": true,
+          "trustArtifact": false,
+          "receiptId": "core-evaluate-timed-out-private-adoption-0001",
+          "issuedAt": "2026-06-23T00:00:00Z"
+        }
+      },
+      {
+        "case": "unavailable",
+        "pass": false,
+        "decision": "indeterminate",
+        "callSite": "gate",
+        "requestDigest": "sha256:fixture-evaluate-unavailable",
+        "changesetDigest": "sha256:fixture-changeset-unavailable",
+        "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
+        "validAsOf": {
+          "rev": "tree:core-host-adoption-baseline"
+        },
+        "coverage": {
+          "required": [
+            "core-required-check"
+          ],
+          "enrolled": [
+            "core-required-check"
+          ],
+          "ran": [],
+          "degraded": [
+            {
+              "source": "core-required-check",
+              "reason": "unavailable",
+              "requirement": "core-required-check",
+              "detail": "Required provider is unavailable in trusted host configuration."
+            }
+          ],
+          "exhaustive": false
+        },
+        "authorityEvidence": [],
+        "assurance": {
+          "mode": "gated",
+          "transactionGuarantee": "none"
+        },
+        "receipt": {
+          "providerProvenance": [],
+          "kind": "evaluate",
+          "host": {
+            "name": "core-host",
+            "version": "0.1.0-private"
+          },
+          "capabilityFamily": "check",
+          "callSite": "gate",
+          "requestDigest": "sha256:fixture-evaluate-unavailable",
+          "changesetDigest": "sha256:fixture-changeset-unavailable",
+          "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
+          "baseline": {
+            "rev": "tree:core-host-adoption-baseline"
+          },
+          "validAsOf": {
+            "rev": "tree:core-host-adoption-baseline"
+          },
+          "coverage": {
+            "required": [
+              "core-required-check"
+            ],
+            "enrolled": [
+              "core-required-check"
+            ],
+            "ran": [],
+            "degraded": [
+              {
+                "source": "core-required-check",
+                "reason": "unavailable",
+                "requirement": "core-required-check",
+                "detail": "Required provider is unavailable in trusted host configuration."
+              }
+            ],
+            "exhaustive": false
+          },
+          "authorityEvidence": [],
+          "providerIds": [],
+          "assurance": {
+            "mode": "gated",
+            "transactionGuarantee": "none"
+          },
+          "timing": {
+            "startedAt": "2026-06-23T00:00:00Z",
+            "endedAt": "2026-06-23T00:00:00Z",
+            "elapsedMs": 0
+          },
+          "failures": [
+            {
+              "source": "core-required-check",
+              "reason": "unavailable",
+              "requirement": "core-required-check",
+              "detail": "Required provider is unavailable in trusted host configuration."
+            }
+          ],
+          "privateOnly": true,
+          "experimental": true,
+          "trustArtifact": false,
+          "receiptId": "core-evaluate-unavailable-private-adoption-0001",
+          "issuedAt": "2026-06-23T00:00:00Z"
+        }
+      },
+      {
+        "case": "incompatible",
+        "pass": false,
+        "decision": "indeterminate",
+        "callSite": "gate",
+        "requestDigest": "sha256:fixture-evaluate-incompatible",
+        "changesetDigest": "sha256:fixture-changeset-incompatible",
+        "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
+        "validAsOf": {
+          "rev": "tree:core-host-adoption-baseline"
+        },
+        "coverage": {
+          "required": [
+            "core-required-check"
+          ],
+          "enrolled": [
+            "core-required-check"
+          ],
+          "ran": [],
+          "degraded": [
+            {
+              "source": "core-required-check",
+              "reason": "incompatible",
+              "requirement": "core-required-check",
+              "detail": "Required provider is incompatible with Core gate requirements."
+            }
+          ],
+          "exhaustive": false
+        },
+        "authorityEvidence": [],
+        "assurance": {
+          "mode": "gated",
+          "transactionGuarantee": "none"
+        },
+        "receipt": {
+          "providerProvenance": [],
+          "kind": "evaluate",
+          "host": {
+            "name": "core-host",
+            "version": "0.1.0-private"
+          },
+          "capabilityFamily": "check",
+          "callSite": "gate",
+          "requestDigest": "sha256:fixture-evaluate-incompatible",
+          "changesetDigest": "sha256:fixture-changeset-incompatible",
+          "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
+          "baseline": {
+            "rev": "tree:core-host-adoption-baseline"
+          },
+          "validAsOf": {
+            "rev": "tree:core-host-adoption-baseline"
+          },
+          "coverage": {
+            "required": [
+              "core-required-check"
+            ],
+            "enrolled": [
+              "core-required-check"
+            ],
+            "ran": [],
+            "degraded": [
+              {
+                "source": "core-required-check",
+                "reason": "incompatible",
+                "requirement": "core-required-check",
+                "detail": "Required provider is incompatible with Core gate requirements."
+              }
+            ],
+            "exhaustive": false
+          },
+          "authorityEvidence": [],
+          "providerIds": [],
+          "assurance": {
+            "mode": "gated",
+            "transactionGuarantee": "none"
+          },
+          "timing": {
+            "startedAt": "2026-06-23T00:00:00Z",
+            "endedAt": "2026-06-23T00:00:00Z",
+            "elapsedMs": 0
+          },
+          "failures": [
+            {
+              "source": "core-required-check",
+              "reason": "incompatible",
+              "requirement": "core-required-check",
+              "detail": "Required provider is incompatible with Core gate requirements."
+            }
+          ],
+          "privateOnly": true,
+          "experimental": true,
+          "trustArtifact": false,
+          "receiptId": "core-evaluate-incompatible-private-adoption-0001",
+          "issuedAt": "2026-06-23T00:00:00Z"
+        }
+      },
+      {
+        "case": "crashed",
+        "pass": false,
+        "decision": "indeterminate",
+        "callSite": "gate",
+        "requestDigest": "sha256:fixture-evaluate-crashed",
+        "changesetDigest": "sha256:fixture-changeset-crashed",
+        "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
+        "validAsOf": {
+          "rev": "tree:core-host-adoption-baseline"
+        },
+        "coverage": {
+          "required": [
+            "core-required-check"
+          ],
+          "enrolled": [
+            "core-required-check"
+          ],
+          "ran": [],
+          "degraded": [
+            {
+              "source": "core-required-check",
+              "reason": "crashed",
+              "requirement": "core-required-check",
+              "detail": "Required provider crashed before returning an Assessment."
+            }
+          ],
+          "exhaustive": false
+        },
+        "authorityEvidence": [],
+        "assurance": {
+          "mode": "gated",
+          "transactionGuarantee": "none"
+        },
+        "receipt": {
+          "providerProvenance": [],
+          "kind": "evaluate",
+          "host": {
+            "name": "core-host",
+            "version": "0.1.0-private"
+          },
+          "capabilityFamily": "check",
+          "callSite": "gate",
+          "requestDigest": "sha256:fixture-evaluate-crashed",
+          "changesetDigest": "sha256:fixture-changeset-crashed",
+          "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
+          "baseline": {
+            "rev": "tree:core-host-adoption-baseline"
+          },
+          "validAsOf": {
+            "rev": "tree:core-host-adoption-baseline"
+          },
+          "coverage": {
+            "required": [
+              "core-required-check"
+            ],
+            "enrolled": [
+              "core-required-check"
+            ],
+            "ran": [],
+            "degraded": [
+              {
+                "source": "core-required-check",
+                "reason": "crashed",
+                "requirement": "core-required-check",
+                "detail": "Required provider crashed before returning an Assessment."
+              }
+            ],
+            "exhaustive": false
+          },
+          "authorityEvidence": [],
+          "providerIds": [],
+          "assurance": {
+            "mode": "gated",
+            "transactionGuarantee": "none"
+          },
+          "timing": {
+            "startedAt": "2026-06-23T00:00:00Z",
+            "endedAt": "2026-06-23T00:00:00Z",
+            "elapsedMs": 0
+          },
+          "failures": [
+            {
+              "source": "core-required-check",
+              "reason": "crashed",
+              "requirement": "core-required-check",
+              "detail": "Required provider crashed before returning an Assessment."
+            }
+          ],
+          "privateOnly": true,
+          "experimental": true,
+          "trustArtifact": false,
+          "receiptId": "core-evaluate-crashed-private-adoption-0001",
+          "issuedAt": "2026-06-23T00:00:00Z"
+        }
+      },
+      {
+        "case": "direct-write-risk",
+        "pass": false,
+        "decision": "indeterminate",
+        "callSite": "gate",
+        "requestDigest": "sha256:fixture-evaluate-direct-write-risk",
+        "changesetDigest": "sha256:fixture-changeset-direct-write-risk",
+        "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
+        "validAsOf": {
+          "rev": "tree:core-host-adoption-baseline",
+          "blobs": [
+            "blob:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "blob:sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          ]
+        },
+        "coverage": {
+          "required": [
+            "core-required-check"
+          ],
+          "enrolled": [
+            "core-required-check"
+          ],
+          "ran": [
+            "core-required-check"
+          ],
+          "degraded": [
+            {
+              "source": "core-required-check",
+              "reason": "direct-write-risk",
+              "requirement": "core-required-check",
+              "detail": "Provider reported a direct-write risk that cannot satisfy mediated write assurance."
+            }
+          ],
+          "exhaustive": false
+        },
+        "authorityEvidence": [
+          {
+            "identity": "core-check-provider",
+            "integrity": "sha256:core-provider",
+            "conformance": "asp-core-v1.0-private",
+            "isolation": "gated",
+            "authority": {
+              "granted": true,
+              "requirement": "core-required-check",
+              "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29"
+            }
+          }
+        ],
+        "assurance": {
+          "mode": "gated",
+          "transactionGuarantee": "none"
+        },
+        "receipt": {
+          "providerProvenance": [
+            {
+              "provider": "core-check-provider",
+              "capability": "check",
+              "identity": "core-check-provider",
+              "integrity": "sha256:core-provider",
+              "conformance": "asp-core-v1.0-private"
+            }
+          ],
+          "kind": "evaluate",
+          "host": {
+            "name": "core-host",
+            "version": "0.1.0-private"
+          },
+          "capabilityFamily": "check",
+          "callSite": "gate",
+          "requestDigest": "sha256:fixture-evaluate-direct-write-risk",
+          "changesetDigest": "sha256:fixture-changeset-direct-write-risk",
+          "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
+          "baseline": {
+            "rev": "tree:core-host-adoption-baseline"
+          },
+          "validAsOf": {
+            "rev": "tree:core-host-adoption-baseline",
+            "blobs": [
+              "blob:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "blob:sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            ]
+          },
+          "coverage": {
+            "required": [
+              "core-required-check"
+            ],
+            "enrolled": [
+              "core-required-check"
+            ],
+            "ran": [
+              "core-required-check"
+            ],
+            "degraded": [
+              {
+                "source": "core-required-check",
+                "reason": "direct-write-risk",
+                "requirement": "core-required-check",
+                "detail": "Provider reported a direct-write risk that cannot satisfy mediated write assurance."
+              }
+            ],
+            "exhaustive": false
+          },
+          "authorityEvidence": [
+            {
+              "identity": "core-check-provider",
+              "integrity": "sha256:core-provider",
+              "conformance": "asp-core-v1.0-private",
+              "isolation": "gated",
+              "authority": {
+                "granted": true,
+                "requirement": "core-required-check",
+                "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29"
+              }
+            }
+          ],
+          "providerIds": [
+            "core-check-provider",
+            "core-required-check"
+          ],
+          "assurance": {
+            "mode": "gated",
+            "transactionGuarantee": "none"
+          },
+          "timing": {
+            "startedAt": "2026-06-23T00:00:00Z",
+            "endedAt": "2026-06-23T00:00:00Z",
+            "elapsedMs": 0
+          },
+          "failures": [
+            {
+              "source": "core-required-check",
+              "reason": "direct-write-risk",
+              "requirement": "core-required-check",
+              "detail": "Provider reported a direct-write risk that cannot satisfy mediated write assurance."
+            }
+          ],
+          "privateOnly": true,
+          "experimental": true,
+          "trustArtifact": false,
+          "receiptId": "core-evaluate-direct-write-risk-private-adoption-0001",
+          "issuedAt": "2026-06-23T00:00:00Z"
+        }
+      },
+      {
+        "case": "policy-self-authorization",
+        "pass": false,
+        "decision": "indeterminate",
+        "callSite": "gate",
+        "requestDigest": "sha256:fixture-evaluate-policy-self-authorization",
+        "changesetDigest": "sha256:fixture-changeset-policy-self-authorization",
+        "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
+        "validAsOf": {
+          "rev": "tree:core-host-adoption-baseline"
+        },
+        "coverage": {
+          "required": [
+            "core-required-check"
+          ],
+          "enrolled": [
+            "core-required-check"
+          ],
+          "ran": [],
+          "degraded": [
+            {
+              "source": ".asp/asp.json",
+              "reason": "policy-self-authorization",
+              "requirement": "core-required-check",
+              "detail": "Candidate policy/config changes cannot authorize the gate evaluating the same changeset."
+            }
+          ],
+          "exhaustive": false
+        },
+        "authorityEvidence": [],
+        "assurance": {
+          "mode": "gated",
+          "transactionGuarantee": "none"
+        },
+        "receipt": {
+          "providerProvenance": [],
+          "kind": "evaluate",
+          "host": {
+            "name": "core-host",
+            "version": "0.1.0-private"
+          },
+          "capabilityFamily": "check",
+          "callSite": "gate",
+          "requestDigest": "sha256:fixture-evaluate-policy-self-authorization",
+          "changesetDigest": "sha256:fixture-changeset-policy-self-authorization",
+          "policyDigest": "sha256:9e32c4df95815c04ccdb4aae55f9cf1105a9eb150a957d3b2a80183be3a44f29",
+          "baseline": {
+            "rev": "tree:core-host-adoption-baseline"
+          },
+          "validAsOf": {
+            "rev": "tree:core-host-adoption-baseline"
+          },
+          "coverage": {
+            "required": [
+              "core-required-check"
+            ],
+            "enrolled": [
+              "core-required-check"
+            ],
+            "ran": [],
+            "degraded": [
+              {
+                "source": ".asp/asp.json",
+                "reason": "policy-self-authorization",
+                "requirement": "core-required-check",
+                "detail": "Candidate policy/config changes cannot authorize the gate evaluating the same changeset."
+              }
+            ],
+            "exhaustive": false
+          },
+          "authorityEvidence": [],
+          "providerIds": [],
+          "assurance": {
+            "mode": "gated",
+            "transactionGuarantee": "none"
+          },
+          "timing": {
+            "startedAt": "2026-06-23T00:00:00Z",
+            "endedAt": "2026-06-23T00:00:00Z",
+            "elapsedMs": 0
+          },
+          "failures": [
+            {
+              "source": ".asp/asp.json",
+              "reason": "policy-self-authorization",
+              "requirement": "core-required-check",
+              "detail": "Candidate policy/config changes cannot authorize the gate evaluating the same changeset."
+            }
+          ],
+          "privateOnly": true,
+          "experimental": true,
+          "trustArtifact": false,
+          "receiptId": "core-evaluate-policy-self-authorization-private-adoption-0001",
+          "issuedAt": "2026-06-23T00:00:00Z"
+        }
+      }
+    ]
+  },
+  "retainedGuardrailStatement": "Existing repo guardrails remain required; this private receipt only records observed Core behavior and does not replace local verification.",
+  "claims": {
+    "behaviorEvidenceOnly": true,
+    "privateOnly": true,
+    "trustClaim": false,
+    "authorityClaim": false,
+    "certificationClaim": false,
+    "registryInclusionClaim": false,
+    "publicStandardClaim": false,
+    "providerApprovalClaim": false,
+    "stablePublicApiClaim": false,
+    "notes": [
+      "Private Core host behavior evidence only."
+    ]
+  }
+}

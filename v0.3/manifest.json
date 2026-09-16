@@ -1,0 +1,18 @@
+{
+  "contentDigest": "sha256:02fe2e434d8cb59e7a52322bac2615772b4307e761e65380c0ad77966823b463",
+  "docsVersion": "v0.3",
+  "productVersion": "0.3.0",
+  "publisherCommit": "8170175bed69d48e16c1b773c9a7b44fb48d4adf",
+  "routes": {
+    "asp": "asp/README.html",
+    "cli": "cli.html",
+    "configuration": "docs/configuration.html",
+    "install": "docs/getting-started.html",
+    "overview": "",
+    "providerProfiles": "api/opcore/api/enum.ProviderProfile.html",
+    "providers": "docs/providers.html",
+    "rustApi": "api/opcore/api/index.html"
+  },
+  "schemaVersion": 1,
+  "sourceCommit": "1abf2218d99de84058fadef8b123aba1d1ae8ec9"
+}

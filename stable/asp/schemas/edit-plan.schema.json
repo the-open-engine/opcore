@@ -1,0 +1,197 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://covibes.dev/asp/schemas/edit-plan.schema.json",
+  "title": "EditPlan",
+  "description": "Canonical provider-produced edit proposal. It is bound to a host-issued SnapshotRef/Baseline and exact validAsOf freshness, contains structured operations and preconditions, and carries no host result fields or executable mutation contract.",
+  "$ref": "#/$defs/editPlan",
+  "$defs": {
+    "baseline": {
+      "$ref": "https://covibes.dev/asp/schemas/changeset.schema.json#/$defs/baseline"
+    },
+    "blobRef": {
+      "$ref": "https://covibes.dev/asp/schemas/changeset.schema.json#/$defs/blobRef"
+    },
+    "providerStructuredData": {
+      "oneOf": [
+        { "type": "null" },
+        { "type": "boolean" },
+        { "type": "number" },
+        { "type": "string" },
+        {
+          "type": "array",
+          "items": { "$ref": "#/$defs/providerStructuredData" }
+        },
+        { "$ref": "#/$defs/providerStructuredDataObject" }
+      ]
+    },
+    "providerStructuredDataObject": {
+      "type": "object",
+      "propertyNames": {
+        "not": { "pattern": "^(authority|assurance|command|commands|decision|disposition|pass|script|transactionGuarantee|verdict|applyReceipt|receipt|policyDigest|policyRef|policyReference|authorityEvidence|hostDecision|applyAttempt|applyResult)$" }
+      },
+      "additionalProperties": { "$ref": "#/$defs/providerStructuredData" }
+    },
+    "provider": {
+      "type": "object",
+      "required": ["id", "version", "capabilityFamily", "capabilityVersion", "configDigest"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string" },
+        "version": { "type": "string" },
+        "capabilityFamily": { "const": "edit" },
+        "capabilityVersion": { "type": "string", "minLength": 1 },
+        "configDigest": { "type": "string" },
+        "buildDigest": { "type": "string" }
+      }
+    },
+    "validAsOf": {
+      "type": "object",
+      "required": ["baseline", "blobs"],
+      "additionalProperties": false,
+      "properties": {
+        "baseline": { "$ref": "#/$defs/baseline" },
+        "blobs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/blobRef" },
+          "uniqueItems": true
+        }
+      }
+    },
+    "precondition": {
+      "$ref": "https://covibes.dev/asp/schemas/workspace-edit.schema.json#/$defs/precondition"
+    },
+    "touchedResource": {
+      "type": "object",
+      "required": ["path", "kind", "precondition"],
+      "additionalProperties": false,
+      "properties": {
+        "path": { "type": "string" },
+        "kind": { "enum": ["create", "modify", "delete", "rename", "move"] },
+        "to": { "type": "string" },
+        "precondition": { "$ref": "#/$defs/precondition" }
+      }
+    },
+    "annotation": {
+      "type": "object",
+      "required": ["path", "message"],
+      "additionalProperties": false,
+      "properties": {
+        "path": { "type": "string" },
+        "range": { "$ref": "https://covibes.dev/asp/schemas/workspace-edit.schema.json#/$defs/range" },
+        "message": { "type": "string" },
+        "severity": { "enum": ["info", "warning", "error"] },
+        "data": { "$ref": "#/$defs/providerStructuredDataObject" }
+      }
+    },
+    "incomplete": {
+      "type": "object",
+      "required": ["reason", "detail"],
+      "additionalProperties": false,
+      "properties": {
+        "reason": { "enum": ["unresolved-reference", "partial-coverage", "ambiguous-target", "budget-exhausted", "provider-limitation"] },
+        "detail": { "type": "string" },
+        "recoverable": { "type": "boolean" }
+      }
+    },
+    "unsupported": {
+      "type": "object",
+      "required": ["operation", "reason", "detail"],
+      "additionalProperties": false,
+      "properties": {
+        "operation": { "type": "string" },
+        "reason": { "enum": ["operation", "language", "resource-kind", "scope", "capability-version"] },
+        "detail": { "type": "string" },
+        "supportedOperations": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        }
+      }
+    },
+    "refusal": {
+      "type": "object",
+      "required": ["reason", "detail"],
+      "additionalProperties": false,
+      "properties": {
+        "reason": { "enum": ["cancelled", "provider-error", "malformed-request", "missing-content", "scope-denied"] },
+        "detail": { "type": "string" },
+        "data": { "$ref": "#/$defs/providerStructuredDataObject" }
+      }
+    },
+    "error": {
+      "type": "object",
+      "required": ["code", "message"],
+      "additionalProperties": false,
+      "properties": {
+        "code": { "type": "string" },
+        "message": { "type": "string" },
+        "data": { "$ref": "#/$defs/providerStructuredDataObject" }
+      }
+    },
+    "conflictHint": {
+      "type": "object",
+      "required": ["path", "kind", "detail"],
+      "additionalProperties": false,
+      "properties": {
+        "path": { "type": "string" },
+        "kind": { "enum": ["stale-baseline", "overlap", "missing-precondition", "range-drift"] },
+        "detail": { "type": "string" },
+        "data": { "$ref": "#/$defs/providerStructuredDataObject" }
+      }
+    },
+    "editPlan": {
+      "type": "object",
+      "required": ["proposalId", "provider", "status", "baseline", "validAsOf", "touchedResources"],
+      "additionalProperties": false,
+      "properties": {
+        "proposalId": { "type": "string", "minLength": 1 },
+        "provider": { "$ref": "#/$defs/provider" },
+        "status": { "$ref": "https://covibes.dev/asp/schemas/assurance.schema.json#/$defs/assessmentStatus" },
+        "baseline": { "$ref": "#/$defs/baseline" },
+        "validAsOf": { "$ref": "#/$defs/validAsOf" },
+        "touchedResources": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/touchedResource" },
+          "uniqueItems": true
+        },
+        "workspaceEdit": { "$ref": "https://covibes.dev/asp/schemas/workspace-edit.schema.json" },
+        "incomplete": { "$ref": "#/$defs/incomplete" },
+        "unsupported": { "$ref": "#/$defs/unsupported" },
+        "refusal": { "$ref": "#/$defs/refusal" },
+        "error": { "$ref": "#/$defs/error" },
+        "conflictHints": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/conflictHint" }
+        },
+        "annotations": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/annotation" }
+        },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+        "rationale": { "type": "string" },
+        "warnings": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "status": { "const": "complete" } } },
+          "then": { "required": ["workspaceEdit"] }
+        },
+        {
+          "if": { "properties": { "status": { "const": "incomplete" } } },
+          "then": { "required": ["incomplete"] }
+        },
+        {
+          "if": { "properties": { "status": { "const": "unsupported" } } },
+          "then": { "required": ["unsupported"] }
+        },
+        {
+          "if": { "properties": { "status": { "enum": ["error", "cancelled"] } } },
+          "then": { "required": ["refusal"] }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,140 @@
+{
+  "jsonrpc": "2.0",
+  "id": 5,
+  "validates": "outer-host.schema.json#/$defs/evaluateChangesetResult",
+  "result": {
+    "pass": false,
+    "decision": "deny",
+    "callSite": "gate",
+    "findings": [],
+    "coverage": {
+      "exhaustive": false,
+      "required": [
+        "lattice"
+      ],
+      "enrolled": [
+        "lattice"
+      ],
+      "ran": [
+        "lattice"
+      ],
+      "degraded": [
+        {
+          "source": "lattice",
+          "reason": "direct-write-risk",
+          "requirement": "lattice-alpha-edit",
+          "detail": "Deployment allows provider process writes to the real worktree, so mediated-write and isolated claims are unavailable; ADR 0024 requires host/applyProposal for write attempts."
+        }
+      ]
+    },
+    "validAsOf": {
+      "rev": "tree:abc123"
+    },
+    "assurance": {
+      "mode": "gated",
+      "transactionGuarantee": "rollback_attempted"
+    },
+    "policyDigest": "sha256:policyabc123",
+    "authorityEvidence": [
+      {
+        "identity": "the-open-engine",
+        "integrity": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+        "conformance": "lattice-alpha",
+        "isolation": "gated",
+        "authority": {
+          "granted": true,
+          "requirement": "lattice-alpha-check",
+          "policyDigest": "sha256:policyabc123"
+        }
+      }
+    ],
+    "receipt": {
+      "receiptId": "evaluate.direct-write-overclaim.response-0001",
+      "issuedAt": "2026-06-22T20:03:00Z",
+      "providerProvenance": [
+        {
+          "provider": "lattice",
+          "capability": "check",
+          "identity": "the-open-engine",
+          "integrity": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+          "conformance": "lattice-alpha"
+        }
+      ],
+      "policyDigest": "sha256:policyabc123",
+      "baseline": {
+        "rev": "tree:abc123"
+      },
+      "validAsOf": {
+        "rev": "tree:abc123"
+      },
+      "coverage": {
+        "exhaustive": false,
+        "required": [
+          "lattice"
+        ],
+        "enrolled": [
+          "lattice"
+        ],
+        "ran": [
+          "lattice"
+        ],
+        "degraded": [
+          {
+            "source": "lattice",
+            "reason": "direct-write-risk",
+            "requirement": "lattice-alpha-edit",
+            "detail": "Deployment allows provider process writes to the real worktree, so mediated-write and isolated claims are unavailable; ADR 0024 requires host/applyProposal for write attempts."
+          }
+        ]
+      },
+      "authorityEvidence": [
+        {
+          "identity": "the-open-engine",
+          "integrity": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+          "conformance": "lattice-alpha",
+          "isolation": "gated",
+          "authority": {
+            "granted": true,
+            "requirement": "lattice-alpha-check",
+            "policyDigest": "sha256:policyabc123"
+          }
+        }
+      ],
+      "assurance": {
+        "mode": "gated",
+        "transactionGuarantee": "rollback_attempted"
+      },
+      "kind": "evaluate",
+      "host": {
+        "name": "core-host",
+        "version": "0.1.0-private"
+      },
+      "capabilityFamily": "check",
+      "callSite": "gate",
+      "requestDigest": "sha256:examples-outer-evaluate-direct-write-overclaim-response-json-request-deny",
+      "changesetDigest": "sha256:examples-outer-evaluate-direct-write-overclaim-response-json-changeset-deny",
+      "providerIds": [
+        "lattice",
+        "the-open-engine"
+      ],
+      "timing": {
+        "startedAt": "2026-06-23T00:00:00Z",
+        "endedAt": "2026-06-23T00:00:00Z",
+        "elapsedMs": 0
+      },
+      "failures": [
+        {
+          "source": "lattice",
+          "reason": "direct-write-risk",
+          "requirement": "lattice-alpha-edit",
+          "detail": "Deployment allows provider process writes to the real worktree, so mediated-write and isolated claims are unavailable; ADR 0024 requires host/applyProposal for write attempts."
+        }
+      ],
+      "privateOnly": true,
+      "experimental": true,
+      "trustArtifact": false
+    },
+    "requestDigest": "sha256:examples-outer-evaluate-direct-write-overclaim-response-json-request-deny",
+    "changesetDigest": "sha256:examples-outer-evaluate-direct-write-overclaim-response-json-changeset-deny"
+  }
+}

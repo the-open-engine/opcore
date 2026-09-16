@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Core, Interop, Edit, Assurance, And Hostile Conformance Evidence · Opcore</title><link rel="stylesheet" href="../../../assets/site.css">
+<script src="../../../assets/theme.js"></script>
+<script defer src="../../../assets/site.js"></script>
+<link rel="icon" type="image/svg+xml" href="../../../assets/oec-favicon.svg"><link rel="stylesheet" href="../../../assets/versions.css"><script defer src="../../../assets/versions.js"></script></head>
+<body class="guide-page"><a class="skip-link" href="#main-content">Skip to content</a>
+<header class="site-header"><div class="header-inner">
+<button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-navigation">Menu</button>
+<a class="brand" href="../../../index.html"><img src="../../../assets/oec-crow.png" alt="" width="32" height="36"><span>Opcore</span></a>
+<a class="header-label" href="../../../index.html">Documentation</a>
+<div class="header-actions"><div class="docs-version" data-site-root="../../../../" data-page-path="asp/docs/conformance/README.html" data-version="v0.3"><a href="../../../../versions.html">v0.3 ▾</a><select hidden aria-label="Documentation version"><option>v0.3</option></select></div><button class="theme-toggle" type="button" aria-label="Use dark mode" title="Use dark mode"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20.8 13.1A9 9 0 0 1 10.9 3.2 9 9 0 1 0 20.8 13.1Z"/></svg></button>
+<a class="repository-link" href="https://github.com/the-open-engine/opcore">GitHub <span aria-hidden="true">↗</span></a></div>
+</div></header>
+<div class="docs-layout"><aside class="docs-sidebar"><nav id="site-navigation" aria-label="Documentation"><div class="nav-group"><p>Opcore</p><ul><li><a href="../../../index.html">Overview</a></li></ul></div><div class="nav-group"><p>Get started</p><ul><li><a href="../../../docs/getting-started.html">Installation and first check</a></li></ul></div><div class="nav-group"><p>Guides</p><ul><li><a href="../../../docs/configuration.html">Configuration</a></li><li><a href="../../../docs/providers.html">Providers</a></li><li><a href="../../../docs/examples.html">Examples</a></li><li><a href="../../../docs/sense.html">Project Sense</a></li><li><a href="../../../docs/agent-signals.html">Agent feedback</a></li></ul></div><div class="nav-group"><p>Reference</p><ul><li><a href="../../../cli.html">CLI</a></li><li><a href="../../../api/opcore/api/index.html">Rust API</a></li><li><a href="../../../api/opcore/api/enum.ProviderProfile.html">Provider profiles</a></li><li><a href="../../README.html">ASP specification</a></li></ul></div><div class="nav-group"><p>Project</p><ul><li><a href="../../../docs/architecture.html">Architecture</a></li><li><a href="../../../CONTRIBUTING.html">Contributing</a></li><li><a href="../../../CODE_OF_CONDUCT.html">Code of conduct</a></li><li><a href="../../../SECURITY.html">Security</a></li></ul></div></nav></aside>
+<main id="main-content" class="guide-content" tabindex="-1">
+<p class="docs-kicker">Core documentation</p><h1 class="title">Core, Interop, Edit, Assurance, And Hostile Conformance Evidence</h1>
+    <blockquote>
+<p>Historical implementation and evidence links on this page point to the original upstream repository and may require repository access. Those files are outside the bundled ASP definition; the specification, schemas, and fixtures are included here.</p>
+</blockquote>
+<details><summary>Specification metadata</summary>
+<div class="example-wrap"><pre class="language-yaml"><code>title: Core conformance evidence
+status: draft
+normative: false
+summary: Private Core host, check-provider server, interop, edit/apply host, assurance honesty, and hostile-provider matrix report scaffolds, commands, and report interpretation.
+updated: 2026-06-26</code></pre></div></details>
+<p>This directory defines the private conformance scaffolds. The host suite emits <code>CORE-*</code>
+evidence by launching the real <code>asp host serve --repo &lt;workspace&gt;</code> JSON-RPC stdio host for host
+status, capabilities, and evaluate behavior. Static fixtures remain examples and schema checks, not
+the only proof for host Core requirements. The check-provider server suite emits <code>CORE-SERVER-*</code>
+evidence by launching a candidate provider behind a fake host over the private JSON-RPC stdio
+dogfood binding. The interop suite emits <code>INTEROP-*</code> evidence by running reference-host and
+independent-host combinations against fake and ordinary enrolled provider entrypoints through the same
+Core provider contract. The hostile-provider matrix emits <code>HOSTILE-*</code> evidence by driving the same
+black-box host through the outer seam with hostile fake providers and edit providers. All reports
+record behavior evidence without granting authority.
+The edit/apply host profile emits <code>EDIT-HOST-*</code> evidence by driving <code>host/requestEditPlan</code> and
+<code>host/applyProposal</code> through the same outer seam with canonical fake edit providers. The assurance
+profile emits <code>ASSURANCE-*</code> evidence for honest assurance-mode and transaction-guarantee reporting on
+the same apply path.</p>
+<p>Host Core evidence is limited to:</p>
+<ul>
+<li>black-box <code>host/status</code>;</li>
+<li>black-box <code>host/capabilities</code>;</li>
+<li>black-box <code>host/evaluateChangeset</code>;</li>
+<li>provider <code>check/evaluate</code> Assessment shape;</li>
+<li>provider Assessment forbidden host-owned fields;</li>
+<li>stale, missing, malformed, unsupported, incomplete, cancelled, provider-error, timeout, stale
+baseline, fabricated-blob, stale-workspace-blob, missing-authority, insufficient-assurance,
+quarantined, skewed, initialize/version contract refusal, fail-open, and degraded required
+coverage;</li>
+<li>host Decision ownership;</li>
+<li>private Core host adoption receipt fixture;</li>
+<li>rejected Lattice fast-path behavior.</li>
+</ul>
+<p>Check-provider server Core evidence is limited to:</p>
+<ul>
+<li><code>initialize</code> and narrowed read-only <code>initialized</code> grant handling;</li>
+<li>unsupported <code>initialize.protocolVersion</code> refusal before initialized state, callbacks, or Core
+coverage;</li>
+<li>pre-initialized <code>check/evaluate</code> rejection;</li>
+<li>grant-scoped, callback-only <code>workspace/listTree</code> and <code>workspace/readBlob</code> content access;</li>
+<li>valid <code>complete</code>, diagnostic, <code>incomplete</code>, <code>unsupported</code>, and <code>cancelled</code> Assessment results;</li>
+<li>typed JSON-RPC provider errors;</li>
+<li>malformed, stale, host-owned-field, and timeout rejection as non-passing evidence;</li>
+<li>provider outputs as Assessments only, never host Decisions or authority grants.</li>
+</ul>
+<p>Interop evidence is limited to:</p>
+<ul>
+<li>the Open Engine reference host with the fake Core check provider;</li>
+<li>the Open Engine reference host with Opcore as an ordinary enrolled provider from manager-owned
+manifest state;</li>
+<li>a minimal independent host harness with the fake Core check provider;</li>
+<li>a minimal independent host harness with an Opcore provider entrypoint;</li>
+<li>unsupported or missing capability coverage surfaced as explicit Assessment/report detail;</li>
+<li>absence of privileged Opcore, old-tool, or temporary guardrail fast paths in interop tests,
+fixtures, and runners;</li>
+<li>private behavior evidence only, with no trust, authority, registry, provider approval,
+certification, stable API, or public-release claim.</li>
+</ul>
+<p>Hostile-provider evidence is limited to:</p>
+<ul>
+<li>malformed initialize and malformed Assessment rejection;</li>
+<li>provider-minted host fields, stale freshness, missing required provider, unsupported required
+capability, incomplete coverage, provider error, cancellation, timeout, initialize/request crash,
+quarantine, missing authority, insufficient assurance, policy self-authorization, and direct-write
+risk as non-allow degraded coverage;</li>
+<li>optional provider degradation staying visible while clean required coverage may still allow;</li>
+<li>command-like edit output and untrusted edit launch rejection before apply;</li>
+<li>absence of privileged reference-provider, old-tool, or temporary guardrail fast paths in hostile
+tests, fixtures, and runners.</li>
+</ul>
+<p>Edit/apply host evidence is limited to:</p>
+<ul>
+<li>provider EditPlans requested through <code>host/requestEditPlan</code> without provider writes;</li>
+<li>host-mediated positive apply of a canonical text edit;</li>
+<li>stale plan, CAS conflict, out-of-scope create, unknown proposal identity, denied validation, and
+indeterminate validation refusal before mutation;</li>
+<li>command-like, direct-write, malformed, and host-field-smuggling edit provider output rejection;</li>
+<li>missing authority and advisory assurance refusal with honest <code>gated</code>/<code>none</code> or advisory/<code>none</code>
+receipt fields;</li>
+<li>concurrent apply serialization or refusal;</li>
+<li>absence of privileged reference-provider, old-tool, or temporary guardrail fast paths in edit
+tests, fixtures, and runners.</li>
+</ul>
+<p>Assurance evidence is limited to:</p>
+<ul>
+<li>advisory apply refusal reporting advisory/<code>none</code>;</li>
+<li>gated apply reporting gated/<code>none</code> plus gate validation and interactive apply boundaries;</li>
+<li>mediated-write and isolated authority labels being refused or downgraded when the host cannot prove
+those properties;</li>
+<li>direct-write provider output and untrusted edit launch refusal;</li>
+<li>accepted transaction-guarantee vocabulary with no staged-snapshot or workspace-transactional claim
+from the current implementation;</li>
+<li>provider crash, command-like edit output, denied validation, and indeterminate validation never
+producing misleading successful apply receipts.</li>
+</ul>
+<p>Run the Core smoke suite:</p>
+<div class="example-wrap"><pre class="language-sh"><code>npm run conformance:core</code></pre></div>
+<p>Generate the deterministic Core report:</p>
+<div class="example-wrap"><pre class="language-sh"><code>npm run conformance:core:report -- --report /tmp/asp-core-conformance-report.json</code></pre></div>
+<p>Run the Core check-provider server suite:</p>
+<div class="example-wrap"><pre class="language-sh"><code>npm run conformance:core:server</code></pre></div>
+<p>Generate the deterministic Core server report:</p>
+<div class="example-wrap"><pre class="language-sh"><code>npm run conformance:core:server:report -- --report /tmp/asp-core-server-conformance-report.json</code></pre></div>
+<p>Run the interop matrix:</p>
+<div class="example-wrap"><pre class="language-sh"><code>npm run conformance:interop</code></pre></div>
+<p>Generate the deterministic interop report:</p>
+<div class="example-wrap"><pre class="language-sh"><code>npm run conformance:interop:report -- --report /tmp/asp-interop-conformance-report.json</code></pre></div>
+<p>The interop matrix requires <code>ASP_INTEROP_PROVIDER_BIN</code> to point to a real Opcore ASP JSON-RPC stdio
+provider executable. <code>ASP_INTEROP_PROVIDER_ARGS</code> supplies its argv array. These inputs are ordinary
+provider entrypoint configuration, not product shortcut commands, and do not grant provider
+authority. Required Opcore assertions only pass when runtime evidence identifies provider <code>opcore</code>
+and reports complete gate/Assessment coverage; missing, non-Opcore, incomplete, error, or unsupported
+evidence fails.</p>
+<p>Run the hostile-provider matrix:</p>
+<div class="example-wrap"><pre class="language-sh"><code>npm run conformance:hostile</code></pre></div>
+<p>Generate the deterministic hostile-provider report:</p>
+<div class="example-wrap"><pre class="language-sh"><code>npm run conformance:hostile:report -- --report /tmp/asp-hostile-conformance-report.json</code></pre></div>
+<p>Run the edit/apply host profile:</p>
+<div class="example-wrap"><pre class="language-sh"><code>npm run conformance:edit</code></pre></div>
+<p>Generate the deterministic edit/apply host report:</p>
+<div class="example-wrap"><pre class="language-sh"><code>npm run conformance:edit:report -- --report /tmp/asp-edit-host-conformance-report.json</code></pre></div>
+<p>Run the assurance honesty profile:</p>
+<div class="example-wrap"><pre class="language-sh"><code>npm run conformance:assurance</code></pre></div>
+<p>Generate the deterministic assurance report:</p>
+<div class="example-wrap"><pre class="language-sh"><code>npm run conformance:assurance:report -- --report /tmp/asp-assurance-conformance-report.json</code></pre></div>
+<p>The report schema is <a href="../../schemas/conformance-report.schema.json"><code>schemas/conformance-report.schema.json</code></a>.
+It applies to the host <code>CORE-*</code> report. The private adoption receipt fixture is
+<a href="../../tests/conformance/fixtures/core/core-host-adoption-receipt.valid.json"><code>tests/conformance/fixtures/core/core-host-adoption-receipt.valid.json</code></a>.
+The <code>CORE-SERVER-*</code> report is checked by
+<a href="https://github.com/the-open-engine/agent-server-protocol/blob/aa6d17135bc3f64d9fc3468251d802bbed284064/scripts/conformance/core-server-report-catalog.ts"><code>scripts/conformance/core-server-report-catalog.ts</code></a>
+to keep the server report separate from the host report schema. The <code>INTEROP-*</code> report is checked by
+<a href="https://github.com/the-open-engine/agent-server-protocol/blob/aa6d17135bc3f64d9fc3468251d802bbed284064/scripts/conformance/interop-report-catalog.ts"><code>scripts/conformance/interop-report-catalog.ts</code></a>
+to keep interoperability evidence separate from trust, authority, certification, and public-standard
+claims. The <code>HOSTILE-*</code> report is checked by
+<a href="https://github.com/the-open-engine/agent-server-protocol/blob/aa6d17135bc3f64d9fc3468251d802bbed284064/scripts/conformance/hostile-report-catalog.ts"><code>scripts/conformance/hostile-report-catalog.ts</code></a>
+to keep hostile behavior evidence separate from trust, authority, certification, and public-standard
+claims. The <code>EDIT-HOST-*</code> report is checked by
+<a href="https://github.com/the-open-engine/agent-server-protocol/blob/aa6d17135bc3f64d9fc3468251d802bbed284064/scripts/conformance/edit-host-report-catalog.ts"><code>scripts/conformance/edit-host-report-catalog.ts</code></a>
+to keep edit/apply host behavior evidence separate from trust, authority, certification, public-standard,
+and mediated-write guarantee claims. The <code>ASSURANCE-*</code> report is checked by
+<a href="https://github.com/the-open-engine/agent-server-protocol/blob/aa6d17135bc3f64d9fc3468251d802bbed284064/scripts/conformance/assurance-report-catalog.ts"><code>scripts/conformance/assurance-report-catalog.ts</code></a>
+to keep assurance-mode honesty evidence separate from trust, authority, certification, public-standard,
+isolated, mediated-write, staged-snapshot, and workspace-transactional claims. The requirement list is
+<a href="requirements.html"><code>requirements.md</code></a>. The source-to-test map is <a href="traceability.html"><code>traceability.md</code></a>.</p>
+<p>Report runners derive assertion results from TAP events. Required host, server, interop, hostile, edit, and assurance
+assertion IDs include their negative cases. A required test that is absent, failed, skipped,
+unsupported, or marked TODO is recorded as failed, missing, skipped, or unsupported coverage and
+cannot produce a passing report.</p>
+<p>Reports are private behavior evidence only. They do not grant trust, authority, registry inclusion,
+provider approval, certification, stable public API status, or permission to replace existing
+guardrails. Full host/server conformance, isolated assurance, workspace-transactional apply,
+mediated-write apply, staged-snapshot apply, deployment-surface claims, repo dogfood, and Lattice
+parity/old-tool retirement remain outside these scaffolds.</p></main><aside class="page-toc" aria-label="On this page"><p>On this page</p><nav id="rustdoc"><ul></ul></nav></aside></div>
+<footer class="site-footer"><div>© The Open Engine
+<a href="https://github.com/the-open-engine/opcore">Opcore on GitHub ↗</a></div></footer></body></html>

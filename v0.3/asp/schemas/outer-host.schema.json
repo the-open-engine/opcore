@@ -1,0 +1,508 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://covibes.dev/asp/schemas/outer-host.schema.json",
+  "title": "ASP outer host surface",
+  "description": "Experimental harness-facing host request and response payloads for status, capabilities, changeset evaluation, inspect queries, edit-plan requests, mediated apply, and authority status. ASP Core v1.0 reuses status, capabilities, and evaluateChangeset without a Core-only schema fork. Provider assessments are host inputs; host-produced decision envelopes remain the only gate result exposed to harnesses. Binding method strings are private candidates; the semantic surface is transport-neutral.",
+  "$defs": {
+    "callSite": {
+      "enum": ["interactive", "gate", "sweep"]
+    },
+    "bindingCandidate": {
+      "enum": ["json-rpc-stdio", "mcp-extension", "embedded-reference", "unavailable"]
+    },
+    "enrollmentState": {
+      "enum": ["enrolled", "optional", "missing", "quarantined", "incompatible", "disabled", "error", "installed-not-enrolled"]
+    },
+    "providerLifecycleState": {
+      "$ref": "https://covibes.dev/asp/schemas/assurance.schema.json#/$defs/providerLifecycleState"
+    },
+    "providerCapabilityHealth": {
+      "type": "object",
+      "required": ["capability", "advertised", "available", "lifecycleState", "degraded"],
+      "additionalProperties": false,
+      "properties": {
+        "capability": { "$ref": "https://covibes.dev/asp/schemas/assurance.schema.json#/$defs/capabilityFamily" },
+        "advertised": { "type": "boolean" },
+        "available": { "type": "boolean" },
+        "lifecycleState": { "$ref": "#/$defs/providerLifecycleState" },
+        "degraded": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/coverageDegradation" }
+        }
+      }
+    },
+    "providerCapabilityHealthByFamily": {
+      "type": "object",
+      "required": ["inspect", "check", "edit"],
+      "additionalProperties": false,
+      "properties": {
+        "inspect": { "$ref": "#/$defs/providerCapabilityHealth" },
+        "check": { "$ref": "#/$defs/providerCapabilityHealth" },
+        "edit": { "$ref": "#/$defs/providerCapabilityHealth" }
+      }
+    },
+    "capabilityProviderState": {
+      "type": "object",
+      "required": ["provider", "role", "capability", "advertised", "available", "lifecycleState", "degraded"],
+      "additionalProperties": false,
+      "properties": {
+        "provider": { "type": "string" },
+        "role": { "enum": ["required", "optional", "advisory", "disabled"] },
+        "capability": { "$ref": "https://covibes.dev/asp/schemas/assurance.schema.json#/$defs/capabilityFamily" },
+        "advertised": { "type": "boolean" },
+        "available": { "type": "boolean" },
+        "lifecycleState": { "$ref": "#/$defs/providerLifecycleState" },
+        "degraded": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/coverageDegradation" }
+        }
+      }
+    },
+    "receipt": {
+      "$ref": "https://covibes.dev/asp/schemas/verdict.schema.json#/$defs/auditReceipt"
+    },
+    "baseline": {
+      "type": "object",
+      "required": ["rev"],
+      "additionalProperties": false,
+      "properties": {
+        "rev": { "type": "string" },
+        "dirty": { "type": "string" },
+        "stampedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "blobRef": {
+      "type": "string",
+      "pattern": "^blob:sha256:[0-9a-f]+$"
+    },
+    "hostValidAsOf": {
+      "type": "object",
+      "required": ["rev"],
+      "additionalProperties": false,
+      "properties": {
+        "rev": { "type": "string" },
+        "blobs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/blobRef" },
+          "uniqueItems": true
+        }
+      }
+    },
+    "coverageDegradation": {
+      "$ref": "https://covibes.dev/asp/schemas/assurance.schema.json#/$defs/coverageDegradation"
+    },
+    "hostCoverage": {
+      "type": "object",
+      "required": ["required", "enrolled", "ran", "degraded"],
+      "additionalProperties": false,
+      "properties": {
+        "exhaustive": { "type": "boolean" },
+        "required": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Canonical required providers or requirements for this host surface."
+        },
+        "enrolled": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Transitional alias that must equal required until #7 migrates field names."
+        },
+        "ran": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "degraded": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/coverageDegradation" }
+        }
+      }
+    },
+    "statusResult": {
+      "type": "object",
+      "required": ["host", "workspace", "policy", "servers", "gates", "capabilities", "assuranceCapabilities", "receipt"],
+      "additionalProperties": false,
+      "properties": {
+        "host": {
+          "type": "object",
+          "required": ["name", "version", "outerProtocol", "state", "bindingCandidate"],
+          "additionalProperties": false,
+          "properties": {
+            "name": { "type": "string" },
+            "version": { "type": "string" },
+            "outerProtocol": { "type": "string" },
+            "state": { "enum": ["ready", "degraded", "unavailable"] },
+            "bindingCandidate": { "$ref": "#/$defs/bindingCandidate" }
+          }
+        },
+        "workspace": {
+          "type": "object",
+          "required": ["root", "baseline", "validAsOf"],
+          "additionalProperties": false,
+          "properties": {
+            "root": { "type": "string" },
+            "baseline": { "$ref": "#/$defs/baseline" },
+            "validAsOf": { "$ref": "#/$defs/baseline" },
+            "staleReason": { "type": "string" }
+          }
+        },
+        "policy": {
+          "type": "object",
+          "required": ["source", "activation", "policyDigest"],
+          "additionalProperties": false,
+          "properties": {
+            "source": { "type": "string" },
+            "activation": { "enum": ["active", "pending", "rejected"] },
+            "policyDigest": { "type": "string" },
+            "localOverride": {
+              "type": "object",
+              "required": ["present", "authorityEffect"],
+              "additionalProperties": false,
+              "properties": {
+                "present": { "type": "boolean" },
+                "path": { "type": ["string", "null"] },
+                "authorityEffect": { "const": "none" },
+                "detail": { "type": "string" }
+              }
+            }
+          }
+        },
+        "servers": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/serverStatus" }
+        },
+        "gates": {
+          "type": "object",
+          "required": ["interactive", "gate", "sweep"],
+          "additionalProperties": false,
+          "properties": {
+            "interactive": { "$ref": "#/$defs/gateStatus" },
+            "gate": { "$ref": "#/$defs/gateStatus" },
+            "sweep": { "$ref": "#/$defs/gateStatus" }
+          }
+        },
+        "capabilities": { "$ref": "#/$defs/capabilityCoverage" },
+        "assuranceCapabilities": {
+          "type": "array",
+          "items": { "$ref": "https://covibes.dev/asp/schemas/assurance.schema.json#/$defs/assuranceMode" },
+          "uniqueItems": true
+        },
+        "receipt": { "$ref": "#/$defs/receipt" }
+      }
+    },
+    "serverStatus": {
+      "type": "object",
+      "required": ["id", "capabilities", "state", "lifecycleState", "capabilityStates", "requiredFor", "enrollmentState", "authorityEvidence"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string" },
+        "roles": {
+          "type": "array",
+          "description": "Legacy/transitional shorthand for the older sense/judge/act vocabulary. Normative capability families are inspect/check/edit.",
+          "items": { "enum": ["sense", "judge", "act"] }
+        },
+        "role": { "enum": ["required", "optional", "advisory", "disabled"] },
+        "category": { "type": ["string", "null"] },
+        "capabilities": {
+          "type": "array",
+          "items": { "$ref": "https://covibes.dev/asp/schemas/assurance.schema.json#/$defs/capabilityFamily" },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "authorityEvidence": { "$ref": "https://covibes.dev/asp/schemas/assurance.schema.json#/$defs/authorityEvidence" },
+        "state": { "enum": ["ready", "installed", "degraded", "unavailable", "quarantined", "incompatible"] },
+        "lifecycleState": { "$ref": "#/$defs/providerLifecycleState" },
+        "enrollmentState": { "$ref": "#/$defs/enrollmentState" },
+        "capabilityStates": { "$ref": "#/$defs/providerCapabilityHealthByFamily" },
+        "requiredFor": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/callSite" }
+        },
+        "coverage": { "$ref": "#/$defs/hostCoverage" },
+        "manifest": { "type": "string" },
+        "manifestState": { "enum": ["valid", "present", "missing", "malformed", "stale", "incompatible", "untrusted"] },
+        "accessExpectationsDeclared": { "type": "boolean" },
+        "manifestDetail": {
+          "type": "object",
+          "required": ["path", "trustEffect", "launchAuthority", "gateAuthority"],
+          "additionalProperties": false,
+          "properties": {
+            "path": { "type": "string" },
+            "trustEffect": { "const": "metadata-only" },
+            "launchAuthority": { "const": false },
+            "gateAuthority": { "const": false },
+            "detail": { "type": "string" }
+          }
+        },
+        "detail": { "type": "string" }
+      }
+    },
+    "gateStatus": {
+      "type": "object",
+      "required": ["available", "requiredProviders", "requiredCapabilities", "degraded"],
+      "additionalProperties": false,
+      "properties": {
+        "available": { "type": "boolean" },
+        "requiredProviders": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "requiredCapabilities": {
+          "type": "array",
+          "items": { "$ref": "https://covibes.dev/asp/schemas/assurance.schema.json#/$defs/capabilityFamily" },
+          "uniqueItems": true
+        },
+        "degraded": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/coverageDegradation" }
+        }
+      }
+    },
+    "capabilityCoverage": {
+      "type": "object",
+      "required": ["inspect", "check", "edit"],
+      "additionalProperties": false,
+      "properties": {
+        "inspect": { "$ref": "#/$defs/capabilityStatus" },
+        "check": { "$ref": "#/$defs/capabilityStatus" },
+        "edit": { "$ref": "#/$defs/capabilityStatus" }
+      }
+    },
+    "capabilityStatus": {
+      "type": "object",
+      "required": ["available", "providers", "degraded", "capabilityStates"],
+      "additionalProperties": false,
+      "properties": {
+        "available": { "type": "boolean" },
+        "providers": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "requiredFor": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/callSite" }
+        },
+        "degraded": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/coverageDegradation" }
+        },
+        "capabilityStates": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/capabilityProviderState" }
+        },
+        "legacyAliases": {
+          "type": "array",
+          "description": "Compatibility labels only; not normative capability names.",
+          "items": { "enum": ["sense", "judge", "act"] }
+        }
+      }
+    },
+    "capabilitiesResult": {
+      "type": "object",
+      "required": ["capabilities", "sources", "coverage", "receipt"],
+      "additionalProperties": false,
+      "properties": {
+        "capabilities": { "$ref": "#/$defs/capabilityCoverage" },
+        "sources": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/serverStatus" }
+        },
+        "coverage": { "$ref": "#/$defs/hostCoverage" },
+        "legacyRoles": {
+          "type": "object",
+          "description": "Legacy/transitional projection of inspect/check/edit into sense/judge/act.",
+          "additionalProperties": false,
+          "properties": {
+            "sense": { "type": "boolean" },
+            "judge": { "type": "boolean" },
+            "act": { "type": "boolean" }
+          }
+        },
+        "receipt": { "$ref": "#/$defs/receipt" }
+      }
+    },
+    "evaluateChangesetParams": {
+      "type": "object",
+      "required": ["callSite", "changeset"],
+      "additionalProperties": false,
+      "properties": {
+        "callSite": { "$ref": "#/$defs/callSite" },
+        "changeset": { "$ref": "https://covibes.dev/asp/schemas/changeset.schema.json" },
+        "comparison": { "enum": ["all", "introduced"] },
+        "timeoutMs": { "type": "integer", "minimum": 1 },
+        "basePolicyDigest": { "type": "string" }
+      }
+    },
+    "evaluateChangesetResult": {
+      "$ref": "https://covibes.dev/asp/schemas/verdict.schema.json"
+    },
+    "queryInspectParams": {
+      "type": "object",
+      "required": ["callSite", "request"],
+      "additionalProperties": false,
+      "properties": {
+        "callSite": { "$ref": "#/$defs/callSite" },
+        "request": { "type": "object" },
+        "baseline": { "$ref": "#/$defs/baseline" },
+        "timeoutMs": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "queryInspectResult": {
+      "type": "object",
+      "required": ["data", "validAsOf", "coverage", "receipt"],
+      "additionalProperties": false,
+      "properties": {
+        "data": {
+          "type": "object",
+          "required": ["results"],
+          "additionalProperties": false,
+          "properties": {
+            "results": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/queryInspectProviderResult" }
+            }
+          }
+        },
+        "validAsOf": { "$ref": "#/$defs/hostValidAsOf" },
+        "coverage": { "$ref": "#/$defs/hostCoverage" },
+        "receipt": { "$ref": "#/$defs/receipt" }
+      }
+    },
+    "queryInspectProviderResult": {
+      "type": "object",
+      "required": ["provider", "result"],
+      "additionalProperties": false,
+      "properties": {
+        "provider": { "type": "string" },
+        "result": { "$ref": "#/$defs/inspectProviderGraphResult" }
+      }
+    },
+    "inspectProviderGraphResult": {
+      "type": "object",
+      "required": ["validAsOf"],
+      "additionalProperties": false,
+      "properties": {
+        "nodes": {
+          "type": "array",
+          "items": { "type": "object" }
+        },
+        "edges": {
+          "type": "array",
+          "items": { "type": "object" }
+        },
+        "data": { "type": "object" },
+        "validAsOf": { "$ref": "#/$defs/hostValidAsOf" }
+      }
+    },
+    "requestEditPlanParams": {
+      "type": "object",
+      "required": ["callSite", "operation", "baseline"],
+      "additionalProperties": false,
+      "properties": {
+        "callSite": { "$ref": "#/$defs/callSite" },
+        "operation": { "type": "string" },
+        "args": { "type": "object" },
+        "baseline": { "$ref": "#/$defs/baseline" },
+        "scope": { "$ref": "https://covibes.dev/asp/schemas/edit-propose.schema.json#/$defs/scope" },
+        "proposalId": { "type": "string" }
+      }
+    },
+    "requestEditPlanResult": {
+      "type": "object",
+      "description": "Host-returned provider EditPlan plus host receipt. The proposal remains provider data; host validation and apply happen only through host/applyProposal.",
+      "required": ["proposal", "receipt"],
+      "additionalProperties": false,
+      "properties": {
+        "proposal": { "$ref": "https://covibes.dev/asp/schemas/edit-plan.schema.json#/$defs/editPlan" },
+        "receipt": { "$ref": "#/$defs/receipt" }
+      }
+    },
+    "applyProposalParams": {
+      "type": "object",
+      "description": "Authorized harness/user/agent write intent for host/applyProposal. Servers cannot initiate applyEdit; see ADR 0024.",
+      "required": ["callSite", "proposalId", "intent"],
+      "additionalProperties": false,
+      "properties": {
+        "callSite": { "$ref": "#/$defs/callSite" },
+        "proposalId": { "type": "string" },
+        "intent": { "enum": ["user", "agent", "harness"] },
+        "proposal": { "$ref": "https://covibes.dev/asp/schemas/edit-plan.schema.json#/$defs/editPlan" },
+        "edit": {
+          "description": "Legacy compatibility projection of proposal.workspaceEdit. When supplied, the host must reject it unless it exactly matches the selected proposal.workspaceEdit.",
+          "$ref": "https://covibes.dev/asp/schemas/workspace-edit.schema.json"
+        },
+        "basePolicyDigest": { "type": "string" }
+      }
+    },
+    "applyProposalResult": {
+      "type": "object",
+      "description": "Host-produced apply receipt for a serialized host transaction, not a provider verdict or server-initiated apply result. Missing authority, insufficient assurance, direct-write risk, unsupported, denied, indeterminate, stale, malformed, missing-blob, precondition, and conflict outcomes do not intentionally mutate the workspace.",
+      "required": ["applied", "proposalId", "baselineBefore", "baselineAfter", "assurance", "receipt"],
+      "additionalProperties": false,
+      "properties": {
+        "applied": { "type": "boolean" },
+        "proposalId": { "type": "string" },
+        "baselineBefore": { "$ref": "#/$defs/baseline" },
+        "baselineAfter": {
+          "oneOf": [
+            { "$ref": "#/$defs/baseline" },
+            { "type": "null" }
+          ]
+        },
+        "assurance": { "$ref": "https://covibes.dev/asp/schemas/assurance.schema.json#/$defs/applyAssurance" },
+        "decision": { "$ref": "https://covibes.dev/asp/schemas/verdict.schema.json" },
+        "refusal": {
+          "type": "object",
+          "required": ["reason", "detail"],
+          "additionalProperties": false,
+          "properties": {
+            "reason": { "enum": ["missing-authority", "insufficient-assurance", "direct-write-risk", "unsupported", "stale-baseline", "conflict", "validation-denied", "validation-indeterminate", "malformed", "missing-blob", "precondition-failed"] },
+            "detail": { "type": "string" },
+            "conflicts": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["path", "detail"],
+                "additionalProperties": false,
+                "properties": {
+                  "path": { "type": "string" },
+                  "detail": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "receipt": { "$ref": "#/$defs/receipt" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "applied": { "const": false } } },
+          "then": {
+            "required": ["refusal"],
+            "properties": { "baselineAfter": { "type": "null" } }
+          }
+        },
+        {
+          "if": { "properties": { "applied": { "const": true } } },
+          "then": {
+            "properties": { "baselineAfter": { "$ref": "#/$defs/baseline" } },
+            "not": { "required": ["refusal"] }
+          }
+        }
+      ]
+    },
+    "authorityStatusResult": {
+      "type": "object",
+      "required": ["policyActivation", "policyDigest", "providers", "receipt"],
+      "additionalProperties": false,
+      "properties": {
+        "policyActivation": { "enum": ["base-active", "candidate-pending", "candidate-approved"] },
+        "policyDigest": { "type": "string" },
+        "providers": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/serverStatus" }
+        },
+        "receipt": { "$ref": "#/$defs/receipt" }
+      }
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "jsonrpc": "2.0",
+  "id": 7,
+  "method": "check/evaluate",
+  "params": {
+    "changeset": {
+      "baseline": { "rev": "git:tree:9f3a1c", "stampedAt": "2026-06-16T10:00:00Z" },
+      "changes": [
+        { "path": "src/api.ts", "kind": "modify", "before": "blob:sha256:aa01", "after": "blob:sha256:bb02" },
+        { "path": "src/new.ts", "kind": "create", "after": "blob:sha256:cc03" }
+      ]
+    },
+    "scope": "changeset",
+    "comparison": "introduced",
+    "diagnosticSources": ["acme-secrets"],
+    "rules": ["acme-secrets/aws-key"]
+  }
+}

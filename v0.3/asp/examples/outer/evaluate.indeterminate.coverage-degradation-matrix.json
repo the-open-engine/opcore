@@ -1,0 +1,457 @@
+{
+  "jsonrpc": "2.0",
+  "id": 9,
+  "validates": "outer-host.schema.json#/$defs/evaluateChangesetResult",
+  "result": {
+    "pass": false,
+    "decision": "indeterminate",
+    "callSite": "gate",
+    "findings": [],
+    "coverage": {
+      "exhaustive": false,
+      "required": [
+        "lattice-check",
+        "static-unsupported",
+        "type-incomplete",
+        "policy-cancelled",
+        "sandbox-quarantined",
+        "version-skewed",
+        "slow-timeout",
+        "health-fail-open"
+      ],
+      "enrolled": [
+        "lattice-check",
+        "static-unsupported",
+        "type-incomplete",
+        "policy-cancelled",
+        "sandbox-quarantined",
+        "version-skewed",
+        "slow-timeout",
+        "health-fail-open"
+      ],
+      "ran": [
+        "lattice-check"
+      ],
+      "degraded": [
+        {
+          "source": "static-unsupported",
+          "reason": "unsupported",
+          "requirement": "required-check-coverage",
+          "detail": "Required provider did not support the requested check capability."
+        },
+        {
+          "source": "type-incomplete",
+          "reason": "incomplete",
+          "requirement": "required-check-coverage",
+          "detail": "Required provider returned an incomplete assessment."
+        },
+        {
+          "source": "policy-cancelled",
+          "reason": "cancelled",
+          "requirement": "required-check-coverage",
+          "detail": "Required provider cancelled before producing a final assessment."
+        },
+        {
+          "source": "sandbox-quarantined",
+          "reason": "quarantined",
+          "requirement": "required-check-coverage",
+          "detail": "Required provider was quarantined by host policy."
+        },
+        {
+          "source": "version-skewed",
+          "reason": "skewed",
+          "requirement": "required-check-coverage",
+          "detail": "Required provider build or schema version did not match the host enrollment."
+        },
+        {
+          "source": "slow-timeout",
+          "reason": "timed-out",
+          "requirement": "required-check-coverage",
+          "detail": "Required provider exceeded the gate budget."
+        },
+        {
+          "source": "health-fail-open",
+          "reason": "fail-open",
+          "requirement": "required-check-coverage",
+          "detail": "Required provider failed open in a context where gate coverage cannot pass silently."
+        },
+        {
+          "source": "core-required-check",
+          "reason": "missing",
+          "requirement": "core-required-check",
+          "detail": "Required provider is missing from the host enrollment."
+        },
+        {
+          "source": "core-required-check",
+          "reason": "unavailable",
+          "requirement": "core-required-check",
+          "detail": "Required provider is unavailable in trusted host configuration."
+        },
+        {
+          "source": "core-required-check",
+          "reason": "incompatible",
+          "requirement": "core-required-check",
+          "detail": "Required provider is incompatible with the Core host."
+        },
+        {
+          "source": "core-required-check",
+          "reason": "malformed",
+          "requirement": "core-required-check",
+          "detail": "Required provider returned malformed Assessment data."
+        },
+        {
+          "source": "core-required-check",
+          "reason": "stale",
+          "requirement": "core-required-check",
+          "detail": "Required provider returned stale Assessment freshness."
+        },
+        {
+          "source": "core-required-check",
+          "reason": "crashed",
+          "requirement": "core-required-check",
+          "detail": "Required provider crashed before returning an Assessment."
+        },
+        {
+          "source": "core-required-check",
+          "reason": "missing-authority",
+          "requirement": "core-required-check",
+          "detail": "Required provider lacks explicit authority for the gate requirement."
+        },
+        {
+          "source": "core-required-check",
+          "reason": "insufficient-assurance",
+          "requirement": "core-required-check",
+          "detail": "Required provider coverage did not achieve gated assurance."
+        },
+        {
+          "source": "core-required-check",
+          "reason": "direct-write-risk",
+          "requirement": "core-required-check",
+          "detail": "Provider reported direct-write risk that cannot satisfy mediated assurance."
+        },
+        {
+          "source": ".asp/asp.json",
+          "reason": "policy-self-authorization",
+          "requirement": "core-required-check",
+          "detail": "Candidate policy changes cannot authorize their own gate."
+        }
+      ]
+    },
+    "policyDigest": "sha256:policyabc123",
+    "authorityEvidence": [
+      {
+        "identity": "the-open-engine",
+        "integrity": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+        "conformance": "lattice-alpha",
+        "isolation": "gated",
+        "authority": {
+          "granted": true,
+          "requirement": "lattice-alpha-check",
+          "policyDigest": "sha256:policyabc123"
+        }
+      }
+    ],
+    "validAsOf": {
+      "rev": "tree:abc123"
+    },
+    "assurance": {
+      "mode": "gated",
+      "transactionGuarantee": "none"
+    },
+    "receipt": {
+      "receiptId": "eval-coverage-degradation-matrix-0001",
+      "issuedAt": "2026-06-23T09:55:00Z",
+      "providerProvenance": [
+        {
+          "provider": "lattice-check",
+          "capability": "check",
+          "identity": "the-open-engine",
+          "integrity": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+          "conformance": "lattice-alpha"
+        }
+      ],
+      "policyDigest": "sha256:policyabc123",
+      "baseline": {
+        "rev": "tree:abc123",
+        "stampedAt": "2026-06-23T09:50:00Z"
+      },
+      "validAsOf": {
+        "rev": "tree:abc123"
+      },
+      "coverage": {
+        "exhaustive": false,
+        "required": [
+          "lattice-check",
+          "static-unsupported",
+          "type-incomplete",
+          "policy-cancelled",
+          "sandbox-quarantined",
+          "version-skewed",
+          "slow-timeout",
+          "health-fail-open"
+        ],
+        "enrolled": [
+          "lattice-check",
+          "static-unsupported",
+          "type-incomplete",
+          "policy-cancelled",
+          "sandbox-quarantined",
+          "version-skewed",
+          "slow-timeout",
+          "health-fail-open"
+        ],
+        "ran": [
+          "lattice-check"
+        ],
+        "degraded": [
+          {
+            "source": "static-unsupported",
+            "reason": "unsupported",
+            "requirement": "required-check-coverage",
+            "detail": "Required provider did not support the requested check capability."
+          },
+          {
+            "source": "type-incomplete",
+            "reason": "incomplete",
+            "requirement": "required-check-coverage",
+            "detail": "Required provider returned an incomplete assessment."
+          },
+          {
+            "source": "policy-cancelled",
+            "reason": "cancelled",
+            "requirement": "required-check-coverage",
+            "detail": "Required provider cancelled before producing a final assessment."
+          },
+          {
+            "source": "sandbox-quarantined",
+            "reason": "quarantined",
+            "requirement": "required-check-coverage",
+            "detail": "Required provider was quarantined by host policy."
+          },
+          {
+            "source": "version-skewed",
+            "reason": "skewed",
+            "requirement": "required-check-coverage",
+            "detail": "Required provider build or schema version did not match the host enrollment."
+          },
+          {
+            "source": "slow-timeout",
+            "reason": "timed-out",
+            "requirement": "required-check-coverage",
+            "detail": "Required provider exceeded the gate budget."
+          },
+          {
+            "source": "health-fail-open",
+            "reason": "fail-open",
+            "requirement": "required-check-coverage",
+            "detail": "Required provider failed open in a context where gate coverage cannot pass silently."
+          },
+          {
+            "source": "core-required-check",
+            "reason": "missing",
+            "requirement": "core-required-check",
+            "detail": "Required provider is missing from the host enrollment."
+          },
+          {
+            "source": "core-required-check",
+            "reason": "unavailable",
+            "requirement": "core-required-check",
+            "detail": "Required provider is unavailable in trusted host configuration."
+          },
+          {
+            "source": "core-required-check",
+            "reason": "incompatible",
+            "requirement": "core-required-check",
+            "detail": "Required provider is incompatible with the Core host."
+          },
+          {
+            "source": "core-required-check",
+            "reason": "malformed",
+            "requirement": "core-required-check",
+            "detail": "Required provider returned malformed Assessment data."
+          },
+          {
+            "source": "core-required-check",
+            "reason": "stale",
+            "requirement": "core-required-check",
+            "detail": "Required provider returned stale Assessment freshness."
+          },
+          {
+            "source": "core-required-check",
+            "reason": "crashed",
+            "requirement": "core-required-check",
+            "detail": "Required provider crashed before returning an Assessment."
+          },
+          {
+            "source": "core-required-check",
+            "reason": "missing-authority",
+            "requirement": "core-required-check",
+            "detail": "Required provider lacks explicit authority for the gate requirement."
+          },
+          {
+            "source": "core-required-check",
+            "reason": "insufficient-assurance",
+            "requirement": "core-required-check",
+            "detail": "Required provider coverage did not achieve gated assurance."
+          },
+          {
+            "source": "core-required-check",
+            "reason": "direct-write-risk",
+            "requirement": "core-required-check",
+            "detail": "Provider reported direct-write risk that cannot satisfy mediated assurance."
+          },
+          {
+            "source": ".asp/asp.json",
+            "reason": "policy-self-authorization",
+            "requirement": "core-required-check",
+            "detail": "Candidate policy changes cannot authorize their own gate."
+          }
+        ]
+      },
+      "authorityEvidence": [
+        {
+          "identity": "the-open-engine",
+          "integrity": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+          "conformance": "lattice-alpha",
+          "isolation": "gated",
+          "authority": {
+            "granted": true,
+            "requirement": "lattice-alpha-check",
+            "policyDigest": "sha256:policyabc123"
+          }
+        }
+      ],
+      "assurance": {
+        "mode": "gated",
+        "transactionGuarantee": "none"
+      },
+      "kind": "evaluate",
+      "host": {
+        "name": "core-host",
+        "version": "0.1.0-private"
+      },
+      "capabilityFamily": "check",
+      "callSite": "gate",
+      "requestDigest": "sha256:examples-outer-evaluate-indeterminate-coverage-degradation-matrix-json-request-indeterminate",
+      "changesetDigest": "sha256:examples-outer-evaluate-indeterminate-coverage-degradation-matrix-json-changeset-indeterminate",
+      "providerIds": [
+        "lattice-check",
+        "the-open-engine"
+      ],
+      "timing": {
+        "startedAt": "2026-06-23T00:00:00Z",
+        "endedAt": "2026-06-23T00:00:00Z",
+        "elapsedMs": 0
+      },
+      "failures": [
+        {
+          "source": "static-unsupported",
+          "reason": "unsupported",
+          "requirement": "required-check-coverage",
+          "detail": "Required provider did not support the requested check capability."
+        },
+        {
+          "source": "type-incomplete",
+          "reason": "incomplete",
+          "requirement": "required-check-coverage",
+          "detail": "Required provider returned an incomplete assessment."
+        },
+        {
+          "source": "policy-cancelled",
+          "reason": "cancelled",
+          "requirement": "required-check-coverage",
+          "detail": "Required provider cancelled before producing a final assessment."
+        },
+        {
+          "source": "sandbox-quarantined",
+          "reason": "quarantined",
+          "requirement": "required-check-coverage",
+          "detail": "Required provider was quarantined by host policy."
+        },
+        {
+          "source": "version-skewed",
+          "reason": "skewed",
+          "requirement": "required-check-coverage",
+          "detail": "Required provider build or schema version did not match the host enrollment."
+        },
+        {
+          "source": "slow-timeout",
+          "reason": "timed-out",
+          "requirement": "required-check-coverage",
+          "detail": "Required provider exceeded the gate budget."
+        },
+        {
+          "source": "health-fail-open",
+          "reason": "fail-open",
+          "requirement": "required-check-coverage",
+          "detail": "Required provider failed open in a context where gate coverage cannot pass silently."
+        },
+        {
+          "source": "core-required-check",
+          "reason": "missing",
+          "requirement": "core-required-check",
+          "detail": "Required provider is missing from the host enrollment."
+        },
+        {
+          "source": "core-required-check",
+          "reason": "unavailable",
+          "requirement": "core-required-check",
+          "detail": "Required provider is unavailable in trusted host configuration."
+        },
+        {
+          "source": "core-required-check",
+          "reason": "incompatible",
+          "requirement": "core-required-check",
+          "detail": "Required provider is incompatible with the Core host."
+        },
+        {
+          "source": "core-required-check",
+          "reason": "malformed",
+          "requirement": "core-required-check",
+          "detail": "Required provider returned malformed Assessment data."
+        },
+        {
+          "source": "core-required-check",
+          "reason": "stale",
+          "requirement": "core-required-check",
+          "detail": "Required provider returned stale Assessment freshness."
+        },
+        {
+          "source": "core-required-check",
+          "reason": "crashed",
+          "requirement": "core-required-check",
+          "detail": "Required provider crashed before returning an Assessment."
+        },
+        {
+          "source": "core-required-check",
+          "reason": "missing-authority",
+          "requirement": "core-required-check",
+          "detail": "Required provider lacks explicit authority for the gate requirement."
+        },
+        {
+          "source": "core-required-check",
+          "reason": "insufficient-assurance",
+          "requirement": "core-required-check",
+          "detail": "Required provider coverage did not achieve gated assurance."
+        },
+        {
+          "source": "core-required-check",
+          "reason": "direct-write-risk",
+          "requirement": "core-required-check",
+          "detail": "Provider reported direct-write risk that cannot satisfy mediated assurance."
+        },
+        {
+          "source": ".asp/asp.json",
+          "reason": "policy-self-authorization",
+          "requirement": "core-required-check",
+          "detail": "Candidate policy changes cannot authorize their own gate."
+        }
+      ],
+      "privateOnly": true,
+      "experimental": true,
+      "trustArtifact": false
+    },
+    "requestDigest": "sha256:examples-outer-evaluate-indeterminate-coverage-degradation-matrix-json-request-indeterminate",
+    "changesetDigest": "sha256:examples-outer-evaluate-indeterminate-coverage-degradation-matrix-json-changeset-indeterminate"
+  }
+}

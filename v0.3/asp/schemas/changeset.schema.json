@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://covibes.dev/asp/schemas/changeset.schema.json",
+  "title": "ChangeSet",
+  "description": "A content-addressed delta over a SnapshotRef/Baseline. ASP Core v1.0 reuses this immutable candidate input without a Core-only schema fork. before/after are blob content-hashes, never inline bytes. The after-state is baseline overlaid with these changes. Hosts normalize accepted EditPlans into this invariant before validation and apply.",
+  "type": "object",
+  "required": ["baseline", "changes"],
+  "additionalProperties": false,
+  "properties": {
+    "baseline": { "$ref": "#/$defs/baseline", "description": "v1.0 field alias for the canonical SnapshotRef object." },
+    "changes": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/change" }
+    }
+  },
+  "$defs": {
+    "snapshotRef": {
+      "type": "object",
+      "title": "SnapshotRef",
+      "required": ["rev"],
+      "additionalProperties": false,
+      "properties": {
+        "rev": { "type": "string", "description": "Content-addressed tree hash, e.g. git:tree:9f3a1c." },
+        "dirty": { "type": "string", "description": "Digest of the uncommitted overlay, if any." },
+        "stampedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "baseline": {
+      "$ref": "#/$defs/snapshotRef",
+      "description": "Transitional schema alias for SnapshotRef used by v1.0 fixtures and compatibility payloads."
+    },
+    "blobRef": {
+      "type": "string",
+      "pattern": "^blob:[a-z0-9]+:[0-9a-f]+$",
+      "description": "Content hash, e.g. blob:sha256:bb…"
+    },
+    "change": {
+      "type": "object",
+      "required": ["path", "kind"],
+      "additionalProperties": false,
+      "properties": {
+        "path": { "type": "string" },
+        "kind": { "enum": ["create", "modify", "delete", "rename"] },
+        "from": { "type": "string", "description": "Prior path, for kind = rename." },
+        "before": { "$ref": "#/$defs/blobRef", "description": "Required for modify/delete/rename." },
+        "after": { "$ref": "#/$defs/blobRef", "description": "Required for create/modify. On a content-changing rename, the new content blob; a pure rename may omit it (after === before)." }
+      },
+      "allOf": [
+        { "if": { "properties": { "kind": { "const": "create" } } }, "then": { "required": ["after"] } },
+        { "if": { "properties": { "kind": { "const": "modify" } } }, "then": { "required": ["before", "after"] } },
+        { "if": { "properties": { "kind": { "const": "delete" } } }, "then": { "required": ["before"] } },
+        { "if": { "properties": { "kind": { "const": "rename" } } }, "then": { "required": ["from", "before"] } }
+      ]
+    }
+  }
+}

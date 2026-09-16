@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Experimental installation and discovery · Opcore</title><link rel="stylesheet" href="../../assets/site.css">
+<script src="../../assets/theme.js"></script>
+<script defer src="../../assets/site.js"></script>
+<link rel="icon" type="image/svg+xml" href="../../assets/oec-favicon.svg"><link rel="stylesheet" href="../../assets/versions.css"><script defer src="../../assets/versions.js"></script></head>
+<body class="guide-page"><a class="skip-link" href="#main-content">Skip to content</a>
+<header class="site-header"><div class="header-inner">
+<button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-navigation">Menu</button>
+<a class="brand" href="../../index.html"><img src="../../assets/oec-crow.png" alt="" width="32" height="36"><span>Opcore</span></a>
+<a class="header-label" href="../../index.html">Documentation</a>
+<div class="header-actions"><div class="docs-version" data-site-root="../../../" data-page-path="asp/spec/10-installation-and-discovery.html" data-version="v0.3"><a href="../../../versions.html">v0.3 ▾</a><select hidden aria-label="Documentation version"><option>v0.3</option></select></div><button class="theme-toggle" type="button" aria-label="Use dark mode" title="Use dark mode"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20.8 13.1A9 9 0 0 1 10.9 3.2 9 9 0 1 0 20.8 13.1Z"/></svg></button>
+<a class="repository-link" href="https://github.com/the-open-engine/opcore">GitHub <span aria-hidden="true">↗</span></a></div>
+</div></header>
+<div class="docs-layout"><aside class="docs-sidebar"><nav id="site-navigation" aria-label="Documentation"><div class="nav-group"><p>Opcore</p><ul><li><a href="../../index.html">Overview</a></li></ul></div><div class="nav-group"><p>Get started</p><ul><li><a href="../../docs/getting-started.html">Installation and first check</a></li></ul></div><div class="nav-group"><p>Guides</p><ul><li><a href="../../docs/configuration.html">Configuration</a></li><li><a href="../../docs/providers.html">Providers</a></li><li><a href="../../docs/examples.html">Examples</a></li><li><a href="../../docs/sense.html">Project Sense</a></li><li><a href="../../docs/agent-signals.html">Agent feedback</a></li></ul></div><div class="nav-group"><p>Reference</p><ul><li><a href="../../cli.html">CLI</a></li><li><a href="../../api/opcore/api/index.html">Rust API</a></li><li><a href="../../api/opcore/api/enum.ProviderProfile.html">Provider profiles</a></li><li><a href="../README.html">ASP specification</a></li></ul></div><div class="nav-group"><p>Project</p><ul><li><a href="../../docs/architecture.html">Architecture</a></li><li><a href="../../CONTRIBUTING.html">Contributing</a></li><li><a href="../../CODE_OF_CONDUCT.html">Code of conduct</a></li><li><a href="../../SECURITY.html">Security</a></li></ul></div></nav></aside>
+<main id="main-content" class="guide-content" tabindex="-1">
+<p class="docs-kicker">Core documentation</p><h1 class="title">Experimental installation and discovery</h1>
+    <details><summary>Specification metadata</summary>
+<div class="example-wrap"><pre class="language-yaml"><code>title: Experimental installation and discovery
+status: draft
+normative: true
+summary: Private experimental manager, host acquisition, server discovery, logical repository policy, provider manifests, local overrides, authority grants, and missing-host behavior.
+updated: 2026-06-24</code></pre></div></details>
+<p>ASP intentionally separates <strong>manager UX</strong>, <strong>host acquisition</strong>, <strong>server discovery</strong>, <strong>logical
+policy</strong>, <strong>provider launch</strong>, and <strong>authority grants</strong>. This chapter is private draft material; the
+filenames and schemas here are not public API, stable manifests, stable descriptors, release gates,
+registries, launch authority, gate authority, certification, or trust roots. Governance posture is in
+<a href="../docs/governance/governance-draft.html">the governance draft</a>.</p>
+<p>The repository does not ship a private copy of the host, and a harness such as ACE does not bundle
+Lattice or carry ASP as a hidden dependency. ASP ships independently as a manager/runtime package such
+as <code>@the-open-engine/asp</code> / <code>asp</code>. The manager may launch the Open Engine reference host, discover and
+supervise installed ASP servers, install agent-root hooks/skills, and help users enroll repos. The
+environment still supplies or embeds a conforming ASP host for authoritative decisions. The
+repository declares logical assurance requirements. The environment, organization, or manager decides
+how servers are installed and launched.</p>
+<p>The <a href="11-core-profile.html">Core Profile</a> deliberately excludes deployment surfaces from the tiny
+first host/provider/check adoption path. Manager daemon behavior, server catalogs, setup wizards,
+agent-root hooks/skills, <code>.asp/asp.json</code>, <code>.asp/local.json</code>, <code>asp-server.json</code>, dogfood wiring, ACE
+integration, and reference-engine parity remain optional non-Core profiles and cannot replace Core
+adoption receipts.</p>
+<h2 id="1-boundary-matrix"><a class="doc-anchor" href="#1-boundary-matrix">§</a>1. Boundary matrix</h2><div><table><thead><tr><th>Surface</th><th>May express</th><th>Must not express</th><th>Activation / failure rule</th></tr></thead><tbody>
+<tr><td><code>asp</code> manager CLI/daemon</td><td>User-level server discovery/install, server supervision, agent-root setup, repo enrollment, status/doctor output, local advisory defaults, and host launch for the Open Engine implementation path.</td><td>Protocol semantics by fiat, mandatory central service behavior, gate authority without policy, certification, public registry trust, or Lattice-specific fast paths.</td><td>It is a trusted local product surface when installed by the user/org. It must still produce or consume host-authored decisions and receipts for gates.</td></tr>
+<tr><td>Server catalog</td><td>Discoverable official-supported, community-listed, partner/paid, closed-source, and local-dev ASP servers with metadata and install hints.</td><td>Trust roots, automatic gate authority, required registry membership, conformance claims without evidence, or exclusion of non-catalog local servers.</td><td>Catalog listing can help installation, but a server satisfies gates only through separate identity, integrity, conformance, isolation, and authority checks.</td></tr>
+<tr><td><code>.asp/asp.json</code> repository policy</td><td>ASP version, capability requirements, gates, budgets, adapter expectations, assurance requirements, pinned provider identity/version/digest/conformance, and authority requirements.</td><td>Host implementation selection, shell commands, scripts, executable paths, launch strings, package discovery, certification programs, registry trust, or provider launch authority.</td><td>Candidate edits are evaluated under trusted base policy or a non-weakenable organization floor. A candidate policy cannot authorize or weaken gates for the same change.</td></tr>
+<tr><td><code>.asp/local.json</code> local override</td><td>Local advisory experiments, unpublished builds, diagnostics, and presentation preferences.</td><td>Shared gate weakening, shared authority grants, certification, trust roots, missing-host fail-open for shared gates, or shared authoritative decisions.</td><td>Ignored by source control. It can affect local advisory behavior only.</td></tr>
+<tr><td><code>asp-server.json</code> installed manifest</td><td>Installed provider metadata, protocol versions, capability hints, structured entrypoint, artifact digest, provenance, and explicit access expectations.</td><td>Trust roots, gate authority, registry authority, certification authority, inherited environment trust, or shared policy requirements.</td><td>The host/environment validates identity, integrity, conformance, isolation, access grants, and authority before launch/enrollment. Stale, malformed, or incompatible manifests cannot silently satisfy gates.</td></tr>
+<tr><td>Trusted environment/org/installation config</td><td>Host and provider launch behavior, protected policy floors, sandboxing, network/secret/data grants, and installed-manifest validation.</td><td>Mutable candidate-policy shortcuts or provider authority without explicit pins.</td><td>It is the only place blocking gate launch behavior may come from.</td></tr>
+<tr><td>Authority grants</td><td>Named provider id/version/integrity/identity/conformance pins for a requirement and call-site.</td><td>Authority from manifest presence, package scope, provenance, first-party label, certification, registry membership, local install, or repository policy alone.</td><td>Identity, integrity, conformance, isolation, and authority are validated as separate axes.</td></tr>
+<tr><td>Missing/degraded gate outcomes</td><td>Explicit deny or indeterminate for required <code>gate</code> coverage with <code>coverage.required</code>, <code>coverage.ran</code>, and <code>coverage.degraded</code>. Optional coverage may degrade.</td><td>Silent pass, optional-provider degradation reported as complete coverage, or local override changing shared gate behavior.</td><td>Missing host/provider, stale baseline, malformed manifest, missing authority, unsupported capability, insufficient assurance, timeout, or schema mismatch fails closed or becomes indeterminate for <code>gate</code>.</td></tr>
+</tbody></table>
+</div><h2 id="2-manager-and-host-acquisition"><a class="doc-anchor" href="#2-manager-and-host-acquisition">§</a>2. Manager and host acquisition</h2>
+<p>The first Open Engine distribution is expected to be a global developer manager with a host runtime
+behind it:</p>
+<div class="example-wrap"><pre class="language-sh"><code>npm install -g @the-open-engine/asp
+asp setup --dry-run
+asp setup
+asp up
+asp host serve --repo &lt;workspace&gt;</code></pre></div>
+<p><code>asp setup</code> is the explicit trusted onboarding action for private local developer installs. It plans
+or installs supported agent-root guidance and advisory hook shims, reports backups, and accepts
+<code>--agent &lt;name&gt;</code>, <code>--repo &lt;path&gt;</code>, <code>--dry-run</code>, and <code>--json</code>. Package installation alone MUST NOT
+silently mutate agent roots or start long-lived processes. Private server catalog behavior,
+supported server offers, and local/partner server links are manager-owned discovery/setup state;
+repository enrollment is manager-owned local state and does not mutate shared repository policy.</p>
+<p>Installed hooks call the manager-owned advisory entrypoint:</p>
+<div class="example-wrap"><pre class="language-sh"><code>asp agent-hook --agent &lt;agent&gt; --event &lt;event&gt; --json</code></pre></div>
+<p>The hook command checks manager status, degrades with repair guidance when the daemon is down, and
+does not start the daemon, call providers directly, produce host decisions, or grant gate authority.</p>
+<p>The current private manager lifecycle is:</p>
+<ul>
+<li><code>asp up</code> starts the user-level manager daemon if it is not already running;</li>
+<li><code>asp down</code> stops it;</li>
+<li><code>asp status</code> reports manager, host, server, agent, and repo state;</li>
+<li><code>asp doctor</code> explains missing or degraded setup;</li>
+<li><code>asp setup</code> installs private local agent guidance and advisory hook shims only when explicitly run;</li>
+<li><code>asp agent-hook</code> reports advisory hook status without provider calls or gate authority;</li>
+<li><code>asp server ...</code> discovers, installs, links, lists, checks, and removes ASP servers;</li>
+<li><code>asp repo ...</code> records local repo enrollment intent under <code>ASP_HOME</code>;</li>
+<li><code>asp check --repo ...</code> evaluates changed or staged content through the conforming Core host;</li>
+<li><code>asp ci verify --repo ...</code> verifies host-authored receipts for protected CI and fails closed on
+provider-only output, direct Lattice output, missing authority, stale baselines, and weakened local
+overrides.</li>
+</ul>
+<p>Other conforming hosts MAY be embedded in an editor, harness, CI system, or vendor runtime. A
+repository policy MUST NOT select, require, or lock in the Open Engine host implementation; it MAY
+require protocol versions, capabilities, assurance modes, and provider identities. Host acquisition is
+owned by the trusted environment or installed manager, not by a mutable branch.</p>
+<p><a href="../decisions/0025-asp-binding-bakeoff.html">ADR 0025</a> chooses JSON-RPC over stdio as the private
+dogfood binding floor. Trusted environment, organization, editor, CI, or harness configuration MAY
+launch the conforming host over that floor. Repository policy, MCP config, <code>.asp/local.json</code>,
+<code>.asp/asp.json</code>, <code>asp-server.json</code>, provider descriptors, and Lattice paths are not host selection,
+launch authority, or gate authority by themselves.</p>
+<h2 id="3-server-discovery-and-manager-catalog"><a class="doc-anchor" href="#3-server-discovery-and-manager-catalog">§</a>3. Server discovery and manager catalog</h2>
+<p>The private manager exposes a server catalog so users can discover and record many ASP servers, not
+only Lattice. Catalog categories are descriptive:</p>
+<ul>
+<li><code>official-supported</code>: Open Engine-maintained or Open Engine-supported servers. Lattice is expected
+to start here.</li>
+<li><code>community-listed</code>: third-party servers referenced for discovery.</li>
+<li><code>verified-conformant</code>: servers with current conformance evidence for a named profile.</li>
+<li><code>partner-paid</code>: partner, paid, private, or closed-source servers that require explicit install and
+authentication steps.</li>
+<li><code>local-dev</code>: local unpublished servers linked from a developer machine.</li>
+</ul>
+<p>These categories MUST NOT collapse trust axes. Official support, catalog listing, paid status,
+closed-source distribution, local installation, or conformance evidence alone does not grant
+authority. Shared gates require explicit policy grants for a named requirement and call-site.</p>
+<p>The manager also allows non-catalog servers through installed manifests or local links. Those
+servers default to advisory and minimal access until the user or organization grants stronger
+authority through trusted policy. Manager server state is stored under <code>$ASP_HOME/servers</code> and does
+not mutate repository policy, agent roots, or shared gates.</p>
+<h2 id="4-repository-policy"><a class="doc-anchor" href="#4-repository-policy">§</a>4. Repository policy</h2>
+<p>Experimental versioned repository policy lives at:</p>
+<div class="example-wrap"><pre class="language-text"><code>.asp/asp.json</code></pre></div>
+<p>The file is declarative. It can name required protocol versions, capabilities, provider identities,
+authority grants, assurance modes, gates, budgets, and adapter expectations. It MUST NOT contain
+arbitrary shell commands, npm scripts, make targets, hook commands, executable paths, launch strings,
+or other command selectors for blocking gates. It MUST NOT select a specific host implementation,
+including <code>@the-open-engine/asp</code>, Lattice, ACE, or a vendor host. <code>.asp/asp.json</code> is not a trust root,
+launch authority, or gate authority by itself.</p>
+<p>Blocking gate execution comes from trusted environment and policy state, not from mutable repository
+commands. Launch instructions are supplied by:</p>
+<ul>
+<li>protected CI or harness configuration;</li>
+<li>organization-controlled host configuration;</li>
+<li>installed provider manifests with pinned identity and integrity evidence.</li>
+</ul>
+<p>This prevents a pull request from weakening its own gate by changing versioned repo policy. A
+candidate policy file can be parsed and reported as pending, but the current changeset is evaluated
+under trusted base policy or an organization-level non-weakenable floor.</p>
+<h2 id="5-local-overrides"><a class="doc-anchor" href="#5-local-overrides">§</a>5. Local overrides</h2>
+<p>Developer-local overrides live at:</p>
+<div class="example-wrap"><pre class="language-text"><code>.asp/local.json</code></pre></div>
+<p>This file MUST be ignored by source control. Local overrides can add unpublished builds, extra
+diagnostics, presentation preferences, or non-blocking experiments. A local override cannot certify a
+provider, weaken shared gates, grant shared authority, change missing-host behavior for shared gates,
+become a trust root, or produce a shared authoritative decision.</p>
+<h2 id="6-server-manifests"><a class="doc-anchor" href="#6-server-manifests">§</a>6. Server manifests</h2>
+<p>Installed ASP servers may advertise themselves with the experimental manifest:</p>
+<div class="example-wrap"><pre class="language-text"><code>asp-server.json</code></pre></div>
+<p>The manifest names the provider id, version, supported protocol versions, capabilities, entrypoint,
+identity, artifact digest, access expectations, and publisher provenance.</p>
+<p>Unlike <code>.asp/asp.json</code>, an installed manifest MAY contain structured executable plus argument arrays
+because it is part of an installed artifact, not mutable repository policy. Its presence on disk does
+not establish trust, registry inclusion, launch authority, or gate authority. The host or environment
+still validates identity, integrity, conformance, isolation, and authority before launching or
+enrolling the provider.</p>
+<p>Manifest entrypoints are structured launch hints: <code>entrypoint.transport</code>, <code>entrypoint.bin</code>, and
+<code>entrypoint.args</code>. A single shell string is invalid. Hosts that launch an installed manifest MUST
+reject relative or PATH-resolved <code>entrypoint.bin</code> values and use a trusted manager/artifact working
+directory, not the candidate repository, for manifest-launched providers. Filesystem, network,
+secret, environment, and data-access expectations must be declared before a trusted host/environment
+may grant them. Ambient process environment, inherited filesystem reach, network reach, data reach,
+or secret access is never trusted by default.</p>
+<h2 id="7-gate-trust"><a class="doc-anchor" href="#7-gate-trust">§</a>7. Gate trust</h2>
+<p>Shared blocking gates MUST enroll only pinned providers authorized by trusted policy for a named
+requirement and named call-site. Authority is separate from provenance or conformance.</p>
+<ul>
+<li>Identity says who published or owns the provider.</li>
+<li>Integrity says which exact artifact/package digest is running.</li>
+<li>Conformance says whether the provider implements ASP correctly.</li>
+<li>Isolation says what the provider can read, write, execute, or transmit.</li>
+<li>Authority says whether its assessment can satisfy a named gate.</li>
+</ul>
+<p>Repository config, local overrides, installed manifests, package provenance, first-party labels, and
+future certification labels are not trust roots. Certification, if later approved, can contribute to
+policy, but certification MUST NOT automatically grant gate authority.</p>
+<h2 id="8-missing-host-and-missing-server-behavior"><a class="doc-anchor" href="#8-missing-host-and-missing-server-behavior">§</a>8. Missing host and missing server behavior</h2>
+<p>For <code>gate</code> call-sites:</p>
+<ul>
+<li>missing conforming host: fail closed;</li>
+<li>incompatible host version: fail closed;</li>
+<li>stale baseline: explicit degraded coverage plus indeterminate or fail closed per policy;</li>
+<li>missing required provider: explicit degraded coverage plus indeterminate or fail closed per policy;</li>
+<li>unavailable required provider: explicit degraded coverage plus indeterminate or fail closed per
+policy;</li>
+<li>quarantined required provider: explicit degraded coverage plus indeterminate or fail closed per
+policy;</li>
+<li>incompatible required provider: explicit degraded coverage plus indeterminate or fail closed per
+policy;</li>
+<li>stale, malformed, or incompatible provider manifest: explicit degraded coverage plus indeterminate
+or fail closed per policy;</li>
+<li>missing provider authority: explicit degraded coverage plus indeterminate or fail closed per
+policy;</li>
+<li>unsupported required capability: explicit degraded coverage plus indeterminate or fail closed per
+policy;</li>
+<li>insufficient assurance mode: explicit degraded coverage plus indeterminate or fail closed per
+policy;</li>
+<li>timeout: explicit degraded coverage plus indeterminate or fail closed per policy;</li>
+<li>schema mismatch: fail closed;</li>
+<li>candidate policy self-authorization: pending policy plus indeterminate or fail closed under trusted
+base policy;</li>
+<li>optional provider unavailable: degraded coverage, not automatic failure unless policy requires it.</li>
+</ul>
+<p>For <code>interactive</code> call-sites, a missing host or server SHOULD warn and fail open so the developer can
+continue working while setup is repaired.</p>
+<h2 id="9-harness-responsibilities"><a class="doc-anchor" href="#9-harness-responsibilities">§</a>9. Harness responsibilities</h2>
+<p>A conforming harness:</p>
+<ul>
+<li>embeds or invokes a conforming ASP host;</li>
+<li>passes the workspace, call-site, changeset, and apply intent to the host;</li>
+<li>renders host decisions without stripping provenance, authority, assurance mode, next-step, or
+coverage degradation;</li>
+<li>does not launch role servers directly for blocking gates;</li>
+<li>does not make Lattice an ACE-managed artifact.</li>
+<li>does not own ASP host startup policy, provider authority, provider provisioning, or ASP release
+gating unless it is itself acting as a trusted conforming host implementation.</li>
+<li>keeps binding mechanics behind a host-client seam, initially the private JSON-RPC stdio floor from
+ADR 0025, so hook/status/inspect code does not depend on provider paths or MCP tool calls.</li>
+<li>may integrate by speaking the outer seam directly, by embedding a conforming host, by using an ASP
+SDK/client, or by calling the installed manager daemon. The manager path is meant to be easy, not
+mandatory.</li>
+</ul>
+<p>For ACE specifically, the private migration target is narrower: ACE may consume a configured
+conforming host, initially the Open Engine reference host where the trusted environment supplies it,
+through a thin host-client adapter. ACE is one optional harness/client, not the architecture center
+and not an ASP release gate. Lattice remains an installed ASP server selected by trusted policy and
+enrolled behind the host. ACE must not own host startup policy, provider authority, Lattice
+provisioning, or any ACE-managed Lattice path for gates, authority, freshness, or apply that bypasses
+the host/provider contracts. MCP configuration may expose read-only compatibility adapters, but it is
+not a trust root and cannot make ordinary MCP tools satisfy blocking ASP gates.</p></main><aside class="page-toc" aria-label="On this page"><p>On this page</p><nav id="rustdoc"><ul>
+<li><a href="#1-boundary-matrix" title="1. Boundary matrix">1. Boundary matrix</a><ul></ul></li>
+<li><a href="#2-manager-and-host-acquisition" title="2. Manager and host acquisition">2. Manager and host acquisition</a><ul></ul></li>
+<li><a href="#3-server-discovery-and-manager-catalog" title="3. Server discovery and manager catalog">3. Server discovery and manager catalog</a><ul></ul></li>
+<li><a href="#4-repository-policy" title="4. Repository policy">4. Repository policy</a><ul></ul></li>
+<li><a href="#5-local-overrides" title="5. Local overrides">5. Local overrides</a><ul></ul></li>
+<li><a href="#6-server-manifests" title="6. Server manifests">6. Server manifests</a><ul></ul></li>
+<li><a href="#7-gate-trust" title="7. Gate trust">7. Gate trust</a><ul></ul></li>
+<li><a href="#8-missing-host-and-missing-server-behavior" title="8. Missing host and missing server behavior">8. Missing host and missing server behavior</a><ul></ul></li>
+<li><a href="#9-harness-responsibilities" title="9. Harness responsibilities">9. Harness responsibilities</a><ul></ul></li></ul></nav></aside></div>
+<footer class="site-footer"><div>© The Open Engine
+<a href="https://github.com/the-open-engine/opcore">Opcore on GitHub ↗</a></div></footer></body></html>

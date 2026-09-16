@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>ASP v1.0 Core Profile · Opcore</title><link rel="stylesheet" href="../../assets/site.css">
+<script src="../../assets/theme.js"></script>
+<script defer src="../../assets/site.js"></script>
+<link rel="icon" type="image/svg+xml" href="../../assets/oec-favicon.svg"><link rel="stylesheet" href="../../assets/versions.css"><script defer src="../../assets/versions.js"></script></head>
+<body class="guide-page"><a class="skip-link" href="#main-content">Skip to content</a>
+<header class="site-header"><div class="header-inner">
+<button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-navigation">Menu</button>
+<a class="brand" href="../../index.html"><img src="../../assets/oec-crow.png" alt="" width="32" height="36"><span>Opcore</span></a>
+<a class="header-label" href="../../index.html">Documentation</a>
+<div class="header-actions"><div class="docs-version" data-site-root="../../../" data-page-path="asp/spec/11-core-profile.html" data-version="v0.3"><a href="../../../versions.html">v0.3 ▾</a><select hidden aria-label="Documentation version"><option>v0.3</option></select></div><button class="theme-toggle" type="button" aria-label="Use dark mode" title="Use dark mode"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20.8 13.1A9 9 0 0 1 10.9 3.2 9 9 0 1 0 20.8 13.1Z"/></svg></button>
+<a class="repository-link" href="https://github.com/the-open-engine/opcore">GitHub <span aria-hidden="true">↗</span></a></div>
+</div></header>
+<div class="docs-layout"><aside class="docs-sidebar"><nav id="site-navigation" aria-label="Documentation"><div class="nav-group"><p>Opcore</p><ul><li><a href="../../index.html">Overview</a></li></ul></div><div class="nav-group"><p>Get started</p><ul><li><a href="../../docs/getting-started.html">Installation and first check</a></li></ul></div><div class="nav-group"><p>Guides</p><ul><li><a href="../../docs/configuration.html">Configuration</a></li><li><a href="../../docs/providers.html">Providers</a></li><li><a href="../../docs/examples.html">Examples</a></li><li><a href="../../docs/sense.html">Project Sense</a></li><li><a href="../../docs/agent-signals.html">Agent feedback</a></li></ul></div><div class="nav-group"><p>Reference</p><ul><li><a href="../../cli.html">CLI</a></li><li><a href="../../api/opcore/api/index.html">Rust API</a></li><li><a href="../../api/opcore/api/enum.ProviderProfile.html">Provider profiles</a></li><li><a href="../README.html">ASP specification</a></li></ul></div><div class="nav-group"><p>Project</p><ul><li><a href="../../docs/architecture.html">Architecture</a></li><li><a href="../../CONTRIBUTING.html">Contributing</a></li><li><a href="../../CODE_OF_CONDUCT.html">Code of conduct</a></li><li><a href="../../SECURITY.html">Security</a></li></ul></div></nav></aside>
+<main id="main-content" class="guide-content" tabindex="-1">
+<p class="docs-kicker">Core documentation</p><h1 class="title">ASP v1.0 Core Profile</h1>
+    <details><summary>Specification metadata</summary>
+<div class="example-wrap"><pre class="language-yaml"><code>title: ASP v1.0 Core Profile
+status: established
+normative: true
+summary: Minimum Core Profile for evidence-backed code-change decisions.
+updated: 2026-09-08</code></pre></div></details>
+<p>The ASP v1.0 Core Profile is the smallest profile that can prove the host/provider/check
+path:</p>
+<div class="example-wrap"><pre class="language-text"><code>candidate changeset -&gt; provider Assessment -&gt; host Decision</code></pre></div>
+<p>Core is a profile over the existing semantic contract. It does not reopen the architecture, add a
+new wire binding, replace current guardrails, or create a public standard, registry, release,
+package, certification, or stable manifest claim.</p>
+<h2 id="scope"><a class="doc-anchor" href="#scope">§</a>Scope</h2>
+<p>Core covers only blocking or advisory candidate evaluation through a conforming host. A Core harness
+talks to the host, the host initializes and narrows check providers, providers read candidate content
+only through host callbacks, providers return Assessments, and the host returns Decisions.</p>
+<p>Core does not include inspect, edit planning, apply, manager daemon behavior, server catalogs, setup
+wizards, agent-root hooks/skills, deployment manifests, dogfood migration, ACE integration, or parity
+with any reference engine. Those are optional profiles or downstream work.</p>
+<h2 id="method-and-object-set"><a class="doc-anchor" href="#method-and-object-set">§</a>Method And Object Set</h2>
+<p>Core host surface:</p>
+<ul>
+<li><code>host/status</code>;</li>
+<li><code>host/capabilities</code>;</li>
+<li><code>host/evaluateChangeset</code>.</li>
+</ul>
+<p>Core provider lifecycle:</p>
+<ul>
+<li><code>initialize</code>;</li>
+<li>the host-sent <code>initialized</code> notification with narrowed <code>grantedPermissions</code>;</li>
+<li>host-visible lifecycle and per-capability health for enrolled providers.</li>
+</ul>
+<p>Core workspace callbacks:</p>
+<ul>
+<li><code>workspace/readBlob</code>;</li>
+<li><code>workspace/listTree</code>.</li>
+</ul>
+<p>Core check provider surface:</p>
+<ul>
+<li><code>check/evaluate</code>.</li>
+</ul>
+<p>Core semantic objects:</p>
+<ul>
+<li>host-issued <code>SnapshotRef</code> / <code>Baseline</code>;</li>
+<li>immutable content-addressed <code>ChangeSet</code>;</li>
+<li>provider-produced <code>Assessment</code>;</li>
+<li>host-produced <code>Decision</code>;</li>
+<li>decision <code>coverage.required</code>, <code>coverage.ran</code>, and <code>coverage.degraded</code>.</li>
+</ul>
+<p><code>Baseline</code> and the <code>baseline</code> field remain the v1.0 schema alias for the canonical <code>SnapshotRef</code>
+object. <code>coverage.enrolled</code> remains a transitional alias and MUST equal <code>coverage.required</code> wherever
+it appears.</p>
+<h2 id="candidate-flow"><a class="doc-anchor" href="#candidate-flow">§</a>Candidate Flow</h2>
+<ol>
+<li>The host issues or confirms a <code>SnapshotRef</code> / <code>Baseline</code> for the candidate workspace state.</li>
+<li>The harness submits a content-addressed <code>ChangeSet</code> to <code>host/evaluateChangeset</code>. Inline bytes are
+not authoritative candidate input.</li>
+<li>The host selects required check providers from trusted policy and composed capabilities.</li>
+<li>Each required provider is launched only from trusted installed/environment configuration, has
+completed <code>initialize</code>, and has received an <code>initialized</code> grant before it can satisfy Core
+coverage. Mutable repository policy cannot provide provider startup commands.</li>
+<li>Providers read blobs and tree entries only through <code>workspace/readBlob</code> and <code>workspace/listTree</code>,
+scoped by the host grant.</li>
+<li>Providers return <code>check/evaluate</code> Assessments with status, diagnostics/evidence, coverage,
+<code>validAsOf</code>, provider metadata, timing, and cache metadata.</li>
+<li>The host rejects stale or malformed provider data, aggregates coverage and findings, applies
+policy and authority grants, and returns the host Decision envelope.</li>
+</ol>
+<p>Direct provider calls, ordinary tool calls, or implementation-specific fast paths cannot satisfy a
+Core gate. A gate output is the host Decision envelope, never a provider pass/fail projection.</p>
+<h2 id="decision-rules"><a class="doc-anchor" href="#decision-rules">§</a>Decision Rules</h2>
+<p>For <code>host/evaluateChangeset</code>, only the host returns <code>allow</code>, <code>deny</code>, or <code>indeterminate</code>.</p>
+<p>The host MAY return <code>allow</code> for a <code>gate</code> call-site only when all required coverage is fresh,
+complete, authorized, compatible, and sufficient for the call-site, every required entry appears in
+<code>coverage.ran</code>, <code>coverage.degraded</code> is empty for required coverage, the achieved assurance mode meets
+policy, and no authorized gating finding remains.</p>
+<p>The host MUST return <code>deny</code> when fresh, complete, authorized required coverage finds a blocking
+policy violation or an authorized gating diagnostic that host arbitration does not clear. Core hosts
+surface this non-allow path in <code>coverage.degraded</code> with reason <code>blocking-diagnostic</code> so deny receipts
+remain machine-readable while providers still only contribute Assessment diagnostics.</p>
+<p>The host MUST return <code>indeterminate</code> or <code>deny</code> for stale, missing, malformed, unsupported,
+incomplete, cancelled, timed-out, crashed, unavailable, incompatible, quarantined, errored,
+missing-authority, insufficient-assurance, direct-write-risk, policy-self-authorization, or degraded
+required coverage. These states MUST be machine-readable in <code>coverage.degraded</code> and the host receipt
+<code>failures[]</code> with capability/provider-state context where provider lifecycle caused the degradation,
+and MUST NOT silently become <code>allow</code>.</p>
+<p>Unsupported required capability and provider runtime error are distinct degraded reasons. Optional
+provider degradation can be visible, but it cannot masquerade as complete required coverage.</p>
+<h2 id="core-adoption-gate"><a class="doc-anchor" href="#core-adoption-gate">§</a>Core Adoption Gate</h2>
+<p>An implementation has adopted ASP Core v1.0 only when a private harness can produce fresh evidence
+for the full Core path:</p>
+<ul>
+<li><code>host/status</code> reports a ready or explicitly degraded host state with active policy identity,
+baseline, required check coverage, provider lifecycle/capability health, and a private
+host-authored receipt.</li>
+<li><code>host/capabilities</code> reports composed host capabilities where <code>check</code> is available for Core and
+<code>inspect</code>/<code>edit</code> are not required to adopt Core; degraded optional provider capability health stays
+visible without satisfying or blocking required coverage by itself, and the response carries the
+same private receipt vocabulary as status/evaluate.</li>
+<li>Every provider that satisfies required coverage has completed <code>initialize</code> and has accepted the
+narrowed <code>initialized</code> grant.</li>
+<li>Required providers can evaluate a host-issued <code>SnapshotRef</code> / <code>Baseline</code> plus immutable
+content-addressed <code>ChangeSet</code> through <code>check/evaluate</code>.</li>
+<li>Provider content access is limited to <code>workspace/readBlob</code> and <code>workspace/listTree</code> under the host
+grant.</li>
+<li><code>host/evaluateChangeset</code> produces host Decision envelopes for allow, deny, and negative
+indeterminate cases.</li>
+<li>Missing provider, stale assessment, malformed provider output, unsupported required capability,
+incomplete assessment, cancellation, timeout, crash, unavailable provider, incompatible provider,
+quarantine, provider error, missing authority, insufficient assurance, direct-write risk, policy
+self-authorization, and degraded required coverage are represented as non-passing host Decisions
+when required.</li>
+<li>Existing private guardrails remain retained during any shadow or pilot phase until separate
+replacement criteria are accepted.</li>
+</ul>
+<p>Core adoption evidence is private implementation evidence. It is not certification, registry
+membership, public standard status, release approval, or package stability.</p>
+<h2 id="core-adoption-receipt"><a class="doc-anchor" href="#core-adoption-receipt">§</a>Core Adoption Receipt</h2>
+<p>A Core adoption receipt is a host-authored evidence bundle. It MUST include:</p>
+<ul>
+<li>the <code>host/status</code> receipt;</li>
+<li>the composed <code>host/capabilities</code> receipt or equivalent host-authored capability evidence;</li>
+<li>initialized grant evidence for each required provider;</li>
+<li>allow, deny, and negative <code>host/evaluateChangeset</code> receipts;</li>
+<li><code>policyDigest</code>;</li>
+<li><code>baseline</code> / <code>SnapshotRef</code>;</li>
+<li><code>validAsOf</code>;</li>
+<li>decision coverage with <code>coverage.required</code>, <code>coverage.ran</code>, and <code>coverage.degraded</code>;</li>
+<li>authority evidence for required providers;</li>
+<li>achieved assurance mode and transaction guarantee;</li>
+<li>request digest, provider ids, timing, failure entries, and private/experimental/non-trust-artifact
+flags on every host receipt;</li>
+<li>a retained-guardrail statement for the private shadow or pilot phase.</li>
+</ul>
+<p>The receipt is valid only for the referenced policy, baseline, changeset, provider identity,
+provider integrity, conformance evidence, authority grant, and assurance mode.</p>
+<h2 id="optional-non-core-profiles"><a class="doc-anchor" href="#optional-non-core-profiles">§</a>Optional Non-Core Profiles</h2>
+<p>The following are explicitly non-Core for v1.0 adoption:</p>
+<ul>
+<li>inspect capability and <code>host/queryInspect</code>;</li>
+<li>edit capability and <code>host/requestEditPlan</code>;</li>
+<li>apply capability and <code>host/applyProposal</code>;</li>
+<li>manager daemon, setup wizard, agent-root hooks/skills, and server catalog;</li>
+<li>deployment manifests and local policy files;</li>
+<li>dogfood migration;</li>
+<li>ACE integration;</li>
+<li>reference-engine parity.</li>
+</ul>
+<p>Optional profiles can depend on Core, but failure to implement them does not block the Core adoption
+gate. They also cannot be used to bypass the Core host/provider/check path for blocking gates.</p></main><aside class="page-toc" aria-label="On this page"><p>On this page</p><nav id="rustdoc"><ul>
+<li><a href="#scope" title="Scope">Scope</a><ul></ul></li>
+<li><a href="#method-and-object-set" title="Method And Object Set">Method And Object Set</a><ul></ul></li>
+<li><a href="#candidate-flow" title="Candidate Flow">Candidate Flow</a><ul></ul></li>
+<li><a href="#decision-rules" title="Decision Rules">Decision Rules</a><ul></ul></li>
+<li><a href="#core-adoption-gate" title="Core Adoption Gate">Core Adoption Gate</a><ul></ul></li>
+<li><a href="#core-adoption-receipt" title="Core Adoption Receipt">Core Adoption Receipt</a><ul></ul></li>
+<li><a href="#optional-non-core-profiles" title="Optional Non-Core Profiles">Optional Non-Core Profiles</a><ul></ul></li></ul></nav></aside></div>
+<footer class="site-footer"><div>© The Open Engine
+<a href="https://github.com/the-open-engine/opcore">Opcore on GitHub ↗</a></div></footer></body></html>

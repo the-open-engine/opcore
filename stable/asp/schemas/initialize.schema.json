@@ -1,0 +1,120 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://covibes.dev/asp/schemas/initialize.schema.json",
+  "title": "initialize",
+  "description": "The initialize handshake: params (host to provider) and result (provider to host). ASP Core v1.0 reuses initialize plus the initialized grant without a Core-only schema fork. Results advertise canonical inspect/check/edit capability families and capability versions; legacy roles remain compatibility metadata. Permission capping happens in the initialized notification, not here.",
+  "$defs": {
+    "baseline": {
+      "type": "object",
+      "required": ["rev"],
+      "properties": {
+        "rev": { "type": "string" },
+        "dirty": { "type": "string" },
+        "stampedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "permissions": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "read": { "type": "array", "items": { "type": "string" }, "description": "Path globs; ! prefix excludes." },
+        "write": { "type": "boolean" },
+        "network": { "type": "boolean", "description": "Egress default-deny; true is valid only with networkAllowlist (else a contract rejection)." },
+        "networkAllowlist": {
+          "type": "array",
+          "description": "Explicit egress destinations when network is true.",
+          "items": {
+            "type": "object",
+            "required": ["host"],
+            "additionalProperties": false,
+            "properties": { "host": { "type": "string" }, "port": { "type": "integer" }, "proto": { "enum": ["https", "http", "tcp"] } }
+          }
+        },
+        "resourceLimits": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Sandbox caps the host enforces (granted side); see ADR 0009.",
+          "properties": {
+            "cpuPct": { "type": "integer" },
+            "memoryMb": { "type": "integer" },
+            "wallclockMs": { "type": "integer" },
+            "fd": { "type": "integer" }
+          }
+        }
+      }
+    },
+    "params": {
+      "type": "object",
+      "required": ["protocolVersion", "host", "workspace"],
+      "additionalProperties": false,
+      "properties": {
+        "protocolVersion": { "type": "string", "examples": ["asp/1.0"] },
+        "host": {
+          "type": "object",
+          "required": ["name", "version"],
+          "properties": { "name": { "type": "string" }, "version": { "type": "string" } }
+        },
+        "hostCapabilities": { "type": "object" },
+        "workspace": {
+          "type": "object",
+          "required": ["root", "baseline"],
+          "properties": { "root": { "type": "string" }, "baseline": { "$ref": "#/$defs/baseline" } }
+        },
+        "assuranceMode": { "$ref": "https://covibes.dev/asp/schemas/assurance.schema.json#/$defs/assuranceMode" },
+        "authorityMode": {
+          "description": "Deprecated compatibility alias for assuranceMode; it does not grant authority.",
+          "$ref": "https://covibes.dev/asp/schemas/assurance.schema.json#/$defs/assuranceMode"
+        },
+        "trustTier": {
+          "enum": ["first-party", "certified", "untrusted"],
+          "description": "Legacy shorthand only; does not grant gate authority by itself."
+        }
+      }
+    },
+    "result": {
+      "type": "object",
+      "required": ["serverInfo", "capabilityFamilies", "capabilities"],
+      "additionalProperties": false,
+      "properties": {
+        "serverInfo": {
+          "type": "object",
+          "required": ["name", "version", "fingerprint"],
+          "properties": {
+            "name": { "type": "string" },
+            "version": { "type": "string" },
+            "fingerprint": { "type": "string", "description": "Content hash of the build; MUST change on rebuild." }
+          }
+        },
+        "capabilityFamilies": {
+          "type": "array",
+          "description": "Canonical capability families advertised by the provider.",
+          "items": { "$ref": "https://covibes.dev/asp/schemas/assurance.schema.json#/$defs/capabilityFamily" },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "roles": {
+          "type": "array",
+          "description": "Legacy compatibility metadata for older sense/judge/act role names.",
+          "items": { "enum": ["sense", "judge", "act"] },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "capabilities": {
+          "description": "Canonical capability declarations keyed by inspect, check, and edit. The edit block advertises EditPlan proposal support, operation support, required preconditions, and workspace/putBlob blob upload; sense, judge, and act keys are legacy shims where retained.",
+          "$ref": "https://covibes.dev/asp/schemas/capabilities.schema.json#/$defs/capabilities"
+        },
+        "requestedPermissions": { "$ref": "#/$defs/permissions" },
+        "provenance": { "type": "object", "properties": { "publisher": { "type": "string" }, "signature": { "type": "string" } } }
+      }
+    },
+    "initializedParams": {
+      "type": "object",
+      "required": ["grantedPermissions", "baseline"],
+      "additionalProperties": false,
+      "properties": {
+        "grantedPermissions": { "allOf": [ { "$ref": "#/$defs/permissions" }, { "required": ["resourceLimits"] }, { "if": { "required": ["network"], "properties": { "network": { "const": true } } }, "then": { "required": ["networkAllowlist"] } } ] },
+        "baseline": { "$ref": "#/$defs/baseline" }
+      }
+    }
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://covibes.dev/asp/schemas/sense-requests.schema.json",
+  "title": "sense/* request params",
+  "description": "Legacy inspect-provider params for the typed sense verbs and the sense/query escape hatch. Every request MAY carry an optional baseline override (ADR 0014); absent it, the session baseline applies. Result shapes are in schemas/sense-graph.schema.json.",
+  "$defs": {
+    "baseline": {
+      "type": "object",
+      "required": ["rev"],
+      "properties": { "rev": { "type": "string" }, "dirty": { "type": "string" }, "stampedAt": { "type": "string", "format": "date-time" } }
+    },
+    "scope": { "oneOf": [ { "enum": ["changeset", "workspace"] }, { "type": "object", "required": ["paths"], "properties": { "paths": { "type": "array", "items": { "type": "string" } } } } ] },
+
+    "references.params": {
+      "type": "object",
+      "required": ["symbol"],
+      "additionalProperties": false,
+      "properties": {
+        "symbol": { "$ref": "https://covibes.dev/asp/schemas/sense-graph.schema.json#/$defs/symbolRef" },
+        "scope": { "$ref": "#/$defs/scope" },
+        "baseline": { "$ref": "#/$defs/baseline" }
+      }
+    },
+    "callers.params": {
+      "type": "object",
+      "required": ["symbol"],
+      "additionalProperties": false,
+      "properties": {
+        "symbol": { "$ref": "https://covibes.dev/asp/schemas/sense-graph.schema.json#/$defs/symbolRef" },
+        "depth": { "type": "integer", "minimum": 1 },
+        "baseline": { "$ref": "#/$defs/baseline" }
+      }
+    },
+    "callees.params": { "$ref": "#/$defs/callers.params" },
+    "symbols.params": {
+      "type": "object",
+      "required": ["query"],
+      "additionalProperties": false,
+      "properties": {
+        "query": { "type": "string" },
+        "kinds": { "type": "array", "items": { "enum": ["file", "module", "class", "function", "type", "test"] } },
+        "baseline": { "$ref": "#/$defs/baseline" }
+      }
+    },
+    "impact.params": {
+      "type": "object",
+      "required": ["changeset", "scope"],
+      "additionalProperties": false,
+      "properties": {
+        "changeset": { "$ref": "https://covibes.dev/asp/schemas/changeset.schema.json" },
+        "depth": { "type": "integer", "minimum": 1 },
+        "scope": { "$ref": "#/$defs/scope" },
+        "baseline": { "$ref": "#/$defs/baseline" }
+      }
+    },
+    "query.params": {
+      "type": "object",
+      "required": ["verb", "args"],
+      "additionalProperties": false,
+      "properties": {
+        "verb": { "type": "string", "description": "MUST be advertised in capabilities.inspect.query or legacy capabilities.sense.query." },
+        "args": { "type": "object" },
+        "baseline": { "$ref": "#/$defs/baseline" }
+      }
+    }
+  }
+}

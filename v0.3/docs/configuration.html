@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Configuration · Opcore</title><link rel="stylesheet" href="../assets/site.css">
+<script src="../assets/theme.js"></script>
+<script defer src="../assets/site.js"></script>
+<link rel="icon" type="image/svg+xml" href="../assets/oec-favicon.svg"><link rel="stylesheet" href="../assets/versions.css"><script defer src="../assets/versions.js"></script></head>
+<body class="guide-page"><a class="skip-link" href="#main-content">Skip to content</a>
+<header class="site-header"><div class="header-inner">
+<button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-navigation">Menu</button>
+<a class="brand" href="../index.html"><img src="../assets/oec-crow.png" alt="" width="32" height="36"><span>Opcore</span></a>
+<a class="header-label" href="../index.html">Documentation</a>
+<div class="header-actions"><div class="docs-version" data-site-root="../../" data-page-path="docs/configuration.html" data-version="v0.3"><a href="../../versions.html">v0.3 ▾</a><select hidden aria-label="Documentation version"><option>v0.3</option></select></div><button class="theme-toggle" type="button" aria-label="Use dark mode" title="Use dark mode"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20.8 13.1A9 9 0 0 1 10.9 3.2 9 9 0 1 0 20.8 13.1Z"/></svg></button>
+<a class="repository-link" href="https://github.com/the-open-engine/opcore">GitHub <span aria-hidden="true">↗</span></a></div>
+</div></header>
+<div class="docs-layout"><aside class="docs-sidebar"><nav id="site-navigation" aria-label="Documentation"><div class="nav-group"><p>Opcore</p><ul><li><a href="../index.html">Overview</a></li></ul></div><div class="nav-group"><p>Get started</p><ul><li><a href="getting-started.html">Installation and first check</a></li></ul></div><div class="nav-group"><p>Guides</p><ul><li><a href="configuration.html" aria-current="page">Configuration</a></li><li><a href="providers.html">Providers</a></li><li><a href="examples.html">Examples</a></li><li><a href="sense.html">Project Sense</a></li><li><a href="agent-signals.html">Agent feedback</a></li></ul></div><div class="nav-group"><p>Reference</p><ul><li><a href="../cli.html">CLI</a></li><li><a href="../api/opcore/api/index.html">Rust API</a></li><li><a href="../api/opcore/api/enum.ProviderProfile.html">Provider profiles</a></li><li><a href="../asp/README.html">ASP specification</a></li></ul></div><div class="nav-group"><p>Project</p><ul><li><a href="architecture.html">Architecture</a></li><li><a href="../CONTRIBUTING.html">Contributing</a></li><li><a href="../CODE_OF_CONDUCT.html">Code of conduct</a></li><li><a href="../SECURITY.html">Security</a></li></ul></div></nav></aside>
+<main id="main-content" class="guide-content" tabindex="-1">
+<p class="docs-kicker">Core documentation</p><h1 class="title">Configuration</h1>
+    
+<h2 id="one-repository-file"><a class="doc-anchor" href="#one-repository-file">§</a>One repository file</h2>
+<p>Check, Sense, hooks, and workflows share root <code>.opcore.json</code>. Every section is optional; omitting the file uses built-in defaults. Cargo, TypeScript, and Python keep their own compiler configuration.</p>
+<div class="example-wrap"><pre class="language-json"><code>{
+  &quot;schemaVersion&quot;: 1,
+  &quot;verify&quot;: { &quot;maxParameters&quot;: 5 },
+  &quot;targets&quot;: { &quot;exclude&quot;: [&quot;vendor&quot;, &quot;generated&quot;] },
+  &quot;providers&quot;: {
+    &quot;node-native&quot;: { &quot;roots&quot;: [&quot;apps/web&quot;] }
+  },
+  &quot;workflows&quot;: {
+    &quot;post-edit&quot;: {
+      &quot;verify&quot;: { &quot;maxParameters&quot;: 8 },
+      &quot;targets&quot;: { &quot;exclude&quot;: [&quot;vendor&quot;, &quot;generated&quot;, &quot;legacy&quot;] }
+    },
+    &quot;pre-commit&quot;: { &quot;native&quot;: [&quot;node-native&quot;] },
+    &quot;ci&quot;: {
+      &quot;native&quot;: [&quot;node-native&quot;],
+      &quot;targets&quot;: { &quot;exclude&quot;: [&quot;vendor&quot;] }
+    }
+  }
+}</code></pre></div>
+<p>Post-edit permits eight parameters and excludes legacy code. Pre-commit inherits the five-parameter limit and checks the selected TypeScript project too. CI also includes generated code.</p>
+<div><table><thead><tr><th>Section</th><th>Settings</th></tr></thead><tbody>
+<tr><td><code>verify</code></td><td><code>maxFileLines</code>, <code>maxLineBytes</code>, <code>maxFunctionLines</code>, <code>maxParameters</code>, <code>maxNesting</code>, <code>maxCyclomaticComplexity</code>.</td></tr>
+<tr><td><code>sense</code></td><td><code>importantFanIn</code>, <code>minimumIdenticalBytes</code>, <code>maxDependencyTargets</code>, <code>maxEdgeSelectors</code>, <code>maxModuleExports</code>, <code>maxShapeMembers</code>.</td></tr>
+<tr><td><code>documentation</code></td><td>Exact source-to-document <code>bindings</code>, shared by every workflow.</td></tr>
+<tr><td><code>targets</code></td><td>Literal excluded file and subtree paths.</td></tr>
+<tr><td><code>providers</code></td><td>Project <code>roots</code> for <code>rust-native</code>, <code>node-native</code>, and <code>python-native</code>; each defaults to <code>["."]</code>.</td></tr>
+<tr><td><code>native</code></td><td>Required native providers for pre-commit and CI; defaults to <code>[]</code>.</td></tr>
+<tr><td><code>coverage</code></td><td><code>allowPartial</code> and <code>allowNodeBuiltins</code> acknowledgments for Sense.</td></tr>
+<tr><td><code>workflows</code></td><td>Overrides for <code>post-edit</code>, <code>pre-commit</code>, and <code>ci</code>.</td></tr>
+</tbody></table>
+</div>
+<p>Inspect settings and generate the editor schema from the installed definitions:</p>
+<div class="example-wrap"><pre class="language-sh"><code>opcore rules
+opcore rules --schema &gt; .opcore.schema.json
+opcore status --workflow pre-commit --json
+opcore doctor --workflow pre-commit</code></pre></div>
+<p>Add <code>"$schema": "./.opcore.schema.json"</code> to the configuration for editor completion and validation. Regenerate the schema after upgrading Opcore. <code>rules</code> also contains <code>policy.defaults</code> in the configuration-file shape; the outer rule manifest is not a valid configuration file.</p>
+<p>Unknown or duplicate fields, explicit <code>null</code>, unsafe paths, unsupported schema versions, symlinks, files over 256 KiB, and settings outside hard bounds fail validation. Doctor identifies configuration errors without evaluating source. The entire file must be valid, including unselected workflows.</p>
+<h2 id="workflow-overrides"><a class="doc-anchor" href="#workflow-overrides">§</a>Workflow overrides</h2>
+<p>Resolution is built-in defaults, then repository settings, then the selected workflow, then explicitly supplied CLI options. Objects merge by their defined fields; scalar values and arrays replace inherited values. Omission inherits, and <code>[]</code> clears a list. Workflows inherit directly from repository settings and cannot inherit another workflow.</p>
+<p>Workflows may override <code>verify</code>, <code>sense</code>, <code>targets</code>, <code>providers</code>, <code>native</code>, and <code>coverage</code>. Documentation ownership remains repository-wide. Configuration cannot select executable commands, grant native execution permission, or change hard resource limits. Post-edit always uses Fast Verify and Sense; selecting native providers inside <code>workflows.post-edit</code> is invalid.</p>
+<p><code>status --workflow &lt;name&gt;</code> reports the effective settings and their origins. Use <code>check --workflow &lt;name&gt;</code> or <code>sense --workflow &lt;name&gt;</code> to run one evaluator with those settings; their source-selection flags retain their normal meaning. <code>run &lt;name&gt;</code> selects the workflow’s complete sequence and Git view.</p>
+<p>Pre-commit and CI require complete Sense coverage by default. Post-edit allows partial Sense coverage by default; explicit repository or workflow coverage settings override that default. Set <code>coverage.allowPartial</code> only after reviewing the reported gaps. <code>coverage.allowNodeBuiltins</code> accepts only known explicit <code>node:</code> built-ins; unknown names and unresolved packages still require attention. Neither setting accepts incomplete evaluation.</p>
+<h2 id="select-targets"><a class="doc-anchor" href="#select-targets">§</a>Select targets</h2>
+<p><code>targets.exclude</code> contains up to 256 distinct normalized repository-relative paths. Each entry excludes that exact file or subtree. <code>legacy</code> matches <code>legacy/api.ts</code>, but not <code>legacy-utils/api.ts</code>. Paths are literal: <code>*</code>, <code>?</code>, and brackets have no wildcard meaning. Absolute paths, <code>..</code>, empty components, and <code>.</code> are invalid exclusions.</p>
+<p>Fast Verify filters excluded paths before reading and parsing source. Sense uses the selected graph and reports any loss of graph coverage; excluded source never becomes evidence that the whole repository is clean. A full check that selects no supported source fails rather than returning a clean result.</p>
+<p>Native tools need intact compiler inputs. Use provider <code>roots</code> to select non-overlapping packages or projects, and override those roots per workflow for monorepos. Opcore retains required ancestor configuration and dependency context. An exclusion that the selected backend cannot honor produces an explanation; it never deletes required compiler inputs or hides a compiler failure. See <a href="providers.html#work-in-a-monorepo">native target selection</a>.</p>
+<h2 id="match-configuration-to-source"><a class="doc-anchor" href="#match-configuration-to-source">§</a>Match configuration to source</h2>
+<p>Worktree checks use worktree configuration. Staged checks use the index, and committed checks use the selected commit’s file. <code>run pre-commit</code> therefore ignores an unstaged threshold change; <code>run ci --tree &lt;target&gt; --base &lt;base&gt;</code> reads target-commit settings even in a dirty checkout. <code>status --workflow ci --tree &lt;target&gt;</code> inspects that same view.</p>
+<p>Introduced comparisons use the selected effective thresholds for both source versions. A threshold change alone does not fabricate a source regression. Full pre-commit and CI Verify checks still detect existing source that exceeds a stricter limit. Sense keeps its introduced-regression semantics: unchanged or reduced baseline debt does not block.</p>
+<p>The host resolves configuration once per attempt and supplies each provider’s settings explicitly. Direct Fast and ASP Fast use the same thresholds. Reports bind their effective configuration and source identities; concurrent source or configuration changes trigger a retry or an incomplete result.</p>
+<h2 id="register-documentation-ownership"><a class="doc-anchor" href="#register-documentation-ownership">§</a>Register documentation ownership</h2>
+<p>Add exact bindings to the same <code>.opcore.json</code>:</p>
+<div class="example-wrap"><pre class="language-json"><code>{
+  &quot;schemaVersion&quot;: 1,
+  &quot;documentation&quot;: {
+    &quot;bindings&quot;: [
+      { &quot;source&quot;: &quot;src/core.ts&quot;, &quot;document&quot;: &quot;docs/core.md&quot; }
+    ]
+  }
+}</code></pre></div>
+<p>Create the referenced document too. Each source gets one binding, with at most 4,096 bindings in the configuration. Paths are literal repository-relative paths; duplicate sources, unsafe paths, source-to-self bindings, and binding the configuration as a document are invalid.</p>
+<p>When an important module changes its public surface, its registered document must change in the same selected view. Stage configuration and document updates with the source change for pre-commit. Rebinding to an unchanged document does not satisfy the obligation. <a href="agent-signals.html#documentation-ownership">Documentation ownership</a> defines the exact triggers.</p>
+<h2 id="check-proposed-changes-in-memory"><a class="doc-anchor" href="#check-proposed-changes-in-memory">§</a>Check proposed changes in memory</h2>
+<p><code>sense --hypothetical</code> compares the current worktree with exact proposed writes and deletes without applying them. For example, save this as <code>proposed-changes.json</code>:</p>
+<div class="example-wrap"><pre class="language-json"><code>{
+  &quot;schemaVersion&quot;: 1,
+  &quot;changes&quot;: [
+    { &quot;action&quot;: &quot;write&quot;, &quot;path&quot;: &quot;src/counter.ts&quot;, &quot;content&quot;: &quot;export const count = 1;\n&quot; },
+    { &quot;action&quot;: &quot;delete&quot;, &quot;path&quot;: &quot;src/old-counter.ts&quot; }
+  ]
+}</code></pre></div><div class="example-wrap"><pre class="language-sh"><code>opcore sense --hypothetical proposed-changes.json --json</code></pre></div>
+<p>Use <code>--hypothetical -</code> to read stdin. Writes contain complete UTF-8 contents, including the final newline; deletes have no <code>content</code>. Each path must be unique and normalized. The request may change supported source, relevant <code>go.mod</code> files, documents, and <code>documentation.bindings</code> in the configuration. Other configuration settings must remain unchanged. This mode cannot combine with staged or committed selection; hypothetical Verify uses <a href="../asp/README.html">ASP</a>.</p><nav class="page-sequence" aria-label="Adjacent pages"><a href="getting-started.html"><span>Previous</span>Installation and first check</a><a href="providers.html"><span>Next</span>Providers</a></nav></main><aside class="page-toc" aria-label="On this page"><p>On this page</p><nav id="rustdoc"><ul>
+<li><a href="#one-repository-file" title="One repository file">One repository file</a><ul></ul></li>
+<li><a href="#workflow-overrides" title="Workflow overrides">Workflow overrides</a><ul></ul></li>
+<li><a href="#select-targets" title="Select targets">Select targets</a><ul></ul></li>
+<li><a href="#match-configuration-to-source" title="Match configuration to source">Match configuration to source</a><ul></ul></li>
+<li><a href="#register-documentation-ownership" title="Register documentation ownership">Register documentation ownership</a><ul></ul></li>
+<li><a href="#check-proposed-changes-in-memory" title="Check proposed changes in memory">Check proposed changes in memory</a><ul></ul></li></ul></nav></aside></div>
+<footer class="site-footer"><div>© The Open Engine
+<a href="https://github.com/the-open-engine/opcore">Opcore on GitHub ↗</a></div></footer></body></html>

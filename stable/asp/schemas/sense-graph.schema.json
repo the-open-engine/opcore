@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://covibes.dev/asp/schemas/sense-graph.schema.json",
+  "title": "Sense graph envelope",
+  "description": "Normalized node/edge results returned by legacy sense verbs for the inspect capability family, plus the impact result shape. Every result carries validAsOf.",
+  "$defs": {
+    "position": {
+      "type": "object",
+      "required": ["line", "char"],
+      "additionalProperties": false,
+      "properties": { "line": { "type": "integer", "minimum": 0 }, "char": { "type": "integer", "minimum": 0 } }
+    },
+    "location": {
+      "type": "object",
+      "required": ["path"],
+      "additionalProperties": false,
+      "properties": {
+        "path": { "type": "string" },
+        "range": {
+          "type": "object",
+          "required": ["start", "end"],
+          "additionalProperties": false,
+          "properties": { "start": { "$ref": "#/$defs/position" }, "end": { "$ref": "#/$defs/position" } }
+        }
+      }
+    },
+    "symbolRef": {
+      "oneOf": [
+        { "type": "object", "required": ["id"], "additionalProperties": false,
+          "properties": { "id": { "type": "string" } } },
+        { "type": "object", "required": ["path", "position"], "additionalProperties": false,
+          "properties": { "path": { "type": "string" }, "position": { "$ref": "#/$defs/position" } } }
+      ]
+    },
+    "node": {
+      "type": "object",
+      "required": ["id", "kind", "name", "location"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "description": "Stable qualified-name id; the addressing key." },
+        "kind": { "enum": ["file", "module", "class", "function", "type", "test"] },
+        "name": { "type": "string" },
+        "location": { "$ref": "#/$defs/location" },
+        "exported": { "type": "boolean" },
+        "test": { "type": "boolean" }
+      }
+    },
+    "edge": {
+      "type": "object",
+      "required": ["kind", "from", "to"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "enum": ["calls", "imports", "inherits", "implements", "contains", "tested-by", "depends-on"] },
+        "from": { "type": "string" },
+        "to": { "type": "string" },
+        "location": { "$ref": "#/$defs/location" }
+      }
+    },
+    "validAsOf": {
+      "type": "object",
+      "required": ["rev", "blobs"],
+      "additionalProperties": false,
+      "properties": {
+        "rev": { "type": "string" },
+        "blobs": { "type": "array", "items": { "type": "string" },
+          "description": "Blob hashes read to answer. Empty array if none. Required so staleness is decidable by hash equality." }
+      }
+    },
+    "graphResult": {
+      "type": "object",
+      "required": ["validAsOf"],
+      "additionalProperties": false,
+      "properties": {
+        "nodes": { "type": "array", "items": { "$ref": "#/$defs/node" } },
+        "edges": { "type": "array", "items": { "$ref": "#/$defs/edge" } },
+        "data": { "type": "object", "description": "Optional verb-specific payload, for the legacy sense/query inspect surface." },
+        "validAsOf": { "$ref": "#/$defs/validAsOf" }
+      }
+    },
+    "impactResult": {
+      "type": "object",
+      "required": ["changedNodes", "impactedNodes", "impactedFiles", "validAsOf"],
+      "additionalProperties": false,
+      "properties": {
+        "changedNodes": { "type": "array", "items": { "$ref": "#/$defs/node" } },
+        "impactedNodes": { "type": "array", "items": { "$ref": "#/$defs/node" } },
+        "impactedFiles": { "type": "array", "items": { "type": "string" } },
+        "edges": { "type": "array", "items": { "$ref": "#/$defs/edge" } },
+        "truncated": { "type": "boolean" },
+        "validAsOf": { "$ref": "#/$defs/validAsOf" }
+      }
+    }
+  }
+}

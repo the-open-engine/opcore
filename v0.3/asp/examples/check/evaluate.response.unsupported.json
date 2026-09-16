@@ -1,0 +1,63 @@
+{
+  "jsonrpc": "2.0",
+  "id": 9,
+  "result": {
+    "status": "unsupported",
+    "diagnostics": [],
+    "evidence": [
+      {
+        "kind": "message",
+        "message": "requested comparison is unsupported for this source"
+      }
+    ],
+    "coverage": {
+      "requested": {
+        "scope": "workspace",
+        "diagnosticSources": ["acme-secrets"],
+        "rules": ["acme-secrets/aws-key"],
+        "comparison": "resolved"
+      },
+      "covered": {
+        "scope": "workspace",
+        "diagnosticSources": [],
+        "rules": [],
+        "comparison": "resolved"
+      },
+      "degraded": [
+        {
+          "source": "acme-secrets",
+          "reason": "unsupported",
+          "requirement": "resolved-workspace-check",
+          "detail": "Provider does not support resolved comparison for workspace scope."
+        }
+      ],
+      "unsupported": [
+        {
+          "source": "acme-secrets",
+          "reason": "unsupported",
+          "requirement": "resolved-workspace-check",
+          "detail": "Unsupported comparison: resolved."
+        }
+      ],
+      "exhaustive": false,
+      "truncated": false
+    },
+    "validAsOf": {
+      "baseline": { "rev": "git:tree:9f3a1c", "stampedAt": "2026-06-16T10:00:00Z" },
+      "changesetDigest": "sha256:changeset-unsupported-001",
+      "blobs": []
+    },
+    "provider": {
+      "id": "acme-secrets",
+      "version": "1.2.0",
+      "configDigest": "sha256:cfg-acme-secrets",
+      "capabilityVersion": "check/1.0",
+      "capabilityFamily": "check"
+    },
+    "timing": { "elapsedMs": 5 },
+    "cache": {
+      "status": "hit",
+      "key": "sha256:cache-key-unsupported-001"
+    }
+  }
+}

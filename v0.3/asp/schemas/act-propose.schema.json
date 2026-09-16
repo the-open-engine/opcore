@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://covibes.dev/asp/schemas/act-propose.schema.json",
+  "title": "act/propose",
+  "description": "Legacy compatibility request params and result for act/propose. Canonical providers should expose edit/propose and return an EditPlan proposal; retained act payloads are shims for old adapters and never represent commands, host decisions, or apply receipts.",
+  "$defs": {
+    "renameArgs": {
+      "type": "object",
+      "required": ["symbol", "newName"],
+      "additionalProperties": false,
+      "properties": {
+        "symbol": { "$ref": "https://covibes.dev/asp/schemas/sense-graph.schema.json#/$defs/symbolRef" },
+        "newName": { "type": "string" }
+      }
+    },
+    "moveArgs": {
+      "type": "object",
+      "required": ["from", "to"],
+      "additionalProperties": false,
+      "properties": { "from": { "type": "string" }, "to": { "type": "string" } }
+    },
+    "params": {
+      "type": "object",
+      "required": ["operation", "args", "baseline"],
+      "additionalProperties": false,
+      "properties": {
+        "operation": { "enum": ["rename", "move", "change-signature", "multi-edit", "organize-imports"] },
+        "args": { "type": "object", "description": "Operation-specific; rename/move are pinned via the allOf below." },
+        "baseline": { "$ref": "https://covibes.dev/asp/schemas/changeset.schema.json#/$defs/baseline" },
+        "scope": { "$ref": "https://covibes.dev/asp/schemas/edit-propose.schema.json#/$defs/scope" },
+        "proposalId": { "type": "string", "description": "Host-issued; echoed across re-proposals. Dedup is on (server, proposalId); server is derived from the authenticated session (ADR 0013)." },
+        "idempotencyKey": { "type": "string" },
+        "validAsOf": { "$ref": "https://covibes.dev/asp/schemas/edit-plan.schema.json#/$defs/validAsOf" }
+      },
+      "allOf": [
+        { "if": { "properties": { "operation": { "const": "rename" } } }, "then": { "properties": { "args": { "$ref": "#/$defs/renameArgs" } } } },
+        { "if": { "properties": { "operation": { "const": "move" } } }, "then": { "properties": { "args": { "$ref": "#/$defs/moveArgs" } } } }
+      ]
+    },
+    "result": {
+      "description": "Either the canonical edit/propose result envelope or a compatibility projection that repeats workspaceEdit/complete fields for old clients.",
+      "oneOf": [
+        { "$ref": "https://covibes.dev/asp/schemas/edit-propose.schema.json#/$defs/result" },
+        {
+          "type": "object",
+          "required": ["proposal", "workspaceEdit", "complete", "validAsOf"],
+          "additionalProperties": false,
+          "properties": {
+            "proposal": { "$ref": "https://covibes.dev/asp/schemas/edit-plan.schema.json#/$defs/editPlan" },
+            "workspaceEdit": { "$ref": "https://covibes.dev/asp/schemas/workspace-edit.schema.json" },
+            "complete": { "type": "boolean", "description": "Deprecated projection of proposal.status == complete." },
+            "incompleteReason": { "type": "string", "description": "Deprecated projection of proposal.incomplete.detail when complete=false." },
+            "validAsOf": { "$ref": "https://covibes.dev/asp/schemas/edit-plan.schema.json#/$defs/validAsOf" }
+          }
+        }
+      ]
+    }
+  }
+}

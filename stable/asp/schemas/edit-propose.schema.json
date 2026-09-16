@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://covibes.dev/asp/schemas/edit-propose.schema.json",
+  "title": "edit/propose",
+  "description": "Canonical edit provider request params and proposal result. Results carry an EditPlan only; host validation decisions and apply receipts are produced later by the host.",
+  "$defs": {
+    "baseline": {
+      "$ref": "https://covibes.dev/asp/schemas/changeset.schema.json#/$defs/baseline"
+    },
+    "providerStructuredData": {
+      "oneOf": [
+        { "type": "null" },
+        { "type": "boolean" },
+        { "type": "number" },
+        { "type": "string" },
+        {
+          "type": "array",
+          "items": { "$ref": "#/$defs/providerStructuredData" }
+        },
+        { "$ref": "#/$defs/providerStructuredDataObject" }
+      ]
+    },
+    "providerStructuredDataObject": {
+      "type": "object",
+      "propertyNames": {
+        "not": { "pattern": "^(authority|assurance|command|commands|decision|disposition|pass|script|transactionGuarantee|verdict|applyReceipt|receipt|policyDigest|policyRef|policyReference|authorityEvidence|hostDecision|applyAttempt|applyResult)$" }
+      },
+      "additionalProperties": { "$ref": "#/$defs/providerStructuredData" }
+    },
+    "scope": {
+      "type": "object",
+      "required": ["paths"],
+      "additionalProperties": false,
+      "properties": {
+        "paths": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "operationProfile": { "type": "string" }
+      }
+    },
+    "params": {
+      "type": "object",
+      "required": ["operation", "baseline", "scope", "proposalId"],
+      "additionalProperties": false,
+      "properties": {
+        "operation": { "type": "string", "minLength": 1 },
+        "baseline": { "$ref": "#/$defs/baseline" },
+        "scope": { "$ref": "#/$defs/scope" },
+        "proposalId": { "type": "string", "minLength": 1 },
+        "idempotencyKey": { "type": "string" },
+        "args": { "$ref": "#/$defs/providerStructuredDataObject" },
+        "priorContext": { "$ref": "#/$defs/providerStructuredDataObject" }
+      }
+    },
+    "result": {
+      "type": "object",
+      "required": ["proposal"],
+      "additionalProperties": false,
+      "properties": {
+        "proposal": { "$ref": "https://covibes.dev/asp/schemas/edit-plan.schema.json#/$defs/editPlan" }
+      }
+    }
+  }
+}

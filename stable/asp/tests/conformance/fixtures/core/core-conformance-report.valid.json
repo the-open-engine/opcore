@@ -1,0 +1,744 @@
+{
+  "target": {
+    "kind": "host",
+    "name": "asp-core-profile-smoke",
+    "implementation": "private-core-fixture",
+    "version": "1.0.0"
+  },
+  "profile": {
+    "id": "asp-core-v1.0",
+    "name": "ASP v1.0 Core Profile",
+    "scope": "private-core",
+    "coreOnly": true,
+    "nonCoreProfilesDeferred": [
+      "inspect",
+      "edit",
+      "apply",
+      "deployment",
+      "dogfood",
+      "ace",
+      "lattice-parity"
+    ]
+  },
+  "suite": {
+    "id": "asp-core-conformance-report",
+    "version": "2026-06-24",
+    "generatedAt": "2026-06-24T00:00:00Z",
+    "runner": "scripts/conformance/run-core-suite.ts",
+    "testCommand": "node --experimental-strip-types --test --test-reporter=tap tests/conformance/core/core-host-black-box.test.ts tests/conformance/core/core-profile-smoke.test.ts"
+  },
+  "summary": {
+    "result": "pass",
+    "total": 17,
+    "passed": 17,
+    "failed": 0,
+    "skipped": 0,
+    "missingRequired": 0
+  },
+  "requirements": [
+    {
+      "id": "CORE-HOST-STATUS",
+      "title": "Host status exposes ready Core gate state",
+      "required": true,
+      "status": "covered",
+      "assertionIds": [
+        "CORE-HOST-STATUS"
+      ],
+      "sourceSpecSections": [
+        "spec/11-core-profile.md:103",
+        "spec/08-conformance.md:106"
+      ],
+      "fixturePaths": [
+        "tests/conformance/core/core-host-black-box.test.ts",
+        "tests/conformance/fixtures/core/core-host-adoption-receipt.valid.json",
+        "examples/core/status.ready.json"
+      ]
+    },
+    {
+      "id": "CORE-HOST-CAPABILITIES",
+      "title": "Host capabilities expose check-only Core coverage",
+      "required": true,
+      "status": "covered",
+      "assertionIds": [
+        "CORE-HOST-CAPABILITIES"
+      ],
+      "sourceSpecSections": [
+        "spec/11-core-profile.md:103",
+        "spec/08-conformance.md:106"
+      ],
+      "fixturePaths": [
+        "tests/conformance/core/core-host-black-box.test.ts",
+        "tests/conformance/fixtures/core/core-host-adoption-receipt.valid.json",
+        "examples/core/capabilities.check-only.json"
+      ]
+    },
+    {
+      "id": "CORE-HOST-EVALUATE",
+      "title": "Host evaluateChangeset owns allow, deny, and indeterminate decisions",
+      "required": true,
+      "status": "covered",
+      "assertionIds": [
+        "CORE-HOST-EVALUATE"
+      ],
+      "sourceSpecSections": [
+        "spec/11-core-profile.md:103",
+        "spec/08-conformance.md:106"
+      ],
+      "fixturePaths": [
+        "tests/conformance/core/core-host-black-box.test.ts",
+        "tests/conformance/fixtures/core/core-host-adoption-receipt.valid.json",
+        "examples/core/evaluate.allow.json",
+        "examples/core/evaluate.deny.json",
+        "examples/core/evaluate.indeterminate.missing-provider.json",
+        "examples/core/evaluate.indeterminate.stale-assessment.json",
+        "examples/core/evaluate.indeterminate.degraded-required-coverage.json"
+      ]
+    },
+    {
+      "id": "CORE-CHECK-ASSESSMENT",
+      "title": "Check providers return the canonical Assessment shape",
+      "required": true,
+      "status": "covered",
+      "assertionIds": [
+        "CORE-CHECK-ASSESSMENT"
+      ],
+      "sourceSpecSections": [
+        "spec/11-core-profile.md:103",
+        "spec/08-conformance.md:106"
+      ],
+      "fixturePaths": [
+        "schemas/check-assessment.schema.json",
+        "schemas/check-evaluate.schema.json",
+        "tests/conformance/fixtures/core/check-assessment.valid.complete.json"
+      ]
+    },
+    {
+      "id": "CORE-PROVIDER-FORBIDDEN-FIELDS",
+      "title": "Provider Assessments cannot smuggle host-owned fields",
+      "required": true,
+      "status": "covered",
+      "assertionIds": [
+        "CORE-PROVIDER-FORBIDDEN-FIELDS"
+      ],
+      "sourceSpecSections": [
+        "spec/11-core-profile.md:103",
+        "spec/08-conformance.md:106"
+      ],
+      "fixturePaths": [
+        "tests/conformance/fixtures/core/check-assessment.invalid.host-owned-top-level.json",
+        "tests/conformance/fixtures/core/check-assessment.invalid.host-owned-nested.json"
+      ]
+    },
+    {
+      "id": "CORE-STALE-VALID-AS-OF",
+      "title": "Stale required Assessment freshness cannot allow a gate",
+      "required": true,
+      "status": "covered",
+      "assertionIds": [
+        "CORE-STALE-VALID-AS-OF"
+      ],
+      "sourceSpecSections": [
+        "spec/11-core-profile.md:103",
+        "spec/08-conformance.md:106"
+      ],
+      "fixturePaths": [
+        "tests/conformance/core/core-host-black-box.test.ts",
+        "tests/conformance/fixtures/core/check-assessment.valid.complete.json"
+      ]
+    },
+    {
+      "id": "CORE-MISSING-REQUIRED-PROVIDER",
+      "title": "Missing required provider coverage cannot allow a gate",
+      "required": true,
+      "status": "covered",
+      "assertionIds": [
+        "CORE-MISSING-REQUIRED-PROVIDER"
+      ],
+      "sourceSpecSections": [
+        "spec/11-core-profile.md:103",
+        "spec/08-conformance.md:106"
+      ],
+      "fixturePaths": [
+        "tests/conformance/core/core-host-black-box.test.ts",
+        "tests/conformance/core/helpers/core-host-harness.ts",
+        "tests/conformance/core/helpers/core-smoke-helpers.ts"
+      ]
+    },
+    {
+      "id": "CORE-MISSING-AUTHORITY",
+      "title": "Fresh complete provider coverage without authority cannot allow a gate",
+      "required": true,
+      "status": "covered",
+      "assertionIds": [
+        "CORE-MISSING-AUTHORITY"
+      ],
+      "sourceSpecSections": [
+        "spec/11-core-profile.md:87-100",
+        "spec/08-conformance.md:163-166"
+      ],
+      "fixturePaths": [
+        "tests/conformance/core/core-host-black-box.test.ts",
+        "tests/conformance/fixtures/core/core-host-adoption-receipt.valid.json"
+      ]
+    },
+    {
+      "id": "CORE-INSUFFICIENT-ASSURANCE",
+      "title": "Authorized fresh coverage below required assurance cannot allow a gate",
+      "required": true,
+      "status": "covered",
+      "assertionIds": [
+        "CORE-INSUFFICIENT-ASSURANCE"
+      ],
+      "sourceSpecSections": [
+        "spec/11-core-profile.md:87-100",
+        "spec/08-conformance.md:163-166"
+      ],
+      "fixturePaths": [
+        "tests/conformance/core/core-host-black-box.test.ts",
+        "tests/conformance/fixtures/core/core-host-adoption-receipt.valid.json"
+      ]
+    },
+    {
+      "id": "CORE-PROVIDER-QUARANTINED",
+      "title": "Quarantined required provider health cannot allow a gate",
+      "required": true,
+      "status": "covered",
+      "assertionIds": [
+        "CORE-PROVIDER-QUARANTINED"
+      ],
+      "sourceSpecSections": [
+        "spec/11-core-profile.md:87-103",
+        "spec/08-conformance.md:158-175"
+      ],
+      "fixturePaths": [
+        "tests/conformance/core/core-host-black-box.test.ts",
+        "tests/conformance/fixtures/core/core-host-adoption-receipt.valid.json"
+      ]
+    },
+    {
+      "id": "CORE-PROVIDER-SKEWED",
+      "title": "Skewed required provider health cannot allow a gate",
+      "required": true,
+      "status": "covered",
+      "assertionIds": [
+        "CORE-PROVIDER-SKEWED"
+      ],
+      "sourceSpecSections": [
+        "spec/11-core-profile.md:87-103",
+        "spec/08-conformance.md:158-175"
+      ],
+      "fixturePaths": [
+        "tests/conformance/core/core-host-black-box.test.ts",
+        "tests/conformance/fixtures/core/core-host-adoption-receipt.valid.json"
+      ]
+    },
+    {
+      "id": "CORE-HOST-INITIALIZE-CONTRACT-REFUSAL",
+      "title": "Required provider initialize contract refusal cannot allow a gate",
+      "required": true,
+      "status": "covered",
+      "assertionIds": [
+        "CORE-HOST-INITIALIZE-CONTRACT-REFUSAL"
+      ],
+      "sourceSpecSections": [
+        "spec/11-core-profile.md:87-103",
+        "spec/08-conformance.md:158-175",
+        "spec/08-conformance.md:209"
+      ],
+      "fixturePaths": [
+        "tests/conformance/core/core-host-black-box.test.ts",
+        "tests/conformance/fixtures/core/core-host-adoption-receipt.valid.json",
+        "packages/asp/src/core-host.ts",
+        "packages/asp/src/core-host-support.ts",
+        "packages/asp/src/fake-check-provider.ts"
+      ]
+    },
+    {
+      "id": "CORE-PROVIDER-FAIL-OPEN",
+      "title": "Fail-open required provider health cannot allow a gate",
+      "required": true,
+      "status": "covered",
+      "assertionIds": [
+        "CORE-PROVIDER-FAIL-OPEN"
+      ],
+      "sourceSpecSections": [
+        "spec/11-core-profile.md:87-103",
+        "spec/08-conformance.md:158-175"
+      ],
+      "fixturePaths": [
+        "tests/conformance/core/core-host-black-box.test.ts",
+        "tests/conformance/fixtures/core/core-host-adoption-receipt.valid.json"
+      ]
+    },
+    {
+      "id": "CORE-MALFORMED-REQUIRED-PROVIDER",
+      "title": "Malformed required provider data cannot allow a gate",
+      "required": true,
+      "status": "covered",
+      "assertionIds": [
+        "CORE-MALFORMED-REQUIRED-PROVIDER"
+      ],
+      "sourceSpecSections": [
+        "spec/11-core-profile.md:103",
+        "spec/08-conformance.md:106"
+      ],
+      "fixturePaths": [
+        "tests/conformance/core/core-host-black-box.test.ts",
+        "tests/conformance/fixtures/core/check-assessment.invalid.host-owned-nested.json"
+      ]
+    },
+    {
+      "id": "CORE-REQUIRED-COVERAGE-VISIBLE",
+      "title": "Required coverage remains machine-readable for every degraded reason",
+      "required": true,
+      "status": "covered",
+      "assertionIds": [
+        "CORE-REQUIRED-COVERAGE-VISIBLE"
+      ],
+      "sourceSpecSections": [
+        "spec/11-core-profile.md:103",
+        "spec/08-conformance.md:106"
+      ],
+      "fixturePaths": [
+        "tests/conformance/core/core-host-black-box.test.ts",
+        "examples/core/evaluate.indeterminate.degraded-required-coverage.json"
+      ]
+    },
+    {
+      "id": "CORE-HOST-DECISION-AUTHORITATIVE",
+      "title": "Host Decisions are authoritative and provider Assessments remain inputs",
+      "required": true,
+      "status": "covered",
+      "assertionIds": [
+        "CORE-HOST-DECISION-AUTHORITATIVE"
+      ],
+      "sourceSpecSections": [
+        "spec/11-core-profile.md:103",
+        "spec/08-conformance.md:106"
+      ],
+      "fixturePaths": [
+        "tests/conformance/core/core-host-black-box.test.ts",
+        "tests/conformance/fixtures/core/core-host-adoption-receipt.valid.json",
+        "tests/conformance/fixtures/core/check-assessment.valid.complete.json",
+        "tests/conformance/fixtures/core/check-assessment.invalid.host-owned-top-level.json"
+      ]
+    },
+    {
+      "id": "CORE-NO-LATTICE-FAST-PATH",
+      "title": "Lattice fast paths are rejected as degraded behavior",
+      "required": true,
+      "status": "covered",
+      "assertionIds": [
+        "CORE-NO-LATTICE-FAST-PATH"
+      ],
+      "sourceSpecSections": [
+        "spec/11-core-profile.md:103",
+        "spec/08-conformance.md:106"
+      ],
+      "fixturePaths": [
+        "examples/outer/evaluate.lattice-fast-path.response.json"
+      ]
+    }
+  ],
+  "assertions": [
+    {
+      "id": "CORE-HOST-STATUS",
+      "requirementId": "CORE-HOST-STATUS",
+      "testName": "CORE-HOST-STATUS exposes ready Core gate status, provider state, policy, and coverage",
+      "result": "pass",
+      "required": true,
+      "fixturePaths": [
+        "tests/conformance/core/core-host-black-box.test.ts",
+        "tests/conformance/fixtures/core/core-host-adoption-receipt.valid.json",
+        "examples/core/status.ready.json"
+      ]
+    },
+    {
+      "id": "CORE-HOST-CAPABILITIES",
+      "requirementId": "CORE-HOST-CAPABILITIES",
+      "testName": "CORE-HOST-CAPABILITIES exposes check-only Core capability coverage",
+      "result": "pass",
+      "required": true,
+      "fixturePaths": [
+        "tests/conformance/core/core-host-black-box.test.ts",
+        "tests/conformance/fixtures/core/core-host-adoption-receipt.valid.json",
+        "examples/core/capabilities.check-only.json"
+      ]
+    },
+    {
+      "id": "CORE-HOST-EVALUATE",
+      "requirementId": "CORE-HOST-EVALUATE",
+      "testName": "CORE-HOST-EVALUATE covers allow, deny, and indeterminate host decision envelopes",
+      "result": "pass",
+      "required": true,
+      "fixturePaths": [
+        "tests/conformance/core/core-host-black-box.test.ts",
+        "tests/conformance/fixtures/core/core-host-adoption-receipt.valid.json",
+        "examples/core/evaluate.allow.json",
+        "examples/core/evaluate.deny.json",
+        "examples/core/evaluate.indeterminate.missing-provider.json",
+        "examples/core/evaluate.indeterminate.stale-assessment.json",
+        "examples/core/evaluate.indeterminate.degraded-required-coverage.json"
+      ]
+    },
+    {
+      "id": "CORE-CHECK-ASSESSMENT",
+      "requirementId": "CORE-CHECK-ASSESSMENT",
+      "testName": "CORE-CHECK-ASSESSMENT accepts the provider Assessment shape used by check/evaluate",
+      "result": "pass",
+      "required": true,
+      "fixturePaths": [
+        "schemas/check-assessment.schema.json",
+        "schemas/check-evaluate.schema.json",
+        "tests/conformance/fixtures/core/check-assessment.valid.complete.json"
+      ]
+    },
+    {
+      "id": "CORE-PROVIDER-FORBIDDEN-FIELDS",
+      "requirementId": "CORE-PROVIDER-FORBIDDEN-FIELDS",
+      "testName": "CORE-PROVIDER-FORBIDDEN-FIELDS rejects host-owned fields at top level and nested provider data",
+      "result": "pass",
+      "required": true,
+      "fixturePaths": [
+        "tests/conformance/fixtures/core/check-assessment.invalid.host-owned-top-level.json",
+        "tests/conformance/fixtures/core/check-assessment.invalid.host-owned-nested.json"
+      ]
+    },
+    {
+      "id": "CORE-STALE-VALID-AS-OF",
+      "requirementId": "CORE-STALE-VALID-AS-OF",
+      "testName": "CORE-STALE-VALID-AS-OF makes a required stale Assessment non-allow with degraded coverage",
+      "result": "pass",
+      "required": true,
+      "fixturePaths": [
+        "tests/conformance/core/core-host-black-box.test.ts",
+        "tests/conformance/fixtures/core/check-assessment.valid.complete.json"
+      ]
+    },
+    {
+      "id": "CORE-MISSING-REQUIRED-PROVIDER",
+      "requirementId": "CORE-MISSING-REQUIRED-PROVIDER",
+      "testName": "CORE-MISSING-REQUIRED-PROVIDER makes an absent required provider non-allow with visible coverage",
+      "result": "pass",
+      "required": true,
+      "fixturePaths": [
+        "tests/conformance/core/core-host-black-box.test.ts",
+        "tests/conformance/core/helpers/core-host-harness.ts",
+        "tests/conformance/core/helpers/core-smoke-helpers.ts"
+      ]
+    },
+    {
+      "id": "CORE-MISSING-AUTHORITY",
+      "requirementId": "CORE-MISSING-AUTHORITY",
+      "testName": "CORE-MISSING-AUTHORITY rejects fresh complete provider coverage without explicit authority",
+      "result": "pass",
+      "required": true,
+      "fixturePaths": [
+        "tests/conformance/core/core-host-black-box.test.ts",
+        "tests/conformance/fixtures/core/core-host-adoption-receipt.valid.json"
+      ]
+    },
+    {
+      "id": "CORE-INSUFFICIENT-ASSURANCE",
+      "requirementId": "CORE-INSUFFICIENT-ASSURANCE",
+      "testName": "CORE-INSUFFICIENT-ASSURANCE rejects authorized fresh coverage below required assurance",
+      "result": "pass",
+      "required": true,
+      "fixturePaths": [
+        "tests/conformance/core/core-host-black-box.test.ts",
+        "tests/conformance/fixtures/core/core-host-adoption-receipt.valid.json"
+      ]
+    },
+    {
+      "id": "CORE-PROVIDER-QUARANTINED",
+      "requirementId": "CORE-PROVIDER-QUARANTINED",
+      "testName": "CORE-PROVIDER-QUARANTINED keeps quarantined required provider non-allow and visibly degraded",
+      "result": "pass",
+      "required": true,
+      "fixturePaths": [
+        "tests/conformance/core/core-host-black-box.test.ts",
+        "tests/conformance/fixtures/core/core-host-adoption-receipt.valid.json"
+      ]
+    },
+    {
+      "id": "CORE-PROVIDER-SKEWED",
+      "requirementId": "CORE-PROVIDER-SKEWED",
+      "testName": "CORE-PROVIDER-SKEWED keeps skewed required provider non-allow and visibly degraded",
+      "result": "pass",
+      "required": true,
+      "fixturePaths": [
+        "tests/conformance/core/core-host-black-box.test.ts",
+        "tests/conformance/fixtures/core/core-host-adoption-receipt.valid.json"
+      ]
+    },
+    {
+      "id": "CORE-HOST-INITIALIZE-CONTRACT-REFUSAL",
+      "requirementId": "CORE-HOST-INITIALIZE-CONTRACT-REFUSAL",
+      "testName": "CORE-HOST-INITIALIZE-CONTRACT-REFUSAL keeps initialize version refusal non-allow and visibly degraded",
+      "result": "pass",
+      "required": true,
+      "fixturePaths": [
+        "tests/conformance/core/core-host-black-box.test.ts",
+        "tests/conformance/fixtures/core/core-host-adoption-receipt.valid.json",
+        "packages/asp/src/core-host.ts",
+        "packages/asp/src/core-host-support.ts",
+        "packages/asp/src/fake-check-provider.ts"
+      ]
+    },
+    {
+      "id": "CORE-PROVIDER-FAIL-OPEN",
+      "requirementId": "CORE-PROVIDER-FAIL-OPEN",
+      "testName": "CORE-PROVIDER-FAIL-OPEN keeps fail-open required provider non-allow and visibly degraded",
+      "result": "pass",
+      "required": true,
+      "fixturePaths": [
+        "tests/conformance/core/core-host-black-box.test.ts",
+        "tests/conformance/fixtures/core/core-host-adoption-receipt.valid.json"
+      ]
+    },
+    {
+      "id": "CORE-MALFORMED-REQUIRED-PROVIDER",
+      "requirementId": "CORE-MALFORMED-REQUIRED-PROVIDER",
+      "testName": "CORE-MALFORMED-REQUIRED-PROVIDER makes malformed required-provider data non-allow",
+      "result": "pass",
+      "required": true,
+      "fixturePaths": [
+        "tests/conformance/core/core-host-black-box.test.ts",
+        "tests/conformance/fixtures/core/check-assessment.invalid.host-owned-nested.json"
+      ]
+    },
+    {
+      "id": "CORE-REQUIRED-COVERAGE-VISIBLE",
+      "requirementId": "CORE-REQUIRED-COVERAGE-VISIBLE",
+      "testName": "CORE-REQUIRED-COVERAGE-VISIBLE keeps every degraded required coverage reason machine-readable",
+      "result": "pass",
+      "required": true,
+      "fixturePaths": [
+        "tests/conformance/core/core-host-black-box.test.ts",
+        "examples/core/evaluate.indeterminate.degraded-required-coverage.json"
+      ]
+    },
+    {
+      "id": "CORE-HOST-DECISION-AUTHORITATIVE",
+      "requirementId": "CORE-HOST-DECISION-AUTHORITATIVE",
+      "testName": "CORE-HOST-DECISION-AUTHORITATIVE treats provider Assessments as inputs, never final gate output",
+      "result": "pass",
+      "required": true,
+      "fixturePaths": [
+        "tests/conformance/core/core-host-black-box.test.ts",
+        "tests/conformance/fixtures/core/core-host-adoption-receipt.valid.json",
+        "tests/conformance/fixtures/core/check-assessment.valid.complete.json",
+        "tests/conformance/fixtures/core/check-assessment.invalid.host-owned-top-level.json"
+      ]
+    },
+    {
+      "id": "CORE-NO-LATTICE-FAST-PATH",
+      "requirementId": "CORE-NO-LATTICE-FAST-PATH",
+      "testName": "CORE-NO-LATTICE-FAST-PATH rejects direct privileged Lattice gate paths as degraded",
+      "result": "pass",
+      "required": true,
+      "fixturePaths": [
+        "examples/outer/evaluate.lattice-fast-path.response.json"
+      ]
+    }
+  ],
+  "coverage": {
+    "required": [
+      "CORE-HOST-STATUS",
+      "CORE-HOST-CAPABILITIES",
+      "CORE-HOST-EVALUATE",
+      "CORE-CHECK-ASSESSMENT",
+      "CORE-PROVIDER-FORBIDDEN-FIELDS",
+      "CORE-STALE-VALID-AS-OF",
+      "CORE-MISSING-REQUIRED-PROVIDER",
+      "CORE-MISSING-AUTHORITY",
+      "CORE-INSUFFICIENT-ASSURANCE",
+      "CORE-PROVIDER-QUARANTINED",
+      "CORE-PROVIDER-SKEWED",
+      "CORE-HOST-INITIALIZE-CONTRACT-REFUSAL",
+      "CORE-PROVIDER-FAIL-OPEN",
+      "CORE-MALFORMED-REQUIRED-PROVIDER",
+      "CORE-REQUIRED-COVERAGE-VISIBLE",
+      "CORE-HOST-DECISION-AUTHORITATIVE",
+      "CORE-NO-LATTICE-FAST-PATH"
+    ],
+    "ran": [
+      "CORE-HOST-STATUS",
+      "CORE-HOST-CAPABILITIES",
+      "CORE-HOST-EVALUATE",
+      "CORE-CHECK-ASSESSMENT",
+      "CORE-PROVIDER-FORBIDDEN-FIELDS",
+      "CORE-STALE-VALID-AS-OF",
+      "CORE-MISSING-REQUIRED-PROVIDER",
+      "CORE-MISSING-AUTHORITY",
+      "CORE-INSUFFICIENT-ASSURANCE",
+      "CORE-PROVIDER-QUARANTINED",
+      "CORE-PROVIDER-SKEWED",
+      "CORE-HOST-INITIALIZE-CONTRACT-REFUSAL",
+      "CORE-PROVIDER-FAIL-OPEN",
+      "CORE-MALFORMED-REQUIRED-PROVIDER",
+      "CORE-REQUIRED-COVERAGE-VISIBLE",
+      "CORE-HOST-DECISION-AUTHORITATIVE",
+      "CORE-NO-LATTICE-FAST-PATH"
+    ],
+    "passed": [
+      "CORE-HOST-STATUS",
+      "CORE-HOST-CAPABILITIES",
+      "CORE-HOST-EVALUATE",
+      "CORE-CHECK-ASSESSMENT",
+      "CORE-PROVIDER-FORBIDDEN-FIELDS",
+      "CORE-STALE-VALID-AS-OF",
+      "CORE-MISSING-REQUIRED-PROVIDER",
+      "CORE-MISSING-AUTHORITY",
+      "CORE-INSUFFICIENT-ASSURANCE",
+      "CORE-PROVIDER-QUARANTINED",
+      "CORE-PROVIDER-SKEWED",
+      "CORE-HOST-INITIALIZE-CONTRACT-REFUSAL",
+      "CORE-PROVIDER-FAIL-OPEN",
+      "CORE-MALFORMED-REQUIRED-PROVIDER",
+      "CORE-REQUIRED-COVERAGE-VISIBLE",
+      "CORE-HOST-DECISION-AUTHORITATIVE",
+      "CORE-NO-LATTICE-FAST-PATH"
+    ],
+    "failed": [],
+    "skipped": [],
+    "missing": [],
+    "degraded": []
+  },
+  "artifacts": [
+    {
+      "path": "docs/conformance/README.md",
+      "kind": "doc",
+      "sha256": "sha256:1c5b7d308b2e94b1c9c0a4bd1d26d07bc417826a38597361b69bd503c976b9d9"
+    },
+    {
+      "path": "docs/conformance/requirements.md",
+      "kind": "doc",
+      "sha256": "sha256:35b3648de88807147c5a111f87e14fb516e2fee1b0673da55d68863a4f1a8872"
+    },
+    {
+      "path": "docs/conformance/traceability.md",
+      "kind": "doc",
+      "sha256": "sha256:35c8fb3fb6ce44247b6587c3c734dbac42817d896f4dc415e3fa12b12255fae5"
+    },
+    {
+      "path": "schemas/conformance-report.schema.json",
+      "kind": "schema",
+      "sha256": "sha256:c8a2f0b20677b8024b0008f08e8c4523c647b7cc2e3149dcad459cf398ede875"
+    },
+    {
+      "path": "scripts/conformance/core-host-adoption-receipt.ts",
+      "kind": "script",
+      "sha256": "sha256:3a2b166b5871968f5920929ed0f2aafe69f48b1e27b7d41d3f7918d5940d94a8"
+    },
+    {
+      "path": "scripts/conformance/core-report-catalog.ts",
+      "kind": "script",
+      "sha256": "sha256:674da25dcfb550ee2a1911ae00fa58536b1b5f7e31ea8bc55be3de1408c67415"
+    },
+    {
+      "path": "scripts/conformance/core-report-utils.ts",
+      "kind": "script",
+      "sha256": "sha256:41f7cbf06d507caa699999a47aacbba0cec12145cc083978b934d30b2148d426"
+    },
+    {
+      "path": "scripts/conformance/run-core-suite.ts",
+      "kind": "script",
+      "sha256": "sha256:2ced55e231e1113eb720033d206639a4b13c1aa3a63be95fd314762741619d82"
+    },
+    {
+      "path": "tests/conformance/core/core-host-black-box.test.ts",
+      "kind": "test",
+      "sha256": "sha256:b7b0ebbea99d1047b218430ebec62d1976cc881f08c09cdecfe7f6d6d33d6fb9"
+    },
+    {
+      "path": "tests/conformance/core/core-profile-smoke.test.ts",
+      "kind": "test",
+      "sha256": "sha256:e8cf22aa0aec6330abcc5663206dc9d690cedc5a30edc43d89e54c4e77f6437b"
+    },
+    {
+      "path": "tests/conformance/core/core-report.test.ts",
+      "kind": "test",
+      "sha256": "sha256:1930cd5def36056a61b3398ee1be799952f94c9aad76d10cf672e23448c4d272"
+    },
+    {
+      "path": "tests/conformance/core/helpers/core-host-harness.ts",
+      "kind": "test",
+      "sha256": "sha256:89ebbfbe96d3da10ec7ae7e03eb172e7cd4031b4e1c6e1003e0cfe108b9212ce"
+    },
+    {
+      "path": "tests/conformance/fixtures/core/core-host-adoption-receipt.valid.json",
+      "kind": "test",
+      "sha256": "sha256:036a5a6c12df99bf724ea134a200688a738bad774cc7b3cfe4f1d98ae51894eb"
+    },
+    {
+      "path": "packages/asp/src/core-host.ts",
+      "kind": "artifact",
+      "sha256": "sha256:3eb1f238a3da8c12ee26366835adfbd48d3e17aadb144de877c401a0ada0cd70"
+    },
+    {
+      "path": "packages/asp/src/core-host-support.ts",
+      "kind": "artifact",
+      "sha256": "sha256:15b2f76d0e1a13f72465240523fb3044f7548eb76d4182bb61ba1ab5bc94b44e"
+    },
+    {
+      "path": "packages/asp/src/core-constants.ts",
+      "kind": "artifact",
+      "sha256": "sha256:3b575812ba15f8e610ae6d396fa69782423a1cb69df7c54872768478a4ebcf2e"
+    },
+    {
+      "path": "packages/asp/src/fake-check-provider.ts",
+      "kind": "artifact",
+      "sha256": "sha256:db37241c51934ec2b7963a8d1f98f49cdbb5377cfc930502b708998c85ad80df"
+    },
+    {
+      "path": "packages/asp/src/host-receipts.ts",
+      "kind": "artifact",
+      "sha256": "sha256:f73493cbfc3b04e9d1b1b35567be593a2feed0a7c4c23916a936a3c29a1017c2"
+    },
+    {
+      "path": "packages/asp/src/types.ts",
+      "kind": "artifact",
+      "sha256": "sha256:7bd0ef73f1a403cbc61f93b8198c76b84426d409e753a58de7d1a59d8f6280fb"
+    },
+    {
+      "path": "spec/08-conformance.md",
+      "kind": "doc",
+      "sha256": "sha256:f28188f6aeb86b04361f6ab66f40dfb2541ecfb35786103fa50f12070113cbd5"
+    },
+    {
+      "path": "spec/11-core-profile.md",
+      "kind": "doc",
+      "sha256": "sha256:13c230599879d12d7e25d749b61dd4c59ca25909796493a851208663163a28cd"
+    },
+    {
+      "path": "schemas/check-assessment.schema.json",
+      "kind": "schema",
+      "sha256": "sha256:ebafb336560c210bc02a8942bad2c8bec4807324c1ba741d427eada918c70e47"
+    },
+    {
+      "path": "schemas/outer-host.schema.json",
+      "kind": "schema",
+      "sha256": "sha256:236463d0bad75b14c3e151a31e1e5a29e81d2594c300da1617a2adef2fa29d55"
+    },
+    {
+      "path": "schemas/verdict.schema.json",
+      "kind": "schema",
+      "sha256": "sha256:c483b71ca3c896438fe854fd7abf51798289c8e929b6fc6d5516b95c162aa708"
+    }
+  ],
+  "claims": {
+    "behaviorEvidenceOnly": true,
+    "privateOnly": true,
+    "trustClaim": false,
+    "authorityClaim": false,
+    "certificationClaim": false,
+    "registryInclusionClaim": false,
+    "publicStandardClaim": false,
+    "providerApprovalClaim": false,
+    "stablePublicApiClaim": false,
+    "notes": [
+      "Private Core behavior evidence only."
+    ]
+  }
+}

@@ -1,0 +1,172 @@
+{
+  "status": "complete",
+  "diagnostics": [
+    {
+      "code": "core/blocking-rule",
+      "severity": "error",
+      "source": "core-check-provider",
+      "message": "Core required check found a blocking policy violation.",
+      "location": {
+        "path": "src/core.ts",
+        "range": {
+          "start": {
+            "line": 4,
+            "char": 2
+          },
+          "end": {
+            "line": 4,
+            "char": 18
+          }
+        }
+      },
+      "fingerprint": "sha256:core-deny-0001",
+      "introduced": true,
+      "help": "Remove the blocking change.",
+      "fix": {
+        "actRef": "core-check-provider/remove-blocking-change",
+        "args": {
+          "targetBlob": "blob:sha256:c0ffee02",
+          "decision": "allow",
+          "disposition": "gating",
+          "verdict": {
+            "decision": "allow"
+          },
+          "pass": true,
+          "authority": {
+            "granted": true
+          },
+          "assurance": {
+            "mode": "isolated"
+          },
+          "transactionGuarantee": "workspace_transactional",
+          "apply": {
+            "write": true
+          },
+          "applyReceipt": {
+            "applied": true
+          },
+          "receipt": {
+            "receiptId": "provider-forged-receipt"
+          },
+          "policyDigest": "sha256:provider-forged-policy",
+          "policyRef": "provider-policy-ref",
+          "policyReference": "provider-policy-reference",
+          "authorityEvidence": [],
+          "hostDecision": {
+            "decision": "allow"
+          },
+          "applyAttempt": {
+            "proposalId": "provider-forged-attempt"
+          },
+          "applyResult": {
+            "applied": true
+          }
+        }
+      }
+    }
+  ],
+  "evidence": [
+    {
+      "kind": "trace",
+      "id": "core-check-trace-0001",
+      "digest": "sha256:core-evidence-0001",
+      "message": "Core check evaluated the candidate changeset.",
+      "data": {
+        "rule": "core/blocking-rule",
+        "providerStatus": "complete",
+        "nested": {
+          "decision": "allow",
+          "disposition": "gating",
+          "verdict": {
+            "decision": "allow"
+          },
+          "pass": true,
+          "authority": {
+            "granted": true
+          },
+          "assurance": {
+            "mode": "isolated"
+          },
+          "transactionGuarantee": "workspace_transactional",
+          "apply": {
+            "write": true
+          },
+          "applyReceipt": {
+            "applied": true
+          },
+          "receipt": {
+            "receiptId": "provider-forged-receipt"
+          },
+          "policyDigest": "sha256:provider-forged-policy",
+          "policyRef": "provider-policy-ref",
+          "policyReference": "provider-policy-reference",
+          "authorityEvidence": [],
+          "hostDecision": {
+            "decision": "allow"
+          },
+          "applyAttempt": {
+            "proposalId": "provider-forged-attempt"
+          },
+          "applyResult": {
+            "applied": true
+          }
+        }
+      }
+    }
+  ],
+  "coverage": {
+    "requested": {
+      "scope": "changeset",
+      "diagnosticSources": [
+        "core-check-provider"
+      ],
+      "rules": [
+        "core/blocking-rule"
+      ],
+      "comparison": "introduced"
+    },
+    "covered": {
+      "scope": "changeset",
+      "diagnosticSources": [
+        "core-check-provider"
+      ],
+      "rules": [
+        "core/blocking-rule"
+      ],
+      "comparison": "introduced"
+    },
+    "degraded": [],
+    "unsupported": [],
+    "exhaustive": true,
+    "truncated": false
+  },
+  "validAsOf": {
+    "baseline": {
+      "rev": "tree:core-base",
+      "stampedAt": "2026-06-23T12:00:00Z"
+    },
+    "changesetDigest": "sha256:core-changeset-0001",
+    "blobs": [
+      "blob:sha256:c0ffee01",
+      "blob:sha256:c0ffee02"
+    ]
+  },
+  "provider": {
+    "id": "core-check-provider",
+    "version": "0.1.0-private",
+    "configDigest": "sha256:core-provider-config",
+    "capabilityVersion": "check/1.0",
+    "buildDigest": "sha256:core-provider",
+    "capabilityFamily": "check"
+  },
+  "timing": {
+    "startedAt": "2026-06-23T12:01:00Z",
+    "endedAt": "2026-06-23T12:01:01Z",
+    "elapsedMs": 1000
+  },
+  "cache": {
+    "status": "miss",
+    "key": "sha256:core-cache-key-0001",
+    "digest": "sha256:core-cache-value-0001"
+  }
+}

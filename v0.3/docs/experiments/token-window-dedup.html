@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Token-Window Deduplication Experiment · Opcore</title><link rel="stylesheet" href="../../assets/site.css">
+<script src="../../assets/theme.js"></script>
+<script defer src="../../assets/site.js"></script>
+<link rel="icon" type="image/svg+xml" href="../../assets/oec-favicon.svg"><link rel="stylesheet" href="../../assets/versions.css"><script defer src="../../assets/versions.js"></script></head>
+<body class="guide-page"><a class="skip-link" href="#main-content">Skip to content</a>
+<header class="site-header"><div class="header-inner">
+<button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-navigation">Menu</button>
+<a class="brand" href="../../index.html"><img src="../../assets/oec-crow.png" alt="" width="32" height="36"><span>Opcore</span></a>
+<a class="header-label" href="../../index.html">Documentation</a>
+<div class="header-actions"><div class="docs-version" data-site-root="../../../" data-page-path="docs/experiments/token-window-dedup.html" data-version="v0.3"><a href="../../../versions.html">v0.3 ▾</a><select hidden aria-label="Documentation version"><option>v0.3</option></select></div><button class="theme-toggle" type="button" aria-label="Use dark mode" title="Use dark mode"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20.8 13.1A9 9 0 0 1 10.9 3.2 9 9 0 1 0 20.8 13.1Z"/></svg></button>
+<a class="repository-link" href="https://github.com/the-open-engine/opcore">GitHub <span aria-hidden="true">↗</span></a></div>
+</div></header>
+<div class="docs-layout"><aside class="docs-sidebar"><nav id="site-navigation" aria-label="Documentation"><div class="nav-group"><p>Opcore</p><ul><li><a href="../../index.html">Overview</a></li></ul></div><div class="nav-group"><p>Get started</p><ul><li><a href="../getting-started.html">Installation and first check</a></li></ul></div><div class="nav-group"><p>Guides</p><ul><li><a href="../configuration.html">Configuration</a></li><li><a href="../providers.html">Providers</a></li><li><a href="../examples.html">Examples</a></li><li><a href="../sense.html">Project Sense</a></li><li><a href="../agent-signals.html">Agent feedback</a></li></ul></div><div class="nav-group"><p>Reference</p><ul><li><a href="../../cli.html">CLI</a></li><li><a href="../../api/opcore/api/index.html">Rust API</a></li><li><a href="../../api/opcore/api/enum.ProviderProfile.html">Provider profiles</a></li><li><a href="../../asp/README.html">ASP specification</a></li></ul></div><div class="nav-group"><p>Project</p><ul><li><a href="../architecture.html">Architecture</a></li><li><a href="../../CONTRIBUTING.html">Contributing</a></li><li><a href="../../CODE_OF_CONDUCT.html">Code of conduct</a></li><li><a href="../../SECURITY.html">Security</a></li></ul></div></nav></aside>
+<main id="main-content" class="guide-content" tabindex="-1">
+<p class="docs-kicker">Core documentation</p><h1 class="title">Token-Window Deduplication Experiment</h1>
+    <p>Date: 2026-08-05</p>
+<p>This experiment measures an exact sub-block duplication candidate path without
+changing production behavior. The benchmark is <code>benches/token_windows.rs</code>.</p>
+<h2 id="question"><a class="doc-anchor" href="#question">§</a>Question</h2>
+<p>Can Opcore recover the legacy detector’s arbitrary copied-block coverage
+without materially harming Sense latency or memory bounds?</p>
+<h2 id="prototype"><a class="doc-anchor" href="#prototype">§</a>Prototype</h2>
+<p>The benchmark parses generated TypeScript through the pinned Oxc lexer and
+interns exact token identities, including Node inter-token line-break state. It
+compares three request-local indexes:</p>
+<ol>
+<li>Every exact 48-token window, indexed by two rolling 64-bit hashes and
+verified by exact token comparison.</li>
+<li>Every exact 48-token window hashed independently with SHA-256.</li>
+<li>Winnowing: rolling 32-token k-grams, a 17-k-gram rightmost-minimum span, and
+SHA-256 only for selected anchors.</li>
+</ol>
+<p>The winnowing parameters guarantee that every exact run of at least 48 tokens
+contains a shared selected anchor. A deterministic 128-case offset check runs
+before measurement. All record collection stops at 200,000 entries and reports
+truncation.</p>
+<p>Measurements used the release profile on Linux x86-64 with 16 logical CPUs.
+Each rolling result is the median and p95 of 15 iterations; SHA-per-window uses
+five iterations. Peak RSS was measured by <code>/usr/bin/time -v</code> around the already
+built benchmark, excluding compilation.</p>
+<p>One unpinned repeat on the shared host reached 104 ms median and 200 ms p95 for
+the 10,000-file winnowed case while smaller cases remained stable. Two complete
+repeats pinned to one CPU measured 82.8-83.4 ms median and 83.3-85.2 ms p95;
+the duplicate-heavy case measured 6.16-6.21 ms median. The table reports the
+first direct run, and these timings are experimental evidence rather than a new
+shared-runner pass/fail threshold.</p>
+<h2 id="results"><a class="doc-anchor" href="#results">§</a>Results</h2><div><table><thead><tr><th>Corpus</th><th style="text-align: right">Lexer tokens</th><th style="text-align: right">All rolling median / p95</th><th style="text-align: right">Winnowed SHA median / p95</th><th style="text-align: right">SHA each median</th></tr></thead><tbody>
+<tr><td>100 unique files</td><td style="text-align: right">30,800</td><td style="text-align: right">0.74 / 0.86 ms</td><td style="text-align: right">0.94 / 1.02 ms</td><td style="text-align: right">5.81 ms</td></tr>
+<tr><td>320 unique files</td><td style="text-align: right">98,560</td><td style="text-align: right">2.57 / 2.99 ms</td><td style="text-align: right">3.04 / 3.12 ms</td><td style="text-align: right">18.89 ms</td></tr>
+<tr><td>800 unique files</td><td style="text-align: right">246,400</td><td style="text-align: right">6.56 / 7.70 ms</td><td style="text-align: right">7.69 / 7.77 ms</td><td style="text-align: right">45.70 ms</td></tr>
+<tr><td>800 duplicate-heavy files</td><td style="text-align: right">246,400</td><td style="text-align: right">10.48 / 10.67 ms</td><td style="text-align: right">6.17 / 6.27 ms</td><td style="text-align: right">49.68 ms</td></tr>
+<tr><td>10,000 unique files</td><td style="text-align: right">3,080,000</td><td style="text-align: right">6.55 / 6.65 ms, truncated</td><td style="text-align: right">83.61 / 84.98 ms, truncated</td><td style="text-align: right">45.75 ms, truncated</td></tr>
+</tbody></table>
+</div>
+<p>At 800 files, indexing every window reached the 200,000-record cap and used
+4.8 MB for one view or 9.6 MB for before plus after. Winnowing retained about
+23,900 anchors and used 0.57 MB for one view. At 10,000 files, winnowing selected
+298,563 possible anchors, retained the bounded 200,000 records, and used 4.8 MB
+for those candidate records. The complete benchmark process peaked at 87,728
+KiB RSS; its retained exact token IDs accounted for 12.32 MB at that scale.</p>
+<p>The duplicate-heavy corpus is intentionally adversarial. Every-window indexing
+performed 197,441 exact comparisons and still completed in 10.67 ms p95.
+Winnowing reduced this to 23,171 comparisons and 6.27 ms p95. No candidate-hash
+collision occurred.</p>
+<p>The explicit production Sense stress suite was also run after integration. On
+the same 16-CPU host, its unoptimized test binary spent 14.96 ms in deduplication
+for the median clean 10,000-file view, 59.60 ms for one changed file, and
+59.69 ms for 1,001 changed paths. Eight simultaneous clean worktrees each spent
+15.97-25.60 ms in deduplication, and the largest measured process stayed below
+67,452 KiB RSS. These shared-host timings are a diagnostic snapshot, not a
+microsecond gate; the suite’s boundedness and deterministic-result assertions
+remain authoritative.</p>
+<h2 id="interpretation"><a class="doc-anchor" href="#interpretation">§</a>Interpretation</h2>
+<p>CPU cost is not the main blocker. A bounded all-window rolling index is fast,
+but it exhausts the request budget too readily and emits excessive overlapping
+candidates: one repeated generated function produced 258 exact window classes.
+Winnowing reduced that to 29 anchors while retaining the 48-token detection
+guarantee and cutting ordinary record memory by about 88%.</p>
+<p>The 10,000-file winnowing cost is cold extraction work over all 3.08 million
+tokens. Production extraction now emits selected path-independent fingerprints
+during the existing parser pass and reuses them from the fact cache; warm
+request comparison sorts and groups only retained fingerprints.</p>
+<h2 id="recommendation"><a class="doc-anchor" href="#recommendation">§</a>Recommendation</h2>
+<p>The production implementation adopts the winnowed design:</p>
+<ul>
+<li>32-token exact k-grams;</li>
+<li>17-k-gram rightmost-minimum winnowing span;</li>
+<li>dual rolling anchor hashes followed by exact normalized-token confirmation;</li>
+<li>4,096 selected anchors per file and 200,000 per request;</li>
+<li>4,000,000 exact token comparisons per request;</li>
+<li>request-local maximal-region merging with bounded occurrence samples and no
+occurrence-pair expansion;</li>
+<li>introduced-only comparison using existing exact path continuity.</li>
+</ul>
+<p>Fact ABI v14 carries compact exact token spans so hashes are never authoritative.
+Any extraction, anchor, decode, or comparison bound yields incomplete coverage.
+Node, Python, and Rust fixtures cover partial blocks, the exact 48-token
+threshold, 128 match offsets, forced hash collisions, parser failure, callable
+and whole-file cascade suppression, multi-copy class merging, and repetitive
+streams.</p></main><aside class="page-toc" aria-label="On this page"><p>On this page</p><nav id="rustdoc"><ul>
+<li><a href="#question" title="Question">Question</a><ul></ul></li>
+<li><a href="#prototype" title="Prototype">Prototype</a><ul></ul></li>
+<li><a href="#results" title="Results">Results</a><ul></ul></li>
+<li><a href="#interpretation" title="Interpretation">Interpretation</a><ul></ul></li>
+<li><a href="#recommendation" title="Recommendation">Recommendation</a><ul></ul></li></ul></nav></aside></div>
+<footer class="site-footer"><div>© The Open Engine
+<a href="https://github.com/the-open-engine/opcore">Opcore on GitHub ↗</a></div></footer></body></html>

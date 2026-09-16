@@ -1,0 +1,138 @@
+{
+  "jsonrpc": "2.0",
+  "id": 11,
+  "result": {
+    "proposal": {
+      "proposalId": "proposal:legacy-rename-api-fetch",
+      "provider": {
+        "id": "lattice",
+        "version": "0.1.0",
+        "capabilityFamily": "edit",
+        "capabilityVersion": "edit/1.0",
+        "configDigest": "sha256:editcfg001"
+      },
+      "status": "complete",
+      "baseline": {
+        "rev": "git:tree:9f3a1c",
+        "stampedAt": "2026-06-16T10:00:00Z"
+      },
+      "validAsOf": {
+        "baseline": {
+          "rev": "git:tree:9f3a1c",
+          "stampedAt": "2026-06-16T10:00:00Z"
+        },
+        "blobs": [
+          "blob:sha256:aa01",
+          "blob:sha256:f201"
+        ]
+      },
+      "touchedResources": [
+        {
+          "path": "src/api.ts",
+          "kind": "modify",
+          "precondition": {
+            "expectedDigest": "blob:sha256:aa01"
+          }
+        },
+        {
+          "path": "src/server.ts",
+          "kind": "modify",
+          "precondition": {
+            "expectedDigest": "blob:sha256:f201"
+          }
+        }
+      ],
+      "workspaceEdit": {
+        "baseline": {
+          "rev": "git:tree:9f3a1c",
+          "stampedAt": "2026-06-16T10:00:00Z"
+        },
+        "documentChanges": [
+          {
+            "path": "src/api.ts",
+            "kind": "modify",
+            "precondition": {
+              "expectedDigest": "blob:sha256:aa01"
+            },
+            "edits": [
+              {
+                "range": {
+                  "start": {
+                    "line": 12,
+                    "char": 13
+                  },
+                  "end": {
+                    "line": 12,
+                    "char": 18
+                  }
+                },
+                "rangeBasis": "blob:sha256:aa01",
+                "coordinateSystem": "utf16",
+                "newText": "request"
+              }
+            ]
+          },
+          {
+            "path": "src/server.ts",
+            "kind": "modify",
+            "precondition": {
+              "expectedDigest": "blob:sha256:f201"
+            },
+            "after": "blob:sha256:9c44"
+          }
+        ]
+      }
+    },
+    "workspaceEdit": {
+      "baseline": {
+        "rev": "git:tree:9f3a1c",
+        "stampedAt": "2026-06-16T10:00:00Z"
+      },
+      "documentChanges": [
+        {
+          "path": "src/api.ts",
+          "kind": "modify",
+          "precondition": {
+            "expectedDigest": "blob:sha256:aa01"
+          },
+          "edits": [
+            {
+              "range": {
+                "start": {
+                  "line": 12,
+                  "char": 13
+                },
+                "end": {
+                  "line": 12,
+                  "char": 18
+                }
+              },
+              "rangeBasis": "blob:sha256:aa01",
+              "coordinateSystem": "utf16",
+              "newText": "request"
+            }
+          ]
+        },
+        {
+          "path": "src/server.ts",
+          "kind": "modify",
+          "precondition": {
+            "expectedDigest": "blob:sha256:f201"
+          },
+          "after": "blob:sha256:9c44"
+        }
+      ]
+    },
+    "complete": true,
+    "validAsOf": {
+      "baseline": {
+        "rev": "git:tree:9f3a1c",
+        "stampedAt": "2026-06-16T10:00:00Z"
+      },
+      "blobs": [
+        "blob:sha256:aa01",
+        "blob:sha256:f201"
+      ]
+    }
+  }
+}

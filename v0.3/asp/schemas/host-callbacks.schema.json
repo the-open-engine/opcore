@@ -1,0 +1,139 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://covibes.dev/asp/schemas/host-callbacks.schema.json",
+  "title": "Host callbacks",
+  "description": "Provider -> host content callbacks and notifications. ASP Core v1.0 reuses workspace/readBlob and workspace/listTree without a Core-only schema fork. The host scope-checks every one; a scope violation returns a policy error (see schemas/error.schema.json). Callbacks never grant apply authority, and server-initiated applyEdit is non-conforming after ADR 0024.",
+  "$defs": {
+    "blobRef": { "type": "string", "pattern": "^blob:[a-z0-9]+:[0-9a-f]+$" },
+    "encoding": { "enum": ["utf-8", "base64"] },
+    "baseline": {
+      "type": "object",
+      "required": ["rev"],
+      "properties": {
+        "rev": { "type": "string" },
+        "dirty": { "type": "string" },
+        "stampedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+
+    "listTree.params": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Enumerate baseline entries. Provide globs or paths; both filtered to the granted read scope.",
+      "properties": {
+        "globs": { "type": "array", "items": { "type": "string" } },
+        "paths": { "type": "array", "items": { "type": "string" } },
+        "baseline": { "$ref": "#/$defs/baseline" }
+      }
+    },
+    "listTree.result": {
+      "type": "object",
+      "required": ["entries"],
+      "additionalProperties": false,
+      "properties": {
+        "entries": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["path", "blobId", "kind"],
+            "additionalProperties": false,
+            "properties": {
+              "path": { "type": "string" },
+              "blobId": { "$ref": "#/$defs/blobRef" },
+              "kind": { "enum": ["file", "dir", "symlink"] }
+            }
+          }
+        },
+        "truncated": { "type": "boolean", "description": "True if a host result cap was hit; the server MUST tolerate it." }
+      }
+    },
+
+    "readBlob.params": {
+      "type": "object",
+      "required": ["blobs"],
+      "additionalProperties": false,
+      "properties": { "blobs": { "type": "array", "items": { "$ref": "#/$defs/blobRef" } } }
+    },
+    "readBlob.result": {
+      "type": "object",
+      "required": ["blobs"],
+      "additionalProperties": false,
+      "properties": {
+        "blobs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "encoding", "bytes"],
+            "additionalProperties": false,
+            "properties": {
+              "id": { "$ref": "#/$defs/blobRef" },
+              "encoding": { "$ref": "#/$defs/encoding" },
+              "bytes": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+
+    "putBlob.params": {
+      "type": "object",
+      "required": ["blobs"],
+      "additionalProperties": false,
+      "description": "Upload proposal-introduced blobs for an EditPlan. The host hashes them and adds them to that proposal's referenced set only; this cannot apply, stage, publish, or authorize workspace changes.",
+      "properties": {
+        "blobs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["encoding", "bytes"],
+            "additionalProperties": false,
+            "properties": { "encoding": { "$ref": "#/$defs/encoding" }, "bytes": { "type": "string" } }
+          }
+        }
+      }
+    },
+    "putBlob.result": {
+      "type": "object",
+      "required": ["ids"],
+      "additionalProperties": false,
+      "description": "Host-managed blob refs for proposal content. A provider still must return a structured EditPlan and wait for host validation/apply.",
+      "properties": { "ids": { "type": "array", "items": { "$ref": "#/$defs/blobRef" } } }
+    },
+
+    "baselineChanged.params": {
+      "type": "object",
+      "required": ["baseline"],
+      "additionalProperties": false,
+      "description": "Notification (host -> server). Advances the session baseline.",
+      "properties": { "baseline": { "$ref": "#/$defs/baseline" } }
+    },
+
+    "logMessage.params": {
+      "type": "object",
+      "required": ["level", "message"],
+      "additionalProperties": false,
+      "description": "Notification (server -> host). message is untrusted data (string containment applies).",
+      "properties": {
+        "level": { "enum": ["error", "warn", "info", "debug"] },
+        "message": { "type": "string" }
+      }
+    },
+
+    "publishDiagnostics.params": {
+      "type": "object",
+      "required": ["uri", "validAsOf", "diagnostics"],
+      "additionalProperties": false,
+      "description": "Notification (server -> host), watch.push judges. Ambient diagnostics, never gating; a new batch for a uri supersedes the prior batch for that uri.",
+      "properties": {
+        "uri": { "type": "string" },
+        "validAsOf": {
+          "type": "object",
+          "required": ["rev"],
+          "additionalProperties": false,
+          "properties": { "rev": { "type": "string" }, "blobs": { "type": "array", "items": { "type": "string" } } }
+        },
+        "diagnostics": { "type": "array", "items": { "$ref": "https://covibes.dev/asp/schemas/diagnostic.schema.json" } }
+      }
+    }
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://covibes.dev/asp/schemas/envelope.schema.json",
+  "title": "JSON-RPC envelope",
+  "description": "ASP messages are JSON-RPC 2.0. The three branches are mutually exclusive: a request has method+id; a notification has method and no id; a response has id, no method, and exactly one of result/error. The params/result/error PAYLOAD is validated separately against the per-method $def named by a fixture's 'validates' (see index.json exampleBinding). Fixtures may carry a '//' comment key.",
+  "oneOf": [
+    {
+      "title": "request",
+      "type": "object",
+      "required": ["jsonrpc", "id", "method"],
+      "properties": {
+        "jsonrpc": { "const": "2.0" },
+        "id": { "oneOf": [ { "type": "string" }, { "type": "integer" } ] },
+        "method": { "type": "string" },
+        "params": { "type": ["object", "array"] }
+      }
+    },
+    {
+      "title": "notification",
+      "type": "object",
+      "required": ["jsonrpc", "method"],
+      "not": { "required": ["id"] },
+      "properties": {
+        "jsonrpc": { "const": "2.0" },
+        "method": { "type": "string" },
+        "params": { "type": ["object", "array"] }
+      }
+    },
+    {
+      "title": "response",
+      "type": "object",
+      "required": ["jsonrpc", "id"],
+      "allOf": [
+        { "not": { "required": ["method"] } },
+        { "oneOf": [
+          { "required": ["result"], "not": { "required": ["error"] } },
+          { "required": ["error"], "not": { "required": ["result"] } }
+        ] }
+      ],
+      "properties": {
+        "jsonrpc": { "const": "2.0" },
+        "id": { "oneOf": [ { "type": "string" }, { "type": "integer" }, { "type": "null" } ] },
+        "result": true,
+        "error": { "$ref": "https://covibes.dev/asp/schemas/error.schema.json" }
+      }
+    }
+  ]
+}

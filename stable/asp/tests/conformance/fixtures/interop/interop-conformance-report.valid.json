@@ -1,0 +1,530 @@
+{
+  "target": {
+    "kind": "interop",
+    "name": "asp-private-interop-matrix",
+    "version": "0.1.0-private"
+  },
+  "profile": {
+    "id": "asp-interop-v1.0-private",
+    "name": "ASP private interoperability evidence",
+    "scope": "private-interop",
+    "coreOnly": true,
+    "nonCoreProfilesDeferred": [
+      "inspect",
+      "edit",
+      "apply",
+      "deployment",
+      "dogfood"
+    ]
+  },
+  "suite": {
+    "id": "asp-interop-conformance-report",
+    "version": "2026-06-26",
+    "generatedAt": "2026-06-26T00:00:00Z",
+    "runner": "scripts/conformance/run-interop-suite.ts",
+    "testCommand": "node --experimental-strip-types --test --test-reporter=tap tests/conformance/interop/interop-matrix.test.ts"
+  },
+  "summary": {
+    "result": "pass",
+    "total": 7,
+    "passed": 7,
+    "failed": 0,
+    "skipped": 0,
+    "missingRequired": 0
+  },
+  "implementations": [
+    {
+      "id": "reference-host+fake-provider",
+      "host": "open-engine-reference-host",
+      "provider": "core-check-provider",
+      "bindingCandidate": "json-rpc-stdio",
+      "capabilityFamilies": [
+        "check"
+      ],
+      "providerSource": "local-fixture",
+      "ordinaryProviderContract": true,
+      "privilegedProviderPath": false
+    },
+    {
+      "id": "reference-host+opcore-provider",
+      "host": "open-engine-reference-host",
+      "provider": "opcore",
+      "bindingCandidate": "json-rpc-stdio",
+      "capabilityFamilies": [
+        "check"
+      ],
+      "providerSource": "env-provider",
+      "ordinaryProviderContract": true,
+      "privilegedProviderPath": false,
+      "manifestSource": "manager-owned-manifest",
+      "providerEntrypoint": {
+        "source": "env-provider",
+        "executable": "provider-stdio",
+        "realExecutable": "env:ASP_INTEROP_PROVIDER_BIN",
+        "argv": [
+          "--stdio"
+        ],
+        "realArgv": [
+          "--stdio"
+        ],
+        "envVariables": [
+          "PATH"
+        ]
+      },
+      "serverInfoName": "opcore",
+      "serverInfoVersion": "0.1.0-private-interop",
+      "runtimeProviderId": "opcore",
+      "providerProvenancePackage": "@the-open-engine/opcore",
+      "gateCallSite": "gate",
+      "gateDecision": "allow",
+      "gateRequiredCoverageStatus": "complete",
+      "gateRequiredCoverageRan": [
+        "opcore/core-required-check"
+      ],
+      "gateRequiredCoverageDegraded": []
+    },
+    {
+      "id": "independent-host+fake",
+      "host": "minimal-independent-host",
+      "provider": "core-check-provider",
+      "bindingCandidate": "json-rpc-stdio",
+      "capabilityFamilies": [
+        "check"
+      ],
+      "providerSource": "local-fixture",
+      "ordinaryProviderContract": true,
+      "privilegedProviderPath": false
+    },
+    {
+      "id": "independent-host+opcore",
+      "host": "minimal-independent-host",
+      "provider": "opcore",
+      "bindingCandidate": "json-rpc-stdio",
+      "capabilityFamilies": [
+        "check"
+      ],
+      "providerSource": "env-provider",
+      "ordinaryProviderContract": true,
+      "privilegedProviderPath": false,
+      "providerEntrypoint": {
+        "source": "env-provider",
+        "executable": "provider-stdio",
+        "realExecutable": "env:ASP_INTEROP_PROVIDER_BIN",
+        "argv": [
+          "--stdio"
+        ],
+        "realArgv": [
+          "--stdio"
+        ],
+        "envVariables": [
+          "PATH"
+        ]
+      },
+      "serverInfoName": "opcore",
+      "serverInfoVersion": "0.1.0-private-interop",
+      "runtimeProviderId": "opcore",
+      "assessmentProviderId": "opcore",
+      "providerProvenancePackage": "@the-open-engine/opcore",
+      "assessmentStatus": "complete",
+      "assessmentCoverageStatus": "complete",
+      "assessmentCoverageDegraded": [],
+      "assessmentCoverageUnsupported": [],
+      "assessmentCoverageExhaustive": true
+    }
+  ],
+  "bindingCandidate": "json-rpc-stdio",
+  "capabilityFamilies": [
+    "check"
+  ],
+  "requirements": [
+    {
+      "id": "INTEROP-REF-HOST-FAKE",
+      "title": "Reference host interoperates with a fake provider",
+      "required": true,
+      "status": "covered",
+      "assertionIds": [
+        "INTEROP-REF-HOST-FAKE"
+      ],
+      "sourceSpecSections": [
+        "spec/08-conformance.md:106",
+        "spec/09-outer-seam.md:35",
+        "spec/11-core-profile.md:103"
+      ],
+      "fixturePaths": [
+        "tests/conformance/interop/interop-matrix.test.ts",
+        "tests/conformance/interop/helpers/interop-harness.ts"
+      ]
+    },
+    {
+      "id": "INTEROP-REF-HOST-OPCORE",
+      "title": "Reference host interoperates with an ordinary enrolled Opcore provider",
+      "required": true,
+      "status": "covered",
+      "assertionIds": [
+        "INTEROP-REF-HOST-OPCORE"
+      ],
+      "sourceSpecSections": [
+        "spec/08-conformance.md:106",
+        "spec/10-installation-and-discovery.md:88",
+        "spec/11-core-profile.md:103"
+      ],
+      "fixturePaths": [
+        "tests/conformance/interop/interop-matrix.test.ts",
+        "tests/conformance/interop/helpers/interop-harness.ts"
+      ]
+    },
+    {
+      "id": "INTEROP-INDEPENDENT-HOST-FAKE",
+      "title": "Independent host harness interoperates with a fake provider",
+      "required": true,
+      "status": "covered",
+      "assertionIds": [
+        "INTEROP-INDEPENDENT-HOST-FAKE"
+      ],
+      "sourceSpecSections": [
+        "spec/08-conformance.md:54",
+        "spec/09-outer-seam.md:35",
+        "spec/11-core-profile.md:55"
+      ],
+      "fixturePaths": [
+        "tests/conformance/interop/interop-matrix.test.ts",
+        "tests/conformance/interop/helpers/interop-harness.ts"
+      ]
+    },
+    {
+      "id": "INTEROP-INDEPENDENT-HOST-OPCORE",
+      "title": "Independent host harness interoperates with an ordinary provider entrypoint",
+      "required": true,
+      "status": "covered",
+      "assertionIds": [
+        "INTEROP-INDEPENDENT-HOST-OPCORE"
+      ],
+      "sourceSpecSections": [
+        "spec/08-conformance.md:54",
+        "spec/09-outer-seam.md:35",
+        "spec/10-installation-and-discovery.md:88"
+      ],
+      "fixturePaths": [
+        "tests/conformance/interop/interop-matrix.test.ts",
+        "tests/conformance/interop/helpers/interop-harness.ts"
+      ]
+    },
+    {
+      "id": "INTEROP-UNSUPPORTED-COVERAGE-VISIBLE",
+      "title": "Unsupported coverage is visible rather than silently passing",
+      "required": true,
+      "status": "covered",
+      "assertionIds": [
+        "INTEROP-UNSUPPORTED-COVERAGE-VISIBLE"
+      ],
+      "sourceSpecSections": [
+        "spec/08-conformance.md:74",
+        "spec/08-conformance.md:158",
+        "spec/11-core-profile.md:57"
+      ],
+      "fixturePaths": [
+        "tests/conformance/interop/interop-matrix.test.ts",
+        "packages/asp/src/fake-check-provider.ts"
+      ]
+    },
+    {
+      "id": "INTEROP-NO-OPCORE-FAST-PATH",
+      "title": "Interop artifacts contain no privileged provider shortcuts",
+      "required": true,
+      "status": "covered",
+      "assertionIds": [
+        "INTEROP-NO-OPCORE-FAST-PATH"
+      ],
+      "sourceSpecSections": [
+        "spec/08-conformance.md:175",
+        "spec/09-outer-seam.md:35"
+      ],
+      "fixturePaths": [
+        "tests/conformance/interop/interop-matrix.test.ts",
+        "tests/conformance/interop/helpers/interop-harness.ts"
+      ]
+    },
+    {
+      "id": "INTEROP-PRIVATE-CLAIMS",
+      "title": "Interop reports remain private behavior evidence only",
+      "required": true,
+      "status": "covered",
+      "assertionIds": [
+        "INTEROP-PRIVATE-CLAIMS"
+      ],
+      "sourceSpecSections": [
+        "spec/08-conformance.md:17",
+        "docs/conformance/requirements.md"
+      ],
+      "fixturePaths": [
+        "scripts/conformance/interop-report-catalog.ts",
+        "tests/conformance/fixtures/interop/interop-conformance-report.valid.json"
+      ]
+    }
+  ],
+  "assertions": [
+    {
+      "id": "INTEROP-REF-HOST-FAKE",
+      "requirementId": "INTEROP-REF-HOST-FAKE",
+      "testName": "INTEROP-REF-HOST-FAKE reference host and fake provider use the Core check contract",
+      "result": "pass",
+      "required": true,
+      "fixturePaths": [
+        "tests/conformance/interop/interop-matrix.test.ts",
+        "tests/conformance/interop/helpers/interop-harness.ts"
+      ]
+    },
+    {
+      "id": "INTEROP-REF-HOST-OPCORE",
+      "requirementId": "INTEROP-REF-HOST-OPCORE",
+      "testName": "INTEROP-REF-HOST-OPCORE reference host and ordinary provider enrollment use the Core check contract",
+      "result": "pass",
+      "required": true,
+      "fixturePaths": [
+        "tests/conformance/interop/interop-matrix.test.ts",
+        "tests/conformance/interop/helpers/interop-harness.ts"
+      ]
+    },
+    {
+      "id": "INTEROP-INDEPENDENT-HOST-FAKE",
+      "requirementId": "INTEROP-INDEPENDENT-HOST-FAKE",
+      "testName": "INTEROP-INDEPENDENT-HOST-FAKE independent host and fake provider use the Core check contract",
+      "result": "pass",
+      "required": true,
+      "fixturePaths": [
+        "tests/conformance/interop/interop-matrix.test.ts",
+        "tests/conformance/interop/helpers/interop-harness.ts"
+      ]
+    },
+    {
+      "id": "INTEROP-INDEPENDENT-HOST-OPCORE",
+      "requirementId": "INTEROP-INDEPENDENT-HOST-OPCORE",
+      "testName": "INTEROP-INDEPENDENT-HOST-OPCORE independent host and ordinary provider entrypoint use the Core check contract",
+      "result": "pass",
+      "required": true,
+      "fixturePaths": [
+        "tests/conformance/interop/interop-matrix.test.ts",
+        "tests/conformance/interop/helpers/interop-harness.ts"
+      ]
+    },
+    {
+      "id": "INTEROP-UNSUPPORTED-COVERAGE-VISIBLE",
+      "requirementId": "INTEROP-UNSUPPORTED-COVERAGE-VISIBLE",
+      "testName": "INTEROP-UNSUPPORTED-COVERAGE-VISIBLE unsupported coverage remains explicit",
+      "result": "pass",
+      "required": true,
+      "fixturePaths": [
+        "tests/conformance/interop/interop-matrix.test.ts",
+        "packages/asp/src/fake-check-provider.ts"
+      ]
+    },
+    {
+      "id": "INTEROP-NO-OPCORE-FAST-PATH",
+      "requirementId": "INTEROP-NO-OPCORE-FAST-PATH",
+      "testName": "INTEROP-NO-OPCORE-FAST-PATH rejects privileged fast-path tokens in interop artifacts",
+      "result": "pass",
+      "required": true,
+      "fixturePaths": [
+        "tests/conformance/interop/interop-matrix.test.ts",
+        "tests/conformance/interop/helpers/interop-harness.ts"
+      ]
+    },
+    {
+      "id": "INTEROP-PRIVATE-CLAIMS",
+      "requirementId": "INTEROP-PRIVATE-CLAIMS",
+      "testName": "INTEROP-PRIVATE-CLAIMS keeps interop evidence private and non-authoritative",
+      "result": "pass",
+      "required": true,
+      "fixturePaths": [
+        "scripts/conformance/interop-report-catalog.ts",
+        "tests/conformance/fixtures/interop/interop-conformance-report.valid.json"
+      ]
+    }
+  ],
+  "skippedAssertions": [],
+  "coverage": {
+    "required": [
+      "INTEROP-REF-HOST-FAKE",
+      "INTEROP-REF-HOST-OPCORE",
+      "INTEROP-INDEPENDENT-HOST-FAKE",
+      "INTEROP-INDEPENDENT-HOST-OPCORE",
+      "INTEROP-UNSUPPORTED-COVERAGE-VISIBLE",
+      "INTEROP-NO-OPCORE-FAST-PATH",
+      "INTEROP-PRIVATE-CLAIMS"
+    ],
+    "ran": [
+      "INTEROP-REF-HOST-FAKE",
+      "INTEROP-REF-HOST-OPCORE",
+      "INTEROP-INDEPENDENT-HOST-FAKE",
+      "INTEROP-INDEPENDENT-HOST-OPCORE",
+      "INTEROP-UNSUPPORTED-COVERAGE-VISIBLE",
+      "INTEROP-NO-OPCORE-FAST-PATH",
+      "INTEROP-PRIVATE-CLAIMS"
+    ],
+    "passed": [
+      "INTEROP-REF-HOST-FAKE",
+      "INTEROP-REF-HOST-OPCORE",
+      "INTEROP-INDEPENDENT-HOST-FAKE",
+      "INTEROP-INDEPENDENT-HOST-OPCORE",
+      "INTEROP-UNSUPPORTED-COVERAGE-VISIBLE",
+      "INTEROP-NO-OPCORE-FAST-PATH",
+      "INTEROP-PRIVATE-CLAIMS"
+    ],
+    "failed": [],
+    "skipped": [],
+    "missing": [],
+    "degraded": [
+      {
+        "requirementId": "INTEROP-UNSUPPORTED-COVERAGE-VISIBLE",
+        "reason": "unsupported",
+        "detail": "The interop matrix observed provider unsupported coverage as explicit Assessment coverage, not a silent pass."
+      }
+    ]
+  },
+  "artifacts": [
+    {
+      "path": "docs/conformance/README.md",
+      "kind": "doc",
+      "sha256": "sha256:6657b56fda83b4f076a9a56d2c2ddda84376530e9ee91b7d2406bc62da6af20a"
+    },
+    {
+      "path": "docs/conformance/requirements.md",
+      "kind": "doc",
+      "sha256": "sha256:5af7583290480819014723cf8ced326223c717e883f0938f2561cc40b09de57c"
+    },
+    {
+      "path": "docs/conformance/traceability.md",
+      "kind": "doc",
+      "sha256": "sha256:b7da58cc0088c25994f16733c70d8c036edc41837cae76b0969ddc504a0a8bd3"
+    },
+    {
+      "path": "scripts/conformance/interop-report-assertions.ts",
+      "kind": "script",
+      "sha256": "sha256:c37f356a602fc825369fa55600c577fc9accc8a0d2900dbd4b096dfa20971460"
+    },
+    {
+      "path": "scripts/conformance/interop-report-catalog.ts",
+      "kind": "script",
+      "sha256": "sha256:ae06a351c3b08ac66df0a00638d8b93d5d2502eb7e2bf621b9985527a8118c2d"
+    },
+    {
+      "path": "scripts/conformance/core-report-utils.ts",
+      "kind": "script",
+      "sha256": "sha256:41f7cbf06d507caa699999a47aacbba0cec12145cc083978b934d30b2148d426"
+    },
+    {
+      "path": "scripts/conformance/run-interop-suite.ts",
+      "kind": "script",
+      "sha256": "sha256:61394420cd9d43cf89c38c35dc05568341536f1965f4f20d9f55c79e06d9d048"
+    },
+    {
+      "path": "tests/conformance/interop/interop-matrix.test.ts",
+      "kind": "test",
+      "sha256": "sha256:9e06e7106ac3fce5db818a8f47a9bb24f00cf818525954d2c910367a449e8458"
+    },
+    {
+      "path": "tests/conformance/interop/interop-report.test.ts",
+      "kind": "test",
+      "sha256": "sha256:48fd01c37bf1b9b4ddb158d2ce3f381901ba3a3be2c5b119c803827a2f7d0262"
+    },
+    {
+      "path": "tests/conformance/interop/helpers/interop-harness.ts",
+      "kind": "test",
+      "sha256": "sha256:b3ad9c6b98740b76bf9cdeeee4cb5ace9dda040686cc54f0c15cd11be43f2930"
+    },
+    {
+      "path": "packages/asp/bin/fake-check-provider",
+      "kind": "artifact",
+      "sha256": "sha256:41d33958091ae4514432636646d7514962a0e306734f42c511073b590f2b8a6f"
+    },
+    {
+      "path": "packages/asp/src/fake-check-provider.ts",
+      "kind": "artifact",
+      "sha256": "sha256:db37241c51934ec2b7963a8d1f98f49cdbb5377cfc930502b708998c85ad80df"
+    },
+    {
+      "path": "packages/asp/src/provider-enrollment.ts",
+      "kind": "artifact",
+      "sha256": "sha256:2f4636a48205884bbcdd3eef27576c21d44821064c849a2f7f8bf6be6b059054"
+    },
+    {
+      "path": "packages/asp/src/provider-runtime.ts",
+      "kind": "artifact",
+      "sha256": "sha256:014fd7ffcf7ee65c13a1b47c8390d6be85f1859e196c884ca52815faed16dd3c"
+    },
+    {
+      "path": "packages/asp/src/provider-supervision.ts",
+      "kind": "artifact",
+      "sha256": "sha256:605a0a464332a94bfe614911d6e6b08c0091cb0a3406258b9bb0a1307d62c38d"
+    },
+    {
+      "path": "packages/asp/src/server-state.ts",
+      "kind": "artifact",
+      "sha256": "sha256:eddf68efc6407a2daff9848d3992765f6f8563b8be4b6974a0b97802335f244c"
+    },
+    {
+      "path": "packages/asp/src/core-host.ts",
+      "kind": "artifact",
+      "sha256": "sha256:3eb1f238a3da8c12ee26366835adfbd48d3e17aadb144de877c401a0ada0cd70"
+    },
+    {
+      "path": "spec/08-conformance.md",
+      "kind": "doc",
+      "sha256": "sha256:f28188f6aeb86b04361f6ab66f40dfb2541ecfb35786103fa50f12070113cbd5"
+    },
+    {
+      "path": "spec/09-outer-seam.md",
+      "kind": "doc",
+      "sha256": "sha256:f70c3f313a92e10e914c68f2cd52405bdacc6404d1ee786da055b27d41326090"
+    },
+    {
+      "path": "spec/10-installation-and-discovery.md",
+      "kind": "doc",
+      "sha256": "sha256:0ed6e471ecd6164a81c2428db40ff91ad8801e9c0300611ba5ba7c6c72f2b70b"
+    },
+    {
+      "path": "spec/11-core-profile.md",
+      "kind": "doc",
+      "sha256": "sha256:13c230599879d12d7e25d749b61dd4c59ca25909796493a851208663163a28cd"
+    },
+    {
+      "path": "schemas/check-assessment.schema.json",
+      "kind": "schema",
+      "sha256": "sha256:ebafb336560c210bc02a8942bad2c8bec4807324c1ba741d427eada918c70e47"
+    },
+    {
+      "path": "schemas/check-evaluate.schema.json",
+      "kind": "schema",
+      "sha256": "sha256:8697732ae70f956897cf78e14207ba12d94b28405aa66f3d7302dd5ec5350403"
+    },
+    {
+      "path": "schemas/host-callbacks.schema.json",
+      "kind": "schema",
+      "sha256": "sha256:1b5c6bfb8fce1fea7bdd9ecdc0b420c182ca51ff57991440ef44443cad5de336"
+    },
+    {
+      "path": "schemas/initialize.schema.json",
+      "kind": "schema",
+      "sha256": "sha256:4e0a49569e41366191044ca0f1721d8e44cda87594d56d7fbbb715aa7d81a106"
+    },
+    {
+      "path": "schemas/server-manifest.schema.json",
+      "kind": "schema",
+      "sha256": "sha256:a17fefbbede4ddfe97649f43c96cc4e3b5500a149d7cf4c84399cfc9b756e3fd"
+    }
+  ],
+  "claims": {
+    "behaviorEvidenceOnly": true,
+    "privateOnly": true,
+    "trustClaim": false,
+    "authorityClaim": false,
+    "certificationClaim": false,
+    "registryInclusionClaim": false,
+    "publicStandardClaim": false,
+    "providerApprovalClaim": false,
+    "stablePublicApiClaim": false,
+    "notes": [
+      "Private interop behavior evidence only."
+    ]
+  }
+}

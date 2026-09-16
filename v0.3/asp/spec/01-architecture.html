@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Architecture · Opcore</title><link rel="stylesheet" href="../../assets/site.css">
+<script src="../../assets/theme.js"></script>
+<script defer src="../../assets/site.js"></script>
+<link rel="icon" type="image/svg+xml" href="../../assets/oec-favicon.svg"><link rel="stylesheet" href="../../assets/versions.css"><script defer src="../../assets/versions.js"></script></head>
+<body class="guide-page"><a class="skip-link" href="#main-content">Skip to content</a>
+<header class="site-header"><div class="header-inner">
+<button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-navigation">Menu</button>
+<a class="brand" href="../../index.html"><img src="../../assets/oec-crow.png" alt="" width="32" height="36"><span>Opcore</span></a>
+<a class="header-label" href="../../index.html">Documentation</a>
+<div class="header-actions"><div class="docs-version" data-site-root="../../../" data-page-path="asp/spec/01-architecture.html" data-version="v0.3"><a href="../../../versions.html">v0.3 ▾</a><select hidden aria-label="Documentation version"><option>v0.3</option></select></div><button class="theme-toggle" type="button" aria-label="Use dark mode" title="Use dark mode"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20.8 13.1A9 9 0 0 1 10.9 3.2 9 9 0 1 0 20.8 13.1Z"/></svg></button>
+<a class="repository-link" href="https://github.com/the-open-engine/opcore">GitHub <span aria-hidden="true">↗</span></a></div>
+</div></header>
+<div class="docs-layout"><aside class="docs-sidebar"><nav id="site-navigation" aria-label="Documentation"><div class="nav-group"><p>Opcore</p><ul><li><a href="../../index.html">Overview</a></li></ul></div><div class="nav-group"><p>Get started</p><ul><li><a href="../../docs/getting-started.html">Installation and first check</a></li></ul></div><div class="nav-group"><p>Guides</p><ul><li><a href="../../docs/configuration.html">Configuration</a></li><li><a href="../../docs/providers.html">Providers</a></li><li><a href="../../docs/examples.html">Examples</a></li><li><a href="../../docs/sense.html">Project Sense</a></li><li><a href="../../docs/agent-signals.html">Agent feedback</a></li></ul></div><div class="nav-group"><p>Reference</p><ul><li><a href="../../cli.html">CLI</a></li><li><a href="../../api/opcore/api/index.html">Rust API</a></li><li><a href="../../api/opcore/api/enum.ProviderProfile.html">Provider profiles</a></li><li><a href="../README.html">ASP specification</a></li></ul></div><div class="nav-group"><p>Project</p><ul><li><a href="../../docs/architecture.html">Architecture</a></li><li><a href="../../CONTRIBUTING.html">Contributing</a></li><li><a href="../../CODE_OF_CONDUCT.html">Code of conduct</a></li><li><a href="../../SECURITY.html">Security</a></li></ul></div></nav></aside>
+<main id="main-content" class="guide-content" tabindex="-1">
+<p class="docs-kicker">Core documentation</p><h1 class="title">Architecture</h1>
+    <details><summary>Specification metadata</summary>
+<div class="example-wrap"><pre class="language-yaml"><code>title: Architecture
+status: established
+normative: true
+summary: Host-centric topology, policy-pinned authority boundaries, capability seams, the shared spine, and the threat model.
+updated: 2026-06-22</code></pre></div></details>
+<blockquote>
+<p><strong>2026-06-22 correction:</strong> Earlier drafts used <code>sense</code>, <code>judge</code>, and <code>act</code> as normative roles and
+<code>first-party</code> / <code>certified</code> / <code>untrusted</code> as a trust ladder. The current contract uses
+<code>inspect</code>, <code>check</code>, and <code>edit</code> capability families. Trust is split into identity, integrity,
+conformance, isolation, and explicit authority grants. See
+<a href="../decisions/0021-separate-semantics-wire-and-deployment.html">ADR 0021</a>,
+<a href="../decisions/0022-conforming-host-role-reference-host.html">ADR 0022</a>, and
+<a href="../decisions/0023-assurance-modes-and-authority-axes.html">ADR 0023</a>. Governance and public-release
+posture are tracked in <a href="../docs/governance/governance-draft.html">the governance draft</a>.</p>
+</blockquote>
+<h2 id="topology-a-star-around-the-host"><a class="doc-anchor" href="#topology-a-star-around-the-host">§</a>Topology: a star around the host</h2>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code>        harness (agent <span class="kw">loop </span>/ CI / pre-commit)
+                       │  outer seam (semantic)
+                    ┌──┴──┐
+                    │ HOST │  enrollment · negotiation · freshness · policy · arbitration · mediated apply
+                    └──┬──┘
+        inner seam (host-to-provider ASP protocol)
+        ┌──────────────┼──────────────┐
+   inspect server  check server     edit server
+   (legacy sense)  (legacy judge)   (legacy act)
+   (crg)           (rox)            (cix)</code></pre></div>
+<p>The diagram is logical, not a process-count requirement. One installed server may advertise several
+capability families; for example, Lattice is expected to be one multi-capability ASP
+engine/server exposing <code>inspect</code>, <code>check</code>, and <code>edit</code>. That aggregation does not make the server a
+host.</p>
+<p>The host is the only component the harness binds to, and the only one that applies edits. Servers
+MUST NOT communicate with each other or compose provider-to-provider; every cross-capability
+interaction (an edit proposal validated by check providers, a check informed by inspect providers) is
+mediated by the host. This is what makes trust, freshness, and arbitration enforceable in one place.</p>
+<p>Lattice, fake providers, third-party providers, and Open Engine dogfood providers all use the same
+host-to-provider contract. A Lattice-specific direct gate, authority grant, freshness authority,
+assessment aggregation, host decision, apply/staging, assurance-mode, or transaction-guarantee path
+is non-conforming even when the selected host is the Open Engine reference/default host
+(<code>@the-open-engine/asp</code>).</p>
+<h2 id="authority-evidence"><a class="doc-anchor" href="#authority-evidence">§</a>Authority evidence</h2>
+<p>The host assigns every registered server explicit authority evidence. A server’s declared
+capabilities and requested permissions are inputs; gate authority is granted only by trusted policy
+for a pinned provider identity/version/digest, named requirement, and named call-site (see
+<a href="07-host-obligations.html">host obligations</a>). Repository config, local overrides, installed
+manifests, package provenance, registry labels, and certification labels cannot weaken trusted policy
+or authorize candidate changes by themselves.</p>
+<div><table><thead><tr><th>Axis</th><th>Meaning</th></tr></thead><tbody>
+<tr><td>Identity</td><td>Who published or owns the provider.</td></tr>
+<tr><td>Integrity</td><td>Which exact artifact/package digest is running.</td></tr>
+<tr><td>Conformance</td><td>Whether the provider implements ASP correctly.</td></tr>
+<tr><td>Isolation</td><td>What the provider can read, write, execute, or transmit.</td></tr>
+<tr><td>Authority</td><td>Whether policy allows the provider to satisfy a named gate.</td></tr>
+</tbody></table>
+</div>
+<p>Legacy labels such as <code>first-party</code>, <code>certified</code>, and <code>untrusted</code> may be shown as shorthand, but they
+MUST NOT grant blocking authority by themselves.</p>
+<p>Every server runs under a mandatory minimal sandbox — process isolation, <code>resourceLimits</code>
+(cpu/memory/wallclock/fd) from the grant, egress default-deny, and no direct filesystem
+(<a href="../decisions/0009-mandatory-minimal-sandbox.html">ADR 0009</a>). Lower-assurance deployments cannot
+waive isolation and still claim stronger assurance modes.</p>
+<h2 id="the-six-host-enforcement-points"><a class="doc-anchor" href="#the-six-host-enforcement-points">§</a>The six host enforcement points</h2>
+<p>Because servers are untrusted by default, the host intervenes at these points, specified
+normatively in <a href="07-host-obligations.html">host obligations</a>:</p>
+<ol>
+<li><strong>Permission cap</strong> — grant a policy-bounded subset of requested permissions; build the sandbox from it.</li>
+<li><strong>Provenance stamp</strong> — overwrite each diagnostic’s <code>source</code> with the authenticated server id.</li>
+<li><strong>Fail-class override</strong> — may downgrade a provider’s self-reported <code>failClass</code> by authority,
+isolation, and policy.</li>
+<li><strong>Freshness</strong> — issue the <code>baseline</code>; reject any answer whose <code>validAsOf</code> doesn’t match.</li>
+<li><strong>Apply is host-executed</strong> — edit providers only propose <code>EditPlan</code>/<code>WorkspaceEdit</code> payloads; the host validates, writes, and reports the achieved transaction guarantee.</li>
+<li><strong>String containment</strong> — treat every server-supplied string as untrusted data, never instructions.</li>
+</ol>
+<h2 id="threat-model"><a class="doc-anchor" href="#threat-model">§</a>Threat model</h2>
+<p>Untrusted servers run inside the dev loop with the ability to read code, block commits, and propose
+mutations. The protocol is designed against:</p>
+<ul>
+<li><strong>Exfiltration</strong> — a server reads source it has no business reading. → least-privilege reads
+enforced at the blob boundary (see <a href="03-data-model.html">data model</a>).</li>
+<li><strong>Gate-disable</strong> — a server silently passes everything, returns a decision, or labels its own failure
+<code>health</code> to fail open. → host computes the decision envelope; host caps/downgrades fail-class and
+reports degraded coverage.</li>
+<li><strong>Commit-DoS</strong> — a server blocks every change. → host owns the decision envelope and can quarantine
+a server by policy; coverage/timeout policy bounds a single server’s influence.</li>
+<li><strong>Tree-corruption</strong> — a malicious edit provider writes garbage. → edit providers never write; the host applies
+after validating.</li>
+<li><strong>Provenance spoofing</strong> — a server blames another. → host stamps <code>source</code>.</li>
+<li><strong>Prompt-injection</strong> — a server puts agent-directed instructions in <code>message</code>/<code>code</code>/<code>fix.args</code>,
+which the host would otherwise relay to the LLM agent. → string containment (enforcement point 6).</li>
+<li><strong>Policy-confusion</strong> — mutable repository policy, local overrides, installed manifests, registry or
+certification labels, first-party labels, or package provenance are treated as trust roots. →
+trusted policy is separate from those artifacts; they cannot grant authority or weaken a gate by
+themselves.</li>
+</ul>
+<h2 id="the-two-seams-ownership"><a class="doc-anchor" href="#the-two-seams-ownership">§</a>The two seams (ownership)</h2>
+<ul>
+<li><strong>Outer seam (harness &lt;-&gt; host)</strong> is a semantic contract first. ADR 0025 chooses native JSON-RPC
+stdio as the private dogfood binding floor and leaves MCP-extension as a private
+compatibility/status experiment. The harness sees one unified capability surface regardless of what
+is plugged in behind the host.</li>
+<li><strong>Inner seam (host ↔ server)</strong> is the conformance protocol. Third parties implement it. Versioned
+per server and negotiated at <code>initialize</code>; on incompatibility the host refuses the server rather
+than degrading silently.</li>
+</ul></main><aside class="page-toc" aria-label="On this page"><p>On this page</p><nav id="rustdoc"><ul>
+<li><a href="#topology-a-star-around-the-host" title="Topology: a star around the host">Topology: a star around the host</a><ul></ul></li>
+<li><a href="#authority-evidence" title="Authority evidence">Authority evidence</a><ul></ul></li>
+<li><a href="#the-six-host-enforcement-points" title="The six host enforcement points">The six host enforcement points</a><ul></ul></li>
+<li><a href="#threat-model" title="Threat model">Threat model</a><ul></ul></li>
+<li><a href="#the-two-seams-ownership" title="The two seams (ownership)">The two seams (ownership)</a><ul></ul></li></ul></nav></aside></div>
+<footer class="site-footer"><div>© The Open Engine
+<a href="https://github.com/the-open-engine/opcore">Opcore on GitHub ↗</a></div></footer></body></html>

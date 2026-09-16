@@ -1,0 +1,155 @@
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "validates": "outer-host.schema.json#/$defs/evaluateChangesetResult",
+  "result": {
+    "pass": false,
+    "decision": "deny",
+    "callSite": "gate",
+    "findings": [
+      {
+        "diagnostic": {
+          "code": "example/blocking-rule",
+          "severity": "error",
+          "source": "example-check-provider",
+          "message": "Required check found a blocking issue.",
+          "location": {
+            "path": "src/example.ts"
+          },
+          "fingerprint": "sha256:example-deny",
+          "introduced": true
+        },
+        "authority": {
+          "identity": "example-check-provider",
+          "integrity": "sha256:example-provider",
+          "conformance": "asp-core-v1.0-private",
+          "isolation": "gated",
+          "authority": {
+            "granted": true,
+            "requirement": "required-check",
+            "policyDigest": "sha256:example-policy"
+          }
+        },
+        "disposition": "gating",
+        "nextStep": "Fix the blocking issue.",
+        "nextStepOrigin": "server"
+      }
+    ],
+    "coverage": {
+      "exhaustive": true,
+      "required": [
+        "required-check"
+      ],
+      "enrolled": [
+        "required-check"
+      ],
+      "ran": [
+        "required-check"
+      ],
+      "degraded": []
+    },
+    "policyDigest": "sha256:example-policy",
+    "authorityEvidence": [
+      {
+        "identity": "example-check-provider",
+        "integrity": "sha256:example-provider",
+        "conformance": "asp-core-v1.0-private",
+        "isolation": "gated",
+        "authority": {
+          "granted": true,
+          "requirement": "required-check",
+          "policyDigest": "sha256:example-policy"
+        }
+      }
+    ],
+    "validAsOf": {
+      "rev": "tree:example-base",
+      "blobs": [
+        "blob:sha256:example-before",
+        "blob:sha256:example-after"
+      ]
+    },
+    "assurance": {
+      "mode": "gated",
+      "transactionGuarantee": "none"
+    },
+    "receipt": {
+      "receiptId": "check-deny-0001",
+      "issuedAt": "2026-06-23T12:01:00Z",
+      "providerProvenance": [
+        {
+          "provider": "example-check-provider",
+          "capability": "check",
+          "identity": "example-check-provider",
+          "integrity": "sha256:example-provider",
+          "conformance": "asp-core-v1.0-private"
+        }
+      ],
+      "policyDigest": "sha256:example-policy",
+      "baseline": {
+        "rev": "tree:example-base"
+      },
+      "validAsOf": {
+        "rev": "tree:example-base",
+        "blobs": [
+          "blob:sha256:example-before",
+          "blob:sha256:example-after"
+        ]
+      },
+      "coverage": {
+        "exhaustive": true,
+        "required": [
+          "required-check"
+        ],
+        "enrolled": [
+          "required-check"
+        ],
+        "ran": [
+          "required-check"
+        ],
+        "degraded": []
+      },
+      "authorityEvidence": [
+        {
+          "identity": "example-check-provider",
+          "integrity": "sha256:example-provider",
+          "conformance": "asp-core-v1.0-private",
+          "isolation": "gated",
+          "authority": {
+            "granted": true,
+            "requirement": "required-check",
+            "policyDigest": "sha256:example-policy"
+          }
+        }
+      ],
+      "assurance": {
+        "mode": "gated",
+        "transactionGuarantee": "none"
+      },
+      "kind": "evaluate",
+      "host": {
+        "name": "core-host",
+        "version": "0.1.0-private"
+      },
+      "capabilityFamily": "check",
+      "callSite": "gate",
+      "requestDigest": "sha256:examples-canonical-check-deny-json-request-deny",
+      "changesetDigest": "sha256:examples-canonical-check-deny-json-changeset-deny",
+      "providerIds": [
+        "example-check-provider",
+        "required-check"
+      ],
+      "timing": {
+        "startedAt": "2026-06-23T00:00:00Z",
+        "endedAt": "2026-06-23T00:00:00Z",
+        "elapsedMs": 0
+      },
+      "failures": [],
+      "privateOnly": true,
+      "experimental": true,
+      "trustArtifact": false
+    },
+    "requestDigest": "sha256:examples-canonical-check-deny-json-request-deny",
+    "changesetDigest": "sha256:examples-canonical-check-deny-json-changeset-deny"
+  }
+}

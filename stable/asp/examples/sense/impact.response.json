@@ -1,0 +1,26 @@
+{
+  "jsonrpc": "2.0",
+  "id": 9,
+  "result": {
+    "changedNodes": [
+      { "id": "src/http.ts::request", "kind": "function", "name": "request",
+        "location": { "path": "src/http.ts", "range": { "start": { "line": 8, "char": 0 }, "end": { "line": 22, "char": 1 } } },
+        "exported": true, "test": false }
+    ],
+    "impactedNodes": [
+      { "id": "src/api.ts::Api.fetch", "kind": "function", "name": "fetch",
+        "location": { "path": "src/api.ts", "range": { "start": { "line": 12, "char": 2 }, "end": { "line": 20, "char": 3 } } },
+        "exported": true, "test": false },
+      { "id": "src/server.ts::handler", "kind": "function", "name": "handler",
+        "location": { "path": "src/server.ts", "range": { "start": { "line": 30, "char": 0 }, "end": { "line": 48, "char": 1 } } },
+        "exported": false, "test": false }
+    ],
+    "impactedFiles": ["src/http.ts", "src/api.ts", "src/server.ts"],
+    "edges": [
+      { "kind": "calls", "from": "src/api.ts::Api.fetch", "to": "src/http.ts::request" },
+      { "kind": "calls", "from": "src/server.ts::handler", "to": "src/api.ts::Api.fetch" }
+    ],
+    "truncated": false,
+    "validAsOf": { "rev": "git:tree:9f3a1c", "blobs": ["blob:sha256:f201"] }
+  }
+}

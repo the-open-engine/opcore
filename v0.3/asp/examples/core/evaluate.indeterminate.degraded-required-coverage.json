@@ -1,0 +1,300 @@
+{
+  "jsonrpc": "2.0",
+  "id": 107,
+  "validates": "outer-host.schema.json#/$defs/evaluateChangesetResult",
+  "result": {
+    "pass": false,
+    "decision": "indeterminate",
+    "callSite": "gate",
+    "changesetDigest": "sha256:core-changeset-degraded-required-coverage",
+    "findings": [],
+    "coverage": {
+      "exhaustive": false,
+      "required": [
+        "core-required-check",
+        "core-required-stale",
+        "core-required-stale-baseline",
+        "core-required-malformed",
+        "core-required-unsupported",
+        "core-required-incomplete",
+        "core-required-cancelled",
+        "core-required-timeout",
+        "core-required-error",
+        "core-required-authority"
+      ],
+      "enrolled": [
+        "core-required-check",
+        "core-required-stale",
+        "core-required-stale-baseline",
+        "core-required-malformed",
+        "core-required-unsupported",
+        "core-required-incomplete",
+        "core-required-cancelled",
+        "core-required-timeout",
+        "core-required-error",
+        "core-required-authority"
+      ],
+      "ran": [],
+      "degraded": [
+        {
+          "source": "core-required-check",
+          "reason": "missing-required-provider",
+          "requirement": "core-required-check",
+          "detail": "Required Core check provider is missing."
+        },
+        {
+          "source": "core-required-stale",
+          "reason": "stale",
+          "requirement": "core-required-stale",
+          "detail": "Required Assessment freshness does not match the host-issued baseline."
+        },
+        {
+          "source": "core-required-stale-baseline",
+          "reason": "stale-baseline",
+          "requirement": "core-required-stale-baseline",
+          "detail": "Submitted changeset baseline does not match the host-issued baseline."
+        },
+        {
+          "source": "core-required-malformed",
+          "reason": "malformed",
+          "requirement": "core-required-malformed",
+          "detail": "Required provider output contains schema-invalid or host-owned data."
+        },
+        {
+          "source": "core-required-unsupported",
+          "reason": "unsupported",
+          "requirement": "core-required-unsupported",
+          "detail": "Required provider does not support the requested Core check coverage."
+        },
+        {
+          "source": "core-required-incomplete",
+          "reason": "incomplete",
+          "requirement": "core-required-incomplete",
+          "detail": "Required provider returned an incomplete Assessment."
+        },
+        {
+          "source": "core-required-cancelled",
+          "reason": "cancelled",
+          "requirement": "core-required-cancelled",
+          "detail": "Required provider evaluation was cancelled before terminal coverage."
+        },
+        {
+          "source": "core-required-timeout",
+          "reason": "timed-out",
+          "requirement": "core-required-timeout",
+          "detail": "Required provider exceeded the gate budget."
+        },
+        {
+          "source": "core-required-error",
+          "reason": "error",
+          "requirement": "core-required-error",
+          "detail": "Required provider returned an error Assessment."
+        },
+        {
+          "source": "core-required-authority",
+          "reason": "missing-authority",
+          "requirement": "core-required-authority",
+          "detail": "Required provider identity lacks an active authority grant."
+        }
+      ]
+    },
+    "policyDigest": "sha256:core-policy",
+    "authorityEvidence": [],
+    "validAsOf": {
+      "rev": "tree:core-base"
+    },
+    "assurance": {
+      "mode": "gated",
+      "transactionGuarantee": "none"
+    },
+    "receipt": {
+      "receiptId": "core-evaluate-degraded-required-coverage-0001",
+      "issuedAt": "2026-06-23T12:05:00Z",
+      "providerProvenance": [],
+      "policyDigest": "sha256:core-policy",
+      "baseline": {
+        "rev": "tree:core-base",
+        "stampedAt": "2026-06-23T12:00:00Z"
+      },
+      "validAsOf": {
+        "rev": "tree:core-base"
+      },
+      "coverage": {
+        "exhaustive": false,
+        "required": [
+          "core-required-check",
+          "core-required-stale",
+          "core-required-stale-baseline",
+          "core-required-malformed",
+          "core-required-unsupported",
+          "core-required-incomplete",
+          "core-required-cancelled",
+          "core-required-timeout",
+          "core-required-error",
+          "core-required-authority"
+        ],
+        "enrolled": [
+          "core-required-check",
+          "core-required-stale",
+          "core-required-stale-baseline",
+          "core-required-malformed",
+          "core-required-unsupported",
+          "core-required-incomplete",
+          "core-required-cancelled",
+          "core-required-timeout",
+          "core-required-error",
+          "core-required-authority"
+        ],
+        "ran": [],
+        "degraded": [
+          {
+            "source": "core-required-check",
+            "reason": "missing-required-provider",
+            "requirement": "core-required-check",
+            "detail": "Required Core check provider is missing."
+          },
+          {
+            "source": "core-required-stale",
+            "reason": "stale",
+            "requirement": "core-required-stale",
+            "detail": "Required Assessment freshness does not match the host-issued baseline."
+          },
+          {
+            "source": "core-required-stale-baseline",
+            "reason": "stale-baseline",
+            "requirement": "core-required-stale-baseline",
+            "detail": "Submitted changeset baseline does not match the host-issued baseline."
+          },
+          {
+            "source": "core-required-malformed",
+            "reason": "malformed",
+            "requirement": "core-required-malformed",
+            "detail": "Required provider output contains schema-invalid or host-owned data."
+          },
+          {
+            "source": "core-required-unsupported",
+            "reason": "unsupported",
+            "requirement": "core-required-unsupported",
+            "detail": "Required provider does not support the requested Core check coverage."
+          },
+          {
+            "source": "core-required-incomplete",
+            "reason": "incomplete",
+            "requirement": "core-required-incomplete",
+            "detail": "Required provider returned an incomplete Assessment."
+          },
+          {
+            "source": "core-required-cancelled",
+            "reason": "cancelled",
+            "requirement": "core-required-cancelled",
+            "detail": "Required provider evaluation was cancelled before terminal coverage."
+          },
+          {
+            "source": "core-required-timeout",
+            "reason": "timed-out",
+            "requirement": "core-required-timeout",
+            "detail": "Required provider exceeded the gate budget."
+          },
+          {
+            "source": "core-required-error",
+            "reason": "error",
+            "requirement": "core-required-error",
+            "detail": "Required provider returned an error Assessment."
+          },
+          {
+            "source": "core-required-authority",
+            "reason": "missing-authority",
+            "requirement": "core-required-authority",
+            "detail": "Required provider identity lacks an active authority grant."
+          }
+        ]
+      },
+      "authorityEvidence": [],
+      "assurance": {
+        "mode": "gated",
+        "transactionGuarantee": "none"
+      },
+      "kind": "evaluate",
+      "host": {
+        "name": "core-host",
+        "version": "0.1.0-private"
+      },
+      "capabilityFamily": "check",
+      "callSite": "gate",
+      "requestDigest": "sha256:examples-core-evaluate-indeterminate-degraded-required-coverage-json-request-indeterminate",
+      "changesetDigest": "sha256:core-changeset-degraded-required-coverage",
+      "providerIds": [],
+      "timing": {
+        "startedAt": "2026-06-23T00:00:00Z",
+        "endedAt": "2026-06-23T00:00:00Z",
+        "elapsedMs": 0
+      },
+      "failures": [
+        {
+          "source": "core-required-check",
+          "reason": "missing-required-provider",
+          "requirement": "core-required-check",
+          "detail": "Required Core check provider is missing."
+        },
+        {
+          "source": "core-required-stale",
+          "reason": "stale",
+          "requirement": "core-required-stale",
+          "detail": "Required Assessment freshness does not match the host-issued baseline."
+        },
+        {
+          "source": "core-required-stale-baseline",
+          "reason": "stale-baseline",
+          "requirement": "core-required-stale-baseline",
+          "detail": "Submitted changeset baseline does not match the host-issued baseline."
+        },
+        {
+          "source": "core-required-malformed",
+          "reason": "malformed",
+          "requirement": "core-required-malformed",
+          "detail": "Required provider output contains schema-invalid or host-owned data."
+        },
+        {
+          "source": "core-required-unsupported",
+          "reason": "unsupported",
+          "requirement": "core-required-unsupported",
+          "detail": "Required provider does not support the requested Core check coverage."
+        },
+        {
+          "source": "core-required-incomplete",
+          "reason": "incomplete",
+          "requirement": "core-required-incomplete",
+          "detail": "Required provider returned an incomplete Assessment."
+        },
+        {
+          "source": "core-required-cancelled",
+          "reason": "cancelled",
+          "requirement": "core-required-cancelled",
+          "detail": "Required provider evaluation was cancelled before terminal coverage."
+        },
+        {
+          "source": "core-required-timeout",
+          "reason": "timed-out",
+          "requirement": "core-required-timeout",
+          "detail": "Required provider exceeded the gate budget."
+        },
+        {
+          "source": "core-required-error",
+          "reason": "error",
+          "requirement": "core-required-error",
+          "detail": "Required provider returned an error Assessment."
+        },
+        {
+          "source": "core-required-authority",
+          "reason": "missing-authority",
+          "requirement": "core-required-authority",
+          "detail": "Required provider identity lacks an active authority grant."
+        }
+      ],
+      "privateOnly": true,
+      "experimental": true,
+      "trustArtifact": false
+    },
+    "requestDigest": "sha256:examples-core-evaluate-indeterminate-degraded-required-coverage-json-request-indeterminate"
+  }
+}

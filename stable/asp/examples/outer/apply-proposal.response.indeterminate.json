@@ -1,0 +1,188 @@
+{
+  "jsonrpc": "2.0",
+  "id": 2103,
+  "validates": "outer-host.schema.json#/$defs/applyProposalResult",
+  "result": {
+    "applied": false,
+    "proposalId": "proposal:rename-api-fetch",
+    "baselineBefore": {
+      "rev": "git:tree:9f3a1c",
+      "stampedAt": "2026-06-23T12:00:00Z"
+    },
+    "baselineAfter": null,
+    "assurance": {
+      "mode": "gated",
+      "transactionGuarantee": "none"
+    },
+    "decision": {
+      "pass": false,
+      "decision": "indeterminate",
+      "callSite": "gate",
+      "findings": [],
+      "coverage": {
+        "exhaustive": false,
+        "required": [
+          "lattice"
+        ],
+        "enrolled": [
+          "lattice"
+        ],
+        "ran": [],
+        "degraded": [
+          {
+            "source": "lattice",
+            "reason": "missing-required-provider",
+            "detail": "Required validation coverage was unavailable for the hypothetical after-state."
+          }
+        ]
+      },
+      "policyDigest": "sha256:policyabc123",
+      "authorityEvidence": [],
+      "validAsOf": {
+        "rev": "git:tree:9f3a1c",
+        "blobs": []
+      },
+      "assurance": {
+        "mode": "gated",
+        "transactionGuarantee": "none"
+      },
+      "receipt": {
+        "receiptId": "apply-validation-indeterminate-0001",
+        "issuedAt": "2026-06-23T12:02:00Z",
+        "providerProvenance": [],
+        "policyDigest": "sha256:policyabc123",
+        "baseline": {
+          "rev": "git:tree:9f3a1c",
+          "stampedAt": "2026-06-23T12:00:00Z"
+        },
+        "validAsOf": {
+          "rev": "git:tree:9f3a1c",
+          "blobs": []
+        },
+        "coverage": {
+          "exhaustive": false,
+          "required": [
+            "lattice"
+          ],
+          "enrolled": [
+            "lattice"
+          ],
+          "ran": [],
+          "degraded": [
+            {
+              "source": "lattice",
+              "reason": "missing-required-provider",
+              "detail": "Required validation coverage was unavailable for the hypothetical after-state."
+            }
+          ]
+        },
+        "authorityEvidence": [],
+        "assurance": {
+          "mode": "gated",
+          "transactionGuarantee": "none"
+        },
+        "kind": "evaluate",
+        "host": {
+          "name": "core-host",
+          "version": "0.1.0-private"
+        },
+        "capabilityFamily": "check",
+        "callSite": "gate",
+        "requestDigest": "sha256:examples-outer-apply-proposal-response-indeterminate-json-request-indeterminate",
+        "changesetDigest": "sha256:examples-outer-apply-proposal-response-indeterminate-json-changeset-indeterminate",
+        "providerIds": [],
+        "timing": {
+          "startedAt": "2026-06-23T00:00:00Z",
+          "endedAt": "2026-06-23T00:00:00Z",
+          "elapsedMs": 0
+        },
+        "failures": [
+          {
+            "source": "lattice",
+            "reason": "missing-required-provider",
+            "detail": "Required validation coverage was unavailable for the hypothetical after-state."
+          }
+        ],
+        "privateOnly": true,
+        "experimental": true,
+        "trustArtifact": false
+      },
+      "requestDigest": "sha256:examples-outer-apply-proposal-response-indeterminate-json-request-indeterminate",
+      "changesetDigest": "sha256:examples-outer-apply-proposal-response-indeterminate-json-changeset-indeterminate"
+    },
+    "refusal": {
+      "reason": "validation-indeterminate",
+      "detail": "Required validation did not produce complete authorized coverage."
+    },
+    "receipt": {
+      "receiptId": "apply-indeterminate-0001",
+      "issuedAt": "2026-06-23T12:03:00Z",
+      "providerProvenance": [
+        {
+          "provider": "lattice",
+          "capability": "edit",
+          "identity": "the-open-engine",
+          "integrity": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+          "conformance": "asp-edit/1.0"
+        }
+      ],
+      "policyDigest": "sha256:policyabc123",
+      "baseline": {
+        "rev": "git:tree:9f3a1c",
+        "stampedAt": "2026-06-23T12:00:00Z"
+      },
+      "validAsOf": {
+        "rev": "git:tree:9f3a1c",
+        "blobs": []
+      },
+      "coverage": {
+        "exhaustive": false,
+        "required": [
+          "lattice"
+        ],
+        "enrolled": [
+          "lattice"
+        ],
+        "ran": [],
+        "degraded": [
+          {
+            "source": "lattice",
+            "reason": "missing-required-provider",
+            "detail": "Required validation coverage was unavailable for the hypothetical after-state."
+          }
+        ]
+      },
+      "authorityEvidence": [],
+      "assurance": {
+        "mode": "gated",
+        "transactionGuarantee": "none"
+      },
+      "kind": "apply-attempt",
+      "host": {
+        "name": "core-host",
+        "version": "0.1.0-private"
+      },
+      "capabilityFamily": "edit",
+      "requestDigest": "sha256:examples-outer-apply-proposal-response-indeterminate-json-apply-attempt-[object Object]",
+      "proposalId": "proposal:rename-api-fetch",
+      "providerIds": [
+        "lattice"
+      ],
+      "timing": {
+        "startedAt": "2026-06-23T00:00:00Z",
+        "endedAt": "2026-06-23T00:00:00Z",
+        "elapsedMs": 0
+      },
+      "failures": [
+        {
+          "source": "lattice",
+          "reason": "missing-required-provider",
+          "detail": "Required validation coverage was unavailable for the hypothetical after-state."
+        }
+      ],
+      "privateOnly": true,
+      "experimental": true,
+      "trustArtifact": false
+    }
+  }
+}

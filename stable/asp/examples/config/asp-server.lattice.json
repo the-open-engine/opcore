@@ -1,0 +1,48 @@
+{
+  "manifestVersion": "asp-server/1.0",
+  "server": {
+    "id": "lattice",
+    "name": "Lattice",
+    "version": "0.1.0-alpha.0"
+  },
+  "protocolVersions": ["asp/1.0"],
+  "capabilities": ["check"],
+  "capabilityProfiles": ["core-check-provider", "lattice-core-check"],
+  "entrypoint": {
+    "transport": "stdio",
+    "bin": "lattice-asp-provider",
+    "args": ["--stdio"]
+  },
+  "artifact": {
+    "fingerprint": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+    "checksums": [
+      {
+        "path": "dist/index.js",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      }
+    ]
+  },
+  "provenance": {
+    "publisher": "the-open-engine",
+    "source": "https://github.com/the-open-engine/lattice",
+    "license": "MIT"
+  },
+  "accessExpectations": {
+    "filesystem": {
+      "read": ["workspace:snapshot"],
+      "write": []
+    },
+    "network": {
+      "outbound": false,
+      "allowlist": []
+    },
+    "secrets": {
+      "names": []
+    },
+    "environment": {
+      "inherit": false,
+      "variables": ["ASP_SESSION_ID"]
+    },
+    "dataClasses": ["source-code", "diff-metadata"]
+  }
+}

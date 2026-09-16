@@ -1,0 +1,79 @@
+{
+  "jsonrpc": "2.0",
+  "id": 1102,
+  "result": {
+    "proposal": {
+      "proposalId": "proposal:rename-api-fetch",
+      "provider": {
+        "id": "lattice",
+        "version": "0.1.0",
+        "capabilityFamily": "edit",
+        "capabilityVersion": "edit/1.0",
+        "configDigest": "sha256:editcfg001"
+      },
+      "status": "incomplete",
+      "baseline": {
+        "rev": "git:tree:9f3a1c",
+        "stampedAt": "2026-06-23T12:00:00Z"
+      },
+      "validAsOf": {
+        "baseline": {
+          "rev": "git:tree:9f3a1c",
+          "stampedAt": "2026-06-23T12:00:00Z"
+        },
+        "blobs": [
+          "blob:sha256:aa01"
+        ]
+      },
+      "touchedResources": [
+        {
+          "path": "src/api.ts",
+          "kind": "modify",
+          "precondition": {
+            "expectedDigest": "blob:sha256:aa01"
+          }
+        }
+      ],
+      "workspaceEdit": {
+        "baseline": {
+          "rev": "git:tree:9f3a1c",
+          "stampedAt": "2026-06-23T12:00:00Z"
+        },
+        "documentChanges": [
+          {
+            "path": "src/api.ts",
+            "kind": "modify",
+            "precondition": {
+              "expectedDigest": "blob:sha256:aa01"
+            },
+            "edits": [
+              {
+                "range": {
+                  "start": {
+                    "line": 12,
+                    "char": 13
+                  },
+                  "end": {
+                    "line": 12,
+                    "char": 18
+                  }
+                },
+                "rangeBasis": "blob:sha256:aa01",
+                "coordinateSystem": "utf16",
+                "newText": "request"
+              }
+            ]
+          }
+        ]
+      },
+      "incomplete": {
+        "reason": "partial-coverage",
+        "detail": "Generated sources were excluded from the granted read scope.",
+        "recoverable": true
+      },
+      "warnings": [
+        "Partial proposal is non-applying unless host policy explicitly accepts reduced coverage."
+      ]
+    }
+  }
+}

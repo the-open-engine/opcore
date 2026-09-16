@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Examples · Opcore</title><link rel="stylesheet" href="../assets/site.css">
+<script src="../assets/theme.js"></script>
+<script defer src="../assets/site.js"></script>
+<link rel="icon" type="image/svg+xml" href="../assets/oec-favicon.svg"><link rel="stylesheet" href="../assets/versions.css"><script defer src="../assets/versions.js"></script></head>
+<body class="guide-page"><a class="skip-link" href="#main-content">Skip to content</a>
+<header class="site-header"><div class="header-inner">
+<button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-navigation">Menu</button>
+<a class="brand" href="../index.html"><img src="../assets/oec-crow.png" alt="" width="32" height="36"><span>Opcore</span></a>
+<a class="header-label" href="../index.html">Documentation</a>
+<div class="header-actions"><div class="docs-version" data-site-root="../../" data-page-path="docs/examples.html" data-version="v0.3"><a href="../../versions.html">v0.3 ▾</a><select hidden aria-label="Documentation version"><option>v0.3</option></select></div><button class="theme-toggle" type="button" aria-label="Use dark mode" title="Use dark mode"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20.8 13.1A9 9 0 0 1 10.9 3.2 9 9 0 1 0 20.8 13.1Z"/></svg></button>
+<a class="repository-link" href="https://github.com/the-open-engine/opcore">GitHub <span aria-hidden="true">↗</span></a></div>
+</div></header>
+<div class="docs-layout"><aside class="docs-sidebar"><nav id="site-navigation" aria-label="Documentation"><div class="nav-group"><p>Opcore</p><ul><li><a href="../index.html">Overview</a></li></ul></div><div class="nav-group"><p>Get started</p><ul><li><a href="getting-started.html">Installation and first check</a></li></ul></div><div class="nav-group"><p>Guides</p><ul><li><a href="configuration.html">Configuration</a></li><li><a href="providers.html">Providers</a></li><li><a href="examples.html" aria-current="page">Examples</a></li><li><a href="sense.html">Project Sense</a></li><li><a href="agent-signals.html">Agent feedback</a></li></ul></div><div class="nav-group"><p>Reference</p><ul><li><a href="../cli.html">CLI</a></li><li><a href="../api/opcore/api/index.html">Rust API</a></li><li><a href="../api/opcore/api/enum.ProviderProfile.html">Provider profiles</a></li><li><a href="../asp/README.html">ASP specification</a></li></ul></div><div class="nav-group"><p>Project</p><ul><li><a href="architecture.html">Architecture</a></li><li><a href="../CONTRIBUTING.html">Contributing</a></li><li><a href="../CODE_OF_CONDUCT.html">Code of conduct</a></li><li><a href="../SECURITY.html">Security</a></li></ul></div></nav></aside>
+<main id="main-content" class="guide-content" tabindex="-1">
+<p class="docs-kicker">Core documentation</p><h1 class="title">Examples</h1>
+    
+<p>Use these examples in a disposable Git project, as described in Getting started. Run <code>opcore check --repo . --all</code> for Fast Verify examples. Sense examples compare the described baseline with the source change. Native examples also need the project and tool setup in the provider guide.</p>
+<p>Fast Verify and Project Sense text below was checked against the current binary. Native diagnostics include stable Opcore rule IDs, but compiler wording can change with the installed toolchain.</p>
+<details>
+<summary>Fast Verify · TypeScript function with too many parameters</summary>
+<div class="example-wrap"><pre class="language-ts"><code>export function total(a: number, b: number, c: number, d: number, e: number, f: number) {
+  return a + b + c + d + e + f;
+}</code></pre></div>
+<p><code>complexity.max-parameters</code>: <code>function parameters: 6; configured maximum is 5</code></p>
+</details>
+<details>
+<summary>Fast Verify · JavaScript decision logic crosses the complexity limit</summary>
+<div class="example-wrap"><pre class="language-js"><code>const allowed = flags =&gt;
+  flags[0] &amp;&amp; flags[1] &amp;&amp; flags[2] &amp;&amp; flags[3] &amp;&amp; flags[4] &amp;&amp; flags[5] &amp;&amp;
+  flags[6] &amp;&amp; flags[7] &amp;&amp; flags[8] &amp;&amp; flags[9] &amp;&amp; flags[10];</code></pre></div>
+<p><code>complexity.max-cyclomatic-complexity</code>: <code>cyclomatic complexity: 11; configured maximum is 10</code></p>
+</details>
+<details>
+<summary>Fast Verify · Python function with too many parameters</summary>
+<div class="example-wrap"><pre class="language-python"><code>def total(a, b, c, d, e, f):
+    return a + b + c + d + e + f</code></pre></div>
+<p><code>complexity.max-parameters</code>: <code>function has 6 parameters; configured maximum is 5</code></p>
+</details>
+<details>
+<summary>Fast Verify · Rust function with too many parameters</summary>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">fn </span>total(a: u8, b: u8, c: u8, d: u8, e: u8, f: u8) -&gt; u8 {
+    a + b + c + d + e + f
+}</code></pre></div>
+<p><code>complexity.max-parameters</code>: <code>Rust callable has 6 parameters; configured maximum is 5</code></p>
+</details>
+<details>
+<summary>Fast Verify · Go function with too many parameters</summary>
+<div class="example-wrap"><pre class="language-go"><code>package metrics
+
+func total(a int, b int, c int, d int, e int, f int) int {
+    return a + b + c + d + e + f
+}</code></pre></div>
+<p><code>complexity.max-parameters</code>: <code>Go callable has 6 function parameters; configured maximum is 5</code></p>
+</details>
+<details>
+<summary>Fast Verify · Terraform JSON with the wrong document shape</summary>
+<div class="example-wrap"><pre class="language-json"><code>42</code></pre></div>
+<p>For <code>main.tf.json</code>, Verify reports <code>hcl.syntax</code>: <code>IaC JSON syntax requires an object at the document root</code>.</p>
+</details>
+<details>
+<summary>Fast Verify · Shell block missing its closing fi</summary>
+<div class="example-wrap"><pre class="language-sh"><code>if true; then
+  echo ok</code></pre></div>
+<p><code>shell.syntax</code>: <code>Invalid Shell syntax: expected 'fi'</code></p>
+</details>
+<details>
+<summary>Fast Verify · Protocol Buffer message missing its closing brace</summary>
+<div class="example-wrap"><pre class="language-proto"><code>syntax = &quot;proto3&quot;;
+message Greeting {</code></pre></div>
+<p><code>protobuf.syntax</code>: <code>Invalid Protobuf syntax near }</code></p>
+</details>
+<details>
+<summary>Project Sense · A change introduces a TypeScript runtime cycle</summary>
+<p><code>src/a.ts</code> already imports <code>src/b.ts</code>. This new import in <code>src/b.ts</code> closes the loop:</p>
+<div class="example-wrap"><pre class="language-ts"><code>import { a } from &quot;./a&quot;;
+export const b = a + 1;</code></pre></div>
+<p>Rule: <code>sense.runtime_cycle</code></p>
+<div class="example-wrap"><pre class="language-text"><code>cycle: src/b.ts -&gt; src/a.ts (2 files)
+  witness: src/b.ts -&gt; src/a.ts -&gt; src/b.ts</code></pre></div>
+<p>JSON evidence identifies the introduced trigger as <code>{"from":"src/b.ts","to":"src/a.ts","kind":"runtime"}</code>.</p>
+</details>
+<details>
+<summary>Project Sense · A copied file introduces exact duplication</summary>
+<p>Suppose <code>src/a.ts</code> is a 667-byte module already in the baseline. Adding byte-for-byte identical content as <code>src/b.ts</code> produces:</p>
+<p><code>sense.duplication.identical_file</code>: <code>duplicate identical file: src/b.ts (2 occurrences, was 1)</code></p>
+<p>The report lists <code>src/b.ts</code> as changed and <code>src/a.ts</code> as the existing occurrence. The default minimum is 256 bytes, so a tiny shared snippet does not trigger this rule.</p>
+</details>
+<details>
+<summary>Project Sense · A TypeScript module grows past its public-interface limit</summary>
+<p>Suppose <code>src/api.ts</code> already has 20 explicit exports. Adding one more crosses the default boundary:</p>
+<div class="example-wrap"><pre class="language-ts"><code>export const twentyFirstValue = 21;</code></pre></div>
+<p><code>sense.interface.module_exports</code> records <code>before: 20</code>, <code>after: 21</code>, and <code>limit: 20</code>. Unchanged or reduced interface debt does not block. Any increase above the limit does, including a change from 21 to 22 exports.</p>
+</details>
+<details>
+<summary>Project Sense · An important module changes without its registered documentation</summary>
+<p>Suppose ten modules import <code>src/core.ts</code>, and <code>.opcore.json</code> binds that source to <code>docs/core.md</code> through <code>documentation.bindings</code>. Renaming a public export without updating the document produces:</p>
+<p><code>sense.documentation.document_not_updated</code>: <code>update the registered document with this source change</code></p>
+<p>Opcore reads only the exact source-to-document binding. It does not guess ownership from filenames or search Markdown for matching words.</p>
+</details>
+<details>
+<summary>Rust-native · A return value has the wrong type</summary>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">fn </span>count() -&gt; u32 {
+    <span class="string">"one"
+</span>}</code></pre></div>
+<p>Opcore rule: <code>opcore-rust-native/cargo-check</code>. A typical rustc finding is <code>E0308: mismatched types</code>; spans and added help come from the installed Rust toolchain.</p>
+</details>
+<details>
+<summary>Node-native · A number is assigned to a string</summary>
+<div class="example-wrap"><pre class="language-ts"><code>const label: string = 42;</code></pre></div>
+<p>Opcore rule: <code>opcore-node-native/typescript-check/TS2322</code>. A common TypeScript message is <code>Type 'number' is not assignable to type 'string'.</code>; exact text belongs to the installed project-local <code>tsc</code>.</p>
+</details>
+<details>
+<summary>Python-native · A number is assigned to a string</summary>
+<div class="example-wrap"><pre class="language-python"><code>value: str = 1</code></pre></div>
+<p>With Pyright, the rule is <code>opcore-python-native/type-check/reportAssignmentType</code>; the parser test form is <code>number is not assignable to str</code>. With mypy fallback, the rule is <code>opcore-python-native/type-check/assignment</code>, commonly with <code>Incompatible types</code>. Exact wording belongs to the selected checker version.</p>
+</details>
+<p>Run <code>opcore rules</code> to see every built-in rule and its default policy field.</p><nav class="page-sequence" aria-label="Adjacent pages"><a href="providers.html"><span>Previous</span>Providers</a><a href="sense.html"><span>Next</span>Project Sense</a></nav></main><aside class="page-toc" aria-label="On this page"><p>On this page</p><nav id="rustdoc"><ul></ul></nav></aside></div>
+<footer class="site-footer"><div>© The Open Engine
+<a href="https://github.com/the-open-engine/opcore">Opcore on GitHub ↗</a></div></footer></body></html>

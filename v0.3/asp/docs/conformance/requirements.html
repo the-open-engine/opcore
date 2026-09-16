@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Core, Interop, Edit, Assurance, And Hostile Conformance Requirements · Opcore</title><link rel="stylesheet" href="../../../assets/site.css">
+<script src="../../../assets/theme.js"></script>
+<script defer src="../../../assets/site.js"></script>
+<link rel="icon" type="image/svg+xml" href="../../../assets/oec-favicon.svg"><link rel="stylesheet" href="../../../assets/versions.css"><script defer src="../../../assets/versions.js"></script></head>
+<body class="guide-page"><a class="skip-link" href="#main-content">Skip to content</a>
+<header class="site-header"><div class="header-inner">
+<button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-navigation">Menu</button>
+<a class="brand" href="../../../index.html"><img src="../../../assets/oec-crow.png" alt="" width="32" height="36"><span>Opcore</span></a>
+<a class="header-label" href="../../../index.html">Documentation</a>
+<div class="header-actions"><div class="docs-version" data-site-root="../../../../" data-page-path="asp/docs/conformance/requirements.html" data-version="v0.3"><a href="../../../../versions.html">v0.3 ▾</a><select hidden aria-label="Documentation version"><option>v0.3</option></select></div><button class="theme-toggle" type="button" aria-label="Use dark mode" title="Use dark mode"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20.8 13.1A9 9 0 0 1 10.9 3.2 9 9 0 1 0 20.8 13.1Z"/></svg></button>
+<a class="repository-link" href="https://github.com/the-open-engine/opcore">GitHub <span aria-hidden="true">↗</span></a></div>
+</div></header>
+<div class="docs-layout"><aside class="docs-sidebar"><nav id="site-navigation" aria-label="Documentation"><div class="nav-group"><p>Opcore</p><ul><li><a href="../../../index.html">Overview</a></li></ul></div><div class="nav-group"><p>Get started</p><ul><li><a href="../../../docs/getting-started.html">Installation and first check</a></li></ul></div><div class="nav-group"><p>Guides</p><ul><li><a href="../../../docs/configuration.html">Configuration</a></li><li><a href="../../../docs/providers.html">Providers</a></li><li><a href="../../../docs/examples.html">Examples</a></li><li><a href="../../../docs/sense.html">Project Sense</a></li><li><a href="../../../docs/agent-signals.html">Agent feedback</a></li></ul></div><div class="nav-group"><p>Reference</p><ul><li><a href="../../../cli.html">CLI</a></li><li><a href="../../../api/opcore/api/index.html">Rust API</a></li><li><a href="../../../api/opcore/api/enum.ProviderProfile.html">Provider profiles</a></li><li><a href="../../README.html">ASP specification</a></li></ul></div><div class="nav-group"><p>Project</p><ul><li><a href="../../../docs/architecture.html">Architecture</a></li><li><a href="../../../CONTRIBUTING.html">Contributing</a></li><li><a href="../../../CODE_OF_CONDUCT.html">Code of conduct</a></li><li><a href="../../../SECURITY.html">Security</a></li></ul></div></nav></aside>
+<main id="main-content" class="guide-content" tabindex="-1">
+<p class="docs-kicker">Core documentation</p><h1 class="title">Core, Interop, Edit, Assurance, And Hostile Conformance Requirements</h1>
+    <details><summary>Specification metadata</summary>
+<div class="example-wrap"><pre class="language-yaml"><code>title: Core, assurance, and hostile conformance requirements
+status: draft
+normative: true
+summary: Stable requirement IDs for private ASP v1.0 Core Profile host, check-provider server, interop, edit/apply host, assurance honesty, and hostile-provider matrix reports.
+updated: 2026-06-26</code></pre></div></details>
+<p>These requirement IDs define the private ASP v1.0 Core Profile report scopes. <code>CORE-*</code> covers the
+current host/Core smoke report. <code>CORE-SERVER-*</code> covers the black-box Core check-provider server
+suite. <code>INTEROP-*</code> covers private host/server interoperability evidence through the same ordinary
+Core provider contract. <code>HOSTILE-*</code> covers the private black-box hostile-provider matrix beyond Core.
+<code>EDIT-HOST-*</code> covers the private black-box host-mediated edit/apply profile. <code>ASSURANCE-*</code> covers
+honest assurance-mode and transaction-guarantee reporting for apply paths. No scope creates trust,
+authority, certification, registry, provider-approval, stable API, public-release, isolated-assurance,
+mediated-write, staged-snapshot, or workspace-transaction claims.</p>
+<div><table><thead><tr><th>ID</th><th>Requirement</th></tr></thead><tbody>
+<tr><td>CORE-HOST-STATUS</td><td>Black-box <code>asp host serve</code> <code>host/status</code> reports ready or explicitly degraded Core state, policy identity, required check coverage, provider state, and receipt coverage.</td></tr>
+<tr><td>CORE-HOST-CAPABILITIES</td><td>Black-box <code>asp host serve</code> <code>host/capabilities</code> reports check as the required Core capability, keeps inspect and edit non-Core, and exposes required/enrolled/ran/degraded coverage.</td></tr>
+<tr><td>CORE-HOST-EVALUATE</td><td>Black-box <code>asp host serve</code> <code>host/evaluateChangeset</code> returns host-owned allow, deny, and indeterminate Decision envelopes for Core gate cases.</td></tr>
+<tr><td>CORE-CHECK-ASSESSMENT</td><td><code>check/evaluate</code> provider outputs use the canonical Assessment contract: status, diagnostics/evidence, coverage, <code>validAsOf</code>, provider metadata, timing, and cache metadata.</td></tr>
+<tr><td>CORE-CHECK-CONFIGURATION</td><td>Providers validate optional request configuration, apply one effective configuration to both views, and report its stable configDigest for every assessment status. Hosts reject a mismatched digest.</td></tr>
+<tr><td>CORE-PROVIDER-FORBIDDEN-FIELDS</td><td>Provider Assessment payloads exclude host-owned decision, verdict, pass, disposition, authority, assurance, transaction, apply, and apply-receipt fields, including nested provider data.</td></tr>
+<tr><td>CORE-STALE-VALID-AS-OF</td><td>A black-box required provider Assessment with stale <code>validAsOf</code> cannot contribute to <code>allow</code> and remains visible as degraded coverage.</td></tr>
+<tr><td>CORE-MISSING-REQUIRED-PROVIDER</td><td>A black-box missing required Core check provider cannot produce <code>allow</code> and remains visible as degraded coverage.</td></tr>
+<tr><td>CORE-MISSING-AUTHORITY</td><td>Black-box initialized, fresh, complete provider coverage without explicit gate authority cannot produce <code>allow</code> and remains visible as degraded coverage.</td></tr>
+<tr><td>CORE-INSUFFICIENT-ASSURANCE</td><td>Black-box initialized, authorized, fresh provider coverage below required gate assurance cannot produce <code>allow</code> and reports achieved assurance.</td></tr>
+<tr><td>CORE-PROVIDER-QUARANTINED</td><td>Black-box quarantined required Core check provider health cannot produce <code>allow</code> and remains visible as degraded coverage.</td></tr>
+<tr><td>CORE-PROVIDER-SKEWED</td><td>Black-box skewed or incompatible required Core check provider enrollment cannot produce <code>allow</code> and remains visible as degraded coverage.</td></tr>
+<tr><td>CORE-HOST-INITIALIZE-CONTRACT-REFUSAL</td><td>Black-box required Core check provider initialize/version contract refusal cannot produce <code>allow</code>, reports <code>skewed</code> degraded coverage, and carries no initialized provider provenance.</td></tr>
+<tr><td>CORE-PROVIDER-FAIL-OPEN</td><td>Black-box fail-open required Core check provider health cannot produce <code>allow</code> and remains visible as degraded coverage.</td></tr>
+<tr><td>CORE-MALFORMED-REQUIRED-PROVIDER</td><td>Black-box malformed, nested host-owned, or forged provider data cannot produce <code>allow</code> and remains visible as degraded coverage.</td></tr>
+<tr><td>CORE-REQUIRED-COVERAGE-VISIBLE</td><td>Black-box missing, unavailable, incompatible, malformed, stale, incomplete, unsupported, cancelled, timed-out, crashed, quarantined, missing-authority, insufficient-assurance, direct-write-risk, and policy-self-authorization coverage stays machine-readable in <code>coverage.required</code>, <code>coverage.ran</code>, and <code>coverage.degraded</code>.</td></tr>
+<tr><td>CORE-HOST-DECISION-AUTHORITATIVE</td><td>Providers produce Assessments; black-box host behavior shows only the host produces the final <code>allow</code>, <code>deny</code>, or <code>indeterminate</code> gate Decision and receipt.</td></tr>
+<tr><td>CORE-NO-LATTICE-FAST-PATH</td><td>A direct or privileged Lattice gate, freshness, authority, or apply path is rejected as degraded behavior rather than accepted as Core evidence.</td></tr>
+<tr><td>CORE-SERVER-INITIALIZE</td><td>A Core check provider <code>initialize</code> result reports server identity, fingerprint, provenance, check capability, and read-only permission request.</td></tr>
+<tr><td>CORE-SERVER-UNSUPPORTED-PROTOCOL</td><td>A Core check provider rejects unsupported <code>initialize.protocolVersion</code> with typed contract failure before <code>initialized</code>, host callbacks, or satisfiable Core coverage.</td></tr>
+<tr><td>CORE-SERVER-PREINITIALIZED</td><td><code>check/evaluate</code> before <code>initialized</code> fails with a typed provider-not-initialized JSON-RPC error and cannot satisfy Core coverage.</td></tr>
+<tr><td>CORE-SERVER-INITIALIZED-GRANT</td><td>The provider records the narrowed read-only <code>initialized</code> grant and receives no write or network authority.</td></tr>
+<tr><td>CORE-SERVER-CALLBACK-CONTENT</td><td>The provider obtains baseline and changeset content through <code>workspace/listTree</code> and <code>workspace/readBlob</code> callbacks.</td></tr>
+<tr><td>CORE-SERVER-GRANT-SCOPE</td><td>Fake-host callbacks filter tree entries and blob bytes to the initialized read grant and reject out-of-grant blob reads.</td></tr>
+<tr><td>CORE-SERVER-VALID-RESULTS</td><td>Complete clean, complete diagnostic, incomplete, unsupported, and cancelled results validate as provider Assessments.</td></tr>
+<tr><td>CORE-SERVER-TYPED-ERROR</td><td>Provider inability to evaluate is reported on the JSON-RPC error channel with typed <code>failClass</code> data.</td></tr>
+<tr><td>CORE-SERVER-REJECTED-MALFORMED-HOST-FIELDS</td><td>Malformed provider outputs and top-level or nested host-owned fields are rejected as non-passing server evidence.</td></tr>
+<tr><td>CORE-SERVER-REJECTED-FRESHNESS</td><td>Stale <code>validAsOf.baseline</code>, changeset digest, or blob freshness is rejected as non-passing server evidence.</td></tr>
+<tr><td>CORE-SERVER-TIMEOUT</td><td>A hung provider is reported as failed or missing required server evidence, never as pass.</td></tr>
+<tr><td>CORE-SERVER-BEHAVIOR-ONLY</td><td>Provider outputs remain Assessments only and are never accepted as host Decisions, authority grants, assurance, receipts, or verdicts.</td></tr>
+<tr><td>INTEROP-REF-HOST-FAKE</td><td>The Open Engine reference host interoperates with the fake Core check provider over JSON-RPC stdio using the ordinary provider contract.</td></tr>
+<tr><td>INTEROP-REF-HOST-OPCORE</td><td>The Open Engine reference host interoperates with Opcore as an ordinary enrolled ASP provider through manager-owned manifest state.</td></tr>
+<tr><td>INTEROP-INDEPENDENT-HOST-FAKE</td><td>A minimal independent host harness interoperates with the fake Core check provider through initialize, initialized grant, host callbacks, and check Assessment validation.</td></tr>
+<tr><td>INTEROP-INDEPENDENT-HOST-OPCORE</td><td>A minimal independent host harness interoperates with the Opcore provider entrypoint through the same provider contract.</td></tr>
+<tr><td>INTEROP-UNSUPPORTED-COVERAGE-VISIBLE</td><td>Unsupported or missing capability coverage remains explicit Assessment/report detail and cannot silently count as passing support.</td></tr>
+<tr><td>INTEROP-NO-OPCORE-FAST-PATH</td><td>Interop tests, fixtures, and runners contain no privileged Opcore, old-tool, or temporary guardrail fast-path calls.</td></tr>
+<tr><td>INTEROP-PRIVATE-CLAIMS</td><td>Interop reports remain private behavior evidence and make no trust, authority, certification, registry, provider-approval, stable API, or public-release claim.</td></tr>
+<tr><td>HOSTILE-MALFORMED-INITIALIZE</td><td>Black-box host evaluation rejects malformed provider initialize results and records degraded required coverage instead of allowing silently.</td></tr>
+<tr><td>HOSTILE-MALFORMED-ASSESSMENT</td><td>Black-box host evaluation rejects malformed provider Assessment payloads and records degraded required coverage instead of allowing silently.</td></tr>
+<tr><td>HOSTILE-FORGED-HOST-FIELDS</td><td>Provider-minted host-owned decision, verdict, pass, authority, assurance, transaction, apply, or receipt fields are rejected or degraded.</td></tr>
+<tr><td>HOSTILE-STALE-ASSESSMENT</td><td>Stale required provider <code>validAsOf</code> data cannot produce <code>allow</code> and remains visible as degraded coverage.</td></tr>
+<tr><td>HOSTILE-MISSING-REQUIRED-PROVIDER</td><td>A missing required provider cannot produce <code>allow</code> and keeps required, ran, degraded, receipt failure, and provenance gaps visible.</td></tr>
+<tr><td>HOSTILE-OPTIONAL-DEGRADED-PROVIDER</td><td>Optional provider failure remains visible in decision, status, and capability coverage while clean required coverage may still allow the gate.</td></tr>
+<tr><td>HOSTILE-UNSUPPORTED-REQUIRED-CAPABILITY</td><td>A required provider that does not advertise its enrolled required capability is incompatible health with unsupported degraded coverage.</td></tr>
+<tr><td>HOSTILE-INCOMPLETE-REQUIRED-COVERAGE</td><td>Incomplete required provider coverage cannot produce <code>allow</code> and remains machine-readable in degraded coverage and receipt failures.</td></tr>
+<tr><td>HOSTILE-PROVIDER-ERROR</td><td>Provider error during required evaluation cannot produce <code>allow</code> and remains machine-readable in degraded coverage and receipt failures.</td></tr>
+<tr><td>HOSTILE-CANCELLED-PROVIDER-REQUEST</td><td>Cancelled provider evaluation cannot produce <code>allow</code> and remains machine-readable in degraded coverage and receipt failures.</td></tr>
+<tr><td>HOSTILE-SLOW-PROVIDER-TIMEOUT</td><td>Slow required provider timeout cannot produce <code>allow</code> and remains machine-readable in degraded coverage and receipt failures.</td></tr>
+<tr><td>HOSTILE-PROVIDER-CRASH</td><td>Provider crash during initialize or active request cannot produce <code>allow</code> and remains machine-readable in degraded coverage and receipt failures.</td></tr>
+<tr><td>HOSTILE-QUARANTINED-PROVIDER</td><td>Quarantined required provider health cannot produce <code>allow</code> and remains visible as degraded coverage.</td></tr>
+<tr><td>HOSTILE-MISSING-AUTHORITY</td><td>Fresh complete provider coverage without explicit required authority cannot produce <code>allow</code> and records host-owned authority evidence.</td></tr>
+<tr><td>HOSTILE-INSUFFICIENT-ASSURANCE</td><td>Authorized provider coverage below required gate assurance cannot produce <code>allow</code> and reports achieved assurance honestly.</td></tr>
+<tr><td>HOSTILE-POLICY-SELF-AUTHORIZATION</td><td>Candidate policy/config changes cannot authorize, select, or weaken the gate evaluating the same changeset.</td></tr>
+<tr><td>HOSTILE-DIRECT-WRITE-RISK</td><td>Declared direct-write risk or untrusted edit launch cannot be treated as mediated host authority or a passing gate.</td></tr>
+<tr><td>HOSTILE-COMMAND-LIKE-EDIT-OUTPUT</td><td>Command-like edit output is rejected before apply and leaves the workspace unchanged.</td></tr>
+<tr><td>HOSTILE-NO-OPCORE-FAST-PATH</td><td>Hostile tests, fixtures, and runners contain no privileged reference-provider, old-tool, or temporary guardrail fast-path calls.</td></tr>
+<tr><td>EDIT-HOST-REQUEST-PLAN-NO-WRITE</td><td><code>host/requestEditPlan</code> returns provider EditPlan data and a host receipt without mutating the workspace or accepting provider-owned decisions, commands, or apply receipts.</td></tr>
+<tr><td>EDIT-HOST-POSITIVE-APPLY</td><td><code>host/applyProposal</code> validates and applies a canonical provider EditPlan through the host, reports actual assurance mode and transaction guarantee, and writes the expected content.</td></tr>
+<tr><td>EDIT-HOST-STALE-PLAN</td><td>Stale provider EditPlan baseline or <code>validAsOf</code> data is rejected before apply and leaves the workspace unchanged.</td></tr>
+<tr><td>EDIT-HOST-CAS-CONFLICT</td><td>Apply validates expected before digests and refuses a changed file without overwriting current content.</td></tr>
+<tr><td>EDIT-HOST-PATH-POLICY</td><td>Apply validates touched-resource preconditions, expected absence for creates, and requested path scope before writing.</td></tr>
+<tr><td>EDIT-HOST-UNKNOWN-PROPOSAL</td><td>Apply refuses unknown or uncached proposal identity before validation or mutation.</td></tr>
+<tr><td>EDIT-HOST-DENIED-VALIDATION</td><td>Host deny validation over the hypothetical after-state prevents apply and reports blocking diagnostic coverage.</td></tr>
+<tr><td>EDIT-HOST-INDETERMINATE-VALIDATION</td><td>Indeterminate host validation over the hypothetical after-state prevents apply and reports incomplete coverage.</td></tr>
+<tr><td>EDIT-HOST-COMMAND-LIKE-OUTPUT</td><td>Command-like provider edit output is rejected as provider data, not executed or converted into host apply behavior.</td></tr>
+<tr><td>EDIT-HOST-DIRECT-WRITE-RISK</td><td>Direct-write provider output and untrusted writable edit launch are rejected before apply.</td></tr>
+<tr><td>EDIT-HOST-MALFORMED-OUTPUT</td><td>Malformed provider edit output is rejected before apply and cannot satisfy edit coverage.</td></tr>
+<tr><td>EDIT-HOST-HOST-FIELD-SMUGGLING</td><td>Provider-owned decisions, apply receipts, authority, assurance, transaction, or receipt fields in edit output are rejected.</td></tr>
+<tr><td>EDIT-HOST-MISSING-AUTHORITY</td><td>Missing explicit edit authority prevents required apply paths and reports host-owned authority evidence.</td></tr>
+<tr><td>EDIT-HOST-INSUFFICIENT-ASSURANCE</td><td>Advisory edit isolation cannot satisfy required apply assurance and reports achieved assurance honestly.</td></tr>
+<tr><td>EDIT-HOST-CONCURRENT-APPLY</td><td>Concurrent apply attempts are serialized or refused so only one write can succeed.</td></tr>
+<tr><td>EDIT-HOST-NO-OPCORE-FAST-PATH</td><td>Edit/apply tests, fixtures, and runners contain no privileged reference-provider, old-tool, or temporary guardrail fast-path calls.</td></tr>
+<tr><td>ASSURANCE-ADVISORY-REPORTING</td><td>Advisory edit authority reports advisory/none, refuses apply requiring stronger assurance, and leaves the workspace unchanged.</td></tr>
+<tr><td>ASSURANCE-GATED-BOUNDARY</td><td>Gated edit apply reports gated/none and identifies the gate validation and interactive apply boundary being controlled.</td></tr>
+<tr><td>ASSURANCE-MEDIATED-WRITE-DOWNGRADE</td><td>Requested mediated-write evidence without enforced host-mediated writes is refused or downgraded to weaker assurance.</td></tr>
+<tr><td>ASSURANCE-ISOLATED-DOWNGRADE</td><td>Requested isolated evidence without enforced provider write isolation is refused or downgraded to weaker assurance.</td></tr>
+<tr><td>ASSURANCE-DIRECT-WRITE-REFUSAL</td><td>Direct-write provider output and untrusted editable launch cannot pass as mediated-write, isolated, or successful apply evidence.</td></tr>
+<tr><td>ASSURANCE-TRANSACTION-GUARANTEE-BOUND</td><td>Every observed transaction guarantee is schema-accepted and no stronger than the current none guarantee.</td></tr>
+<tr><td>ASSURANCE-FAILED-APPLY-NO-SUCCESSFUL-RECEIPT</td><td>Provider crash, command-like edit output, denied validation, and indeterminate validation cannot produce misleading successful apply receipts.</td></tr>
+</tbody></table>
+</div></main><aside class="page-toc" aria-label="On this page"><p>On this page</p><nav id="rustdoc"><ul></ul></nav></aside></div>
+<footer class="site-footer"><div>© The Open Engine
+<a href="https://github.com/the-open-engine/opcore">Opcore on GitHub ↗</a></div></footer></body></html>

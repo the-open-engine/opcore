@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Host obligations · Opcore</title><link rel="stylesheet" href="../../assets/site.css">
+<script src="../../assets/theme.js"></script>
+<script defer src="../../assets/site.js"></script>
+<link rel="icon" type="image/svg+xml" href="../../assets/oec-favicon.svg"><link rel="stylesheet" href="../../assets/versions.css"><script defer src="../../assets/versions.js"></script></head>
+<body class="guide-page"><a class="skip-link" href="#main-content">Skip to content</a>
+<header class="site-header"><div class="header-inner">
+<button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-navigation">Menu</button>
+<a class="brand" href="../../index.html"><img src="../../assets/oec-crow.png" alt="" width="32" height="36"><span>Opcore</span></a>
+<a class="header-label" href="../../index.html">Documentation</a>
+<div class="header-actions"><div class="docs-version" data-site-root="../../../" data-page-path="asp/spec/07-host-obligations.html" data-version="v0.3"><a href="../../../versions.html">v0.3 ▾</a><select hidden aria-label="Documentation version"><option>v0.3</option></select></div><button class="theme-toggle" type="button" aria-label="Use dark mode" title="Use dark mode"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20.8 13.1A9 9 0 0 1 10.9 3.2 9 9 0 1 0 20.8 13.1Z"/></svg></button>
+<a class="repository-link" href="https://github.com/the-open-engine/opcore">GitHub <span aria-hidden="true">↗</span></a></div>
+</div></header>
+<div class="docs-layout"><aside class="docs-sidebar"><nav id="site-navigation" aria-label="Documentation"><div class="nav-group"><p>Opcore</p><ul><li><a href="../../index.html">Overview</a></li></ul></div><div class="nav-group"><p>Get started</p><ul><li><a href="../../docs/getting-started.html">Installation and first check</a></li></ul></div><div class="nav-group"><p>Guides</p><ul><li><a href="../../docs/configuration.html">Configuration</a></li><li><a href="../../docs/providers.html">Providers</a></li><li><a href="../../docs/examples.html">Examples</a></li><li><a href="../../docs/sense.html">Project Sense</a></li><li><a href="../../docs/agent-signals.html">Agent feedback</a></li></ul></div><div class="nav-group"><p>Reference</p><ul><li><a href="../../cli.html">CLI</a></li><li><a href="../../api/opcore/api/index.html">Rust API</a></li><li><a href="../../api/opcore/api/enum.ProviderProfile.html">Provider profiles</a></li><li><a href="../README.html">ASP specification</a></li></ul></div><div class="nav-group"><p>Project</p><ul><li><a href="../../docs/architecture.html">Architecture</a></li><li><a href="../../CONTRIBUTING.html">Contributing</a></li><li><a href="../../CODE_OF_CONDUCT.html">Code of conduct</a></li><li><a href="../../SECURITY.html">Security</a></li></ul></div></nav></aside>
+<main id="main-content" class="guide-content" tabindex="-1">
+<p class="docs-kicker">Core documentation</p><h1 class="title">Host obligations</h1>
+    <details><summary>Specification metadata</summary>
+<div class="example-wrap"><pre class="language-yaml"><code>title: Host obligations
+status: established
+normative: true
+summary: Assessment aggregation, provider supervision, decision computation, policy-pinned authority grants, fail-policy, freshness, arbitration, mediated apply, assurance modes, budgets, and dogfood reporting.
+updated: 2026-06-25</code></pre></div></details>
+<p>The host is where ASP’s guarantees actually live. Servers report assessments and edit plans; the host
+decides.</p>
+<p>The <a href="11-core-profile.html">Core Profile</a> narrows these obligations to the tiny first
+host/provider/check path: status, composed capabilities, initialized grants, blob/tree callbacks,
+provider Assessments, and host Decisions. Inspect, edit, apply, deployment surfaces, dogfood, ACE
+integration, and reference-engine parity remain optional non-Core profiles.</p>
+<h2 id="1-decision-computation-and-gate-authority"><a class="doc-anchor" href="#1-decision-computation-and-gate-authority">§</a>1. Decision computation and gate authority</h2>
+<p>A check-capable server returns an <strong>assessment</strong>: status, diagnostics/evidence, coverage, freshness
+binding, and provider metadata. It never returns the authoritative policy result. The host derives the
+<strong>decision</strong>.</p>
+<p>Assessment shape is provider-owned only. If a check provider returns a pass/fail projection, host
+decision, verdict envelope, finding disposition, authority grant, assurance mode, or transaction
+guarantee, the host MUST treat the response as malformed contract data and surface degraded coverage.</p>
+<p>Two host-owned concepts govern whether a finding blocks:</p>
+<ul>
+<li><strong>Authority grant.</strong> A <code>check/*</code> capability means a provider can evaluate. Whether its assessment
+satisfies a gate is a trusted-policy decision. Authority MUST be granted to a pinned provider
+identity/version/digest for a named requirement and named call-site. Certification, provenance,
+first-party labels, package scope, repository config, local overrides, and installed manifests cannot
+satisfy a gate without that trusted policy grant.</li>
+<li><strong>Effective severity.</strong> The host MAY cap or reinterpret provider self-reported severity by
+authority, isolation, and policy. This is presentation and policy logic; it is not conformance.</li>
+</ul>
+<div class="example-wrap"><pre class="language-text"><code>required        = host.requiredRequirements(callSite)
+assessments     = host.collectAssessments(required)
+coverage        = { required, ran: host.completedSources(assessments),
+                    degraded: host.degradedSources(required, assessments) }
+blocking        = [ d in assessments.diagnostics
+                    if host.effectiveSeverity(d, providerAuthority) == &quot;error&quot; ]
+decision        = allow only when every coverage.required entry is in coverage.ran
+                  AND coverage.degraded is empty for required coverage
+                  AND blocking is empty
+                  AND no required assessment is stale, missing, malformed,
+                      unsupported, incomplete, cancelled, timed out,
+                      quarantined, or errored
+                  AND authority evidence is present for every required provider
+                  AND achieved assurance satisfies the call-site</code></pre></div>
+<p>When several providers run on one changeset, the decision is conservative: the change is allowed only
+if every required authorized provider satisfies its requirement after arbitration (§4). Missing or
+incomplete required coverage produces <code>indeterminate</code> or <code>deny</code> according to call-site policy.</p>
+<h3 id="authority-axes"><a class="doc-anchor" href="#authority-axes">§</a>Authority axes</h3>
+<p>The host tracks five independent axes for every provider, aligned with
+<a href="../docs/governance/governance-draft.html">the governance draft</a>:</p>
+<div><table><thead><tr><th>Axis</th><th>Meaning</th></tr></thead><tbody>
+<tr><td>Identity</td><td>Who published or owns the provider.</td></tr>
+<tr><td>Integrity</td><td>Which exact artifact/package digest is running.</td></tr>
+<tr><td>Conformance</td><td>Whether the provider implements ASP correctly.</td></tr>
+<tr><td>Isolation</td><td>What the provider can read, write, execute, or transmit.</td></tr>
+<tr><td>Authority</td><td>Whether policy allows the provider to satisfy a named gate.</td></tr>
+</tbody></table>
+</div>
+<p>Older labels such as <code>first-party</code>, <code>certified</code>, and <code>untrusted</code> are shorthand only and MUST NOT grant
+authority by themselves.</p>
+<h3 id="decision-envelope"><a class="doc-anchor" href="#decision-envelope">§</a>Decision envelope</h3>
+<p>The host packages every evaluation it surfaces to the harness/user as a <strong>verdict object</strong>
+(<a href="../schemas/verdict.schema.json"><code>schemas/verdict.schema.json</code></a>). <code>verdict</code> is a legacy envelope name
+for a host-produced decision; servers return assessments, not verdicts. The host MUST:</p>
+<ul>
+<li>set the <strong><code>callSite</code></strong> (<code>interactive</code> | <code>gate</code> | <code>sweep</code>) so the developer can tell a hard block
+from a warn-allow;</li>
+<li>stamp every finding with host-authenticated <strong>provenance</strong> (<code>diagnostic.source</code>) and authority
+evidence, and mark each finding’s <strong><code>disposition</code></strong> (<code>gating</code> | <code>advisory</code>);</li>
+<li>when it caps a finding’s effective severity below the server’s self-report, set <strong><code>severityNote</code></strong>
+so the downgrade is legible;</li>
+<li>guarantee a <strong><code>nextStep</code></strong> on every gating finding from the server’s <code>fix</code>/<code>help</code>/
+<code>codeDescription.href</code>, or a host-synthesized fallback when the server gave none;</li>
+<li>include <strong>every gating finding</strong> in <code>findings</code>; advisory inclusion is host policy;</li>
+<li>report <strong><code>coverage</code></strong>: <code>required</code> sources, which <code>ran</code>, and a <strong><code>degraded</code></strong> list naming any
+provider that failed open, was quarantined, skewed/incompatible, missing, unavailable, stale,
+unsupported, malformed, incomplete, cancelled, crashed, timed out, errored, missing authority, or
+insufficiently assured; provider degradation SHOULD include <code>capability</code> and <code>providerState</code>;</li>
+<li>report <strong><code>policyDigest</code></strong> or equivalent immutable policy identity;</li>
+<li>report provider <strong>authority evidence</strong> across identity, integrity, conformance, isolation, and
+authority grant;</li>
+<li>report the achieved <strong>assurance mode</strong> and transaction guarantee when apply is involved;</li>
+<li>attach or enable reconstruction of an <strong>audit receipt</strong> preserving provenance, policy digest,
+baseline/<code>validAsOf</code>, coverage, authority evidence, assurance mode, and transaction guarantee.</li>
+</ul>
+<p>The decision envelope is how provenance, advisory-vs-gating, next-step, assurance, receipts, and
+degraded coverage reach the developer. Its rendering stays outer-seam.</p>
+<h2 id="2-fail-policy"><a class="doc-anchor" href="#2-fail-policy">§</a>2. Fail-policy</h2>
+<p>When a required provider is absent, unavailable, quarantined, incompatible, stale, malformed,
+unsupported, or exceeds its budget (§8), the host decides open vs closed from the typed failure and
+the <strong>call-site</strong> — never from the provider. The canonical call-sites are <code>interactive</code>, <code>gate</code>, and
+<code>sweep</code>.</p>
+<p>Provider <code>status:"unsupported"</code> is a capability gap, not a provider/runtime failure. Provider
+<code>status:"error"</code> means the provider attempted evaluation and failed. The host MUST keep these
+distinct for routing, metrics, user display, and coverage degradation, while ensuring neither silently
+satisfies required gate coverage.</p>
+<div><table><thead><tr><th>failClass</th><th>interactive edit</th><th>commit / ship gate</th></tr></thead><tbody>
+<tr><td><code>health</code> (could not run / timed out)</td><td>fail open (warn, allow)</td><td>indeterminate/deny by policy</td></tr>
+<tr><td><code>contract</code> (ran wrong / version skew)</td><td>fail closed</td><td>fail closed</td></tr>
+<tr><td><code>policy</code> / <code>input</code></td><td>fail closed</td><td>fail closed</td></tr>
+</tbody></table>
+</div>
+<p>The host MUST log every fail-open with provider id, <code>failClass</code>, and call-site. Silent fail-open is
+forbidden. Missing required coverage, stale baselines, malformed responses, unsupported required
+capabilities, incomplete responses, cancellations, provider errors, timeouts, quarantined providers,
+missing authority, and insufficient assurance MUST be visible as degraded coverage plus
+<code>indeterminate</code> or <code>deny</code> for gates, never as a pass.</p>
+<p>For <code>gate</code> call-sites, the following conditions MUST produce <code>indeterminate</code> or <code>deny</code>; they MUST NOT
+be rendered as <code>allow</code>: missing conforming host, incompatible host, missing required provider, stale
+baseline, stale/malformed/incompatible manifest, timeout, schema mismatch, missing authority,
+unsupported required capability, insufficient assurance mode, and provider quarantine. Optional
+provider loss may reduce coverage, but optional degradation MUST NOT be reported as full required
+coverage.</p>
+<p>The decision envelope’s
+<code>coverage.degraded[]</code> entry MUST identify the provider or requirement and use the corresponding
+degradation reason from
+<a href="../schemas/assurance.schema.json"><code>schemas/assurance.schema.json</code></a>.</p>
+<h3 id="provider-supervision"><a class="doc-anchor" href="#provider-supervision">§</a>Provider supervision</h3>
+<p>The host owns provider launch and lifecycle supervision. Repository policy is logical input only and
+MUST NOT supply executable paths, shell strings, scripts, working directories, or environment
+mutation for provider startup. Where launch metadata exists, it must come from trusted installed or
+environment configuration and use structured executable plus argv arrays; shell-string startup is not
+a conforming gate path. Installed manifest executables MUST be absolute paths, and manifest launches
+MUST use a trusted manager/artifact working directory rather than the mutable candidate repository.</p>
+<p>The host MUST track provider lifecycle states visibly: launched, initializing, initialized, active,
+cancelled, shutting down, exited, crashed, timed out, incompatible, malformed, unavailable,
+quarantined, and degraded. <code>host/status</code>, <code>host/capabilities</code>, and evaluation receipts MUST expose
+provider state per provider and per capability family (<code>inspect</code>, <code>check</code>, <code>edit</code>). Legacy
+<code>sense</code>/<code>judge</code>/<code>act</code> labels may appear only as compatibility aliases.</p>
+<p>Provider metadata, installed provenance, catalog membership, conformance evidence, first-party
+labels, local install state, and manifest presence are evidence only. None of them grants gate
+authority without explicit trusted policy over identity, integrity, isolation, requirement, and
+call-site. Lattice, fake providers, community providers, paid providers, closed-source providers, and
+local-dev providers all travel through the same supervisor/router boundary.</p>
+<h2 id="3-assurance-enforcement"><a class="doc-anchor" href="#3-assurance-enforcement">§</a>3. Assurance enforcement</h2>
+<p>The host MUST report the actual assurance mode achieved for each decision:</p>
+<div><table><thead><tr><th>Mode</th><th>Actual guarantee</th></tr></thead><tbody>
+<tr><td><code>advisory</code></td><td>Host can run/report checks but cannot enforce a boundary.</td></tr>
+<tr><td><code>gated</code></td><td>Host controls a commit, merge, CI, or similar boundary.</td></tr>
+<tr><td><code>mediated-write</code></td><td>Intended writes pass through the host.</td></tr>
+<tr><td><code>isolated</code></td><td>Server cannot write the real worktree and has constrained data/network access.</td></tr>
+</tbody></table>
+</div>
+<p>Protocol text cannot by itself stop a local subprocess from writing files. A claim of
+<code>mediated-write</code> or <code>isolated</code> requires an enforceable deployment mechanism such as a read-only
+snapshot mount, host-provided content API, copy-on-write overlay, container, OS sandbox, or equivalent
+worktree write denial.</p>
+<p>If server code can write the real worktree directly, the host MUST report <code>advisory</code> or <code>gated</code>, mark
+the relevant coverage or apply receipt with <code>direct-write-risk</code>, and avoid any transaction guarantee
+stronger than it can enforce. A local direct-write deployment cannot claim <code>mediated-write</code>,
+<code>isolated</code>, <code>workspace_transactional</code>, or <code>staged_snapshot</code> solely because the protocol describes
+proposal and apply messages.</p>
+<h2 id="4-arbitration"><a class="doc-anchor" href="#4-arbitration">§</a>4. Arbitration</h2>
+<p>Multiple providers may hold the same capability. The host reconciles before producing a decision:</p>
+<ul>
+<li><strong>Dedup within a source by fingerprint; across sources, host-canonicalized.</strong> A <code>fingerprint</code> is
+authoritative only within its <code>diagnosticSource</code>; cross-server fingerprint equality MUST NOT affect
+the gate decision.</li>
+<li><strong>Precedence per requirement, by authority grant.</strong> When two providers covering the same required
+source conflict, the provider authorized for that requirement wins; ties surface both and produce
+an indeterminate/deny decision on a gate.</li>
+<li><strong>Conflicting edits.</strong> Two edit proposals touching overlapping blobs MUST NOT both apply. The host
+serializes: apply one, re-baseline, re-propose the other against the new baseline, or reject.</li>
+<li><strong>Source ownership.</strong> A server MUST only emit diagnostics whose <code>code</code> is namespaced under a
+<code>diagnosticSource</code> it declared at initialize; the host MUST drop or relabel others.</li>
+<li><strong>Coverage.</strong> The host MUST record which diagnostic sources and requirements ran so a missing
+provider reduces coverage visibly rather than silently.</li>
+</ul>
+<h2 id="5-freshness-authority"><a class="doc-anchor" href="#5-freshness-authority">§</a>5. Freshness authority</h2>
+<p>The host is the sole issuer of baselines and the sole authority for staleness.</p>
+<ul>
+<li>Every provider request carries the host’s current baseline; every response echoes <code>validAsOf</code>.</li>
+<li>The host MUST reject, downgrade, or re-issue any response whose <code>validAsOf</code> does not equal the
+request baseline, changeset digest, and provider-read blob set.</li>
+<li>A stale assessment MUST NOT contribute to an <code>allow</code> decision. If a stale response cannot be
+re-issued before the budget expires, the host records degraded coverage with reason
+<code>stale</code> and returns <code>indeterminate</code> or <code>deny</code> for a <code>gate</code> call-site.</li>
+<li>Because changesets and blobs are content-addressed (<a href="03-data-model.html">data model</a>), staleness is
+exact in the private binding. Future public bindings may standardize only the observable invariant:
+immutable snapshot identity and per-resource preconditions.</li>
+<li>The host owns the watch/refresh loop. Servers bind to the baseline the host gives them; they do not
+re-derive freshness.</li>
+</ul>
+<h2 id="6-mediated-apply"><a class="doc-anchor" href="#6-mediated-apply">§</a>6. Mediated apply</h2>
+<p>Edit-capable servers propose; the host applies or stages. The host MUST report the achieved
+transaction guarantee and an apply receipt:</p>
+<div><table><thead><tr><th>Guarantee</th><th>Meaning</th></tr></thead><tbody>
+<tr><td><code>none</code></td><td>No atomicity or rollback guarantee.</td></tr>
+<tr><td><code>rollback_attempted</code></td><td>Host attempted restoration after failure.</td></tr>
+<tr><td><code>text_only_transactional</code></td><td>Text edits are all-or-nothing within declared constraints.</td></tr>
+<tr><td><code>workspace_transactional</code></td><td>Workspace mutation is atomic within declared constraints.</td></tr>
+<tr><td><code>staged_snapshot</code></td><td>Host produced a candidate snapshot/tree before publishing it.</td></tr>
+</tbody></table>
+</div>
+<p>The default mediated flow:</p>
+<div class="example-wrap"><pre class="language-text"><code>1. edit/propose                      -&gt; workspaceEdit/EditPlan (bound to baseline B)
+2. host normalizes hypothetical changeset = B + workspaceEdit
+3. host runs required checks on the hypothetical change
+4. allow -&gt; apply/stage according to reported guarantee; issue new baseline B&#39;
+   deny/indeterminate -&gt; reject; nothing intentional is written
+5. if B moved in a touched path, 3-way merge or re-propose, bounded to N retries, then reject</code></pre></div>
+<p>The apply receipt MUST include proposal id, baseline before/after, validation decision, policy digest,
+provider provenance, authority evidence, achieved assurance mode, and the transaction guarantee
+actually achieved.</p>
+<p>Before apply, the host MUST reject or mark indeterminate any edit provider output that is not a
+structured <code>EditPlan</code>: shell commands, arbitrary scripts, command arrays, patch shellouts, missing
+preconditions, missing proposal blobs, unsupported operations, stale <code>validAsOf</code>, baseline mismatch,
+touched-path drift, host-owned decision fields, or provider-claimed transaction guarantees. Denied or
+required indeterminate validation over the hypothetical after-state prevents apply and returns
+<code>applied:false</code>; <code>baselineAfter</code> remains null because no intentional workspace mutation is published.</p>
+<p>The host MUST NOT claim a stronger guarantee than it can enforce. Ordinary worktrees may only support
+<code>rollback_attempted</code> or <code>text_only_transactional</code>; overlays or staged snapshots may support stronger
+guarantees. Server code has no direct write authority in mediated-write or isolated assurance modes.</p>
+<p>A fix or edit plan is applied only on explicit agent, harness, or user action; the host MUST NOT
+auto-apply background server notifications.</p>
+<p>Authorized <code>host/applyProposal</code> intent is sufficient protocol-level write intent for the host to
+attempt a mediated transaction. It is not authority for a provider to write directly, schedule a
+background write, or bypass re-validation of the proposed changeset. Server-initiated <code>applyEdit</code> is
+not a conforming write path; <a href="../decisions/0024-supersede-server-initiated-apply-edit.html">ADR 0024</a>
+supersedes that branch while preserving serialized host apply semantics.</p>
+<h2 id="7-policy-activation-and-self-authorization"><a class="doc-anchor" href="#7-policy-activation-and-self-authorization">§</a>7. Policy activation and self-authorization</h2>
+<p>Policy edits are evaluated under <strong>BasePolicyAuthority</strong>: the trusted base policy already active for
+the target branch, plus any organization-level non-weakenable floor. Candidate policy may be parsed and
+reported as pending, but it MUST NOT authorize the same changeset that introduces it, add a new
+provider as blocking authority for that changeset, or weaken the required gate set for that changeset.</p>
+<p>When a candidate policy tries to authorize its own provider, lower assurance, weaken a gate, or select
+a privileged host implementation, the host MUST record degraded coverage with reason
+<code>policy-self-authorization</code> and return <code>indeterminate</code> or <code>deny</code> for a <code>gate</code> call-site.</p>
+<h2 id="8-budgets-and-quarantine"><a class="doc-anchor" href="#8-budgets-and-quarantine">§</a>8. Budgets and quarantine</h2>
+<p>A single provider MUST NOT be able to stall the loop or block by attrition.</p>
+<ul>
+<li>The host applies a per-call-site timeout. A timeout is a <code>health</code> failure and follows the §2 policy.</li>
+<li>A provider that repeatedly fails health or exceeds budget MAY be quarantined, and the event MUST be
+surfaced as reduced coverage, never as a silent pass.</li>
+<li>The interactive budget is a whole-host ceiling, not per-provider.</li>
+<li>The host MUST bound server-to-host callbacks per request/session and provider response sizes.</li>
+<li>The host MUST emit per-provider health, latency, and coverage metrics so degradation is visible.</li>
+</ul>
+<h2 id="9-dogfood-reporting"><a class="doc-anchor" href="#9-dogfood-reporting">§</a>9. Dogfood reporting</h2>
+<p>When a host reports ASP dogfood runs for a reference engine/server such as Lattice, it MUST preserve
+host-owned and per-capability evidence instead of collapsing the run into a single pass/fail label.
+Reports MUST include:</p>
+<ul>
+<li>parity deltas by capability and predecessor baseline: <code>inspect</code> versus CRG graph/search/impact/
+watch/WAL/hot-query and relevant CIX read-only symbol routes; <code>check</code> versus Rox TypeScript, Rust,
+custom-extension, daemon/cache, scope, and pre-write/hypothetical behavior; <code>edit</code> versus CIX
+exact, multi, search-replace, patch, tree, rename, move, signature, and validation-before-write
+behavior;</li>
+<li>false positives and false negatives with samples tied to check ids, predecessor findings, or
+receipts;</li>
+<li>latency by call-site and capability, including p50, p95, timeout counts, and interactive/gate/sweep
+context;</li>
+<li>stale rejections and freshness failures, including baseline or <code>validAsOf</code> mismatches and any graph
+freshness mismatch;</li>
+<li>typed failures by capability: crash, timeout, daemon unavailable, schema mismatch, missing
+provider, unsupported mode, provider error, malformed output, invalid payload, and missing
+authority;</li>
+<li>degraded coverage, including skipped providers, unsupported language/check/edit surfaces,
+quarantined providers, lower-than-required assurance, and retained old-tool compatibility gates;</li>
+<li>edit conflicts and refused edits, including checksum conflicts, overlapping edits, path-policy
+refusals, validation failures, unsafe patches, unsupported binary edits, and stale graph/edit
+evidence;</li>
+<li>rollback or staging outcome for any apply path: no write, rollback attempted,
+text-only transactional, workspace transactional, or staged snapshot;</li>
+<li>achieved assurance mode and actual transaction guarantee as reported by the host;</li>
+<li>old-tool compatibility status per protected surface: native provider, ASP provider compatibility,
+retained old-tool compatibility gate, explicit de-scope, or roadmap;</li>
+<li>referenced release evidence such as descriptor artifact, graph release receipt, release receipt,
+cutover receipt, provenance report, license report, secret scan report, and supported-platform
+notes when those artifacts are used as readiness inputs.</li>
+</ul>
+<p>The host MUST keep graph/inspect, validation/check, and edit degradation independently visible. A
+provider-side validation result, edit apply receipt, descriptor, or release receipt is not a host
+decision and cannot prove an achieved assurance mode or transaction guarantee without host evidence.</p>
+<h2 id="implementation-defined"><a class="doc-anchor" href="#implementation-defined">§</a>Implementation-defined</h2>
+<ul>
+<li>Exact effective-severity and fail-class reclassification tables.</li>
+<li>Concrete timeout, quarantine, callback-budget, and resource-limit values.</li>
+<li>Concrete sandbox and isolation mechanism for each assurance mode.</li>
+<li>Concrete staged apply, transaction, merge, and retry strategies.</li>
+</ul></main><aside class="page-toc" aria-label="On this page"><p>On this page</p><nav id="rustdoc"><ul>
+<li><a href="#1-decision-computation-and-gate-authority" title="1. Decision computation and gate authority">1. Decision computation and gate authority</a><ul>
+<li><a href="#authority-axes" title="Authority axes">Authority axes</a><ul></ul></li>
+<li><a href="#decision-envelope" title="Decision envelope">Decision envelope</a><ul></ul></li></ul></li>
+<li><a href="#2-fail-policy" title="2. Fail-policy">2. Fail-policy</a><ul>
+<li><a href="#provider-supervision" title="Provider supervision">Provider supervision</a><ul></ul></li></ul></li>
+<li><a href="#3-assurance-enforcement" title="3. Assurance enforcement">3. Assurance enforcement</a><ul></ul></li>
+<li><a href="#4-arbitration" title="4. Arbitration">4. Arbitration</a><ul></ul></li>
+<li><a href="#5-freshness-authority" title="5. Freshness authority">5. Freshness authority</a><ul></ul></li>
+<li><a href="#6-mediated-apply" title="6. Mediated apply">6. Mediated apply</a><ul></ul></li>
+<li><a href="#7-policy-activation-and-self-authorization" title="7. Policy activation and self-authorization">7. Policy activation and self-authorization</a><ul></ul></li>
+<li><a href="#8-budgets-and-quarantine" title="8. Budgets and quarantine">8. Budgets and quarantine</a><ul></ul></li>
+<li><a href="#9-dogfood-reporting" title="9. Dogfood reporting">9. Dogfood reporting</a><ul></ul></li>
+<li><a href="#implementation-defined" title="Implementation-defined">Implementation-defined</a><ul></ul></li></ul></nav></aside></div>
+<footer class="site-footer"><div>© The Open Engine
+<a href="https://github.com/the-open-engine/opcore">Opcore on GitHub ↗</a></div></footer></body></html>

@@ -1,0 +1,148 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://covibes.dev/asp/schemas/workspace-edit.schema.json",
+  "title": "WorkspaceEdit",
+  "description": "Structured operation payload carried by an EditPlan or diagnostic fix. Providers propose; the host validates and applies or stages after explicit apply intent. Every operation is bound to a SnapshotRef/Baseline plus per-resource preconditions so stale ranges or blobs cannot silently apply.",
+  "type": "object",
+  "required": ["baseline", "documentChanges"],
+  "additionalProperties": false,
+  "properties": {
+    "baseline": {
+      "$ref": "https://covibes.dev/asp/schemas/changeset.schema.json#/$defs/baseline",
+      "description": "SnapshotRef/Baseline precondition for the proposed edit operations.",
+      "$comment": "Baseline is the v1.0 schema alias for SnapshotRef."
+    },
+    "documentChanges": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/documentChange" }
+    }
+  },
+  "$defs": {
+    "blobRef": { "$ref": "https://covibes.dev/asp/schemas/changeset.schema.json#/$defs/blobRef" },
+    "providerStructuredData": {
+      "oneOf": [
+        { "type": "null" },
+        { "type": "boolean" },
+        { "type": "number" },
+        { "type": "string" },
+        {
+          "type": "array",
+          "items": { "$ref": "#/$defs/providerStructuredData" }
+        },
+        { "$ref": "#/$defs/providerStructuredDataObject" }
+      ]
+    },
+    "providerStructuredDataObject": {
+      "type": "object",
+      "propertyNames": {
+        "not": { "pattern": "^(authority|assurance|command|commands|decision|disposition|pass|script|transactionGuarantee|verdict|applyReceipt|receipt|policyDigest|policyRef|policyReference|authorityEvidence|hostDecision|applyAttempt|applyResult)$" }
+      },
+      "additionalProperties": { "$ref": "#/$defs/providerStructuredData" }
+    },
+    "position": {
+      "type": "object",
+      "required": ["line", "char"],
+      "additionalProperties": false,
+      "properties": {
+        "line": { "type": "integer", "minimum": 0 },
+        "char": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "range": {
+      "type": "object",
+      "required": ["start", "end"],
+      "additionalProperties": false,
+      "properties": { "start": { "$ref": "#/$defs/position" }, "end": { "$ref": "#/$defs/position" } }
+    },
+    "precondition": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "expectedDigest": { "$ref": "#/$defs/blobRef", "description": "Required for existing-resource update, delete, rename, move, and text edit operations." },
+        "expectedAbsence": { "const": true, "description": "Required for create operations where the path must not exist." }
+      },
+      "oneOf": [
+        { "required": ["expectedDigest"] },
+        { "required": ["expectedAbsence"] }
+      ]
+    },
+    "annotation": {
+      "type": "object",
+      "required": ["message"],
+      "additionalProperties": false,
+      "properties": {
+        "message": { "type": "string" },
+        "range": { "$ref": "#/$defs/range" },
+        "data": { "$ref": "#/$defs/providerStructuredDataObject" }
+      }
+    },
+    "textEdit": {
+      "type": "object",
+      "required": ["range", "rangeBasis", "coordinateSystem", "newText"],
+      "additionalProperties": false,
+      "properties": {
+        "range": { "$ref": "#/$defs/range" },
+        "rangeBasis": { "$ref": "#/$defs/blobRef", "description": "Digest of the resource content used to compute the range." },
+        "coordinateSystem": { "const": "utf16" },
+        "newText": { "type": "string" }
+      }
+    },
+    "documentChange": {
+      "type": "object",
+      "required": ["path", "kind", "precondition"],
+      "additionalProperties": false,
+      "properties": {
+        "path": { "type": "string" },
+        "kind": { "enum": ["create", "modify", "delete", "rename", "move"] },
+        "to": { "type": "string", "description": "Destination path, for kind = rename or move." },
+        "precondition": { "$ref": "#/$defs/precondition" },
+        "after": { "$ref": "#/$defs/blobRef", "description": "Whole-blob replacement (create/modify)." },
+        "edits": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/textEdit" },
+          "description": "Granular text edits (modify). Mutually exclusive with after."
+        },
+        "annotations": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/annotation" }
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "kind": { "const": "create" } } },
+          "then": {
+            "required": ["after"],
+            "properties": { "precondition": { "required": ["expectedAbsence"] } }
+          }
+        },
+        {
+          "if": { "properties": { "kind": { "const": "modify" } } },
+          "then": {
+            "properties": { "precondition": { "required": ["expectedDigest"] } },
+            "oneOf": [ { "required": ["edits"] }, { "required": ["after"] } ]
+          }
+        },
+        {
+          "if": { "properties": { "kind": { "const": "delete" } } },
+          "then": {
+            "properties": { "precondition": { "required": ["expectedDigest"] } }
+          }
+        },
+        {
+          "if": { "properties": { "kind": { "const": "rename" } } },
+          "then": {
+            "required": ["to"],
+            "properties": { "precondition": { "required": ["expectedDigest"] } }
+          }
+        },
+        {
+          "if": { "properties": { "kind": { "const": "move" } } },
+          "then": {
+            "required": ["to"],
+            "properties": { "precondition": { "required": ["expectedDigest"] } }
+          }
+        }
+      ]
+    }
+  }
+}

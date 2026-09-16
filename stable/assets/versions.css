@@ -1,0 +1,9 @@
+.docs-version { display: inline-flex; align-items: center; font-size: 14px; }
+.docs-version select { max-width: 13rem; padding: .3rem; border: 1px solid #706960; border-radius: .2rem; background: #171411; color: #faf7f1; font: inherit; }
+.docs-version [hidden] { display: none; }
+@media (max-width: 760px) {
+  .docs-version { font-size: 12px; }
+  .docs-version select { max-width: 8.5rem; }
+  .header-inner { gap: .75rem; }
+  .header-actions { gap: .5rem; }
+}
