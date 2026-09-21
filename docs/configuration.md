@@ -70,13 +70,15 @@ Pre-commit and CI require complete Sense coverage by default. Post-edit allows p
 
 Fast Verify filters excluded paths before reading and parsing source. Sense uses the selected graph and reports any loss of graph coverage; excluded source never becomes evidence that the whole repository is clean. A full check that selects no supported source fails rather than returning a clean result.
 
+Do not use exclusions to grandfather findings in source the repository still owns. An excluded file is outside both full and introduced checks, including new violations added later. For brownfield Fast adoption, keep the source selected and use `run pre-commit --comparison introduced` or `run ci --comparison introduced --base <base>`.
+
 Native tools need intact compiler inputs. Use provider `roots` to select non-overlapping packages or projects, and override those roots per workflow for monorepos. Opcore retains required ancestor configuration and dependency context. An exclusion that the selected backend cannot honor produces an explanation; it never deletes required compiler inputs or hides a compiler failure. See [native target selection](providers.md#work-in-a-monorepo).
 
 ## Match configuration to source
 
 Worktree checks use worktree configuration. Staged checks use the index, and committed checks use the selected commit's file. `run pre-commit` therefore ignores an unstaged threshold change; `run ci --tree <target> --base <base>` reads target-commit settings even in a dirty checkout. `status --workflow ci --tree <target>` inspects that same view.
 
-Introduced comparisons use the selected effective thresholds for both source versions. A threshold change alone does not fabricate a source regression. Full pre-commit and CI Verify checks still detect existing source that exceeds a stricter limit. Sense keeps its introduced-regression semantics: unchanged or reduced baseline debt does not block.
+Introduced comparisons use the selected effective thresholds for both source versions. A threshold change alone does not fabricate a source regression. Pre-commit and CI default to `--comparison all`, which detects existing source that exceeds a stricter limit; opt into `--comparison introduced` to grandfather unchanged Fast Verify findings while retaining coverage requirements. Native findings are subtracted only when the provider establishes a comparison-safe baseline; an unsafe baseline makes the workflow incomplete. See the [Rust-native baseline limitation](providers.md#rust-native). Sense always keeps its introduced-regression semantics: unchanged or reduced baseline debt does not block.
 
 The host resolves configuration once per attempt and supplies each provider's settings explicitly. Direct Fast and ASP Fast use the same thresholds. Reports bind their effective configuration and source identities; concurrent source or configuration changes trigger a retry or an incomplete result.
 

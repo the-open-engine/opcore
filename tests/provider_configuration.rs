@@ -24,6 +24,64 @@ fn assessment(output: &Output) -> Value {
 }
 
 #[test]
+fn direct_check_reports_configuration_state_view_and_origins() {
+    let fixture = RepositoryFixture::new(&[("src/main.ts", "export const ready = true;\n")]);
+
+    let default = opcore_json(&fixture, "check", &["--all"]);
+    let default = support::json(&default);
+    assert_eq!(default["configuration"]["state"], "default");
+    assert_eq!(default["configuration"]["view"]["kind"], "worktree");
+    assert_eq!(
+        default["configuration"]["origins"]["/verify/maxParameters"],
+        "default"
+    );
+
+    fixture.write(
+        ".opcore.json",
+        r#"{
+          "schemaVersion": 1,
+          "verify": {"maxParameters": 7},
+          "workflows": {"post-edit": {"verify": {"maxParameters": 5}}}
+        }"#,
+    );
+    let worktree = opcore_json(&fixture, "check", &["--all", "--workflow", "post-edit"]);
+    let worktree = support::json(&worktree);
+    assert_eq!(worktree["configuration"]["state"], "configured");
+    assert_eq!(worktree["configuration"]["view"]["kind"], "worktree");
+    assert_eq!(
+        worktree["configuration"]["effective"]["verify"]["maxParameters"],
+        5
+    );
+    assert_eq!(
+        worktree["configuration"]["origins"]["/verify/maxParameters"],
+        "workflow:post-edit"
+    );
+    assert!(worktree["configuration"]["digest"].as_str().is_some());
+
+    git(fixture.repo(), &["add", ".opcore.json"]);
+    let staged = opcore_json(&fixture, "check", &["--staged", "--all"]);
+    assert_eq!(
+        support::json(&staged)["configuration"]["view"]["kind"],
+        "index"
+    );
+
+    git(fixture.repo(), &["commit", "-qm", "configure"]);
+    let tree = opcore_json(&fixture, "check", &["--tree", "HEAD", "--all"]);
+    let tree = support::json(&tree);
+    assert_eq!(tree["configuration"]["view"]["kind"], "tree");
+    assert_eq!(tree["configuration"]["view"]["ref"], "HEAD");
+
+    let hosted = provider(&fixture, &["--all", "--workflow", "post-edit"]);
+    let hosted = support::json(&hosted);
+    for field in ["state", "view", "digest", "effective", "origins"] {
+        assert_eq!(
+            hosted["configuration"][field],
+            worktree["configuration"][field]
+        );
+    }
+}
+
+#[test]
 fn direct_and_asp_fast_share_workflow_thresholds() {
     let fixture = RepositoryFixture::new(&[("src/main.ts", SOURCE), (".opcore.json", CONFIG)]);
     for (workflow, passes) in [("post-edit", true), ("pre-commit", false)] {
