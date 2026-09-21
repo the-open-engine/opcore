@@ -1,10 +1,15 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::{
-    documentation::DocumentationRegistry, path::RepoPath, source::git::AuxiliaryPathState,
+    documentation::DocumentationRegistry,
+    model::Language,
+    path::RepoPath,
+    source::git::{AuxiliaryPathState, detect_language},
 };
 
-use super::model::{DocumentationReason, DocumentationRequirement, ImportantNodeObservation};
+use super::model::{
+    DocumentationReason, DocumentationRequirement, ImportantNodeObservation, SenseIssue,
+};
 
 #[derive(Clone, Copy)]
 pub(super) struct DocumentationPolicy {
@@ -23,18 +28,24 @@ pub(super) struct DocumentationInputs<'a> {
 
 pub(super) struct DocumentationResult {
     pub requirements: Vec<DocumentationRequirement>,
+    pub coverage_issues: Vec<SenseIssue>,
     pub findings_truncated: bool,
     pub documents_requested: usize,
     pub before_documents: usize,
     pub after_documents: usize,
     pub changed_documents: usize,
+    pub public_surface_candidates: usize,
+    pub authoritative_public_surfaces: usize,
+    pub unavailable_public_surfaces: usize,
 }
 
 pub(super) fn needs_evaluation(
     nodes: &[ImportantNodeObservation],
     policy: DocumentationPolicy,
 ) -> bool {
-    nodes.iter().any(|node| trigger(node, policy).is_some())
+    nodes.iter().any(|node| {
+        trigger(node, policy).is_some() || python_public_surface_candidate(node, policy)
+    })
 }
 
 pub(super) fn referenced_documents(
@@ -59,24 +70,87 @@ pub(super) fn referenced_documents(
 
 pub(super) fn evaluate(inputs: DocumentationInputs<'_>) -> DocumentationResult {
     let mut requirements = Vec::new();
+    let mut coverage_issues = Vec::new();
+    let mut public_surface_candidates = 0usize;
+    let mut authoritative_public_surfaces = 0usize;
+    let mut unavailable_public_surfaces = 0usize;
     for node in inputs.nodes {
-        let Some(trigger) = trigger(node, inputs.policy) else {
+        if let Some(trigger) = trigger(node, inputs.policy) {
+            evaluate_node(&inputs, node, trigger, &mut requirements);
+        }
+        let Some(document) = python_public_surface_document(&inputs, node) else {
             continue;
         };
-        evaluate_node(&inputs, node, trigger, &mut requirements);
+        public_surface_candidates = public_surface_candidates.saturating_add(1);
+        if node.before_public_surface_authoritative && node.after_public_surface_authoritative {
+            authoritative_public_surfaces = authoritative_public_surfaces.saturating_add(1);
+            continue;
+        }
+        unavailable_public_surfaces = unavailable_public_surfaces.saturating_add(1);
+        let mut issue = SenseIssue::new(
+            "sense.documentation.public_surface_unavailable",
+            format!(
+                concat!(
+                    "could not evaluate sense.documentation.document_not_updated for {} and its ",
+                    "registered document {} because the Python public surface was not ",
+                    "authoritative in both views"
+                ),
+                node.path, document
+            ),
+        );
+        issue.paths.push(node.path.clone());
+        coverage_issues.push(issue);
     }
     requirements.sort();
-    let findings_truncated = requirements.len() > inputs.finding_limit;
-    requirements.truncate(inputs.finding_limit);
+    coverage_issues.sort_by(|left, right| left.paths.cmp(&right.paths));
+    let result_count = requirements.len().saturating_add(coverage_issues.len());
+    let findings_truncated = result_count > inputs.finding_limit;
+    if requirements.len() >= inputs.finding_limit {
+        requirements.truncate(inputs.finding_limit);
+        coverage_issues.clear();
+    } else {
+        coverage_issues.truncate(inputs.finding_limit - requirements.len());
+    }
     let (before_documents, after_documents, changed_documents) = document_counts(inputs.documents);
     DocumentationResult {
         requirements,
+        coverage_issues,
         findings_truncated,
         documents_requested: inputs.documents.len(),
         before_documents,
         after_documents,
         changed_documents,
+        public_surface_candidates,
+        authoritative_public_surfaces,
+        unavailable_public_surfaces,
     }
+}
+
+fn python_public_surface_document<'a>(
+    inputs: &'a DocumentationInputs<'_>,
+    node: &ImportantNodeObservation,
+) -> Option<&'a RepoPath> {
+    python_public_surface_candidate(node, inputs.policy)
+        .then(|| inputs.after_registry?.document_for(&node.path))?
+}
+
+fn python_public_surface_candidate(
+    node: &ImportantNodeObservation,
+    policy: DocumentationPolicy,
+) -> bool {
+    !node.deleted
+        && detect_language(&node.path).is_some_and(|(language, _)| language == Language::Python)
+        && (important(
+            node.before_confirmed_dependency_fan_in,
+            node.before_public_surface_authoritative,
+            node.before_explicit_exports,
+            policy,
+        ) || important(
+            node.after_confirmed_dependency_fan_in,
+            node.after_public_surface_authoritative,
+            node.after_explicit_exports,
+            policy,
+        ))
 }
 
 #[derive(Clone, Copy)]
