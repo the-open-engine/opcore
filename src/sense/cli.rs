@@ -746,6 +746,10 @@ fn evaluate_documentation_files(
     report.documentation_coverage.before_documents = result.before_documents;
     report.documentation_coverage.after_documents = result.after_documents;
     report.documentation_coverage.changed_documents = result.changed_documents;
+    report.documentation_coverage.public_surface_candidates = result.public_surface_candidates;
+    report.documentation_coverage.authoritative_public_surfaces =
+        result.authoritative_public_surfaces;
+    report.documentation_coverage.unavailable_public_surfaces = result.unavailable_public_surfaces;
     report.documentation_requirements = result.requirements;
     if result.findings_truncated {
         report.findings_truncated = true;
@@ -756,6 +760,12 @@ fn evaluate_documentation_files(
         );
     } else if !report.documentation_requirements.is_empty() && report.status == SenseStatus::Clean {
         report.status = SenseStatus::Findings;
+    }
+    if !result.coverage_issues.is_empty() {
+        report.issues.extend(result.coverage_issues);
+        if report.status != SenseStatus::Incomplete {
+            report.status = SenseStatus::Partial;
+        }
     }
     bind_documentation_freshness(report, &evaluation.captures);
     evaluation.captures
@@ -1024,6 +1034,15 @@ fn human_output(report: &SenseReport) -> String {
             documentation_message(&requirement.code),
             document,
             requirement.code,
+        );
+    }
+    if report.documentation_coverage.public_surface_candidates > 0 {
+        let _ = writeln!(
+            output,
+            "documentation public-surface coverage: {}/{} bound important changed Python sources authoritative; {} unavailable",
+            report.documentation_coverage.authoritative_public_surfaces,
+            report.documentation_coverage.public_surface_candidates,
+            report.documentation_coverage.unavailable_public_surfaces,
         );
     }
     for item in &report.observations.high_impact_changes {

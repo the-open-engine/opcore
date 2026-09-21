@@ -273,6 +273,9 @@ pub struct DocumentationCoverage {
     pub before_documents: usize,
     pub after_documents: usize,
     pub changed_documents: usize,
+    pub public_surface_candidates: usize,
+    pub authoritative_public_surfaces: usize,
+    pub unavailable_public_surfaces: usize,
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
