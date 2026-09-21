@@ -46,6 +46,18 @@ fn assert_uses_strict_configuration(result: &Value) {
     assert_eq!(result["verify"]["status"], "findings");
 }
 
+#[test]
+fn public_run_args_remain_constructible_without_comparison() {
+    let _args = opcore::api::RunArgs {
+        workflow: opcore::api::Workflow::PostEdit,
+        repo: ".".into(),
+        tree: None,
+        base: None,
+        json: false,
+        allow_unsandboxed_native: false,
+    };
+}
+
 fn hook(fixture: &RepositoryFixture) -> std::process::Output {
     Command::new(assert_cmd::cargo::cargo_bin!("opcore"))
         .arg("agent-gate")

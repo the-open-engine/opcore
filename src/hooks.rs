@@ -97,7 +97,6 @@ pub async fn agent_gate() -> bool {
         repo,
         base: None,
         tree: None,
-        comparison: None,
         json: false,
         allow_unsandboxed_native: false,
     };

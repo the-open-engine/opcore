@@ -153,14 +153,14 @@ opcore run pre-commit
 
 ### Adopt on an existing codebase
 
-If existing Verify or compiler findings make the default full comparison impractical, opt into the brownfield gate instead of excluding owned source:
+If existing Fast Verify findings make the default full comparison impractical, opt into the brownfield gate instead of excluding owned source. Native findings can also be compared when the selected provider establishes a comparison-safe baseline:
 
 ```sh
 opcore run pre-commit --comparison introduced
 opcore run ci --comparison introduced --base <base-commit>
 ```
 
-This keeps the combined workflow's single configuration capture, freshness check, Sense evaluation, native-provider sequence, coverage requirements, and explicit native authorization. It grandfathers unchanged findings but still blocks a new finding added to an already-dirty file. Structured workflow output records `"comparison":"introduced"`; omit the option, or pass `--comparison all`, for the default full comparison.
+This keeps the combined workflow's single configuration capture, freshness check, Sense evaluation, native-provider sequence, coverage requirements, and explicit native authorization. Fast Verify grandfathers unchanged findings but still blocks a new finding added to an already-dirty file. A native provider does the same only when its baseline run yields an exhaustive diagnostic set; otherwise the workflow is incomplete rather than guessing. In particular, a failing Rust-native baseline is not comparison-safe because Cargo may stop before checking every crate or target. See the [native-provider comparison limitations](providers.md#rust-native). Structured workflow output records `"comparison":"introduced"`; omit the option, or pass `--comparison all`, for the default full comparison.
 
 `targets.exclude` is a scope boundary, not a findings baseline: excluded source is not checked for new violations. Use exclusions only for source the workflow intentionally does not own, such as vendored or generated trees.
 

@@ -1,6 +1,6 @@
 //! Local composition of the built-in checks over one selected Git view.
 
-use std::{collections::BTreeSet, path::PathBuf};
+use std::{collections::BTreeSet, ops::Deref, path::PathBuf};
 
 use anyhow::{Context, Result, ensure};
 use clap::Args;
@@ -37,9 +37,6 @@ pub struct RunArgs {
     /// CI baseline for Sense and introduced Verify/native findings; supply the intended commit.
     #[arg(long, value_name = "REF")]
     pub base: Option<String>,
-    /// Select introduced or all Verify and native diagnostics; defaults to all.
-    #[arg(long, value_enum, value_name = "MODE")]
-    pub comparison: Option<CheckComparison>,
     /// Emit one structured report containing every selected check.
     #[arg(long)]
     pub json: bool,
@@ -56,7 +53,22 @@ impl RunArgs {
             Workflow::Ci => ConfigView::Tree(self.tree.clone().unwrap_or_else(|| "HEAD".into())),
         }
     }
+}
 
+struct RunRequest<'a> {
+    args: &'a RunArgs,
+    comparison: Option<CheckComparison>,
+}
+
+impl Deref for RunRequest<'_> {
+    type Target = RunArgs;
+
+    fn deref(&self) -> &Self::Target {
+        self.args
+    }
+}
+
+impl RunRequest<'_> {
     fn validate(&self) -> Result<()> {
         ensure!(
             self.workflow != Workflow::PostEdit || self.comparison.is_none(),
@@ -77,7 +89,7 @@ impl RunArgs {
     }
 
     const fn comparison(&self) -> CheckComparison {
-        match self.workflow {
+        match self.args.workflow {
             Workflow::PostEdit => CheckComparison::Introduced,
             Workflow::PreCommit | Workflow::Ci => match self.comparison {
                 Some(comparison) => comparison,
@@ -123,7 +135,7 @@ impl WorkflowEvaluation {
         Ok(())
     }
 
-    fn report(&self, args: &RunArgs) -> Value {
+    fn report(&self, args: &RunRequest<'_>) -> Value {
         json!({
             "schema": "opcore.workflow.v1",
             "workflow": args.workflow,
@@ -136,7 +148,7 @@ impl WorkflowEvaluation {
         })
     }
 
-    fn render(&self, args: &RunArgs) -> Result<String> {
+    fn render(&self, args: &RunRequest<'_>) -> Result<String> {
         if args.json {
             return bounded_json(&self.report(args));
         }
@@ -160,7 +172,28 @@ impl WorkflowEvaluation {
 ///
 /// Returns an error for invalid configuration, stale or unavailable coverage, or required findings.
 pub async fn run(args: RunArgs) -> Result<()> {
-    let outcome = run_inner(&args).await;
+    run_request(&RunRequest {
+        args: &args,
+        comparison: None,
+    })
+    .await
+}
+
+/// Executes a workflow with an explicit Verify/native comparison and prints its combined result.
+///
+/// # Errors
+///
+/// Returns an error for invalid configuration, stale or unavailable coverage, or required findings.
+pub async fn run_with_comparison(args: RunArgs, comparison: CheckComparison) -> Result<()> {
+    run_request(&RunRequest {
+        args: &args,
+        comparison: Some(comparison),
+    })
+    .await
+}
+
+async fn run_request(args: &RunRequest<'_>) -> Result<()> {
+    let outcome = run_inner(args).await;
     match outcome {
         Ok(result) => {
             println!("{}", result.rendered.trim_end());
@@ -182,14 +215,25 @@ pub async fn run(args: RunArgs) -> Result<()> {
     }
 }
 
-async fn run_inner(args: &RunArgs) -> Result<WorkflowEvaluation> {
+async fn run_inner(args: &RunRequest<'_>) -> Result<WorkflowEvaluation> {
     args.validate()?;
     let repository = GitRepository::discover(&args.repo).context("discover workflow repository")?;
-    evaluate(args, &repository).await
+    evaluate_request(args, &repository).await
 }
 
 pub(crate) async fn evaluate(
     args: &RunArgs,
+    repository: &GitRepository,
+) -> Result<WorkflowEvaluation> {
+    let request = RunRequest {
+        args,
+        comparison: None,
+    };
+    evaluate_request(&request, repository).await
+}
+
+async fn evaluate_request(
+    args: &RunRequest<'_>,
     repository: &GitRepository,
 ) -> Result<WorkflowEvaluation> {
     for attempt in 0..2 {
@@ -217,7 +261,7 @@ pub(crate) async fn evaluate(
 }
 
 fn is_current(
-    args: &RunArgs,
+    args: &RunRequest<'_>,
     repository: &GitRepository,
     before: &str,
     result: &WorkflowEvaluation,
@@ -249,7 +293,7 @@ fn auxiliary_paths(configuration: &PolicySnapshot) -> Result<BTreeSet<RepoPath>>
 }
 
 async fn evaluate_once(
-    args: &RunArgs,
+    args: &RunRequest<'_>,
     repository: &GitRepository,
     configuration: PolicySnapshot,
 ) -> Result<WorkflowEvaluation> {
@@ -284,7 +328,7 @@ async fn evaluate_once(
     })
 }
 
-fn check_args(args: &RunArgs) -> CheckArgs {
+fn check_args(args: &RunRequest<'_>) -> CheckArgs {
     let comparison = args.comparison();
     CheckArgs {
         repo: args.repo.clone(),
@@ -305,7 +349,7 @@ fn check_args(args: &RunArgs) -> CheckArgs {
     }
 }
 
-fn sense_args(args: &RunArgs) -> sense_cli::SenseArgs {
+fn sense_args(args: &RunRequest<'_>) -> sense_cli::SenseArgs {
     sense_cli::SenseArgs {
         repo: args.repo.clone(),
         json: false,
