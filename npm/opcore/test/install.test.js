@@ -170,7 +170,8 @@ function codexPackage(t) {
   return { root, packageRoot, home, agentRoot };
 }
 
-function createInstalledFiles({ bundleRoot, agent, agentRoot, home, skillRoot, binDir }) {
+function createInstalledFiles({ bundleRoot, agent, agentRoot, home, skillRoot, binDir,
+  enrollHooks = true }) {
   fs.mkdirSync(binDir, { recursive: true });
   const binaryPath = path.join(binDir, 'opcore');
   fs.copyFileSync(path.join(bundleRoot, 'bin', 'opcore'), binaryPath);
@@ -180,7 +181,7 @@ function createInstalledFiles({ bundleRoot, agent, agentRoot, home, skillRoot, b
   const uninstallerPath = path.join(runtime, 'uninstall.sh');
   fs.writeFileSync(uninstallerPath, '#!/usr/bin/env bash\nexit 0\n', { mode: 0o755 });
   const hookReceiptPath = path.join(runtime, 'hook-install.json');
-  fs.writeFileSync(hookReceiptPath, '{"owned":true}\n');
+  if (enrollHooks) fs.writeFileSync(hookReceiptPath, '{"owned":true}\n');
   const owners = path.join(home, '.local', 'share', 'opcore', 'owners',
     sha256(Buffer.from(binaryPath)));
   fs.mkdirSync(owners, { recursive: true });
@@ -204,7 +205,7 @@ function createInstalledFiles({ bundleRoot, agent, agentRoot, home, skillRoot, b
     `binary_path ${sha256(Buffer.from(binaryPath))}`,
     `owners_path ${sha256(Buffer.from(owners))}`,
     `skill_path ${sha256(Buffer.from(path.join(skillRoot, 'opcore', 'SKILL.md')))}`,
-    'hooks yes',
+    `hooks ${enrollHooks ? 'yes' : 'no'}`,
     `descriptor ${'7'.repeat(64)}`,
   ];
   fs.writeFileSync(path.join(runtime, 'install.receipt'), `${lines.join('\n')}\n`);
@@ -281,6 +282,9 @@ test('Linux compatibility is explicit and checked before release downloads', asy
   await assert.rejects(install({ ...options, runtimeHeader: {}, fetchBuffer }), /LIBC/);
   await assert.rejects(install({ ...options,
     environment: { HOME: home, OPCORE_AGENT: 'invalid' }, fetchBuffer }), /must be codex or claude/);
+  await assert.rejects(install({ ...options,
+    environment: { HOME: home, OPCORE_AGENT_NO_HOOKS: 'yes' }, fetchBuffer,
+  }), /OPCORE_AGENT_NO_HOOKS must be 0 or 1/);
   assert.equal(fs.existsSync(path.join(packageRoot, STATE_FILE)), false);
 });
 
@@ -288,7 +292,10 @@ test('agent selection is explicit or unambiguous', (t) => {
   const root = temporary(t);
   const home = path.join(root, 'home');
   fs.mkdirSync(home);
-  assert.throws(() => selectAgent({ HOME: home }), /no supported agent detected/);
+  assert.throws(
+    () => selectAgent({ HOME: home }),
+    /no supported agent detected.*OPCORE_NO_HOOKS=1/
+  );
   fs.mkdirSync(path.join(home, '.codex'));
   assert.deepEqual(selectAgent({ HOME: home }), {
     agent: 'codex',
@@ -513,6 +520,32 @@ test('postinstall fails before process execution on checksum or platform errors'
     install({ ...common, platform: 'linux', arch: 'arm64', fetchBuffer: async () => Buffer.alloc(0) }),
     /UNSUPPORTED_OPCORE_HOST/
   );
+});
+
+test('bundle installer forwards agent integration without hook enrollment', (t) => {
+  const root = temporary(t);
+  const bundleRoot = path.join(root, 'bundle');
+  const binDir = path.join(root, 'bin');
+  const output = path.join(root, 'args');
+  fs.mkdirSync(bundleRoot);
+  fs.writeFileSync(path.join(bundleRoot, 'install.sh'),
+    `#!/usr/bin/env bash\nprintf '%s\\n' "$@" > ${JSON.stringify(output)}\n`, { mode: 0o755 });
+  const selected = {
+    bundleRoot,
+    agent: 'codex',
+    agentRoot: path.join(root, 'home', '.codex'),
+    home: path.join(root, 'home'),
+    skillRoot: path.join(root, 'home', '.agents', 'skills'),
+    binDir,
+    enrollHooks: false,
+    environment: {},
+  };
+  runBundleInstaller(selected);
+  assert.deepEqual(fs.readFileSync(output, 'utf8').trim().split('\n'),
+    ['--agent', 'codex', '--no-hooks', '--bin-dir', binDir]);
+  runBundleInstaller({ ...selected, contexts: [selected] });
+  assert.deepEqual(fs.readFileSync(output, 'utf8').trim().split('\n'),
+    ['--no-hooks', '--bin-dir', binDir]);
 });
 
 test('explicit uninstall verifies receipts before trusted cleanup and gives the npm command', async (t) => {
@@ -835,6 +868,45 @@ test('npm records both integrations, updates, and verifies all before cleanup', 
   });
   assert.deepEqual(calls, ['codex', 'claude']);
   assert.equal(fs.existsSync(entries[0].binaryPath), false);
+});
+
+test('npm preserves hooks-no ownership through install, update, and uninstall', async (t) => {
+  const { options, packageRoot, home } = await installBothFixture(t);
+  options.environment = { HOME: home, OPCORE_AGENT_NO_HOOKS: '1' };
+  await install(options);
+  await install(options);
+  const entries = stateEntries(readState(packageRoot));
+  assert.deepEqual(entries.map((entry) => entry.agent), ['codex', 'claude']);
+  for (const entry of entries) {
+    assert.equal(parseInstallReceipt(fs.readFileSync(entry.receiptPath)).get('hooks'), 'no');
+    assert.equal(fs.existsSync(entry.hookReceiptPath), false);
+  }
+  cleanup({ packageRoot, platform: 'linux', arch: 'x64', runUninstaller: removeCleanupInputs });
+  assert.equal(fs.existsSync(entries[0].binaryPath), false);
+});
+
+test('npm rolls back new hooks-no integrations after a partial failure', async (t) => {
+  const { options, packageRoot, home } = await installBothFixture(t, (request) => {
+    createInstalledFiles(request);
+    if (request.agent === 'claude') throw new Error('manifest publication failed');
+  });
+  options.environment = { HOME: home, OPCORE_AGENT_NO_HOOKS: '1' };
+  let removals = 0;
+  await assert.rejects(install({
+    ...options,
+    runUninstaller: (entry) => {
+      assert.equal(parseInstallReceipt(fs.readFileSync(entry.receiptPath)).get('hooks'), 'no');
+      assert.equal(fs.existsSync(entry.hookReceiptPath), false);
+      for (const filename of [entry.receiptPath, entry.uninstallerPath]) {
+        fs.rmSync(filename, { force: true });
+      }
+      deactivateOwner(entry);
+      removals += 1;
+      if (removals === 2) fs.rmSync(entry.binaryPath);
+    },
+  }), /manifest publication failed/);
+  assert.equal(removals, 2);
+  assert.equal(fs.existsSync(path.join(packageRoot, STATE_FILE)), false);
 });
 
 test('npm removes new receipt-owned integrations after a partial installer failure', async (t) => {

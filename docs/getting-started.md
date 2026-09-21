@@ -25,6 +25,14 @@ To select only one agent, set `OPCORE_AGENT`:
 OPCORE_AGENT=codex npm install -g --foreground-scripts @the-open-engine-company/opcore
 ```
 
+To retain that agent's skill, four provider manifests, ownership receipt, and shared executable without changing its user-level hook configuration, add `OPCORE_AGENT_NO_HOOKS=1`:
+
+```sh
+OPCORE_AGENT=codex OPCORE_AGENT_NO_HOOKS=1 npm install -g --foreground-scripts @the-open-engine-company/opcore
+```
+
+Keep `OPCORE_AGENT_NO_HOOKS=1` on later npm updates. This uses the installer's existing `hooks no` receipt state, so updates, rollback, and `opcore uninstall` preserve the same ownership behavior as other agent integrations. It does not change the separate `OPCORE_NO_HOOKS=1` CLI-only mode below.
+
 Use `claude` for Claude. Keep custom agent directory variables set when installing or updating.
 
 ### Project-local and CI installation
@@ -109,7 +117,7 @@ Doctor reads repository configuration, integration state, and native-tool setup 
 
 The installer enrolls hooks at user scope. They apply across that agent's Git projects, with each project's `.opcore.json` controlling its post-edit thresholds and exclusions. A mixed-language project can report unsupported files; [target exclusions](configuration.md#select-targets) let the project make that scope explicit. Use CLI-only installation if you want manual checks without global agent hooks.
 
-Restart the agent after installation. In the Codex CLI, open `/hooks`, review the Opcore command, and trust it; see the [Codex hook permission model](https://developers.openai.com/codex/hooks). In the Claude Code CLI, open `/hooks` and inspect the installed command. Doctor can check the receipt and configuration but can't determine host trust, feature enablement, or whether a session executed the command.
+Restart the agent after installation. In the Codex CLI, open `/hooks`, review the Opcore command, and trust it; see the [Codex hook permission model](https://developers.openai.com/codex/hooks). In the Claude Code CLI, open `/hooks` and inspect the user-settings hook; it is already active in trusted workspaces. Doctor can check the receipt and configuration but can't determine host trust, feature enablement, or whether a session executed the command.
 
 Desktop interfaces may not provide `/hooks`. Review the settings path printed by the installer and use the smoke edit below in that desktop session, accepting its normal workspace and tool permission prompts. CLI activation does not establish desktop activation.
 
@@ -222,7 +230,7 @@ Cleanup checks the recorded artifacts before removing them and retains modified 
 | `NATIVE_SETUP_REQUIRED` or missing npm install state | Run `opcore setup`, or `setup --no-hooks` for CLI-only use. `doctor --json` identifies the package path and setup failure even before a native binary is available. |
 | Unsupported platform or glibc | Use the [source installer](#source-checkout) on a supported build host; npm has no source fallback. |
 | Download failed or timed out | Check access to the named GitHub Release URL, then retry `setup`. A checksum mismatch requires a fresh verified download; never bypass the digest check. |
-| No supported agent detected | Set `OPCORE_AGENT=codex` or `claude`, set the intended agent directory, or install with `OPCORE_NO_HOOKS=1`. |
+| No supported agent detected | Set `OPCORE_AGENT=codex` or `claude`, set the intended agent directory, or explicitly choose CLI-only installation with `OPCORE_NO_HOOKS=1`. |
 | Permission denied | Use a writable npm prefix or project-local install. For executable preflight failures, ensure the temporary filesystem permits execution; npm's `TMPDIR` can select an appropriate temporary directory. |
 | CLI checks work but no automatic feedback appears | Restart the agent, review hook trust and settings, and repeat the edit smoke test in that session. |
 | Native coverage is unavailable | Run `doctor --workflow <name>` and follow the selected [provider's prerequisites](providers.md). A present compiler can still lack dependencies or usable project configuration. |
