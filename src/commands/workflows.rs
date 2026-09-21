@@ -34,7 +34,7 @@ pub struct RunArgs {
     /// CI target commit or tree (default: HEAD); never reads worktree overlays.
     #[arg(long, value_name = "REF")]
     pub tree: Option<String>,
-    /// CI baseline for introduced Sense findings; fetch and supply the intended base commit.
+    /// CI baseline for Sense and introduced Verify/native findings; supply the intended commit.
     #[arg(long, value_name = "REF")]
     pub base: Option<String>,
     /// Select introduced or all Verify and native diagnostics; defaults to all.
