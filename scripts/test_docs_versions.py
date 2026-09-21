@@ -160,6 +160,39 @@ class DocumentationVersions(unittest.TestCase):
             (site / "v0.3/manifest.json").read_bytes(),
         )
 
+    def test_version_bound_guidance_is_fetchable_without_javascript(self):
+        configuration = self.snapshot / ROUTES["configuration"]
+        configuration.write_text(
+            '<!doctype html><html><body><main id="select-targets">'
+            'targets.exclude generated vendor</main></body></html>'
+        )
+        sense = self.snapshot / "docs/sense.html"
+        sense.write_text(
+            '<!doctype html><html><body><main id="dependency-envelope">'
+            'Deliberately not resolved dedup_region_file_limit importantFanIn '
+            'evaluated not_read publicSurfaceAuthoritative</main></body></html>'
+        )
+
+        site = self.publish("v0.3.0", stable=True)
+        for relative, terms in (
+            ("docs/configuration.html", ("targets.exclude", "generated", "vendor")),
+            (
+                "docs/sense.html",
+                (
+                    "Deliberately not resolved",
+                    "dedup_region_file_limit",
+                    "importantFanIn",
+                    "evaluated",
+                    "not_read",
+                    "publicSurfaceAuthoritative",
+                ),
+            ),
+        ):
+            content = (site / "v0.3" / relative).read_text()
+            self.assertNotIn('http-equiv="refresh"', content)
+            for term in terms:
+                self.assertIn(term, content)
+
     def test_rustdoc_source_ranges_work_inside_version_directories(self):
         source = self.snapshot / "api/src/opcore/api.rs.html"
         source.parent.mkdir(parents=True)

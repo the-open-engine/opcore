@@ -379,6 +379,12 @@ Use `check` or `sense` to run an individual evaluator. Plain `check` reports `No
 
 The [examples above](#examples) show findings in every supported language family.
 
+### Troubleshoot Sense coverage
+
+Sense resolves only uniquely confirmed local dependencies; bare Node packages, Python absolute imports, Cargo-configured Rust roots, external Go modules, and HCL/Shell/Protobuf loading semantics remain deliberately unresolved. `effectivePolicy.importantFanIn` is the configured direct-dependent threshold for important modules. Fixed duplicate-analysis limits such as `dedup_region_file_limit` cannot be raised at runtime. For generated or vendored trees, use literal repository-relative exclusions such as `{"schemaVersion":1,"targets":{"exclude":["generated","vendor"]}}`; `targets.exclude` does not accept globs.
+
+In JSON, `documentationCoverage.evaluated: false` means no qualifying documentation obligation was evaluated, while a registry state of `not_read` means the registry was not needed for that view. `publicSurfaceAuthoritative: false` means Opcore could not establish a complete explicit public surface. The fetchable, version-bound [Sense reference](https://the-open-engine.github.io/opcore/v0.3/docs/sense.html#dependency-envelope) has the full resolution table and limits; [configuration](https://the-open-engine.github.io/opcore/v0.3/docs/configuration.html#select-targets) defines exclusions.
+
 ## Providers
 
 | Provider | Checks |
@@ -402,7 +408,7 @@ Opcore's bundled local runner reports `allow`, `deny`, or `indeterminate` for lo
 
 ## Documentation and help
 
-Read the [published documentation](https://the-open-engine.github.io/opcore/), including the [CLI reference](https://the-open-engine.github.io/opcore/cli.html), [public Rust API](https://the-open-engine.github.io/opcore/api/opcore/api/index.html), and ASP specification. In a source checkout, generate the same site from the Rust definitions:
+Read the [published documentation](https://the-open-engine.github.io/opcore/v0.3/), including the [CLI reference](https://the-open-engine.github.io/opcore/v0.3/cli.html), [public Rust API](https://the-open-engine.github.io/opcore/v0.3/api/opcore/api/index.html), and ASP specification. These version-bound pages contain complete static HTML without requiring JavaScript. In a source checkout, generate the same site from the Rust definitions:
 
 ```sh
 ./scripts/build-docs.sh

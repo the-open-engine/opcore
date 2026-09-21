@@ -1,6 +1,6 @@
 # `@the-open-engine-company/opcore`
 
-[Documentation](https://the-open-engine.github.io/opcore/) · [Upgrade guide](https://the-open-engine.github.io/opcore/docs/getting-started.html#upgrade-from-an-earlier-installation)
+[Documentation](https://the-open-engine.github.io/opcore/v0.3/) · [Upgrade guide](https://the-open-engine.github.io/opcore/v0.3/docs/getting-started.html#upgrade-from-an-earlier-installation)
 
 Opcore checks source changes while coding agents work. It returns syntax, hygiene, and complexity findings, then uses Project Sense to check repository relationships such as introduced cycles and duplication.
 
@@ -40,11 +40,19 @@ opcore sense --repo .
 
 `check --all` inspects current source even on a clean worktree. Later, plain `check` reports introduced findings in your worktree changes. Add `--json` for structured evidence or run `opcore rules` to inspect the built-in rules.
 
-Restart the agent after setup. In Codex, open `/hooks`, review the command, and trust it. Doctor inspects configuration but can't establish host trust or execution; follow the [activation smoke test](https://github.com/the-open-engine/opcore/blob/main/docs/getting-started.md#confirm-hook-activation) before relying on automatic feedback.
+Restart the agent after setup. In Codex, open `/hooks`, review the command, and trust it. Doctor inspects configuration but can't establish host trust or execution; follow the [activation smoke test](https://the-open-engine.github.io/opcore/v0.3/docs/getting-started.html#confirm-hook-activation) before relying on automatic feedback.
 
 The post-edit hook sends Verify and Sense feedback after supported file edits, Bash, and MCP tool calls, including reads. It checks the written state and does not enforce a final handoff. Default partial Sense coverage produces one hint and continues. Configure full `run pre-commit` and `run ci --base <base-commit>` checks, ideally with the applicable native providers, alongside your existing tests and linters. Native execution requires explicit host authorization.
 
-Read the [main guide](https://github.com/the-open-engine/opcore#readme) for language coverage, [configuration](https://github.com/the-open-engine/opcore/blob/main/docs/configuration.md), and [provider setup](https://github.com/the-open-engine/opcore/blob/main/docs/providers.md).
+### Troubleshoot Sense coverage
+
+Sense resolves only uniquely confirmed local dependencies. The full [resolution table](https://the-open-engine.github.io/opcore/v0.3/docs/sense.html#dependency-envelope) explains what is confirmed and what is **Deliberately not resolved**, including bare Node packages, Python absolute imports, Cargo-configured Rust roots, external Go modules, and HCL, Shell, or Protobuf loading semantics. `effectivePolicy.importantFanIn` is the configured direct-dependent threshold for important modules. Fixed duplicate-analysis limits such as `dedup_region_file_limit` cannot be raised at runtime.
+
+For generated or vendored trees, use literal repository-relative exclusions such as `{"schemaVersion":1,"targets":{"exclude":["generated","vendor"]}}`. `targets.exclude` entries are files or subtrees, not globs; do not exclude maintained source merely to hide a finding. See [Select targets](https://the-open-engine.github.io/opcore/v0.3/docs/configuration.html#select-targets).
+
+In JSON, `documentationCoverage.evaluated: false` means no qualifying documentation obligation was evaluated, while a registry state of `not_read` means the registry was not needed for that view. `publicSurfaceAuthoritative: false` means Opcore could not establish a complete explicit public surface.
+
+Read the version-bound static [main guide](https://the-open-engine.github.io/opcore/v0.3/) for language coverage, [configuration](https://the-open-engine.github.io/opcore/v0.3/docs/configuration.html), and [provider setup](https://the-open-engine.github.io/opcore/v0.3/docs/providers.html). These pages contain complete HTML without requiring JavaScript.
 
 ## Update or remove
 
@@ -59,6 +67,6 @@ npm uninstall -g @the-open-engine-company/opcore
 
 For a project-local install, run `npx --no-install opcore uninstall`, then omit `-g` from npm removal.
 
-The first command verifies each recorded integration before cleanup, then removes the shared binary after its last owner. It refuses modified or ambiguous state. If postinstall fails, the installer attempts to remove new, unmodified integrations while the binary is available. It retains existing or modified integrations; repair the reported problem and rerun npm installation before removing them. npm may remove the wrapper and binary after a failed lifecycle script. See [setup recovery](https://github.com/the-open-engine/opcore/blob/main/docs/getting-started.md#if-setup-doesnt-work).
+The first command verifies each recorded integration before cleanup, then removes the shared binary after its last owner. It refuses modified or ambiguous state. If postinstall fails, the installer attempts to remove new, unmodified integrations while the binary is available. It retains existing or modified integrations; repair the reported problem and rerun npm installation before removing them. npm may remove the wrapper and binary after a failed lifecycle script. See [setup recovery](https://the-open-engine.github.io/opcore/v0.3/docs/getting-started.html#if-setup-doesnt-work).
 
 The package version selects the matching GitHub Release. Embedded archive hashes, the release `SHA256SUMS`, archive-entry validation, and an inner binary checksum bind the downloaded installer to that version. [Report installation problems](https://github.com/the-open-engine/opcore/issues) with the version, platform, and full installer error.

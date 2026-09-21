@@ -42,6 +42,29 @@ try {
   if (!metadata.isFile() || metadata.isSymbolicLink() || metadata.size === 0) {
     throw new Error('npm pack did not produce one regular archive');
   }
+  const readmeResult = spawnSync('tar', ['-xOf', archive, 'package/README.md'], {
+    encoding: 'utf8',
+  });
+  if (readmeResult.error) throw readmeResult.error;
+  if (readmeResult.status !== 0) {
+    throw new Error(readmeResult.stderr || `tar exited ${readmeResult.status}`);
+  }
+  const requiredGuidance = [
+    'targets.exclude',
+    'dedup_region_file_limit',
+    'importantFanIn',
+    'Deliberately not resolved',
+    'documentationCoverage.evaluated',
+    'not_read',
+    'publicSurfaceAuthoritative',
+    'https://the-open-engine.github.io/opcore/v0.3/docs/configuration.html#select-targets',
+    'https://the-open-engine.github.io/opcore/v0.3/docs/sense.html#dependency-envelope',
+  ];
+  for (const guidance of requiredGuidance) {
+    if (!readmeResult.stdout.includes(guidance)) {
+      throw new Error(`packed README is missing required guidance: ${guidance}`);
+    }
+  }
   process.stdout.write(`packed ${packed.filename} (${metadata.size} bytes)\n`);
 } finally {
   fs.rmSync(destination, { recursive: true, force: true });

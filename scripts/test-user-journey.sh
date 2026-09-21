@@ -215,6 +215,18 @@ test -f "$install_home/.agents/skills/opcore/SKILL.md"
 printf -v installed_command '%q' "$installed"
 grep -F "$installed_command run post-edit --repo . --json" \
   "$install_home/.agents/skills/opcore/SKILL.md" >/dev/null
+for guidance in \
+  targets.exclude \
+  dedup_region_file_limit \
+  importantFanIn \
+  'Deliberately not resolved' \
+  publicSurfaceAuthoritative \
+  documentationCoverage.evaluated \
+  not_read \
+  'https://the-open-engine.github.io/opcore/v0.3/docs/configuration.html#select-targets' \
+  'https://the-open-engine.github.io/opcore/v0.3/docs/sense.html#dependency-envelope'; do
+  grep -F "$guidance" "$install_home/.agents/skills/opcore/SKILL.md" >/dev/null
+done
 env -i HOME="$install_home" PATH=/usr/bin:/bin \
   /bin/bash --noprofile --norc -c "$installed_command --version" >/dev/null
 grep -F 'verified opcore ' "$fixture/install-output" >/dev/null

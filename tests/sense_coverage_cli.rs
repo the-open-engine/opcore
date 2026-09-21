@@ -200,4 +200,16 @@ fn duplicate_file_limit_reports_stage_limit_view_path_and_recovery() {
             .unwrap()
             .contains("No runtime option")
     );
+    assert!(
+        issue["nextStep"]
+            .as_str()
+            .unwrap()
+            .contains(r#"{"schemaVersion":1,"targets":{"exclude":["generated","vendor"]}}"#)
+    );
+    assert!(
+        issue["nextStep"]
+            .as_str()
+            .unwrap()
+            .contains("/v0.3/docs/configuration.html#select-targets")
+    );
 }
