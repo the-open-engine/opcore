@@ -167,6 +167,10 @@ test -x "$codex_bin/opcore"
 printf -v codex_command '%q' "$codex_bin/opcore"
 grep -F "$codex_command run post-edit --repo . --json" \
   "$codex_home/.agents/skills/opcore/SKILL.md" >/dev/null
+grep -F 'all selected uncommitted worktree changes against HEAD' \
+  "$codex_home/.agents/skills/opcore/SKILL.md" >/dev/null
+grep -F 'While an intervention remains unresolved' \
+  "$codex_home/.agents/skills/opcore/SKILL.md" >/dev/null
 if grep -F '`opcore check' \
   "$codex_home/.agents/skills/opcore/SKILL.md" >/dev/null; then
   printf 'installed Codex skill still depends on PATH\n' >&2
@@ -325,6 +329,10 @@ HOME="$claude_home" CLAUDE_CONFIG_DIR="$claude_root" \
 test -x "$claude_bin/opcore"
 printf -v claude_command '%q' "$claude_bin/opcore"
 grep -F "$claude_command run post-edit --repo . --json" \
+  "$claude_root/skills/opcore/SKILL.md" >/dev/null
+grep -F 'all selected uncommitted worktree changes against HEAD' \
+  "$claude_root/skills/opcore/SKILL.md" >/dev/null
+grep -F 'While an intervention remains unresolved' \
   "$claude_root/skills/opcore/SKILL.md" >/dev/null
 grep -F '"PostToolUse"' "$claude_root/settings.json" >/dev/null
 grep -F 'opcore agent-gate' "$claude_root/settings.json" >/dev/null
