@@ -211,12 +211,31 @@ fn post_write_gate_intervenes_on_disk_findings_and_skips_non_repositories() {
     assert!(feedback.contains("The triggering PostToolUse call already executed"));
     assert!(feedback.contains("Codex may replace its result with this feedback"));
     assert!(feedback.contains("Matched calls will keep receiving the same feedback"));
-    assert!(feedback.contains("does not repair them"));
+    assert!(feedback.contains("while this intervention remains unresolved"));
+    assert!(feedback.contains("does not resolve the reported issues"));
     assert!(blocking_feedback(&repo.join("src"), &cache).contains("complexity.max-parameters"));
 
     assert!(gate(temp.path(), &cache).status.success());
     fs::create_dir(temp.path().join(".git")).unwrap();
     assert!(gate(temp.path(), &cache).status.success());
+}
+
+#[test]
+fn coverage_only_intervention_uses_coverage_neutral_worktree_feedback() {
+    let temp = tempfile::tempdir().unwrap();
+    let (repo, cache) = initialized_repository(temp.path());
+    fs::write(
+        repo.join("src/unsupported.rs"),
+        "#![feature(test)]\npub fn value() {}\n",
+    )
+    .unwrap();
+
+    let feedback = blocking_feedback(&repo, &cache);
+    assert!(feedback.contains("0 diagnostic(s); 0/1 files covered"));
+    assert!(feedback.contains("src/unsupported.rs: coverage Unsupported"));
+    assert!(feedback.contains("while this intervention remains unresolved"));
+    assert!(feedback.contains("does not resolve the reported issues"));
+    assert!(!feedback.contains("findings remain introduced"));
 }
 
 #[test]

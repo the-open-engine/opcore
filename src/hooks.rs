@@ -36,8 +36,8 @@ const WORKTREE_VERDICT_FEEDBACK: &str = concat!(
     "Opcore checks all selected uncommitted worktree changes against HEAD, not only the call ",
     "that triggered this hook. The triggering PostToolUse call already executed; Codex may ",
     "replace its result with this feedback. Matched calls will keep receiving the same feedback ",
-    "while these findings remain introduced. Committing changes only changes the comparison ",
-    "baseline; it does not repair them."
+    "while this intervention remains unresolved. Committing changes only changes the comparison ",
+    "baseline; it does not resolve the reported issues."
 );
 
 /// Agent whose global hook configuration is managed by the installer.
