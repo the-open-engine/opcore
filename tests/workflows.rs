@@ -163,6 +163,81 @@ fn full_commit_gate_reports_existing_findings_and_rejects_an_empty_target_set() 
 }
 
 #[test]
+fn introduced_pre_commit_grandfathers_existing_findings_but_checks_changed_files() {
+    let fixture = RepositoryFixture::new(&[(
+        "legacy.ts",
+        "export function legacy(a,b,c,d,e,f) { return a+b+c+d+e+f; }\n",
+    )]);
+    fixture.write("clean.ts", "export const clean = true;\n");
+    git(fixture.repo(), &["add", "clean.ts"]);
+
+    let full = run(&fixture, "pre-commit", &[], false);
+    assert_eq!(full["comparison"], "all");
+    assert_eq!(full["verify"]["status"], "findings");
+
+    let introduced = run(
+        &fixture,
+        "pre-commit",
+        &["--comparison", "introduced"],
+        true,
+    );
+    assert_eq!(introduced["comparison"], "introduced");
+    assert_eq!(introduced["verify"]["status"], "clean");
+
+    fixture.write(
+        "legacy.ts",
+        concat!(
+            "export function legacy(a,b,c,d,e,f) { return a+b+c+d+e+f; }\n",
+            "export function added(a,b,c,d,e,f) { return a+b+c+d+e+f; }\n"
+        ),
+    );
+    git(fixture.repo(), &["add", "legacy.ts"]);
+    let regression = run(
+        &fixture,
+        "pre-commit",
+        &["--comparison", "introduced"],
+        false,
+    );
+    assert_eq!(regression["verify"]["status"], "findings");
+    assert_eq!(
+        regression["verify"]["diagnostics"]
+            .as_array()
+            .unwrap()
+            .len(),
+        1
+    );
+}
+
+#[test]
+fn introduced_ci_compares_the_target_with_the_explicit_base() {
+    let fixture = RepositoryFixture::new(&[(
+        "legacy.ts",
+        "export function legacy(a,b,c,d,e,f) { return a+b+c+d+e+f; }\n",
+    )]);
+    let base = String::from_utf8(
+        Command::new("git")
+            .args(["rev-parse", "HEAD"])
+            .current_dir(fixture.repo())
+            .output()
+            .unwrap()
+            .stdout,
+    )
+    .unwrap();
+    fixture.write("clean.ts", "export const clean = true;\n");
+    git(fixture.repo(), &["add", "clean.ts"]);
+    git(fixture.repo(), &["commit", "-qm", "clean addition"]);
+
+    let result = run(
+        &fixture,
+        "ci",
+        &["--base", base.trim(), "--comparison", "introduced"],
+        true,
+    );
+    assert_eq!(result["comparison"], "introduced");
+    assert_eq!(result["verify"]["status"], "clean");
+}
+
+#[test]
 fn status_explains_staged_overrides_without_creating_analysis_cache() {
     let fixture = RepositoryFixture::new(&[("src/a.ts", "export const first = 1;\n")]);
     configure(
@@ -212,6 +287,15 @@ fn native_selection_requires_explicit_host_execution_authorization() {
             .unwrap()
             .contains("--allow-unsandboxed-native")
     );
+
+    let introduced = run(
+        &fixture,
+        "pre-commit",
+        &["--comparison", "introduced", "--allow-unsandboxed-native"],
+        false,
+    );
+    assert_eq!(introduced["comparison"], "introduced");
+    assert_eq!(introduced["native"]["comparison"], "introduced");
 }
 
 #[test]

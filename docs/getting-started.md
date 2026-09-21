@@ -140,8 +140,8 @@ Use the built-in workflows alongside the repository's tests, linters, and existi
 | Workflow | Selected view and checks |
 | --- | --- |
 | `post-edit` | Worktree changes against HEAD: introduced Verify and Sense findings. |
-| `pre-commit` | Full staged Verify and configured native checks; introduced Sense against HEAD. |
-| `ci` | Full target-commit Verify and configured native checks; introduced Sense against an explicit base commit. |
+| `pre-commit` | Staged Verify and configured native checks; introduced Sense against HEAD. Verify/native default to all findings. |
+| `ci` | Target-commit Verify and configured native checks; introduced Sense against an explicit base commit. Verify/native default to all findings. |
 
 The staged workflow also reads staged configuration and documents; unstaged edits cannot change its result. CI defaults to target `HEAD`, or accepts `--tree <target>`. Existing Verify/compiler findings can fail these full checks. Review exclusions and the effective policy before adopting them:
 
@@ -150,6 +150,28 @@ opcore status --workflow pre-commit --json
 opcore doctor --workflow pre-commit
 opcore run pre-commit
 ```
+
+### Adopt on an existing codebase
+
+If existing Verify or compiler findings make the default full comparison impractical, opt into the brownfield gate instead of excluding owned source:
+
+```sh
+opcore run pre-commit --comparison introduced
+opcore run ci --comparison introduced --base <base-commit>
+```
+
+This keeps the combined workflow's single configuration capture, freshness check, Sense evaluation, native-provider sequence, coverage requirements, and explicit native authorization. It grandfathers unchanged findings but still blocks a new finding added to an already-dirty file. Structured workflow output records `"comparison":"introduced"`; omit the option, or pass `--comparison all`, for the default full comparison.
+
+`targets.exclude` is a scope boundary, not a findings baseline: excluded source is not checked for new violations. Use exclusions only for source the workflow intentionally does not own, such as vendored or generated trees.
+
+On an older Opcore release without combined introduced mode, the immediate Fast/Sense fallback is:
+
+```sh
+opcore check --staged --workflow pre-commit
+opcore sense --staged --workflow pre-commit
+```
+
+That fallback does not preserve the combined workflow's native sequencing or whole-run freshness check.
 
 Ideally, configure the applicable [native providers](providers.md) in pre-commit and CI for compiler or type-checker coverage. Prepare each provider's tools and dependency cache first. Repository settings select the checks; the host must also authorize native execution with `--allow-unsandboxed-native`. Use trusted repositories or an externally isolated CI environment. Native checks never enter automatic agent hooks.
 

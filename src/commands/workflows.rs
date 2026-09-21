@@ -37,6 +37,9 @@ pub struct RunArgs {
     /// CI baseline for introduced Sense findings; fetch and supply the intended base commit.
     #[arg(long, value_name = "REF")]
     pub base: Option<String>,
+    /// Select introduced or all Verify and native diagnostics; defaults to all.
+    #[arg(long, value_enum, value_name = "MODE")]
+    pub comparison: Option<CheckComparison>,
     /// Emit one structured report containing every selected check.
     #[arg(long)]
     pub json: bool,
@@ -55,6 +58,10 @@ impl RunArgs {
     }
 
     fn validate(&self) -> Result<()> {
+        ensure!(
+            self.workflow != Workflow::PostEdit || self.comparison.is_none(),
+            "--comparison applies only to the pre-commit and ci workflows"
+        );
         if self.workflow == Workflow::Ci {
             ensure!(
                 self.base.is_some(),
@@ -67,6 +74,16 @@ impl RunArgs {
             );
         }
         Ok(())
+    }
+
+    const fn comparison(&self) -> CheckComparison {
+        match self.workflow {
+            Workflow::PostEdit => CheckComparison::Introduced,
+            Workflow::PreCommit | Workflow::Ci => match self.comparison {
+                Some(comparison) => comparison,
+                None => CheckComparison::All,
+            },
+        }
     }
 }
 
@@ -106,10 +123,11 @@ impl WorkflowEvaluation {
         Ok(())
     }
 
-    fn report(&self, workflow: Workflow) -> Value {
+    fn report(&self, args: &RunArgs) -> Value {
         json!({
             "schema": "opcore.workflow.v1",
-            "workflow": workflow,
+            "workflow": args.workflow,
+            "comparison": args.comparison().as_str(),
             "status": if self.enforce().is_ok() { "accepted" } else { "requires_attention" },
             "configuration": {
                 "view": self.configuration.view,
@@ -125,7 +143,7 @@ impl WorkflowEvaluation {
 
     fn render(&self, args: &RunArgs) -> Result<String> {
         if args.json {
-            return bounded_json(&self.report(args.workflow));
+            return bounded_json(&self.report(args));
         }
         let mut output = format!("opcore workflow: {}\n", args.workflow.as_str());
         output.push_str(&cli::render_human(&self.verify));
@@ -158,6 +176,7 @@ pub async fn run(args: RunArgs) -> Result<()> {
                 let report = json!({
                     "schema": "opcore.workflow.v1",
                     "workflow": args.workflow,
+                    "comparison": args.comparison().as_str(),
                     "status": "incomplete",
                     "error": format!("{error:#}"),
                 });
@@ -259,7 +278,6 @@ async fn evaluate_once(
                 NativeProvider::PythonNative => CheckProvider::PythonNative,
             })
             .collect();
-        check.comparison = Some(CheckComparison::All);
         Some(host_cli::evaluate(&check, repository, &configuration).await?)
     };
     Ok(WorkflowEvaluation {
@@ -272,15 +290,20 @@ async fn evaluate_once(
 }
 
 fn check_args(args: &RunArgs) -> CheckArgs {
+    let comparison = args.comparison();
     CheckArgs {
         repo: args.repo.clone(),
         changed: args.workflow == Workflow::PostEdit,
         staged: args.workflow == Workflow::PreCommit,
-        all: args.workflow != Workflow::PostEdit,
+        all: args.workflow != Workflow::PostEdit && comparison == CheckComparison::All,
+        base: (comparison == CheckComparison::Introduced)
+            .then(|| args.base.clone())
+            .flatten(),
         tree: match args.view() {
             ConfigView::Tree(tree) => Some(tree),
             _ => None,
         },
+        comparison: Some(comparison),
         workflow: Some(args.workflow),
         allow_unsandboxed_native: args.allow_unsandboxed_native,
         ..CheckArgs::default()
