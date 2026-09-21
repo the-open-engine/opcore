@@ -129,12 +129,7 @@ impl WorkflowEvaluation {
             "workflow": args.workflow,
             "comparison": args.comparison().as_str(),
             "status": if self.enforce().is_ok() { "accepted" } else { "requires_attention" },
-            "configuration": {
-                "view": self.configuration.view,
-                "digest": self.configuration.digest,
-                "effective": self.configuration.policy,
-                "origins": self.configuration.origins,
-            },
+            "configuration": self.configuration.report_configuration(),
             "verify": self.verify,
             "sense": self.sense,
             "native": self.native.as_ref().map(|result| &result.report),

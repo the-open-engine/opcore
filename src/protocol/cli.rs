@@ -232,7 +232,7 @@ async fn stable_assessment(
         let capture = capture_source(&selected, selection, args.json, capture_started)?;
         let mut assessment = evaluate_capture(args, engine, &capture, &policy).await?;
         mark_empty_selection(&mut assessment, args);
-        let rendered = render_assessment(&assessment, args.json)?;
+        let rendered = render_assessment(&assessment, &policy, args.json)?;
         let stale_reason = freshness_error(&selected, &capture, selection)
             .or_else(|| policy_freshness_error(&policy));
         if let Some(error) = stale_reason {
@@ -381,9 +381,18 @@ fn render_capture_error(json: bool, reason: String, started: Instant) -> Result<
     Ok(())
 }
 
-fn render_assessment(assessment: &Assessment, json: bool) -> Result<String> {
+fn render_assessment(
+    assessment: &Assessment,
+    policy: &PolicySnapshot,
+    json: bool,
+) -> Result<String> {
     if json {
-        Ok(serde_json::to_string(assessment)?)
+        let mut value = serde_json::to_value(assessment)?;
+        value
+            .as_object_mut()
+            .context("assessment JSON must be an object")?
+            .insert("configuration".into(), policy.report_configuration());
+        Ok(serde_json::to_string(&value)?)
     } else {
         Ok(render_human(assessment))
     }

@@ -11,7 +11,7 @@ use std::{
 use anyhow::{Context, Result, ensure};
 use clap::ValueEnum;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 
 use crate::{
@@ -296,6 +296,16 @@ pub struct PolicySnapshot {
 }
 
 impl PolicySnapshot {
+    pub(crate) fn report_configuration(&self) -> Value {
+        json!({
+            "state": self.state,
+            "view": self.view,
+            "digest": self.digest,
+            "effective": self.policy,
+            "origins": self.origins,
+        })
+    }
+
     #[cfg(test)]
     pub fn load(root: &Path) -> Result<Self> {
         let bytes = stable_read(&root.join(POLICY_PATH))?;
