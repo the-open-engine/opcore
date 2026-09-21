@@ -1410,7 +1410,8 @@ fn unsupported_dependency_forms_and_languages_never_report_clean() {
     initialize(&python, &[("a.py", "import b\n"), ("b.py", "import a\n")]);
     let python_report = json(&sense(&python, &temp.path().join("python-cache"), false));
     assert_eq!(python_report["status"], "partial");
-    assert_eq!(python_report["after"]["coverage"]["externalReferences"], 2);
+    assert_eq!(python_report["after"]["coverage"]["ambiguousReferences"], 2);
+    assert_eq!(python_report["after"]["coverage"]["externalReferences"], 0);
 
     initialize(&hcl, &[("main.tf", "locals { value = \"before\" }\n")]);
     fs::write(hcl.join("main.tf"), "locals { value = \"after\" }\n").unwrap();

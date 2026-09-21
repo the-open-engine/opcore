@@ -7,7 +7,7 @@ pub(super) enum ReferenceClass {
     Edge(EdgeKind),
     Unsupported,
     Unresolved,
-    External,
+    Ambiguous,
 }
 
 impl ReferenceClass {
@@ -16,7 +16,7 @@ impl ReferenceClass {
             Self::Edge(_) => None,
             Self::Unsupported => Some(ResolutionGapKind::UnsupportedDynamic),
             Self::Unresolved => Some(ResolutionGapKind::Unresolved),
-            Self::External => Some(ResolutionGapKind::External),
+            Self::Ambiguous => Some(ResolutionGapKind::Ambiguous),
         }
     }
 }
@@ -35,6 +35,6 @@ pub(super) const fn reference_class(kind: DependencyReferenceKind) -> ReferenceC
         | DependencyReferenceKind::GoUnsupportedImport
         | DependencyReferenceKind::GoUnsupportedConditional => ReferenceClass::Unsupported,
         DependencyReferenceKind::PythonUnsupportedRelative => ReferenceClass::Unresolved,
-        DependencyReferenceKind::PythonAbsolute => ReferenceClass::External,
+        DependencyReferenceKind::PythonAbsolute => ReferenceClass::Ambiguous,
     }
 }

@@ -542,9 +542,9 @@ fn observe_reference_class(projection: &mut Projection, class: ReferenceClass) -
                 projection.coverage.unresolved_references.saturating_add(1);
             None
         }
-        ReferenceClass::External => {
-            projection.coverage.external_references =
-                projection.coverage.external_references.saturating_add(1);
+        ReferenceClass::Ambiguous => {
+            projection.coverage.ambiguous_references =
+                projection.coverage.ambiguous_references.saturating_add(1);
             None
         }
     }
@@ -1194,7 +1194,8 @@ mod tests {
         assert_eq!(projection.edges.len(), 2);
         assert_eq!(projection.coverage.resolved_references, 2);
         assert_eq!(projection.coverage.unresolved_references, 1);
-        assert_eq!(projection.coverage.external_references, 1);
+        assert_eq!(projection.coverage.ambiguous_references, 1);
+        assert_eq!(projection.coverage.external_references, 0);
         assert_eq!(projection.coverage.unsupported_files, 0);
     }
 
