@@ -1039,7 +1039,10 @@ fn human_output(report: &SenseReport) -> String {
     if report.documentation_coverage.public_surface_candidates > 0 {
         let _ = writeln!(
             output,
-            "documentation public-surface coverage: {}/{} bound important changed Python sources authoritative; {} unavailable",
+            concat!(
+                "documentation public-surface coverage: {}/{} bound important changed Python ",
+                "sources authoritative; {} unavailable"
+            ),
             report.documentation_coverage.authoritative_public_surfaces,
             report.documentation_coverage.public_surface_candidates,
             report.documentation_coverage.unavailable_public_surfaces,
@@ -1325,6 +1328,7 @@ fn partial_only_for_node_builtins(report: &SenseReport) -> bool {
         })
         && !report.observations.impact_truncated
         && !has_partial_dedup_gap(report)
+        && report.documentation_coverage.unavailable_public_surfaces == 0
 }
 
 fn has_non_builtin_resolution_gap(coverage: &ResolutionCoverage) -> bool {

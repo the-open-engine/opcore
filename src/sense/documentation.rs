@@ -90,7 +90,11 @@ pub(super) fn evaluate(inputs: DocumentationInputs<'_>) -> DocumentationResult {
         let mut issue = SenseIssue::new(
             "sense.documentation.public_surface_unavailable",
             format!(
-                "could not evaluate sense.documentation.document_not_updated for {} and its registered document {} because the Python public surface was not authoritative in both views",
+                concat!(
+                    "could not evaluate sense.documentation.document_not_updated for {} and its ",
+                    "registered document {} because the Python public surface was not ",
+                    "authoritative in both views"
+                ),
                 node.path, document
             ),
         );

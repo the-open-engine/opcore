@@ -231,32 +231,33 @@ fn static_python_all_drives_exact_documentation_enforcement() {
 
 #[test]
 fn bound_important_python_without_static_all_reports_documentation_surface_gap() {
-    let temp = tempfile::tempdir().unwrap();
-    let repo = temp.path().join("repo");
-    let cache = temp.path().join("cache");
-    initialize(
-        &repo,
-        &[
-            ("pkg/__init__.py", ""),
-            ("pkg/core.py", "def alpha(value):\n    return value + 1\n"),
-            ("pkg/one.py", "from .core import alpha\n"),
-            ("pkg/two.py", "from .core import alpha\n"),
-            ("pkg/three.py", "from .core import alpha\n"),
-            (
-                ".opcore.json",
-                r#"{"schemaVersion":1,"sense":{"importantFanIn":2},"documentation":{"bindings":[{"source":"pkg/core.py","document":"docs/core.md"}]}}"#,
+    let fixture = RepositoryFixture::new(&[
+        ("pkg/__init__.py", ""),
+        ("pkg/core.py", "def alpha(value):\n    return value + 1\n"),
+        ("pkg/one.py", "from .core import alpha\n"),
+        ("pkg/two.py", "from .core import alpha\n"),
+        ("pkg/three.py", "from .core import alpha\n"),
+        (
+            "src/builtins.ts",
+            "import { readFile } from \"node:fs\";\nexport { readFile };\n",
+        ),
+        (
+            ".opcore.json",
+            concat!(
+                r#"{"schemaVersion":1,"sense":{"importantFanIn":2},"#,
+                r#""documentation":{"bindings":[{"source":"pkg/core.py","#,
+                r#""document":"docs/core.md"}]}}"#,
             ),
-            ("docs/core.md", "Core API.\n"),
-        ],
+        ),
+        ("docs/core.md", "Core API.\n"),
+    ]);
+
+    fixture.write(
+        "pkg/core.py",
+        "def alpha(value):\n    return value + 1\n\ndef beta(value):\n    return value + 2\n",
     );
 
-    fs::write(
-        repo.join("pkg/core.py"),
-        "def alpha(value):\n    return value + 1\n\ndef beta(value):\n    return value + 2\n",
-    )
-    .unwrap();
-
-    let output = sense(&repo, &cache, false);
+    let output = sense(fixture.repo(), fixture.cache(), false);
     assert!(!output.status.success());
     let report = json(&output);
     assert_eq!(report["status"], "partial");
@@ -278,6 +279,7 @@ fn bound_important_python_without_static_all_reports_documentation_surface_gap()
         report["documentationCoverage"]["unavailablePublicSurfaces"],
         1
     );
+    assert_eq!(report["after"]["coverage"]["nodeBuiltinReferences"], 1);
     let issue = report["issues"]
         .as_array()
         .unwrap()
@@ -287,11 +289,24 @@ fn bound_important_python_without_static_all_reports_documentation_surface_gap()
     assert_eq!(issue["paths"][0], "pkg/core.py");
     assert!(issue["message"].as_str().unwrap().contains("docs/core.md"));
 
-    let human = support::opcore(&repo, &cache, "sense", &["--allow-partial"]);
-    assert!(human.status.success());
-    assert!(
-        String::from_utf8_lossy(&human.stdout).contains(
-            "documentation public-surface coverage: 0/1 bound important changed Python sources authoritative; 1 unavailable"
-        )
+    let builtin_acknowledgment = support::opcore(
+        fixture.repo(),
+        fixture.cache(),
+        "sense",
+        &["--allow-node-builtins"],
     );
+    assert!(!builtin_acknowledgment.status.success());
+    assert!(String::from_utf8_lossy(&builtin_acknowledgment.stderr).contains("--allow-partial"));
+
+    let human = support::opcore(
+        fixture.repo(),
+        fixture.cache(),
+        "sense",
+        &["--allow-partial"],
+    );
+    assert!(human.status.success());
+    assert!(String::from_utf8_lossy(&human.stdout).contains(concat!(
+        "documentation public-surface coverage: 0/1 bound important changed Python ",
+        "sources authoritative; 1 unavailable"
+    )));
 }
