@@ -542,11 +542,6 @@ fn observe_reference_class(projection: &mut Projection, class: ReferenceClass) -
                 projection.coverage.unresolved_references.saturating_add(1);
             None
         }
-        ReferenceClass::External => {
-            projection.coverage.external_references =
-                projection.coverage.external_references.saturating_add(1);
-            None
-        }
     }
 }
 
@@ -559,7 +554,9 @@ fn resolve_edge_reference(
         DependencyReferenceKind::NodeRuntime | DependencyReferenceKind::NodeType => {
             resolve_node(&file.path, &reference.specifier, index)
         }
-        DependencyReferenceKind::PythonRelative => resolve_python(&file.path, reference, index),
+        DependencyReferenceKind::PythonRelative | DependencyReferenceKind::PythonAbsolute => {
+            resolve_python(&file.path, reference, index)
+        }
         DependencyReferenceKind::RustModule => {
             rust::resolve_module(&file.path, &reference.specifier, &index.rust)
         }
@@ -775,6 +772,7 @@ fn record_interface_edge(
         | DependencyReferenceKind::NodeRuntime
         | DependencyReferenceKind::GoImport => true,
         DependencyReferenceKind::PythonRelative
+        | DependencyReferenceKind::PythonAbsolute
         | DependencyReferenceKind::RustModule
         | DependencyReferenceKind::RustUse => false,
         _ => return,
@@ -899,8 +897,14 @@ fn normalized_relative(
 }
 
 fn normalized_python(importer: &RepoPath, module: &str, level: u32) -> Option<String> {
-    if level == 0 || module.is_empty() || module.contains(['/', '\\']) {
+    if module.is_empty() || module.contains(['/', '\\']) {
         return None;
+    }
+    if level == 0 {
+        if module.contains('.') {
+            return None;
+        }
+        return normalized_relative(importer, module, 0);
     }
     let parents = usize::try_from(level.saturating_sub(1)).ok()?;
     let module_path = module.replace('.', "/");
@@ -1008,6 +1012,22 @@ mod tests {
             go_modules: &go_modules,
         });
         (before_projection, after_projection)
+    }
+
+    fn project_single_dependency(
+        files: Vec<SourceFile>,
+        importer: &str,
+        kind: DependencyReferenceKind,
+        specifier: &str,
+        level: u32,
+    ) -> Projection {
+        let parser_options = serde_json::to_vec(&RuleLimits::default()).unwrap();
+        let facts = facts_for(
+            &files,
+            &[(importer, vec![dependency(kind, specifier, level)])],
+            &parser_options,
+        );
+        project(&SourceSnapshot::new(files), &facts, &parser_options)
     }
 
     #[test]
@@ -1164,10 +1184,11 @@ mod tests {
     }
 
     #[test]
-    fn resolves_python_explicit_relative_modules_with_complete_rust_without_references() {
+    fn resolves_python_sibling_absolute_and_explicit_relative_modules() {
         let files = vec![
             source("pkg/sub/a.py", Language::Python),
             source("pkg/sub/b.py", Language::Python),
+            source("pkg/sub/local.pyi", Language::Python),
             source("pkg/tools/__init__.py", Language::Python),
             source("src/lib.rs", Language::Rust),
         ];
@@ -1179,23 +1200,116 @@ mod tests {
                 vec![
                     dependency(DependencyReferenceKind::PythonRelative, "b", 1),
                     dependency(DependencyReferenceKind::PythonRelative, "tools", 2),
-                    dependency(
-                        DependencyReferenceKind::PythonUnsupportedRelative,
-                        "attribute_or_module",
-                        1,
-                    ),
+                    dependency(DependencyReferenceKind::PythonRelative, "local", 1),
+                    dependency(DependencyReferenceKind::PythonAbsolute, "b", 0),
                     dependency(DependencyReferenceKind::PythonAbsolute, "requests", 0),
+                    dependency(DependencyReferenceKind::PythonAbsolute, "pkg.nested", 0),
                 ],
             )],
             &parser_options,
         );
         let projection = project(&SourceSnapshot::new(files), &facts, &parser_options);
 
-        assert_eq!(projection.edges.len(), 2);
-        assert_eq!(projection.coverage.resolved_references, 2);
-        assert_eq!(projection.coverage.unresolved_references, 1);
-        assert_eq!(projection.coverage.external_references, 1);
+        assert_eq!(projection.edges.len(), 3);
+        assert_eq!(projection.coverage.resolved_references, 4);
+        assert_eq!(projection.coverage.unresolved_references, 2);
+        assert_eq!(projection.coverage.external_references, 0);
         assert_eq!(projection.coverage.unsupported_files, 0);
+        assert!(projection.resolution_gaps.iter().any(|gap| {
+            gap.specifier == "requests" && gap.kind == ResolutionGapKind::Unresolved
+        }));
+        assert!(projection.resolution_gaps.iter().any(|gap| {
+            gap.specifier == "pkg.nested" && gap.kind == ResolutionGapKind::Unresolved
+        }));
+    }
+
+    #[test]
+    fn python_sibling_absolute_imports_record_interface_selectors_like_relative_imports() {
+        let files = vec![
+            source("pkg/absolute.py", Language::Python),
+            source("pkg/relative.py", Language::Python),
+            source("pkg/target.py", Language::Python),
+        ];
+        let parser_options = serde_json::to_vec(&RuleLimits::default()).unwrap();
+        let mut file_facts = facts_for(
+            &files,
+            &[
+                (
+                    "pkg/absolute.py",
+                    vec![dependency(
+                        DependencyReferenceKind::PythonAbsolute,
+                        "target",
+                        0,
+                    )],
+                ),
+                (
+                    "pkg/relative.py",
+                    vec![dependency(
+                        DependencyReferenceKind::PythonRelative,
+                        "target",
+                        1,
+                    )],
+                ),
+            ],
+            &parser_options,
+        );
+        for (file, level) in [(&files[0], 0), (&files[1], 1)] {
+            Arc::make_mut(
+                file_facts
+                    .get_mut(&facts::key(file, &parser_options))
+                    .unwrap(),
+            )
+            .interfaces = InterfaceFacts {
+                status: InterfaceExtractionStatus::Complete,
+                public_surface_status: InterfaceSurfaceStatus::Complete,
+                imports: vec![InterfaceImportFact {
+                    specifier: "target".into(),
+                    level,
+                    role: InterfaceImportRole::Import,
+                    namespace: InterfaceNamespace::Runtime,
+                    selector: InterfaceSelector {
+                        kind: InterfaceSelectorKind::Named,
+                        name: "selected".into(),
+                    },
+                }],
+                ..InterfaceFacts::default()
+            };
+        }
+
+        let projection = project(&SourceSnapshot::new(files), &file_facts, &parser_options);
+
+        assert_eq!(projection.runtime_edges().count(), 2);
+        assert_eq!(projection.interface_edges.len(), 2);
+        assert_eq!(projection.interface_coverage.resolved_selectors, 2);
+        assert!(projection.interface_edges.values().all(|edge| {
+            edge.selectors
+                .iter()
+                .any(|selector| selector.name == "selected")
+        }));
+    }
+
+    #[test]
+    fn reports_python_sibling_file_package_collisions_as_ambiguous() {
+        let projection = project_single_dependency(
+            vec![
+                source("pkg/a.py", Language::Python),
+                source("pkg/target.py", Language::Python),
+                source("pkg/target/__init__.py", Language::Python),
+            ],
+            "pkg/a.py",
+            DependencyReferenceKind::PythonAbsolute,
+            "target",
+            0,
+        );
+
+        assert!(projection.edges.is_empty());
+        assert_eq!(projection.coverage.ambiguous_references, 1);
+        assert_eq!(projection.coverage.unresolved_references, 0);
+        assert!(
+            projection.resolution_gaps.iter().any(|gap| {
+                gap.specifier == "target" && gap.kind == ResolutionGapKind::Ambiguous
+            })
+        );
     }
 
     #[test]
@@ -1262,26 +1376,17 @@ mod tests {
 
     #[test]
     fn ambiguous_rust_module_file_forms_never_become_an_edge() {
-        let files = vec![
-            source("src/lib.rs", Language::Rust),
-            source("src/duplicate.rs", Language::Rust),
-            source("src/duplicate/mod.rs", Language::Rust),
-        ];
-        let parser_options = serde_json::to_vec(&RuleLimits::default()).unwrap();
-        let facts = facts_for(
-            &files,
-            &[(
-                "src/lib.rs",
-                vec![dependency(
-                    DependencyReferenceKind::RustModule,
-                    "duplicate",
-                    0,
-                )],
-            )],
-            &parser_options,
+        let projection = project_single_dependency(
+            vec![
+                source("src/lib.rs", Language::Rust),
+                source("src/duplicate.rs", Language::Rust),
+                source("src/duplicate/mod.rs", Language::Rust),
+            ],
+            "src/lib.rs",
+            DependencyReferenceKind::RustModule,
+            "duplicate",
+            0,
         );
-
-        let projection = project(&SourceSnapshot::new(files), &facts, &parser_options);
 
         assert!(projection.edges.is_empty());
         assert_eq!(projection.coverage.ambiguous_references, 1);
@@ -1328,21 +1433,16 @@ mod tests {
 
     #[test]
     fn custom_rust_roots_are_not_guessed_without_project_context() {
-        let files = vec![
-            source("custom/entry.rs", Language::Rust),
-            source("custom/entry/child.rs", Language::Rust),
-        ];
-        let parser_options = serde_json::to_vec(&RuleLimits::default()).unwrap();
-        let facts = facts_for(
-            &files,
-            &[(
-                "custom/entry.rs",
-                vec![dependency(DependencyReferenceKind::RustModule, "child", 0)],
-            )],
-            &parser_options,
+        let projection = project_single_dependency(
+            vec![
+                source("custom/entry.rs", Language::Rust),
+                source("custom/entry/child.rs", Language::Rust),
+            ],
+            "custom/entry.rs",
+            DependencyReferenceKind::RustModule,
+            "child",
+            0,
         );
-
-        let projection = project(&SourceSnapshot::new(files), &facts, &parser_options);
 
         assert!(projection.edges.is_empty());
         assert_eq!(projection.coverage.unresolved_references, 1);

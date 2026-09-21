@@ -145,6 +145,22 @@ fn selector_import(namespace: &str, count: usize) -> String {
     format!("{prefix} {{ {names} }} from './target';\n")
 }
 
+fn python_target_exports(count: usize) -> String {
+    (0..count).fold(String::new(), |mut source, index| {
+        writeln!(source, "def value_{index:02}():\n    return {index}\n").unwrap();
+        source
+    })
+}
+
+fn python_selector_import(relative: bool, count: usize) -> String {
+    let names = (0..count)
+        .map(|index| format!("value_{index:02}"))
+        .collect::<Vec<_>>()
+        .join(", ");
+    let prefix = if relative { "." } else { "" };
+    format!("from {prefix}target import {names}\n")
+}
+
 #[test]
 fn runtime_and_type_edge_selectors_enforce_boundary_and_introduced_only_debt() {
     for (namespace, metric, reference_field) in [
@@ -199,6 +215,51 @@ fn runtime_and_type_edge_selectors_enforce_boundary_and_introduced_only_debt() {
         let report = json(&retained_debt);
         assert_eq!(report["status"], "clean");
         assert!(report["interfaceFindings"].as_array().unwrap().is_empty());
+    }
+}
+
+#[test]
+fn python_absolute_and_relative_sibling_imports_enforce_selector_limits_equally() {
+    for relative in [false, true] {
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let cache = temp.path().join("cache");
+        initialize(
+            &repo,
+            &[
+                ("pkg/target.py".into(), python_target_exports(9)),
+                ("pkg/client.py".into(), python_selector_import(relative, 8)),
+            ],
+        );
+
+        let boundary = sense(&repo, &cache, false);
+        assert!(boundary.status.success(), "relative={relative}");
+        assert_eq!(json(&boundary)["status"], "clean");
+
+        fs::write(
+            repo.join("pkg/client.py"),
+            python_selector_import(relative, 9),
+        )
+        .unwrap();
+        let blocked = sense(&repo, &cache, false);
+        assert!(!blocked.status.success(), "relative={relative}");
+        let report = json(&blocked);
+        assert_eq!(report["status"], "partial");
+        assert_finding(
+            &report,
+            (
+                "sense.interface.edge_selectors",
+                "confirmed_runtime_edge_selectors",
+                8,
+                9,
+                8,
+            ),
+        );
+        assert_eq!(report["interfaceFindings"][0]["path"], "pkg/client.py");
+        assert_eq!(report["interfaceFindings"][0]["target"], "pkg/target.py");
+        assert_eq!(report["after"]["runtimeEdges"], 1);
+        assert_eq!(report["after"]["coverage"]["resolvedReferences"], 1);
+        assert_eq!(report["after"]["interfaceCoverage"]["resolvedSelectors"], 9);
     }
 }
 

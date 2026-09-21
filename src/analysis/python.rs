@@ -544,6 +544,30 @@ impl<'a> MetricsWalker<'a> {
                         import.module.as_ref().map_or("", |module| module.as_str()),
                         0,
                     );
+                    if let Some(module) = &import.module {
+                        for alias in &import.names {
+                            let selector = if alias.name.as_str() == "*" {
+                                self.interfaces.gaps.namespace_imports =
+                                    self.interfaces.gaps.namespace_imports.saturating_add(1);
+                                InterfaceSelector {
+                                    kind: InterfaceSelectorKind::Namespace,
+                                    name: String::new(),
+                                }
+                            } else {
+                                InterfaceSelector {
+                                    kind: InterfaceSelectorKind::Named,
+                                    name: alias.name.to_string(),
+                                }
+                            };
+                            self.push_interface_import(InterfaceImportFact {
+                                specifier: module.to_string(),
+                                level,
+                                role: InterfaceImportRole::Import,
+                                namespace: InterfaceNamespace::Runtime,
+                                selector,
+                            });
+                        }
+                    }
                 } else if let Some(module) = &import.module {
                     self.push_dependency(
                         DependencyReferenceKind::PythonRelative,
@@ -580,7 +604,7 @@ impl<'a> MetricsWalker<'a> {
                         .saturating_add(import.names.len());
                     for alias in &import.names {
                         self.push_dependency(
-                            DependencyReferenceKind::PythonUnsupportedRelative,
+                            DependencyReferenceKind::PythonRelative,
                             alias.name.to_string(),
                             level,
                         );
@@ -922,7 +946,7 @@ mod tests {
     }
 
     #[test]
-    fn extracts_only_explicit_relative_dependencies_as_resolvable_facts() {
+    fn extracts_sibling_absolute_and_explicit_relative_dependencies_as_resolvable_facts() {
         let result = facts(
             "import os\nfrom .pkg import value\nfrom ..tools import helper\nfrom . import ambiguous\n",
             &RuleLimits::default(),
@@ -936,6 +960,11 @@ mod tests {
             vec![
                 DependencyReference {
                     kind: DependencyReferenceKind::PythonRelative,
+                    specifier: "ambiguous".into(),
+                    level: 1,
+                },
+                DependencyReference {
+                    kind: DependencyReferenceKind::PythonRelative,
                     specifier: "pkg".into(),
                     level: 1,
                 },
@@ -943,11 +972,6 @@ mod tests {
                     kind: DependencyReferenceKind::PythonRelative,
                     specifier: "tools".into(),
                     level: 2,
-                },
-                DependencyReference {
-                    kind: DependencyReferenceKind::PythonUnsupportedRelative,
-                    specifier: "ambiguous".into(),
-                    level: 1,
                 },
                 DependencyReference {
                     kind: DependencyReferenceKind::PythonAbsolute,
@@ -959,9 +983,9 @@ mod tests {
     }
 
     #[test]
-    fn extracts_relative_selectors_and_only_exact_static_all_exports() {
+    fn extracts_absolute_and_relative_selectors_and_only_exact_static_all_exports() {
         let result = facts(
-            "__all__ = ['public_api', 'Shape']\nfrom .api import public_api, Shape as LocalShape\n",
+            "__all__ = ['public_api', 'Shape']\nfrom api import public_api, Shape as AbsoluteShape\nfrom .api import public_api, Shape as RelativeShape\n",
             &RuleLimits::default(),
         );
         assert_eq!(
@@ -981,12 +1005,34 @@ mod tests {
                 .collect::<Vec<_>>(),
             ["Shape", "public_api"]
         );
-        assert_eq!(result.interfaces.imports.len(), 2);
-        assert!(result.interfaces.imports.iter().all(|fact| {
-            fact.specifier == "api"
-                && fact.level == 1
-                && fact.selector.kind == InterfaceSelectorKind::Named
-        }));
+        assert_eq!(result.interfaces.imports.len(), 4);
+        assert_eq!(
+            result
+                .interfaces
+                .imports
+                .iter()
+                .map(|fact| {
+                    (
+                        fact.specifier.as_str(),
+                        fact.level,
+                        fact.selector.name.as_str(),
+                    )
+                })
+                .collect::<Vec<_>>(),
+            [
+                ("api", 0, "Shape"),
+                ("api", 0, "public_api"),
+                ("api", 1, "Shape"),
+                ("api", 1, "public_api"),
+            ]
+        );
+        assert!(
+            result
+                .interfaces
+                .imports
+                .iter()
+                .all(|fact| fact.selector.kind == InterfaceSelectorKind::Named)
+        );
     }
 
     #[test]
