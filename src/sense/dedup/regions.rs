@@ -1006,8 +1006,9 @@ struct ComparisonState {
     limit_reached: bool,
     malformed_evidence: bool,
     views: BTreeSet<SenseView>,
-    paths: BTreeSet<RepoPath>,
-    paths_truncated: bool,
+    limit_paths: BTreeSet<RepoPath>,
+    malformed_paths: BTreeSet<RepoPath>,
+    malformed_paths_truncated: bool,
 }
 
 impl Default for ComparisonState {
@@ -1019,8 +1020,9 @@ impl Default for ComparisonState {
             limit_reached: false,
             malformed_evidence: false,
             views: BTreeSet::new(),
-            paths: BTreeSet::new(),
-            paths_truncated: false,
+            limit_paths: BTreeSet::new(),
+            malformed_paths: BTreeSet::new(),
+            malformed_paths_truncated: false,
         }
     }
 }
@@ -1034,28 +1036,40 @@ impl ComparisonState {
         self.malformed_evidence = true;
         self.views.insert(view.view);
         for path in &view.malformed_paths {
-            record_bounded_path(&mut self.paths, &mut self.paths_truncated, path.clone());
+            record_bounded_path(
+                &mut self.malformed_paths,
+                &mut self.malformed_paths_truncated,
+                path.clone(),
+            );
         }
-        self.paths_truncated |= view.malformed_paths_truncated;
+        self.malformed_paths_truncated |= view.malformed_paths_truncated;
     }
 
-    fn record_location(&mut self, view: &RegionView<'_>, file: usize) {
+    fn record_limit_location(&mut self, view: &RegionView<'_>, file: usize) {
         self.views.insert(view.view);
         let Some(path) = view.files.get(file).map(|file| &file.path) else {
             return;
         };
-        record_bounded_path(&mut self.paths, &mut self.paths_truncated, path.clone());
+        self.limit_paths.insert(path.clone());
     }
 
-    fn record_pair(&mut self, pair: &TokenPair<'_, '_>) {
-        self.record_location(pair.left_view, pair.left.file);
-        self.record_location(pair.right_view, pair.right.file);
+    fn record_limit_pair(&mut self, pair: &TokenPair<'_, '_>) {
+        self.record_limit_location(pair.left_view, pair.left.file);
+        self.record_limit_location(pair.right_view, pair.right.file);
     }
 
     fn mark_malformed_location(&mut self, view: &RegionView<'_>, file: usize) {
         self.incomplete = true;
         self.malformed_evidence = true;
-        self.record_location(view, file);
+        self.views.insert(view.view);
+        let Some(path) = view.files.get(file).map(|file| &file.path) else {
+            return;
+        };
+        record_bounded_path(
+            &mut self.malformed_paths,
+            &mut self.malformed_paths_truncated,
+            path.clone(),
+        );
     }
 
     fn issues(&self) -> Vec<SenseIssue> {
@@ -1069,8 +1083,8 @@ impl ComparisonState {
                 "exact token evidence was malformed; duplicate comparison could not complete",
             );
             issue.views = self.views.iter().copied().collect();
-            issue.paths = self.paths.iter().cloned().collect();
-            issue.paths_truncated = self.paths_truncated;
+            issue.paths = self.malformed_paths.iter().cloned().collect();
+            issue.paths_truncated = self.malformed_paths_truncated;
             issue.next_step = Some(
                 concat!(
                     "Rerun with a fresh local cache. If the error repeats, report the affected ",
@@ -1097,11 +1111,11 @@ impl ComparisonState {
         issue.views = self.views.iter().copied().collect();
         issue.limit = Some(MAX_DEDUP_TOKEN_COMPARISONS);
         issue.processed = Some(MAX_DEDUP_TOKEN_COMPARISONS);
-        issue.paths = self.paths.iter().cloned().collect();
-        issue.paths_truncated = self.paths_truncated;
+        issue.paths = self.limit_paths.iter().cloned().collect();
         issue.next_step = Some(concat!(
-            "No runtime option raises this fixed safety limit. Split unusually repetitive source ",
-            "or keep generated code outside the captured Git source set where appropriate."
+            "No runtime option raises this fixed safety limit. Split unusually repetitive source or ",
+            "add literal file or subtree entries to targets.exclude where appropriate; see ",
+            "docs/configuration.md#select-targets."
         ).into());
         Some(issue)
     }
@@ -1119,7 +1133,7 @@ impl ComparisonState {
         if self.remaining == 0 {
             self.incomplete = true;
             self.limit_reached = true;
-            self.record_pair(&pair);
+            self.record_limit_pair(&pair);
             return None;
         }
         self.remaining = self.remaining.saturating_sub(1);
@@ -1255,7 +1269,57 @@ mod tests {
         assert_eq!(issue.paths, vec![alpha.path]);
         assert_eq!(issue.limit, Some(MAX_DEDUP_TOKEN_COMPARISONS));
         assert_eq!(issue.processed, Some(MAX_DEDUP_TOKEN_COMPARISONS));
-        assert!(issue.next_step.is_some());
+        let next_step = issue.next_step.unwrap();
+        assert!(next_step.contains("targets.exclude"));
+        assert!(next_step.contains("docs/configuration.md#select-targets"));
+    }
+
+    #[test]
+    fn exact_comparison_limit_keeps_complete_deterministic_paths() {
+        let files = (0..6)
+            .map(|index| source(&format!("path-{index}.ts"), "alpha"))
+            .collect::<Vec<_>>();
+        let options = serde_json::to_vec(&RuleLimits::default()).unwrap();
+        let snapshot = SourceSnapshot::new(files.clone());
+        let mut file_facts = facts::FactMap::new();
+        let mut fact_keys = FactKeyLookup::new();
+        for file in &files {
+            let analyzed =
+                analysis::analyze(file, &RuleLimits::default(), &CancelToken::new()).unwrap();
+            let key = facts::key(file, &options);
+            file_facts.insert(key, Arc::new(analyzed));
+            fact_keys.insert(
+                file.content_id,
+                BTreeMap::from([(file.language_mode.clone(), key)]),
+            );
+        }
+        let mut decoded_evidence = DecodedEvidence::default();
+        let view = RegionView::new(RegionViewInputs {
+            view: SenseView::After,
+            snapshot: &snapshot,
+            file_facts: &file_facts,
+            fact_keys: &fact_keys,
+            continuity: &BTreeMap::new(),
+            decoded_evidence: &mut decoded_evidence,
+        });
+        let mut comparison = ComparisonState {
+            remaining: 0,
+            ..ComparisonState::default()
+        };
+        for file in 0..files.len() {
+            let location = TokenLocation { file, token: 0 };
+            assert_eq!(
+                comparison.tokens_equal(TokenPair::same_view(&view, location, location)),
+                None
+            );
+        }
+
+        let issue = comparison.limit_issue().unwrap();
+        assert_eq!(
+            issue.paths,
+            files.into_iter().map(|file| file.path).collect::<Vec<_>>()
+        );
+        assert!(!issue.paths_truncated);
     }
 
     #[test]
