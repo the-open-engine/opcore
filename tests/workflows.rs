@@ -238,6 +238,39 @@ fn introduced_ci_compares_the_target_with_the_explicit_base() {
 }
 
 #[test]
+fn introduced_ci_does_not_block_without_supported_source_changes() {
+    let fixture = RepositoryFixture::new(&[("src/a.ts", "export const value = 1;\n")]);
+    let base = String::from_utf8(
+        Command::new("git")
+            .args(["rev-parse", "HEAD"])
+            .current_dir(fixture.repo())
+            .output()
+            .unwrap()
+            .stdout,
+    )
+    .unwrap();
+
+    let identical = run(
+        &fixture,
+        "ci",
+        &["--base", base.trim(), "--comparison", "introduced"],
+        true,
+    );
+    assert_eq!(identical["verify"]["status"], "not_checked");
+
+    fixture.write("README.md", "documentation only\n");
+    git(fixture.repo(), &["add", "README.md"]);
+    git(fixture.repo(), &["commit", "-qm", "documentation"]);
+    let documentation_only = run(
+        &fixture,
+        "ci",
+        &["--base", base.trim(), "--comparison", "introduced"],
+        true,
+    );
+    assert_eq!(documentation_only["verify"]["status"], "not_checked");
+}
+
+#[test]
 fn status_explains_staged_overrides_without_creating_analysis_cache() {
     let fixture = RepositoryFixture::new(&[("src/a.ts", "export const first = 1;\n")]);
     configure(
