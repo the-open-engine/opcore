@@ -190,7 +190,8 @@ opcore check --repo . --all</code></pre></div>
 <p>See <a href="docs/getting-started.html">Getting started</a> for source and archive installs, agent selection, prerequisites, and cleanup. Windows, Linux ARM64, and Intel macOS have no published binaries.</p>
 <h2 id="workflows"><a class="doc-anchor" href="#workflows">§</a>Workflows</h2><div class="example-wrap"><pre class="language-sh"><code>opcore run post-edit                         # current changes against HEAD
 opcore run pre-commit                        # full staged Verify and introduced Sense
-opcore run ci --base &lt;base-commit&gt;            # full committed Verify and introduced Sense</code></pre></div>
+opcore run ci --base &lt;base-commit&gt;            # full committed Verify and introduced Sense
+opcore run pre-commit --comparison introduced # Fast brownfield gate; native needs a safe baseline</code></pre></div>
 <p>Add the pre-commit workflow to your Git hook and require the CI workflow alongside existing tests and linters. Configure the applicable native providers for compiler or type-checker coverage; those runs also require explicit host authorization. The <a href="docs/getting-started.html#add-pre-commit-and-ci-checks">setup guide</a> has recipes.</p>
 <p>One root <code>.opcore.json</code> holds shared settings and workflow overrides. Pre-commit can use stricter thresholds or fewer exclusions than post-edit; monorepos can select different native project roots. See <a href="docs/configuration.html">Configuration</a>.</p>
 <p>Use <code>check</code> or <code>sense</code> to run an individual evaluator. Plain <code>check</code> reports <code>Nothing checked</code> on a clean worktree; <code>check --all</code> checks the current project even when nothing changed. A full check with no selected supported source reports unsupported coverage.</p>

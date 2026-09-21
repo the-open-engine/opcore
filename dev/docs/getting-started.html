@@ -83,14 +83,23 @@ git init</code></pre></div>
 <p>Use the built-in workflows alongside the repository’s tests, linters, and existing hooks:</p>
 <div><table><thead><tr><th>Workflow</th><th>Selected view and checks</th></tr></thead><tbody>
 <tr><td><code>post-edit</code></td><td>Worktree changes against HEAD: introduced Verify and Sense findings.</td></tr>
-<tr><td><code>pre-commit</code></td><td>Full staged Verify and configured native checks; introduced Sense against HEAD.</td></tr>
-<tr><td><code>ci</code></td><td>Full target-commit Verify and configured native checks; introduced Sense against an explicit base commit.</td></tr>
+<tr><td><code>pre-commit</code></td><td>Staged Verify and configured native checks; introduced Sense against HEAD. Verify/native default to all findings.</td></tr>
+<tr><td><code>ci</code></td><td>Target-commit Verify and configured native checks; introduced Sense against an explicit base commit. Verify/native default to all findings.</td></tr>
 </tbody></table>
 </div>
 <p>The staged workflow also reads staged configuration and documents; unstaged edits cannot change its result. CI defaults to target <code>HEAD</code>, or accepts <code>--tree &lt;target&gt;</code>. Existing Verify/compiler findings can fail these full checks. Review exclusions and the effective policy before adopting them:</p>
 <div class="example-wrap"><pre class="language-sh"><code>opcore status --workflow pre-commit --json
 opcore doctor --workflow pre-commit
-opcore run pre-commit</code></pre></div>
+opcore run pre-commit</code></pre></div><h3 id="adopt-on-an-existing-codebase"><a class="doc-anchor" href="#adopt-on-an-existing-codebase">§</a>Adopt on an existing codebase</h3>
+<p>If existing Fast Verify findings make the default full comparison impractical, opt into the brownfield gate instead of excluding owned source. Native findings can also be compared when the selected provider establishes a comparison-safe baseline:</p>
+<div class="example-wrap"><pre class="language-sh"><code>opcore run pre-commit --comparison introduced
+opcore run ci --comparison introduced --base &lt;base-commit&gt;</code></pre></div>
+<p>This keeps the combined workflow’s single configuration capture, freshness check, Sense evaluation, native-provider sequence, coverage requirements, and explicit native authorization. Fast Verify grandfathers unchanged findings but still blocks a new finding added to an already-dirty file. A native provider does the same only when its baseline run yields an exhaustive diagnostic set; otherwise the workflow is incomplete rather than guessing. In particular, a failing Rust-native baseline is not comparison-safe because Cargo may stop before checking every crate or target. See the <a href="providers.html#rust-native">native-provider comparison limitations</a>. Structured workflow output records <code>"comparison":"introduced"</code>; omit the option, or pass <code>--comparison all</code>, for the default full comparison.</p>
+<p><code>targets.exclude</code> is a scope boundary, not a findings baseline: excluded source is not checked for new violations. Use exclusions only for source the workflow intentionally does not own, such as vendored or generated trees.</p>
+<p>On an older Opcore release without combined introduced mode, the immediate Fast/Sense fallback is:</p>
+<div class="example-wrap"><pre class="language-sh"><code>opcore check --staged --workflow pre-commit
+opcore sense --staged --workflow pre-commit</code></pre></div>
+<p>That fallback does not preserve the combined workflow’s native sequencing or whole-run freshness check.</p>
 <p>Ideally, configure the applicable <a href="providers.html">native providers</a> in pre-commit and CI for compiler or type-checker coverage. Prepare each provider’s tools and dependency cache first. Repository settings select the checks; the host must also authorize native execution with <code>--allow-unsandboxed-native</code>. Use trusted repositories or an externally isolated CI environment. Native checks never enter automatic agent hooks.</p>
 <p>Have your existing hook manager run <code>opcore run pre-commit --repo . --allow-unsandboxed-native</code> and propagate its exit status. For a new hook, save the following as <code>.githooks/pre-commit</code>:</p>
 <div class="example-wrap"><pre class="language-sh"><code>#!/bin/sh
@@ -141,7 +150,8 @@ npm uninstall -g @the-open-engine-company/opcore</code></pre></div>
 <li><a href="#upgrade-from-an-earlier-installation" title="Upgrade from an earlier installation">Upgrade from an earlier installation</a><ul></ul></li>
 <li><a href="#verify-the-installation" title="Verify the installation">Verify the installation</a><ul></ul></li></ul></li>
 <li><a href="#confirm-hook-activation" title="Confirm hook activation">Confirm hook activation</a><ul></ul></li>
-<li><a href="#add-pre-commit-and-ci-checks" title="Add pre-commit and CI checks">Add pre-commit and CI checks</a><ul></ul></li>
+<li><a href="#add-pre-commit-and-ci-checks" title="Add pre-commit and CI checks">Add pre-commit and CI checks</a><ul>
+<li><a href="#adopt-on-an-existing-codebase" title="Adopt on an existing codebase">Adopt on an existing codebase</a><ul></ul></li></ul></li>
 <li><a href="#read-the-result" title="Read the result">Read the result</a><ul></ul></li>
 <li><a href="#update-or-remove" title="Update or remove">Update or remove</a><ul></ul></li>
 <li><a href="#if-setup-doesnt-work" title="If setup doesn’t work">If setup doesn’t work</a><ul></ul></li></ul></nav></aside></div>

@@ -10,7 +10,7 @@
 <a class="repository-link" href="https://github.com/the-open-engine/opcore">GitHub <span aria-hidden="true">↗</span></a></div>
 </div></header><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">opcore/commands/</div>workflows.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Local composition of the built-in checks over one selected Git view.
 <a href=#2 id=2 data-nosnippet>2</a>
-<a href=#3 id=3 data-nosnippet>3</a></span><span class="kw">use </span>std::{collections::BTreeSet, path::PathBuf};
+<a href=#3 id=3 data-nosnippet>3</a></span><span class="kw">use </span>std::{collections::BTreeSet, ops::Deref, path::PathBuf};
 <a href=#4 id=4 data-nosnippet>4</a>
 <a href=#5 id=5 data-nosnippet>5</a><span class="kw">use </span>anyhow::{Context, <span class="prelude-ty">Result</span>, ensure};
 <a href=#6 id=6 data-nosnippet>6</a><span class="kw">use </span>clap::Args;
@@ -44,7 +44,7 @@
 <a href=#34 id=34 data-nosnippet>34</a>    <span class="doccomment">/// CI target commit or tree (default: HEAD); never reads worktree overlays.
 <a href=#35 id=35 data-nosnippet>35</a>    </span><span class="attr">#[arg(long, value_name = <span class="string">"REF"</span>)]
 <a href=#36 id=36 data-nosnippet>36</a>    </span><span class="kw">pub </span>tree: <span class="prelude-ty">Option</span>&lt;String&gt;,
-<a href=#37 id=37 data-nosnippet>37</a>    <span class="doccomment">/// CI baseline for introduced Sense findings; fetch and supply the intended base commit.
+<a href=#37 id=37 data-nosnippet>37</a>    <span class="doccomment">/// CI baseline for Sense and introduced Verify/native findings; supply the intended commit.
 <a href=#38 id=38 data-nosnippet>38</a>    </span><span class="attr">#[arg(long, value_name = <span class="string">"REF"</span>)]
 <a href=#39 id=39 data-nosnippet>39</a>    </span><span class="kw">pub </span>base: <span class="prelude-ty">Option</span>&lt;String&gt;,
 <a href=#40 id=40 data-nosnippet>40</a>    <span class="doccomment">/// Emit one structured report containing every selected check.
@@ -63,259 +63,326 @@
 <a href=#53 id=53 data-nosnippet>53</a>            Workflow::Ci =&gt; ConfigView::Tree(<span class="self">self</span>.tree.clone().unwrap_or_else(|| <span class="string">"HEAD"</span>.into())),
 <a href=#54 id=54 data-nosnippet>54</a>        }
 <a href=#55 id=55 data-nosnippet>55</a>    }
-<a href=#56 id=56 data-nosnippet>56</a>
-<a href=#57 id=57 data-nosnippet>57</a>    <span class="kw">fn </span>validate(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-<a href=#58 id=58 data-nosnippet>58</a>        <span class="kw">if </span><span class="self">self</span>.workflow == Workflow::Ci {
-<a href=#59 id=59 data-nosnippet>59</a>            <span class="macro">ensure!</span>(
-<a href=#60 id=60 data-nosnippet>60</a>                <span class="self">self</span>.base.is_some(),
-<a href=#61 id=61 data-nosnippet>61</a>                <span class="string">"CI Sense requires --base &lt;commit&gt;; fetch and supply the intended comparison base"
-<a href=#62 id=62 data-nosnippet>62</a>            </span>);
-<a href=#63 id=63 data-nosnippet>63</a>        } <span class="kw">else </span>{
-<a href=#64 id=64 data-nosnippet>64</a>            <span class="macro">ensure!</span>(
-<a href=#65 id=65 data-nosnippet>65</a>                <span class="self">self</span>.base.is_none() &amp;&amp; <span class="self">self</span>.tree.is_none(),
-<a href=#66 id=66 data-nosnippet>66</a>                <span class="string">"--base and --tree apply only to the ci workflow"
-<a href=#67 id=67 data-nosnippet>67</a>            </span>);
-<a href=#68 id=68 data-nosnippet>68</a>        }
-<a href=#69 id=69 data-nosnippet>69</a>        <span class="prelude-val">Ok</span>(())
-<a href=#70 id=70 data-nosnippet>70</a>    }
-<a href=#71 id=71 data-nosnippet>71</a>}
-<a href=#72 id=72 data-nosnippet>72</a>
-<a href=#73 id=73 data-nosnippet>73</a><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>WorkflowEvaluation {
-<a href=#74 id=74 data-nosnippet>74</a>    <span class="kw">pub</span>(<span class="kw">crate</span>) verify: Assessment,
-<a href=#75 id=75 data-nosnippet>75</a>    <span class="kw">pub</span>(<span class="kw">crate</span>) sense: SenseReport,
-<a href=#76 id=76 data-nosnippet>76</a>    <span class="kw">pub</span>(<span class="kw">crate</span>) native: <span class="prelude-ty">Option</span>&lt;HostEvaluation&gt;,
-<a href=#77 id=77 data-nosnippet>77</a>    <span class="kw">pub</span>(<span class="kw">crate</span>) configuration: PolicySnapshot,
-<a href=#78 id=78 data-nosnippet>78</a>    rendered: String,
-<a href=#79 id=79 data-nosnippet>79</a>}
-<a href=#80 id=80 data-nosnippet>80</a>
-<a href=#81 id=81 data-nosnippet>81</a><span class="kw">impl </span>WorkflowEvaluation {
-<a href=#82 id=82 data-nosnippet>82</a>    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>enforce(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-<a href=#83 id=83 data-nosnippet>83</a>        cli::enforce_status(<span class="self">self</span>.verify.status, <span class="bool-val">false</span>)<span class="question-mark">?</span>;
-<a href=#84 id=84 data-nosnippet>84</a>        <span class="kw">let </span>coverage = <span class="kw-2">&amp;</span><span class="self">self</span>.configuration.policy.coverage;
-<a href=#85 id=85 data-nosnippet>85</a>        <span class="kw">let </span>sense_result = sense_cli::enforce_report(
-<a href=#86 id=86 data-nosnippet>86</a>            <span class="kw-2">&amp;</span><span class="self">self</span>.sense,
-<a href=#87 id=87 data-nosnippet>87</a>            <span class="bool-val">false</span>,
-<a href=#88 id=88 data-nosnippet>88</a>            coverage.allow_partial,
-<a href=#89 id=89 data-nosnippet>89</a>            coverage.allow_node_builtins,
-<a href=#90 id=90 data-nosnippet>90</a>        );
-<a href=#91 id=91 data-nosnippet>91</a>        <span class="kw">if </span><span class="self">self</span>.sense.status == SenseStatus::Partial &amp;&amp; sense_result.is_err() {
-<a href=#92 id=92 data-nosnippet>92</a>            <span class="kw">let </span>workflow = <span class="self">self
-<a href=#93 id=93 data-nosnippet>93</a>                </span>.configuration
-<a href=#94 id=94 data-nosnippet>94</a>                .workflow
-<a href=#95 id=95 data-nosnippet>95</a>                .context(<span class="string">"workflow settings are unavailable"</span>)<span class="question-mark">?</span>;
-<a href=#96 id=96 data-nosnippet>96</a>            <span class="macro">anyhow::bail!</span>(
-<a href=#97 id=97 data-nosnippet>97</a>                <span class="string">"Sense requirements were not satisfied; rerun the same command with --json and inspect .opcore.json workflows.{}.coverage. Findings still require repair"</span>,
-<a href=#98 id=98 data-nosnippet>98</a>                workflow.as_str()
-<a href=#99 id=99 data-nosnippet>99</a>            );
-<a href=#100 id=100 data-nosnippet>100</a>        }
-<a href=#101 id=101 data-nosnippet>101</a>        sense_result<span class="question-mark">?</span>;
-<a href=#102 id=102 data-nosnippet>102</a>        <span class="macro">ensure!</span>(
-<a href=#103 id=103 data-nosnippet>103</a>            <span class="self">self</span>.native.as_ref().is_none_or(|result| result.passed),
-<a href=#104 id=104 data-nosnippet>104</a>            <span class="string">"required native checks did not pass; inspect the provider diagnostics and coverage"
-<a href=#105 id=105 data-nosnippet>105</a>        </span>);
-<a href=#106 id=106 data-nosnippet>106</a>        <span class="prelude-val">Ok</span>(())
-<a href=#107 id=107 data-nosnippet>107</a>    }
-<a href=#108 id=108 data-nosnippet>108</a>
-<a href=#109 id=109 data-nosnippet>109</a>    <span class="kw">fn </span>report(<span class="kw-2">&amp;</span><span class="self">self</span>, workflow: Workflow) -&gt; Value {
-<a href=#110 id=110 data-nosnippet>110</a>        <span class="macro">json!</span>({
-<a href=#111 id=111 data-nosnippet>111</a>            <span class="string">"schema"</span>: <span class="string">"opcore.workflow.v1"</span>,
-<a href=#112 id=112 data-nosnippet>112</a>            <span class="string">"workflow"</span>: workflow,
-<a href=#113 id=113 data-nosnippet>113</a>            <span class="string">"status"</span>: <span class="kw">if </span><span class="self">self</span>.enforce().is_ok() { <span class="string">"accepted" </span>} <span class="kw">else </span>{ <span class="string">"requires_attention" </span>},
-<a href=#114 id=114 data-nosnippet>114</a>            <span class="string">"configuration"</span>: <span class="self">self</span>.configuration.report_configuration(),
-<a href=#115 id=115 data-nosnippet>115</a>            <span class="string">"verify"</span>: <span class="self">self</span>.verify,
-<a href=#116 id=116 data-nosnippet>116</a>            <span class="string">"sense"</span>: <span class="self">self</span>.sense,
-<a href=#117 id=117 data-nosnippet>117</a>            <span class="string">"native"</span>: <span class="self">self</span>.native.as_ref().map(|result| <span class="kw-2">&amp;</span>result.report),
-<a href=#118 id=118 data-nosnippet>118</a>        })
-<a href=#119 id=119 data-nosnippet>119</a>    }
-<a href=#120 id=120 data-nosnippet>120</a>
-<a href=#121 id=121 data-nosnippet>121</a>    <span class="kw">fn </span>render(<span class="kw-2">&amp;</span><span class="self">self</span>, args: <span class="kw-2">&amp;</span>RunArgs) -&gt; <span class="prelude-ty">Result</span>&lt;String&gt; {
-<a href=#122 id=122 data-nosnippet>122</a>        <span class="kw">if </span>args.json {
-<a href=#123 id=123 data-nosnippet>123</a>            <span class="kw">return </span>bounded_json(<span class="kw-2">&amp;</span><span class="self">self</span>.report(args.workflow));
-<a href=#124 id=124 data-nosnippet>124</a>        }
-<a href=#125 id=125 data-nosnippet>125</a>        <span class="kw">let </span><span class="kw-2">mut </span>output = <span class="macro">format!</span>(<span class="string">"opcore workflow: {}\n"</span>, args.workflow.as_str());
-<a href=#126 id=126 data-nosnippet>126</a>        output.push_str(<span class="kw-2">&amp;</span>cli::render_human(<span class="kw-2">&amp;</span><span class="self">self</span>.verify));
-<a href=#127 id=127 data-nosnippet>127</a>        output.push_str(<span class="kw-2">&amp;</span>sense_cli::render_output(<span class="kw-2">&amp;</span><span class="self">self</span>.sense, <span class="bool-val">false</span>)<span class="question-mark">?</span>);
-<a href=#128 id=128 data-nosnippet>128</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>(native) = <span class="kw-2">&amp;</span><span class="self">self</span>.native {
-<a href=#129 id=129 data-nosnippet>129</a>            output.push_str(<span class="kw-2">&amp;</span>native.human);
-<a href=#130 id=130 data-nosnippet>130</a>        }
+<a href=#56 id=56 data-nosnippet>56</a>}
+<a href=#57 id=57 data-nosnippet>57</a>
+<a href=#58 id=58 data-nosnippet>58</a><span class="kw">struct </span>RunRequest&lt;<span class="lifetime">'a</span>&gt; {
+<a href=#59 id=59 data-nosnippet>59</a>    args: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>RunArgs,
+<a href=#60 id=60 data-nosnippet>60</a>    comparison: <span class="prelude-ty">Option</span>&lt;CheckComparison&gt;,
+<a href=#61 id=61 data-nosnippet>61</a>}
+<a href=#62 id=62 data-nosnippet>62</a>
+<a href=#63 id=63 data-nosnippet>63</a><span class="kw">impl </span>Deref <span class="kw">for </span>RunRequest&lt;<span class="lifetime">'_</span>&gt; {
+<a href=#64 id=64 data-nosnippet>64</a>    <span class="kw">type </span>Target = RunArgs;
+<a href=#65 id=65 data-nosnippet>65</a>
+<a href=#66 id=66 data-nosnippet>66</a>    <span class="kw">fn </span>deref(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="self">Self</span>::Target {
+<a href=#67 id=67 data-nosnippet>67</a>        <span class="self">self</span>.args
+<a href=#68 id=68 data-nosnippet>68</a>    }
+<a href=#69 id=69 data-nosnippet>69</a>}
+<a href=#70 id=70 data-nosnippet>70</a>
+<a href=#71 id=71 data-nosnippet>71</a><span class="kw">impl </span>RunRequest&lt;<span class="lifetime">'_</span>&gt; {
+<a href=#72 id=72 data-nosnippet>72</a>    <span class="kw">fn </span>validate(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+<a href=#73 id=73 data-nosnippet>73</a>        <span class="macro">ensure!</span>(
+<a href=#74 id=74 data-nosnippet>74</a>            <span class="self">self</span>.workflow != Workflow::PostEdit || <span class="self">self</span>.comparison.is_none(),
+<a href=#75 id=75 data-nosnippet>75</a>            <span class="string">"--comparison applies only to the pre-commit and ci workflows"
+<a href=#76 id=76 data-nosnippet>76</a>        </span>);
+<a href=#77 id=77 data-nosnippet>77</a>        <span class="kw">if </span><span class="self">self</span>.workflow == Workflow::Ci {
+<a href=#78 id=78 data-nosnippet>78</a>            <span class="macro">ensure!</span>(
+<a href=#79 id=79 data-nosnippet>79</a>                <span class="self">self</span>.base.is_some(),
+<a href=#80 id=80 data-nosnippet>80</a>                <span class="string">"CI Sense requires --base &lt;commit&gt;; fetch and supply the intended comparison base"
+<a href=#81 id=81 data-nosnippet>81</a>            </span>);
+<a href=#82 id=82 data-nosnippet>82</a>        } <span class="kw">else </span>{
+<a href=#83 id=83 data-nosnippet>83</a>            <span class="macro">ensure!</span>(
+<a href=#84 id=84 data-nosnippet>84</a>                <span class="self">self</span>.base.is_none() &amp;&amp; <span class="self">self</span>.tree.is_none(),
+<a href=#85 id=85 data-nosnippet>85</a>                <span class="string">"--base and --tree apply only to the ci workflow"
+<a href=#86 id=86 data-nosnippet>86</a>            </span>);
+<a href=#87 id=87 data-nosnippet>87</a>        }
+<a href=#88 id=88 data-nosnippet>88</a>        <span class="prelude-val">Ok</span>(())
+<a href=#89 id=89 data-nosnippet>89</a>    }
+<a href=#90 id=90 data-nosnippet>90</a>
+<a href=#91 id=91 data-nosnippet>91</a>    <span class="kw">const fn </span>comparison(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; CheckComparison {
+<a href=#92 id=92 data-nosnippet>92</a>        <span class="kw">match </span><span class="self">self</span>.args.workflow {
+<a href=#93 id=93 data-nosnippet>93</a>            Workflow::PostEdit =&gt; CheckComparison::Introduced,
+<a href=#94 id=94 data-nosnippet>94</a>            Workflow::PreCommit | Workflow::Ci =&gt; <span class="kw">match </span><span class="self">self</span>.comparison {
+<a href=#95 id=95 data-nosnippet>95</a>                <span class="prelude-val">Some</span>(comparison) =&gt; comparison,
+<a href=#96 id=96 data-nosnippet>96</a>                <span class="prelude-val">None </span>=&gt; CheckComparison::All,
+<a href=#97 id=97 data-nosnippet>97</a>            },
+<a href=#98 id=98 data-nosnippet>98</a>        }
+<a href=#99 id=99 data-nosnippet>99</a>    }
+<a href=#100 id=100 data-nosnippet>100</a>}
+<a href=#101 id=101 data-nosnippet>101</a>
+<a href=#102 id=102 data-nosnippet>102</a><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>WorkflowEvaluation {
+<a href=#103 id=103 data-nosnippet>103</a>    <span class="kw">pub</span>(<span class="kw">crate</span>) verify: Assessment,
+<a href=#104 id=104 data-nosnippet>104</a>    <span class="kw">pub</span>(<span class="kw">crate</span>) sense: SenseReport,
+<a href=#105 id=105 data-nosnippet>105</a>    <span class="kw">pub</span>(<span class="kw">crate</span>) native: <span class="prelude-ty">Option</span>&lt;HostEvaluation&gt;,
+<a href=#106 id=106 data-nosnippet>106</a>    <span class="kw">pub</span>(<span class="kw">crate</span>) configuration: PolicySnapshot,
+<a href=#107 id=107 data-nosnippet>107</a>    rendered: String,
+<a href=#108 id=108 data-nosnippet>108</a>}
+<a href=#109 id=109 data-nosnippet>109</a>
+<a href=#110 id=110 data-nosnippet>110</a><span class="kw">impl </span>WorkflowEvaluation {
+<a href=#111 id=111 data-nosnippet>111</a>    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>enforce(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+<a href=#112 id=112 data-nosnippet>112</a>        cli::enforce_status(<span class="self">self</span>.verify.status, <span class="bool-val">false</span>)<span class="question-mark">?</span>;
+<a href=#113 id=113 data-nosnippet>113</a>        <span class="kw">let </span>coverage = <span class="kw-2">&amp;</span><span class="self">self</span>.configuration.policy.coverage;
+<a href=#114 id=114 data-nosnippet>114</a>        <span class="kw">let </span>sense_result = sense_cli::enforce_report(
+<a href=#115 id=115 data-nosnippet>115</a>            <span class="kw-2">&amp;</span><span class="self">self</span>.sense,
+<a href=#116 id=116 data-nosnippet>116</a>            <span class="bool-val">false</span>,
+<a href=#117 id=117 data-nosnippet>117</a>            coverage.allow_partial,
+<a href=#118 id=118 data-nosnippet>118</a>            coverage.allow_node_builtins,
+<a href=#119 id=119 data-nosnippet>119</a>        );
+<a href=#120 id=120 data-nosnippet>120</a>        <span class="kw">if </span><span class="self">self</span>.sense.status == SenseStatus::Partial &amp;&amp; sense_result.is_err() {
+<a href=#121 id=121 data-nosnippet>121</a>            <span class="kw">let </span>workflow = <span class="self">self
+<a href=#122 id=122 data-nosnippet>122</a>                </span>.configuration
+<a href=#123 id=123 data-nosnippet>123</a>                .workflow
+<a href=#124 id=124 data-nosnippet>124</a>                .context(<span class="string">"workflow settings are unavailable"</span>)<span class="question-mark">?</span>;
+<a href=#125 id=125 data-nosnippet>125</a>            <span class="macro">anyhow::bail!</span>(
+<a href=#126 id=126 data-nosnippet>126</a>                <span class="string">"Sense requirements were not satisfied; rerun the same command with --json and inspect .opcore.json workflows.{}.coverage. Findings still require repair"</span>,
+<a href=#127 id=127 data-nosnippet>127</a>                workflow.as_str()
+<a href=#128 id=128 data-nosnippet>128</a>            );
+<a href=#129 id=129 data-nosnippet>129</a>        }
+<a href=#130 id=130 data-nosnippet>130</a>        sense_result<span class="question-mark">?</span>;
 <a href=#131 id=131 data-nosnippet>131</a>        <span class="macro">ensure!</span>(
-<a href=#132 id=132 data-nosnippet>132</a>            output.len() &lt;= MAX_ASSESSMENT_BYTES,
-<a href=#133 id=133 data-nosnippet>133</a>            <span class="string">"workflow report exceeds the output byte limit"
+<a href=#132 id=132 data-nosnippet>132</a>            <span class="self">self</span>.native.as_ref().is_none_or(|result| result.passed),
+<a href=#133 id=133 data-nosnippet>133</a>            <span class="string">"required native checks did not pass; inspect the provider diagnostics and coverage"
 <a href=#134 id=134 data-nosnippet>134</a>        </span>);
-<a href=#135 id=135 data-nosnippet>135</a>        <span class="prelude-val">Ok</span>(output)
+<a href=#135 id=135 data-nosnippet>135</a>        <span class="prelude-val">Ok</span>(())
 <a href=#136 id=136 data-nosnippet>136</a>    }
-<a href=#137 id=137 data-nosnippet>137</a>}
-<a href=#138 id=138 data-nosnippet>138</a>
-<a href=#139 id=139 data-nosnippet>139</a><span class="doccomment">/// Executes a workflow and prints its combined result.
-<a href=#140 id=140 data-nosnippet>140</a>///
-<a href=#141 id=141 data-nosnippet>141</a>/// # Errors
-<a href=#142 id=142 data-nosnippet>142</a>///
-<a href=#143 id=143 data-nosnippet>143</a>/// Returns an error for invalid configuration, stale or unavailable coverage, or required findings.
-<a href=#144 id=144 data-nosnippet>144</a></span><span class="kw">pub async fn </span>run(args: RunArgs) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-<a href=#145 id=145 data-nosnippet>145</a>    <span class="kw">let </span>outcome = run_inner(<span class="kw-2">&amp;</span>args).<span class="kw">await</span>;
-<a href=#146 id=146 data-nosnippet>146</a>    <span class="kw">match </span>outcome {
-<a href=#147 id=147 data-nosnippet>147</a>        <span class="prelude-val">Ok</span>(result) =&gt; {
-<a href=#148 id=148 data-nosnippet>148</a>            <span class="macro">println!</span>(<span class="string">"{}"</span>, result.rendered.trim_end());
-<a href=#149 id=149 data-nosnippet>149</a>            result.enforce()
-<a href=#150 id=150 data-nosnippet>150</a>        }
-<a href=#151 id=151 data-nosnippet>151</a>        <span class="prelude-val">Err</span>(error) =&gt; {
-<a href=#152 id=152 data-nosnippet>152</a>            <span class="kw">if </span>args.json {
-<a href=#153 id=153 data-nosnippet>153</a>                <span class="kw">let </span>report = <span class="macro">json!</span>({
-<a href=#154 id=154 data-nosnippet>154</a>                    <span class="string">"schema"</span>: <span class="string">"opcore.workflow.v1"</span>,
-<a href=#155 id=155 data-nosnippet>155</a>                    <span class="string">"workflow"</span>: args.workflow,
-<a href=#156 id=156 data-nosnippet>156</a>                    <span class="string">"status"</span>: <span class="string">"incomplete"</span>,
-<a href=#157 id=157 data-nosnippet>157</a>                    <span class="string">"error"</span>: <span class="macro">format!</span>(<span class="string">"{error:#}"</span>),
-<a href=#158 id=158 data-nosnippet>158</a>                });
-<a href=#159 id=159 data-nosnippet>159</a>                <span class="macro">println!</span>(<span class="string">"{}"</span>, bounded_json(<span class="kw-2">&amp;</span>report)<span class="question-mark">?</span>);
-<a href=#160 id=160 data-nosnippet>160</a>            }
-<a href=#161 id=161 data-nosnippet>161</a>            <span class="prelude-val">Err</span>(error)
-<a href=#162 id=162 data-nosnippet>162</a>        }
-<a href=#163 id=163 data-nosnippet>163</a>    }
-<a href=#164 id=164 data-nosnippet>164</a>}
-<a href=#165 id=165 data-nosnippet>165</a>
-<a href=#166 id=166 data-nosnippet>166</a><span class="kw">async fn </span>run_inner(args: <span class="kw-2">&amp;</span>RunArgs) -&gt; <span class="prelude-ty">Result</span>&lt;WorkflowEvaluation&gt; {
-<a href=#167 id=167 data-nosnippet>167</a>    args.validate()<span class="question-mark">?</span>;
-<a href=#168 id=168 data-nosnippet>168</a>    <span class="kw">let </span>repository = GitRepository::discover(<span class="kw-2">&amp;</span>args.repo).context(<span class="string">"discover workflow repository"</span>)<span class="question-mark">?</span>;
-<a href=#169 id=169 data-nosnippet>169</a>    evaluate(args, <span class="kw-2">&amp;</span>repository).<span class="kw">await
-<a href=#170 id=170 data-nosnippet>170</a></span>}
-<a href=#171 id=171 data-nosnippet>171</a>
-<a href=#172 id=172 data-nosnippet>172</a><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>evaluate(
-<a href=#173 id=173 data-nosnippet>173</a>    args: <span class="kw-2">&amp;</span>RunArgs,
-<a href=#174 id=174 data-nosnippet>174</a>    repository: <span class="kw-2">&amp;</span>GitRepository,
-<a href=#175 id=175 data-nosnippet>175</a>) -&gt; <span class="prelude-ty">Result</span>&lt;WorkflowEvaluation&gt; {
-<a href=#176 id=176 data-nosnippet>176</a>    <span class="kw">for </span>attempt <span class="kw">in </span><span class="number">0</span>..<span class="number">2 </span>{
-<a href=#177 id=177 data-nosnippet>177</a>        <span class="kw">let </span>configuration = PolicySnapshot::capture(repository, args.view(), <span class="prelude-val">Some</span>(args.workflow))<span class="question-mark">?</span>;
-<a href=#178 id=178 data-nosnippet>178</a>        <span class="macro">ensure!</span>(
-<a href=#179 id=179 data-nosnippet>179</a>            configuration.policy.native.is_empty() || args.allow_unsandboxed_native,
-<a href=#180 id=180 data-nosnippet>180</a>            <span class="string">"this workflow requires native checks; run in a trusted environment and pass --allow-unsandboxed-native"
-<a href=#181 id=181 data-nosnippet>181</a>        </span>);
-<a href=#182 id=182 data-nosnippet>182</a>        <span class="kw">let </span>selected = repository.with_targets(<span class="kw-2">&amp;</span>configuration.policy.targets);
-<a href=#183 id=183 data-nosnippet>183</a>        <span class="kw">let </span>auxiliary = auxiliary_paths(<span class="kw-2">&amp;</span>configuration)<span class="question-mark">?</span>;
-<a href=#184 id=184 data-nosnippet>184</a>        <span class="kw">let </span>before =
-<a href=#185 id=185 data-nosnippet>185</a>            selected.observation_with_auxiliary(<span class="kw-2">&amp;</span>args.view(), args.base.as_deref(), <span class="kw-2">&amp;</span>auxiliary)<span class="question-mark">?</span>;
-<a href=#186 id=186 data-nosnippet>186</a>        <span class="kw">let </span><span class="kw-2">mut </span>result = evaluate_once(args, repository, configuration).<span class="kw">await</span><span class="question-mark">?</span>;
-<a href=#187 id=187 data-nosnippet>187</a>        <span class="comment">// Render before freshness validation so expensive serialization cannot hide a stale view.
-<a href=#188 id=188 data-nosnippet>188</a>        </span>result.rendered = result.render(args)<span class="question-mark">?</span>;
-<a href=#189 id=189 data-nosnippet>189</a>        <span class="kw">if </span>is_current(args, repository, <span class="kw-2">&amp;</span>before, <span class="kw-2">&amp;</span>result)<span class="question-mark">? </span>{
-<a href=#190 id=190 data-nosnippet>190</a>            <span class="kw">return </span><span class="prelude-val">Ok</span>(result);
-<a href=#191 id=191 data-nosnippet>191</a>        }
-<a href=#192 id=192 data-nosnippet>192</a>        <span class="macro">ensure!</span>(
-<a href=#193 id=193 data-nosnippet>193</a>            attempt == <span class="number">0</span>,
-<a href=#194 id=194 data-nosnippet>194</a>            <span class="string">"source or configuration changed during the workflow; rerun the same command"
-<a href=#195 id=195 data-nosnippet>195</a>        </span>);
-<a href=#196 id=196 data-nosnippet>196</a>    }
-<a href=#197 id=197 data-nosnippet>197</a>    <span class="macro">anyhow::bail!</span>(<span class="string">"workflow freshness retry exhausted"</span>)
-<a href=#198 id=198 data-nosnippet>198</a>}
-<a href=#199 id=199 data-nosnippet>199</a>
-<a href=#200 id=200 data-nosnippet>200</a><span class="kw">fn </span>is_current(
-<a href=#201 id=201 data-nosnippet>201</a>    args: <span class="kw-2">&amp;</span>RunArgs,
-<a href=#202 id=202 data-nosnippet>202</a>    repository: <span class="kw-2">&amp;</span>GitRepository,
-<a href=#203 id=203 data-nosnippet>203</a>    before: <span class="kw-2">&amp;</span>str,
-<a href=#204 id=204 data-nosnippet>204</a>    result: <span class="kw-2">&amp;</span>WorkflowEvaluation,
-<a href=#205 id=205 data-nosnippet>205</a>) -&gt; <span class="prelude-ty">Result</span>&lt;bool&gt; {
-<a href=#206 id=206 data-nosnippet>206</a>    <span class="kw">let </span>selected = repository.with_targets(<span class="kw-2">&amp;</span>result.configuration.policy.targets);
-<a href=#207 id=207 data-nosnippet>207</a>    <span class="kw">let </span>auxiliary = auxiliary_paths(<span class="kw-2">&amp;</span>result.configuration)<span class="question-mark">?</span>;
-<a href=#208 id=208 data-nosnippet>208</a>    <span class="kw">let </span>native_current = result
-<a href=#209 id=209 data-nosnippet>209</a>        .native
-<a href=#210 id=210 data-nosnippet>210</a>        .as_ref()
-<a href=#211 id=211 data-nosnippet>211</a>        .map(|native| native.is_current(repository))
-<a href=#212 id=212 data-nosnippet>212</a>        .transpose()<span class="question-mark">?
-<a href=#213 id=213 data-nosnippet>213</a>        </span>.unwrap_or(<span class="bool-val">true</span>);
-<a href=#214 id=214 data-nosnippet>214</a>    <span class="prelude-val">Ok</span>(before
-<a href=#215 id=215 data-nosnippet>215</a>        == selected.observation_with_auxiliary(<span class="kw-2">&amp;</span>args.view(), args.base.as_deref(), <span class="kw-2">&amp;</span>auxiliary)<span class="question-mark">?
-<a href=#216 id=216 data-nosnippet>216</a>        </span>&amp;&amp; result.configuration.is_current()<span class="question-mark">?
-<a href=#217 id=217 data-nosnippet>217</a>        </span>&amp;&amp; native_current)
-<a href=#218 id=218 data-nosnippet>218</a>}
-<a href=#219 id=219 data-nosnippet>219</a>
-<a href=#220 id=220 data-nosnippet>220</a><span class="kw">fn </span>auxiliary_paths(configuration: <span class="kw-2">&amp;</span>PolicySnapshot) -&gt; <span class="prelude-ty">Result</span>&lt;BTreeSet&lt;RepoPath&gt;&gt; {
-<a href=#221 id=221 data-nosnippet>221</a>    <span class="kw">let </span><span class="kw-2">mut </span>paths = configuration
-<a href=#222 id=222 data-nosnippet>222</a>        .policy
-<a href=#223 id=223 data-nosnippet>223</a>        .documentation
-<a href=#224 id=224 data-nosnippet>224</a>        .bindings
-<a href=#225 id=225 data-nosnippet>225</a>        .iter()
-<a href=#226 id=226 data-nosnippet>226</a>        .map(|binding| binding.document.clone())
-<a href=#227 id=227 data-nosnippet>227</a>        .collect::&lt;BTreeSet&lt;<span class="kw">_</span>&gt;&gt;();
-<a href=#228 id=228 data-nosnippet>228</a>    paths.insert(RepoPath::from_protocol(POLICY_PATH)<span class="question-mark">?</span>);
-<a href=#229 id=229 data-nosnippet>229</a>    <span class="prelude-val">Ok</span>(paths)
-<a href=#230 id=230 data-nosnippet>230</a>}
-<a href=#231 id=231 data-nosnippet>231</a>
-<a href=#232 id=232 data-nosnippet>232</a><span class="kw">async fn </span>evaluate_once(
-<a href=#233 id=233 data-nosnippet>233</a>    args: <span class="kw-2">&amp;</span>RunArgs,
-<a href=#234 id=234 data-nosnippet>234</a>    repository: <span class="kw-2">&amp;</span>GitRepository,
-<a href=#235 id=235 data-nosnippet>235</a>    configuration: PolicySnapshot,
-<a href=#236 id=236 data-nosnippet>236</a>) -&gt; <span class="prelude-ty">Result</span>&lt;WorkflowEvaluation&gt; {
-<a href=#237 id=237 data-nosnippet>237</a>    <span class="kw">let </span><span class="kw-2">mut </span>check = check_args(args);
-<a href=#238 id=238 data-nosnippet>238</a>    <span class="kw">let </span>verify = cli::assess_with_policy(<span class="kw-2">&amp;</span>check, repository, <span class="kw-2">&amp;</span>configuration)
-<a href=#239 id=239 data-nosnippet>239</a>        .<span class="kw">await
-<a href=#240 id=240 data-nosnippet>240</a>        </span>.context(<span class="string">"Verify could not complete"</span>)<span class="question-mark">?</span>;
-<a href=#241 id=241 data-nosnippet>241</a>    <span class="kw">let </span>sense = sense_cli::assess(<span class="kw-2">&amp;</span>sense_args(args), repository, <span class="kw-2">&amp;</span>configuration)
-<a href=#242 id=242 data-nosnippet>242</a>        .<span class="kw">await
-<a href=#243 id=243 data-nosnippet>243</a>        </span>.context(<span class="string">"Sense could not complete"</span>)<span class="question-mark">?</span>;
-<a href=#244 id=244 data-nosnippet>244</a>    <span class="kw">let </span>native = <span class="kw">if </span>configuration.policy.native.is_empty() {
-<a href=#245 id=245 data-nosnippet>245</a>        <span class="prelude-val">None
-<a href=#246 id=246 data-nosnippet>246</a>    </span>} <span class="kw">else </span>{
-<a href=#247 id=247 data-nosnippet>247</a>        check.providers = configuration
-<a href=#248 id=248 data-nosnippet>248</a>            .policy
-<a href=#249 id=249 data-nosnippet>249</a>            .native
-<a href=#250 id=250 data-nosnippet>250</a>            .iter()
-<a href=#251 id=251 data-nosnippet>251</a>            .map(|provider| <span class="kw">match </span>provider {
-<a href=#252 id=252 data-nosnippet>252</a>                NativeProvider::RustNative =&gt; CheckProvider::RustNative,
-<a href=#253 id=253 data-nosnippet>253</a>                NativeProvider::NodeNative =&gt; CheckProvider::NodeNative,
-<a href=#254 id=254 data-nosnippet>254</a>                NativeProvider::PythonNative =&gt; CheckProvider::PythonNative,
-<a href=#255 id=255 data-nosnippet>255</a>            })
-<a href=#256 id=256 data-nosnippet>256</a>            .collect();
-<a href=#257 id=257 data-nosnippet>257</a>        check.comparison = <span class="prelude-val">Some</span>(CheckComparison::All);
-<a href=#258 id=258 data-nosnippet>258</a>        <span class="prelude-val">Some</span>(host_cli::evaluate(<span class="kw-2">&amp;</span>check, repository, <span class="kw-2">&amp;</span>configuration).<span class="kw">await</span><span class="question-mark">?</span>)
-<a href=#259 id=259 data-nosnippet>259</a>    };
-<a href=#260 id=260 data-nosnippet>260</a>    <span class="prelude-val">Ok</span>(WorkflowEvaluation {
-<a href=#261 id=261 data-nosnippet>261</a>        verify,
-<a href=#262 id=262 data-nosnippet>262</a>        sense,
-<a href=#263 id=263 data-nosnippet>263</a>        native,
-<a href=#264 id=264 data-nosnippet>264</a>        configuration,
-<a href=#265 id=265 data-nosnippet>265</a>        rendered: String::new(),
-<a href=#266 id=266 data-nosnippet>266</a>    })
-<a href=#267 id=267 data-nosnippet>267</a>}
-<a href=#268 id=268 data-nosnippet>268</a>
-<a href=#269 id=269 data-nosnippet>269</a><span class="kw">fn </span>check_args(args: <span class="kw-2">&amp;</span>RunArgs) -&gt; CheckArgs {
-<a href=#270 id=270 data-nosnippet>270</a>    CheckArgs {
-<a href=#271 id=271 data-nosnippet>271</a>        repo: args.repo.clone(),
-<a href=#272 id=272 data-nosnippet>272</a>        changed: args.workflow == Workflow::PostEdit,
-<a href=#273 id=273 data-nosnippet>273</a>        staged: args.workflow == Workflow::PreCommit,
-<a href=#274 id=274 data-nosnippet>274</a>        all: args.workflow != Workflow::PostEdit,
-<a href=#275 id=275 data-nosnippet>275</a>        tree: <span class="kw">match </span>args.view() {
-<a href=#276 id=276 data-nosnippet>276</a>            ConfigView::Tree(tree) =&gt; <span class="prelude-val">Some</span>(tree),
-<a href=#277 id=277 data-nosnippet>277</a>            <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
-<a href=#278 id=278 data-nosnippet>278</a>        },
-<a href=#279 id=279 data-nosnippet>279</a>        workflow: <span class="prelude-val">Some</span>(args.workflow),
-<a href=#280 id=280 data-nosnippet>280</a>        allow_unsandboxed_native: args.allow_unsandboxed_native,
-<a href=#281 id=281 data-nosnippet>281</a>        ..CheckArgs::default()
-<a href=#282 id=282 data-nosnippet>282</a>    }
-<a href=#283 id=283 data-nosnippet>283</a>}
-<a href=#284 id=284 data-nosnippet>284</a>
-<a href=#285 id=285 data-nosnippet>285</a><span class="kw">fn </span>sense_args(args: <span class="kw-2">&amp;</span>RunArgs) -&gt; sense_cli::SenseArgs {
-<a href=#286 id=286 data-nosnippet>286</a>    sense_cli::SenseArgs {
-<a href=#287 id=287 data-nosnippet>287</a>        repo: args.repo.clone(),
-<a href=#288 id=288 data-nosnippet>288</a>        json: <span class="bool-val">false</span>,
-<a href=#289 id=289 data-nosnippet>289</a>        advisory: <span class="bool-val">false</span>,
-<a href=#290 id=290 data-nosnippet>290</a>        allow_partial: <span class="bool-val">false</span>,
-<a href=#291 id=291 data-nosnippet>291</a>        allow_node_builtins: <span class="bool-val">false</span>,
-<a href=#292 id=292 data-nosnippet>292</a>        staged: args.workflow == Workflow::PreCommit,
-<a href=#293 id=293 data-nosnippet>293</a>        hypothetical: <span class="prelude-val">None</span>,
-<a href=#294 id=294 data-nosnippet>294</a>        workflow: <span class="prelude-val">Some</span>(args.workflow),
-<a href=#295 id=295 data-nosnippet>295</a>        tree: <span class="kw">match </span>args.view() {
-<a href=#296 id=296 data-nosnippet>296</a>            ConfigView::Tree(tree) =&gt; <span class="prelude-val">Some</span>(tree),
-<a href=#297 id=297 data-nosnippet>297</a>            <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
-<a href=#298 id=298 data-nosnippet>298</a>        },
-<a href=#299 id=299 data-nosnippet>299</a>        base: args.base.clone(),
-<a href=#300 id=300 data-nosnippet>300</a>    }
-<a href=#301 id=301 data-nosnippet>301</a>}
-<a href=#302 id=302 data-nosnippet>302</a>
-<a href=#303 id=303 data-nosnippet>303</a><span class="kw">fn </span>bounded_json(value: <span class="kw-2">&amp;</span>Value) -&gt; <span class="prelude-ty">Result</span>&lt;String&gt; {
-<a href=#304 id=304 data-nosnippet>304</a>    <span class="kw">let </span>output = serde_json::to_string(value)<span class="question-mark">?</span>;
-<a href=#305 id=305 data-nosnippet>305</a>    <span class="macro">ensure!</span>(
-<a href=#306 id=306 data-nosnippet>306</a>        output.len() &lt;= MAX_ASSESSMENT_BYTES,
-<a href=#307 id=307 data-nosnippet>307</a>        <span class="string">"workflow report exceeds the output byte limit"
-<a href=#308 id=308 data-nosnippet>308</a>    </span>);
-<a href=#309 id=309 data-nosnippet>309</a>    <span class="prelude-val">Ok</span>(output)
-<a href=#310 id=310 data-nosnippet>310</a>}
+<a href=#137 id=137 data-nosnippet>137</a>
+<a href=#138 id=138 data-nosnippet>138</a>    <span class="kw">fn </span>report(<span class="kw-2">&amp;</span><span class="self">self</span>, args: <span class="kw-2">&amp;</span>RunRequest&lt;<span class="lifetime">'_</span>&gt;) -&gt; Value {
+<a href=#139 id=139 data-nosnippet>139</a>        <span class="macro">json!</span>({
+<a href=#140 id=140 data-nosnippet>140</a>            <span class="string">"schema"</span>: <span class="string">"opcore.workflow.v1"</span>,
+<a href=#141 id=141 data-nosnippet>141</a>            <span class="string">"workflow"</span>: args.workflow,
+<a href=#142 id=142 data-nosnippet>142</a>            <span class="string">"comparison"</span>: args.comparison().as_str(),
+<a href=#143 id=143 data-nosnippet>143</a>            <span class="string">"status"</span>: <span class="kw">if </span><span class="self">self</span>.enforce().is_ok() { <span class="string">"accepted" </span>} <span class="kw">else </span>{ <span class="string">"requires_attention" </span>},
+<a href=#144 id=144 data-nosnippet>144</a>            <span class="string">"configuration"</span>: <span class="self">self</span>.configuration.report_configuration(),
+<a href=#145 id=145 data-nosnippet>145</a>            <span class="string">"verify"</span>: <span class="self">self</span>.verify,
+<a href=#146 id=146 data-nosnippet>146</a>            <span class="string">"sense"</span>: <span class="self">self</span>.sense,
+<a href=#147 id=147 data-nosnippet>147</a>            <span class="string">"native"</span>: <span class="self">self</span>.native.as_ref().map(|result| <span class="kw-2">&amp;</span>result.report),
+<a href=#148 id=148 data-nosnippet>148</a>        })
+<a href=#149 id=149 data-nosnippet>149</a>    }
+<a href=#150 id=150 data-nosnippet>150</a>
+<a href=#151 id=151 data-nosnippet>151</a>    <span class="kw">fn </span>render(<span class="kw-2">&amp;</span><span class="self">self</span>, args: <span class="kw-2">&amp;</span>RunRequest&lt;<span class="lifetime">'_</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;String&gt; {
+<a href=#152 id=152 data-nosnippet>152</a>        <span class="kw">if </span>args.json {
+<a href=#153 id=153 data-nosnippet>153</a>            <span class="kw">return </span>bounded_json(<span class="kw-2">&amp;</span><span class="self">self</span>.report(args));
+<a href=#154 id=154 data-nosnippet>154</a>        }
+<a href=#155 id=155 data-nosnippet>155</a>        <span class="kw">let </span><span class="kw-2">mut </span>output = <span class="macro">format!</span>(<span class="string">"opcore workflow: {}\n"</span>, args.workflow.as_str());
+<a href=#156 id=156 data-nosnippet>156</a>        output.push_str(<span class="kw-2">&amp;</span>cli::render_human(<span class="kw-2">&amp;</span><span class="self">self</span>.verify));
+<a href=#157 id=157 data-nosnippet>157</a>        output.push_str(<span class="kw-2">&amp;</span>sense_cli::render_output(<span class="kw-2">&amp;</span><span class="self">self</span>.sense, <span class="bool-val">false</span>)<span class="question-mark">?</span>);
+<a href=#158 id=158 data-nosnippet>158</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>(native) = <span class="kw-2">&amp;</span><span class="self">self</span>.native {
+<a href=#159 id=159 data-nosnippet>159</a>            output.push_str(<span class="kw-2">&amp;</span>native.human);
+<a href=#160 id=160 data-nosnippet>160</a>        }
+<a href=#161 id=161 data-nosnippet>161</a>        <span class="macro">ensure!</span>(
+<a href=#162 id=162 data-nosnippet>162</a>            output.len() &lt;= MAX_ASSESSMENT_BYTES,
+<a href=#163 id=163 data-nosnippet>163</a>            <span class="string">"workflow report exceeds the output byte limit"
+<a href=#164 id=164 data-nosnippet>164</a>        </span>);
+<a href=#165 id=165 data-nosnippet>165</a>        <span class="prelude-val">Ok</span>(output)
+<a href=#166 id=166 data-nosnippet>166</a>    }
+<a href=#167 id=167 data-nosnippet>167</a>}
+<a href=#168 id=168 data-nosnippet>168</a>
+<a href=#169 id=169 data-nosnippet>169</a><span class="doccomment">/// Executes a workflow and prints its combined result.
+<a href=#170 id=170 data-nosnippet>170</a>///
+<a href=#171 id=171 data-nosnippet>171</a>/// # Errors
+<a href=#172 id=172 data-nosnippet>172</a>///
+<a href=#173 id=173 data-nosnippet>173</a>/// Returns an error for invalid configuration, stale or unavailable coverage, or required findings.
+<a href=#174 id=174 data-nosnippet>174</a></span><span class="kw">pub async fn </span>run(args: RunArgs) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+<a href=#175 id=175 data-nosnippet>175</a>    run_request(<span class="kw-2">&amp;</span>RunRequest {
+<a href=#176 id=176 data-nosnippet>176</a>        args: <span class="kw-2">&amp;</span>args,
+<a href=#177 id=177 data-nosnippet>177</a>        comparison: <span class="prelude-val">None</span>,
+<a href=#178 id=178 data-nosnippet>178</a>    })
+<a href=#179 id=179 data-nosnippet>179</a>    .<span class="kw">await
+<a href=#180 id=180 data-nosnippet>180</a></span>}
+<a href=#181 id=181 data-nosnippet>181</a>
+<a href=#182 id=182 data-nosnippet>182</a><span class="doccomment">/// Executes a workflow with an explicit Verify/native comparison and prints its combined result.
+<a href=#183 id=183 data-nosnippet>183</a>///
+<a href=#184 id=184 data-nosnippet>184</a>/// # Errors
+<a href=#185 id=185 data-nosnippet>185</a>///
+<a href=#186 id=186 data-nosnippet>186</a>/// Returns an error for invalid configuration, stale or unavailable coverage, or required findings.
+<a href=#187 id=187 data-nosnippet>187</a></span><span class="kw">pub async fn </span>run_with_comparison(args: RunArgs, comparison: CheckComparison) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+<a href=#188 id=188 data-nosnippet>188</a>    run_request(<span class="kw-2">&amp;</span>RunRequest {
+<a href=#189 id=189 data-nosnippet>189</a>        args: <span class="kw-2">&amp;</span>args,
+<a href=#190 id=190 data-nosnippet>190</a>        comparison: <span class="prelude-val">Some</span>(comparison),
+<a href=#191 id=191 data-nosnippet>191</a>    })
+<a href=#192 id=192 data-nosnippet>192</a>    .<span class="kw">await
+<a href=#193 id=193 data-nosnippet>193</a></span>}
+<a href=#194 id=194 data-nosnippet>194</a>
+<a href=#195 id=195 data-nosnippet>195</a><span class="kw">async fn </span>run_request(args: <span class="kw-2">&amp;</span>RunRequest&lt;<span class="lifetime">'_</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+<a href=#196 id=196 data-nosnippet>196</a>    <span class="kw">let </span>outcome = run_inner(args).<span class="kw">await</span>;
+<a href=#197 id=197 data-nosnippet>197</a>    <span class="kw">match </span>outcome {
+<a href=#198 id=198 data-nosnippet>198</a>        <span class="prelude-val">Ok</span>(result) =&gt; {
+<a href=#199 id=199 data-nosnippet>199</a>            <span class="macro">println!</span>(<span class="string">"{}"</span>, result.rendered.trim_end());
+<a href=#200 id=200 data-nosnippet>200</a>            result.enforce()
+<a href=#201 id=201 data-nosnippet>201</a>        }
+<a href=#202 id=202 data-nosnippet>202</a>        <span class="prelude-val">Err</span>(error) =&gt; {
+<a href=#203 id=203 data-nosnippet>203</a>            <span class="kw">if </span>args.json {
+<a href=#204 id=204 data-nosnippet>204</a>                <span class="kw">let </span>report = <span class="macro">json!</span>({
+<a href=#205 id=205 data-nosnippet>205</a>                    <span class="string">"schema"</span>: <span class="string">"opcore.workflow.v1"</span>,
+<a href=#206 id=206 data-nosnippet>206</a>                    <span class="string">"workflow"</span>: args.workflow,
+<a href=#207 id=207 data-nosnippet>207</a>                    <span class="string">"comparison"</span>: args.comparison().as_str(),
+<a href=#208 id=208 data-nosnippet>208</a>                    <span class="string">"status"</span>: <span class="string">"incomplete"</span>,
+<a href=#209 id=209 data-nosnippet>209</a>                    <span class="string">"error"</span>: <span class="macro">format!</span>(<span class="string">"{error:#}"</span>),
+<a href=#210 id=210 data-nosnippet>210</a>                });
+<a href=#211 id=211 data-nosnippet>211</a>                <span class="macro">println!</span>(<span class="string">"{}"</span>, bounded_json(<span class="kw-2">&amp;</span>report)<span class="question-mark">?</span>);
+<a href=#212 id=212 data-nosnippet>212</a>            }
+<a href=#213 id=213 data-nosnippet>213</a>            <span class="prelude-val">Err</span>(error)
+<a href=#214 id=214 data-nosnippet>214</a>        }
+<a href=#215 id=215 data-nosnippet>215</a>    }
+<a href=#216 id=216 data-nosnippet>216</a>}
+<a href=#217 id=217 data-nosnippet>217</a>
+<a href=#218 id=218 data-nosnippet>218</a><span class="kw">async fn </span>run_inner(args: <span class="kw-2">&amp;</span>RunRequest&lt;<span class="lifetime">'_</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;WorkflowEvaluation&gt; {
+<a href=#219 id=219 data-nosnippet>219</a>    args.validate()<span class="question-mark">?</span>;
+<a href=#220 id=220 data-nosnippet>220</a>    <span class="kw">let </span>repository = GitRepository::discover(<span class="kw-2">&amp;</span>args.repo).context(<span class="string">"discover workflow repository"</span>)<span class="question-mark">?</span>;
+<a href=#221 id=221 data-nosnippet>221</a>    evaluate_request(args, <span class="kw-2">&amp;</span>repository).<span class="kw">await
+<a href=#222 id=222 data-nosnippet>222</a></span>}
+<a href=#223 id=223 data-nosnippet>223</a>
+<a href=#224 id=224 data-nosnippet>224</a><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>evaluate(
+<a href=#225 id=225 data-nosnippet>225</a>    args: <span class="kw-2">&amp;</span>RunArgs,
+<a href=#226 id=226 data-nosnippet>226</a>    repository: <span class="kw-2">&amp;</span>GitRepository,
+<a href=#227 id=227 data-nosnippet>227</a>) -&gt; <span class="prelude-ty">Result</span>&lt;WorkflowEvaluation&gt; {
+<a href=#228 id=228 data-nosnippet>228</a>    <span class="kw">let </span>request = RunRequest {
+<a href=#229 id=229 data-nosnippet>229</a>        args,
+<a href=#230 id=230 data-nosnippet>230</a>        comparison: <span class="prelude-val">None</span>,
+<a href=#231 id=231 data-nosnippet>231</a>    };
+<a href=#232 id=232 data-nosnippet>232</a>    evaluate_request(<span class="kw-2">&amp;</span>request, repository).<span class="kw">await
+<a href=#233 id=233 data-nosnippet>233</a></span>}
+<a href=#234 id=234 data-nosnippet>234</a>
+<a href=#235 id=235 data-nosnippet>235</a><span class="kw">async fn </span>evaluate_request(
+<a href=#236 id=236 data-nosnippet>236</a>    args: <span class="kw-2">&amp;</span>RunRequest&lt;<span class="lifetime">'_</span>&gt;,
+<a href=#237 id=237 data-nosnippet>237</a>    repository: <span class="kw-2">&amp;</span>GitRepository,
+<a href=#238 id=238 data-nosnippet>238</a>) -&gt; <span class="prelude-ty">Result</span>&lt;WorkflowEvaluation&gt; {
+<a href=#239 id=239 data-nosnippet>239</a>    <span class="kw">for </span>attempt <span class="kw">in </span><span class="number">0</span>..<span class="number">2 </span>{
+<a href=#240 id=240 data-nosnippet>240</a>        <span class="kw">let </span>configuration = PolicySnapshot::capture(repository, args.view(), <span class="prelude-val">Some</span>(args.workflow))<span class="question-mark">?</span>;
+<a href=#241 id=241 data-nosnippet>241</a>        <span class="macro">ensure!</span>(
+<a href=#242 id=242 data-nosnippet>242</a>            configuration.policy.native.is_empty() || args.allow_unsandboxed_native,
+<a href=#243 id=243 data-nosnippet>243</a>            <span class="string">"this workflow requires native checks; run in a trusted environment and pass --allow-unsandboxed-native"
+<a href=#244 id=244 data-nosnippet>244</a>        </span>);
+<a href=#245 id=245 data-nosnippet>245</a>        <span class="kw">let </span>selected = repository.with_targets(<span class="kw-2">&amp;</span>configuration.policy.targets);
+<a href=#246 id=246 data-nosnippet>246</a>        <span class="kw">let </span>auxiliary = auxiliary_paths(<span class="kw-2">&amp;</span>configuration)<span class="question-mark">?</span>;
+<a href=#247 id=247 data-nosnippet>247</a>        <span class="kw">let </span>before =
+<a href=#248 id=248 data-nosnippet>248</a>            selected.observation_with_auxiliary(<span class="kw-2">&amp;</span>args.view(), args.base.as_deref(), <span class="kw-2">&amp;</span>auxiliary)<span class="question-mark">?</span>;
+<a href=#249 id=249 data-nosnippet>249</a>        <span class="kw">let </span><span class="kw-2">mut </span>result = evaluate_once(args, repository, configuration).<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#250 id=250 data-nosnippet>250</a>        <span class="comment">// Render before freshness validation so expensive serialization cannot hide a stale view.
+<a href=#251 id=251 data-nosnippet>251</a>        </span>result.rendered = result.render(args)<span class="question-mark">?</span>;
+<a href=#252 id=252 data-nosnippet>252</a>        <span class="kw">if </span>is_current(args, repository, <span class="kw-2">&amp;</span>before, <span class="kw-2">&amp;</span>result)<span class="question-mark">? </span>{
+<a href=#253 id=253 data-nosnippet>253</a>            <span class="kw">return </span><span class="prelude-val">Ok</span>(result);
+<a href=#254 id=254 data-nosnippet>254</a>        }
+<a href=#255 id=255 data-nosnippet>255</a>        <span class="macro">ensure!</span>(
+<a href=#256 id=256 data-nosnippet>256</a>            attempt == <span class="number">0</span>,
+<a href=#257 id=257 data-nosnippet>257</a>            <span class="string">"source or configuration changed during the workflow; rerun the same command"
+<a href=#258 id=258 data-nosnippet>258</a>        </span>);
+<a href=#259 id=259 data-nosnippet>259</a>    }
+<a href=#260 id=260 data-nosnippet>260</a>    <span class="macro">anyhow::bail!</span>(<span class="string">"workflow freshness retry exhausted"</span>)
+<a href=#261 id=261 data-nosnippet>261</a>}
+<a href=#262 id=262 data-nosnippet>262</a>
+<a href=#263 id=263 data-nosnippet>263</a><span class="kw">fn </span>is_current(
+<a href=#264 id=264 data-nosnippet>264</a>    args: <span class="kw-2">&amp;</span>RunRequest&lt;<span class="lifetime">'_</span>&gt;,
+<a href=#265 id=265 data-nosnippet>265</a>    repository: <span class="kw-2">&amp;</span>GitRepository,
+<a href=#266 id=266 data-nosnippet>266</a>    before: <span class="kw-2">&amp;</span>str,
+<a href=#267 id=267 data-nosnippet>267</a>    result: <span class="kw-2">&amp;</span>WorkflowEvaluation,
+<a href=#268 id=268 data-nosnippet>268</a>) -&gt; <span class="prelude-ty">Result</span>&lt;bool&gt; {
+<a href=#269 id=269 data-nosnippet>269</a>    <span class="kw">let </span>selected = repository.with_targets(<span class="kw-2">&amp;</span>result.configuration.policy.targets);
+<a href=#270 id=270 data-nosnippet>270</a>    <span class="kw">let </span>auxiliary = auxiliary_paths(<span class="kw-2">&amp;</span>result.configuration)<span class="question-mark">?</span>;
+<a href=#271 id=271 data-nosnippet>271</a>    <span class="kw">let </span>native_current = result
+<a href=#272 id=272 data-nosnippet>272</a>        .native
+<a href=#273 id=273 data-nosnippet>273</a>        .as_ref()
+<a href=#274 id=274 data-nosnippet>274</a>        .map(|native| native.is_current(repository))
+<a href=#275 id=275 data-nosnippet>275</a>        .transpose()<span class="question-mark">?
+<a href=#276 id=276 data-nosnippet>276</a>        </span>.unwrap_or(<span class="bool-val">true</span>);
+<a href=#277 id=277 data-nosnippet>277</a>    <span class="prelude-val">Ok</span>(before
+<a href=#278 id=278 data-nosnippet>278</a>        == selected.observation_with_auxiliary(<span class="kw-2">&amp;</span>args.view(), args.base.as_deref(), <span class="kw-2">&amp;</span>auxiliary)<span class="question-mark">?
+<a href=#279 id=279 data-nosnippet>279</a>        </span>&amp;&amp; result.configuration.is_current()<span class="question-mark">?
+<a href=#280 id=280 data-nosnippet>280</a>        </span>&amp;&amp; native_current)
+<a href=#281 id=281 data-nosnippet>281</a>}
+<a href=#282 id=282 data-nosnippet>282</a>
+<a href=#283 id=283 data-nosnippet>283</a><span class="kw">fn </span>auxiliary_paths(configuration: <span class="kw-2">&amp;</span>PolicySnapshot) -&gt; <span class="prelude-ty">Result</span>&lt;BTreeSet&lt;RepoPath&gt;&gt; {
+<a href=#284 id=284 data-nosnippet>284</a>    <span class="kw">let </span><span class="kw-2">mut </span>paths = configuration
+<a href=#285 id=285 data-nosnippet>285</a>        .policy
+<a href=#286 id=286 data-nosnippet>286</a>        .documentation
+<a href=#287 id=287 data-nosnippet>287</a>        .bindings
+<a href=#288 id=288 data-nosnippet>288</a>        .iter()
+<a href=#289 id=289 data-nosnippet>289</a>        .map(|binding| binding.document.clone())
+<a href=#290 id=290 data-nosnippet>290</a>        .collect::&lt;BTreeSet&lt;<span class="kw">_</span>&gt;&gt;();
+<a href=#291 id=291 data-nosnippet>291</a>    paths.insert(RepoPath::from_protocol(POLICY_PATH)<span class="question-mark">?</span>);
+<a href=#292 id=292 data-nosnippet>292</a>    <span class="prelude-val">Ok</span>(paths)
+<a href=#293 id=293 data-nosnippet>293</a>}
+<a href=#294 id=294 data-nosnippet>294</a>
+<a href=#295 id=295 data-nosnippet>295</a><span class="kw">async fn </span>evaluate_once(
+<a href=#296 id=296 data-nosnippet>296</a>    args: <span class="kw-2">&amp;</span>RunRequest&lt;<span class="lifetime">'_</span>&gt;,
+<a href=#297 id=297 data-nosnippet>297</a>    repository: <span class="kw-2">&amp;</span>GitRepository,
+<a href=#298 id=298 data-nosnippet>298</a>    configuration: PolicySnapshot,
+<a href=#299 id=299 data-nosnippet>299</a>) -&gt; <span class="prelude-ty">Result</span>&lt;WorkflowEvaluation&gt; {
+<a href=#300 id=300 data-nosnippet>300</a>    <span class="kw">let </span><span class="kw-2">mut </span>check = check_args(args);
+<a href=#301 id=301 data-nosnippet>301</a>    <span class="kw">let </span>verify = cli::assess_with_policy(<span class="kw-2">&amp;</span>check, repository, <span class="kw-2">&amp;</span>configuration)
+<a href=#302 id=302 data-nosnippet>302</a>        .<span class="kw">await
+<a href=#303 id=303 data-nosnippet>303</a>        </span>.context(<span class="string">"Verify could not complete"</span>)<span class="question-mark">?</span>;
+<a href=#304 id=304 data-nosnippet>304</a>    <span class="kw">let </span>sense = sense_cli::assess(<span class="kw-2">&amp;</span>sense_args(args), repository, <span class="kw-2">&amp;</span>configuration)
+<a href=#305 id=305 data-nosnippet>305</a>        .<span class="kw">await
+<a href=#306 id=306 data-nosnippet>306</a>        </span>.context(<span class="string">"Sense could not complete"</span>)<span class="question-mark">?</span>;
+<a href=#307 id=307 data-nosnippet>307</a>    <span class="kw">let </span>native = <span class="kw">if </span>configuration.policy.native.is_empty() {
+<a href=#308 id=308 data-nosnippet>308</a>        <span class="prelude-val">None
+<a href=#309 id=309 data-nosnippet>309</a>    </span>} <span class="kw">else </span>{
+<a href=#310 id=310 data-nosnippet>310</a>        check.providers = configuration
+<a href=#311 id=311 data-nosnippet>311</a>            .policy
+<a href=#312 id=312 data-nosnippet>312</a>            .native
+<a href=#313 id=313 data-nosnippet>313</a>            .iter()
+<a href=#314 id=314 data-nosnippet>314</a>            .map(|provider| <span class="kw">match </span>provider {
+<a href=#315 id=315 data-nosnippet>315</a>                NativeProvider::RustNative =&gt; CheckProvider::RustNative,
+<a href=#316 id=316 data-nosnippet>316</a>                NativeProvider::NodeNative =&gt; CheckProvider::NodeNative,
+<a href=#317 id=317 data-nosnippet>317</a>                NativeProvider::PythonNative =&gt; CheckProvider::PythonNative,
+<a href=#318 id=318 data-nosnippet>318</a>            })
+<a href=#319 id=319 data-nosnippet>319</a>            .collect();
+<a href=#320 id=320 data-nosnippet>320</a>        <span class="prelude-val">Some</span>(host_cli::evaluate(<span class="kw-2">&amp;</span>check, repository, <span class="kw-2">&amp;</span>configuration).<span class="kw">await</span><span class="question-mark">?</span>)
+<a href=#321 id=321 data-nosnippet>321</a>    };
+<a href=#322 id=322 data-nosnippet>322</a>    <span class="prelude-val">Ok</span>(WorkflowEvaluation {
+<a href=#323 id=323 data-nosnippet>323</a>        verify,
+<a href=#324 id=324 data-nosnippet>324</a>        sense,
+<a href=#325 id=325 data-nosnippet>325</a>        native,
+<a href=#326 id=326 data-nosnippet>326</a>        configuration,
+<a href=#327 id=327 data-nosnippet>327</a>        rendered: String::new(),
+<a href=#328 id=328 data-nosnippet>328</a>    })
+<a href=#329 id=329 data-nosnippet>329</a>}
+<a href=#330 id=330 data-nosnippet>330</a>
+<a href=#331 id=331 data-nosnippet>331</a><span class="kw">fn </span>check_args(args: <span class="kw-2">&amp;</span>RunRequest&lt;<span class="lifetime">'_</span>&gt;) -&gt; CheckArgs {
+<a href=#332 id=332 data-nosnippet>332</a>    <span class="kw">let </span>comparison = args.comparison();
+<a href=#333 id=333 data-nosnippet>333</a>    CheckArgs {
+<a href=#334 id=334 data-nosnippet>334</a>        repo: args.repo.clone(),
+<a href=#335 id=335 data-nosnippet>335</a>        changed: args.workflow == Workflow::PostEdit,
+<a href=#336 id=336 data-nosnippet>336</a>        staged: args.workflow == Workflow::PreCommit,
+<a href=#337 id=337 data-nosnippet>337</a>        all: args.workflow != Workflow::PostEdit &amp;&amp; comparison == CheckComparison::All,
+<a href=#338 id=338 data-nosnippet>338</a>        base: (comparison == CheckComparison::Introduced)
+<a href=#339 id=339 data-nosnippet>339</a>            .then(|| args.base.clone())
+<a href=#340 id=340 data-nosnippet>340</a>            .flatten(),
+<a href=#341 id=341 data-nosnippet>341</a>        tree: <span class="kw">match </span>args.view() {
+<a href=#342 id=342 data-nosnippet>342</a>            ConfigView::Tree(tree) =&gt; <span class="prelude-val">Some</span>(tree),
+<a href=#343 id=343 data-nosnippet>343</a>            <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
+<a href=#344 id=344 data-nosnippet>344</a>        },
+<a href=#345 id=345 data-nosnippet>345</a>        comparison: <span class="prelude-val">Some</span>(comparison),
+<a href=#346 id=346 data-nosnippet>346</a>        workflow: <span class="prelude-val">Some</span>(args.workflow),
+<a href=#347 id=347 data-nosnippet>347</a>        allow_unsandboxed_native: args.allow_unsandboxed_native,
+<a href=#348 id=348 data-nosnippet>348</a>        ..CheckArgs::default()
+<a href=#349 id=349 data-nosnippet>349</a>    }
+<a href=#350 id=350 data-nosnippet>350</a>}
+<a href=#351 id=351 data-nosnippet>351</a>
+<a href=#352 id=352 data-nosnippet>352</a><span class="kw">fn </span>sense_args(args: <span class="kw-2">&amp;</span>RunRequest&lt;<span class="lifetime">'_</span>&gt;) -&gt; sense_cli::SenseArgs {
+<a href=#353 id=353 data-nosnippet>353</a>    sense_cli::SenseArgs {
+<a href=#354 id=354 data-nosnippet>354</a>        repo: args.repo.clone(),
+<a href=#355 id=355 data-nosnippet>355</a>        json: <span class="bool-val">false</span>,
+<a href=#356 id=356 data-nosnippet>356</a>        advisory: <span class="bool-val">false</span>,
+<a href=#357 id=357 data-nosnippet>357</a>        allow_partial: <span class="bool-val">false</span>,
+<a href=#358 id=358 data-nosnippet>358</a>        allow_node_builtins: <span class="bool-val">false</span>,
+<a href=#359 id=359 data-nosnippet>359</a>        staged: args.workflow == Workflow::PreCommit,
+<a href=#360 id=360 data-nosnippet>360</a>        hypothetical: <span class="prelude-val">None</span>,
+<a href=#361 id=361 data-nosnippet>361</a>        workflow: <span class="prelude-val">Some</span>(args.workflow),
+<a href=#362 id=362 data-nosnippet>362</a>        tree: <span class="kw">match </span>args.view() {
+<a href=#363 id=363 data-nosnippet>363</a>            ConfigView::Tree(tree) =&gt; <span class="prelude-val">Some</span>(tree),
+<a href=#364 id=364 data-nosnippet>364</a>            <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
+<a href=#365 id=365 data-nosnippet>365</a>        },
+<a href=#366 id=366 data-nosnippet>366</a>        base: args.base.clone(),
+<a href=#367 id=367 data-nosnippet>367</a>    }
+<a href=#368 id=368 data-nosnippet>368</a>}
+<a href=#369 id=369 data-nosnippet>369</a>
+<a href=#370 id=370 data-nosnippet>370</a><span class="kw">fn </span>bounded_json(value: <span class="kw-2">&amp;</span>Value) -&gt; <span class="prelude-ty">Result</span>&lt;String&gt; {
+<a href=#371 id=371 data-nosnippet>371</a>    <span class="kw">let </span>output = serde_json::to_string(value)<span class="question-mark">?</span>;
+<a href=#372 id=372 data-nosnippet>372</a>    <span class="macro">ensure!</span>(
+<a href=#373 id=373 data-nosnippet>373</a>        output.len() &lt;= MAX_ASSESSMENT_BYTES,
+<a href=#374 id=374 data-nosnippet>374</a>        <span class="string">"workflow report exceeds the output byte limit"
+<a href=#375 id=375 data-nosnippet>375</a>    </span>);
+<a href=#376 id=376 data-nosnippet>376</a>    <span class="prelude-val">Ok</span>(output)
+<a href=#377 id=377 data-nosnippet>377</a>}
 </code></pre></div></section></main></body></html>

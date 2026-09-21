@@ -358,6 +358,7 @@ See [Getting started](docs/getting-started.md) for source and archive installs, 
 opcore run post-edit                         # current changes against HEAD
 opcore run pre-commit                        # full staged Verify and introduced Sense
 opcore run ci --base <base-commit>            # full committed Verify and introduced Sense
+opcore run pre-commit --comparison introduced # Fast brownfield gate; native needs a safe baseline
 ```
 
 Add the pre-commit workflow to your Git hook and require the CI workflow alongside existing tests and linters. Configure the applicable native providers for compiler or type-checker coverage; those runs also require explicit host authorization. The [setup guide](docs/getting-started.md#add-pre-commit-and-ci-checks) has recipes.

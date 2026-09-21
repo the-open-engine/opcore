@@ -55,8 +55,8 @@ Arguments:
 
           Possible values:
           - post-edit:  Fast Verify and Sense against the current worktree
-          - pre-commit: Full staged Verify and selected native checks, plus introduced Sense
-          - ci:         Full immutable-commit Verify and native checks, plus Sense against a base commit
+          - pre-commit: Staged Verify and selected native checks, plus introduced Sense; defaults to all findings
+          - ci:         Immutable-commit Verify and native checks, plus Sense against a base; defaults to all findings
 
 Options:
       --repo &lt;REPO&gt;
@@ -68,13 +68,20 @@ Options:
           CI target commit or tree (default: HEAD); never reads worktree overlays
 
       --base &lt;REF&gt;
-          CI baseline for introduced Sense findings; fetch and supply the intended base commit
+          CI baseline for Sense and introduced Verify/native findings; supply the intended commit
 
       --json
           Emit one structured report containing every selected check
 
       --allow-unsandboxed-native
           Authorize selected native tools to execute trusted repository code with host access
+
+      --comparison &lt;MODE&gt;
+          Select introduced or all Verify and native diagnostics; defaults to all
+
+          Possible values:
+          - introduced: Report diagnostics introduced since the exact baseline
+          - all:        Report every diagnostic in the selected current provider workspace
 
   -h, --help
           Print help (see a summary with &#39;-h&#39;)</code></pre></div><h2 id="opcore-check"><a class="doc-anchor" href="#opcore-check">§</a><code>opcore check</code></h2><div class="example-wrap"><pre class="language-text"><code>Evaluate a local Git source view
@@ -145,8 +152,8 @@ Options:
 
           Possible values:
           - post-edit:  Fast Verify and Sense against the current worktree
-          - pre-commit: Full staged Verify and selected native checks, plus introduced Sense
-          - ci:         Full immutable-commit Verify and native checks, plus Sense against a base commit
+          - pre-commit: Staged Verify and selected native checks, plus introduced Sense; defaults to all findings
+          - ci:         Immutable-commit Verify and native checks, plus Sense against a base; defaults to all findings
 
   -h, --help
           Print help (see a summary with &#39;-h&#39;)</code></pre></div><h2 id="opcore-sense"><a class="doc-anchor" href="#opcore-sense">§</a><code>opcore sense</code></h2><div class="example-wrap"><pre class="language-text"><code>Analyze exact local dependency changes and introduced runtime cycles
@@ -182,8 +189,8 @@ Options:
 
           Possible values:
           - post-edit:  Fast Verify and Sense against the current worktree
-          - pre-commit: Full staged Verify and selected native checks, plus introduced Sense
-          - ci:         Full immutable-commit Verify and native checks, plus Sense against a base commit
+          - pre-commit: Staged Verify and selected native checks, plus introduced Sense; defaults to all findings
+          - ci:         Immutable-commit Verify and native checks, plus Sense against a base; defaults to all findings
 
       --tree &lt;REF&gt;
           Read source, configuration and documents from an immutable Git target
@@ -210,8 +217,8 @@ Options:
 
           Possible values:
           - post-edit:  Fast Verify and Sense against the current worktree
-          - pre-commit: Full staged Verify and selected native checks, plus introduced Sense
-          - ci:         Full immutable-commit Verify and native checks, plus Sense against a base commit
+          - pre-commit: Staged Verify and selected native checks, plus introduced Sense; defaults to all findings
+          - ci:         Immutable-commit Verify and native checks, plus Sense against a base; defaults to all findings
 
       --staged
           Inspect staged configuration rather than worktree settings
@@ -238,8 +245,8 @@ Options:
 
           Possible values:
           - post-edit:  Fast Verify and Sense against the current worktree
-          - pre-commit: Full staged Verify and selected native checks, plus introduced Sense
-          - ci:         Full immutable-commit Verify and native checks, plus Sense against a base commit
+          - pre-commit: Staged Verify and selected native checks, plus introduced Sense; defaults to all findings
+          - ci:         Immutable-commit Verify and native checks, plus Sense against a base; defaults to all findings
 
       --staged
           Inspect staged configuration rather than worktree settings
