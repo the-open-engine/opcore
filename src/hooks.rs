@@ -32,6 +32,13 @@ const RECEIPT_SCHEMA: &str = "opcore.hook-install.v1";
 const COMMAND_MARKER: &str = "opcore agent-gate";
 const MAX_HOOK_FEEDBACK_BYTES: usize = 8 * 1024;
 const MAX_HOOK_FEEDBACK_ITEMS: usize = 8;
+const WORKTREE_VERDICT_FEEDBACK: &str = concat!(
+    "Opcore checks all selected uncommitted worktree changes against HEAD, not only the call ",
+    "that triggered this hook. The triggering PostToolUse call already executed; Codex may ",
+    "replace its result with this feedback. Matched calls will keep receiving the same feedback ",
+    "while these findings remain introduced. Committing changes only changes the comparison ",
+    "baseline; it does not repair them."
+);
 
 /// Agent whose global hook configuration is managed by the installer.
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize, ValueEnum)]
@@ -161,6 +168,7 @@ fn sense_finding_count(report: &SenseReport) -> usize {
 fn sense_findings_feedback(report: &SenseReport, findings: usize) -> String {
     let mut feedback =
         format!("Opcore Project Sense requires intervention: {findings} finding(s).");
+    append_worktree_verdict_feedback(&mut feedback);
     let mut shown = append_cycle_feedback(&mut feedback, report, MAX_HOOK_FEEDBACK_ITEMS);
     shown += append_duplicate_feedback(
         &mut feedback,
@@ -263,6 +271,7 @@ fn assessment_feedback(assessment: &Assessment) -> String {
         assessment.coverage.files_covered,
         assessment.coverage.files_considered,
     );
+    append_worktree_verdict_feedback(&mut feedback);
     let mut shown = 0usize;
     for diagnostic in assessment.diagnostics.iter().take(MAX_HOOK_FEEDBACK_ITEMS) {
         let line = diagnostic.range.map_or(0, |range| range.start.line);
@@ -293,6 +302,10 @@ fn assessment_feedback(assessment: &Assessment) -> String {
     }
     feedback.push_str("\nRun `opcore run post-edit --repo . --json` for full evidence.");
     truncate_feedback(feedback)
+}
+
+fn append_worktree_verdict_feedback(feedback: &mut String) {
+    let _ = write!(feedback, "\n{WORKTREE_VERDICT_FEEDBACK}");
 }
 
 fn truncate_feedback(mut feedback: String) -> String {

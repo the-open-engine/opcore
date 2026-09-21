@@ -60,22 +60,38 @@ fn hook_count(config: &Value) -> usize {
 }
 
 fn gate(repo: &Path, cache: &Path) -> Output {
+    gate_with_payload(
+        cache,
+        &json!({
+            "hook_event_name": "PostToolUse",
+            "cwd": repo,
+        }),
+    )
+}
+
+fn gate_with_payload(cache: &Path, payload: &Value) -> Output {
     let mut command = Command::new(binary());
     command.arg("agent-gate");
     command.env("XDG_CACHE_HOME", cache);
-    run_gate(command, repo)
+    run_gate_with_payload(command, payload)
 }
 
-fn run_gate(mut command: Command, repo: &Path) -> Output {
+fn run_gate(command: Command, repo: &Path) -> Output {
+    run_gate_with_payload(
+        command,
+        &json!({
+            "hook_event_name": "PostToolUse",
+            "cwd": repo,
+        }),
+    )
+}
+
+fn run_gate_with_payload(mut command: Command, payload: &Value) -> Output {
     command.stdin(Stdio::piped());
     command.stdout(Stdio::piped());
     command.stderr(Stdio::piped());
     let mut child = command.spawn().unwrap();
-    let payload = serde_json::to_vec(&json!({
-        "hook_event_name": "PostToolUse",
-        "cwd": repo,
-    }))
-    .unwrap();
+    let payload = serde_json::to_vec(&payload).unwrap();
     std::io::Write::write_all(child.stdin.as_mut().unwrap(), &payload).unwrap();
     drop(child.stdin.take());
     child.wait_with_output().unwrap()
@@ -190,11 +206,62 @@ fn post_write_gate_intervenes_on_disk_findings_and_skips_non_repositories() {
     assert!(feedback.contains("requires intervention"));
     assert!(feedback.contains("complexity.max-parameters"));
     assert!(feedback.contains("src/a.ts:1"));
+    assert!(feedback.contains("all selected uncommitted worktree changes against HEAD"));
+    assert!(feedback.contains("not only the call that triggered this hook"));
+    assert!(feedback.contains("The triggering PostToolUse call already executed"));
+    assert!(feedback.contains("Matched calls will keep receiving the same feedback"));
+    assert!(feedback.contains("does not repair them"));
     assert!(blocking_feedback(&repo.join("src"), &cache).contains("complexity.max-parameters"));
 
     assert!(gate(temp.path(), &cache).status.success());
     fs::create_dir(temp.path().join(".git")).unwrap();
     assert!(gate(temp.path(), &cache).status.success());
+}
+
+#[test]
+fn post_tool_payload_shapes_intentionally_share_the_worktree_verdict() {
+    let temp = tempfile::tempdir().unwrap();
+    let (repo, cache) = initialized_repository(temp.path());
+    fs::create_dir(repo.join("apps")).unwrap();
+    fs::write(
+        repo.join("apps/report.ts"),
+        "export function report(a,b,c,d,e,f) { return a; }\n",
+    )
+    .unwrap();
+
+    let payloads = [
+        json!({
+            "cwd": repo,
+            "tool_name": "Bash",
+            "tool_input": { "command": "pwd" },
+        }),
+        json!({
+            "cwd": repo,
+            "tool_name": "Edit",
+            "tool_input": { "file_path": "src/a.ts" },
+        }),
+        json!({
+            "cwd": repo,
+            "tool_name": "Bash",
+            "tool_input": { "command": "rm -rf /" },
+        }),
+        json!({ "cwd": repo }),
+    ];
+    let outputs = payloads
+        .into_iter()
+        .map(|payload| gate_with_payload(&cache, &payload))
+        .collect::<Vec<_>>();
+
+    for output in &outputs {
+        assert_eq!(output.status.code(), Some(2));
+        assert!(output.stdout.is_empty());
+    }
+    for output in outputs.iter().skip(1) {
+        assert_eq!(output.stderr, outputs[0].stderr);
+    }
+    let feedback = String::from_utf8(outputs[0].stderr.clone()).unwrap();
+    assert!(feedback.contains("apps/report.ts:1"));
+    assert!(feedback.contains("not only the call that triggered this hook"));
 }
 
 #[test]
