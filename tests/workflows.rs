@@ -34,6 +34,17 @@ fn hook(fixture: &RepositoryFixture) -> std::process::Output {
 }
 
 #[test]
+fn workflow_configuration_reports_default_and_configured_state() {
+    let fixture = RepositoryFixture::new(&[("src/a.ts", "export const ready = true;\n")]);
+    let default = run(&fixture, "post-edit", &[], true);
+    assert_eq!(default["configuration"]["state"], "default");
+
+    configure(&fixture, &json!({"schemaVersion": 1}));
+    let configured = run(&fixture, "post-edit", &[], true);
+    assert_eq!(configured["configuration"]["state"], "configured");
+}
+
+#[test]
 fn workflow_overrides_are_shared_by_hook_manual_check_and_full_staged_gate() {
     let fixture = RepositoryFixture::new(&[("src/a.ts", "export const initial = 1;\n")]);
     configure(
