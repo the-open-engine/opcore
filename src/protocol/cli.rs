@@ -417,7 +417,10 @@ fn mark_empty_selection(assessment: &mut Assessment, args: &CheckArgs) {
     if assessment.coverage.files_considered != 0 {
         return;
     }
-    let (status, coverage_status, reason) = if args.all || args.committed || args.tree.is_some() {
+    let (status, coverage_status, reason) = if args.all
+        || args.committed
+        || (args.tree.is_some() && args.base.is_none())
+    {
         (
             AssessmentStatus::Unsupported,
             CoverageStatus::Unsupported,

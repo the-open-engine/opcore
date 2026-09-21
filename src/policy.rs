@@ -42,9 +42,9 @@ pub const MAX_POLICY_BYTES: usize = 256 * 1024;
 pub enum Workflow {
     /// Fast Verify and Sense against the current worktree.
     PostEdit,
-    /// Full staged Verify and selected native checks, plus introduced Sense.
+    /// Staged Verify and selected native checks, plus introduced Sense; defaults to all findings.
     PreCommit,
-    /// Full immutable-commit Verify and native checks, plus Sense against a base commit.
+    /// Immutable-commit Verify and native checks, plus Sense against a base; defaults to all findings.
     Ci,
 }
 
