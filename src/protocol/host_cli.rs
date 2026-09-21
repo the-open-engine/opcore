@@ -245,11 +245,8 @@ pub(crate) async fn evaluate(
     }
     let report = merge_reports(reports, &selection, &policy.policy.targets);
     let mut value = report_value(&report);
-    value["configuration"] = json!({
-        "view": policy.view,
-        "workflow": policy.workflow,
-        "effective": policy.policy,
-    });
+    value["configuration"] = policy.report_configuration();
+    value["configuration"]["workflow"] = json!(policy.workflow);
     anyhow::ensure!(
         serde_json::to_vec(&value)?.len() <= MAX_ASSESSMENT_BYTES,
         "combined provider report exceeds {MAX_ASSESSMENT_BYTES} bytes"
