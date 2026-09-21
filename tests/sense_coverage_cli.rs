@@ -201,3 +201,50 @@ fn duplicate_file_limit_reports_stage_limit_view_path_and_recovery() {
             .contains("No runtime option")
     );
 }
+
+#[test]
+fn duplicate_file_limit_keeps_complete_json_paths_and_samples_human_output() {
+    let fixture = RepositoryFixture::new(&[("baseline.js", "export const baseline = true;\n")]);
+    let mut source = String::from("let total = 0;\n");
+    for index in 0..15_000 {
+        writeln!(source, "total += {index};").unwrap();
+    }
+    let expected_paths = (0..12)
+        .map(|index| format!("vendor/bundle{index:02}.min.js"))
+        .collect::<Vec<_>>();
+    for path in &expected_paths {
+        fixture.write(path, &source);
+    }
+
+    let output = opcore_json(&fixture, "sense", &[]);
+    assert!(!output.status.success());
+    let report = json(&output);
+    assert_eq!(report["status"], "incomplete");
+    let issue = report["issues"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|issue| issue["code"] == "dedup_region_file_limit")
+        .unwrap();
+    assert_eq!(issue["paths"], Value::from(expected_paths.clone()));
+    assert_eq!(issue["pathsTruncated"], Value::Null);
+    let next_step = issue["nextStep"].as_str().unwrap();
+    assert!(next_step.contains("targets.exclude"), "{next_step}");
+    assert!(
+        next_step.contains("docs/configuration.md#select-targets"),
+        "{next_step}"
+    );
+
+    let human = opcore(fixture.repo(), fixture.cache(), "sense", &[]);
+    assert!(!human.status.success());
+    let human = String::from_utf8_lossy(&human.stdout);
+    let affected = human
+        .lines()
+        .find(|line| line.contains("complete bounded evidence is available with --json"))
+        .unwrap();
+    for path in &expected_paths[..5] {
+        assert!(affected.contains(path), "{affected}");
+    }
+    assert!(!affected.contains(&expected_paths[5]), "{affected}");
+    assert!(affected.contains("showing 5 of 12"), "{affected}");
+}

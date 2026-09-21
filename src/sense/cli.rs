@@ -16,7 +16,9 @@ use crate::{
     documentation::{
         DOCUMENTATION_REGISTRY_PATH, DocumentationRegistry, parse_optional_documentation_registry,
     },
-    limits::{MAX_ASSESSMENT_BYTES, MAX_AUXILIARY_PATHS, MAX_SENSE_FINDINGS},
+    limits::{
+        MAX_ASSESSMENT_BYTES, MAX_AUXILIARY_PATHS, MAX_OBSERVATION_PATHS, MAX_SENSE_FINDINGS,
+    },
     local::repository_fact_cache,
     model::ProviderMetadata,
     path::RepoPath,
@@ -1040,13 +1042,20 @@ fn human_output(report: &SenseReport) -> String {
             let paths = issue
                 .paths
                 .iter()
+                .take(MAX_OBSERVATION_PATHS)
                 .map(ToString::to_string)
                 .collect::<Vec<_>>()
                 .join(", ");
             let suffix = if issue.paths_truncated {
-                " (sample truncated)"
+                " (sample truncated)".to_string()
+            } else if issue.paths.len() > MAX_OBSERVATION_PATHS {
+                format!(
+                    " (showing {} of {}; complete bounded evidence is available with --json)",
+                    MAX_OBSERVATION_PATHS,
+                    issue.paths.len()
+                )
             } else {
-                ""
+                String::new()
             };
             let _ = writeln!(output, "  affected: {paths}{suffix}");
         }
@@ -1444,5 +1453,29 @@ mod tests {
                 assert!(rendered.contains("output_too_large"));
             }
         }
+    }
+
+    #[test]
+    fn human_issue_paths_only_advertise_complete_json_when_retained() {
+        let started = Instant::now();
+        let paths = (0..6)
+            .map(|index| RepoPath::new(format!("path-{index}.js").into_bytes()).unwrap())
+            .collect::<Vec<_>>();
+
+        let mut complete = incomplete_report("complete", "complete".into(), started);
+        complete.issues[0].paths = paths.clone();
+        let rendered = human_output(&complete);
+        assert!(
+            rendered.contains("showing 5 of 6; complete bounded evidence is available with --json")
+        );
+
+        let mut truncated = incomplete_report("truncated", "truncated".into(), started);
+        truncated.issues[0].paths = paths;
+        truncated.issues[0].paths_truncated = true;
+        let rendered = human_output(&truncated);
+        assert!(rendered.contains(
+            "affected: path-0.js, path-1.js, path-2.js, path-3.js, path-4.js (sample truncated)"
+        ));
+        assert!(!rendered.contains("JSON evidence"));
     }
 }

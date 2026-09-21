@@ -150,15 +150,13 @@ fn identical_snapshot_result(inputs: DedupInputs<'_>) -> DedupResult {
 #[derive(Default)]
 struct AffectedPaths {
     count: usize,
-    sample: Vec<RepoPath>,
+    paths: Vec<RepoPath>,
 }
 
 impl AffectedPaths {
     fn push(&mut self, path: &RepoPath) {
         self.count = self.count.saturating_add(1);
-        if self.sample.len() < MAX_OBSERVATION_PATHS {
-            self.sample.push(path.clone());
-        }
+        self.paths.push(path.clone());
     }
 }
 
@@ -332,12 +330,13 @@ fn push_limit_issue(
     issue.views = spec.views.to_vec();
     issue.limit = Some(spec.limit);
     issue.processed = Some(spec.processed);
-    issue.paths = affected.sample;
+    issue.paths = affected.paths;
     issue.paths_truncated = affected.count > issue.paths.len();
     issue.next_step = Some(
         concat!(
             "No runtime option raises this fixed safety limit. Split unusually dense source files ",
-            "or keep generated code outside the captured Git source set where appropriate."
+            "or add literal file or subtree entries to targets.exclude where appropriate; see ",
+            "docs/configuration.md#select-targets."
         )
         .into(),
     );
