@@ -209,6 +209,7 @@ fn post_write_gate_intervenes_on_disk_findings_and_skips_non_repositories() {
     assert!(feedback.contains("all selected uncommitted worktree changes against HEAD"));
     assert!(feedback.contains("not only the call that triggered this hook"));
     assert!(feedback.contains("The triggering PostToolUse call already executed"));
+    assert!(feedback.contains("Codex may replace its result with this feedback"));
     assert!(feedback.contains("Matched calls will keep receiving the same feedback"));
     assert!(feedback.contains("does not repair them"));
     assert!(blocking_feedback(&repo.join("src"), &cache).contains("complexity.max-parameters"));
