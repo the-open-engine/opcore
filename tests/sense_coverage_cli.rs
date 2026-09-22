@@ -153,9 +153,9 @@ fn node_builtin_acknowledgment_does_not_accept_other_resolution_gaps() {
 }
 
 #[test]
-fn python_absolute_imports_are_ambiguous_in_json_and_human_output() {
+fn python_absolute_imports_resolve_only_unique_siblings_in_json_and_human_output() {
     let fixture = RepositoryFixture::new(&[("target.py", "value = 42\n")]);
-    fixture.write("uses_absolute.py", "import target\n");
+    fixture.write("uses_absolute.py", "import target\nimport missing.module\n");
 
     let report = {
         let output = opcore_json(&fixture, "sense", &[]);
@@ -163,21 +163,25 @@ fn python_absolute_imports_are_ambiguous_in_json_and_human_output() {
         json(&output)
     };
     assert_eq!(report["status"], "partial");
-    assert_eq!(report["after"]["runtimeEdges"], 0);
+    assert_eq!(report["after"]["runtimeEdges"], 1);
+    assert_eq!(report["after"]["coverage"]["resolvedReferences"], 1);
     assert_eq!(report["after"]["coverage"]["ambiguousReferences"], 1);
     assert_eq!(report["after"]["coverage"]["externalReferences"], 0);
     assert_eq!(
         report["after"]["resolutionGaps"][0]["path"],
         "uses_absolute.py"
     );
-    assert_eq!(report["after"]["resolutionGaps"][0]["specifier"], "target");
+    assert_eq!(
+        report["after"]["resolutionGaps"][0]["specifier"],
+        "missing.module"
+    );
     assert_eq!(report["after"]["resolutionGaps"][0]["kind"], "ambiguous");
 
     let human_output = opcore(fixture.repo(), fixture.cache(), "sense", &[]);
     assert!(!human_output.status.success());
     let human = String::from_utf8_lossy(&human_output.stdout);
     assert!(
-        human.contains("ambiguous reference: uses_absolute.py imports \"target\""),
+        human.contains("ambiguous reference: uses_absolute.py imports \"missing.module\""),
         "{human}"
     );
     assert!(
