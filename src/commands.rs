@@ -66,6 +66,9 @@ pub fn status(args: &RepositoryArgs) -> Result<()> {
     let repository = GitRepository::discover(&args.repo).context("discover Git repository")?;
     let policy = PolicySnapshot::capture(&repository, args.config_view(), args.workflow)
         .context("load selected repository configuration")?;
+    let mut policy_report = policy.report_configuration();
+    policy_report["path"] = json!(POLICY_PATH);
+    policy_report["workflow"] = json!(policy.workflow);
     let report = json!({
         "schema": "opcore.status.v2",
         "status": "fast_check_ready",
@@ -76,15 +79,7 @@ pub fn status(args: &RepositoryArgs) -> Result<()> {
             "commonDir": repository.common_dir(),
             "repositoryId": repository.repository_id().hex(),
         },
-        "policy": {
-            "path": POLICY_PATH,
-            "state": policy.state,
-            "digest": policy.digest,
-            "effective": policy.policy,
-            "view": policy.view,
-            "workflow": policy.workflow,
-            "origins": policy.origins,
-        },
+        "policy": policy_report,
         "runtime": {
             "persistentFacts": "content_only",
             "persistentGraph": false,

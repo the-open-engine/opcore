@@ -5,6 +5,7 @@ mod evidence;
 mod go;
 mod node;
 mod pair;
+mod python;
 mod rust;
 
 #[cfg(test)]
@@ -555,7 +556,7 @@ fn resolve_edge_reference(
             resolve_node(&file.path, &reference.specifier, index)
         }
         DependencyReferenceKind::PythonRelative | DependencyReferenceKind::PythonAbsolute => {
-            resolve_python(&file.path, reference, index)
+            python::resolve(&file.path, reference, index)
         }
         DependencyReferenceKind::RustModule => {
             rust::resolve_module(&file.path, &reference.specifier, &index.rust)
@@ -846,17 +847,6 @@ fn resolve_node(importer: &RepoPath, specifier: &str, index: &ResolutionIndex) -
     }
 }
 
-fn resolve_python(
-    importer: &RepoPath,
-    reference: &DependencyReference,
-    index: &ResolutionIndex,
-) -> Resolution {
-    let Some(base) = normalized_python(importer, &reference.specifier, reference.level) else {
-        return Resolution::Unresolved;
-    };
-    alias_resolution(index.python_aliases.get(&base))
-}
-
 fn exact_resolution(path: &str, index: &ResolutionIndex, family: &str) -> Resolution {
     let Some(path) = RepoPath::from_protocol(path).ok() else {
         return Resolution::Unresolved;
@@ -894,21 +884,6 @@ fn normalized_relative(
     }
     append_normalized(&mut parts, specifier.split('/'))?;
     Some(parts.join("/"))
-}
-
-fn normalized_python(importer: &RepoPath, module: &str, level: u32) -> Option<String> {
-    if module.is_empty() || module.contains(['/', '\\']) {
-        return None;
-    }
-    if level == 0 {
-        if module.contains('.') {
-            return None;
-        }
-        return normalized_relative(importer, module, 0);
-    }
-    let parents = usize::try_from(level.saturating_sub(1)).ok()?;
-    let module_path = module.replace('.', "/");
-    normalized_relative(importer, &module_path, parents)
 }
 
 fn append_normalized<'a>(
@@ -1212,79 +1187,15 @@ mod tests {
 
         assert_eq!(projection.edges.len(), 3);
         assert_eq!(projection.coverage.resolved_references, 4);
-        assert_eq!(projection.coverage.unresolved_references, 2);
+        assert_eq!(projection.coverage.ambiguous_references, 2);
+        assert_eq!(projection.coverage.unresolved_references, 0);
         assert_eq!(projection.coverage.external_references, 0);
         assert_eq!(projection.coverage.unsupported_files, 0);
         assert!(projection.resolution_gaps.iter().any(|gap| {
-            gap.specifier == "requests" && gap.kind == ResolutionGapKind::Unresolved
+            gap.specifier == "requests" && gap.kind == ResolutionGapKind::Ambiguous
         }));
         assert!(projection.resolution_gaps.iter().any(|gap| {
-            gap.specifier == "pkg.nested" && gap.kind == ResolutionGapKind::Unresolved
-        }));
-    }
-
-    #[test]
-    fn python_sibling_absolute_imports_record_interface_selectors_like_relative_imports() {
-        let files = vec![
-            source("pkg/absolute.py", Language::Python),
-            source("pkg/relative.py", Language::Python),
-            source("pkg/target.py", Language::Python),
-        ];
-        let parser_options = serde_json::to_vec(&RuleLimits::default()).unwrap();
-        let mut file_facts = facts_for(
-            &files,
-            &[
-                (
-                    "pkg/absolute.py",
-                    vec![dependency(
-                        DependencyReferenceKind::PythonAbsolute,
-                        "target",
-                        0,
-                    )],
-                ),
-                (
-                    "pkg/relative.py",
-                    vec![dependency(
-                        DependencyReferenceKind::PythonRelative,
-                        "target",
-                        1,
-                    )],
-                ),
-            ],
-            &parser_options,
-        );
-        for (file, level) in [(&files[0], 0), (&files[1], 1)] {
-            Arc::make_mut(
-                file_facts
-                    .get_mut(&facts::key(file, &parser_options))
-                    .unwrap(),
-            )
-            .interfaces = InterfaceFacts {
-                status: InterfaceExtractionStatus::Complete,
-                public_surface_status: InterfaceSurfaceStatus::Complete,
-                imports: vec![InterfaceImportFact {
-                    specifier: "target".into(),
-                    level,
-                    role: InterfaceImportRole::Import,
-                    namespace: InterfaceNamespace::Runtime,
-                    selector: InterfaceSelector {
-                        kind: InterfaceSelectorKind::Named,
-                        name: "selected".into(),
-                    },
-                }],
-                ..InterfaceFacts::default()
-            };
-        }
-
-        let projection = project(&SourceSnapshot::new(files), &file_facts, &parser_options);
-
-        assert_eq!(projection.runtime_edges().count(), 2);
-        assert_eq!(projection.interface_edges.len(), 2);
-        assert_eq!(projection.interface_coverage.resolved_selectors, 2);
-        assert!(projection.interface_edges.values().all(|edge| {
-            edge.selectors
-                .iter()
-                .any(|selector| selector.name == "selected")
+            gap.specifier == "pkg.nested" && gap.kind == ResolutionGapKind::Ambiguous
         }));
     }
 

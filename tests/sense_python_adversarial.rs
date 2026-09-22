@@ -228,3 +228,85 @@ fn static_python_all_drives_exact_documentation_enforcement() {
         1
     );
 }
+
+#[test]
+fn bound_important_python_without_static_all_reports_documentation_surface_gap() {
+    let fixture = RepositoryFixture::new(&[
+        ("pkg/__init__.py", ""),
+        ("pkg/core.py", "def alpha(value):\n    return value + 1\n"),
+        ("pkg/one.py", "from .core import alpha\n"),
+        ("pkg/two.py", "from .core import alpha\n"),
+        ("pkg/three.py", "from .core import alpha\n"),
+        (
+            "src/builtins.ts",
+            "import { readFile } from \"node:fs\";\nexport { readFile };\n",
+        ),
+        (
+            ".opcore.json",
+            concat!(
+                r#"{"schemaVersion":1,"sense":{"importantFanIn":2},"#,
+                r#""documentation":{"bindings":[{"source":"pkg/core.py","#,
+                r#""document":"docs/core.md"}]}}"#,
+            ),
+        ),
+        ("docs/core.md", "Core API.\n"),
+    ]);
+
+    fixture.write(
+        "pkg/core.py",
+        "def alpha(value):\n    return value + 1\n\ndef beta(value):\n    return value + 2\n",
+    );
+
+    let output = sense(fixture.repo(), fixture.cache(), false);
+    assert!(!output.status.success());
+    let report = json(&output);
+    assert_eq!(report["status"], "partial");
+    assert!(
+        report["documentationRequirements"]
+            .as_array()
+            .unwrap()
+            .is_empty()
+    );
+    assert_eq!(
+        report["documentationCoverage"]["publicSurfaceCandidates"],
+        1
+    );
+    assert_eq!(
+        report["documentationCoverage"]["authoritativePublicSurfaces"],
+        0
+    );
+    assert_eq!(
+        report["documentationCoverage"]["unavailablePublicSurfaces"],
+        1
+    );
+    assert_eq!(report["after"]["coverage"]["nodeBuiltinReferences"], 1);
+    let issue = report["issues"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|issue| issue["code"] == "sense.documentation.public_surface_unavailable")
+        .unwrap();
+    assert_eq!(issue["paths"][0], "pkg/core.py");
+    assert!(issue["message"].as_str().unwrap().contains("docs/core.md"));
+
+    let builtin_acknowledgment = support::opcore(
+        fixture.repo(),
+        fixture.cache(),
+        "sense",
+        &["--allow-node-builtins"],
+    );
+    assert!(!builtin_acknowledgment.status.success());
+    assert!(String::from_utf8_lossy(&builtin_acknowledgment.stderr).contains("--allow-partial"));
+
+    let human = support::opcore(
+        fixture.repo(),
+        fixture.cache(),
+        "sense",
+        &["--allow-partial"],
+    );
+    assert!(human.status.success());
+    assert!(String::from_utf8_lossy(&human.stdout).contains(concat!(
+        "documentation public-surface coverage: 0/1 bound important changed Python ",
+        "sources authoritative; 1 unavailable"
+    )));
+}

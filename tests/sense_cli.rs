@@ -754,9 +754,7 @@ fn node_reexports_block_cycles_while_dynamic_imports_degrade_without_an_edge() {
 
 #[test]
 fn python_sibling_import_cycles_and_new_target_ambiguity_are_exact() {
-    let temp = tempfile::tempdir().unwrap();
-    let repo = temp.path().join("repo");
-    let cache = temp.path().join("cache");
+    let (_temp, repo, cache) = repository_paths();
     initialize(
         &repo,
         &[("pkg/a.py", "import b\na = 1\n"), ("pkg/b.py", "b = 1\n")],
@@ -1413,9 +1411,10 @@ fn unsupported_dependency_forms_and_languages_never_report_clean() {
     );
     let python_report = json(&sense(&python, &temp.path().join("python-cache"), false));
     assert_eq!(python_report["status"], "partial");
+    assert_eq!(python_report["after"]["coverage"]["ambiguousReferences"], 2);
     assert_eq!(
         python_report["after"]["coverage"]["unresolvedReferences"],
-        2
+        0
     );
     assert_eq!(python_report["after"]["coverage"]["externalReferences"], 0);
 

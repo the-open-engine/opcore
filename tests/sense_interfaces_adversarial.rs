@@ -51,6 +51,14 @@ fn assert_finding(report: &Value, expected: (&str, &str, usize, usize, usize)) {
     assert_eq!(findings[0]["basis"], "confirmed");
 }
 
+fn assert_retained_interface_debt_is_clean(repo: &Path, cache: &Path) {
+    let retained_debt = sense(repo, cache, false);
+    assert!(retained_debt.status.success());
+    let report = json(&retained_debt);
+    assert_eq!(report["status"], "clean");
+    assert!(report["interfaceFindings"].as_array().unwrap().is_empty());
+}
+
 fn dependency_imports(count: usize) -> String {
     (0..count).fold(String::new(), |mut source, index| {
         writeln!(source, "import './target_{index:02}';").unwrap();
@@ -108,11 +116,7 @@ fn confirmed_dependency_targets_enforce_boundary_and_introduced_only_debt() {
         format!("{}// unrelated edit\n", dependency_imports(21)),
     )
     .unwrap();
-    let retained_debt = sense(&repo, &cache, false);
-    assert!(retained_debt.status.success());
-    let report = json(&retained_debt);
-    assert_eq!(report["status"], "clean");
-    assert!(report["interfaceFindings"].as_array().unwrap().is_empty());
+    assert_retained_interface_debt_is_clean(&repo, &cache);
 }
 
 fn target_exports(namespace: &str, count: usize) -> String {
@@ -210,11 +214,7 @@ fn runtime_and_type_edge_selectors_enforce_boundary_and_introduced_only_debt() {
             format!("{}// unrelated edit\n", selector_import(namespace, 9)),
         )
         .unwrap();
-        let retained_debt = sense(&repo, &cache, false);
-        assert!(retained_debt.status.success());
-        let report = json(&retained_debt);
-        assert_eq!(report["status"], "clean");
-        assert!(report["interfaceFindings"].as_array().unwrap().is_empty());
+        assert_retained_interface_debt_is_clean(&repo, &cache);
     }
 }
 
@@ -222,8 +222,10 @@ fn runtime_and_type_edge_selectors_enforce_boundary_and_introduced_only_debt() {
 fn python_absolute_and_relative_sibling_imports_enforce_selector_limits_equally() {
     for relative in [false, true] {
         let temp = tempfile::tempdir().unwrap();
-        let repo = temp.path().join("repo");
-        let cache = temp.path().join("cache");
+        let (repo, cache) = (
+            temp.path().join("python-repo"),
+            temp.path().join("python-cache"),
+        );
         initialize(
             &repo,
             &[
@@ -319,11 +321,7 @@ fn exported_shapes_enforce_member_boundary_and_introduced_only_debt() {
             format!("{}// unrelated edit\n", exported_shape(kind, 21)),
         )
         .unwrap();
-        let retained_debt = sense(&repo, &cache, false);
-        assert!(retained_debt.status.success());
-        let report = json(&retained_debt);
-        assert_eq!(report["status"], "clean");
-        assert!(report["interfaceFindings"].as_array().unwrap().is_empty());
+        assert_retained_interface_debt_is_clean(&repo, &cache);
     }
 }
 

@@ -260,6 +260,42 @@ test('real npm lifecycle supports repeatable CLI-only installation without an ag
   cleanup(current);
 });
 
+test('real npm lifecycle keeps agent artifacts without enrolling hooks', {
+  skip: !archive,
+}, (t) => {
+  const current = fixture(t);
+  const environment = { OPCORE_AGENT_NO_HOOKS: '1' };
+  const failed = install(current, true, environment);
+  assert.notEqual(failed.status, 0);
+  assert.match(failed.stdout + failed.stderr, /injected npm state publication failure/);
+  assertRemoved(current);
+  requireSuccess(install(current, false, environment));
+  requireSuccess(install(current, false, environment));
+
+  const state = JSON.parse(fs.readFileSync(path.join(current.packageRoot, 'install-state.json')));
+  assert.equal(state.schema, 'opcore.npm-install.v2');
+  assert.deepEqual(state.installations.map((entry) => entry.agent), agentNames);
+  for (const agent of agentNames) {
+    const agentRoot = path.join(current.home, `.${agent}`);
+    const runtime = path.join(agentRoot, 'opcore');
+    assert.match(fs.readFileSync(path.join(runtime, 'install.receipt'), 'utf8'), /^hooks no$/m);
+    assert.equal(fs.existsSync(path.join(runtime, 'hook-install.json')), false);
+    for (const manifest of [
+      'asp-server.json',
+      'asp-server-rust-native.json',
+      'asp-server-node-native.json',
+      'asp-server-python-native.json',
+    ]) {
+      assert.equal(fs.existsSync(path.join(runtime, manifest)), true, `${agent}/${manifest}`);
+    }
+  }
+  assert.equal(fs.existsSync(path.join(current.home, '.codex/hooks.json')), false);
+  assert.equal(fs.existsSync(path.join(current.home, '.claude/settings.json')), false);
+  assert.equal(fs.existsSync(path.join(current.home, '.agents/skills/opcore/SKILL.md')), true);
+  assert.equal(fs.existsSync(path.join(current.home, '.claude/skills/opcore/SKILL.md')), true);
+  cleanup(current);
+});
+
 test('npm --ignore-scripts leaves useful help and setup diagnostics without running native files', (t) => {
   const current = emptyFixture(t);
   const packed = requireSuccess(command('npm', ['pack', sourcePackage, '--ignore-scripts',

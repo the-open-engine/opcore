@@ -1,6 +1,6 @@
 //! Local composition of the built-in checks over one selected Git view.
 
-use std::{collections::BTreeSet, path::PathBuf};
+use std::{collections::BTreeSet, ops::Deref, path::PathBuf};
 
 use anyhow::{Context, Result, ensure};
 use clap::Args;
@@ -34,7 +34,7 @@ pub struct RunArgs {
     /// CI target commit or tree (default: HEAD); never reads worktree overlays.
     #[arg(long, value_name = "REF")]
     pub tree: Option<String>,
-    /// CI baseline for introduced Sense findings; fetch and supply the intended base commit.
+    /// CI baseline for Sense and introduced Verify/native findings; supply the intended commit.
     #[arg(long, value_name = "REF")]
     pub base: Option<String>,
     /// Emit one structured report containing every selected check.
@@ -53,8 +53,27 @@ impl RunArgs {
             Workflow::Ci => ConfigView::Tree(self.tree.clone().unwrap_or_else(|| "HEAD".into())),
         }
     }
+}
 
+struct RunRequest<'a> {
+    args: &'a RunArgs,
+    comparison: Option<CheckComparison>,
+}
+
+impl Deref for RunRequest<'_> {
+    type Target = RunArgs;
+
+    fn deref(&self) -> &Self::Target {
+        self.args
+    }
+}
+
+impl RunRequest<'_> {
     fn validate(&self) -> Result<()> {
+        ensure!(
+            self.workflow != Workflow::PostEdit || self.comparison.is_none(),
+            "--comparison applies only to the pre-commit and ci workflows"
+        );
         if self.workflow == Workflow::Ci {
             ensure!(
                 self.base.is_some(),
@@ -67,6 +86,16 @@ impl RunArgs {
             );
         }
         Ok(())
+    }
+
+    const fn comparison(&self) -> CheckComparison {
+        match self.args.workflow {
+            Workflow::PostEdit => CheckComparison::Introduced,
+            Workflow::PreCommit | Workflow::Ci => match self.comparison {
+                Some(comparison) => comparison,
+                None => CheckComparison::All,
+            },
+        }
     }
 }
 
@@ -106,26 +135,22 @@ impl WorkflowEvaluation {
         Ok(())
     }
 
-    fn report(&self, workflow: Workflow) -> Value {
+    fn report(&self, args: &RunRequest<'_>) -> Value {
         json!({
             "schema": "opcore.workflow.v1",
-            "workflow": workflow,
+            "workflow": args.workflow,
+            "comparison": args.comparison().as_str(),
             "status": if self.enforce().is_ok() { "accepted" } else { "requires_attention" },
-            "configuration": {
-                "view": self.configuration.view,
-                "digest": self.configuration.digest,
-                "effective": self.configuration.policy,
-                "origins": self.configuration.origins,
-            },
+            "configuration": self.configuration.report_configuration(),
             "verify": self.verify,
             "sense": self.sense,
             "native": self.native.as_ref().map(|result| &result.report),
         })
     }
 
-    fn render(&self, args: &RunArgs) -> Result<String> {
+    fn render(&self, args: &RunRequest<'_>) -> Result<String> {
         if args.json {
-            return bounded_json(&self.report(args.workflow));
+            return bounded_json(&self.report(args));
         }
         let mut output = format!("opcore workflow: {}\n", args.workflow.as_str());
         output.push_str(&cli::render_human(&self.verify));
@@ -147,7 +172,28 @@ impl WorkflowEvaluation {
 ///
 /// Returns an error for invalid configuration, stale or unavailable coverage, or required findings.
 pub async fn run(args: RunArgs) -> Result<()> {
-    let outcome = run_inner(&args).await;
+    run_request(&RunRequest {
+        args: &args,
+        comparison: None,
+    })
+    .await
+}
+
+/// Executes a workflow with an explicit Verify/native comparison and prints its combined result.
+///
+/// # Errors
+///
+/// Returns an error for invalid configuration, stale or unavailable coverage, or required findings.
+pub async fn run_with_comparison(args: RunArgs, comparison: CheckComparison) -> Result<()> {
+    run_request(&RunRequest {
+        args: &args,
+        comparison: Some(comparison),
+    })
+    .await
+}
+
+async fn run_request(args: &RunRequest<'_>) -> Result<()> {
+    let outcome = run_inner(args).await;
     match outcome {
         Ok(result) => {
             println!("{}", result.rendered.trim_end());
@@ -158,6 +204,7 @@ pub async fn run(args: RunArgs) -> Result<()> {
                 let report = json!({
                     "schema": "opcore.workflow.v1",
                     "workflow": args.workflow,
+                    "comparison": args.comparison().as_str(),
                     "status": "incomplete",
                     "error": format!("{error:#}"),
                 });
@@ -168,14 +215,25 @@ pub async fn run(args: RunArgs) -> Result<()> {
     }
 }
 
-async fn run_inner(args: &RunArgs) -> Result<WorkflowEvaluation> {
+async fn run_inner(args: &RunRequest<'_>) -> Result<WorkflowEvaluation> {
     args.validate()?;
     let repository = GitRepository::discover(&args.repo).context("discover workflow repository")?;
-    evaluate(args, &repository).await
+    evaluate_request(args, &repository).await
 }
 
 pub(crate) async fn evaluate(
     args: &RunArgs,
+    repository: &GitRepository,
+) -> Result<WorkflowEvaluation> {
+    let request = RunRequest {
+        args,
+        comparison: None,
+    };
+    evaluate_request(&request, repository).await
+}
+
+async fn evaluate_request(
+    args: &RunRequest<'_>,
     repository: &GitRepository,
 ) -> Result<WorkflowEvaluation> {
     for attempt in 0..2 {
@@ -203,7 +261,7 @@ pub(crate) async fn evaluate(
 }
 
 fn is_current(
-    args: &RunArgs,
+    args: &RunRequest<'_>,
     repository: &GitRepository,
     before: &str,
     result: &WorkflowEvaluation,
@@ -235,7 +293,7 @@ fn auxiliary_paths(configuration: &PolicySnapshot) -> Result<BTreeSet<RepoPath>>
 }
 
 async fn evaluate_once(
-    args: &RunArgs,
+    args: &RunRequest<'_>,
     repository: &GitRepository,
     configuration: PolicySnapshot,
 ) -> Result<WorkflowEvaluation> {
@@ -259,7 +317,6 @@ async fn evaluate_once(
                 NativeProvider::PythonNative => CheckProvider::PythonNative,
             })
             .collect();
-        check.comparison = Some(CheckComparison::All);
         Some(host_cli::evaluate(&check, repository, &configuration).await?)
     };
     Ok(WorkflowEvaluation {
@@ -271,23 +328,28 @@ async fn evaluate_once(
     })
 }
 
-fn check_args(args: &RunArgs) -> CheckArgs {
+fn check_args(args: &RunRequest<'_>) -> CheckArgs {
+    let comparison = args.comparison();
     CheckArgs {
         repo: args.repo.clone(),
         changed: args.workflow == Workflow::PostEdit,
         staged: args.workflow == Workflow::PreCommit,
-        all: args.workflow != Workflow::PostEdit,
+        all: args.workflow != Workflow::PostEdit && comparison == CheckComparison::All,
+        base: (comparison == CheckComparison::Introduced)
+            .then(|| args.base.clone())
+            .flatten(),
         tree: match args.view() {
             ConfigView::Tree(tree) => Some(tree),
             _ => None,
         },
+        comparison: Some(comparison),
         workflow: Some(args.workflow),
         allow_unsandboxed_native: args.allow_unsandboxed_native,
         ..CheckArgs::default()
     }
 }
 
-fn sense_args(args: &RunArgs) -> sense_cli::SenseArgs {
+fn sense_args(args: &RunRequest<'_>) -> sense_cli::SenseArgs {
     sense_cli::SenseArgs {
         repo: args.repo.clone(),
         json: false,

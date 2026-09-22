@@ -716,7 +716,8 @@ function chooseAgents(environment, home) {
   if (found.length) return found;
   throw error(
     'INSTALL_CONTEXT_INVALID',
-    'no supported agent detected; set OPCORE_AGENT=codex or OPCORE_AGENT=claude'
+    'no supported agent detected; set OPCORE_AGENT=codex or OPCORE_AGENT=claude, ' +
+      'or set OPCORE_NO_HOOKS=1 for an explicit CLI-only installation'
   );
 }
 
@@ -776,8 +777,8 @@ function boundAgentEnvironment({ agent, agentRoot, home, skillRoot }) {
   return { HOME: home, CLAUDE_CONFIG_DIR: agentRoot };
 }
 
-function installerAgentArgs(agent, contexts) {
-  return contexts ? [] : ['--agent', agent];
+function installerAgentArgs(agent, contexts, enrollHooks) {
+  return [...(contexts ? [] : ['--agent', agent]), ...(enrollHooks ? [] : ['--no-hooks'])];
 }
 
 function runBundleInstaller({
@@ -787,12 +788,14 @@ function runBundleInstaller({
   home,
   skillRoot,
   contexts,
+  enrollHooks = true,
   binDir,
   environment = process.env,
 }) {
   const result = spawnSync(
     '/bin/bash',
-    [path.join(bundleRoot, 'install.sh'), ...installerAgentArgs(agent, contexts), '--bin-dir', binDir],
+    [path.join(bundleRoot, 'install.sh'),
+      ...installerAgentArgs(agent, contexts, enrollHooks), '--bin-dir', binDir],
     {
       cwd: bundleRoot,
       env: installerEnvironment(
@@ -1292,11 +1295,16 @@ function installationSelection(options, packageRoot) {
   if (environment.OPCORE_NO_HOOKS && !['0', '1'].includes(environment.OPCORE_NO_HOOKS)) {
     throw error('INSTALL_CONTEXT_INVALID', 'OPCORE_NO_HOOKS must be 0 or 1');
   }
+  if (environment.OPCORE_AGENT_NO_HOOKS &&
+      !['0', '1'].includes(environment.OPCORE_AGENT_NO_HOOKS)) {
+    throw error('INSTALL_CONTEXT_INVALID', 'OPCORE_AGENT_NO_HOOKS must be 0 or 1');
+  }
   const cliOnly = options.noHooks || environment.OPCORE_NO_HOOKS === '1';
+  const enrollHooks = environment.OPCORE_AGENT_NO_HOOKS !== '1';
   const contexts = cliOnly ? [] : selectAgents(environment);
   const allContexts = cliOnly ? [] : installationContexts(packageRoot, contexts);
   if (cliOnly) options.preflightStandalone({ packageRoot, environment });
-  return { environment, cliOnly, contexts, allContexts };
+  return { environment, cliOnly, enrollHooks, contexts, allContexts };
 }
 
 async function installRelease(options) {
@@ -1311,7 +1319,8 @@ async function installRelease(options) {
     );
   }
   const target = selectTarget(options.platform, options.arch);
-  const { environment, cliOnly, contexts, allContexts } = installationSelection(options, packageRoot);
+  const { environment, cliOnly, enrollHooks, contexts, allContexts } =
+    installationSelection(options, packageRoot);
   requireHostCompatibility(options.platform, options.runtimeHeader);
   const filename = archiveName(metadata.version, target);
   const releaseAssets =
@@ -1344,7 +1353,7 @@ async function installRelease(options) {
       expectedBinaryDigest: sha256(entries.get('bin/opcore').bytes) };
     if (cliOnly) return options.installStandalone({ ...context, bundleRoot, binDir, environment });
     const state = installAndCapture(options, contexts, allContexts,
-      { bundleRoot, binDir, environment }, context);
+      { bundleRoot, binDir, environment, enrollHooks }, context);
     return state;
   } finally {
     try {

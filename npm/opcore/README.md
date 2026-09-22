@@ -15,6 +15,14 @@ Postinstall downloads and verifies the native release, then installs the integra
 
 Set `OPCORE_AGENT=codex` or `OPCORE_AGENT=claude` to select one agent. If neither exists, select an agent explicitly or use CLI-only setup below.
 
+To install the selected agent skill and provider manifests without enrolling its user-level hook, set `OPCORE_AGENT_NO_HOOKS=1`:
+
+```sh
+OPCORE_AGENT=claude OPCORE_AGENT_NO_HOOKS=1 npm install -g --foreground-scripts @the-open-engine-company/opcore
+```
+
+Keep `OPCORE_AGENT_NO_HOOKS=1` on updates. This remains an agent integration with an ownership receipt and shared executable; `opcore uninstall` removes it normally. It is distinct from `OPCORE_NO_HOOKS=1`, which installs only the CLI.
+
 If npm skipped lifecycle scripts, `opcore --help` still explains setup, `--version` identifies the package, and `doctor --json` reports the missing installation state. Run `opcore setup` to retry verified installation; the wrapper never executes an unverified native binary.
 
 ## Project-local or CI installation
@@ -40,7 +48,7 @@ opcore sense --repo .
 
 `check --all` inspects current source even on a clean worktree. Later, plain `check` reports introduced findings in your worktree changes. Add `--json` for structured evidence or run `opcore rules` to inspect the built-in rules.
 
-Restart the agent after setup. In Codex, open `/hooks`, review the command, and trust it. Doctor inspects configuration but can't establish host trust or execution; follow the [activation smoke test](https://github.com/the-open-engine/opcore/blob/main/docs/getting-started.md#confirm-hook-activation) before relying on automatic feedback.
+Restart the agent after setup. In Codex, open `/hooks`, review the command, and trust it. In Claude, open `/hooks` to inspect the user-settings hook, which is already active in trusted workspaces. Doctor inspects configuration but can't establish host trust or execution; follow the [activation smoke test](https://github.com/the-open-engine/opcore/blob/main/docs/getting-started.md#confirm-hook-activation) before relying on automatic feedback.
 
 The post-edit hook sends Verify and Sense feedback after supported file edits, Bash, and MCP tool calls, including reads. It checks the written state and does not enforce a final handoff. Default partial Sense coverage produces one hint and continues. Configure full `run pre-commit` and `run ci --base <base-commit>` checks, ideally with the applicable native providers, alongside your existing tests and linters. Native execution requires explicit host authorization.
 

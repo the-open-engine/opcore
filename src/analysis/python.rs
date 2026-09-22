@@ -525,6 +525,36 @@ impl<'a> MetricsWalker<'a> {
         });
     }
 
+    fn observe_import_from_selectors(
+        &mut self,
+        import: &ast::StmtImportFrom,
+        module: &str,
+        level: u32,
+    ) {
+        for alias in &import.names {
+            let selector = if alias.name.as_str() == "*" {
+                self.interfaces.gaps.namespace_imports =
+                    self.interfaces.gaps.namespace_imports.saturating_add(1);
+                InterfaceSelector {
+                    kind: InterfaceSelectorKind::Namespace,
+                    name: String::new(),
+                }
+            } else {
+                InterfaceSelector {
+                    kind: InterfaceSelectorKind::Named,
+                    name: alias.name.to_string(),
+                }
+            };
+            self.push_interface_import(InterfaceImportFact {
+                specifier: module.to_string(),
+                level,
+                role: InterfaceImportRole::Import,
+                namespace: InterfaceNamespace::Runtime,
+                selector,
+            });
+        }
+    }
+
     fn observe_dependency(&mut self, statement: &ast::Stmt) {
         match statement {
             ast::Stmt::Import(import) => {
@@ -538,76 +568,38 @@ impl<'a> MetricsWalker<'a> {
             }
             ast::Stmt::ImportFrom(import) => {
                 let level = import.level;
-                if level == 0 {
-                    self.push_dependency(
-                        DependencyReferenceKind::PythonAbsolute,
-                        import.module.as_ref().map_or("", |module| module.as_str()),
-                        0,
-                    );
-                    if let Some(module) = &import.module {
-                        for alias in &import.names {
-                            let selector = if alias.name.as_str() == "*" {
-                                self.interfaces.gaps.namespace_imports =
-                                    self.interfaces.gaps.namespace_imports.saturating_add(1);
-                                InterfaceSelector {
-                                    kind: InterfaceSelectorKind::Namespace,
-                                    name: String::new(),
-                                }
-                            } else {
-                                InterfaceSelector {
-                                    kind: InterfaceSelectorKind::Named,
-                                    name: alias.name.to_string(),
-                                }
-                            };
-                            self.push_interface_import(InterfaceImportFact {
-                                specifier: module.to_string(),
-                                level,
-                                role: InterfaceImportRole::Import,
-                                namespace: InterfaceNamespace::Runtime,
-                                selector,
-                            });
+                match (level, import.module.as_ref()) {
+                    (0, module) => {
+                        self.push_dependency(
+                            DependencyReferenceKind::PythonAbsolute,
+                            module.map_or("", |name| name.as_str()),
+                            0,
+                        );
+                        if let Some(module) = module {
+                            self.observe_import_from_selectors(import, module.as_str(), level);
                         }
                     }
-                } else if let Some(module) = &import.module {
-                    self.push_dependency(
-                        DependencyReferenceKind::PythonRelative,
-                        module.to_string(),
-                        level,
-                    );
-                    for alias in &import.names {
-                        let selector = if alias.name.as_str() == "*" {
-                            self.interfaces.gaps.namespace_imports =
-                                self.interfaces.gaps.namespace_imports.saturating_add(1);
-                            InterfaceSelector {
-                                kind: InterfaceSelectorKind::Namespace,
-                                name: String::new(),
-                            }
-                        } else {
-                            InterfaceSelector {
-                                kind: InterfaceSelectorKind::Named,
-                                name: alias.name.to_string(),
-                            }
-                        };
-                        self.push_interface_import(InterfaceImportFact {
-                            specifier: module.to_string(),
-                            level,
-                            role: InterfaceImportRole::Import,
-                            namespace: InterfaceNamespace::Runtime,
-                            selector,
-                        });
-                    }
-                } else {
-                    self.interfaces.gaps.unsupported_patterns = self
-                        .interfaces
-                        .gaps
-                        .unsupported_patterns
-                        .saturating_add(import.names.len());
-                    for alias in &import.names {
+                    (_, Some(module)) => {
                         self.push_dependency(
                             DependencyReferenceKind::PythonRelative,
-                            alias.name.to_string(),
+                            module.to_string(),
                             level,
                         );
+                        self.observe_import_from_selectors(import, module.as_str(), level);
+                    }
+                    (_, None) => {
+                        self.interfaces.gaps.unsupported_patterns = self
+                            .interfaces
+                            .gaps
+                            .unsupported_patterns
+                            .saturating_add(import.names.len());
+                        for alias in &import.names {
+                            self.push_dependency(
+                                DependencyReferenceKind::PythonRelative,
+                                alias.name.to_string(),
+                                level,
+                            );
+                        }
                     }
                 }
             }
@@ -985,7 +977,11 @@ mod tests {
     #[test]
     fn extracts_absolute_and_relative_selectors_and_only_exact_static_all_exports() {
         let result = facts(
-            "__all__ = ['public_api', 'Shape']\nfrom api import public_api, Shape as AbsoluteShape\nfrom .api import public_api, Shape as RelativeShape\n",
+            concat!(
+                "__all__ = ['public_api', 'Shape']\n",
+                "from api import public_api, Shape as AbsoluteShape\n",
+                "from .api import public_api, Shape as RelativeShape\n",
+            ),
             &RuleLimits::default(),
         );
         assert_eq!(
