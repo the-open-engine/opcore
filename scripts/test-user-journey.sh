@@ -24,6 +24,10 @@ if [[ ! "$release_version" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)
   printf 'user journey: unexpected release version in %s\n' "$archive_name" >&2
   exit 1
 fi
+release_major=${release_version%%.*}
+release_remainder=${release_version#*.}
+release_minor=${release_remainder%%.*}
+release_docs=https://the-open-engine.github.io/opcore/v$release_major.$release_minor
 bundle_name="opcore-$platform"
 
 temp_root=${TMPDIR:-/tmp}
@@ -223,10 +227,17 @@ for guidance in \
   publicSurfaceAuthoritative \
   documentationCoverage.evaluated \
   not_read \
-  'https://the-open-engine.github.io/opcore/v0.3/docs/configuration.html#select-targets' \
-  'https://the-open-engine.github.io/opcore/v0.3/docs/sense.html#dependency-envelope'; do
+  "$release_docs/docs/configuration.html#select-targets" \
+  "$release_docs/docs/sense.html#dependency-envelope"; do
   grep -F "$guidance" "$install_home/.agents/skills/opcore/SKILL.md" >/dev/null
 done
+grep -F "$release_docs/docs/sense.html#dependency-envelope" \
+  "$bundle_root/README.md" >/dev/null
+if grep -F 'https://the-open-engine.github.io/opcore/dev/' \
+  "$bundle_root/README.md" "$install_home/.agents/skills/opcore/SKILL.md" >/dev/null; then
+  printf 'user journey: release guidance retained development documentation links\n' >&2
+  exit 1
+fi
 env -i HOME="$install_home" PATH=/usr/bin:/bin \
   /bin/bash --noprofile --norc -c "$installed_command --version" >/dev/null
 grep -F 'verified opcore ' "$fixture/install-output" >/dev/null

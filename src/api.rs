@@ -54,7 +54,9 @@
 pub use crate::{
     commands::{
         RepositoryArgs, configuration_schema, doctor, rules, status,
-        workflows::{RunArgs, run as run_workflow},
+        workflows::{
+            RunArgs, run as run_workflow, run_with_comparison as run_workflow_with_comparison,
+        },
     },
     hooks::{Agent, ConfigureHookArgs, agent_gate, configure},
     policy::Workflow,

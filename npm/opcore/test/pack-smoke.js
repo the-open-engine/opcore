@@ -7,6 +7,15 @@ const path = require('path');
 const { spawnSync } = require('child_process');
 
 const packageRoot = path.resolve(__dirname, '..');
+const packageVersion = JSON.parse(
+  fs.readFileSync(path.join(packageRoot, 'package.json'), 'utf8')
+).version;
+const releaseMatch = /^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\./.exec(packageVersion);
+const docsVersion = packageVersion === '0.0.0-development'
+  ? 'dev'
+  : releaseMatch && `v${releaseMatch[1]}.${releaseMatch[2]}`;
+if (!docsVersion) throw new Error(`package has no documentation route: ${packageVersion}`);
+const docsBase = `https://the-open-engine.github.io/opcore/${docsVersion}`;
 const destination = fs.mkdtempSync(path.join(os.tmpdir(), 'opcore-pack.'));
 try {
   const result = spawnSync(
@@ -57,12 +66,18 @@ try {
     'documentationCoverage.evaluated',
     'not_read',
     'publicSurfaceAuthoritative',
-    'https://the-open-engine.github.io/opcore/v0.3/docs/configuration.html#select-targets',
-    'https://the-open-engine.github.io/opcore/v0.3/docs/sense.html#dependency-envelope',
+    `${docsBase}/docs/configuration.html#select-targets`,
+    `${docsBase}/docs/sense.html#dependency-envelope`,
   ];
   for (const guidance of requiredGuidance) {
     if (!readmeResult.stdout.includes(guidance)) {
       throw new Error(`packed README is missing required guidance: ${guidance}`);
+    }
+  }
+  const route = /https:\/\/the-open-engine\.github\.io\/opcore\/(dev|v[0-9]+\.[0-9]+)\//g;
+  for (const match of readmeResult.stdout.matchAll(route)) {
+    if (match[1] !== docsVersion) {
+      throw new Error(`packed README route ${match[1]} does not match ${packageVersion}`);
     }
   }
   process.stdout.write(`packed ${packed.filename} (${metadata.size} bytes)\n`);

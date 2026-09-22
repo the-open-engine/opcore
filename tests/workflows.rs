@@ -24,6 +24,40 @@ fn configure(fixture: &RepositoryFixture, value: &Value) {
     fixture.write(".opcore.json", &serde_json::to_string(value).unwrap());
 }
 
+fn head(fixture: &RepositoryFixture) -> String {
+    String::from_utf8(
+        Command::new("git")
+            .args(["rev-parse", "HEAD"])
+            .current_dir(fixture.repo())
+            .output()
+            .unwrap()
+            .stdout,
+    )
+    .unwrap()
+    .trim()
+    .to_owned()
+}
+
+fn assert_uses_strict_configuration(result: &Value) {
+    assert_eq!(
+        result["configuration"]["effective"]["verify"]["maxParameters"],
+        1
+    );
+    assert_eq!(result["verify"]["status"], "findings");
+}
+
+#[test]
+fn public_run_args_remain_constructible_without_comparison() {
+    let _args = opcore::api::RunArgs {
+        workflow: opcore::api::Workflow::PostEdit,
+        repo: ".".into(),
+        tree: None,
+        base: None,
+        json: false,
+        allow_unsandboxed_native: false,
+    };
+}
+
 fn hook(fixture: &RepositoryFixture) -> std::process::Output {
     Command::new(assert_cmd::cargo::cargo_bin!("opcore"))
         .arg("agent-gate")
@@ -31,6 +65,17 @@ fn hook(fixture: &RepositoryFixture) -> std::process::Output {
         .env("XDG_CACHE_HOME", fixture.cache())
         .output()
         .unwrap()
+}
+
+#[test]
+fn workflow_configuration_reports_default_and_configured_state() {
+    let fixture = RepositoryFixture::new(&[("src/a.ts", "export const ready = true;\n")]);
+    let default = run(&fixture, "post-edit", &[], true);
+    assert_eq!(default["configuration"]["state"], "default");
+
+    configure(&fixture, &json!({"schemaVersion": 1}));
+    let configured = run(&fixture, "post-edit", &[], true);
+    assert_eq!(configured["configuration"]["state"], "configured");
 }
 
 #[test]
@@ -78,6 +123,14 @@ fn workflow_overrides_are_shared_by_hook_manual_check_and_full_staged_gate() {
         "complexity.max-parameters"
     );
     assert_eq!(result["configuration"]["view"]["kind"], "index");
+
+    let introduced = run(
+        &fixture,
+        "pre-commit",
+        &["--comparison", "introduced"],
+        false,
+    );
+    assert_uses_strict_configuration(&introduced);
 }
 
 #[test]
@@ -113,12 +166,7 @@ fn exclusions_replace_per_workflow_and_match_whole_path_segments() {
 #[test]
 fn ci_checks_committed_source_and_configuration_and_requires_its_base() {
     let fixture = RepositoryFixture::new(&[("src/a.py", "initial = 1\n")]);
-    let base = Command::new("git")
-        .args(["rev-parse", "HEAD"])
-        .current_dir(fixture.repo())
-        .output()
-        .unwrap();
-    let base = String::from_utf8(base.stdout).unwrap();
+    let base = head(&fixture);
     configure(
         &fixture,
         &json!({"schemaVersion":1,"verify":{"maxParameters":1}}),
@@ -133,7 +181,7 @@ fn ci_checks_committed_source_and_configuration_and_requires_its_base() {
     );
     let missing_base = run(&fixture, "ci", &[], false);
     assert!(missing_base["error"].as_str().unwrap().contains("--base"));
-    let result = run(&fixture, "ci", &["--base", base.trim()], false);
+    let result = run(&fixture, "ci", &["--base", &base], false);
     assert_eq!(result["verify"]["status"], "findings");
     assert_eq!(
         result["configuration"]["effective"]["verify"]["maxParameters"],
@@ -143,6 +191,14 @@ fn ci_checks_committed_source_and_configuration_and_requires_its_base() {
         fs::read_to_string(fixture.repo().join("src/a.py")).unwrap(),
         "initial = 2\n"
     );
+
+    let introduced = run(
+        &fixture,
+        "ci",
+        &["--base", &base, "--comparison", "introduced"],
+        false,
+    );
+    assert_uses_strict_configuration(&introduced);
 }
 
 #[test]
@@ -160,6 +216,96 @@ fn full_commit_gate_reports_existing_findings_and_rejects_an_empty_target_set() 
     git(fixture.repo(), &["add", ".opcore.json"]);
     let excluded = run(&fixture, "pre-commit", &[], false);
     assert_eq!(excluded["verify"]["status"], "unsupported");
+}
+
+#[test]
+fn introduced_pre_commit_grandfathers_existing_findings_but_checks_changed_files() {
+    let fixture = RepositoryFixture::new(&[(
+        "legacy.ts",
+        "export function legacy(a,b,c,d,e,f) { return a+b+c+d+e+f; }\n",
+    )]);
+    fixture.write("clean.ts", "export const clean = true;\n");
+    git(fixture.repo(), &["add", "clean.ts"]);
+
+    let full = run(&fixture, "pre-commit", &[], false);
+    assert_eq!(full["comparison"], "all");
+    assert_eq!(full["verify"]["status"], "findings");
+
+    let introduced = run(
+        &fixture,
+        "pre-commit",
+        &["--comparison", "introduced"],
+        true,
+    );
+    assert_eq!(introduced["comparison"], "introduced");
+    assert_eq!(introduced["verify"]["status"], "clean");
+
+    fixture.write(
+        "legacy.ts",
+        concat!(
+            "export function legacy(a,b,c,d,e,f) { return a+b+c+d+e+f; }\n",
+            "export function added(a,b,c,d,e,f) { return a+b+c+d+e+f; }\n"
+        ),
+    );
+    git(fixture.repo(), &["add", "legacy.ts"]);
+    let regression = run(
+        &fixture,
+        "pre-commit",
+        &["--comparison", "introduced"],
+        false,
+    );
+    assert_eq!(regression["verify"]["status"], "findings");
+    assert_eq!(
+        regression["verify"]["diagnostics"]
+            .as_array()
+            .unwrap()
+            .len(),
+        1
+    );
+}
+
+#[test]
+fn introduced_ci_compares_the_target_with_the_explicit_base() {
+    let fixture = RepositoryFixture::new(&[(
+        "legacy.ts",
+        "export function legacy(a,b,c,d,e,f) { return a+b+c+d+e+f; }\n",
+    )]);
+    let base = head(&fixture);
+    fixture.write("clean.ts", "export const clean = true;\n");
+    git(fixture.repo(), &["add", "clean.ts"]);
+    git(fixture.repo(), &["commit", "-qm", "clean addition"]);
+
+    let result = run(
+        &fixture,
+        "ci",
+        &["--base", &base, "--comparison", "introduced"],
+        true,
+    );
+    assert_eq!(result["comparison"], "introduced");
+    assert_eq!(result["verify"]["status"], "clean");
+}
+
+#[test]
+fn introduced_workflows_do_not_block_without_supported_source_changes() {
+    for workflow in ["pre-commit", "ci"] {
+        let fixture = RepositoryFixture::new(&[("src/a.ts", "export const value = 1;\n")]);
+        let base = head(&fixture);
+        let arguments = match workflow {
+            "ci" => vec!["--base", base.as_str(), "--comparison", "introduced"],
+            _ => vec!["--comparison", "introduced"],
+        };
+
+        let identical = run(&fixture, workflow, &arguments, true);
+        assert_eq!(identical["verify"]["status"], "not_checked");
+
+        fixture.write("README.md", "documentation only\n");
+        git(fixture.repo(), &["add", "README.md"]);
+        if workflow == "ci" {
+            git(fixture.repo(), &["commit", "-qm", "documentation"]);
+        }
+        let documentation_only = run(&fixture, workflow, &arguments, true);
+        assert_eq!(documentation_only["verify"]["status"], "not_checked");
+    }
 }
 
 #[test]
@@ -212,6 +358,15 @@ fn native_selection_requires_explicit_host_execution_authorization() {
             .unwrap()
             .contains("--allow-unsandboxed-native")
     );
+
+    let introduced = run(
+        &fixture,
+        "pre-commit",
+        &["--comparison", "introduced", "--allow-unsandboxed-native"],
+        false,
+    );
+    assert_eq!(introduced["comparison"], "introduced");
+    assert_eq!(introduced["native"]["comparison"], "introduced");
 }
 
 #[test]

@@ -173,8 +173,7 @@ class DocumentationVersions(unittest.TestCase):
             'evaluated not_read publicSurfaceAuthoritative</main></body></html>'
         )
 
-        site = self.publish("v0.3.0", stable=True)
-        for relative, terms in (
+        guidance = (
             ("docs/configuration.html", ("targets.exclude", "generated", "vendor")),
             (
                 "docs/sense.html",
@@ -187,11 +186,24 @@ class DocumentationVersions(unittest.TestCase):
                     "publicSurfaceAuthoritative",
                 ),
             ),
-        ):
-            content = (site / "v0.3" / relative).read_text()
-            self.assertNotIn('http-equiv="refresh"', content)
-            for term in terms:
-                self.assertIn(term, content)
+        )
+
+        def assert_fetchable(root):
+            for relative, terms in guidance:
+                content = (root / relative).read_text()
+                self.assertNotIn('http-equiv="refresh"', content)
+                for term in terms:
+                    self.assertIn(term, content)
+
+        site = self.publish()
+        assert_fetchable(site / "dev")
+        site = self.publish("v0.3.0", stable=True)
+        assert_fetchable(site / "v0.3")
+        site = self.publish("v0.4.0", commit="c" * 40, stable=True)
+        assert_fetchable(site / "v0.4")
+        stable = (site / "stable/docs/sense.html").read_text()
+        self.assertIn('http-equiv="refresh"', stable)
+        self.assertIn("../../v0.4/docs/sense.html", stable)
 
     def test_rustdoc_source_ranges_work_inside_version_directories(self):
         source = self.snapshot / "api/src/opcore/api.rs.html"

@@ -753,19 +753,14 @@ fn node_reexports_block_cycles_while_dynamic_imports_degrade_without_an_edge() {
 }
 
 #[test]
-fn python_relative_cycles_and_new_target_ambiguity_are_exact() {
-    let temp = tempfile::tempdir().unwrap();
-    let repo = temp.path().join("repo");
-    let cache = temp.path().join("cache");
+fn python_sibling_import_cycles_and_new_target_ambiguity_are_exact() {
+    let (_temp, repo, cache) = repository_paths();
     initialize(
         &repo,
-        &[
-            ("pkg/a.py", "from .b import b\na = 1\n"),
-            ("pkg/b.py", "b = 1\n"),
-        ],
+        &[("pkg/a.py", "import b\na = 1\n"), ("pkg/b.py", "b = 1\n")],
     );
 
-    fs::write(repo.join("pkg/b.py"), "from .a import a\nb = 1\n").unwrap();
+    fs::write(repo.join("pkg/b.py"), "from . import a\nb = 1\n").unwrap();
     let cycle = sense(&repo, &cache, false);
     assert!(!cycle.status.success());
     assert_eq!(json(&cycle)["introducedCycles"][0]["memberCount"], 2);
@@ -1407,10 +1402,21 @@ fn unsupported_dependency_forms_and_languages_never_report_clean() {
         2
     );
 
-    initialize(&python, &[("a.py", "import b\n"), ("b.py", "import a\n")]);
+    initialize(
+        &python,
+        &[
+            ("a.py", "import missing.module\n"),
+            ("b.py", "import absent.package\n"),
+        ],
+    );
     let python_report = json(&sense(&python, &temp.path().join("python-cache"), false));
     assert_eq!(python_report["status"], "partial");
-    assert_eq!(python_report["after"]["coverage"]["externalReferences"], 2);
+    assert_eq!(python_report["after"]["coverage"]["ambiguousReferences"], 2);
+    assert_eq!(
+        python_report["after"]["coverage"]["unresolvedReferences"],
+        0
+    );
+    assert_eq!(python_report["after"]["coverage"]["externalReferences"], 0);
 
     initialize(&hcl, &[("main.tf", "locals { value = \"before\" }\n")]);
     fs::write(hcl.join("main.tf"), "locals { value = \"after\" }\n").unwrap();

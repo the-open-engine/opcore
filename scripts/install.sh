@@ -1157,6 +1157,7 @@ enroll_agent() (
     printf 'restart Codex, open /hooks, review this command, and trust it before expecting it to run\n'
   else
     printf 'configured the Claude PostToolUse Verify and Project Sense hook in %s\n' "$hook_config_path"
+    printf 'open /hooks to inspect this user-settings hook; it is already active in trusted workspaces\n'
   fi
 )
 

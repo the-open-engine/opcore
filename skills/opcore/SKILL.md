@@ -9,7 +9,7 @@ Use Opcore as a mechanical intervention gate for agent edits.
 
 After each coherent source edit, run `opcore run post-edit --repo . --json`. Act on installed PostToolUse feedback immediately. Post-edit uses the repository's workflow thresholds and exclusions, with partial Sense coverage allowed by default; review the report when that coverage matters.
 
-The hook covers supported file-edit tools, Bash, and all MCP tool calls, including reads. It sends feedback after the call and cannot prevent a commit executed inside it or enforce final handoff. Run the post-edit workflow before handing work back. A configured hook does not prove host trust, activation, or coverage of another editing tool.
+The hook covers supported file-edit tools, Bash, and all MCP tool calls, including reads. Every matched call checks all selected uncommitted worktree changes against HEAD, not only files or commands named by the triggering payload. While an intervention remains unresolved, unrelated edits and read-only calls receive the same whole-worktree feedback. The triggering PostToolUse call already executed, although Codex may replace its result with hook feedback. Committing changes only changes the comparison baseline; it does not resolve the reported issues. The hook cannot prevent a commit executed inside the call or enforce final handoff. Run the post-edit workflow before handing work back. A configured hook does not prove host trust, activation, or coverage of another editing tool.
 
 - To investigate one evaluator, use `opcore check --workflow post-edit --changed --json` or `opcore sense --workflow post-edit --json`.
 - Before applying a graph-sensitive proposed edit, send its exact write/delete JSON to `opcore sense --repo . --hypothetical - --json`; do not materialize a temporary tree.
@@ -46,7 +46,7 @@ Sense confirms only exact local dependency targets without executing project con
 | Family | Confirmed | Deliberately not resolved |
 | --- | --- | --- |
 | Node | Static imports and re-exports; runtime and type-only stay distinct | Bare packages, aliases, dynamic imports, `require`, query/hash suffixes, and ambiguous extension/index targets |
-| Python | Unambiguous explicit-relative `.py`/`.pyi` or package targets | Absolute imports, `from . import name`, sys.path, namespace/config ambiguity, and multiple candidates |
+| Python | Unambiguous explicit-relative targets and one-component imports with one sibling `.py`, `.pyi`, or package target | Missing, dotted, colliding, or non-sibling absolute targets; sys.path and namespace/config ambiguity |
 | Rust | External `mod` plus explicit or uniquely local paths reachable from conventional crate roots | Cargo-configured roots, cfg/path attributes, generated or undeclared modules, aliases, and ambiguous module targets |
 | Go | Exact imports inside the deepest enclosing root or `go.mod` module | External modules, `go.work`, `replace`, vendor/GOPATH context, generated packages, custom build tags, and malformed module metadata |
 | HCL, Shell, Protobuf | Syntax and hygiene only | Import/include/tool-specific or generated-code semantics |
@@ -57,6 +57,6 @@ Sense confirms only exact local dependency targets without executing project con
 {"schemaVersion":1,"targets":{"exclude":["generated","vendor"]}}
 ```
 
-`targets.exclude` entries are literal files or subtrees, not globs: `vendor` matches `vendor/pkg/file.ts` but not `vendor-utils/file.ts`. Do not exclude maintained source merely to hide a finding. See the version-bound [configuration reference](https://the-open-engine.github.io/opcore/v0.3/docs/configuration.html#select-targets) and [Sense resolution and limits](https://the-open-engine.github.io/opcore/v0.3/docs/sense.html#dependency-envelope).
+`targets.exclude` entries are literal files or subtrees, not globs: `vendor` matches `vendor/pkg/file.ts` but not `vendor-utils/file.ts`. Do not exclude maintained source merely to hide a finding. See the fetchable [configuration reference](https://the-open-engine.github.io/opcore/dev/docs/configuration.html#select-targets) and [Sense resolution and limits](https://the-open-engine.github.io/opcore/dev/docs/sense.html#dependency-envelope). Source installations use current development guidance; release bundles rewrite these links to their exact `vX.Y` archive. The guidance above remains usable if a documentation fetch is unavailable.
 
 In JSON output, `documentationCoverage.evaluated: false` normally means no qualifying newly-important or authoritative public-surface change required documentation evaluation; check `issues` if observations were bounded. A registry state of `not_read` means that view's `.opcore.json` documentation bindings were not needed for this run, not that configuration was ignored. `publicSurfaceAuthoritative: false` means the parser could not establish a complete explicit public surface, so Opcore does not claim an authoritative surface comparison.
