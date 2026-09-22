@@ -13,6 +13,12 @@ const {
   isReleaseVersion,
 } = require('../lib/install');
 
+const DOCUMENTATION_BASE = 'https://the-open-engine.github.io/opcore/';
+const DOCUMENTATION_ROUTE =
+  /https:\/\/the-open-engine\.github\.io\/opcore\/(dev|v(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*))\//g;
+const DOCUMENTATION_HOST_PREFIX = 'https://the-open-engine.';
+const DOCUMENTATION_PATH_MARKER = 'github.io/opcore/';
+
 function fail(message) {
   throw new Error(`release asset staging failed: ${message}`);
 }
@@ -26,6 +32,37 @@ function archiveDigest(filename) {
   return crypto.createHash('sha256').update(fs.readFileSync(filename)).digest('hex');
 }
 
+function validateDocumentationHosts(content) {
+  let marker = content.indexOf(DOCUMENTATION_PATH_MARKER);
+  while (marker !== -1) {
+    const prefixStart = marker - DOCUMENTATION_HOST_PREFIX.length;
+    if (
+      prefixStart < 0 ||
+      content.slice(prefixStart, marker) !== DOCUMENTATION_HOST_PREFIX
+    ) {
+      fail('README.md contains an unexpected documentation host');
+    }
+    marker = content.indexOf(DOCUMENTATION_PATH_MARKER, marker + DOCUMENTATION_PATH_MARKER.length);
+  }
+}
+
+function rewriteDocumentationLinks(content, releaseRoute) {
+  validateDocumentationHosts(content);
+  const routes = [...content.matchAll(DOCUMENTATION_ROUTE)].map((route) => route[1]);
+  if (routes.length === 0) fail('README.md has no recognized documentation links');
+  if (routes.some((route) => route !== 'dev' && route !== releaseRoute)) {
+    fail('README.md links to a different release documentation minor');
+  }
+  const hasDevelopment = routes.includes('dev');
+  const hasRelease = routes.includes(releaseRoute);
+  if (hasDevelopment && hasRelease) fail('README.md mixes development and release documentation');
+  if (!hasDevelopment && !hasRelease) fail('README.md has no matching documentation links');
+  return content.replaceAll(
+    `${DOCUMENTATION_BASE}dev/`,
+    `${DOCUMENTATION_BASE}${releaseRoute}/`
+  );
+}
+
 function stageDocumentationLinks(version) {
   const match = /^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\./.exec(version);
   if (!match) fail('release version has no documentation minor');
@@ -35,14 +72,9 @@ function stageDocumentationLinks(version) {
     fail('README.md is not a bounded regular file');
   }
   const content = fs.readFileSync(readme, 'utf8');
-  const base = 'https://the-open-engine.github.io/opcore';
-  const development = `${base}/dev/`;
-  const release = `${base}/v${match[1]}.${match[2]}/`;
-  if (!content.includes(development)) fail('README.md has no development documentation links');
-  if (new RegExp(`${base.replaceAll('.', '\\.')}/v[0-9]+\\.[0-9]+/`).test(content)) {
-    fail('README.md hard-codes a release documentation minor');
-  }
-  const staged = content.replaceAll(development, release);
+  const releaseRoute = `v${match[1]}.${match[2]}`;
+  const staged = rewriteDocumentationLinks(content, releaseRoute);
+  if (staged === content) return;
   const temporary = `${readme}.${process.pid}.tmp`;
   try {
     fs.writeFileSync(temporary, staged, { flag: 'wx', mode: 0o600 });
