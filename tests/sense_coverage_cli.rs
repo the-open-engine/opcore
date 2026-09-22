@@ -7,6 +7,31 @@ use serde_json::Value;
 mod support;
 use support::{RepositoryFixture, git, json, opcore, opcore_json};
 
+fn oversized_region_source() -> String {
+    let mut source = String::from("let total = 0;\n");
+    for index in 0..15_000 {
+        writeln!(source, "total += {index};").unwrap();
+    }
+    source
+}
+
+fn incomplete_sense_report(fixture: &RepositoryFixture) -> Value {
+    let output = opcore_json(fixture, "sense", &[]);
+    assert!(!output.status.success());
+    let report = json(&output);
+    assert_eq!(report["status"], "incomplete");
+    report
+}
+
+fn issue_by_code<'a>(report: &'a Value, code: &str) -> &'a Value {
+    report["issues"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|issue| issue["code"] == code)
+        .unwrap()
+}
+
 #[test]
 fn empty_staged_sense_keeps_baseline_gaps_visible_without_blocking() {
     let fixture = RepositoryFixture::new(&[(
@@ -173,22 +198,10 @@ fn unknown_node_scheme_name_is_not_acknowledged_as_a_builtin() {
 #[test]
 fn duplicate_file_limit_reports_stage_limit_view_path_and_recovery() {
     let fixture = RepositoryFixture::new(&[("baseline.js", "export const baseline = true;\n")]);
-    let mut source = String::from("let total = 0;\n");
-    for index in 0..15_000 {
-        writeln!(source, "total += {index};").unwrap();
-    }
-    fixture.write("large.js", &source);
+    fixture.write("large.js", &oversized_region_source());
 
-    let output = opcore_json(&fixture, "sense", &[]);
-    assert!(!output.status.success());
-    let report = json(&output);
-    assert_eq!(report["status"], "incomplete");
-    let issue = report["issues"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .find(|issue| issue["code"] == "dedup_region_file_limit")
-        .unwrap();
+    let report = incomplete_sense_report(&fixture);
+    let issue = issue_by_code(&report, "dedup_region_file_limit");
     assert_eq!(issue["stage"], "token_region_file_extraction");
     assert_eq!(issue["views"], Value::from(vec!["after"]));
     assert_eq!(issue["limit"], 4_096);
@@ -205,10 +218,7 @@ fn duplicate_file_limit_reports_stage_limit_view_path_and_recovery() {
 #[test]
 fn duplicate_file_limit_keeps_complete_json_paths_and_samples_human_output() {
     let fixture = RepositoryFixture::new(&[("baseline.js", "export const baseline = true;\n")]);
-    let mut source = String::from("let total = 0;\n");
-    for index in 0..15_000 {
-        writeln!(source, "total += {index};").unwrap();
-    }
+    let source = oversized_region_source();
     let expected_paths = (0..12)
         .map(|index| format!("vendor/bundle{index:02}.min.js"))
         .collect::<Vec<_>>();
@@ -216,16 +226,8 @@ fn duplicate_file_limit_keeps_complete_json_paths_and_samples_human_output() {
         fixture.write(path, &source);
     }
 
-    let output = opcore_json(&fixture, "sense", &[]);
-    assert!(!output.status.success());
-    let report = json(&output);
-    assert_eq!(report["status"], "incomplete");
-    let issue = report["issues"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .find(|issue| issue["code"] == "dedup_region_file_limit")
-        .unwrap();
+    let report = incomplete_sense_report(&fixture);
+    let issue = issue_by_code(&report, "dedup_region_file_limit");
     assert_eq!(issue["paths"], Value::from(expected_paths.clone()));
     assert_eq!(issue["pathsTruncated"], Value::Null);
     let next_step = issue["nextStep"].as_str().unwrap();
