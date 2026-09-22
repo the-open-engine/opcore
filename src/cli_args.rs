@@ -26,7 +26,13 @@ pub(crate) struct Cli {
 #[derive(Debug, Subcommand)]
 pub(crate) enum Command {
     /// Run Verify, Sense, and configured native checks for post-edit, pre-commit, or CI.
-    Run(api::RunArgs),
+    Run {
+        #[command(flatten)]
+        args: api::RunArgs,
+        /// Select introduced or all Verify and native diagnostics; defaults to all.
+        #[arg(long, value_enum, value_name = "MODE")]
+        comparison: Option<api::CheckComparison>,
+    },
     /// Evaluate a local Git source view.
     Check(api::CheckArgs),
     /// Analyze exact local dependency changes and introduced runtime cycles.
