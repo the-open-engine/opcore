@@ -59,6 +59,16 @@ version and resolve a named route against that archive's base URL. For example,
 `v0.3/` plus `routes.cli` selects `v0.3/cli.html`. The manifest records which patch
 the archive currently describes; it may be newer than the installed patch.
 
+Checked-in README, npm README, and installed-skill sources link directly to the
+complete `dev/` pages so guidance on `main` never carries a stale minor. Release
+bundle staging rewrites the README and skill links to the validated binary's
+`vX.Y/` archive; npm release staging does the same using the validated package
+version. CLI remediation URLs derive that minor from Cargo package metadata.
+Packaging tests reject a release whose documentation route does not match its
+version. `stable/` and the unversioned paths remain useful browser redirects,
+but fetch-only troubleshooting references must use `dev/` or an exact minor
+because redirect pages do not contain the guide body.
+
 `contentDigest` covers each sorted relative file path and its bytes, excluding
 the manifest itself. Each path and content value has an unsigned 64-bit
 big-endian byte-length prefix before hashing with SHA-256. The publisher checks

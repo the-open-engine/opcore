@@ -38,3 +38,25 @@ Hypothetical Sense accepts this shape; use the intended repository-relative path
 Pass the JSON through stdin with `opcore sense --repo . --workflow post-edit --hypothetical - --json`. It compares against the current worktree without writing candidate files and cannot combine with staged or committed selection. A proposed `.opcore.json` write may change documentation bindings only; all other settings must stay unchanged.
 
 Respect root `.opcore.json` and the selected workflow. `opcore rules --schema` emits its editor schema. Workflow objects merge defined fields, arrays replace, and literal exclusions narrow the stated scope. Documentation ownership lives in `documentation.bindings`, for example `{"schemaVersion":1,"documentation":{"bindings":[{"source":"src/core.ts","document":"docs/core.md"}]}}`. Create or update the registered document in the same selected view as the source. Never relax settings or add exclusions just to hide a finding.
+
+## Troubleshooting Sense
+
+Sense confirms only exact local dependency targets without executing project configuration. Treat everything in the last column as an explicit coverage boundary, not as an absent dependency.
+
+| Family | Confirmed | Deliberately not resolved |
+| --- | --- | --- |
+| Node | Static imports and re-exports; runtime and type-only stay distinct | Bare packages, aliases, dynamic imports, `require`, query/hash suffixes, and ambiguous extension/index targets |
+| Python | Unambiguous explicit-relative targets and one-component imports with one sibling `.py`, `.pyi`, or package target | Missing, dotted, colliding, or non-sibling absolute targets; sys.path and namespace/config ambiguity |
+| Rust | External `mod` plus explicit or uniquely local paths reachable from conventional crate roots | Cargo-configured roots, cfg/path attributes, generated or undeclared modules, aliases, and ambiguous module targets |
+| Go | Exact imports inside the deepest enclosing root or `go.mod` module | External modules, `go.work`, `replace`, vendor/GOPATH context, generated packages, custom build tags, and malformed module metadata |
+| HCL, Shell, Protobuf | Syntax and hygiene only | Import/include/tool-specific or generated-code semantics |
+
+`effectivePolicy.importantFanIn` is the configured direct-dependent threshold for mechanically important modules; it is not a count of all possible dependents when resolution is partial. Duplicate extraction has fixed safety limits; `dedup_region_file_limit` means one file exceeded 4,096 token-region anchors. No runtime option raises it. Split unusually dense source, or, when the affected paths are generated or vendored rather than maintained source, exclude literal repository-relative trees:
+
+```json
+{"schemaVersion":1,"targets":{"exclude":["generated","vendor"]}}
+```
+
+`targets.exclude` entries are literal files or subtrees, not globs: `vendor` matches `vendor/pkg/file.ts` but not `vendor-utils/file.ts`. Do not exclude maintained source merely to hide a finding. See the fetchable [configuration reference](https://the-open-engine.github.io/opcore/dev/docs/configuration.html#select-targets) and [Sense resolution and limits](https://the-open-engine.github.io/opcore/dev/docs/sense.html#dependency-envelope). Source installations use current development guidance; release bundles rewrite these links to their exact `vX.Y` archive. The guidance above remains usable if a documentation fetch is unavailable.
+
+In JSON output, `documentationCoverage.evaluated: false` normally means no qualifying newly-important or authoritative public-surface change required documentation evaluation; check `issues` if observations were bounded. A registry state of `not_read` means that view's `.opcore.json` documentation bindings were not needed for this run, not that configuration was ignored. `publicSurfaceAuthoritative: false` means the parser could not establish a complete explicit public surface, so Opcore does not claim an authoritative surface comparison.

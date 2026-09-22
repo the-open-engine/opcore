@@ -335,8 +335,13 @@ fn push_limit_issue(
     issue.next_step = Some(
         concat!(
             "No runtime option raises this fixed safety limit. Split unusually dense source files ",
-            "or add literal file or subtree entries to targets.exclude where appropriate; see ",
-            "docs/configuration.md#select-targets."
+            "or, for generated/vendor trees, use literal targets.exclude entries such as ",
+            "{\"schemaVersion\":1,\"targets\":{\"exclude\":[\"generated\",\"vendor\"]}}. See ",
+            "https://the-open-engine.github.io/opcore/v",
+            env!("CARGO_PKG_VERSION_MAJOR"),
+            ".",
+            env!("CARGO_PKG_VERSION_MINOR"),
+            "/docs/configuration.html#select-targets."
         )
         .into(),
     );

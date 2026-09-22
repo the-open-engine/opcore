@@ -1118,9 +1118,14 @@ impl ComparisonState {
         // intentionally unknown, so this remains a bounded sample rather than complete evidence.
         issue.paths_truncated = true;
         issue.next_step = Some(concat!(
-            "No runtime option raises this fixed safety limit. Split unusually repetitive source or ",
-            "add literal file or subtree entries to targets.exclude where appropriate; see ",
-            "docs/configuration.md#select-targets."
+            "No runtime option raises this fixed safety limit. Split unusually repetitive source ",
+            "or, for generated/vendor trees, use literal targets.exclude entries such as ",
+            "{\"schemaVersion\":1,\"targets\":{\"exclude\":[\"generated\",\"vendor\"]}}. See ",
+            "https://the-open-engine.github.io/opcore/v",
+            env!("CARGO_PKG_VERSION_MAJOR"),
+            ".",
+            env!("CARGO_PKG_VERSION_MINOR"),
+            "/docs/configuration.html#select-targets."
         ).into());
         Some(issue)
     }
@@ -1301,7 +1306,12 @@ mod tests {
         assert!(issue.paths_truncated);
         let next_step = issue.next_step.unwrap();
         assert!(next_step.contains("targets.exclude"));
-        assert!(next_step.contains("docs/configuration.md#select-targets"));
+        let docs_route = format!(
+            "/v{}.{}/docs/configuration.html#select-targets",
+            env!("CARGO_PKG_VERSION_MAJOR"),
+            env!("CARGO_PKG_VERSION_MINOR")
+        );
+        assert!(next_step.contains(&docs_route));
     }
 
     #[test]

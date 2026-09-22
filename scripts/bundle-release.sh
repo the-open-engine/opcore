@@ -103,6 +103,34 @@ if [[ ! "$release_version" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)
     "$release_version" >&2
   exit 1
 fi
+release_major=${release_version%%.*}
+release_remainder=${release_version#*.}
+release_minor=${release_remainder%%.*}
+docs_source_base=https://the-open-engine.github.io/opcore/dev
+docs_release_base=https://the-open-engine.github.io/opcore/v$release_major.$release_minor
+
+stage_documentation_links() {
+  local source=$1
+  local destination=$2
+  if ! grep -Fq "$docs_source_base/" "$source"; then
+    printf 'bundle-release: guidance has no development documentation links: %s\n' \
+      "$source" >&2
+    exit 1
+  fi
+  if grep -Eq 'https://the-open-engine\.github\.io/opcore/v[0-9]+\.[0-9]+/' "$source"; then
+    printf 'bundle-release: guidance hard-codes a release documentation minor: %s\n' \
+      "$source" >&2
+    exit 1
+  fi
+  sed "s|$docs_source_base/|$docs_release_base/|g" "$source" > "$destination"
+  chmod 0644 "$destination"
+  if grep -Fq "$docs_source_base/" "$destination" || \
+     ! grep -Fq "$docs_release_base/" "$destination"; then
+    printf 'bundle-release: failed to bind guidance to %s\n' "$docs_release_base" >&2
+    exit 1
+  fi
+}
+
 archive="$output_dir/opcore-v$release_version-$platform.tar.gz"
 if [[ -L "$archive" || ( -e "$archive" && ! -f "$archive" ) ]]; then
   printf 'bundle-release: archive destination is not a regular file: %s\n' \
@@ -139,7 +167,7 @@ install -d \
   "$bundle_root/skills/opcore/agents"
 install -m 0755 "$repo_root/scripts/install.sh" "$bundle_root/install.sh"
 install -m 0755 "$dist_dir/opcore" "$bundle_root/bin/opcore"
-install -m 0644 \
+stage_documentation_links \
   "$repo_root/skills/opcore/SKILL.md" \
   "$bundle_root/skills/opcore/SKILL.md"
 install -m 0644 \
@@ -149,7 +177,7 @@ cp -R "$repo_root/asp/." "$bundle_root/asp/"
 find "$bundle_root/asp" -type d -exec chmod 0755 {} +
 find "$bundle_root/asp" -type f -exec chmod 0644 {} +
 install -m 0644 "$repo_root/LICENSE" "$bundle_root/LICENSE"
-install -m 0644 "$repo_root/README.md" "$bundle_root/README.md"
+stage_documentation_links "$repo_root/README.md" "$bundle_root/README.md"
 install -m 0644 "$repo_root/CONTRIBUTING.md" "$bundle_root/CONTRIBUTING.md"
 for guide in \
   getting-started configuration providers examples sense agent-signals \

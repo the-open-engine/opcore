@@ -160,6 +160,51 @@ class DocumentationVersions(unittest.TestCase):
             (site / "v0.3/manifest.json").read_bytes(),
         )
 
+    def test_version_bound_guidance_is_fetchable_without_javascript(self):
+        configuration = self.snapshot / ROUTES["configuration"]
+        configuration.write_text(
+            '<!doctype html><html><body><main id="select-targets">'
+            'targets.exclude generated vendor</main></body></html>'
+        )
+        sense = self.snapshot / "docs/sense.html"
+        sense.write_text(
+            '<!doctype html><html><body><main id="dependency-envelope">'
+            'Deliberately not resolved dedup_region_file_limit importantFanIn '
+            'evaluated not_read publicSurfaceAuthoritative</main></body></html>'
+        )
+
+        guidance = (
+            ("docs/configuration.html", ("targets.exclude", "generated", "vendor")),
+            (
+                "docs/sense.html",
+                (
+                    "Deliberately not resolved",
+                    "dedup_region_file_limit",
+                    "importantFanIn",
+                    "evaluated",
+                    "not_read",
+                    "publicSurfaceAuthoritative",
+                ),
+            ),
+        )
+
+        def assert_fetchable(root):
+            for relative, terms in guidance:
+                content = (root / relative).read_text()
+                self.assertNotIn('http-equiv="refresh"', content)
+                for term in terms:
+                    self.assertIn(term, content)
+
+        site = self.publish()
+        assert_fetchable(site / "dev")
+        site = self.publish("v0.3.0", stable=True)
+        assert_fetchable(site / "v0.3")
+        site = self.publish("v0.4.0", commit="c" * 40, stable=True)
+        assert_fetchable(site / "v0.4")
+        stable = (site / "stable/docs/sense.html").read_text()
+        self.assertIn('http-equiv="refresh"', stable)
+        self.assertIn("../../v0.4/docs/sense.html", stable)
+
     def test_rustdoc_source_ranges_work_inside_version_directories(self):
         source = self.snapshot / "api/src/opcore/api.rs.html"
         source.parent.mkdir(parents=True)

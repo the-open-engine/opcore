@@ -171,6 +171,17 @@ grep -F 'all selected uncommitted worktree changes against HEAD' \
   "$codex_home/.agents/skills/opcore/SKILL.md" >/dev/null
 grep -F 'While an intervention remains unresolved' \
   "$codex_home/.agents/skills/opcore/SKILL.md" >/dev/null
+for guidance in \
+  targets.exclude \
+  dedup_region_file_limit \
+  importantFanIn \
+  publicSurfaceAuthoritative \
+  documentationCoverage.evaluated \
+  not_read \
+  'https://the-open-engine.github.io/opcore/dev/docs/configuration.html#select-targets' \
+  'https://the-open-engine.github.io/opcore/dev/docs/sense.html#dependency-envelope'; do
+  grep -F "$guidance" "$codex_home/.agents/skills/opcore/SKILL.md" >/dev/null
+done
 if grep -F '`opcore check' \
   "$codex_home/.agents/skills/opcore/SKILL.md" >/dev/null; then
   printf 'installed Codex skill still depends on PATH\n' >&2
