@@ -12,6 +12,12 @@ const DOCUMENTATION_BASE = 'https://the-open-engine.github.io/opcore/';
 const DOCUMENTATION_ROUTE =
   /https:\/\/the-open-engine\.github\.io\/opcore\/(?:dev|v(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*))\//g;
 const PUBLISH_ORDER_CHILD = 'OPCORE_STAGE_RELEASE_PUBLISH_ORDER_CHILD';
+const NESTED_TEST_FIXTURE_VARIABLES = [
+  'OPCORE_TEST_BINARY',
+  'OPCORE_TEST_BUNDLE',
+  'OPCORE_LIFECYCLE_TEST_GLIBC',
+  'OPCORE_LIFECYCLE_FAIL_STATE',
+];
 
 function fixture(t) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'opcore-stage-release.'));
@@ -85,10 +91,12 @@ test('tag publication order can run the npm test suite after staging', (t) => {
     encoding: 'utf8',
   });
   assert.equal(versioned.status, 0, versioned.stderr);
+  const environment = { ...process.env, [PUBLISH_ORDER_CHILD]: '1' };
+  for (const variable of NESTED_TEST_FIXTURE_VARIABLES) delete environment[variable];
   const tested = spawnSync('npm', ['test'], {
     cwd: packageRoot,
     encoding: 'utf8',
-    env: { ...process.env, [PUBLISH_ORDER_CHILD]: '1' },
+    env: environment,
     timeout: 120_000,
   });
   assert.equal(tested.status, 0, tested.stderr || tested.stdout);
