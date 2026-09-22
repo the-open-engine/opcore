@@ -65,6 +65,15 @@ for development documentation.</p>
 version and resolve a named route against that archive’s base URL. For example,
 <code>v0.3/</code> plus <code>routes.cli</code> selects <code>v0.3/cli.html</code>. The manifest records which patch
 the archive currently describes; it may be newer than the installed patch.</p>
+<p>Checked-in README, npm README, and installed-skill sources link directly to the
+complete <code>dev/</code> pages so guidance on <code>main</code> never carries a stale minor. Release
+bundle staging rewrites the README and skill links to the validated binary’s
+<code>vX.Y/</code> archive; npm release staging does the same using the validated package
+version. CLI remediation URLs derive that minor from Cargo package metadata.
+Packaging tests reject a release whose documentation route does not match its
+version. <code>stable/</code> and the unversioned paths remain useful browser redirects,
+but fetch-only troubleshooting references must use <code>dev/</code> or an exact minor
+because redirect pages do not contain the guide body.</p>
 <p><code>contentDigest</code> covers each sorted relative file path and its bytes, excluding
 the manifest itself. Each path and content value has an unsigned 64-bit
 big-endian byte-length prefix before hashing with SHA-256. The publisher checks

@@ -206,6 +206,9 @@ opcore run pre-commit --comparison introduced # Fast brownfield gate; native nee
 </div>
 <p><code>--advisory</code> makes findings report-only; missing coverage still blocks. Add <code>--json</code> for structured evidence. The <a href="docs/getting-started.html#read-the-result">getting-started guide</a> explains exit statuses and partial-coverage options.</p>
 <p>The <a href="#examples">examples above</a> show findings in every supported language family.</p>
+<h3 id="troubleshoot-sense-coverage"><a class="doc-anchor" href="#troubleshoot-sense-coverage">§</a>Troubleshoot Sense coverage</h3>
+<p>Sense resolves only uniquely confirmed local dependencies; bare Node packages, missing, dotted, or colliding Python absolute imports, Cargo-configured Rust roots, external Go modules, and HCL/Shell/Protobuf loading semantics remain deliberately unresolved. A one-component Python import does resolve when it has exactly one sibling module or package target. <code>effectivePolicy.importantFanIn</code> is the configured direct-dependent threshold for important modules. Fixed duplicate-analysis limits such as <code>dedup_region_file_limit</code> cannot be raised at runtime. For generated or vendored trees, use literal repository-relative exclusions such as <code>{"schemaVersion":1,"targets":{"exclude":["generated","vendor"]}}</code>; <code>targets.exclude</code> does not accept globs.</p>
+<p>In JSON, <code>documentationCoverage.evaluated: false</code> means no qualifying documentation obligation was evaluated, while a registry state of <code>not_read</code> means the registry was not needed for that view. <code>publicSurfaceAuthoritative: false</code> means Opcore could not establish a complete explicit public surface. The fetchable <a href="https://the-open-engine.github.io/opcore/dev/docs/sense.html#dependency-envelope">Sense reference</a> has the full resolution table and limits; <a href="https://the-open-engine.github.io/opcore/dev/docs/configuration.html#select-targets">configuration</a> defines exclusions. Release bundles rewrite these development links to their exact <code>vX.Y</code> documentation archive.</p>
 <h2 id="providers"><a class="doc-anchor" href="#providers">§</a>Providers</h2><div><table><thead><tr><th>Provider</th><th>Checks</th></tr></thead><tbody>
 <tr><td>Fast</td><td>Built-in syntax, hygiene, and code metrics; the default CLI and hook path.</td></tr>
 <tr><td>Rust-native</td><td>Cargo Check against the selected workspace or package.</td></tr>
@@ -220,7 +223,7 @@ opcore run pre-commit --comparison introduced # Fast brownfield gate; native nee
 <p><a href="docs/assets/asp-overview-mobile.svg">Open the phone-sized ASP diagram</a></p>
 <p>Opcore’s bundled local runner reports <code>allow</code>, <code>deny</code>, or <code>indeterminate</code> for local use. Its result has advisory assurance and doesn’t issue an ASP receipt. Read the <a href="asp/README.html">protocol definition</a> for integration contracts.</p>
 <h2 id="documentation-and-help"><a class="doc-anchor" href="#documentation-and-help">§</a>Documentation and help</h2>
-<p>Read the <a href="https://the-open-engine.github.io/opcore/">published documentation</a>, including the <a href="https://the-open-engine.github.io/opcore/cli.html">CLI reference</a>, <a href="https://the-open-engine.github.io/opcore/api/opcore/api/index.html">public Rust API</a>, and ASP specification. In a source checkout, generate the same site from the Rust definitions:</p>
+<p>Read the <a href="https://the-open-engine.github.io/opcore/dev/">development documentation</a>, including the <a href="https://the-open-engine.github.io/opcore/dev/cli.html">CLI reference</a>, <a href="https://the-open-engine.github.io/opcore/dev/api/opcore/api/index.html">public Rust API</a>, and ASP specification. These pages contain complete static HTML without requiring JavaScript; release bundles point to their exact minor archive. In a source checkout, generate the same site from the Rust definitions:</p>
 <div class="example-wrap"><pre class="language-sh"><code>./scripts/build-docs.sh</code></pre></div>
 <p>Open <code>target/site/index.html</code> in a browser. CI checks the generated site on every pull request and publishes the passing <code>main</code> build to GitHub Pages. Running the local build only writes <code>target/site/</code>.</p>
 <p>Report reproducible problems in <a href="https://github.com/the-open-engine/opcore/issues">GitHub Issues</a>. <a href="CONTRIBUTING.html">Contributing</a> explains useful report details and the development checks.</p>
@@ -233,7 +236,8 @@ npm uninstall -g @the-open-engine-company/opcore</code></pre></div>
 <li><a href="#project-sense" title="Project Sense">Project Sense</a><ul></ul></li>
 <li><a href="#native-checks" title="Native checks">Native checks</a><ul></ul></li></ul></li>
 <li><a href="#get-started" title="Get started">Get started</a><ul></ul></li>
-<li><a href="#workflows" title="Workflows">Workflows</a><ul></ul></li>
+<li><a href="#workflows" title="Workflows">Workflows</a><ul>
+<li><a href="#troubleshoot-sense-coverage" title="Troubleshoot Sense coverage">Troubleshoot Sense coverage</a><ul></ul></li></ul></li>
 <li><a href="#providers" title="Providers">Providers</a><ul></ul></li>
 <li><a href="#agent-server-protocol" title="Agent Server Protocol">Agent Server Protocol</a><ul></ul></li>
 <li><a href="#documentation-and-help" title="Documentation and help">Documentation and help</a><ul></ul></li></ul></nav></aside></div>
