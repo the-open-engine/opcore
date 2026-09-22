@@ -157,9 +157,11 @@ fn python_absolute_imports_are_ambiguous_in_json_and_human_output() {
     let fixture = RepositoryFixture::new(&[("target.py", "value = 42\n")]);
     fixture.write("uses_absolute.py", "import target\n");
 
-    let output = opcore_json(&fixture, "sense", &[]);
-    assert!(!output.status.success());
-    let report = json(&output);
+    let report = {
+        let output = opcore_json(&fixture, "sense", &[]);
+        assert!(!output.status.success());
+        json(&output)
+    };
     assert_eq!(report["status"], "partial");
     assert_eq!(report["after"]["runtimeEdges"], 0);
     assert_eq!(report["after"]["coverage"]["ambiguousReferences"], 1);
@@ -171,9 +173,9 @@ fn python_absolute_imports_are_ambiguous_in_json_and_human_output() {
     assert_eq!(report["after"]["resolutionGaps"][0]["specifier"], "target");
     assert_eq!(report["after"]["resolutionGaps"][0]["kind"], "ambiguous");
 
-    let human = opcore(fixture.repo(), fixture.cache(), "sense", &[]);
-    assert!(!human.status.success());
-    let human = String::from_utf8_lossy(&human.stdout);
+    let human_output = opcore(fixture.repo(), fixture.cache(), "sense", &[]);
+    assert!(!human_output.status.success());
+    let human = String::from_utf8_lossy(&human_output.stdout);
     assert!(
         human.contains("ambiguous reference: uses_absolute.py imports \"target\""),
         "{human}"
