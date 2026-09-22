@@ -846,6 +846,37 @@ mod tests {
         )
     }
 
+    fn request_limit_snapshot() -> SourceSnapshot {
+        SourceSnapshot::new((0..50).map(|index| {
+            source(
+                &format!("file-{index:02}.ts"),
+                "export const shared = true;",
+                Language::TypeScript,
+            )
+        }))
+    }
+
+    fn test_callable() -> CallableFingerprint {
+        CallableFingerprint {
+            kind: CallableKind::Function,
+            range: SourceRange {
+                start: Position {
+                    line: 1,
+                    column: 1,
+                    byte: 0,
+                },
+                end: Position {
+                    line: 1,
+                    column: 2,
+                    byte: 1,
+                },
+            },
+            token_count: 64,
+            token_line_count: 1,
+            digest: "sha256:test".into(),
+        }
+    }
+
     fn swap_first_encoded_token_records(facts: &mut RegionFingerprintFacts) {
         let bytes = base64::engine::general_purpose::STANDARD
             .decode(&facts.encoded_tokens)
@@ -1065,14 +1096,40 @@ mod tests {
     }
 
     #[test]
+    fn request_wide_callable_limit_keeps_complete_deterministic_paths() {
+        let snapshot = request_limit_snapshot();
+        let options = parser_options();
+        let file = snapshot.read(&path("file-00.ts")).unwrap();
+        let facts_by_file = facts::FactMap::from([(
+            facts::key(&file, &options),
+            Arc::new(FileFacts {
+                callable_fingerprints: CallableFingerprintFacts {
+                    status: FingerprintExtractionStatus::Complete,
+                    callables: vec![test_callable(); MAX_CALLABLE_FINGERPRINTS_PER_FILE],
+                },
+                ..FileFacts::default()
+            }),
+        )]);
+        let fact_keys = fact_key_lookup(&[&snapshot], &options);
+        let issue = snapshot_limit_issues(
+            &snapshot,
+            &facts_by_file,
+            &fact_keys,
+            &[SenseView::After],
+            &BTreeSet::new(),
+        )
+        .into_iter()
+        .find(|issue| issue.code == "dedup_callable_request_limit")
+        .unwrap();
+
+        assert_eq!(issue.paths, vec![path("file-48.ts"), path("file-49.ts")]);
+        assert_eq!(issue.processed, Some(MAX_CALLABLE_FINGERPRINTS_PER_REQUEST));
+        assert!(!issue.paths_truncated);
+    }
+
+    #[test]
     fn request_wide_region_limit_names_the_stage_and_affected_paths() {
-        let snapshot = SourceSnapshot::new((0..50).map(|index| {
-            source(
-                &format!("file-{index:02}.ts"),
-                "export const shared = true;",
-                Language::TypeScript,
-            )
-        }));
+        let snapshot = request_limit_snapshot();
         let options = parser_options();
         let file = snapshot.read(&path("file-00.ts")).unwrap();
         let anchors = (0..MAX_REGION_FINGERPRINTS_PER_FILE)
@@ -1193,24 +1250,6 @@ mod tests {
 
     #[test]
     fn complete_facts_cannot_exceed_per_file_limits() {
-        let callable = CallableFingerprint {
-            kind: CallableKind::Function,
-            range: SourceRange {
-                start: Position {
-                    line: 1,
-                    column: 1,
-                    byte: 0,
-                },
-                end: Position {
-                    line: 1,
-                    column: 2,
-                    byte: 1,
-                },
-            },
-            token_count: 64,
-            token_line_count: 1,
-            digest: "sha256:test".into(),
-        };
         let anchor = RegionFingerprint {
             hash_one: 1,
             hash_two: 2,
@@ -1219,7 +1258,7 @@ mod tests {
         let issues = single_file_limit_issues(FileFacts {
             callable_fingerprints: CallableFingerprintFacts {
                 status: FingerprintExtractionStatus::Complete,
-                callables: vec![callable; MAX_CALLABLE_FINGERPRINTS_PER_FILE + 1],
+                callables: vec![test_callable(); MAX_CALLABLE_FINGERPRINTS_PER_FILE + 1],
             },
             region_fingerprints: RegionFingerprintFacts {
                 status: FingerprintExtractionStatus::Complete,

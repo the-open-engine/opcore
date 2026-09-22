@@ -1050,7 +1050,9 @@ impl ComparisonState {
         let Some(path) = view.files.get(file).map(|file| &file.path) else {
             return;
         };
-        self.limit_paths.insert(path.clone());
+        if self.limit_paths.len() < MAX_OBSERVATION_PATHS {
+            self.limit_paths.insert(path.clone());
+        }
     }
 
     fn record_limit_pair(&mut self, pair: &TokenPair<'_, '_>) {
@@ -1112,6 +1114,9 @@ impl ComparisonState {
         issue.limit = Some(MAX_DEDUP_TOKEN_COMPARISONS);
         issue.processed = Some(MAX_DEDUP_TOKEN_COMPARISONS);
         issue.paths = self.limit_paths.iter().cloned().collect();
+        // Evaluation stops at the exhausted comparison. Paths from unchecked candidates are
+        // intentionally unknown, so this remains a bounded sample rather than complete evidence.
+        issue.paths_truncated = true;
         issue.next_step = Some(concat!(
             "No runtime option raises this fixed safety limit. Split unusually repetitive source or ",
             "add literal file or subtree entries to targets.exclude where appropriate; see ",
@@ -1241,41 +1246,7 @@ mod tests {
     }
 
     #[test]
-    fn exact_comparison_limit_reports_stage_view_path_and_recovery() {
-        let alpha = source("alpha.ts", "alpha");
-        let (snapshot, file_facts, fact_keys) = single_file_region_state(&alpha);
-        let mut decoded_evidence = DecodedEvidence::default();
-        let view = RegionView::new(RegionViewInputs {
-            view: SenseView::After,
-            snapshot: &snapshot,
-            file_facts: &file_facts,
-            fact_keys: &fact_keys,
-            continuity: &BTreeMap::new(),
-            decoded_evidence: &mut decoded_evidence,
-        });
-        let mut comparison = ComparisonState {
-            remaining: 0,
-            ..ComparisonState::default()
-        };
-        let location = TokenLocation { file: 0, token: 0 };
-        assert_eq!(
-            comparison.tokens_equal(TokenPair::same_view(&view, location, location)),
-            None
-        );
-        let issue = comparison.limit_issue().unwrap();
-
-        assert_eq!(issue.stage, Some(DedupLimitStage::ExactTokenComparison));
-        assert_eq!(issue.views, vec![SenseView::After]);
-        assert_eq!(issue.paths, vec![alpha.path]);
-        assert_eq!(issue.limit, Some(MAX_DEDUP_TOKEN_COMPARISONS));
-        assert_eq!(issue.processed, Some(MAX_DEDUP_TOKEN_COMPARISONS));
-        let next_step = issue.next_step.unwrap();
-        assert!(next_step.contains("targets.exclude"));
-        assert!(next_step.contains("docs/configuration.md#select-targets"));
-    }
-
-    #[test]
-    fn exact_comparison_limit_keeps_complete_deterministic_paths() {
+    fn exact_comparison_limit_reports_bounded_paths_and_recovery() {
         let files = (0..6)
             .map(|index| source(&format!("path-{index}.ts"), "alpha"))
             .collect::<Vec<_>>();
@@ -1317,9 +1288,20 @@ mod tests {
         let issue = comparison.limit_issue().unwrap();
         assert_eq!(
             issue.paths,
-            files.into_iter().map(|file| file.path).collect::<Vec<_>>()
+            files
+                .into_iter()
+                .take(MAX_OBSERVATION_PATHS)
+                .map(|file| file.path)
+                .collect::<Vec<_>>()
         );
-        assert!(!issue.paths_truncated);
+        assert_eq!(issue.stage, Some(DedupLimitStage::ExactTokenComparison));
+        assert_eq!(issue.views, vec![SenseView::After]);
+        assert_eq!(issue.limit, Some(MAX_DEDUP_TOKEN_COMPARISONS));
+        assert_eq!(issue.processed, Some(MAX_DEDUP_TOKEN_COMPARISONS));
+        assert!(issue.paths_truncated);
+        let next_step = issue.next_step.unwrap();
+        assert!(next_step.contains("targets.exclude"));
+        assert!(next_step.contains("docs/configuration.md#select-targets"));
     }
 
     #[test]
