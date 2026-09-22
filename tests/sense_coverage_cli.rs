@@ -153,6 +153,40 @@ fn node_builtin_acknowledgment_does_not_accept_other_resolution_gaps() {
 }
 
 #[test]
+fn python_absolute_imports_are_ambiguous_in_json_and_human_output() {
+    let fixture = RepositoryFixture::new(&[("target.py", "value = 42\n")]);
+    fixture.write("uses_absolute.py", "import target\n");
+
+    let report = {
+        let output = opcore_json(&fixture, "sense", &[]);
+        assert!(!output.status.success());
+        json(&output)
+    };
+    assert_eq!(report["status"], "partial");
+    assert_eq!(report["after"]["runtimeEdges"], 0);
+    assert_eq!(report["after"]["coverage"]["ambiguousReferences"], 1);
+    assert_eq!(report["after"]["coverage"]["externalReferences"], 0);
+    assert_eq!(
+        report["after"]["resolutionGaps"][0]["path"],
+        "uses_absolute.py"
+    );
+    assert_eq!(report["after"]["resolutionGaps"][0]["specifier"], "target");
+    assert_eq!(report["after"]["resolutionGaps"][0]["kind"], "ambiguous");
+
+    let human_output = opcore(fixture.repo(), fixture.cache(), "sense", &[]);
+    assert!(!human_output.status.success());
+    let human = String::from_utf8_lossy(&human_output.stdout);
+    assert!(
+        human.contains("ambiguous reference: uses_absolute.py imports \"target\""),
+        "{human}"
+    );
+    assert!(
+        !human.contains("external reference: uses_absolute.py"),
+        "{human}"
+    );
+}
+
+#[test]
 fn resolution_gap_evidence_is_bounded_and_deterministic() {
     let fixture = RepositoryFixture::new(&[("main.mjs", "export const before = true;\n")]);
     fixture.write(
