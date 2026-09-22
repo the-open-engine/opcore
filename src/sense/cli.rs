@@ -16,7 +16,9 @@ use crate::{
     documentation::{
         DOCUMENTATION_REGISTRY_PATH, DocumentationRegistry, parse_optional_documentation_registry,
     },
-    limits::{MAX_ASSESSMENT_BYTES, MAX_AUXILIARY_PATHS, MAX_SENSE_FINDINGS},
+    limits::{
+        MAX_ASSESSMENT_BYTES, MAX_AUXILIARY_PATHS, MAX_OBSERVATION_PATHS, MAX_SENSE_FINDINGS,
+    },
     local::repository_fact_cache,
     model::ProviderMetadata,
     path::RepoPath,
@@ -845,7 +847,12 @@ fn prepare_output(
         report.timing.render_us = elapsed_us(render_started);
         report.timing.total_us = elapsed_us(command_started);
         let rendered = render_output(report, json)?;
-        if rendered.len() <= MAX_ASSESSMENT_BYTES {
+        let assessment_bytes = if json {
+            rendered.len()
+        } else {
+            serialized_report_len(report)?
+        };
+        if rendered.len() <= MAX_ASSESSMENT_BYTES && assessment_bytes <= MAX_ASSESSMENT_BYTES {
             return Ok(rendered);
         }
         mark_output_truncated(report);
@@ -862,6 +869,26 @@ fn prepare_output(
         );
         replaced_oversize_report = true;
     }
+}
+
+fn serialized_report_len(report: &SenseReport) -> Result<usize> {
+    #[derive(Default)]
+    struct ByteCounter(usize);
+
+    impl std::io::Write for ByteCounter {
+        fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
+            self.0 = self.0.saturating_add(bytes.len());
+            Ok(bytes.len())
+        }
+
+        fn flush(&mut self) -> std::io::Result<()> {
+            Ok(())
+        }
+    }
+
+    let mut counter = ByteCounter::default();
+    serde_json::to_writer(&mut counter, report)?;
+    Ok(counter.0.saturating_add(1))
 }
 
 fn shrink_report(report: &mut SenseReport) -> bool {
@@ -1062,13 +1089,20 @@ fn human_output(report: &SenseReport) -> String {
             let paths = issue
                 .paths
                 .iter()
+                .take(MAX_OBSERVATION_PATHS)
                 .map(ToString::to_string)
                 .collect::<Vec<_>>()
                 .join(", ");
             let suffix = if issue.paths_truncated {
-                " (sample truncated)"
+                " (sample truncated)".to_string()
+            } else if issue.paths.len() > MAX_OBSERVATION_PATHS {
+                format!(
+                    " (showing {} of {}; complete bounded evidence is available with --json)",
+                    MAX_OBSERVATION_PATHS,
+                    issue.paths.len()
+                )
             } else {
-                ""
+                String::new()
             };
             let _ = writeln!(output, "  affected: {paths}{suffix}");
         }
@@ -1407,65 +1441,4 @@ fn elapsed_us(started: Instant) -> u64 {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::{
-        path::RepoPath,
-        sense::model::{DependencyEdge, EdgeKind, IntroducedCycle},
-    };
-
-    #[test]
-    fn final_json_bytes_are_bounded_after_timings_are_populated() {
-        let mut report = incomplete_report("test", "test".into(), Instant::now());
-        report.status = SenseStatus::Findings;
-        report.issues.clear();
-        let path = RepoPath::new(vec![0xff; 4_096]).unwrap();
-        for _ in 0..32 {
-            report.introduced_cycles.push(IntroducedCycle {
-                member_count: 10,
-                members: vec![path.clone(); 10],
-                members_truncated: false,
-                trigger: DependencyEdge {
-                    from: path.clone(),
-                    to: path.clone(),
-                    kind: EdgeKind::Runtime,
-                },
-                witness: vec![path.clone(); 10],
-                witness_truncated: false,
-            });
-        }
-
-        let started = Instant::now();
-        let rendered = prepare_output(&mut report, true, started).unwrap();
-        assert_eq!(report.status, SenseStatus::Incomplete);
-        assert!(rendered.len() <= MAX_ASSESSMENT_BYTES);
-        let emitted: serde_json::Value = serde_json::from_str(&rendered).unwrap();
-        assert_eq!(emitted["timing"]["totalUs"], report.timing.total_us);
-        assert_eq!(emitted["timing"]["renderUs"], report.timing.render_us);
-        assert!(report.introduced_cycles[0].members.is_empty());
-    }
-
-    #[test]
-    fn irreducible_oversize_is_a_bounded_structured_failure() {
-        for json in [false, true] {
-            let started = Instant::now();
-            let mut report =
-                incomplete_report("oversize", "x".repeat(MAX_ASSESSMENT_BYTES + 1), started);
-            let rendered = prepare_output(&mut report, json, started).unwrap();
-
-            assert!(rendered.len() <= MAX_ASSESSMENT_BYTES);
-            assert_eq!(report.status, SenseStatus::Incomplete);
-            assert_eq!(report.issues.len(), 1);
-            assert_eq!(report.issues[0].code, "output_too_large");
-            if json {
-                let emitted: SenseReport = serde_json::from_str(&rendered).unwrap();
-                assert_eq!(emitted.status, SenseStatus::Incomplete);
-                assert_eq!(emitted.issues[0].code, "output_too_large");
-                assert_eq!(emitted.timing.total_us, report.timing.total_us);
-                assert_eq!(emitted.timing.render_us, report.timing.render_us);
-            } else {
-                assert!(rendered.contains("output_too_large"));
-            }
-        }
-    }
-}
+mod tests;
