@@ -50,6 +50,8 @@ for first in codex claude; do
   test_home="$fixture/remove $first first"
   mkdir -p "$test_home/.codex" "$test_home/.claude"
   run_install
+  grep -F 'open /hooks to inspect this user-settings hook' "$fixture/output" >/dev/null
+  grep -F 'already active in trusted workspaces' "$fixture/output" >/dev/null
   assert_integrations
   test -f "$test_home/.codex/hooks.json"
   test -f "$test_home/.claude/settings.json"

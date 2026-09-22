@@ -18,7 +18,14 @@ fn main() -> Result<()> {
 
 async fn dispatch(command: Command) -> Result<()> {
     match command {
-        Command::Run(args) => api::run_workflow(args).await,
+        Command::Run {
+            args,
+            comparison: Some(comparison),
+        } => api::run_workflow_with_comparison(args, comparison).await,
+        Command::Run {
+            args,
+            comparison: None,
+        } => api::run_workflow(args).await,
         Command::Check(args) => api::check(args).await,
         Command::Sense(args) => api::run_sense(args).await,
         Command::AgentGate => {
@@ -57,7 +64,7 @@ fn dispatch_sync(command: Command) -> Result<()> {
             );
             Ok(())
         }
-        Command::Run(_)
+        Command::Run { .. }
         | Command::Check(_)
         | Command::Sense(_)
         | Command::AgentGate
