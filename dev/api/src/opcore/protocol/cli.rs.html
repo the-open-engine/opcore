@@ -108,7 +108,7 @@
 <a href=#98 id=98 data-nosnippet>98</a>    <span class="doccomment">/// Print the structured assessment as JSON, including coverage and evidence.
 <a href=#99 id=99 data-nosnippet>99</a>    </span><span class="attr">#[arg(long)]
 <a href=#100 id=100 data-nosnippet>100</a>    </span><span class="kw">pub </span>json: bool,
-<a href=#101 id=101 data-nosnippet>101</a>    <span class="doccomment">/// Report findings without returning a blocking exit status. Coverage failures still block.
+<a href=#101 id=101 data-nosnippet>101</a>    <span class="doccomment">/// Report findings without returning a blocking exit status.
 <a href=#102 id=102 data-nosnippet>102</a>    </span><span class="attr">#[arg(long)]
 <a href=#103 id=103 data-nosnippet>103</a>    </span><span class="kw">pub </span>advisory: bool,
 <a href=#104 id=104 data-nosnippet>104</a>    <span class="doccomment">/// Also run Cargo Check through the unsandboxed local ASP host. Requires explicit consent.
@@ -413,13 +413,13 @@
 <a href=#403 id=403 data-nosnippet>403</a>        AssessmentStatus::Findings <span class="kw">if </span>!advisory =&gt; {
 <a href=#404 id=404 data-nosnippet>404</a>            <span class="macro">anyhow::bail!</span>(<span class="string">"verification requires intervention"</span>)
 <a href=#405 id=405 data-nosnippet>405</a>        }
-<a href=#406 id=406 data-nosnippet>406</a>        AssessmentStatus::Unsupported =&gt; <span class="macro">anyhow::bail!</span>(<span class="string">"verification coverage is unsupported"</span>),
-<a href=#407 id=407 data-nosnippet>407</a>        AssessmentStatus::Error | AssessmentStatus::Cancelled | AssessmentStatus::Incomplete =&gt; {
-<a href=#408 id=408 data-nosnippet>408</a>            <span class="macro">anyhow::bail!</span>(<span class="string">"evaluation did not complete"</span>)
-<a href=#409 id=409 data-nosnippet>409</a>        }
-<a href=#410 id=410 data-nosnippet>410</a>        AssessmentStatus::Clean | AssessmentStatus::Findings | AssessmentStatus::NotChecked =&gt; {
-<a href=#411 id=411 data-nosnippet>411</a>            <span class="prelude-val">Ok</span>(())
-<a href=#412 id=412 data-nosnippet>412</a>        }
+<a href=#406 id=406 data-nosnippet>406</a>        AssessmentStatus::Error | AssessmentStatus::Cancelled | AssessmentStatus::Incomplete =&gt; {
+<a href=#407 id=407 data-nosnippet>407</a>            <span class="macro">anyhow::bail!</span>(<span class="string">"evaluation did not complete"</span>)
+<a href=#408 id=408 data-nosnippet>408</a>        }
+<a href=#409 id=409 data-nosnippet>409</a>        AssessmentStatus::Clean
+<a href=#410 id=410 data-nosnippet>410</a>        | AssessmentStatus::Findings
+<a href=#411 id=411 data-nosnippet>411</a>        | AssessmentStatus::NotChecked
+<a href=#412 id=412 data-nosnippet>412</a>        | AssessmentStatus::Unsupported =&gt; <span class="prelude-val">Ok</span>(()),
 <a href=#413 id=413 data-nosnippet>413</a>    }
 <a href=#414 id=414 data-nosnippet>414</a>}
 <a href=#415 id=415 data-nosnippet>415</a>
@@ -432,14 +432,14 @@
 <a href=#422 id=422 data-nosnippet>422</a>        || (args.tree.is_some() &amp;&amp; args.base.is_none())
 <a href=#423 id=423 data-nosnippet>423</a>    {
 <a href=#424 id=424 data-nosnippet>424</a>        (
-<a href=#425 id=425 data-nosnippet>425</a>            AssessmentStatus::Unsupported,
-<a href=#426 id=426 data-nosnippet>426</a>            CoverageStatus::Unsupported,
+<a href=#425 id=425 data-nosnippet>425</a>            AssessmentStatus::NotChecked,
+<a href=#426 id=426 data-nosnippet>426</a>            CoverageStatus::NotChecked,
 <a href=#427 id=427 data-nosnippet>427</a>            <span class="string">"No supported source files were found in the selected project view."</span>,
 <a href=#428 id=428 data-nosnippet>428</a>        )
 <a href=#429 id=429 data-nosnippet>429</a>    } <span class="kw">else if </span>!args.files.is_empty() {
 <a href=#430 id=430 data-nosnippet>430</a>        (
-<a href=#431 id=431 data-nosnippet>431</a>            AssessmentStatus::Unsupported,
-<a href=#432 id=432 data-nosnippet>432</a>            CoverageStatus::Unsupported,
+<a href=#431 id=431 data-nosnippet>431</a>            AssessmentStatus::NotChecked,
+<a href=#432 id=432 data-nosnippet>432</a>            CoverageStatus::NotChecked,
 <a href=#433 id=433 data-nosnippet>433</a>            <span class="string">"None of the explicit paths selected a supported regular source file."</span>,
 <a href=#434 id=434 data-nosnippet>434</a>        )
 <a href=#435 id=435 data-nosnippet>435</a>    } <span class="kw">else </span>{
@@ -471,57 +471,73 @@
 <a href=#461 id=461 data-nosnippet>461</a>    }
 <a href=#462 id=462 data-nosnippet>462</a>    <span class="kw">let _ </span>= <span class="macro">writeln!</span>(
 <a href=#463 id=463 data-nosnippet>463</a>        output,
-<a href=#464 id=464 data-nosnippet>464</a>        <span class="string">"opcore: {:?} ({} diagnostics, {} files, {} ms)"</span>,
+<a href=#464 id=464 data-nosnippet>464</a>        <span class="string">"opcore: {:?} ({} diagnostics, {}/{} files covered, {} coverage warnings, {} ms)"</span>,
 <a href=#465 id=465 data-nosnippet>465</a>        assessment.status,
 <a href=#466 id=466 data-nosnippet>466</a>        assessment.diagnostics.len(),
-<a href=#467 id=467 data-nosnippet>467</a>        assessment.coverage.files_considered,
-<a href=#468 id=468 data-nosnippet>468</a>        assessment.timing.duration_ms
-<a href=#469 id=469 data-nosnippet>469</a>    );
-<a href=#470 id=470 data-nosnippet>470</a>    <span class="kw">for </span>diagnostic <span class="kw">in </span><span class="kw-2">&amp;</span>assessment.diagnostics {
-<a href=#471 id=471 data-nosnippet>471</a>        <span class="kw">let </span>line = diagnostic.range.map_or(<span class="number">0</span>, |range| range.start.line);
-<a href=#472 id=472 data-nosnippet>472</a>        <span class="kw">let _ </span>= <span class="macro">writeln!</span>(
-<a href=#473 id=473 data-nosnippet>473</a>            output,
-<a href=#474 id=474 data-nosnippet>474</a>            <span class="string">"{}:{line}: {}: {}"</span>,
-<a href=#475 id=475 data-nosnippet>475</a>            diagnostic.path, diagnostic.rule_id, diagnostic.message
-<a href=#476 id=476 data-nosnippet>476</a>        );
-<a href=#477 id=477 data-nosnippet>477</a>    }
-<a href=#478 id=478 data-nosnippet>478</a>    <span class="kw">for </span>item <span class="kw">in </span><span class="kw-2">&amp;</span>assessment.coverage.gaps {
+<a href=#467 id=467 data-nosnippet>467</a>        assessment.coverage.files_covered,
+<a href=#468 id=468 data-nosnippet>468</a>        assessment.coverage.files_considered,
+<a href=#469 id=469 data-nosnippet>469</a>        assessment
+<a href=#470 id=470 data-nosnippet>470</a>            .coverage
+<a href=#471 id=471 data-nosnippet>471</a>            .gaps
+<a href=#472 id=472 data-nosnippet>472</a>            .iter()
+<a href=#473 id=473 data-nosnippet>473</a>            .filter(|item| item.status == CoverageStatus::Unsupported)
+<a href=#474 id=474 data-nosnippet>474</a>            .count(),
+<a href=#475 id=475 data-nosnippet>475</a>        assessment.timing.duration_ms
+<a href=#476 id=476 data-nosnippet>476</a>    );
+<a href=#477 id=477 data-nosnippet>477</a>    <span class="kw">for </span>diagnostic <span class="kw">in </span><span class="kw-2">&amp;</span>assessment.diagnostics {
+<a href=#478 id=478 data-nosnippet>478</a>        <span class="kw">let </span>line = diagnostic.range.map_or(<span class="number">0</span>, |range| range.start.line);
 <a href=#479 id=479 data-nosnippet>479</a>        <span class="kw">let _ </span>= <span class="macro">writeln!</span>(
 <a href=#480 id=480 data-nosnippet>480</a>            output,
-<a href=#481 id=481 data-nosnippet>481</a>            <span class="string">"{}: {:?}: {}"</span>,
-<a href=#482 id=482 data-nosnippet>482</a>            item.path,
-<a href=#483 id=483 data-nosnippet>483</a>            item.status,
-<a href=#484 id=484 data-nosnippet>484</a>            item.reason.as_deref().unwrap_or(<span class="string">"no reason"</span>)
-<a href=#485 id=485 data-nosnippet>485</a>        );
-<a href=#486 id=486 data-nosnippet>486</a>    }
-<a href=#487 id=487 data-nosnippet>487</a>    output
-<a href=#488 id=488 data-nosnippet>488</a>}
-<a href=#489 id=489 data-nosnippet>489</a>
-<a href=#490 id=490 data-nosnippet>490</a><span class="kw">fn </span>capture_error_assessment(reason: String, started: Instant) -&gt; Assessment {
-<a href=#491 id=491 data-nosnippet>491</a>    <span class="kw">let </span>path = RepoPath::request_marker();
-<a href=#492 id=492 data-nosnippet>492</a>    Assessment {
-<a href=#493 id=493 data-nosnippet>493</a>        status: AssessmentStatus::Incomplete,
-<a href=#494 id=494 data-nosnippet>494</a>        diagnostics: Vec::new(),
-<a href=#495 id=495 data-nosnippet>495</a>        coverage: Coverage {
-<a href=#496 id=496 data-nosnippet>496</a>            files_considered: <span class="number">1</span>,
-<a href=#497 id=497 data-nosnippet>497</a>            files_covered: <span class="number">0</span>,
-<a href=#498 id=498 data-nosnippet>498</a>            gaps: <span class="macro">vec!</span>[CoverageGap {
-<a href=#499 id=499 data-nosnippet>499</a>                path,
-<a href=#500 id=500 data-nosnippet>500</a>                status: CoverageStatus::Incomplete,
-<a href=#501 id=501 data-nosnippet>501</a>                language: <span class="prelude-val">None</span>,
-<a href=#502 id=502 data-nosnippet>502</a>                reason: <span class="prelude-val">Some</span>(reason),
-<a href=#503 id=503 data-nosnippet>503</a>            }],
-<a href=#504 id=504 data-nosnippet>504</a>        },
-<a href=#505 id=505 data-nosnippet>505</a>        valid_as_of: <span class="string">"unavailable"</span>.into(),
-<a href=#506 id=506 data-nosnippet>506</a>        provider: ProviderMetadata::default(),
-<a href=#507 id=507 data-nosnippet>507</a>        timing: Timing {
-<a href=#508 id=508 data-nosnippet>508</a>            duration_ms: u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX),
-<a href=#509 id=509 data-nosnippet>509</a>            ..Timing::default()
-<a href=#510 id=510 data-nosnippet>510</a>        },
-<a href=#511 id=511 data-nosnippet>511</a>        cache: CacheMetadata {
-<a href=#512 id=512 data-nosnippet>512</a>            state: <span class="string">"unavailable"</span>.into(),
-<a href=#513 id=513 data-nosnippet>513</a>            ..CacheMetadata::default()
-<a href=#514 id=514 data-nosnippet>514</a>        },
-<a href=#515 id=515 data-nosnippet>515</a>    }
-<a href=#516 id=516 data-nosnippet>516</a>}
+<a href=#481 id=481 data-nosnippet>481</a>            <span class="string">"{}:{line}: {}: {}"</span>,
+<a href=#482 id=482 data-nosnippet>482</a>            diagnostic.path, diagnostic.rule_id, diagnostic.message
+<a href=#483 id=483 data-nosnippet>483</a>        );
+<a href=#484 id=484 data-nosnippet>484</a>    }
+<a href=#485 id=485 data-nosnippet>485</a>    <span class="kw">for </span>item <span class="kw">in </span><span class="kw-2">&amp;</span>assessment.coverage.gaps {
+<a href=#486 id=486 data-nosnippet>486</a>        <span class="kw">if </span>item.status == CoverageStatus::Unsupported {
+<a href=#487 id=487 data-nosnippet>487</a>            <span class="kw">let _ </span>= <span class="macro">writeln!</span>(
+<a href=#488 id=488 data-nosnippet>488</a>                output,
+<a href=#489 id=489 data-nosnippet>489</a>                <span class="string">"{}: warning: unsupported coverage: {}"</span>,
+<a href=#490 id=490 data-nosnippet>490</a>                item.path,
+<a href=#491 id=491 data-nosnippet>491</a>                item.reason.as_deref().unwrap_or(<span class="string">"no reason"</span>)
+<a href=#492 id=492 data-nosnippet>492</a>            );
+<a href=#493 id=493 data-nosnippet>493</a>        } <span class="kw">else </span>{
+<a href=#494 id=494 data-nosnippet>494</a>            <span class="kw">let _ </span>= <span class="macro">writeln!</span>(
+<a href=#495 id=495 data-nosnippet>495</a>                output,
+<a href=#496 id=496 data-nosnippet>496</a>                <span class="string">"{}: {:?}: {}"</span>,
+<a href=#497 id=497 data-nosnippet>497</a>                item.path,
+<a href=#498 id=498 data-nosnippet>498</a>                item.status,
+<a href=#499 id=499 data-nosnippet>499</a>                item.reason.as_deref().unwrap_or(<span class="string">"no reason"</span>)
+<a href=#500 id=500 data-nosnippet>500</a>            );
+<a href=#501 id=501 data-nosnippet>501</a>        }
+<a href=#502 id=502 data-nosnippet>502</a>    }
+<a href=#503 id=503 data-nosnippet>503</a>    output
+<a href=#504 id=504 data-nosnippet>504</a>}
+<a href=#505 id=505 data-nosnippet>505</a>
+<a href=#506 id=506 data-nosnippet>506</a><span class="kw">fn </span>capture_error_assessment(reason: String, started: Instant) -&gt; Assessment {
+<a href=#507 id=507 data-nosnippet>507</a>    <span class="kw">let </span>path = RepoPath::request_marker();
+<a href=#508 id=508 data-nosnippet>508</a>    Assessment {
+<a href=#509 id=509 data-nosnippet>509</a>        status: AssessmentStatus::Incomplete,
+<a href=#510 id=510 data-nosnippet>510</a>        diagnostics: Vec::new(),
+<a href=#511 id=511 data-nosnippet>511</a>        coverage: Coverage {
+<a href=#512 id=512 data-nosnippet>512</a>            files_considered: <span class="number">1</span>,
+<a href=#513 id=513 data-nosnippet>513</a>            files_covered: <span class="number">0</span>,
+<a href=#514 id=514 data-nosnippet>514</a>            gaps: <span class="macro">vec!</span>[CoverageGap {
+<a href=#515 id=515 data-nosnippet>515</a>                path,
+<a href=#516 id=516 data-nosnippet>516</a>                status: CoverageStatus::Incomplete,
+<a href=#517 id=517 data-nosnippet>517</a>                language: <span class="prelude-val">None</span>,
+<a href=#518 id=518 data-nosnippet>518</a>                reason: <span class="prelude-val">Some</span>(reason),
+<a href=#519 id=519 data-nosnippet>519</a>            }],
+<a href=#520 id=520 data-nosnippet>520</a>        },
+<a href=#521 id=521 data-nosnippet>521</a>        valid_as_of: <span class="string">"unavailable"</span>.into(),
+<a href=#522 id=522 data-nosnippet>522</a>        provider: ProviderMetadata::default(),
+<a href=#523 id=523 data-nosnippet>523</a>        timing: Timing {
+<a href=#524 id=524 data-nosnippet>524</a>            duration_ms: u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX),
+<a href=#525 id=525 data-nosnippet>525</a>            ..Timing::default()
+<a href=#526 id=526 data-nosnippet>526</a>        },
+<a href=#527 id=527 data-nosnippet>527</a>        cache: CacheMetadata {
+<a href=#528 id=528 data-nosnippet>528</a>            state: <span class="string">"unavailable"</span>.into(),
+<a href=#529 id=529 data-nosnippet>529</a>            ..CacheMetadata::default()
+<a href=#530 id=530 data-nosnippet>530</a>        },
+<a href=#531 id=531 data-nosnippet>531</a>    }
+<a href=#532 id=532 data-nosnippet>532</a>}
 </code></pre></div></section></main></body></html>

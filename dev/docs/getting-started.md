@@ -115,7 +115,7 @@ Doctor reads repository configuration, integration state, and native-tool setup 
 
 ## Confirm hook activation
 
-The installer enrolls hooks at user scope. They apply across that agent's Git projects, with each project's `.opcore.json` controlling its post-edit thresholds and exclusions. A mixed-language project can report unsupported files; [target exclusions](configuration.md#select-targets) let the project make that scope explicit. Use CLI-only installation if you want manual checks without global agent hooks.
+The installer enrolls hooks at user scope. They apply across that agent's Git projects, with each project's `.opcore.json` controlling its post-edit thresholds and exclusions. A mixed-language project can report unsupported files as non-blocking coverage warnings; [target exclusions](configuration.md#select-targets) define source the project intentionally leaves out of scope. Use CLI-only installation if you want manual checks without global agent hooks.
 
 Restart the agent after installation. In the Codex CLI, open `/hooks`, review the Opcore command, and trust it; see the [Codex hook permission model](https://developers.openai.com/codex/hooks). In the Claude Code CLI, open `/hooks` and inspect the user-settings hook; it is already active in trusted workspaces. Doctor can check the receipt and configuration but can't determine host trust, feature enablement, or whether a session executed the command.
 
@@ -209,9 +209,9 @@ opcore sense --repo . --json
 
 Workflows, Check, and Sense return exit `0` when the selected evaluation permits continuation and exit `1` for blocking findings or evaluation failures. Argument-parsing errors, such as unknown options, return `2`. The installed hook uses `2` for intervention feedback; a hook that continues returns `0`.
 
-An empty changed or staged Check reports `not_checked` and exits `0`; it hasn't assessed the whole project. Use `check --all` for that. An empty Sense comparison also exits `0`, even if the unchanged baseline has partial coverage.
+An empty changed or staged Check reports `not_checked` and exits `0`; it hasn't assessed the whole project. Use `check --all` for that. A full or explicit Check with no source candidates is also `not_checked`. Recognized source that Fast Verify cannot analyze remains in `coverage.gaps` with status `unsupported`; it is reported as a warning and does not change the `clean` or `findings` verdict or exit status. An empty Sense comparison also exits `0`, even if the unchanged baseline has partial coverage.
 
-For a changed project, Sense can report confirmed findings alongside coverage gaps. `--advisory` accepts findings for reporting purposes, while `--allow-partial` acknowledges partial Sense coverage. A report with both needs both flags to exit successfully. Neither option accepts incomplete evaluation. Workflows use `coverage.allowPartial` and `coverage.allowNodeBuiltins` from their [configuration](configuration.md); pre-commit and CI default to requiring complete coverage. Post-edit defaults to allowing partial Sense coverage while retaining confirmed findings.
+`--advisory` accepts findings for reporting purposes; Fast unsupported coverage warnings do not require it. For a changed project, Sense can report confirmed findings alongside coverage gaps, and `--allow-partial` acknowledges partial Sense coverage. A Sense report with both needs both flags to exit successfully. Neither option accepts incomplete evaluation. Workflows use `coverage.allowPartial` and `coverage.allowNodeBuiltins` from their [configuration](configuration.md); pre-commit and CI default to requiring complete Sense coverage. Post-edit defaults to allowing partial Sense coverage while retaining confirmed findings.
 
 Sense doesn't inspect external dependency implementations. Imports of known explicit Node built-ins, such as `node:fs/promises`, have a narrower acknowledgment:
 
