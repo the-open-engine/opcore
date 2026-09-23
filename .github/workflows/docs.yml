@@ -134,7 +134,7 @@ jobs:
 
       - name: Store the version tree
         run: |
-          rsync -a --delete --exclude=.git "$RUNNER_TEMP/opcore-versioned-site/" "$PAGES_DIR/"
+          rsync -a --checksum --delete --exclude=.git "$RUNNER_TEMP/opcore-versioned-site/" "$PAGES_DIR/"
           git -C "$PAGES_DIR" config user.name 'github-actions[bot]'
           git -C "$PAGES_DIR" config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git -C "$PAGES_DIR" add --all
