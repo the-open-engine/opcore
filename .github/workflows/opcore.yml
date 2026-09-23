@@ -1,0 +1,103 @@
+name: Opcore verified
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: opcore-badge
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    name: Full repository check
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - name: Set up Node 18
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "18"
+          package-manager-cache: false
+      - name: Install Opcore
+        id: install
+        env:
+          OPCORE_NO_HOOKS: "1"
+        run: npm install --global --foreground-scripts @the-open-engine-company/opcore@0.3.0
+      - name: Verify the full repository
+        id: check
+        if: ${{ always() && steps.install.outcome == 'success' }}
+        run: |
+          report="${RUNNER_TEMP}/opcore-check.json"
+          exit_code=0
+          opcore check --repo . --all --json > "$report" || exit_code=$?
+          cat "$report"
+          printf 'exit_code=%s\n' "$exit_code" >> "$GITHUB_OUTPUT"
+      - name: Render badge
+        id: render
+        if: ${{ always() }}
+        env:
+          CHECK_EXIT_CODE: ${{ steps.check.outputs.exit_code }}
+        run: |
+          python3 scripts/opcore_badge.py \
+            --report "${RUNNER_TEMP}/opcore-check.json" \
+            --output "${RUNNER_TEMP}/opcore.svg" \
+            --revision "$GITHUB_SHA" \
+            --exit-code "${CHECK_EXIT_CODE:-1}"
+      - name: Publish badge
+        id: publish
+        if: ${{ always() && steps.render.outcome == 'success' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          branch=opcore-badge
+          badge_path=opcore.svg
+          if ! gh api \
+            "repos/${GITHUB_REPOSITORY}/git/ref/heads/${branch}" >/dev/null 2>&1; then
+            gh api --method POST "repos/${GITHUB_REPOSITORY}/git/refs" \
+              -f "ref=refs/heads/${branch}" \
+              -f "sha=${GITHUB_SHA}" >/dev/null
+          fi
+
+          badge_sha="$(
+            gh api "repos/${GITHUB_REPOSITORY}/contents/${badge_path}?ref=${branch}" \
+              --jq .sha 2>/dev/null || true
+          )"
+          content="$(base64 -w0 "${RUNNER_TEMP}/opcore.svg")"
+          request=(
+            --method PUT
+            "repos/${GITHUB_REPOSITORY}/contents/${badge_path}"
+            -f "message=Update Opcore badge for ${GITHUB_SHA:0:12}"
+            -f "content=${content}"
+            -f "branch=${branch}"
+          )
+          if [[ -n "$badge_sha" ]]; then
+            request+=(-f "sha=${badge_sha}")
+          fi
+          gh api "${request[@]}" >/dev/null
+      - name: Enforce verification result
+        if: ${{ always() }}
+        env:
+          CHECK_EXIT_CODE: ${{ steps.check.outputs.exit_code }}
+          INSTALL_OUTCOME: ${{ steps.install.outcome }}
+          PUBLISH_OUTCOME: ${{ steps.publish.outcome }}
+          RENDER_OUTCOME: ${{ steps.render.outcome }}
+        run: |
+          if [[ "$INSTALL_OUTCOME" != success ]]; then
+            echo "Opcore installation failed" >&2
+            exit 1
+          fi
+          if [[ "$RENDER_OUTCOME" != success || "$PUBLISH_OUTCOME" != success ]]; then
+            echo "Opcore badge publication failed" >&2
+            exit 1
+          fi
+          if [[ "$CHECK_EXIT_CODE" != 0 ]]; then
+            echo "Opcore full-repository verification failed" >&2
+            exit 1
+          fi
