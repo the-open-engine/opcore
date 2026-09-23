@@ -25,6 +25,14 @@ To select only one agent, set `OPCORE_AGENT`:
 OPCORE_AGENT=codex npm install -g --foreground-scripts @the-open-engine-company/opcore
 ```
 
+To retain that agent's skill, four provider manifests, ownership receipt, and shared executable without changing its user-level hook configuration, add `OPCORE_AGENT_NO_HOOKS=1`:
+
+```sh
+OPCORE_AGENT=codex OPCORE_AGENT_NO_HOOKS=1 npm install -g --foreground-scripts @the-open-engine-company/opcore
+```
+
+Keep `OPCORE_AGENT_NO_HOOKS=1` on later npm updates. This uses the installer's existing `hooks no` receipt state, so updates, rollback, and `opcore uninstall` preserve the same ownership behavior as other agent integrations. It does not change the separate `OPCORE_NO_HOOKS=1` CLI-only mode below.
+
 Use `claude` for Claude. Keep custom agent directory variables set when installing or updating.
 
 ### Project-local and CI installation
@@ -109,7 +117,7 @@ Doctor reads repository configuration, integration state, and native-tool setup 
 
 The installer enrolls hooks at user scope. They apply across that agent's Git projects, with each project's `.opcore.json` controlling its post-edit thresholds and exclusions. A mixed-language project can report unsupported files; [target exclusions](configuration.md#select-targets) let the project make that scope explicit. Use CLI-only installation if you want manual checks without global agent hooks.
 
-Restart the agent after installation. In the Codex CLI, open `/hooks`, review the Opcore command, and trust it; see the [Codex hook permission model](https://developers.openai.com/codex/hooks). In the Claude Code CLI, open `/hooks` and inspect the installed command. Doctor can check the receipt and configuration but can't determine host trust, feature enablement, or whether a session executed the command.
+Restart the agent after installation. In the Codex CLI, open `/hooks`, review the Opcore command, and trust it; see the [Codex hook permission model](https://developers.openai.com/codex/hooks). In the Claude Code CLI, open `/hooks` and inspect the user-settings hook; it is already active in trusted workspaces. Doctor can check the receipt and configuration but can't determine host trust, feature enablement, or whether a session executed the command.
 
 Desktop interfaces may not provide `/hooks`. Review the settings path printed by the installer and use the smoke edit below in that desktop session, accepting its normal workspace and tool permission prompts. CLI activation does not establish desktop activation.
 
@@ -140,8 +148,8 @@ Use the built-in workflows alongside the repository's tests, linters, and existi
 | Workflow | Selected view and checks |
 | --- | --- |
 | `post-edit` | Worktree changes against HEAD: introduced Verify and Sense findings. |
-| `pre-commit` | Full staged Verify and configured native checks; introduced Sense against HEAD. |
-| `ci` | Full target-commit Verify and configured native checks; introduced Sense against an explicit base commit. |
+| `pre-commit` | Staged Verify and configured native checks; introduced Sense against HEAD. Verify/native default to all findings. |
+| `ci` | Target-commit Verify and configured native checks; introduced Sense against an explicit base commit. Verify/native default to all findings. |
 
 The staged workflow also reads staged configuration and documents; unstaged edits cannot change its result. CI defaults to target `HEAD`, or accepts `--tree <target>`. Existing Verify/compiler findings can fail these full checks. Review exclusions and the effective policy before adopting them:
 
@@ -150,6 +158,28 @@ opcore status --workflow pre-commit --json
 opcore doctor --workflow pre-commit
 opcore run pre-commit
 ```
+
+### Adopt on an existing codebase
+
+If existing Fast Verify findings make the default full comparison impractical, opt into the brownfield gate instead of excluding owned source. Native findings can also be compared when the selected provider establishes a comparison-safe baseline:
+
+```sh
+opcore run pre-commit --comparison introduced
+opcore run ci --comparison introduced --base <base-commit>
+```
+
+This keeps the combined workflow's single configuration capture, freshness check, Sense evaluation, native-provider sequence, coverage requirements, and explicit native authorization. Fast Verify grandfathers unchanged findings but still blocks a new finding added to an already-dirty file. A native provider does the same only when its baseline run yields an exhaustive diagnostic set; otherwise the workflow is incomplete rather than guessing. In particular, a failing Rust-native baseline is not comparison-safe because Cargo may stop before checking every crate or target. See the [native-provider comparison limitations](providers.md#rust-native). Structured workflow output records `"comparison":"introduced"`; omit the option, or pass `--comparison all`, for the default full comparison.
+
+`targets.exclude` is a scope boundary, not a findings baseline: excluded source is not checked for new violations. Use exclusions only for source the workflow intentionally does not own, such as vendored or generated trees.
+
+On an older Opcore release without combined introduced mode, the immediate Fast/Sense fallback is:
+
+```sh
+opcore check --staged --workflow pre-commit
+opcore sense --staged --workflow pre-commit
+```
+
+That fallback does not preserve the combined workflow's native sequencing or whole-run freshness check.
 
 Ideally, configure the applicable [native providers](providers.md) in pre-commit and CI for compiler or type-checker coverage. Prepare each provider's tools and dependency cache first. Repository settings select the checks; the host must also authorize native execution with `--allow-unsandboxed-native`. Use trusted repositories or an externally isolated CI environment. Native checks never enter automatic agent hooks.
 
@@ -222,7 +252,7 @@ Cleanup checks the recorded artifacts before removing them and retains modified 
 | `NATIVE_SETUP_REQUIRED` or missing npm install state | Run `opcore setup`, or `setup --no-hooks` for CLI-only use. `doctor --json` identifies the package path and setup failure even before a native binary is available. |
 | Unsupported platform or glibc | Use the [source installer](#source-checkout) on a supported build host; npm has no source fallback. |
 | Download failed or timed out | Check access to the named GitHub Release URL, then retry `setup`. A checksum mismatch requires a fresh verified download; never bypass the digest check. |
-| No supported agent detected | Set `OPCORE_AGENT=codex` or `claude`, set the intended agent directory, or install with `OPCORE_NO_HOOKS=1`. |
+| No supported agent detected | Set `OPCORE_AGENT=codex` or `claude`, set the intended agent directory, or explicitly choose CLI-only installation with `OPCORE_NO_HOOKS=1`. |
 | Permission denied | Use a writable npm prefix or project-local install. For executable preflight failures, ensure the temporary filesystem permits execution; npm's `TMPDIR` can select an appropriate temporary directory. |
 | CLI checks work but no automatic feedback appears | Restart the agent, review hook trust and settings, and repeat the edit smoke test in that session. |
 | Native coverage is unavailable | Run `doctor --workflow <name>` and follow the selected [provider's prerequisites](providers.md). A present compiler can still lack dependencies or usable project configuration. |

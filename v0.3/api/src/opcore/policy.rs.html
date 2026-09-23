@@ -21,7 +21,7 @@
 <a href=#11 id=11 data-nosnippet>11</a><span class="kw">use </span>anyhow::{Context, <span class="prelude-ty">Result</span>, ensure};
 <a href=#12 id=12 data-nosnippet>12</a><span class="kw">use </span>clap::ValueEnum;
 <a href=#13 id=13 data-nosnippet>13</a><span class="kw">use </span>serde::{Deserialize, Serialize};
-<a href=#14 id=14 data-nosnippet>14</a><span class="kw">use </span>serde_json::Value;
+<a href=#14 id=14 data-nosnippet>14</a><span class="kw">use </span>serde_json::{Value, json};
 <a href=#15 id=15 data-nosnippet>15</a><span class="kw">use </span>sha2::{Digest, Sha256};
 <a href=#16 id=16 data-nosnippet>16</a>
 <a href=#17 id=17 data-nosnippet>17</a><span class="kw">use crate</span>::{
@@ -52,9 +52,9 @@
 <a href=#42 id=42 data-nosnippet>42</a></span><span class="kw">pub enum </span>Workflow {
 <a href=#43 id=43 data-nosnippet>43</a>    <span class="doccomment">/// Fast Verify and Sense against the current worktree.
 <a href=#44 id=44 data-nosnippet>44</a>    </span>PostEdit,
-<a href=#45 id=45 data-nosnippet>45</a>    <span class="doccomment">/// Full staged Verify and selected native checks, plus introduced Sense.
+<a href=#45 id=45 data-nosnippet>45</a>    <span class="doccomment">/// Staged Verify and selected native checks, plus introduced Sense; defaults to all findings.
 <a href=#46 id=46 data-nosnippet>46</a>    </span>PreCommit,
-<a href=#47 id=47 data-nosnippet>47</a>    <span class="doccomment">/// Full immutable-commit Verify and native checks, plus Sense against a base commit.
+<a href=#47 id=47 data-nosnippet>47</a>    <span class="doccomment">/// Immutable-commit Verify and native checks, plus Sense against a base; defaults to all findings.
 <a href=#48 id=48 data-nosnippet>48</a>    </span>Ci,
 <a href=#49 id=49 data-nosnippet>49</a>}
 <a href=#50 id=50 data-nosnippet>50</a>
@@ -306,203 +306,213 @@
 <a href=#296 id=296 data-nosnippet>296</a>}
 <a href=#297 id=297 data-nosnippet>297</a>
 <a href=#298 id=298 data-nosnippet>298</a><span class="kw">impl </span>PolicySnapshot {
-<a href=#299 id=299 data-nosnippet>299</a>    <span class="attr">#[cfg(test)]
-<a href=#300 id=300 data-nosnippet>300</a>    </span><span class="kw">pub fn </span>load(root: <span class="kw-2">&amp;</span>Path) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
-<a href=#301 id=301 data-nosnippet>301</a>        <span class="kw">let </span>bytes = stable_read(<span class="kw-2">&amp;</span>root.join(POLICY_PATH))<span class="question-mark">?</span>;
-<a href=#302 id=302 data-nosnippet>302</a>        <span class="self">Self</span>::from_bytes(root, bytes, ConfigView::Worktree, <span class="prelude-val">None</span>, <span class="prelude-val">None</span>)
-<a href=#303 id=303 data-nosnippet>303</a>    }
-<a href=#304 id=304 data-nosnippet>304</a>
-<a href=#305 id=305 data-nosnippet>305</a>    <span class="kw">pub fn </span>capture(
-<a href=#306 id=306 data-nosnippet>306</a>        repository: <span class="kw-2">&amp;</span>GitRepository,
-<a href=#307 id=307 data-nosnippet>307</a>        view: ConfigView,
-<a href=#308 id=308 data-nosnippet>308</a>        workflow: <span class="prelude-ty">Option</span>&lt;Workflow&gt;,
-<a href=#309 id=309 data-nosnippet>309</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
-<a href=#310 id=310 data-nosnippet>310</a>        <span class="kw">let </span>path = RepoPath::from_protocol(POLICY_PATH)<span class="question-mark">?</span>;
-<a href=#311 id=311 data-nosnippet>311</a>        <span class="kw">let </span>paths = BTreeSet::from([path.clone()]);
-<a href=#312 id=312 data-nosnippet>312</a>        <span class="kw">let </span>capture = <span class="kw">match </span><span class="kw-2">&amp;</span>view {
-<a href=#313 id=313 data-nosnippet>313</a>            ConfigView::Worktree =&gt; repository.capture_auxiliary(<span class="kw-2">&amp;</span>paths)<span class="question-mark">?</span>,
-<a href=#314 id=314 data-nosnippet>314</a>            ConfigView::Index =&gt; repository.capture_staged_auxiliary(<span class="kw-2">&amp;</span>paths)<span class="question-mark">?</span>,
-<a href=#315 id=315 data-nosnippet>315</a>            ConfigView::Tree(reference) =&gt; {
-<a href=#316 id=316 data-nosnippet>316</a>                repository.capture_tree_auxiliary(<span class="kw-2">&amp;</span>paths, reference, <span class="prelude-val">None</span>)<span class="question-mark">?
-<a href=#317 id=317 data-nosnippet>317</a>            </span>}
-<a href=#318 id=318 data-nosnippet>318</a>        };
-<a href=#319 id=319 data-nosnippet>319</a>        <span class="kw">let </span>state = capture
-<a href=#320 id=320 data-nosnippet>320</a>            .paths
-<a href=#321 id=321 data-nosnippet>321</a>            .get(<span class="kw-2">&amp;</span>path)
-<a href=#322 id=322 data-nosnippet>322</a>            .context(<span class="string">"configuration capture omitted requested path"</span>)<span class="question-mark">?</span>;
-<a href=#323 id=323 data-nosnippet>323</a>        <span class="kw">let </span>bytes = state.after.as_ref().map(|blob| blob.bytes.to_vec());
-<a href=#324 id=324 data-nosnippet>324</a>        <span class="self">Self</span>::from_bytes(repository.root(), bytes, view, workflow, <span class="prelude-val">Some</span>(capture))
-<a href=#325 id=325 data-nosnippet>325</a>    }
-<a href=#326 id=326 data-nosnippet>326</a>
-<a href=#327 id=327 data-nosnippet>327</a>    <span class="kw">fn </span>from_bytes(
-<a href=#328 id=328 data-nosnippet>328</a>        root: <span class="kw-2">&amp;</span>Path,
-<a href=#329 id=329 data-nosnippet>329</a>        bytes: <span class="prelude-ty">Option</span>&lt;Vec&lt;u8&gt;&gt;,
-<a href=#330 id=330 data-nosnippet>330</a>        view: ConfigView,
-<a href=#331 id=331 data-nosnippet>331</a>        workflow: <span class="prelude-ty">Option</span>&lt;Workflow&gt;,
-<a href=#332 id=332 data-nosnippet>332</a>        capture: <span class="prelude-ty">Option</span>&lt;GitAuxiliaryCapture&gt;,
-<a href=#333 id=333 data-nosnippet>333</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
-<a href=#334 id=334 data-nosnippet>334</a>        <span class="kw">let </span>configured = bytes
-<a href=#335 id=335 data-nosnippet>335</a>            .as_ref()
-<a href=#336 id=336 data-nosnippet>336</a>            .map(|bytes| parse_policy(bytes))
-<a href=#337 id=337 data-nosnippet>337</a>            .transpose()<span class="question-mark">?</span>;
-<a href=#338 id=338 data-nosnippet>338</a>        <span class="kw">let </span>state = <span class="kw">if </span>configured.is_some() {
-<a href=#339 id=339 data-nosnippet>339</a>            PolicyState::Configured
-<a href=#340 id=340 data-nosnippet>340</a>        } <span class="kw">else </span>{
-<a href=#341 id=341 data-nosnippet>341</a>            PolicyState::Default
-<a href=#342 id=342 data-nosnippet>342</a>        };
-<a href=#343 id=343 data-nosnippet>343</a>        <span class="kw">let </span><span class="kw-2">mut </span>configuration = configured.unwrap_or_default();
-<a href=#344 id=344 data-nosnippet>344</a>        <span class="kw">if </span>workflow == <span class="prelude-val">Some</span>(Workflow::PostEdit) {
-<a href=#345 id=345 data-nosnippet>345</a>            <span class="kw">let </span>explicit = bytes
-<a href=#346 id=346 data-nosnippet>346</a>                .as_ref()
-<a href=#347 id=347 data-nosnippet>347</a>                .map(|bytes| parse_unique_json(bytes))
-<a href=#348 id=348 data-nosnippet>348</a>                .transpose()<span class="question-mark">?</span>;
-<a href=#349 id=349 data-nosnippet>349</a>            <span class="kw">if </span>explicit
-<a href=#350 id=350 data-nosnippet>350</a>                .as_ref()
-<a href=#351 id=351 data-nosnippet>351</a>                .and_then(|value| value.get(<span class="string">"coverage"</span>))
-<a href=#352 id=352 data-nosnippet>352</a>                .and_then(|value| value.get(<span class="string">"allowPartial"</span>))
-<a href=#353 id=353 data-nosnippet>353</a>                .is_none()
-<a href=#354 id=354 data-nosnippet>354</a>            {
-<a href=#355 id=355 data-nosnippet>355</a>                configuration.coverage.allow_partial = <span class="bool-val">true</span>;
-<a href=#356 id=356 data-nosnippet>356</a>            }
-<a href=#357 id=357 data-nosnippet>357</a>        }
-<a href=#358 id=358 data-nosnippet>358</a>        <span class="kw">let </span>policy = configuration.resolve(workflow)<span class="question-mark">?</span>;
-<a href=#359 id=359 data-nosnippet>359</a>        <span class="kw">let </span>canonical = serde_json::to_vec(<span class="kw-2">&amp;</span>policy).context(<span class="string">"serialize effective configuration"</span>)<span class="question-mark">?</span>;
-<a href=#360 id=360 data-nosnippet>360</a>        <span class="kw">let </span><span class="kw-2">mut </span>hasher = Sha256::new();
-<a href=#361 id=361 data-nosnippet>361</a>        hasher.update(<span class="string">b"opcore-configuration/v1\0"</span>);
-<a href=#362 id=362 data-nosnippet>362</a>        hasher.update(canonical);
-<a href=#363 id=363 data-nosnippet>363</a>        <span class="kw">let </span>origins = configuration_origins(<span class="kw-2">&amp;</span>policy, bytes.as_deref(), workflow)<span class="question-mark">?</span>;
-<a href=#364 id=364 data-nosnippet>364</a>        <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
-<a href=#365 id=365 data-nosnippet>365</a>            policy,
-<a href=#366 id=366 data-nosnippet>366</a>            state,
-<a href=#367 id=367 data-nosnippet>367</a>            digest: <span class="macro">format!</span>(<span class="string">"sha256:{}"</span>, hex::encode(hasher.finalize())),
-<a href=#368 id=368 data-nosnippet>368</a>            workflow,
-<a href=#369 id=369 data-nosnippet>369</a>            view,
-<a href=#370 id=370 data-nosnippet>370</a>            origins,
-<a href=#371 id=371 data-nosnippet>371</a>            root: root.to_path_buf(),
-<a href=#372 id=372 data-nosnippet>372</a>            bytes,
-<a href=#373 id=373 data-nosnippet>373</a>            capture,
-<a href=#374 id=374 data-nosnippet>374</a>        })
-<a href=#375 id=375 data-nosnippet>375</a>    }
-<a href=#376 id=376 data-nosnippet>376</a>
-<a href=#377 id=377 data-nosnippet>377</a>    <span class="kw">pub fn </span>is_current(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;bool&gt; {
-<a href=#378 id=378 data-nosnippet>378</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>(capture) = <span class="kw-2">&amp;</span><span class="self">self</span>.capture {
-<a href=#379 id=379 data-nosnippet>379</a>            <span class="kw">let </span>repository = GitRepository::discover(<span class="kw-2">&amp;</span><span class="self">self</span>.root)<span class="question-mark">?</span>;
-<a href=#380 id=380 data-nosnippet>380</a>            <span class="kw">return </span><span class="prelude-val">Ok</span>(repository.is_auxiliary_current(capture)<span class="question-mark">?</span>);
-<a href=#381 id=381 data-nosnippet>381</a>        }
-<a href=#382 id=382 data-nosnippet>382</a>        <span class="prelude-val">Ok</span>(stable_read(<span class="kw-2">&amp;</span><span class="self">self</span>.root.join(POLICY_PATH))<span class="question-mark">? </span>== <span class="self">self</span>.bytes)
-<a href=#383 id=383 data-nosnippet>383</a>    }
-<a href=#384 id=384 data-nosnippet>384</a>
-<a href=#385 id=385 data-nosnippet>385</a>    <span class="kw">pub fn </span>validate_hypothetical(<span class="kw-2">&amp;</span><span class="self">self</span>, proposed: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>[u8]&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-<a href=#386 id=386 data-nosnippet>386</a>        <span class="kw">let </span>current = <span class="self">self
-<a href=#387 id=387 data-nosnippet>387</a>            </span>.bytes
-<a href=#388 id=388 data-nosnippet>388</a>            .as_deref()
-<a href=#389 id=389 data-nosnippet>389</a>            .map(parse_policy)
-<a href=#390 id=390 data-nosnippet>390</a>            .transpose()<span class="question-mark">?
-<a href=#391 id=391 data-nosnippet>391</a>            </span>.unwrap_or_default();
-<a href=#392 id=392 data-nosnippet>392</a>        <span class="kw">let </span><span class="kw-2">mut </span>candidate = proposed.map(parse_policy).transpose()<span class="question-mark">?</span>.unwrap_or_default();
-<a href=#393 id=393 data-nosnippet>393</a>        candidate.documentation = current.documentation.clone();
-<a href=#394 id=394 data-nosnippet>394</a>        <span class="macro">ensure!</span>(
-<a href=#395 id=395 data-nosnippet>395</a>            candidate == current,
-<a href=#396 id=396 data-nosnippet>396</a>            <span class="string">"hypothetical configuration may change documentation.bindings only; Verify, Sense, targets, providers and workflows must stay unchanged"
-<a href=#397 id=397 data-nosnippet>397</a>        </span>);
-<a href=#398 id=398 data-nosnippet>398</a>        <span class="prelude-val">Ok</span>(())
-<a href=#399 id=399 data-nosnippet>399</a>    }
-<a href=#400 id=400 data-nosnippet>400</a>
-<a href=#401 id=401 data-nosnippet>401</a>    <span class="attr">#[must_use]
-<a href=#402 id=402 data-nosnippet>402</a>    </span><span class="kw">pub fn </span>bind_valid_as_of(<span class="kw-2">&amp;</span><span class="self">self</span>, source: <span class="kw-2">&amp;</span>str) -&gt; String {
-<a href=#403 id=403 data-nosnippet>403</a>        <span class="kw">let </span>source = serde_json::from_str::&lt;Value&gt;(source)
-<a href=#404 id=404 data-nosnippet>404</a>            .unwrap_or_else(|<span class="kw">_</span>| Value::String(source.to_owned()));
-<a href=#405 id=405 data-nosnippet>405</a>        <span class="macro">serde_json::json!</span>({<span class="string">"kind"</span>:<span class="string">"opcore-local"</span>, <span class="string">"source"</span>:source, <span class="string">"policy"</span>:<span class="self">self</span>.digest,
-<a href=#406 id=406 data-nosnippet>406</a>            <span class="string">"configurationView"</span>:<span class="self">self</span>.view, <span class="string">"workflow"</span>:<span class="self">self</span>.workflow})
-<a href=#407 id=407 data-nosnippet>407</a>        .to_string()
-<a href=#408 id=408 data-nosnippet>408</a>    }
-<a href=#409 id=409 data-nosnippet>409</a>}
+<a href=#299 id=299 data-nosnippet>299</a>    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>report_configuration(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Value {
+<a href=#300 id=300 data-nosnippet>300</a>        <span class="macro">json!</span>({
+<a href=#301 id=301 data-nosnippet>301</a>            <span class="string">"state"</span>: <span class="self">self</span>.state,
+<a href=#302 id=302 data-nosnippet>302</a>            <span class="string">"view"</span>: <span class="self">self</span>.view,
+<a href=#303 id=303 data-nosnippet>303</a>            <span class="string">"digest"</span>: <span class="self">self</span>.digest,
+<a href=#304 id=304 data-nosnippet>304</a>            <span class="string">"effective"</span>: <span class="self">self</span>.policy,
+<a href=#305 id=305 data-nosnippet>305</a>            <span class="string">"origins"</span>: <span class="self">self</span>.origins,
+<a href=#306 id=306 data-nosnippet>306</a>        })
+<a href=#307 id=307 data-nosnippet>307</a>    }
+<a href=#308 id=308 data-nosnippet>308</a>
+<a href=#309 id=309 data-nosnippet>309</a>    <span class="attr">#[cfg(test)]
+<a href=#310 id=310 data-nosnippet>310</a>    </span><span class="kw">pub fn </span>load(root: <span class="kw-2">&amp;</span>Path) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
+<a href=#311 id=311 data-nosnippet>311</a>        <span class="kw">let </span>bytes = stable_read(<span class="kw-2">&amp;</span>root.join(POLICY_PATH))<span class="question-mark">?</span>;
+<a href=#312 id=312 data-nosnippet>312</a>        <span class="self">Self</span>::from_bytes(root, bytes, ConfigView::Worktree, <span class="prelude-val">None</span>, <span class="prelude-val">None</span>)
+<a href=#313 id=313 data-nosnippet>313</a>    }
+<a href=#314 id=314 data-nosnippet>314</a>
+<a href=#315 id=315 data-nosnippet>315</a>    <span class="kw">pub fn </span>capture(
+<a href=#316 id=316 data-nosnippet>316</a>        repository: <span class="kw-2">&amp;</span>GitRepository,
+<a href=#317 id=317 data-nosnippet>317</a>        view: ConfigView,
+<a href=#318 id=318 data-nosnippet>318</a>        workflow: <span class="prelude-ty">Option</span>&lt;Workflow&gt;,
+<a href=#319 id=319 data-nosnippet>319</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
+<a href=#320 id=320 data-nosnippet>320</a>        <span class="kw">let </span>path = RepoPath::from_protocol(POLICY_PATH)<span class="question-mark">?</span>;
+<a href=#321 id=321 data-nosnippet>321</a>        <span class="kw">let </span>paths = BTreeSet::from([path.clone()]);
+<a href=#322 id=322 data-nosnippet>322</a>        <span class="kw">let </span>capture = <span class="kw">match </span><span class="kw-2">&amp;</span>view {
+<a href=#323 id=323 data-nosnippet>323</a>            ConfigView::Worktree =&gt; repository.capture_auxiliary(<span class="kw-2">&amp;</span>paths)<span class="question-mark">?</span>,
+<a href=#324 id=324 data-nosnippet>324</a>            ConfigView::Index =&gt; repository.capture_staged_auxiliary(<span class="kw-2">&amp;</span>paths)<span class="question-mark">?</span>,
+<a href=#325 id=325 data-nosnippet>325</a>            ConfigView::Tree(reference) =&gt; {
+<a href=#326 id=326 data-nosnippet>326</a>                repository.capture_tree_auxiliary(<span class="kw-2">&amp;</span>paths, reference, <span class="prelude-val">None</span>)<span class="question-mark">?
+<a href=#327 id=327 data-nosnippet>327</a>            </span>}
+<a href=#328 id=328 data-nosnippet>328</a>        };
+<a href=#329 id=329 data-nosnippet>329</a>        <span class="kw">let </span>state = capture
+<a href=#330 id=330 data-nosnippet>330</a>            .paths
+<a href=#331 id=331 data-nosnippet>331</a>            .get(<span class="kw-2">&amp;</span>path)
+<a href=#332 id=332 data-nosnippet>332</a>            .context(<span class="string">"configuration capture omitted requested path"</span>)<span class="question-mark">?</span>;
+<a href=#333 id=333 data-nosnippet>333</a>        <span class="kw">let </span>bytes = state.after.as_ref().map(|blob| blob.bytes.to_vec());
+<a href=#334 id=334 data-nosnippet>334</a>        <span class="self">Self</span>::from_bytes(repository.root(), bytes, view, workflow, <span class="prelude-val">Some</span>(capture))
+<a href=#335 id=335 data-nosnippet>335</a>    }
+<a href=#336 id=336 data-nosnippet>336</a>
+<a href=#337 id=337 data-nosnippet>337</a>    <span class="kw">fn </span>from_bytes(
+<a href=#338 id=338 data-nosnippet>338</a>        root: <span class="kw-2">&amp;</span>Path,
+<a href=#339 id=339 data-nosnippet>339</a>        bytes: <span class="prelude-ty">Option</span>&lt;Vec&lt;u8&gt;&gt;,
+<a href=#340 id=340 data-nosnippet>340</a>        view: ConfigView,
+<a href=#341 id=341 data-nosnippet>341</a>        workflow: <span class="prelude-ty">Option</span>&lt;Workflow&gt;,
+<a href=#342 id=342 data-nosnippet>342</a>        capture: <span class="prelude-ty">Option</span>&lt;GitAuxiliaryCapture&gt;,
+<a href=#343 id=343 data-nosnippet>343</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
+<a href=#344 id=344 data-nosnippet>344</a>        <span class="kw">let </span>configured = bytes
+<a href=#345 id=345 data-nosnippet>345</a>            .as_ref()
+<a href=#346 id=346 data-nosnippet>346</a>            .map(|bytes| parse_policy(bytes))
+<a href=#347 id=347 data-nosnippet>347</a>            .transpose()<span class="question-mark">?</span>;
+<a href=#348 id=348 data-nosnippet>348</a>        <span class="kw">let </span>state = <span class="kw">if </span>configured.is_some() {
+<a href=#349 id=349 data-nosnippet>349</a>            PolicyState::Configured
+<a href=#350 id=350 data-nosnippet>350</a>        } <span class="kw">else </span>{
+<a href=#351 id=351 data-nosnippet>351</a>            PolicyState::Default
+<a href=#352 id=352 data-nosnippet>352</a>        };
+<a href=#353 id=353 data-nosnippet>353</a>        <span class="kw">let </span><span class="kw-2">mut </span>configuration = configured.unwrap_or_default();
+<a href=#354 id=354 data-nosnippet>354</a>        <span class="kw">if </span>workflow == <span class="prelude-val">Some</span>(Workflow::PostEdit) {
+<a href=#355 id=355 data-nosnippet>355</a>            <span class="kw">let </span>explicit = bytes
+<a href=#356 id=356 data-nosnippet>356</a>                .as_ref()
+<a href=#357 id=357 data-nosnippet>357</a>                .map(|bytes| parse_unique_json(bytes))
+<a href=#358 id=358 data-nosnippet>358</a>                .transpose()<span class="question-mark">?</span>;
+<a href=#359 id=359 data-nosnippet>359</a>            <span class="kw">if </span>explicit
+<a href=#360 id=360 data-nosnippet>360</a>                .as_ref()
+<a href=#361 id=361 data-nosnippet>361</a>                .and_then(|value| value.get(<span class="string">"coverage"</span>))
+<a href=#362 id=362 data-nosnippet>362</a>                .and_then(|value| value.get(<span class="string">"allowPartial"</span>))
+<a href=#363 id=363 data-nosnippet>363</a>                .is_none()
+<a href=#364 id=364 data-nosnippet>364</a>            {
+<a href=#365 id=365 data-nosnippet>365</a>                configuration.coverage.allow_partial = <span class="bool-val">true</span>;
+<a href=#366 id=366 data-nosnippet>366</a>            }
+<a href=#367 id=367 data-nosnippet>367</a>        }
+<a href=#368 id=368 data-nosnippet>368</a>        <span class="kw">let </span>policy = configuration.resolve(workflow)<span class="question-mark">?</span>;
+<a href=#369 id=369 data-nosnippet>369</a>        <span class="kw">let </span>canonical = serde_json::to_vec(<span class="kw-2">&amp;</span>policy).context(<span class="string">"serialize effective configuration"</span>)<span class="question-mark">?</span>;
+<a href=#370 id=370 data-nosnippet>370</a>        <span class="kw">let </span><span class="kw-2">mut </span>hasher = Sha256::new();
+<a href=#371 id=371 data-nosnippet>371</a>        hasher.update(<span class="string">b"opcore-configuration/v1\0"</span>);
+<a href=#372 id=372 data-nosnippet>372</a>        hasher.update(canonical);
+<a href=#373 id=373 data-nosnippet>373</a>        <span class="kw">let </span>origins = configuration_origins(<span class="kw-2">&amp;</span>policy, bytes.as_deref(), workflow)<span class="question-mark">?</span>;
+<a href=#374 id=374 data-nosnippet>374</a>        <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
+<a href=#375 id=375 data-nosnippet>375</a>            policy,
+<a href=#376 id=376 data-nosnippet>376</a>            state,
+<a href=#377 id=377 data-nosnippet>377</a>            digest: <span class="macro">format!</span>(<span class="string">"sha256:{}"</span>, hex::encode(hasher.finalize())),
+<a href=#378 id=378 data-nosnippet>378</a>            workflow,
+<a href=#379 id=379 data-nosnippet>379</a>            view,
+<a href=#380 id=380 data-nosnippet>380</a>            origins,
+<a href=#381 id=381 data-nosnippet>381</a>            root: root.to_path_buf(),
+<a href=#382 id=382 data-nosnippet>382</a>            bytes,
+<a href=#383 id=383 data-nosnippet>383</a>            capture,
+<a href=#384 id=384 data-nosnippet>384</a>        })
+<a href=#385 id=385 data-nosnippet>385</a>    }
+<a href=#386 id=386 data-nosnippet>386</a>
+<a href=#387 id=387 data-nosnippet>387</a>    <span class="kw">pub fn </span>is_current(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;bool&gt; {
+<a href=#388 id=388 data-nosnippet>388</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>(capture) = <span class="kw-2">&amp;</span><span class="self">self</span>.capture {
+<a href=#389 id=389 data-nosnippet>389</a>            <span class="kw">let </span>repository = GitRepository::discover(<span class="kw-2">&amp;</span><span class="self">self</span>.root)<span class="question-mark">?</span>;
+<a href=#390 id=390 data-nosnippet>390</a>            <span class="kw">return </span><span class="prelude-val">Ok</span>(repository.is_auxiliary_current(capture)<span class="question-mark">?</span>);
+<a href=#391 id=391 data-nosnippet>391</a>        }
+<a href=#392 id=392 data-nosnippet>392</a>        <span class="prelude-val">Ok</span>(stable_read(<span class="kw-2">&amp;</span><span class="self">self</span>.root.join(POLICY_PATH))<span class="question-mark">? </span>== <span class="self">self</span>.bytes)
+<a href=#393 id=393 data-nosnippet>393</a>    }
+<a href=#394 id=394 data-nosnippet>394</a>
+<a href=#395 id=395 data-nosnippet>395</a>    <span class="kw">pub fn </span>validate_hypothetical(<span class="kw-2">&amp;</span><span class="self">self</span>, proposed: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>[u8]&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+<a href=#396 id=396 data-nosnippet>396</a>        <span class="kw">let </span>current = <span class="self">self
+<a href=#397 id=397 data-nosnippet>397</a>            </span>.bytes
+<a href=#398 id=398 data-nosnippet>398</a>            .as_deref()
+<a href=#399 id=399 data-nosnippet>399</a>            .map(parse_policy)
+<a href=#400 id=400 data-nosnippet>400</a>            .transpose()<span class="question-mark">?
+<a href=#401 id=401 data-nosnippet>401</a>            </span>.unwrap_or_default();
+<a href=#402 id=402 data-nosnippet>402</a>        <span class="kw">let </span><span class="kw-2">mut </span>candidate = proposed.map(parse_policy).transpose()<span class="question-mark">?</span>.unwrap_or_default();
+<a href=#403 id=403 data-nosnippet>403</a>        candidate.documentation = current.documentation.clone();
+<a href=#404 id=404 data-nosnippet>404</a>        <span class="macro">ensure!</span>(
+<a href=#405 id=405 data-nosnippet>405</a>            candidate == current,
+<a href=#406 id=406 data-nosnippet>406</a>            <span class="string">"hypothetical configuration may change documentation.bindings only; Verify, Sense, targets, providers and workflows must stay unchanged"
+<a href=#407 id=407 data-nosnippet>407</a>        </span>);
+<a href=#408 id=408 data-nosnippet>408</a>        <span class="prelude-val">Ok</span>(())
+<a href=#409 id=409 data-nosnippet>409</a>    }
 <a href=#410 id=410 data-nosnippet>410</a>
-<a href=#411 id=411 data-nosnippet>411</a><span class="kw">fn </span>configuration_origins(
-<a href=#412 id=412 data-nosnippet>412</a>    policy: <span class="kw-2">&amp;</span>Policy,
-<a href=#413 id=413 data-nosnippet>413</a>    bytes: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>[u8]&gt;,
-<a href=#414 id=414 data-nosnippet>414</a>    workflow: <span class="prelude-ty">Option</span>&lt;Workflow&gt;,
-<a href=#415 id=415 data-nosnippet>415</a>) -&gt; <span class="prelude-ty">Result</span>&lt;BTreeMap&lt;String, String&gt;&gt; {
-<a href=#416 id=416 data-nosnippet>416</a>    <span class="kw">let </span><span class="kw-2">mut </span>origins = BTreeMap::new();
-<a href=#417 id=417 data-nosnippet>417</a>    mark_origins(<span class="kw-2">&amp;</span>serde_json::to_value(policy)<span class="question-mark">?</span>, <span class="string">""</span>, <span class="string">"default"</span>, <span class="kw-2">&amp;mut </span>origins);
-<a href=#418 id=418 data-nosnippet>418</a>    <span class="kw">if let </span><span class="prelude-val">Some</span>(bytes) = bytes {
-<a href=#419 id=419 data-nosnippet>419</a>        <span class="kw">let </span>raw = parse_unique_json(bytes)<span class="question-mark">?</span>;
-<a href=#420 id=420 data-nosnippet>420</a>        mark_origins(<span class="kw-2">&amp;</span>raw, <span class="string">""</span>, <span class="string">"repository"</span>, <span class="kw-2">&amp;mut </span>origins);
-<a href=#421 id=421 data-nosnippet>421</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>(workflow) = workflow
-<a href=#422 id=422 data-nosnippet>422</a>            &amp;&amp; <span class="kw">let </span><span class="prelude-val">Some</span>(settings) = raw
-<a href=#423 id=423 data-nosnippet>423</a>                .get(<span class="string">"workflows"</span>)
-<a href=#424 id=424 data-nosnippet>424</a>                .and_then(|workflows| workflows.get(workflow.as_str()))
-<a href=#425 id=425 data-nosnippet>425</a>        {
-<a href=#426 id=426 data-nosnippet>426</a>            mark_origins(
-<a href=#427 id=427 data-nosnippet>427</a>                settings,
-<a href=#428 id=428 data-nosnippet>428</a>                <span class="string">""</span>,
-<a href=#429 id=429 data-nosnippet>429</a>                <span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"workflow:{}"</span>, workflow.as_str()),
-<a href=#430 id=430 data-nosnippet>430</a>                <span class="kw-2">&amp;mut </span>origins,
-<a href=#431 id=431 data-nosnippet>431</a>            );
-<a href=#432 id=432 data-nosnippet>432</a>        }
-<a href=#433 id=433 data-nosnippet>433</a>    }
-<a href=#434 id=434 data-nosnippet>434</a>    origins.retain(|path, <span class="kw">_</span>| !path.starts_with(<span class="string">"/workflows"</span>) &amp;&amp; path != <span class="string">"/$schema"</span>);
-<a href=#435 id=435 data-nosnippet>435</a>    <span class="prelude-val">Ok</span>(origins)
-<a href=#436 id=436 data-nosnippet>436</a>}
-<a href=#437 id=437 data-nosnippet>437</a>
-<a href=#438 id=438 data-nosnippet>438</a><span class="kw">fn </span>mark_origins(
-<a href=#439 id=439 data-nosnippet>439</a>    value: <span class="kw-2">&amp;</span>Value,
-<a href=#440 id=440 data-nosnippet>440</a>    pointer: <span class="kw-2">&amp;</span>str,
-<a href=#441 id=441 data-nosnippet>441</a>    origin: <span class="kw-2">&amp;</span>str,
-<a href=#442 id=442 data-nosnippet>442</a>    origins: <span class="kw-2">&amp;mut </span>BTreeMap&lt;String, String&gt;,
-<a href=#443 id=443 data-nosnippet>443</a>) {
-<a href=#444 id=444 data-nosnippet>444</a>    <span class="kw">if let </span>Value::Object(fields) = value {
-<a href=#445 id=445 data-nosnippet>445</a>        <span class="kw">for </span>(key, value) <span class="kw">in </span>fields {
-<a href=#446 id=446 data-nosnippet>446</a>            mark_origins(value, <span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"{pointer}/{key}"</span>), origin, origins);
-<a href=#447 id=447 data-nosnippet>447</a>        }
-<a href=#448 id=448 data-nosnippet>448</a>    } <span class="kw">else </span>{
-<a href=#449 id=449 data-nosnippet>449</a>        origins.insert(pointer.to_owned(), origin.to_owned());
-<a href=#450 id=450 data-nosnippet>450</a>    }
-<a href=#451 id=451 data-nosnippet>451</a>}
-<a href=#452 id=452 data-nosnippet>452</a><span class="kw">fn </span>stable_read(path: <span class="kw-2">&amp;</span>Path) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Vec&lt;u8&gt;&gt;&gt; {
-<a href=#453 id=453 data-nosnippet>453</a>    <span class="kw">let </span><span class="kw-2">mut </span>previous = <span class="prelude-val">None</span>;
-<a href=#454 id=454 data-nosnippet>454</a>    <span class="kw">for _ in </span><span class="number">0</span>..<span class="number">2 </span>{
-<a href=#455 id=455 data-nosnippet>455</a>        <span class="kw">let </span>first = read_once(path)<span class="question-mark">?</span>;
-<a href=#456 id=456 data-nosnippet>456</a>        <span class="kw">let </span>second = read_once(path)<span class="question-mark">?</span>;
-<a href=#457 id=457 data-nosnippet>457</a>        <span class="kw">if </span>first == second {
-<a href=#458 id=458 data-nosnippet>458</a>            <span class="kw">return </span><span class="prelude-val">Ok</span>(first);
-<a href=#459 id=459 data-nosnippet>459</a>        }
-<a href=#460 id=460 data-nosnippet>460</a>        previous = <span class="prelude-val">Some</span>(<span class="string">"policy changed while it was read"</span>);
-<a href=#461 id=461 data-nosnippet>461</a>    }
-<a href=#462 id=462 data-nosnippet>462</a>    <span class="macro">anyhow::bail!</span>(previous.unwrap_or(<span class="string">"policy capture did not stabilize"</span>))
-<a href=#463 id=463 data-nosnippet>463</a>}
-<a href=#464 id=464 data-nosnippet>464</a>
-<a href=#465 id=465 data-nosnippet>465</a><span class="kw">fn </span>read_once(path: <span class="kw-2">&amp;</span>Path) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Vec&lt;u8&gt;&gt;&gt; {
-<a href=#466 id=466 data-nosnippet>466</a>    <span class="kw">let </span><span class="kw-2">mut </span>file = <span class="kw">match </span>OpenOptions::new()
-<a href=#467 id=467 data-nosnippet>467</a>        .read(<span class="bool-val">true</span>)
-<a href=#468 id=468 data-nosnippet>468</a>        .custom_flags(libc::O_CLOEXEC | libc::O_NOFOLLOW)
-<a href=#469 id=469 data-nosnippet>469</a>        .open(path)
-<a href=#470 id=470 data-nosnippet>470</a>    {
-<a href=#471 id=471 data-nosnippet>471</a>        <span class="prelude-val">Ok</span>(file) =&gt; file,
-<a href=#472 id=472 data-nosnippet>472</a>        <span class="prelude-val">Err</span>(error) <span class="kw">if </span>error.kind() == std::io::ErrorKind::NotFound =&gt; <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>),
-<a href=#473 id=473 data-nosnippet>473</a>        <span class="prelude-val">Err</span>(error) =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(error).with_context(|| <span class="macro">format!</span>(<span class="string">"open {POLICY_PATH}"</span>)),
-<a href=#474 id=474 data-nosnippet>474</a>    };
-<a href=#475 id=475 data-nosnippet>475</a>    <span class="kw">let </span>metadata = file
-<a href=#476 id=476 data-nosnippet>476</a>        .metadata()
-<a href=#477 id=477 data-nosnippet>477</a>        .with_context(|| <span class="macro">format!</span>(<span class="string">"inspect {POLICY_PATH}"</span>))<span class="question-mark">?</span>;
-<a href=#478 id=478 data-nosnippet>478</a>    <span class="macro">ensure!</span>(metadata.is_file(), <span class="string">"{POLICY_PATH} must be a regular file"</span>);
-<a href=#479 id=479 data-nosnippet>479</a>    <span class="macro">ensure!</span>(
-<a href=#480 id=480 data-nosnippet>480</a>        metadata.len() &lt;= MAX_POLICY_BYTES <span class="kw">as </span>u64,
-<a href=#481 id=481 data-nosnippet>481</a>        <span class="string">"{POLICY_PATH} exceeds {MAX_POLICY_BYTES} bytes"
-<a href=#482 id=482 data-nosnippet>482</a>    </span>);
-<a href=#483 id=483 data-nosnippet>483</a>    <span class="kw">let </span>capacity = usize::try_from(metadata.len()).context(<span class="string">"policy size fits this platform"</span>)<span class="question-mark">?</span>;
-<a href=#484 id=484 data-nosnippet>484</a>    <span class="kw">let </span><span class="kw-2">mut </span>bytes = Vec::with_capacity(capacity);
-<a href=#485 id=485 data-nosnippet>485</a>    file.by_ref()
-<a href=#486 id=486 data-nosnippet>486</a>        .take((MAX_POLICY_BYTES + <span class="number">1</span>) <span class="kw">as </span>u64)
-<a href=#487 id=487 data-nosnippet>487</a>        .read_to_end(<span class="kw-2">&amp;mut </span>bytes)
-<a href=#488 id=488 data-nosnippet>488</a>        .with_context(|| <span class="macro">format!</span>(<span class="string">"read {POLICY_PATH}"</span>))<span class="question-mark">?</span>;
+<a href=#411 id=411 data-nosnippet>411</a>    <span class="attr">#[must_use]
+<a href=#412 id=412 data-nosnippet>412</a>    </span><span class="kw">pub fn </span>bind_valid_as_of(<span class="kw-2">&amp;</span><span class="self">self</span>, source: <span class="kw-2">&amp;</span>str) -&gt; String {
+<a href=#413 id=413 data-nosnippet>413</a>        <span class="kw">let </span>source = serde_json::from_str::&lt;Value&gt;(source)
+<a href=#414 id=414 data-nosnippet>414</a>            .unwrap_or_else(|<span class="kw">_</span>| Value::String(source.to_owned()));
+<a href=#415 id=415 data-nosnippet>415</a>        <span class="macro">serde_json::json!</span>({<span class="string">"kind"</span>:<span class="string">"opcore-local"</span>, <span class="string">"source"</span>:source, <span class="string">"policy"</span>:<span class="self">self</span>.digest,
+<a href=#416 id=416 data-nosnippet>416</a>            <span class="string">"configurationView"</span>:<span class="self">self</span>.view, <span class="string">"workflow"</span>:<span class="self">self</span>.workflow})
+<a href=#417 id=417 data-nosnippet>417</a>        .to_string()
+<a href=#418 id=418 data-nosnippet>418</a>    }
+<a href=#419 id=419 data-nosnippet>419</a>}
+<a href=#420 id=420 data-nosnippet>420</a>
+<a href=#421 id=421 data-nosnippet>421</a><span class="kw">fn </span>configuration_origins(
+<a href=#422 id=422 data-nosnippet>422</a>    policy: <span class="kw-2">&amp;</span>Policy,
+<a href=#423 id=423 data-nosnippet>423</a>    bytes: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>[u8]&gt;,
+<a href=#424 id=424 data-nosnippet>424</a>    workflow: <span class="prelude-ty">Option</span>&lt;Workflow&gt;,
+<a href=#425 id=425 data-nosnippet>425</a>) -&gt; <span class="prelude-ty">Result</span>&lt;BTreeMap&lt;String, String&gt;&gt; {
+<a href=#426 id=426 data-nosnippet>426</a>    <span class="kw">let </span><span class="kw-2">mut </span>origins = BTreeMap::new();
+<a href=#427 id=427 data-nosnippet>427</a>    mark_origins(<span class="kw-2">&amp;</span>serde_json::to_value(policy)<span class="question-mark">?</span>, <span class="string">""</span>, <span class="string">"default"</span>, <span class="kw-2">&amp;mut </span>origins);
+<a href=#428 id=428 data-nosnippet>428</a>    <span class="kw">if let </span><span class="prelude-val">Some</span>(bytes) = bytes {
+<a href=#429 id=429 data-nosnippet>429</a>        <span class="kw">let </span>raw = parse_unique_json(bytes)<span class="question-mark">?</span>;
+<a href=#430 id=430 data-nosnippet>430</a>        mark_origins(<span class="kw-2">&amp;</span>raw, <span class="string">""</span>, <span class="string">"repository"</span>, <span class="kw-2">&amp;mut </span>origins);
+<a href=#431 id=431 data-nosnippet>431</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>(workflow) = workflow
+<a href=#432 id=432 data-nosnippet>432</a>            &amp;&amp; <span class="kw">let </span><span class="prelude-val">Some</span>(settings) = raw
+<a href=#433 id=433 data-nosnippet>433</a>                .get(<span class="string">"workflows"</span>)
+<a href=#434 id=434 data-nosnippet>434</a>                .and_then(|workflows| workflows.get(workflow.as_str()))
+<a href=#435 id=435 data-nosnippet>435</a>        {
+<a href=#436 id=436 data-nosnippet>436</a>            mark_origins(
+<a href=#437 id=437 data-nosnippet>437</a>                settings,
+<a href=#438 id=438 data-nosnippet>438</a>                <span class="string">""</span>,
+<a href=#439 id=439 data-nosnippet>439</a>                <span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"workflow:{}"</span>, workflow.as_str()),
+<a href=#440 id=440 data-nosnippet>440</a>                <span class="kw-2">&amp;mut </span>origins,
+<a href=#441 id=441 data-nosnippet>441</a>            );
+<a href=#442 id=442 data-nosnippet>442</a>        }
+<a href=#443 id=443 data-nosnippet>443</a>    }
+<a href=#444 id=444 data-nosnippet>444</a>    origins.retain(|path, <span class="kw">_</span>| !path.starts_with(<span class="string">"/workflows"</span>) &amp;&amp; path != <span class="string">"/$schema"</span>);
+<a href=#445 id=445 data-nosnippet>445</a>    <span class="prelude-val">Ok</span>(origins)
+<a href=#446 id=446 data-nosnippet>446</a>}
+<a href=#447 id=447 data-nosnippet>447</a>
+<a href=#448 id=448 data-nosnippet>448</a><span class="kw">fn </span>mark_origins(
+<a href=#449 id=449 data-nosnippet>449</a>    value: <span class="kw-2">&amp;</span>Value,
+<a href=#450 id=450 data-nosnippet>450</a>    pointer: <span class="kw-2">&amp;</span>str,
+<a href=#451 id=451 data-nosnippet>451</a>    origin: <span class="kw-2">&amp;</span>str,
+<a href=#452 id=452 data-nosnippet>452</a>    origins: <span class="kw-2">&amp;mut </span>BTreeMap&lt;String, String&gt;,
+<a href=#453 id=453 data-nosnippet>453</a>) {
+<a href=#454 id=454 data-nosnippet>454</a>    <span class="kw">if let </span>Value::Object(fields) = value {
+<a href=#455 id=455 data-nosnippet>455</a>        <span class="kw">for </span>(key, value) <span class="kw">in </span>fields {
+<a href=#456 id=456 data-nosnippet>456</a>            mark_origins(value, <span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"{pointer}/{key}"</span>), origin, origins);
+<a href=#457 id=457 data-nosnippet>457</a>        }
+<a href=#458 id=458 data-nosnippet>458</a>    } <span class="kw">else </span>{
+<a href=#459 id=459 data-nosnippet>459</a>        origins.insert(pointer.to_owned(), origin.to_owned());
+<a href=#460 id=460 data-nosnippet>460</a>    }
+<a href=#461 id=461 data-nosnippet>461</a>}
+<a href=#462 id=462 data-nosnippet>462</a><span class="kw">fn </span>stable_read(path: <span class="kw-2">&amp;</span>Path) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Vec&lt;u8&gt;&gt;&gt; {
+<a href=#463 id=463 data-nosnippet>463</a>    <span class="kw">let </span><span class="kw-2">mut </span>previous = <span class="prelude-val">None</span>;
+<a href=#464 id=464 data-nosnippet>464</a>    <span class="kw">for _ in </span><span class="number">0</span>..<span class="number">2 </span>{
+<a href=#465 id=465 data-nosnippet>465</a>        <span class="kw">let </span>first = read_once(path)<span class="question-mark">?</span>;
+<a href=#466 id=466 data-nosnippet>466</a>        <span class="kw">let </span>second = read_once(path)<span class="question-mark">?</span>;
+<a href=#467 id=467 data-nosnippet>467</a>        <span class="kw">if </span>first == second {
+<a href=#468 id=468 data-nosnippet>468</a>            <span class="kw">return </span><span class="prelude-val">Ok</span>(first);
+<a href=#469 id=469 data-nosnippet>469</a>        }
+<a href=#470 id=470 data-nosnippet>470</a>        previous = <span class="prelude-val">Some</span>(<span class="string">"policy changed while it was read"</span>);
+<a href=#471 id=471 data-nosnippet>471</a>    }
+<a href=#472 id=472 data-nosnippet>472</a>    <span class="macro">anyhow::bail!</span>(previous.unwrap_or(<span class="string">"policy capture did not stabilize"</span>))
+<a href=#473 id=473 data-nosnippet>473</a>}
+<a href=#474 id=474 data-nosnippet>474</a>
+<a href=#475 id=475 data-nosnippet>475</a><span class="kw">fn </span>read_once(path: <span class="kw-2">&amp;</span>Path) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Vec&lt;u8&gt;&gt;&gt; {
+<a href=#476 id=476 data-nosnippet>476</a>    <span class="kw">let </span><span class="kw-2">mut </span>file = <span class="kw">match </span>OpenOptions::new()
+<a href=#477 id=477 data-nosnippet>477</a>        .read(<span class="bool-val">true</span>)
+<a href=#478 id=478 data-nosnippet>478</a>        .custom_flags(libc::O_CLOEXEC | libc::O_NOFOLLOW)
+<a href=#479 id=479 data-nosnippet>479</a>        .open(path)
+<a href=#480 id=480 data-nosnippet>480</a>    {
+<a href=#481 id=481 data-nosnippet>481</a>        <span class="prelude-val">Ok</span>(file) =&gt; file,
+<a href=#482 id=482 data-nosnippet>482</a>        <span class="prelude-val">Err</span>(error) <span class="kw">if </span>error.kind() == std::io::ErrorKind::NotFound =&gt; <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>),
+<a href=#483 id=483 data-nosnippet>483</a>        <span class="prelude-val">Err</span>(error) =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(error).with_context(|| <span class="macro">format!</span>(<span class="string">"open {POLICY_PATH}"</span>)),
+<a href=#484 id=484 data-nosnippet>484</a>    };
+<a href=#485 id=485 data-nosnippet>485</a>    <span class="kw">let </span>metadata = file
+<a href=#486 id=486 data-nosnippet>486</a>        .metadata()
+<a href=#487 id=487 data-nosnippet>487</a>        .with_context(|| <span class="macro">format!</span>(<span class="string">"inspect {POLICY_PATH}"</span>))<span class="question-mark">?</span>;
+<a href=#488 id=488 data-nosnippet>488</a>    <span class="macro">ensure!</span>(metadata.is_file(), <span class="string">"{POLICY_PATH} must be a regular file"</span>);
 <a href=#489 id=489 data-nosnippet>489</a>    <span class="macro">ensure!</span>(
-<a href=#490 id=490 data-nosnippet>490</a>        bytes.len() &lt;= MAX_POLICY_BYTES,
+<a href=#490 id=490 data-nosnippet>490</a>        metadata.len() &lt;= MAX_POLICY_BYTES <span class="kw">as </span>u64,
 <a href=#491 id=491 data-nosnippet>491</a>        <span class="string">"{POLICY_PATH} exceeds {MAX_POLICY_BYTES} bytes"
 <a href=#492 id=492 data-nosnippet>492</a>    </span>);
-<a href=#493 id=493 data-nosnippet>493</a>    <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(bytes))
-<a href=#494 id=494 data-nosnippet>494</a>}
-<a href=#495 id=495 data-nosnippet>495</a>
-<a href=#496 id=496 data-nosnippet>496</a><span class="attr">#[cfg(test)]
-<a href=#497 id=497 data-nosnippet>497</a></span><span class="kw">mod </span>tests;
+<a href=#493 id=493 data-nosnippet>493</a>    <span class="kw">let </span>capacity = usize::try_from(metadata.len()).context(<span class="string">"policy size fits this platform"</span>)<span class="question-mark">?</span>;
+<a href=#494 id=494 data-nosnippet>494</a>    <span class="kw">let </span><span class="kw-2">mut </span>bytes = Vec::with_capacity(capacity);
+<a href=#495 id=495 data-nosnippet>495</a>    file.by_ref()
+<a href=#496 id=496 data-nosnippet>496</a>        .take((MAX_POLICY_BYTES + <span class="number">1</span>) <span class="kw">as </span>u64)
+<a href=#497 id=497 data-nosnippet>497</a>        .read_to_end(<span class="kw-2">&amp;mut </span>bytes)
+<a href=#498 id=498 data-nosnippet>498</a>        .with_context(|| <span class="macro">format!</span>(<span class="string">"read {POLICY_PATH}"</span>))<span class="question-mark">?</span>;
+<a href=#499 id=499 data-nosnippet>499</a>    <span class="macro">ensure!</span>(
+<a href=#500 id=500 data-nosnippet>500</a>        bytes.len() &lt;= MAX_POLICY_BYTES,
+<a href=#501 id=501 data-nosnippet>501</a>        <span class="string">"{POLICY_PATH} exceeds {MAX_POLICY_BYTES} bytes"
+<a href=#502 id=502 data-nosnippet>502</a>    </span>);
+<a href=#503 id=503 data-nosnippet>503</a>    <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(bytes))
+<a href=#504 id=504 data-nosnippet>504</a>}
+<a href=#505 id=505 data-nosnippet>505</a>
+<a href=#506 id=506 data-nosnippet>506</a><span class="attr">#[cfg(test)]
+<a href=#507 id=507 data-nosnippet>507</a></span><span class="kw">mod </span>tests;
 </code></pre></div></section></main></body></html>

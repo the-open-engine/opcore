@@ -22,6 +22,7 @@
     "api/opcore/api/fn.rules.html",
     "api/opcore/api/fn.run_sense.html",
     "api/opcore/api/fn.run_workflow.html",
+    "api/opcore/api/fn.run_workflow_with_comparison.html",
     "api/opcore/api/fn.serve_stdio.html",
     "api/opcore/api/fn.serve_stdio_profile.html",
     "api/opcore/api/fn.serve_stdio_profile_at.html",
@@ -38,6 +39,7 @@
     "api/opcore/commands/fn.status.html",
     "api/opcore/commands/struct.RepositoryArgs.html",
     "api/opcore/commands/workflows/fn.run.html",
+    "api/opcore/commands/workflows/fn.run_with_comparison.html",
     "api/opcore/commands/workflows/struct.RunArgs.html",
     "api/opcore/hooks/enum.Agent.html",
     "api/opcore/hooks/fn.agent_gate.html",
@@ -142,6 +144,7 @@
     "api/src/opcore/sense/resolver/go.rs.html",
     "api/src/opcore/sense/resolver/node.rs.html",
     "api/src/opcore/sense/resolver/pair.rs.html",
+    "api/src/opcore/sense/resolver/python.rs.html",
     "api/src/opcore/sense/resolver/rust.rs.html",
     "api/src/opcore/sense/resolver.rs.html",
     "api/src/opcore/source/git/auxiliary.rs.html",
@@ -246,6 +249,7 @@
     "docs/index.html",
     "docs/providers.html",
     "docs/sense.html",
+    "docs/versioning.html",
     "index.html"
   ],
   "schemaVersion": 1
