@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="210" height="34" viewBox="0 0 210 34" role="img" aria-labelledby="title desc" data-revision="$revision">
+  <title id="title">Opcore not verified</title>
+  <desc id="desc">$description</desc>
+  <rect x="0.75" y="0.75" width="208.5" height="32.5" rx="6.25" fill="#171411" stroke="#FAF7F1" stroke-opacity="0.46" stroke-width="1.5"/>
+  <polygon points="11.75,7.907 22.25,7.907 27.5,17 22.25,26.093 11.75,26.093 6.5,17" fill="#C2240C"/>
+  <path d="m12.8 12.8 8.4 8.4m0-8.4-8.4 8.4" fill="none" stroke="#FAF7F1" stroke-width="2.25" stroke-linecap="round"/>
+  <path d="M35.75 7v20" stroke="#706960" stroke-width="1"/>
+  <text x="43" y="14.25" fill="#FAF7F1" font-family="ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="10.4" font-weight="650" letter-spacing="0.18">OPCORE NOT VERIFIED</text>
+  <text x="43" y="25.5" fill="#ED6B55" font-family="ui-monospace,'Roboto Mono','Cascadia Mono','DejaVu Sans Mono',Menlo,Consolas,monospace" font-size="7.15" font-weight="600" letter-spacing="0.72">FULL REPO · $detail</text>
+</svg>

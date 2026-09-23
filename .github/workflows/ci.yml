@@ -153,6 +153,8 @@ jobs:
           done
       - name: Documentation versioning
         run: python3 -B -m unittest discover -s scripts -p 'test_docs_versions.py'
+      - name: Badge rendering
+        run: python3 -B -m unittest discover -s scripts -p 'test_opcore_badge.py'
 
   npm-facade:
     runs-on: ubuntu-24.04

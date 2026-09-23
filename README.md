@@ -1,5 +1,7 @@
 # Opcore
 
+[![Opcore full repository verification][opcore-badge]][opcore-workflow]
+
 Opcore gives coding agents specific feedback while they edit source. Its installed hook checks the current Git changes and returns the file, location, rule, and evidence when something needs repair.
 
 > [!IMPORTANT]
@@ -427,3 +429,6 @@ npm uninstall -g @the-open-engine-company/opcore
 ```
 
 [Update and removal instructions](docs/getting-started.md#update-or-remove) cover source installs and recovery after an interrupted setup.
+
+[opcore-badge]: https://raw.githubusercontent.com/the-open-engine/opcore/opcore-badge/opcore.svg
+[opcore-workflow]: https://github.com/the-open-engine/opcore/actions/workflows/opcore.yml?query=branch%3Amain+event%3Apush
