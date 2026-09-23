@@ -367,18 +367,18 @@ Add the pre-commit workflow to your Git hook and require the CI workflow alongsi
 
 One root `.opcore.json` holds shared settings and workflow overrides. Pre-commit can use stricter thresholds or fewer exclusions than post-edit; monorepos can select different native project roots. See [Configuration](docs/configuration.md).
 
-Use `check` or `sense` to run an individual evaluator. Plain `check` reports `Nothing checked` on a clean worktree; `check --all` checks the current project even when nothing changed. A full check with no selected supported source reports unsupported coverage.
+Use `check` or `sense` to run an individual evaluator. Plain `check` reports `Nothing checked` on a clean worktree; `check --all` checks the current project even when nothing changed. A full check with no source candidates reports `Not checked`. Recognized source that Fast Verify cannot analyze remains in the report as an unsupported coverage warning without blocking the check.
 
 | Result | Next step |
 | --- | --- |
-| `Clean` or `allow` | The selected required checks completed with no findings. |
+| `Clean` or `allow` | The selected checks completed with no findings. Fast unsupported coverage warnings may remain in the report. |
 | `Findings` or `deny` | Read the evidence, repair the change, and rerun the same command. |
 | `Not checked` | No source changes required checking; use `check --all` for a project check. |
 | `Partial` | Review the missing Sense coverage. Use `--allow-partial` only if you accept those gaps. |
-| `Unsupported` | Choose supported source or a provider that applies to the project. |
+| `Unsupported` | An explicitly selected provider or capability does not apply; inspect its coverage details. |
 | `Incomplete` or `indeterminate` | Resolve the reported setup, capture, or evaluation failure and retry. |
 
-`--advisory` makes findings report-only; missing coverage still blocks. Add `--json` for structured evidence. The [getting-started guide](docs/getting-started.md#read-the-result) explains exit statuses and partial-coverage options.
+`--advisory` makes findings report-only. Fast unsupported coverage is already a non-blocking warning; incomplete evaluation and unacknowledged required Sense coverage still block. Add `--json` for structured evidence. The [getting-started guide](docs/getting-started.md#read-the-result) explains exit statuses and partial-coverage options.
 
 The [examples above](#examples) show findings in every supported language family.
 

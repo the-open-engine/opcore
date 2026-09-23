@@ -98,7 +98,7 @@ pub struct CheckArgs {
     /// Print the structured assessment as JSON, including coverage and evidence.
     #[arg(long)]
     pub json: bool,
-    /// Report findings without returning a blocking exit status. Coverage failures still block.
+    /// Report findings without returning a blocking exit status.
     #[arg(long)]
     pub advisory: bool,
     /// Also run Cargo Check through the unsandboxed local ASP host. Requires explicit consent.
@@ -403,13 +403,13 @@ pub(crate) fn enforce_status(status: AssessmentStatus, advisory: bool) -> Result
         AssessmentStatus::Findings if !advisory => {
             anyhow::bail!("verification requires intervention")
         }
-        AssessmentStatus::Unsupported => anyhow::bail!("verification coverage is unsupported"),
         AssessmentStatus::Error | AssessmentStatus::Cancelled | AssessmentStatus::Incomplete => {
             anyhow::bail!("evaluation did not complete")
         }
-        AssessmentStatus::Clean | AssessmentStatus::Findings | AssessmentStatus::NotChecked => {
-            Ok(())
-        }
+        AssessmentStatus::Clean
+        | AssessmentStatus::Findings
+        | AssessmentStatus::NotChecked
+        | AssessmentStatus::Unsupported => Ok(()),
     }
 }
 
@@ -422,14 +422,14 @@ fn mark_empty_selection(assessment: &mut Assessment, args: &CheckArgs) {
         || (args.tree.is_some() && args.base.is_none())
     {
         (
-            AssessmentStatus::Unsupported,
-            CoverageStatus::Unsupported,
+            AssessmentStatus::NotChecked,
+            CoverageStatus::NotChecked,
             "No supported source files were found in the selected project view.",
         )
     } else if !args.files.is_empty() {
         (
-            AssessmentStatus::Unsupported,
-            CoverageStatus::Unsupported,
+            AssessmentStatus::NotChecked,
+            CoverageStatus::NotChecked,
             "None of the explicit paths selected a supported regular source file.",
         )
     } else {
@@ -461,10 +461,17 @@ pub(crate) fn render_human(assessment: &Assessment) -> String {
     }
     let _ = writeln!(
         output,
-        "opcore: {:?} ({} diagnostics, {} files, {} ms)",
+        "opcore: {:?} ({} diagnostics, {}/{} files covered, {} coverage warnings, {} ms)",
         assessment.status,
         assessment.diagnostics.len(),
+        assessment.coverage.files_covered,
         assessment.coverage.files_considered,
+        assessment
+            .coverage
+            .gaps
+            .iter()
+            .filter(|item| item.status == CoverageStatus::Unsupported)
+            .count(),
         assessment.timing.duration_ms
     );
     for diagnostic in &assessment.diagnostics {
@@ -476,13 +483,22 @@ pub(crate) fn render_human(assessment: &Assessment) -> String {
         );
     }
     for item in &assessment.coverage.gaps {
-        let _ = writeln!(
-            output,
-            "{}: {:?}: {}",
-            item.path,
-            item.status,
-            item.reason.as_deref().unwrap_or("no reason")
-        );
+        if item.status == CoverageStatus::Unsupported {
+            let _ = writeln!(
+                output,
+                "{}: warning: unsupported coverage: {}",
+                item.path,
+                item.reason.as_deref().unwrap_or("no reason")
+            );
+        } else {
+            let _ = writeln!(
+                output,
+                "{}: {:?}: {}",
+                item.path,
+                item.status,
+                item.reason.as_deref().unwrap_or("no reason")
+            );
+        }
     }
     output
 }

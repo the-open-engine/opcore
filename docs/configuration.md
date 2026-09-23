@@ -68,7 +68,7 @@ Pre-commit and CI require complete Sense coverage by default. Post-edit allows p
 
 `targets.exclude` contains up to 256 distinct normalized repository-relative paths. Each entry excludes that exact file or subtree. `legacy` matches `legacy/api.ts`, but not `legacy-utils/api.ts`. Paths are literal: `*`, `?`, and brackets have no wildcard meaning. Absolute paths, `..`, empty components, and `.` are invalid exclusions.
 
-Fast Verify filters excluded paths before reading and parsing source. Sense uses the selected graph and reports any loss of graph coverage; excluded source never becomes evidence that the whole repository is clean. A full check that selects no supported source fails rather than returning a clean result.
+Fast Verify filters excluded paths before reading and parsing source. Sense uses the selected graph and reports any loss of graph coverage; excluded source never becomes evidence that the whole repository is clean. A full check with no source candidates is `not_checked`. Recognized unsupported source remains in Fast coverage as a non-blocking warning and is never counted as covered evidence.
 
 Do not use exclusions to grandfather findings in source the repository still owns. An excluded file is outside both full and introduced checks, including new violations added later. For brownfield Fast adoption, keep the source selected and use `run pre-commit --comparison introduced` or `run ci --comparison introduced --base <base>`.
 

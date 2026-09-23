@@ -202,7 +202,7 @@ fn ci_checks_committed_source_and_configuration_and_requires_its_base() {
 }
 
 #[test]
-fn full_commit_gate_reports_existing_findings_and_rejects_an_empty_target_set() {
+fn full_commit_gate_reports_existing_findings_and_marks_an_empty_target_not_checked() {
     let fixture = RepositoryFixture::new(&[(
         "src/a.ts",
         "export function debt(a,b,c,d,e,f) { return a+b+c+d+e+f; }\n",
@@ -214,8 +214,8 @@ fn full_commit_gate_reports_existing_findings_and_rejects_an_empty_target_set() 
         &json!({"schemaVersion":1,"targets":{"exclude":["src"]}}),
     );
     git(fixture.repo(), &["add", ".opcore.json"]);
-    let excluded = run(&fixture, "pre-commit", &[], false);
-    assert_eq!(excluded["verify"]["status"], "unsupported");
+    let excluded = run(&fixture, "pre-commit", &[], true);
+    assert_eq!(excluded["verify"]["status"], "not_checked");
 }
 
 #[test]

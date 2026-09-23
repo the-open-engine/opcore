@@ -41,20 +41,46 @@ def read_report(path):
     return value if isinstance(value, dict) else None
 
 
-def is_clean_report(status, diagnostics, gaps, considered, covered):
-    """Require exact, non-empty coverage before rendering the green state."""
-    return all(
-        (
-            status == "clean",
-            isinstance(diagnostics, list),
-            diagnostics == [],
-            isinstance(gaps, list),
-            gaps == [],
-            type(considered) is int,
-            considered > 0,
-            covered == considered,
-        )
+def is_unsupported_gap(gap):
+    """Accept only the required shape of one unsupported coverage gap."""
+    return (
+        isinstance(gap, dict)
+        and isinstance(gap.get("path"), str)
+        and bool(gap["path"])
+        and gap.get("status") == "unsupported"
     )
+
+
+def has_clean_report_shape(status, diagnostics, gaps):
+    """Require the terminal fields used by a verified badge."""
+    return (
+        status == "clean"
+        and isinstance(diagnostics, list)
+        and diagnostics == []
+        and isinstance(gaps, list)
+    )
+
+
+def has_valid_coverage_counts(considered, covered):
+    """Reject booleans, empty selections, and negative coverage."""
+    return (
+        type(considered) is int
+        and considered > 0
+        and type(covered) is int
+        and covered >= 0
+    )
+
+
+def is_clean_report(status, diagnostics, gaps, considered, covered):
+    """Require exact, non-empty coverage accounting for the green state."""
+    if not has_clean_report_shape(status, diagnostics, gaps):
+        return False
+    if not has_valid_coverage_counts(considered, covered):
+        return False
+    if not all(is_unsupported_gap(gap) for gap in gaps):
+        return False
+    paths = [gap["path"] for gap in gaps]
+    return len(paths) == len(set(paths)) and covered + len(gaps) == considered
 
 
 def finding_count(status, diagnostics):

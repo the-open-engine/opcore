@@ -39,6 +39,24 @@ class OpcoreBadge(unittest.TestCase):
         self.assertIn("FULL REPO · CLEAN", text)
         self.assertIn("11.75,7.907 22.25,7.907 27.5,17", badge)
 
+    def test_unsupported_coverage_warnings_do_not_change_the_badge(self):
+        state, _, text = self.badge(
+            report(
+                covered=2,
+                gaps=[
+                    {
+                        "path": "scripts/check.ps1",
+                        "status": "unsupported",
+                        "reason": "unsupported language",
+                    }
+                ],
+            )
+        )
+        self.assertEqual(state.name, "verified")
+        self.assertIn("FULL REPO · CLEAN", text)
+        self.assertNotIn("WARNING", text.upper())
+        self.assertNotIn("UNSUPPORTED", text.upper())
+
     def test_findings_report_the_exact_diagnostic_count(self):
         state, badge, text = self.badge(report("findings", [{}, {}, {}]))
         self.assertEqual(state.name, "findings")
@@ -62,7 +80,29 @@ class OpcoreBadge(unittest.TestCase):
         cases = [
             report(considered=0, covered=0),
             report(covered=2),
+            {
+                "status": "clean",
+                "diagnostics": [],
+                "coverage": {
+                    "filesConsidered": 3,
+                    "filesCovered": 3,
+                    "gaps": None,
+                },
+            },
             report(gaps=[{"reason": "unsupported"}]),
+            report(covered=2, gaps=[{"status": "unsupported"}]),
+            report(
+                considered=2,
+                covered=0,
+                gaps=[
+                    {"path": "same.ps1", "status": "unsupported"},
+                    {"path": "same.ps1", "status": "unsupported"},
+                ],
+            ),
+            report(
+                covered=2,
+                gaps=[{"status": "incomplete", "reason": "truncated output"}],
+            ),
             report(diagnostics=[{}]),
         ]
         for value in cases:

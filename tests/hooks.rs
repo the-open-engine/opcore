@@ -221,7 +221,7 @@ fn post_write_gate_intervenes_on_disk_findings_and_skips_non_repositories() {
 }
 
 #[test]
-fn coverage_only_intervention_uses_coverage_neutral_worktree_feedback() {
+fn unsupported_coverage_warns_without_intervening() {
     let temp = tempfile::tempdir().unwrap();
     let (repo, cache) = initialized_repository(temp.path());
     fs::write(
@@ -230,12 +230,38 @@ fn coverage_only_intervention_uses_coverage_neutral_worktree_feedback() {
     )
     .unwrap();
 
+    let warning = gate(&repo, &cache);
+    assert!(warning.status.success());
+    assert!(warning.stdout.is_empty());
+    let warning = String::from_utf8(warning.stderr).unwrap();
+    assert!(warning.contains("Opcore Verify coverage warning"));
+    assert!(warning.contains("0/1 files covered; 1 unsupported source file"));
+    assert!(warning.contains("opcore run post-edit --repo . --json"));
+    assert!(!warning.contains("requires intervention"));
+}
+
+#[test]
+fn findings_keep_unsupported_coverage_path_free() {
+    let temp = tempfile::tempdir().unwrap();
+    let (repo, cache) = initialized_repository(temp.path());
+    fs::write(
+        repo.join("src/a.ts"),
+        "export function violation(a,b,c,d,e,f) { return a; }\n",
+    )
+    .unwrap();
+    fs::write(
+        repo.join("src/unsupported.rs"),
+        "#![feature(test)]\npub fn value() {}\n",
+    )
+    .unwrap();
+
     let feedback = blocking_feedback(&repo, &cache);
-    assert!(feedback.contains("0 diagnostic(s); 0/1 files covered"));
-    assert!(feedback.contains("src/unsupported.rs: coverage Unsupported"));
-    assert!(feedback.contains("while this intervention remains unresolved"));
-    assert!(feedback.contains("does not resolve the reported issues"));
-    assert!(!feedback.contains("findings remain introduced"));
+    assert!(feedback.contains("Opcore Verify coverage warning"));
+    assert!(feedback.contains("1/2 files covered; 1 unsupported source file"));
+    assert!(feedback.contains("complexity.max-parameters"));
+    assert!(feedback.contains("requires intervention"));
+    assert!(!feedback.contains("src/unsupported.rs"));
+    assert!(!feedback.contains("coverage Unsupported"));
 }
 
 #[test]

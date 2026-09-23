@@ -16,7 +16,7 @@ use serde_json::{Map, Value, json};
 use crate::{
     commands::workflows::{self, RunArgs},
     json::parse_unique_json,
-    model::{Assessment, AssessmentStatus},
+    model::{Assessment, AssessmentStatus, CoverageStatus},
     policy::Workflow,
     sense::model::{DuplicateKind, SenseReport, SenseStatus},
     source::{SourceError, git::GitRepository},
@@ -121,9 +121,12 @@ pub async fn agent_gate() -> bool {
             return true;
         }
     };
+    if let Some(warning) = verify_coverage_warning(&result.verify) {
+        eprintln!("{warning}");
+    }
     if !matches!(
         result.verify.status,
-        AssessmentStatus::Clean | AssessmentStatus::NotChecked
+        AssessmentStatus::Clean | AssessmentStatus::NotChecked | AssessmentStatus::Unsupported
     ) {
         eprintln!("{}", assessment_feedback(&result.verify));
         return true;
@@ -131,6 +134,28 @@ pub async fn agent_gate() -> bool {
     let requires_intervention = result.enforce().is_err();
     let feedback_blocks = sense_gate_feedback(&result.sense, requires_intervention);
     feedback_blocks || requires_intervention
+}
+
+fn verify_coverage_warning(assessment: &Assessment) -> Option<String> {
+    let unsupported = assessment
+        .coverage
+        .gaps
+        .iter()
+        .filter(|gap| gap.status == CoverageStatus::Unsupported)
+        .count();
+    (unsupported > 0).then(|| {
+        let noun = if unsupported == 1 { "file" } else { "files" };
+        format!(
+            concat!(
+                "Opcore Verify coverage warning: {}/{} files covered; {} unsupported source {}. ",
+                "Run `opcore run post-edit --repo . --json` for details."
+            ),
+            assessment.coverage.files_covered,
+            assessment.coverage.files_considered,
+            unsupported,
+            noun,
+        )
+    })
 }
 
 fn sense_gate_feedback(report: &SenseReport, requires_intervention: bool) -> bool {
@@ -286,6 +311,7 @@ fn assessment_feedback(assessment: &Assessment) -> String {
         .coverage
         .gaps
         .iter()
+        .filter(|gap| gap.status != CoverageStatus::Unsupported)
         .take(MAX_HOOK_FEEDBACK_ITEMS.saturating_sub(shown))
     {
         let _ = write!(
@@ -297,7 +323,13 @@ fn assessment_feedback(assessment: &Assessment) -> String {
         );
         shown += 1;
     }
-    if assessment.diagnostics.len() + assessment.coverage.gaps.len() > shown {
+    let reportable_gap_count = assessment
+        .coverage
+        .gaps
+        .iter()
+        .filter(|gap| gap.status != CoverageStatus::Unsupported)
+        .count();
+    if assessment.diagnostics.len() + reportable_gap_count > shown {
         feedback.push_str("\nAdditional evidence omitted.");
     }
     feedback.push_str("\nRun `opcore run post-edit --repo . --json` for full evidence.");

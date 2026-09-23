@@ -399,9 +399,6 @@ fn assessment_status(
     if diagnostics_truncated || has_coverage(coverage_gaps, CoverageStatus::Incomplete) {
         return AssessmentStatus::Incomplete;
     }
-    if has_coverage(coverage_gaps, CoverageStatus::Unsupported) {
-        return AssessmentStatus::Unsupported;
-    }
     if !diagnostics.is_empty() {
         return AssessmentStatus::Findings;
     }
@@ -762,10 +759,7 @@ mod tests {
             )
             .await
             .unwrap();
-        assert!(matches!(
-            result.status,
-            AssessmentStatus::Clean | AssessmentStatus::Unsupported
-        ));
+        assert_eq!(result.status, AssessmentStatus::Clean);
     }
 
     #[tokio::test]
