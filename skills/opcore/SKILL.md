@@ -17,7 +17,7 @@ The hook covers supported file-edit tools, Bash, and all MCP tool calls, includi
 - For branch/CI review, fetch the intended history and use `opcore run ci --repo . --tree <target> --base <base> --json`.
 - Fix the introduced cause, rerun the same scope, and preserve the repository's lint, tests, CI, and existing hooks.
 
-Treat findings, incomplete coverage, and unsupported coverage as requiring attention. Never describe uncovered code as clean. Use `--advisory` only when the user explicitly wants report-only behavior.
+Treat findings and incomplete coverage as requiring intervention. Unsupported Fast Verify gaps are non-blocking warnings: retain and report them without converting a `clean` or `findings` verdict, and inspect the JSON when the uncovered source matters. Do not describe an unsupported file as covered. Use `--advisory` only when the user explicitly wants findings to be report-only.
 
 Recommend pre-commit and required CI workflows alongside existing tests and linters, ideally with applicable native providers. Configured native checks are required. They need prepared toolchains/dependencies and explicit `--allow-unsandboxed-native` authorization in a trusted or externally isolated environment; repository configuration never grants host permission. Automatic post-edit hooks always use Fast and Sense.
 

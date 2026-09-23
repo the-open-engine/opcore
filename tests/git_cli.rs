@@ -222,10 +222,11 @@ fn changed_staged_untracked_and_worktree_views_are_exact() {
     )
     .unwrap();
     let mixed = check(&repo, &cache, &["--changed", "--advisory"]);
-    assert!(!mixed.status.success());
+    assert!(mixed.status.success());
     let mixed = json(&mixed);
-    assert_eq!(mixed["status"], "unsupported");
+    assert_eq!(mixed["status"], "findings");
     assert!(!mixed["diagnostics"].as_array().unwrap().is_empty());
+    assert_eq!(mixed["coverage"]["gaps"][0]["status"], "unsupported");
     fs::remove_file(repo.join("src/unsupported.py")).unwrap();
     let warm = json(&check(&repo, &cache, &["--changed"]));
     assert_eq!(warm["cache"]["hits"], 2);
@@ -552,8 +553,10 @@ fn rename_and_hard_source_bounds_are_explicit() {
         vec![b'x'; opcore::api::test_support::MAX_LINE_BYTES + 1],
     )
     .unwrap();
-    let long_line = json(&check(&repo, &cache, &["--changed"]));
-    assert_eq!(long_line["status"], "unsupported");
+    let long_line = check(&repo, &cache, &["--changed"]);
+    assert!(long_line.status.success());
+    let long_line = json(&long_line);
+    assert_eq!(long_line["status"], "clean");
     assert!(
         long_line["coverage"]["gaps"][0]["reason"]
             .as_str()
@@ -601,8 +604,9 @@ fn non_utf8_paths_degrade_without_leaking_absolute_paths() {
     let name = OsString::from_vec(b"bad-\xff.py".to_vec());
     fs::write(repo.join("src").join(name), b"def ok():\n    pass\n").unwrap();
     let output = check(&repo, &cache, &["--changed"]);
+    assert!(output.status.success());
     let assessment = json(&output);
-    assert_eq!(assessment["status"], "unsupported");
+    assert_eq!(assessment["status"], "clean");
     let rendered = String::from_utf8(output.stdout).unwrap();
     assert!(rendered.contains("bad-\\\\xff.py"));
     assert!(!rendered.contains(repo.to_str().unwrap()));
