@@ -1,19 +1,26 @@
 use oxc_ast::ast::{
-    ExportNamedDeclaration, ImportDeclaration, ImportDeclarationSpecifier, ImportOrExportKind,
-    Statement,
+    AssignmentExpression, BindingIdentifier, CallExpression, ExportNamedDeclaration, Expression,
+    ForStatementLeft, ImportDeclaration, ImportDeclarationSpecifier, ImportOrExportKind,
+    SimpleAssignmentTarget, Statement, TSModuleReference, UpdateExpression,
 };
+use oxc_ast_visit::{Visit, walk};
 use oxc_parser::{Kind, ParserReturn};
 
 use crate::{
     limits::MAX_DEPENDENCY_FACTS_PER_FILE,
     model::{
         DependencyExtractionStatus, DependencyFacts, DependencyReference, DependencyReferenceKind,
+        SourceFile,
     },
 };
 
 use super::LexToken;
 
-pub(super) fn extract(parsed: &ParserReturn<'_>, tokens: &[LexToken]) -> DependencyFacts {
+pub(super) fn extract(
+    parsed: &ParserReturn<'_>,
+    tokens: &[LexToken],
+    file: &SourceFile,
+) -> DependencyFacts {
     if parsed.panicked || !parsed.diagnostics.is_empty() {
         return crate::analysis::parser_failed_dependencies();
     }
@@ -21,6 +28,7 @@ pub(super) fn extract(parsed: &ParserReturn<'_>, tokens: &[LexToken]) -> Depende
     for statement in &parsed.program.body {
         collector.observe_statement(statement);
     }
+    collector.observe_require_calls(parsed, file);
     collector.observe_unsupported_loaders(tokens);
     collector.finish()
 }
@@ -47,15 +55,31 @@ impl Collector {
                 reference_kind(declaration.export_kind),
                 declaration.source.value.as_str(),
             ),
+            Statement::TSImportEqualsDeclaration(declaration) => {
+                if let TSModuleReference::ExternalModuleReference(reference) =
+                    &declaration.module_reference
+                {
+                    self.push(
+                        DependencyReferenceKind::NodeUnsupportedDynamic,
+                        reference.expression.value.as_str(),
+                    );
+                }
+            }
             _ => {}
+        }
+    }
+
+    fn observe_require_calls(&mut self, parsed: &ParserReturn<'_>, file: &SourceFile) {
+        let mut visitor = RequireVisitor::new(file);
+        visitor.visit_program(&parsed.program);
+        for reference in visitor.references {
+            self.push(reference.kind, &reference.specifier);
         }
     }
 
     fn observe_unsupported_loaders(&mut self, tokens: &[LexToken]) {
         for pair in tokens.windows(2) {
-            if (pair[0].kind == Kind::Import || pair[0].text == "require")
-                && pair[1].kind == Kind::LParen
-            {
+            if pair[0].kind == Kind::Import && pair[1].kind == Kind::LParen {
                 self.push(DependencyReferenceKind::NodeUnsupportedDynamic, "");
             }
         }
@@ -83,6 +107,197 @@ impl Collector {
             },
             references: self.references,
         }
+    }
+}
+
+struct RequireVisitor<'a> {
+    eligible_calls: Vec<u32>,
+    require_call_callees: Vec<u32>,
+    references: Vec<DependencyReference>,
+    require_overridden: bool,
+    common_js_file: bool,
+    marker: std::marker::PhantomData<&'a ()>,
+}
+
+impl<'a> RequireVisitor<'a> {
+    fn new(file: &SourceFile) -> Self {
+        Self {
+            eligible_calls: Vec::new(),
+            require_call_callees: Vec::new(),
+            references: Vec::new(),
+            require_overridden: false,
+            common_js_file: file
+                .path
+                .as_utf8()
+                .is_some_and(|path| path.as_bytes().ends_with(b".cjs"))
+                && file.language_mode.split(':').any(|part| part == "commonjs"),
+            marker: std::marker::PhantomData,
+        }
+    }
+
+    fn observe_top_level_statement(&mut self, statement: &Statement<'a>) {
+        match statement {
+            Statement::ExpressionStatement(statement) => {
+                self.mark_eligible_expression(&statement.expression);
+            }
+            Statement::VariableDeclaration(declaration) => {
+                for declarator in &declaration.declarations {
+                    if let Some(initializer) = &declarator.init {
+                        self.mark_eligible_expression(initializer);
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+
+    fn mark_eligible_expression(&mut self, expression: &Expression<'a>) {
+        if let Expression::CallExpression(call) = expression {
+            self.eligible_calls.push(call.span.start);
+        }
+    }
+
+    fn literal_specifier(call: &CallExpression<'a>) -> Option<String> {
+        let [argument] = call.arguments.as_slice() else {
+            return None;
+        };
+        match argument {
+            oxc_ast::ast::Argument::StringLiteral(literal) => {
+                Some(literal.value.as_str().to_owned())
+            }
+            _ => None,
+        }
+    }
+
+    fn valid_common_js_specifier(specifier: &str) -> bool {
+        (specifier.starts_with("./") || specifier.starts_with("../"))
+            && specifier.as_bytes().ends_with(b".cjs")
+    }
+}
+
+impl<'a> Visit<'a> for RequireVisitor<'a> {
+    fn visit_program(&mut self, program: &oxc_ast::ast::Program<'a>) {
+        for statement in &program.body {
+            self.observe_top_level_statement(statement);
+        }
+        let mut override_visitor = RequireOverrideVisitor::default();
+        override_visitor.visit_program(program);
+        self.require_overridden = override_visitor.found;
+        walk::walk_program(self, program);
+    }
+
+    fn visit_call_expression(&mut self, call: &CallExpression<'a>) {
+        if matches!(&call.callee, Expression::Identifier(identifier) if identifier.name == "require")
+        {
+            if let Expression::Identifier(identifier) = &call.callee {
+                self.require_call_callees.push(identifier.span.start);
+            }
+            let specifier = Self::literal_specifier(call).unwrap_or_default();
+            let eligible = self.common_js_file
+                && !self.require_overridden
+                && self.eligible_calls.contains(&call.span.start)
+                && Self::valid_common_js_specifier(&specifier);
+            self.references.push(DependencyReference {
+                kind: if eligible {
+                    DependencyReferenceKind::NodeRuntime
+                } else {
+                    DependencyReferenceKind::NodeUnsupportedDynamic
+                },
+                specifier,
+                level: 0,
+            });
+        }
+        walk::walk_call_expression(self, call);
+    }
+
+    fn visit_identifier_reference(&mut self, identifier: &oxc_ast::ast::IdentifierReference<'a>) {
+        if identifier.name == "require"
+            && !self.require_call_callees.contains(&identifier.span.start)
+        {
+            self.references.push(DependencyReference {
+                kind: DependencyReferenceKind::NodeUnsupportedDynamic,
+                specifier: String::new(),
+                level: 0,
+            });
+        }
+        walk::walk_identifier_reference(self, identifier);
+    }
+}
+
+#[derive(Default)]
+struct RequireOverrideVisitor {
+    found: bool,
+}
+
+impl<'a> Visit<'a> for RequireOverrideVisitor {
+    fn visit_binding_identifier(&mut self, identifier: &BindingIdentifier<'a>) {
+        self.found |= identifier.name == "require";
+        walk::walk_binding_identifier(self, identifier);
+    }
+
+    fn visit_assignment_expression(&mut self, expression: &AssignmentExpression<'a>) {
+        let mut target = AssignmentTargetRequireVisitor::default();
+        target.visit_assignment_target(&expression.left);
+        self.found |= target.found;
+        walk::walk_assignment_expression(self, expression);
+    }
+
+    fn visit_for_statement_left(&mut self, left: &ForStatementLeft<'a>) {
+        if let Some(assignment_target) = left.as_assignment_target() {
+            let mut target = AssignmentTargetRequireVisitor::default();
+            target.visit_assignment_target(assignment_target);
+            self.found |= target.found;
+        }
+        walk::walk_for_statement_left(self, left);
+    }
+
+    fn visit_update_expression(&mut self, expression: &UpdateExpression<'a>) {
+        self.found |= matches!(
+            &expression.argument,
+            SimpleAssignmentTarget::AssignmentTargetIdentifier(identifier)
+                if identifier.name == "require"
+        );
+        walk::walk_update_expression(self, expression);
+    }
+}
+
+#[derive(Default)]
+struct AssignmentTargetRequireVisitor {
+    found: bool,
+}
+
+impl<'a> Visit<'a> for AssignmentTargetRequireVisitor {
+    fn visit_simple_assignment_target(&mut self, target: &SimpleAssignmentTarget<'a>) {
+        self.found |= matches!(
+            target,
+            SimpleAssignmentTarget::AssignmentTargetIdentifier(identifier)
+                if identifier.name == "require"
+        );
+    }
+
+    fn visit_assignment_target_rest(&mut self, rest: &oxc_ast::ast::AssignmentTargetRest<'a>) {
+        self.visit_assignment_target(&rest.target);
+    }
+
+    fn visit_assignment_target_with_default(
+        &mut self,
+        target: &oxc_ast::ast::AssignmentTargetWithDefault<'a>,
+    ) {
+        self.visit_assignment_target(&target.binding);
+    }
+
+    fn visit_assignment_target_property_identifier(
+        &mut self,
+        property: &oxc_ast::ast::AssignmentTargetPropertyIdentifier<'a>,
+    ) {
+        self.found |= property.binding.name == "require";
+    }
+
+    fn visit_assignment_target_property_property(
+        &mut self,
+        property: &oxc_ast::ast::AssignmentTargetPropertyProperty<'a>,
+    ) {
+        self.visit_assignment_target_maybe_default(&property.binding);
     }
 }
 

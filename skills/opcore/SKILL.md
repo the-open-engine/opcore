@@ -45,7 +45,7 @@ Sense confirms only exact local dependency targets without executing project con
 
 | Family | Confirmed | Deliberately not resolved |
 | --- | --- | --- |
-| Node | Static imports and re-exports; runtime and type-only stay distinct | Bare packages, aliases, dynamic imports, `require`, query/hash suffixes, and ambiguous extension/index targets |
+| Node | Static imports and re-exports plus guarded direct top-level `.cjs` `require("./target.cjs")`; runtime and type-only stay distinct | Bare packages, aliases, other `require` forms, dynamic imports, query/hash suffixes, and ambiguous extension/index targets |
 | Python | Unambiguous explicit-relative targets and one-component imports with one sibling `.py`, `.pyi`, or package target | Missing, dotted, colliding, or non-sibling absolute targets; sys.path and namespace/config ambiguity |
 | Rust | External `mod` plus explicit or uniquely local paths reachable from conventional crate roots | Cargo-configured roots, cfg/path attributes, generated or undeclared modules, aliases, and ambiguous module targets |
 | Go | Exact imports inside the deepest enclosing root or `go.mod` module | External modules, `go.work`, `replace`, vendor/GOPATH context, generated packages, custom build tags, and malformed module metadata |
