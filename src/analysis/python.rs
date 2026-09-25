@@ -354,6 +354,12 @@ impl<'a> MetricsWalker<'a> {
         }
     }
 
+    fn count_assertion(&mut self, node: &ast::Stmt) {
+        if matches!(node, ast::Stmt::Assert(_)) {
+            self.add_complexity(1);
+        }
+    }
+
     fn enter_callable(
         &mut self,
         kind: CallableKind,
@@ -780,6 +786,7 @@ impl<'ast> Visitor<'ast> for MetricsWalker<'_> {
             }
             _ => {}
         }
+        self.count_assertion(node);
         let control = match node {
             ast::Stmt::If(_) | ast::Stmt::For(_) | ast::Stmt::While(_) => self.enter_control(1),
             ast::Stmt::With(_) => self.enter_control(0),
@@ -1168,6 +1175,31 @@ mod tests {
             .unwrap();
         assert_eq!(diagnostic.evidence["actual"], 3);
         assert!(diagnostic.message.starts_with("async function"));
+    }
+
+    #[test]
+    fn assertions_count_as_decisions_without_increasing_nesting() {
+        let limits = RuleLimits {
+            max_cyclomatic_complexity: 1,
+            max_nesting: 0,
+            ..RuleLimits::default()
+        };
+        let result = facts(
+            "def check(value):\n    assert value\n    return value\n",
+            &limits,
+        );
+        let complexity = result
+            .diagnostics
+            .iter()
+            .find(|diagnostic| diagnostic.rule_id == "complexity.max-cyclomatic-complexity")
+            .unwrap();
+        assert_eq!(complexity.evidence["actual"], 2);
+        assert!(
+            result
+                .diagnostics
+                .iter()
+                .all(|diagnostic| diagnostic.rule_id != "complexity.max-nesting")
+        );
     }
 
     #[test]

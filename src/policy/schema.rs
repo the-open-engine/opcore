@@ -8,7 +8,7 @@ pub fn schema() -> Value {
     let defaults = serde_json::to_value(Policy::default()).unwrap_or(Value::Null);
     let mut properties = serde_json::Map::new();
     properties.insert("$schema".into(), json!({"type":"string"}));
-    properties.insert("schemaVersion".into(), json!({"const":1,"default":1}));
+    properties.insert("schemaVersion".into(), json!({"enum":[1,2],"default":1}));
     for name in ["verify", "sense", "coverage"] {
         properties.insert(name.into(), scalar_section(&defaults[name]));
     }
@@ -17,13 +17,24 @@ pub fn schema() -> Value {
         object(json!({"exclude":path_list(false)})),
     );
     let provider = object(json!({"roots":path_list(true)}));
-    let providers =
-        object(json!({"rust-native":provider,"node-native":provider,"python-native":provider}));
+    let providers = object(json!({"rust-native":provider,"node-native":provider,
+        "python-native":provider,
+        "external":{"type":"object","maxProperties":16,
+            "propertyNames":{"pattern":"^[a-z][a-z0-9-]{0,63}$"},
+            "additionalProperties":{"type":"object","additionalProperties":false,
+                "required":["configuration"],"properties":{
+                    "configuration":{"type":"object"}}}}}));
     properties.insert("providers".into(), providers);
     properties.insert(
         "native".into(),
         json!({"type":"array","uniqueItems":true,"maxItems":3,
         "default":[],"items":{"enum":["rust-native","node-native","python-native"]}}),
+    );
+    properties.insert(
+        "external".into(),
+        json!({"type":"array","uniqueItems":true,
+        "maxItems":16,"items":{"type":"string","pattern":"^[a-z][a-z0-9-]{0,63}$"},
+        "default":[]}),
     );
     properties.insert("documentation".into(), object(json!({"bindings": {
         "type":"array", "maxItems":crate::documentation::MAX_DOCUMENTATION_BINDINGS,"default":[],
@@ -36,7 +47,13 @@ pub fn schema() -> Value {
             .filter(|(key, _)| {
                 matches!(
                     key.as_str(),
-                    "verify" | "sense" | "coverage" | "targets" | "providers" | "native"
+                    "verify"
+                        | "sense"
+                        | "coverage"
+                        | "targets"
+                        | "providers"
+                        | "native"
+                        | "external"
                 )
             })
             .map(|(key, value)| (key.clone(), value.clone()))
@@ -52,7 +69,11 @@ pub fn schema() -> Value {
     );
     json!({"$schema":"https://json-schema.org/draft/2020-12/schema",
         "title":"Opcore repository configuration", "type":"object",
-        "additionalProperties":false,"required":["schemaVersion"],"properties":properties})
+        "additionalProperties":false,"required":["schemaVersion"],"properties":properties,
+        "if":{"properties":{"schemaVersion":{"const":1}}},
+        "then":{"properties":{"providers":{"properties":{"external":{"maxProperties":0}}},
+            "external":{"maxItems":0},
+            "workflows":{"additionalProperties":{"properties":{"external":{"maxItems":0}}}}}}})
 }
 
 fn remove_override_defaults(value: &mut Value) {

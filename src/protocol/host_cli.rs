@@ -202,6 +202,7 @@ async fn stable_report(args: &CheckArgs, repository: &GitRepository) -> Result<H
     for _ in 0..2 {
         let policy = PolicySnapshot::capture(repository, args.config_view(), args.workflow)
             .context("load repository configuration for provider check")?;
+        policy.require_bundled_runner()?;
         let evaluation = evaluate(args, repository, &policy).await?;
         if evaluation.is_current(repository)? && policy.is_current()? {
             return Ok(evaluation);

@@ -238,6 +238,7 @@ async fn evaluate_request(
 ) -> Result<WorkflowEvaluation> {
     for attempt in 0..2 {
         let configuration = PolicySnapshot::capture(repository, args.view(), Some(args.workflow))?;
+        configuration.require_bundled_runner()?;
         ensure!(
             configuration.policy.native.is_empty() || args.allow_unsandboxed_native,
             "this workflow requires native checks; run in a trusted environment and pass --allow-unsandboxed-native"
