@@ -51,6 +51,9 @@
 <tr><td><code>workflows</code></td><td>Overrides for <code>post-edit</code>, <code>pre-commit</code>, and <code>ci</code>.</td></tr>
 </tbody></table>
 </div>
+<p>For Python callables, cyclomatic complexity starts at 1 and adds one decision
+for each <code>assert</code>, <code>if</code>, and <code>elif</code>. An <code>else</code> adds no decision, and an <code>elif</code>
+does not add a nesting level.</p>
 <p>Inspect settings and generate the editor schema from the installed definitions:</p>
 <div class="example-wrap"><pre class="language-sh"><code>opcore rules
 opcore rules --schema &gt; .opcore.schema.json
