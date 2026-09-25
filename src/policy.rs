@@ -34,6 +34,7 @@ pub use settings::*;
 
 pub const POLICY_PATH: &str = ".opcore.json";
 pub const POLICY_SCHEMA_VERSION: u32 = 1;
+pub const EXTERNAL_POLICY_SCHEMA_VERSION: u32 = 2;
 pub const MAX_POLICY_BYTES: usize = 256 * 1024;
 
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize, ValueEnum)]
@@ -84,6 +85,8 @@ pub struct Policy {
     pub providers: ProviderSettings,
     #[serde(default)]
     pub native: Vec<NativeProvider>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub external: Vec<String>,
     #[serde(default)]
     pub coverage: CoveragePolicy,
     #[serde(default, skip_serializing_if = "Workflows::is_empty")]
@@ -100,6 +103,7 @@ impl Default for Policy {
             targets: TargetPolicy::default(),
             providers: ProviderSettings::default(),
             native: Vec::new(),
+            external: Vec::new(),
             coverage: CoveragePolicy::default(),
             workflows: Workflows::default(),
         }
@@ -157,6 +161,9 @@ impl Policy {
             if let Some(native) = &settings.native {
                 resolved.native.clone_from(native);
             }
+            if let Some(external) = &settings.external {
+                resolved.external.clone_from(external);
+            }
             if workflow == Workflow::PostEdit {
                 ensure!(
                     settings.native.as_ref().is_none_or(Vec::is_empty),
@@ -181,8 +188,8 @@ impl Policy {
 
     fn validate_effective(&self) -> Result<()> {
         ensure!(
-            self.schema_version == POLICY_SCHEMA_VERSION,
-            "schemaVersion must be {POLICY_SCHEMA_VERSION}"
+            [POLICY_SCHEMA_VERSION, EXTERNAL_POLICY_SCHEMA_VERSION].contains(&self.schema_version),
+            "schemaVersion must be 1 or 2"
         );
         validate_verify(&self.verify)?;
         ensure!(
@@ -209,6 +216,21 @@ impl Policy {
         }
         self.targets.validate()?;
         self.providers.validate()?;
+        ensure!(
+            self.schema_version == EXTERNAL_POLICY_SCHEMA_VERSION
+                || (self.external.is_empty() && self.providers.external.is_empty()),
+            "external providers require schemaVersion 2"
+        );
+        ensure!(
+            self.external.iter().collect::<BTreeSet<_>>().len() == self.external.len(),
+            "external contains a duplicate provider"
+        );
+        for id in &self.external {
+            ensure!(
+                self.providers.external.contains_key(id),
+                "external provider {id} has no providers.external configuration"
+            );
+        }
         validate_bindings(&self.documentation.bindings)?;
         ensure!(
             self.native.iter().collect::<BTreeSet<_>>().len() == self.native.len(),
@@ -296,6 +318,15 @@ pub struct PolicySnapshot {
 }
 
 impl PolicySnapshot {
+    pub(crate) fn require_bundled_runner(&self) -> Result<()> {
+        ensure!(
+            self.policy.external.is_empty(),
+            "selected workflow requires external ASP providers, but this Opcore build has no external provider loader; \
+             use an enrolled outer host"
+        );
+        Ok(())
+    }
+
     pub(crate) fn report_configuration(&self) -> Value {
         json!({
             "state": self.state,

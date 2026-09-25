@@ -36,7 +36,7 @@ Post-edit permits eight parameters and excludes legacy code. Pre-commit inherits
 | `sense` | `importantFanIn`, `minimumIdenticalBytes`, `maxDependencyTargets`, `maxEdgeSelectors`, `maxModuleExports`, `maxShapeMembers`. |
 | `documentation` | Exact source-to-document `bindings`, shared by every workflow. |
 | `targets` | Literal excluded file and subtree paths. |
-| `providers` | Project `roots` for `rust-native`, `node-native`, and `python-native`; each defaults to `["."]`. |
+| `providers` | Project `roots` for `rust-native`, `node-native`, and `python-native`; each defaults to `["."]`. Schema v2 also accepts bounded `external` rule configurations. |
 | `native` | Required native providers for pre-commit and CI; defaults to `[]`. |
 | `coverage` | `allowPartial` and `allowNodeBuiltins` acknowledgments for Sense. |
 | `workflows` | Overrides for `post-edit`, `pre-commit`, and `ci`. |
@@ -59,6 +59,8 @@ Unknown or duplicate fields, explicit `null`, unsafe paths, unsupported schema v
 Resolution is built-in defaults, then repository settings, then the selected workflow, then explicitly supplied CLI options. Objects merge by their defined fields; scalar values and arrays replace inherited values. Omission inherits, and `[]` clears a list. Workflows inherit directly from repository settings and cannot inherit another workflow.
 
 Workflows may override `verify`, `sense`, `targets`, `providers`, `native`, and `coverage`. Documentation ownership remains repository-wide. Configuration cannot select executable commands, grant native execution permission, or change hard resource limits. Post-edit always uses Fast Verify and Sense; selecting native providers inside `workflows.post-edit` is invalid.
+
+Schema v2 also accepts `providers.external.<id>.configuration` as a bounded JSON object and an `external` list at repository or workflow level. The configuration is provider input, not an executable registration or permission grant. The current Opcore CLI has no external provider runner: a selected external provider causes `check` or `run` to fail closed. An external ASP host can compose that configuration with a separately enrolled provider; the [experimental AST-grep provider](providers.md#experimental-ast-grep-provider) shows the provider side of this seam.
 
 `status --workflow <name>` reports the effective settings and their origins. Use `check --workflow <name>` or `sense --workflow <name>` to run one evaluator with those settings; their source-selection flags retain their normal meaning. `run <name>` selects the workflow's complete sequence and Git view.
 

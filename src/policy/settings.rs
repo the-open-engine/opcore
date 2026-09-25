@@ -1,7 +1,8 @@
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 use anyhow::{Result, ensure};
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 use crate::{documentation::DocumentationBinding, limits::RuleLimits, path::RepoPath};
 
@@ -121,6 +122,13 @@ pub struct ProviderSettings {
     pub rust_native: ProviderOptions,
     pub node_native: ProviderOptions,
     pub python_native: ProviderOptions,
+    pub external: BTreeMap<String, ExternalProviderSettings>,
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct ExternalProviderSettings {
+    pub configuration: Value,
 }
 
 impl ProviderSettings {
@@ -139,6 +147,25 @@ impl ProviderSettings {
             NativeProvider::PythonNative,
         ] {
             self.options(provider).validate(provider.as_str())?;
+        }
+        ensure!(
+            self.external.len() <= 16,
+            "providers.external exceeds 16 providers"
+        );
+        for (id, settings) in &self.external {
+            ensure!(
+                !id.is_empty()
+                    && id.len() <= 64
+                    && id.bytes().all(|byte| byte.is_ascii_lowercase()
+                        || byte.is_ascii_digit()
+                        || byte == b'-')
+                    && id.as_bytes()[0].is_ascii_lowercase(),
+                "providers.external has an invalid provider ID"
+            );
+            ensure!(
+                settings.configuration.is_object(),
+                "providers.external.{id}.configuration must be an object"
+            );
         }
         Ok(())
     }
@@ -216,6 +243,8 @@ pub struct WorkflowOverride {
     pub coverage: CoverageOverride,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub native: Option<Vec<NativeProvider>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub external: Option<Vec<String>>,
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]

@@ -117,6 +117,36 @@ fn direct_and_asp_fast_share_workflow_thresholds() {
 }
 
 #[test]
+fn selected_external_provider_fails_closed_until_runner_is_enrolled() {
+    let fixture = RepositoryFixture::new(&[
+        ("main.py", "def ready():\n    return True\n"),
+        (
+            ".opcore.json",
+            r#"{
+                "schemaVersion": 2,
+                "providers": {
+                    "external": {"example-ast-grep": {"configuration": {"rules": []}}}
+                },
+                "workflows": {"post-edit": {"external": ["example-ast-grep"]}}
+            }"#,
+        ),
+    ]);
+    let unselected = opcore_json(&fixture, "check", &["--all"]);
+    assert!(unselected.status.success());
+
+    let selected = opcore_json(&fixture, "check", &["--all", "--workflow", "post-edit"]);
+    assert!(!selected.status.success());
+    let report = support::json(&selected);
+    assert_eq!(report["status"], "incomplete");
+    assert!(
+        report["coverage"]["gaps"][0]["reason"]
+            .as_str()
+            .unwrap()
+            .contains("external provider loader")
+    );
+}
+
+#[test]
 fn staged_and_committed_provider_checks_use_configuration_from_that_view() {
     let fixture = RepositoryFixture::new(&[("src/main.ts", SOURCE), (".opcore.json", CONFIG)]);
     fixture.write(

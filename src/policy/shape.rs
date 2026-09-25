@@ -10,6 +10,7 @@ pub(super) fn validate(value: &Value) -> Result<()> {
     defaults["$schema"] = json!("");
     defaults["targets"]["exclude"] = json!(["path"]);
     defaults["native"] = json!(["rust-native"]);
+    defaults["external"] = json!(["provider-id"]);
     defaults["documentation"]["bindings"] = json!([{"source":"path","document":"path"}]);
     let mut workflow = defaults.clone();
     if let Some(fields) = workflow.as_object_mut() {
@@ -22,6 +23,9 @@ pub(super) fn validate(value: &Value) -> Result<()> {
 }
 
 fn validate_value(value: &Value, expected: &Value, pointer: &str) -> Result<()> {
+    if pointer == "/providers/external" {
+        return validate_external_providers(value);
+    }
     match expected {
         Value::Object(fields) => validate_object(value, fields, pointer),
         Value::Array(items) => validate_array(value, items.first(), pointer),
@@ -31,6 +35,40 @@ fn validate_value(value: &Value, expected: &Value, pointer: &str) -> Result<()> 
         Value::Bool(_) => require_type(value.is_boolean(), pointer, "true or false"),
         Value::String(_) => validate_string(value, pointer),
         Value::Null => Ok(()),
+    }
+}
+
+fn validate_external_providers(value: &Value) -> Result<()> {
+    let providers = value
+        .as_object()
+        .ok_or_else(|| anyhow::anyhow!("{POLICY_PATH}/providers/external: expected an object"))?;
+    for (id, provider) in providers {
+        let entry = provider.as_object().ok_or_else(|| {
+            anyhow::anyhow!("{POLICY_PATH}/providers/external/{id}: expected an object")
+        })?;
+        ensure!(
+            entry.len() == 1 && entry.contains_key("configuration"),
+            "{POLICY_PATH}/providers/external/{id}: expected only configuration"
+        );
+        let configuration = &entry["configuration"];
+        ensure!(
+            configuration.is_object(),
+            "{POLICY_PATH}/providers/external/{id}/configuration: expected an object"
+        );
+        ensure!(
+            !contains_null(configuration),
+            "{POLICY_PATH}/providers/external/{id}/configuration: null values are not allowed"
+        );
+    }
+    Ok(())
+}
+
+fn contains_null(value: &Value) -> bool {
+    match value {
+        Value::Null => true,
+        Value::Array(values) => values.iter().any(contains_null),
+        Value::Object(fields) => fields.values().any(contains_null),
+        _ => false,
     }
 }
 

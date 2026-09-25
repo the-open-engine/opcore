@@ -255,7 +255,8 @@ fn rejects_unknown_duplicate_unsafe_and_oversized_policy() {
     for invalid in [
         r#"{"schemaVersion":1,"unknown":true}"#,
         r#"{"schemaVersion":1,"schemaVersion":1}"#,
-        r#"{"schemaVersion":2}"#,
+        r#"{"schemaVersion":3}"#,
+        r#"{"schemaVersion":1,"providers":{"external":{"example":{"configuration":{}}}}}"#,
         r#"{"schemaVersion":1,"verify":{"maxLineBytes":1048577}}"#,
         r#"{"schemaVersion":1,"sense":{"importantFanIn":0}}"#,
     ] {
@@ -268,4 +269,27 @@ fn rejects_unknown_duplicate_unsafe_and_oversized_policy() {
     )
     .unwrap();
     assert!(PolicySnapshot::load(root.path()).is_err());
+}
+
+#[test]
+fn schema_two_keeps_external_rules_with_workflow_selection() {
+    let policy = parse_policy(
+        br#"{
+        "schemaVersion":2,
+        "providers":{"external":{"example-ast-grep":{"configuration":{"rules":[{
+            "id":"redundant-branch","language":"python","severity":"error",
+            "message":"Simplify this branch","rule":{"pattern":"return True"}
+        }]}}}},
+        "workflows":{"post-edit":{"external":["example-ast-grep"]}}
+    }"#,
+    )
+    .unwrap();
+    assert!(policy.external.is_empty());
+    let effective = policy.resolve(Some(Workflow::PostEdit)).unwrap();
+    assert_eq!(effective.external, ["example-ast-grep"]);
+    assert_eq!(
+        effective.providers.external["example-ast-grep"].configuration["rules"][0]["id"],
+        "redundant-branch"
+    );
+    assert!(parse_policy(br#"{"schemaVersion":2,"external":["missing"]}"#).is_err());
 }

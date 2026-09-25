@@ -252,7 +252,12 @@ fn capture_policy(
     repository: &GitRepository,
     started: Instant,
 ) -> Result<PolicySnapshot> {
-    match PolicySnapshot::capture(repository, args.config_view(), args.workflow) {
+    match PolicySnapshot::capture(repository, args.config_view(), args.workflow).and_then(
+        |policy| {
+            policy.require_bundled_runner()?;
+            Ok(policy)
+        },
+    ) {
         Ok(policy) => Ok(policy),
         Err(error) => {
             let reason = format!("load repository policy: {error:#}");

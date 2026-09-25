@@ -90,3 +90,7 @@ Put shared roots under `providers.<name>.roots` in `.opcore.json`, and override 
 `doctor --workflow <name>` inspects the selected native prerequisites without running checks. A tool on `PATH` doesn't prove its dependencies or project configuration are ready. If a provider fails, inspect its coverage reason; malformed output, timeouts, and incomplete compiler coverage never count as a clean result.
 
 For ASP integration, the executable exposes each profile as a separate provider identity through `serve --stdio --profile <profile>`. Generate the command and public Rust API reference with `./scripts/build-docs.sh` from a checkout; the [protocol definition](../asp/README.md) specifies the callback and assessment contracts.
+
+## Experimental AST-grep provider
+
+Source checkouts include an experimental AST-grep ASP provider under `contrib/asp-ast-grep/`. It accepts bounded declarative Python rules through ASP `check/evaluate.configuration`, including rules supplied from a repository's `.opcore.json`. It is not selectable by `opcore check --providers`; composing it with Opcore currently requires an external ASP host that owns enrollment, validation, and decisions. Opcore rejects a workflow selecting an external provider rather than silently omitting it.
