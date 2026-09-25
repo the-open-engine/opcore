@@ -354,6 +354,36 @@ impl<'a> MetricsWalker<'a> {
         }
     }
 
+    fn count_assertion(&mut self, node: &ast::Stmt) {
+        if matches!(node, ast::Stmt::Assert(_)) {
+            self.add_complexity(1);
+        }
+    }
+
+    fn visit_if_statement(&mut self, node: &ast::StmtIf) {
+        let control = self.enter_control(1);
+        self.visit_expr(&node.test);
+        self.visit_body(&node.body);
+        for clause in &node.elif_else_clauses {
+            self.visit_elif_else_clause(clause);
+        }
+        self.leave_control(control);
+    }
+
+    fn enter_statement_control(&mut self, node: &ast::Stmt) -> Option<u32> {
+        match node {
+            ast::Stmt::For(_) | ast::Stmt::While(_) => self.enter_control(1),
+            ast::Stmt::With(_) => self.enter_control(0),
+            ast::Stmt::Try(node) => {
+                self.enter_control(u32::try_from(node.handlers.len()).unwrap_or(u32::MAX))
+            }
+            ast::Stmt::Match(node) => {
+                self.enter_control(u32::try_from(node.cases.len()).unwrap_or(u32::MAX))
+            }
+            _ => None,
+        }
+    }
+
     fn enter_callable(
         &mut self,
         kind: CallableKind,
@@ -778,19 +808,14 @@ impl<'ast> Visitor<'ast> for MetricsWalker<'_> {
                 self.scope.pop();
                 return;
             }
+            ast::Stmt::If(if_statement) => {
+                self.visit_if_statement(if_statement);
+                return;
+            }
             _ => {}
         }
-        let control = match node {
-            ast::Stmt::If(_) | ast::Stmt::For(_) | ast::Stmt::While(_) => self.enter_control(1),
-            ast::Stmt::With(_) => self.enter_control(0),
-            ast::Stmt::Try(node) => {
-                self.enter_control(u32::try_from(node.handlers.len()).unwrap_or(u32::MAX))
-            }
-            ast::Stmt::Match(node) => {
-                self.enter_control(u32::try_from(node.cases.len()).unwrap_or(u32::MAX))
-            }
-            _ => None,
-        };
+        self.count_assertion(node);
+        let control = self.enter_statement_control(node);
         walk_stmt(self, node);
         self.leave_control(control);
     }
@@ -1168,6 +1193,73 @@ mod tests {
             .unwrap();
         assert_eq!(diagnostic.evidence["actual"], 3);
         assert!(diagnostic.message.starts_with("async function"));
+    }
+
+    #[test]
+    fn assertions_count_as_decisions_without_increasing_nesting() {
+        let limits = RuleLimits {
+            max_cyclomatic_complexity: 1,
+            max_nesting: 0,
+            ..RuleLimits::default()
+        };
+        let result = facts(
+            "def check(value):\n    assert value\n    return value\n",
+            &limits,
+        );
+        let complexity = result
+            .diagnostics
+            .iter()
+            .find(|diagnostic| diagnostic.rule_id == "complexity.max-cyclomatic-complexity")
+            .unwrap();
+        assert_eq!(complexity.evidence["actual"], 2);
+        assert!(
+            result
+                .diagnostics
+                .iter()
+                .all(|diagnostic| diagnostic.rule_id != "complexity.max-nesting")
+        );
+    }
+
+    #[test]
+    fn elif_tests_add_one_decision_each_without_nesting_or_double_visiting_conditions() {
+        let limits = RuleLimits {
+            max_cyclomatic_complexity: 1,
+            max_nesting: 1,
+            ..RuleLimits::default()
+        };
+        let result = facts(
+            concat!(
+                "def choose(value, flag):\n",
+                "    if value == 0: return 0\n",
+                "    elif value == 1: return 1\n",
+                "    elif value == 2: return 2\n",
+                "    else: return 3\n",
+            ),
+            &limits,
+        );
+        let complexity = result
+            .diagnostics
+            .iter()
+            .find(|diagnostic| diagnostic.rule_id == "complexity.max-cyclomatic-complexity")
+            .unwrap();
+        assert_eq!(complexity.evidence["actual"], 4);
+        assert!(
+            result
+                .diagnostics
+                .iter()
+                .all(|diagnostic| diagnostic.rule_id != "complexity.max-nesting")
+        );
+
+        let result = facts(
+            "def choose(a, b):\n    if a: return 1\n    elif a and b: return 2\n",
+            &limits,
+        );
+        let complexity = result
+            .diagnostics
+            .iter()
+            .find(|diagnostic| diagnostic.rule_id == "complexity.max-cyclomatic-complexity")
+            .unwrap();
+        assert_eq!(complexity.evidence["actual"], 4);
     }
 
     #[test]

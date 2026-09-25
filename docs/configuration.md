@@ -41,6 +41,10 @@ Post-edit permits eight parameters and excludes legacy code. Pre-commit inherits
 | `coverage` | `allowPartial` and `allowNodeBuiltins` acknowledgments for Sense. |
 | `workflows` | Overrides for `post-edit`, `pre-commit`, and `ci`. |
 
+For Python callables, cyclomatic complexity starts at 1 and adds one decision
+for each `assert`, `if`, and `elif`. An `else` adds no decision, and an `elif`
+does not add a nesting level.
+
 Inspect settings and generate the editor schema from the installed definitions:
 
 ```sh
