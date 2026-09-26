@@ -309,9 +309,7 @@ fn runtime_cycles_are_introduced_only_and_type_edges_do_not_block() {
 
 #[test]
 fn direct_common_js_require_edges_create_introduced_runtime_cycles() {
-    let temp = tempfile::tempdir().unwrap();
-    let repo = temp.path().join("repo");
-    let cache = temp.path().join("cache");
+    let (_temp, repo, cache) = repository_paths();
     initialize(
         &repo,
         &[
