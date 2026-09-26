@@ -160,7 +160,9 @@ fn language_rule(path: &[u8]) -> Option<(Language, &'static str)> {
         }
     }
     if has_tfvars_suffix(filename) {
-        let mode = if has_extension(filename, b".json") {
+        let mode = if has_extension(filename, b".json")
+            || has_extension(filename, b".tfvars.json.example")
+        {
             "hcl:terraform-vars:json"
         } else {
             "hcl:terraform-vars:native"
@@ -406,6 +408,9 @@ mod tests {
             ("main.tofu.json", "hcl:opentofu:json"),
             ("terraform.tfvars.example", "hcl:terraform-vars:native"),
             ("prod.auto.tfvars.json", "hcl:terraform-vars:json"),
+            ("prod.auto.tfvars.example.json", "hcl:terraform-vars:json"),
+            ("dev.auto.tfvars.json.example", "hcl:terraform-vars:json"),
+            ("dev.auto.tfvars.json.backup", "hcl:terraform-vars:native"),
             ("module.tftest.hcl", "hcl:terraform-test:native"),
             ("module.tofutest.json", "hcl:opentofu-test:json"),
             (".terraform.lock.hcl", "hcl:terraform-lock:native"),
