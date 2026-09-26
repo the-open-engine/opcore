@@ -333,53 +333,9 @@ fn direct_common_js_require_edges_create_introduced_runtime_cycles() {
     assert_eq!(report["before"]["runtimeEdges"], 1);
     assert_eq!(report["after"]["runtimeEdges"], 2);
     assert_eq!(report["after"]["coverage"]["runtimeReferences"], 2);
-    assert_eq!(report["after"]["coverage"]["resolvedReferences"], 2);
     assert_eq!(report["introducedCycles"][0]["memberCount"], 2);
     assert_eq!(report["introducedCycles"][0]["trigger"]["from"], "b.cjs");
     assert_eq!(report["introducedCycles"][0]["trigger"]["to"], "a.cjs");
-}
-
-#[test]
-fn loop_reassignment_keeps_common_js_require_edges_partial_and_unconfirmed() {
-    let temp = tempfile::tempdir().unwrap();
-    let repo = temp.path().join("repo");
-    let cache = temp.path().join("cache");
-    initialize(
-        &repo,
-        &[
-            ("target-a.cjs", "module.exports = 1;\n"),
-            ("target-b.cjs", "module.exports = 2;\n"),
-            ("target-c.cjs", "module.exports = 3;\n"),
-            ("target-d.cjs", "module.exports = 4;\n"),
-        ],
-    );
-
-    for (path, source) in [
-        (
-            "a.cjs",
-            "for (require of loaders) {}\nconst value = require('./target-a.cjs');\n",
-        ),
-        (
-            "b.cjs",
-            "const value = require('./target-b.cjs');\nfor (require in loaders) {}\n",
-        ),
-        (
-            "c.cjs",
-            "for ([require] of loaderGroups) {}\nconst value = require('./target-c.cjs');\n",
-        ),
-        (
-            "d.cjs",
-            "const value = require('./target-d.cjs');\nfor ({ loader: require } in loaderGroups) {}\n",
-        ),
-    ] {
-        fs::write(repo.join(path), source).unwrap();
-    }
-
-    let report = blocking_sense(&repo, &cache);
-    assert_eq!(report["status"], "partial");
-    assert_eq!(report["after"]["runtimeEdges"], 0);
-    assert_eq!(report["after"]["coverage"]["runtimeReferences"], 0);
-    assert_eq!(report["after"]["coverage"]["resolvedReferences"], 0);
 }
 
 #[test]

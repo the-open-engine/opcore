@@ -387,6 +387,33 @@ fn dependency_fact_overflow_is_explicit_and_bounded() {
     )
     .unwrap();
 
+    assert_dependency_fact_overflow(&facts);
+}
+
+#[test]
+fn common_js_require_fact_overflow_is_explicit_and_bounded() {
+    use std::fmt::Write as _;
+
+    let mut source_text = String::new();
+    for index in 0..=opcore::api::test_support::MAX_DEPENDENCY_FACTS_PER_FILE {
+        writeln!(source_text, "require('./target-{index}.cjs');").unwrap();
+    }
+    let facts = node::analyze(
+        &source_with_mode(
+            "src/overflow.cjs",
+            &source_text,
+            Language::JavaScript,
+            "javascript:commonjs",
+        ),
+        &RuleLimits::default(),
+        &CancelToken::new(),
+    )
+    .unwrap();
+
+    assert_dependency_fact_overflow(&facts);
+}
+
+fn assert_dependency_fact_overflow(facts: &FileFacts) {
     assert_eq!(
         facts.dependencies.status,
         DependencyExtractionStatus::Truncated

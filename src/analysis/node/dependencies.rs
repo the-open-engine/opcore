@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use oxc_ast::ast::{
     AssignmentExpression, BindingIdentifier, CallExpression, ExportNamedDeclaration, Expression,
     ForStatementLeft, ImportDeclaration, ImportDeclarationSpecifier, ImportOrExportKind,
@@ -70,11 +72,11 @@ impl Collector {
     }
 
     fn observe_require_calls(&mut self, parsed: &ParserReturn<'_>, file: &SourceFile) {
-        let mut visitor = RequireVisitor::new(file);
+        let remaining = MAX_DEPENDENCY_FACTS_PER_FILE.saturating_sub(self.references.len());
+        let mut visitor = RequireVisitor::new(file, remaining);
         visitor.visit_program(&parsed.program);
-        for reference in visitor.references {
-            self.push(reference.kind, &reference.specifier);
-        }
+        self.references.extend(visitor.references);
+        self.truncated |= visitor.truncated;
     }
 
     fn observe_unsupported_loaders(&mut self, tokens: &[LexToken]) {
@@ -111,20 +113,22 @@ impl Collector {
 }
 
 struct RequireVisitor<'a> {
-    eligible_calls: Vec<u32>,
-    require_call_callees: Vec<u32>,
+    eligible_calls: HashSet<u32>,
     references: Vec<DependencyReference>,
+    reference_limit: usize,
+    truncated: bool,
     require_overridden: bool,
     common_js_file: bool,
     marker: std::marker::PhantomData<&'a ()>,
 }
 
 impl<'a> RequireVisitor<'a> {
-    fn new(file: &SourceFile) -> Self {
+    fn new(file: &SourceFile, reference_limit: usize) -> Self {
         Self {
-            eligible_calls: Vec::new(),
-            require_call_callees: Vec::new(),
+            eligible_calls: HashSet::new(),
             references: Vec::new(),
+            reference_limit,
+            truncated: false,
             require_overridden: false,
             common_js_file: file
                 .path
@@ -153,7 +157,7 @@ impl<'a> RequireVisitor<'a> {
 
     fn mark_eligible_expression(&mut self, expression: &Expression<'a>) {
         if let Expression::CallExpression(call) = expression {
-            self.eligible_calls.push(call.span.start);
+            self.eligible_calls.insert(call.span.start);
         }
     }
 
@@ -173,6 +177,18 @@ impl<'a> RequireVisitor<'a> {
         (specifier.starts_with("./") || specifier.starts_with("../"))
             && specifier.as_bytes().ends_with(b".cjs")
     }
+
+    fn push(&mut self, kind: DependencyReferenceKind, specifier: String) {
+        if self.references.len() >= self.reference_limit {
+            self.truncated = true;
+            return;
+        }
+        self.references.push(DependencyReference {
+            kind,
+            specifier,
+            level: 0,
+        });
+    }
 }
 
 impl<'a> Visit<'a> for RequireVisitor<'a> {
@@ -189,36 +205,34 @@ impl<'a> Visit<'a> for RequireVisitor<'a> {
     fn visit_call_expression(&mut self, call: &CallExpression<'a>) {
         if matches!(&call.callee, Expression::Identifier(identifier) if identifier.name == "require")
         {
-            if let Expression::Identifier(identifier) = &call.callee {
-                self.require_call_callees.push(identifier.span.start);
-            }
             let specifier = Self::literal_specifier(call).unwrap_or_default();
             let eligible = self.common_js_file
                 && !self.require_overridden
                 && self.eligible_calls.contains(&call.span.start)
                 && Self::valid_common_js_specifier(&specifier);
-            self.references.push(DependencyReference {
-                kind: if eligible {
+            self.push(
+                if eligible {
                     DependencyReferenceKind::NodeRuntime
                 } else {
                     DependencyReferenceKind::NodeUnsupportedDynamic
                 },
                 specifier,
-                level: 0,
-            });
+            );
+            if let Some(type_arguments) = &call.type_arguments {
+                self.visit_ts_type_parameter_instantiation(type_arguments);
+            }
+            self.visit_arguments(&call.arguments);
+            return;
         }
         walk::walk_call_expression(self, call);
     }
 
     fn visit_identifier_reference(&mut self, identifier: &oxc_ast::ast::IdentifierReference<'a>) {
-        if identifier.name == "require"
-            && !self.require_call_callees.contains(&identifier.span.start)
-        {
-            self.references.push(DependencyReference {
-                kind: DependencyReferenceKind::NodeUnsupportedDynamic,
-                specifier: String::new(),
-                level: 0,
-            });
+        if identifier.name == "require" {
+            self.push(
+                DependencyReferenceKind::NodeUnsupportedDynamic,
+                String::new(),
+            );
         }
         walk::walk_identifier_reference(self, identifier);
     }
