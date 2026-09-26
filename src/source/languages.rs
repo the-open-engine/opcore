@@ -159,7 +159,14 @@ fn language_rule(path: &[u8]) -> Option<(Language, &'static str)> {
             return Some((Language::Hcl, mode));
         }
     }
-    if let Some(mode) = tfvars_mode(filename) {
+    if has_tfvars_suffix(filename) {
+        let mode = if has_extension(filename, b".json")
+            || has_extension(filename, b".tfvars.json.example")
+        {
+            "hcl:terraform-vars:json"
+        } else {
+            "hcl:terraform-vars:native"
+        };
         return Some((Language::Hcl, mode));
     }
     language_rules()
@@ -182,22 +189,13 @@ pub(crate) fn has_extension(path: &[u8], extension: &[u8]) -> bool {
         && path[path.len() - extension.len()..].eq_ignore_ascii_case(extension)
 }
 
-fn tfvars_mode(filename: &[u8]) -> Option<&'static str> {
+fn has_tfvars_suffix(filename: &[u8]) -> bool {
     filename
         .windows(b".tfvars".len())
         .position(|window| window.eq_ignore_ascii_case(b".tfvars"))
-        .and_then(|index| {
+        .is_some_and(|index| {
             let remainder = &filename[index + b".tfvars".len()..];
-            if !remainder.is_empty() && !remainder.starts_with(b".") {
-                return None;
-            }
-            let json_suffix = remainder.eq_ignore_ascii_case(b".json")
-                || remainder.eq_ignore_ascii_case(b".json.example");
-            Some(if json_suffix {
-                "hcl:terraform-vars:json"
-            } else {
-                "hcl:terraform-vars:native"
-            })
+            remainder.is_empty() || remainder.starts_with(b".")
         })
 }
 
@@ -410,6 +408,7 @@ mod tests {
             ("main.tofu.json", "hcl:opentofu:json"),
             ("terraform.tfvars.example", "hcl:terraform-vars:native"),
             ("prod.auto.tfvars.json", "hcl:terraform-vars:json"),
+            ("prod.auto.tfvars.example.json", "hcl:terraform-vars:json"),
             ("dev.auto.tfvars.json.example", "hcl:terraform-vars:json"),
             ("dev.auto.tfvars.json.backup", "hcl:terraform-vars:native"),
             ("module.tftest.hcl", "hcl:terraform-test:native"),

@@ -186,6 +186,11 @@ fn tfvars_json_examples_use_json_syntax() {
 
     let path = repo.join("dev.auto.tfvars.json.example");
     fs::write(&path, r#"{"region":"us-east-1"}"#).unwrap();
+    fs::write(
+        repo.join("dev.auto.tfvars.example.json"),
+        r#"{"region":"us-west-2"}"#,
+    )
+    .unwrap();
     let clean = check(&repo, &cache, &["--changed"]);
     assert!(
         clean.status.success(),
