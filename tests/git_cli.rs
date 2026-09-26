@@ -177,6 +177,42 @@ fn iac_shell_and_protobuf_are_checked_through_git_capture() {
 }
 
 #[test]
+fn tfvars_json_examples_use_json_syntax() {
+    let temp = tempfile::tempdir().unwrap();
+    let repo = temp.path().join("repo");
+    let cache = temp.path().join("cache");
+    fs::create_dir(&repo).unwrap();
+    initialize(&repo);
+
+    let path = repo.join("dev.auto.tfvars.json.example");
+    fs::write(&path, r#"{"region":"us-east-1"}"#).unwrap();
+    fs::write(
+        repo.join("dev.auto.tfvars.example.json"),
+        r#"{"region":"us-west-2"}"#,
+    )
+    .unwrap();
+    let clean = check(&repo, &cache, &["--changed"]);
+    assert!(
+        clean.status.success(),
+        "{}",
+        String::from_utf8_lossy(&clean.stderr)
+    );
+    assert_eq!(json(&clean)["status"], "clean");
+
+    fs::write(&path, r#"{"region":}"#).unwrap();
+    let findings = json(&check(&repo, &cache, &["--changed"]));
+    assert_eq!(findings["status"], "findings");
+    let diagnostic = findings["diagnostics"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|item| item["path"] == "dev.auto.tfvars.json.example")
+        .expect("tfvars JSON syntax finding");
+    assert_eq!(diagnostic["ruleId"], "hcl.syntax");
+    assert_eq!(diagnostic["evidence"]["parser"], "serde_json");
+}
+
+#[test]
 fn repository_paths_may_contain_newlines() {
     let temp = tempfile::tempdir().unwrap();
     let repo = temp.path().join("repo\nline");
