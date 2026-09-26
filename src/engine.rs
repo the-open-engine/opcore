@@ -868,6 +868,37 @@ mod tests {
         }
     }
 
+    fn assess_bounded_diagnostics(
+        comparison: Comparison,
+        before_diagnostics: BoundedDiagnostics,
+        after_diagnostics: BoundedDiagnostics,
+    ) -> Assessment {
+        let after = Arc::new(SourceSnapshot::new(Vec::new()));
+        let before = matches!(comparison, Comparison::Introduced).then(|| Arc::clone(&after));
+        finalize_assessment(FinalAssessment {
+            request: EvaluationRequest {
+                before,
+                after,
+                scope: Scope::Workspace,
+                comparison,
+                paths: BTreeSet::new(),
+                limits: RuleLimits::default(),
+                valid_as_of: "test".into(),
+                public_fingerprint_comparison: false,
+            },
+            path_continuity: BTreeMap::new(),
+            files_read: 0,
+            batch: AnalysisBatch {
+                before_diagnostics,
+                after_diagnostics,
+                ..AnalysisBatch::default()
+            },
+            cache_before: crate::model::CacheMetadata::default(),
+            cache_after: crate::model::CacheMetadata::default(),
+            started: Instant::now(),
+        })
+    }
+
     struct FailingCache;
 
     impl FactCache for FailingCache {
@@ -948,30 +979,11 @@ mod tests {
         for index in 0..=MAX_DIAGNOSTICS {
             after_diagnostics.push(evaluated_diagnostic(&path, index));
         }
-        let batch = AnalysisBatch {
+        let result = assess_bounded_diagnostics(
+            Comparison::All,
+            BoundedDiagnostics::default(),
             after_diagnostics,
-            ..AnalysisBatch::default()
-        };
-        let empty = Arc::new(SourceSnapshot::new(Vec::new()));
-
-        let result = finalize_assessment(FinalAssessment {
-            request: EvaluationRequest {
-                before: None,
-                after: empty,
-                scope: Scope::Workspace,
-                comparison: Comparison::All,
-                paths: BTreeSet::new(),
-                limits: RuleLimits::default(),
-                valid_as_of: "test".into(),
-                public_fingerprint_comparison: false,
-            },
-            path_continuity: BTreeMap::new(),
-            files_read: 0,
-            batch,
-            cache_before: crate::model::CacheMetadata::default(),
-            cache_after: crate::model::CacheMetadata::default(),
-            started: Instant::now(),
-        });
+        );
 
         assert_eq!(result.status, AssessmentStatus::Incomplete);
         assert_eq!(result.diagnostics.len(), MAX_DIAGNOSTICS);
@@ -995,30 +1007,11 @@ mod tests {
         }
         let mut after_diagnostics = BoundedDiagnostics::default();
         after_diagnostics.push(evaluated_diagnostic(&path, MAX_DIAGNOSTICS + 1));
-        let empty = Arc::new(SourceSnapshot::new(Vec::new()));
-
-        let result = finalize_assessment(FinalAssessment {
-            request: EvaluationRequest {
-                before: Some(Arc::clone(&empty)),
-                after: empty,
-                scope: Scope::Workspace,
-                comparison: Comparison::Introduced,
-                paths: BTreeSet::new(),
-                limits: RuleLimits::default(),
-                valid_as_of: "test".into(),
-                public_fingerprint_comparison: false,
-            },
-            path_continuity: BTreeMap::new(),
-            files_read: 0,
-            batch: AnalysisBatch {
-                before_diagnostics,
-                after_diagnostics,
-                ..AnalysisBatch::default()
-            },
-            cache_before: crate::model::CacheMetadata::default(),
-            cache_after: crate::model::CacheMetadata::default(),
-            started: Instant::now(),
-        });
+        let result = assess_bounded_diagnostics(
+            Comparison::Introduced,
+            before_diagnostics,
+            after_diagnostics,
+        );
 
         assert_eq!(result.status, AssessmentStatus::Incomplete);
         assert!(result.diagnostics.is_empty());
