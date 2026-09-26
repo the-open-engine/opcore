@@ -219,10 +219,160 @@ fn require_calls_and_typescript_import_equals_are_explicitly_unsupported() {
     assert_eq!(
         facts.dependencies.references,
         vec![
-            dependency(DependencyReferenceKind::NodeUnsupportedDynamic, ""),
-            dependency(DependencyReferenceKind::NodeUnsupportedDynamic, ""),
+            dependency(DependencyReferenceKind::NodeUnsupportedDynamic, "./legacy"),
+            dependency(DependencyReferenceKind::NodeUnsupportedDynamic, "./runtime"),
         ]
     );
+}
+
+#[test]
+fn confirms_only_guarded_direct_common_js_require_calls() {
+    let facts = node::analyze(
+        &source_with_mode(
+            "src/loaders.cjs",
+            r"
+const first = require('./first.cjs');
+require('../second.cjs');
+const wrong_suffix = require('./wrong.js');
+const computed = require('./' + name + '.cjs');
+const conditional = flag ? require('./conditional.cjs') : null;
+const short_circuit = flag && require('./short.cjs');
+function nested() { return require('./nested.cjs'); }
+const load = require;
+load('./alias.cjs');
+",
+            Language::JavaScript,
+            "javascript:commonjs",
+        ),
+        &RuleLimits::default(),
+        &CancelToken::new(),
+    )
+    .unwrap();
+
+    assert_eq!(
+        facts.dependencies.references,
+        vec![
+            dependency(DependencyReferenceKind::NodeRuntime, "../second.cjs"),
+            dependency(DependencyReferenceKind::NodeRuntime, "./first.cjs"),
+            dependency(DependencyReferenceKind::NodeUnsupportedDynamic, ""),
+            dependency(DependencyReferenceKind::NodeUnsupportedDynamic, ""),
+            dependency(
+                DependencyReferenceKind::NodeUnsupportedDynamic,
+                "./conditional.cjs"
+            ),
+            dependency(
+                DependencyReferenceKind::NodeUnsupportedDynamic,
+                "./nested.cjs"
+            ),
+            dependency(
+                DependencyReferenceKind::NodeUnsupportedDynamic,
+                "./short.cjs"
+            ),
+            dependency(
+                DependencyReferenceKind::NodeUnsupportedDynamic,
+                "./wrong.js"
+            ),
+        ]
+    );
+}
+
+#[test]
+fn shadowing_or_esm_mode_keeps_literal_require_calls_unsupported() {
+    for (path, mode, text) in [
+        (
+            "src/module.mjs",
+            "javascript:module",
+            "const value = require('./value.cjs');\n",
+        ),
+        (
+            "src/shadowed.cjs",
+            "javascript:commonjs",
+            "const value = require('./value.cjs');\nconst require = loader;\n",
+        ),
+        (
+            "src/reassigned.cjs",
+            "javascript:commonjs",
+            "const value = require('./value.cjs');\nrequire = loader;\n",
+        ),
+    ] {
+        let facts = node::analyze(
+            &source_with_mode(path, text, Language::JavaScript, mode),
+            &RuleLimits::default(),
+            &CancelToken::new(),
+        )
+        .unwrap();
+        assert!(
+            !facts
+                .dependencies
+                .references
+                .iter()
+                .any(|reference| { reference.kind == DependencyReferenceKind::NodeRuntime })
+        );
+        assert!(facts.dependencies.references.iter().any(|reference| {
+            reference.kind == DependencyReferenceKind::NodeUnsupportedDynamic
+                && reference.specifier == "./value.cjs"
+        }));
+    }
+}
+
+#[test]
+fn loop_assignment_targets_keep_literal_require_calls_unsupported() {
+    for reassignment in [
+        "for (require of loaders) {}",
+        "for (require in loaders) {}",
+        "for ([require] of loaderGroups) {}",
+        "for ({ loader: require } in loaderGroups) {}",
+    ] {
+        for text in [
+            format!("{reassignment}\nconst value = require('./value.cjs');\n"),
+            format!("const value = require('./value.cjs');\n{reassignment}\n"),
+        ] {
+            let facts = node::analyze(
+                &source_with_mode(
+                    "src/reassigned.cjs",
+                    &text,
+                    Language::JavaScript,
+                    "javascript:commonjs",
+                ),
+                &RuleLimits::default(),
+                &CancelToken::new(),
+            )
+            .unwrap();
+
+            assert!(
+                !facts
+                    .dependencies
+                    .references
+                    .iter()
+                    .any(|reference| reference.kind == DependencyReferenceKind::NodeRuntime),
+                "unexpected runtime edge for {reassignment}"
+            );
+            assert!(facts.dependencies.references.iter().any(|reference| {
+                reference.kind == DependencyReferenceKind::NodeUnsupportedDynamic
+                    && reference.specifier == "./value.cjs"
+            }));
+        }
+    }
+}
+
+#[test]
+fn computed_assignment_use_does_not_look_like_require_reassignment() {
+    let facts = node::analyze(
+        &source_with_mode(
+            "src/computed.cjs",
+            "target[require] = marker;\nconst value = require('./value.cjs');\n",
+            Language::JavaScript,
+            "javascript:commonjs",
+        ),
+        &RuleLimits::default(),
+        &CancelToken::new(),
+    )
+    .unwrap();
+
+    assert!(facts.dependencies.references.iter().any(|reference| {
+        reference.kind == DependencyReferenceKind::NodeRuntime
+            && reference.specifier == "./value.cjs"
+    }));
 }
 
 #[test]
@@ -237,6 +387,33 @@ fn dependency_fact_overflow_is_explicit_and_bounded() {
     )
     .unwrap();
 
+    assert_dependency_fact_overflow(&facts);
+}
+
+#[test]
+fn common_js_require_fact_overflow_is_explicit_and_bounded() {
+    use std::fmt::Write as _;
+
+    let mut source_text = String::new();
+    for index in 0..=opcore::api::test_support::MAX_DEPENDENCY_FACTS_PER_FILE {
+        writeln!(source_text, "require('./target-{index}.cjs');").unwrap();
+    }
+    let facts = node::analyze(
+        &source_with_mode(
+            "src/overflow.cjs",
+            &source_text,
+            Language::JavaScript,
+            "javascript:commonjs",
+        ),
+        &RuleLimits::default(),
+        &CancelToken::new(),
+    )
+    .unwrap();
+
+    assert_dependency_fact_overflow(&facts);
+}
+
+fn assert_dependency_fact_overflow(facts: &FileFacts) {
     assert_eq!(
         facts.dependencies.status,
         DependencyExtractionStatus::Truncated

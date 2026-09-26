@@ -308,6 +308,35 @@ fn runtime_cycles_are_introduced_only_and_type_edges_do_not_block() {
 }
 
 #[test]
+fn direct_common_js_require_edges_create_introduced_runtime_cycles() {
+    let (_temp, repo, cache) = repository_paths();
+    initialize(
+        &repo,
+        &[
+            (
+                "a.cjs",
+                "const b = require(\"./b.cjs\");\nmodule.exports = b;\n",
+            ),
+            ("b.cjs", "module.exports = 42;\n"),
+        ],
+    );
+
+    fs::write(
+        repo.join("b.cjs"),
+        "const a = require(\"./a.cjs\");\nmodule.exports = a;\n",
+    )
+    .unwrap();
+    let report = blocking_sense(&repo, &cache);
+    assert_eq!(report["status"], "partial");
+    assert_eq!(report["before"]["runtimeEdges"], 1);
+    assert_eq!(report["after"]["runtimeEdges"], 2);
+    assert_eq!(report["after"]["coverage"]["runtimeReferences"], 2);
+    assert_eq!(report["introducedCycles"][0]["memberCount"], 2);
+    assert_eq!(report["introducedCycles"][0]["trigger"]["from"], "b.cjs");
+    assert_eq!(report["introducedCycles"][0]["trigger"]["to"], "a.cjs");
+}
+
+#[test]
 fn ambiguity_is_not_an_edge_and_exact_copy_is_a_finding() {
     let temp = tempfile::tempdir().unwrap();
     let repo = temp.path().join("repo");

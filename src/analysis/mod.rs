@@ -21,7 +21,7 @@ use crate::{
     },
 };
 
-pub const FACT_ABI: &str = "opcore.file-facts.v19";
+pub const FACT_ABI: &str = "opcore.file-facts.v20";
 pub(crate) const GO_GRAMMAR_VERSION: &str = "0.25.0";
 pub(crate) const GO_RUNTIME_VERSION: &str = "0.26.12";
 pub(crate) const HCL_PARSER_VERSION: &str = "0.9.6";

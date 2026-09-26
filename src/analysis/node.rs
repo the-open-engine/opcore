@@ -67,7 +67,7 @@ pub fn analyze(
     let mut diagnostics = syntax_diagnostics(&parsed, source, &line_index);
     let tokens = lex_tokens(&parsed, source, &line_index, cancel)?;
     let parsed_callables = parsed_callables(&parsed);
-    let dependencies = dependencies::extract(&parsed, &tokens);
+    let dependencies = dependencies::extract(&parsed, &tokens, file);
     let interfaces = interfaces::extract(&parsed, &tokens, &file.language_mode);
     let (callable_fingerprints, region_fingerprints) = append_metrics(
         &mut diagnostics,
