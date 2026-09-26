@@ -96,6 +96,34 @@ fn parses_hcl_json_and_requires_an_object_root() {
 }
 
 #[test]
+fn parses_tfvars_json_examples_as_json() {
+    let valid = hcl::analyze(
+        &source(
+            "dev.auto.tfvars.json.example",
+            r#"{"region":"us-east-1"}"#,
+            "hcl:terraform-vars:json",
+        ),
+        &CancelToken::new(),
+    )
+    .expect("valid tfvars JSON example");
+    assert!(valid.diagnostics.is_empty());
+    assert_eq!(valid.parser, "serde_json");
+
+    let malformed = hcl::analyze(
+        &source(
+            "dev.auto.tfvars.json.example",
+            r#"{"region":}"#,
+            "hcl:terraform-vars:json",
+        ),
+        &CancelToken::new(),
+    )
+    .expect("invalid tfvars JSON example is a finding");
+    assert_eq!(malformed.diagnostics.len(), 1);
+    assert_eq!(malformed.diagnostics[0].rule_id, "hcl.syntax");
+    assert_eq!(malformed.diagnostics[0].evidence["parser"], "serde_json");
+}
+
+#[test]
 fn native_and_json_syntax_findings_are_ranged_and_identify_the_parser() {
     for (path, mode, text, parser) in [
         (

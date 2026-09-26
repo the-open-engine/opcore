@@ -1,6 +1,7 @@
 use std::{
-    collections::{BTreeMap, BTreeSet},
-    sync::Arc,
+    cmp::Ordering,
+    collections::{BTreeMap, BTreeSet, BinaryHeap},
+    sync::{Arc, Mutex, MutexGuard},
     time::Instant,
 };
 
@@ -81,9 +82,8 @@ impl Engine {
             path_continuity,
             files_read,
         } = prepared;
-        let analyzed =
+        let batch =
             analyze_prepared(inputs, request.limits, Arc::clone(&self.cache), cancel).await?;
-        let batch = collect_analysis(analyzed)?;
         Ok(finalize_assessment(FinalAssessment {
             request,
             path_continuity,
@@ -191,12 +191,12 @@ async fn analyze_prepared(
     limits: RuleLimits,
     cache: Arc<dyn FactCache>,
     cancel: CancelToken,
-) -> anyhow::Result<Vec<Result<AnalyzedInput, anyhow::Error>>> {
+) -> anyhow::Result<AnalysisBatch> {
     let parser_options = serde_json::to_vec(&limits)?;
-    Ok(tokio::task::spawn_blocking(move || {
+    tokio::task::spawn_blocking(move || {
         run_analysis(inputs, &limits, &parser_options, cache.as_ref(), &cancel)
     })
-    .await?)
+    .await?
 }
 
 fn run_analysis(
@@ -205,7 +205,7 @@ fn run_analysis(
     parser_options: &[u8],
     cache: &dyn FactCache,
     cancel: &CancelToken,
-) -> Vec<Result<AnalyzedInput, anyhow::Error>> {
+) -> anyhow::Result<AnalysisBatch> {
     let analyze = |input| {
         analyze_input(
             input,
@@ -218,11 +218,52 @@ fn run_analysis(
         )
     };
     if inputs.len() < PARALLEL_FILE_THRESHOLD {
-        return inputs.into_iter().map(analyze).collect();
+        let mut batch = AnalysisBatch::default();
+        for input in inputs {
+            batch.push(analyze(input)?);
+        }
+        return Ok(batch);
     }
+    let batch = Mutex::new(AnalysisBatch::default());
+    let errors = Mutex::new(Vec::new());
     match worker_pool() {
-        Some(pool) => pool.install(|| inputs.into_par_iter().map(analyze).collect()),
-        None => inputs.into_iter().map(analyze).collect(),
+        Some(pool) => pool.install(|| {
+            inputs
+                .into_par_iter()
+                .enumerate()
+                .for_each(|(index, input)| match analyze(input) {
+                    Ok(result) => lock_unpoisoned(&batch).push(result),
+                    Err(error) => lock_unpoisoned(&errors).push((index, error)),
+                });
+        }),
+        None => {
+            for (index, input) in inputs.into_iter().enumerate() {
+                match analyze(input) {
+                    Ok(result) => lock_unpoisoned(&batch).push(result),
+                    Err(error) => lock_unpoisoned(&errors).push((index, error)),
+                }
+            }
+        }
+    }
+    let mut errors = into_unpoisoned(errors);
+    if !errors.is_empty() {
+        errors.sort_by_key(|(index, _)| *index);
+        return Err(errors.remove(0).1);
+    }
+    Ok(into_unpoisoned(batch))
+}
+
+fn lock_unpoisoned<T>(mutex: &Mutex<T>) -> MutexGuard<'_, T> {
+    match mutex.lock() {
+        Ok(guard) => guard,
+        Err(poisoned) => poisoned.into_inner(),
+    }
+}
+
+fn into_unpoisoned<T>(mutex: Mutex<T>) -> T {
+    match mutex.into_inner() {
+        Ok(value) => value,
+        Err(poisoned) => poisoned.into_inner(),
     }
 }
 
@@ -231,8 +272,8 @@ struct AnalysisBatch {
     files_considered: usize,
     files_covered: usize,
     coverage_gaps: Vec<CoverageGap>,
-    before_diagnostics: Vec<EvaluatedDiagnostic>,
-    after_diagnostics: Vec<EvaluatedDiagnostic>,
+    before_diagnostics: BoundedDiagnostics,
+    after_diagnostics: BoundedDiagnostics,
     cancelled: bool,
 }
 
@@ -266,24 +307,12 @@ impl AnalysisBatch {
     fn push_ready(&mut self, before: Option<Box<AnalyzedFile>>, after: Option<Box<AnalyzedFile>>) {
         self.files_covered = self.files_covered.saturating_add(1);
         if let Some(item) = before {
-            self.before_diagnostics
-                .extend(materialize(&item.file, &item.facts));
+            self.before_diagnostics.merge(item.diagnostics);
         }
         if let Some(item) = after {
-            self.after_diagnostics
-                .extend(materialize(&item.file, &item.facts));
+            self.after_diagnostics.merge(item.diagnostics);
         }
     }
-}
-
-fn collect_analysis(
-    analyzed: Vec<Result<AnalyzedInput, anyhow::Error>>,
-) -> anyhow::Result<AnalysisBatch> {
-    let mut batch = AnalysisBatch::default();
-    for result in analyzed {
-        batch.push(result?);
-    }
-    Ok(batch)
 }
 
 struct FinalAssessment {
@@ -297,31 +326,40 @@ struct FinalAssessment {
 }
 
 fn finalize_assessment(mut final_state: FinalAssessment) -> Assessment {
-    final_state
-        .batch
-        .before_diagnostics
-        .sort_by(diagnostic_order);
-    final_state
-        .batch
-        .after_diagnostics
-        .sort_by(diagnostic_order);
-    let after_diagnostics = std::mem::take(&mut final_state.batch.after_diagnostics);
-    let mut diagnostics = compared_diagnostics(
-        final_state.request.comparison,
-        &final_state.batch.before_diagnostics,
-        after_diagnostics,
-        &final_state.path_continuity,
-        final_state.request.public_fingerprint_comparison,
-    );
-    let diagnostics_truncated = diagnostics.len() > MAX_DIAGNOSTICS;
-    diagnostics.truncate(MAX_DIAGNOSTICS);
-    if diagnostics_truncated {
+    let before_overflowed = final_state.batch.before_diagnostics.overflowed();
+    let after_overflowed = final_state.batch.after_diagnostics.overflowed();
+    let before_diagnostics =
+        std::mem::take(&mut final_state.batch.before_diagnostics).into_sorted();
+    let after_diagnostics = std::mem::take(&mut final_state.batch.after_diagnostics).into_sorted();
+    let comparison_incomplete = match final_state.request.comparison {
+        Comparison::All => after_overflowed,
+        Comparison::Introduced => before_overflowed || after_overflowed,
+    };
+    let diagnostics = match (final_state.request.comparison, before_overflowed) {
+        (Comparison::Introduced, true) => Vec::new(),
+        _ => compared_diagnostics(
+            final_state.request.comparison,
+            &before_diagnostics,
+            after_diagnostics,
+            &final_state.path_continuity,
+            final_state.request.public_fingerprint_comparison,
+        ),
+    };
+    if comparison_incomplete {
+        let overflowing_view = if before_overflowed && after_overflowed {
+            "baseline and candidate views"
+        } else if before_overflowed {
+            "baseline view"
+        } else {
+            "candidate view"
+        };
         final_state.batch.coverage_gaps.push(CoverageGap {
             path: RepoPath::request_marker(),
             status: CoverageStatus::Incomplete,
             language: None,
             reason: Some(format!(
-                "diagnostics exceeded the {MAX_DIAGNOSTICS}-finding output limit"
+                "diagnostic working set for the {overflowing_view} exceeded the \
+                 {MAX_DIAGNOSTICS}-finding limit; exact comparison is incomplete"
             )),
         });
     }
@@ -332,7 +370,7 @@ fn finalize_assessment(mut final_state: FinalAssessment) -> Assessment {
     let cache = metadata_delta(&final_state.cache_before, final_state.cache_after);
     let status = assessment_status(
         final_state.batch.cancelled,
-        diagnostics_truncated,
+        comparison_incomplete,
         &diagnostics,
         &final_state.batch.coverage_gaps,
     );
@@ -389,14 +427,14 @@ fn public_fingerprint_difference(
 
 fn assessment_status(
     cancelled: bool,
-    diagnostics_truncated: bool,
+    comparison_incomplete: bool,
     diagnostics: &[Diagnostic],
     coverage_gaps: &[CoverageGap],
 ) -> AssessmentStatus {
     if cancelled {
         return AssessmentStatus::Cancelled;
     }
-    if diagnostics_truncated || has_coverage(coverage_gaps, CoverageStatus::Incomplete) {
+    if comparison_incomplete || has_coverage(coverage_gaps, CoverageStatus::Incomplete) {
         return AssessmentStatus::Incomplete;
     }
     if !diagnostics.is_empty() {
@@ -468,8 +506,7 @@ fn exact_content_path_continuity(inputs: &[EvaluationInput]) -> BTreeMap<RepoPat
 }
 
 struct AnalyzedFile {
-    file: Arc<SourceFile>,
-    facts: Arc<FileFacts>,
+    diagnostics: BoundedDiagnostics,
 }
 
 enum AnalyzedInput {
@@ -512,7 +549,7 @@ fn analyze_input(
             reason: "path is missing or its language is outside the supported envelope".into(),
         });
     }
-    match analyze_pair(input.before, input.after, &context) {
+    match analyze_pair(input.before.as_deref(), input.after.as_deref(), &context) {
         Ok((before, after)) => Ok(AnalyzedInput::Ready {
             before: before.map(Box::new),
             after: after.map(Box::new),
@@ -531,8 +568,8 @@ fn analyze_input(
 }
 
 fn analyze_pair(
-    before: Option<Arc<SourceFile>>,
-    after: Option<Arc<SourceFile>>,
+    before: Option<&SourceFile>,
+    after: Option<&SourceFile>,
     context: &AnalysisContext<'_>,
 ) -> Result<(Option<AnalyzedFile>, Option<AnalyzedFile>), AnalysisError> {
     let before = before.map(|file| analyze_one(file, context)).transpose()?;
@@ -541,57 +578,153 @@ fn analyze_pair(
 }
 
 fn analyze_one(
-    file: Arc<SourceFile>,
+    file: &SourceFile,
     context: &AnalysisContext<'_>,
 ) -> Result<AnalyzedFile, AnalysisError> {
     let facts = facts::load(
-        &file,
+        file,
         context.limits,
         context.parser_options,
         context.cache,
         context.cancel,
     )?;
-    Ok(AnalyzedFile { file, facts })
+    Ok(AnalyzedFile {
+        diagnostics: materialize(file, &facts),
+    })
+}
+
+#[derive(Default)]
+struct BoundedDiagnostics {
+    storage: DiagnosticStorage,
+    overflowed: bool,
+}
+
+enum DiagnosticStorage {
+    Exact(Vec<EvaluatedDiagnostic>),
+    Truncated(BinaryHeap<EvaluatedDiagnostic>),
+}
+
+impl Default for DiagnosticStorage {
+    fn default() -> Self {
+        Self::Exact(Vec::new())
+    }
+}
+
+impl BoundedDiagnostics {
+    fn push(&mut self, diagnostic: EvaluatedDiagnostic) {
+        match &mut self.storage {
+            DiagnosticStorage::Exact(items) if items.len() < MAX_DIAGNOSTICS => {
+                items.push(diagnostic);
+            }
+            DiagnosticStorage::Exact(items) => {
+                self.overflowed = true;
+                let mut retained = BinaryHeap::from(std::mem::take(items));
+                retain_bounded(&mut retained, diagnostic);
+                self.storage = DiagnosticStorage::Truncated(retained);
+            }
+            DiagnosticStorage::Truncated(items) => {
+                self.overflowed = true;
+                retain_bounded(items, diagnostic);
+            }
+        }
+    }
+
+    fn merge(&mut self, other: Self) {
+        self.overflowed |= other.overflowed;
+        match other.storage {
+            DiagnosticStorage::Exact(items) => {
+                for item in items {
+                    self.push(item);
+                }
+            }
+            DiagnosticStorage::Truncated(items) => {
+                for item in items {
+                    self.push(item);
+                }
+            }
+        }
+    }
+
+    fn overflowed(&self) -> bool {
+        self.overflowed
+    }
+
+    fn into_sorted(self) -> Vec<EvaluatedDiagnostic> {
+        match self.storage {
+            DiagnosticStorage::Exact(mut items) => {
+                items.sort_by(diagnostic_order);
+                items
+            }
+            DiagnosticStorage::Truncated(items) => items.into_sorted_vec(),
+        }
+    }
+}
+
+fn retain_bounded(retained: &mut BinaryHeap<EvaluatedDiagnostic>, candidate: EvaluatedDiagnostic) {
+    if retained.peek().is_some_and(|largest| candidate < *largest) {
+        retained.pop();
+        retained.push(candidate);
+    }
 }
 
 struct EvaluatedDiagnostic {
     diagnostic: Diagnostic,
     comparison_key: String,
+    materialization_order: usize,
 }
 
-fn materialize(file: &SourceFile, facts: &FileFacts) -> Vec<EvaluatedDiagnostic> {
-    facts
-        .diagnostics
-        .iter()
-        .map(|raw| {
-            let comparison_key = hex::encode(hash_domain(
-                "diagnostic-comparison/v1",
-                &[
-                    raw.rule_id.as_bytes(),
-                    file.language.family().as_bytes(),
-                    raw.entity_key.as_bytes(),
-                    raw.cause_key.as_bytes(),
-                ],
-            ));
-            let fingerprint = hex::encode(hash_domain(
-                "diagnostic-fingerprint/v1",
-                &[file.path.as_bytes(), comparison_key.as_bytes()],
-            ));
-            EvaluatedDiagnostic {
-                diagnostic: Diagnostic {
-                    rule_id: raw.rule_id.clone(),
-                    severity: raw.severity,
-                    message: raw.message.clone(),
-                    path: file.path.clone(),
-                    range: raw.range,
-                    fingerprint,
-                    language: file.language,
-                    evidence: raw.evidence.clone(),
-                },
-                comparison_key,
-            }
-        })
-        .collect()
+impl PartialEq for EvaluatedDiagnostic {
+    fn eq(&self, other: &Self) -> bool {
+        diagnostic_order(self, other) == Ordering::Equal
+    }
+}
+
+impl Eq for EvaluatedDiagnostic {}
+
+impl PartialOrd for EvaluatedDiagnostic {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for EvaluatedDiagnostic {
+    fn cmp(&self, other: &Self) -> Ordering {
+        diagnostic_order(self, other)
+    }
+}
+
+fn materialize(file: &SourceFile, facts: &FileFacts) -> BoundedDiagnostics {
+    let mut diagnostics = BoundedDiagnostics::default();
+    for (materialization_order, raw) in facts.diagnostics.iter().enumerate() {
+        let comparison_key = hex::encode(hash_domain(
+            "diagnostic-comparison/v1",
+            &[
+                raw.rule_id.as_bytes(),
+                file.language.family().as_bytes(),
+                raw.entity_key.as_bytes(),
+                raw.cause_key.as_bytes(),
+            ],
+        ));
+        let fingerprint = hex::encode(hash_domain(
+            "diagnostic-fingerprint/v1",
+            &[file.path.as_bytes(), comparison_key.as_bytes()],
+        ));
+        diagnostics.push(EvaluatedDiagnostic {
+            diagnostic: Diagnostic {
+                rule_id: raw.rule_id.clone(),
+                severity: raw.severity,
+                message: raw.message.clone(),
+                path: file.path.clone(),
+                range: raw.range,
+                fingerprint,
+                language: file.language,
+                evidence: raw.evidence.clone(),
+            },
+            comparison_key,
+            materialization_order,
+        });
+    }
+    diagnostics
 }
 
 fn diagnostic_order(left: &EvaluatedDiagnostic, right: &EvaluatedDiagnostic) -> std::cmp::Ordering {
@@ -604,6 +737,7 @@ fn diagnostic_order(left: &EvaluatedDiagnostic, right: &EvaluatedDiagnostic) -> 
                 .fingerprint
                 .cmp(&right.diagnostic.fingerprint)
         })
+        .then_with(|| left.materialization_order.cmp(&right.materialization_order))
 }
 
 fn semantic_difference(
@@ -717,6 +851,54 @@ mod tests {
         file_at("src/a.js", contents)
     }
 
+    fn evaluated_diagnostic(path: &RepoPath, index: usize) -> EvaluatedDiagnostic {
+        EvaluatedDiagnostic {
+            diagnostic: Diagnostic {
+                rule_id: "test.rule".into(),
+                severity: crate::model::Severity::Error,
+                message: "finding".into(),
+                path: path.clone(),
+                range: None,
+                fingerprint: format!("fingerprint-{index:05}"),
+                language: Language::JavaScript,
+                evidence: BTreeMap::new(),
+            },
+            comparison_key: format!("comparison-{index:05}"),
+            materialization_order: index,
+        }
+    }
+
+    fn assess_bounded_diagnostics(
+        comparison: Comparison,
+        before_diagnostics: BoundedDiagnostics,
+        after_diagnostics: BoundedDiagnostics,
+    ) -> Assessment {
+        let after = Arc::new(SourceSnapshot::new(Vec::new()));
+        let before = matches!(comparison, Comparison::Introduced).then(|| Arc::clone(&after));
+        finalize_assessment(FinalAssessment {
+            request: EvaluationRequest {
+                before,
+                after,
+                scope: Scope::Workspace,
+                comparison,
+                paths: BTreeSet::new(),
+                limits: RuleLimits::default(),
+                valid_as_of: "test".into(),
+                public_fingerprint_comparison: false,
+            },
+            path_continuity: BTreeMap::new(),
+            files_read: 0,
+            batch: AnalysisBatch {
+                before_diagnostics,
+                after_diagnostics,
+                ..AnalysisBatch::default()
+            },
+            cache_before: crate::model::CacheMetadata::default(),
+            cache_after: crate::model::CacheMetadata::default(),
+            started: Instant::now(),
+        })
+    }
+
     struct FailingCache;
 
     impl FactCache for FailingCache {
@@ -791,45 +973,17 @@ mod tests {
     }
 
     #[test]
-    fn diagnostic_truncation_is_explained_as_incomplete_coverage() {
+    fn all_comparison_bounds_diagnostics_and_reports_incomplete_coverage() {
         let path = RepoPath::from_protocol("src/a.js").unwrap();
-        let diagnostic = || EvaluatedDiagnostic {
-            diagnostic: Diagnostic {
-                rule_id: "test.rule".into(),
-                severity: crate::model::Severity::Error,
-                message: "finding".into(),
-                path: path.clone(),
-                range: None,
-                fingerprint: "fingerprint".into(),
-                language: Language::JavaScript,
-                evidence: BTreeMap::new(),
-            },
-            comparison_key: "comparison".into(),
-        };
-        let batch = AnalysisBatch {
-            after_diagnostics: (0..=MAX_DIAGNOSTICS).map(|_| diagnostic()).collect(),
-            ..AnalysisBatch::default()
-        };
-        let empty = Arc::new(SourceSnapshot::new(Vec::new()));
-
-        let result = finalize_assessment(FinalAssessment {
-            request: EvaluationRequest {
-                before: None,
-                after: empty,
-                scope: Scope::Workspace,
-                comparison: Comparison::All,
-                paths: BTreeSet::new(),
-                limits: RuleLimits::default(),
-                valid_as_of: "test".into(),
-                public_fingerprint_comparison: false,
-            },
-            path_continuity: BTreeMap::new(),
-            files_read: 0,
-            batch,
-            cache_before: crate::model::CacheMetadata::default(),
-            cache_after: crate::model::CacheMetadata::default(),
-            started: Instant::now(),
-        });
+        let mut after_diagnostics = BoundedDiagnostics::default();
+        for index in 0..=MAX_DIAGNOSTICS {
+            after_diagnostics.push(evaluated_diagnostic(&path, index));
+        }
+        let result = assess_bounded_diagnostics(
+            Comparison::All,
+            BoundedDiagnostics::default(),
+            after_diagnostics,
+        );
 
         assert_eq!(result.status, AssessmentStatus::Incomplete);
         assert_eq!(result.diagnostics.len(), MAX_DIAGNOSTICS);
@@ -840,7 +994,34 @@ mod tests {
                 .reason
                 .as_deref()
                 .unwrap()
-                .contains("output limit")
+                .contains("candidate view")
+        );
+    }
+
+    #[test]
+    fn introduced_comparison_is_incomplete_when_only_baseline_overflows() {
+        let path = RepoPath::from_protocol("src/a.js").unwrap();
+        let mut before_diagnostics = BoundedDiagnostics::default();
+        for index in 0..=MAX_DIAGNOSTICS {
+            before_diagnostics.push(evaluated_diagnostic(&path, index));
+        }
+        let mut after_diagnostics = BoundedDiagnostics::default();
+        after_diagnostics.push(evaluated_diagnostic(&path, MAX_DIAGNOSTICS + 1));
+        let result = assess_bounded_diagnostics(
+            Comparison::Introduced,
+            before_diagnostics,
+            after_diagnostics,
+        );
+
+        assert_eq!(result.status, AssessmentStatus::Incomplete);
+        assert!(result.diagnostics.is_empty());
+        assert_eq!(result.coverage.gaps.len(), 1);
+        assert!(
+            result.coverage.gaps[0]
+                .reason
+                .as_deref()
+                .unwrap()
+                .contains("baseline view")
         );
     }
 
@@ -951,6 +1132,7 @@ mod tests {
                 evidence: BTreeMap::new(),
             },
             comparison_key: fingerprint.into(),
+            materialization_order: 0,
         };
         let prior = [diagnostic("old")];
         let candidate = vec![diagnostic("old"), diagnostic("old"), diagnostic("new")];
@@ -979,6 +1161,7 @@ mod tests {
                 evidence: BTreeMap::new(),
             },
             comparison_key,
+            materialization_order: 0,
         };
         let continuity = (0..count)
             .map(|index| {
