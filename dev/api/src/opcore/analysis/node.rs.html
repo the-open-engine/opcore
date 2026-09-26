@@ -77,7 +77,7 @@
 <a href=#67 id=67 data-nosnippet>67</a>    <span class="kw">let </span><span class="kw-2">mut </span>diagnostics = syntax_diagnostics(<span class="kw-2">&amp;</span>parsed, source, <span class="kw-2">&amp;</span>line_index);
 <a href=#68 id=68 data-nosnippet>68</a>    <span class="kw">let </span>tokens = lex_tokens(<span class="kw-2">&amp;</span>parsed, source, <span class="kw-2">&amp;</span>line_index, cancel)<span class="question-mark">?</span>;
 <a href=#69 id=69 data-nosnippet>69</a>    <span class="kw">let </span>parsed_callables = parsed_callables(<span class="kw-2">&amp;</span>parsed);
-<a href=#70 id=70 data-nosnippet>70</a>    <span class="kw">let </span>dependencies = dependencies::extract(<span class="kw-2">&amp;</span>parsed, <span class="kw-2">&amp;</span>tokens);
+<a href=#70 id=70 data-nosnippet>70</a>    <span class="kw">let </span>dependencies = dependencies::extract(<span class="kw-2">&amp;</span>parsed, <span class="kw-2">&amp;</span>tokens, file);
 <a href=#71 id=71 data-nosnippet>71</a>    <span class="kw">let </span>interfaces = interfaces::extract(<span class="kw-2">&amp;</span>parsed, <span class="kw-2">&amp;</span>tokens, <span class="kw-2">&amp;</span>file.language_mode);
 <a href=#72 id=72 data-nosnippet>72</a>    <span class="kw">let </span>(callable_fingerprints, region_fingerprints) = append_metrics(
 <a href=#73 id=73 data-nosnippet>73</a>        <span class="kw-2">&amp;mut </span>diagnostics,
