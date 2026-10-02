@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Opcore README banners · Opcore</title><link rel="stylesheet" href="../../assets/site.css">
+<script src="../../assets/theme.js"></script>
+<script defer src="../../assets/site.js"></script>
+<link rel="icon" type="image/svg+xml" href="../../assets/oec-favicon.svg"><link rel="stylesheet" href="../../assets/versions.css"><script defer src="../../assets/versions.js"></script></head>
+<body class="guide-page"><a class="skip-link" href="#main-content">Skip to content</a>
+<header class="site-header"><div class="header-inner">
+<button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-navigation">Menu</button>
+<a class="brand" href="../../index.html"><img src="../../assets/oec-crow.png" alt="" width="32" height="36"><span>Opcore</span></a>
+<a class="header-label" href="../../index.html">Documentation</a>
+<div class="header-actions"><div class="docs-version" data-site-root="../../../" data-page-path="docs/brand/README.html" data-version="dev"><a href="../../../versions.html">Development ▾</a><select hidden aria-label="Documentation version"><option>Development</option></select></div><button class="theme-toggle" type="button" aria-label="Use dark mode" title="Use dark mode"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20.8 13.1A9 9 0 0 1 10.9 3.2 9 9 0 1 0 20.8 13.1Z"/></svg></button>
+<a class="repository-link" href="https://github.com/the-open-engine/opcore">GitHub <span aria-hidden="true">↗</span></a></div>
+</div></header>
+<div class="docs-layout"><aside class="docs-sidebar"><nav id="site-navigation" aria-label="Documentation"><div class="nav-group"><p>Opcore</p><ul><li><a href="../../index.html">Overview</a></li></ul></div><div class="nav-group"><p>Get started</p><ul><li><a href="../getting-started.html">Installation and first check</a></li></ul></div><div class="nav-group"><p>Guides</p><ul><li><a href="../configuration.html">Configuration</a></li><li><a href="../providers.html">Providers</a></li><li><a href="../examples.html">Examples</a></li><li><a href="../sense.html">Project Sense</a></li><li><a href="../agent-signals.html">Agent feedback</a></li></ul></div><div class="nav-group"><p>Reference</p><ul><li><a href="../../cli.html">CLI</a></li><li><a href="../../api/opcore/api/index.html">Rust API</a></li><li><a href="../../api/opcore/api/enum.ProviderProfile.html">Provider profiles</a></li><li><a href="../../asp/README.html">ASP specification</a></li></ul></div><div class="nav-group"><p>Project</p><ul><li><a href="../versioning.html">Documentation versions</a></li><li><a href="../architecture.html">Architecture</a></li><li><a href="../../CONTRIBUTING.html">Contributing</a></li><li><a href="../../CODE_OF_CONDUCT.html">Code of conduct</a></li><li><a href="../../SECURITY.html">Security</a></li></ul></div></nav></aside>
+<main id="main-content" class="guide-content" tabindex="-1">
+<p class="docs-kicker">Core documentation</p><h1 class="title">Opcore README banners</h1>
+    <p>Editable HTML/CSS sources and rendered light/dark PNGs for the repository README.
+The design follows <a href="https://theopenengine.com">The Open Engine</a> and
+<a href="https://zeroshot.sh">Zeroshot</a>, inspected on October 2, 2026: warm paper,
+handwritten headings and diagrams, yellow notes, and the company mascot.</p>
+<h2 id="files"><a class="doc-anchor" href="#files">§</a>Files</h2>
+<ul>
+<li><code>opcore-hero-light.html</code> and <code>opcore-hero-dark.html</code>: source layouts.</li>
+<li><code>hero.css</code>: shared layout and theme tokens.</li>
+<li><code>opcore-hero-light.png</code> and <code>opcore-hero-dark.png</code>: 2560 × 800 exports
+from a 1280 × 400 canvas at 2× scale.</li>
+<li><code>assets/</code>: local fonts, font licenses, and the website mascot. Rendering needs
+no network requests.</li>
+</ul>
+<h2 id="design"><a class="doc-anchor" href="#design">§</a>Design</h2>
+<p>Reenie Beanie is the handwriting face; Fraunces 600 is the company wordmark.
+The light palette uses paper <code>#FAF7F1</code>, pen ink <code>#26221C</code>, and rust <code>#C2240C</code>.
+Dark mode uses <code>#171411</code>, cream text, and the documentation theme’s lighter rust
+<code>#ED6B55</code> for readable accents. Notes retain yellow paper and dark ink in both themes.
+The diagrams illustrate each product’s feedback loop, rather than runtime status.</p>
+<h2 id="re-render"><a class="doc-anchor" href="#re-render">§</a>Re-render</h2>
+<p>From the repository root, install rendering tools outside the product dependencies:</p>
+<div class="example-wrap"><pre class="language-sh"><code>npm install --prefix /tmp/open-engine-banner-tools playwright@1.61.0
+/tmp/open-engine-banner-tools/node_modules/.bin/playwright install chromium
+NODE_PATH=/tmp/open-engine-banner-tools/node_modules node &lt;&lt;&#39;JS&#39;
+const { chromium } = require(&#39;playwright&#39;);
+const { resolve } = require(&#39;node:path&#39;);
+const { pathToFileURL } = require(&#39;node:url&#39;);
+(async () =&gt; {
+  const browser = await chromium.launch();
+  try {
+    const page = await browser.newPage({
+      viewport: { width: 1280, height: 400 },
+      deviceScaleFactor: 2,
+    });
+    for (const theme of [&#39;light&#39;, &#39;dark&#39;]) {
+      const stem = resolve(`docs/brand/opcore-hero-${theme}`);
+      await page.goto(pathToFileURL(`${stem}.html`).href);
+      await page.evaluate(() =&gt; document.fonts.ready);
+      const ready = await page.evaluate(() =&gt;
+        [...document.fonts].every(font =&gt; font.status === &#39;loaded&#39;) &amp;&amp;
+        [...document.images].every(image =&gt; image.complete &amp;&amp; image.naturalWidth &gt; 0)
+      );
+      if (!ready) throw new Error(&#39;Banner assets failed to load&#39;);
+      await page.locator(&#39;.hero&#39;).screenshot({ path: `${stem}.png` });
+    }
+  } finally {
+    await browser.close();
+  }
+})().catch(error =&gt; { console.error(error); process.exitCode = 1; });
+JS</code></pre></div>
+<p>Review both exports at full resolution and README display width before committing.</p>
+<h2 id="asset-provenance"><a class="doc-anchor" href="#asset-provenance">§</a>Asset provenance</h2>
+<ul>
+<li><code>assets/oec-mascot.png</code>: unchanged copy of
+<code>company/content/brand/logos/open-engine-mascot-website.png</code>, originally from
+<a href="https://theopenengine.com/landing/oec-mascot.png">https://theopenengine.com/landing/oec-mascot.png</a>.</li>
+<li>Fonts: Google Fonts’ Fraunces 600 (optical-size variable) and Reenie Beanie 400,
+downloaded October 2, 2026. Their SIL Open Font Licenses are bundled beside them.
+Upstream: <a href="https://github.com/google/fonts/tree/main/ofl/fraunces">Fraunces</a>,
+<a href="https://github.com/google/fonts/tree/main/ofl/reeniebeanie">Reenie Beanie</a>.</li>
+</ul></main><aside class="page-toc" aria-label="On this page"><p>On this page</p><nav id="rustdoc"><ul>
+<li><a href="#files" title="Files">Files</a><ul></ul></li>
+<li><a href="#design" title="Design">Design</a><ul></ul></li>
+<li><a href="#re-render" title="Re-render">Re-render</a><ul></ul></li>
+<li><a href="#asset-provenance" title="Asset provenance">Asset provenance</a><ul></ul></li></ul></nav></aside></div>
+<footer class="site-footer"><div>© The Open Engine
+<a href="https://github.com/the-open-engine/opcore">Opcore on GitHub ↗</a></div></footer></body></html>

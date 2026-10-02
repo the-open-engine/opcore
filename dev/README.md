@@ -1,3 +1,8 @@
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/brand/opcore-hero-dark.png">
+  <img alt="Opcore: specific feedback for coding agents while they edit. Check the change and show the evidence." src="docs/brand/opcore-hero-light.png" width="100%">
+</picture>
+
 # Opcore
 
 [![Opcore full repository verification][opcore-badge]][opcore-workflow]
