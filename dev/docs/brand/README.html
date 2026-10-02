@@ -77,10 +77,23 @@ JS</code></pre></div>
 downloaded October 2, 2026. Their SIL Open Font Licenses are bundled beside them.
 Upstream: <a href="https://github.com/google/fonts/tree/main/ofl/fraunces">Fraunces</a>,
 <a href="https://github.com/google/fonts/tree/main/ofl/reeniebeanie">Reenie Beanie</a>.</li>
-</ul></main><aside class="page-toc" aria-label="On this page"><p>On this page</p><nav id="rustdoc"><ul>
+</ul>
+<h2 id="workflow-diagrams"><a class="doc-anchor" href="#workflow-diagrams">§</a>Workflow diagrams</h2>
+<p>The hook loop and ASP diagrams include desktop and mobile layouts.
+Editable SVG labels and shapes live in <code>diagram-sources/</code>. Run the exporter after
+editing them:</p>
+<div class="example-wrap"><pre class="language-sh"><code>python3 -m venv /tmp/open-engine-diagram-tools
+/tmp/open-engine-diagram-tools/bin/pip install fonttools==4.63.0
+/tmp/open-engine-diagram-tools/bin/python docs/brand/outline-diagrams.py</code></pre></div>
+<p>Exports land in <code>docs/assets/</code>. Text becomes vector paths, retaining accessible
+labels, so GitHub needs no external fonts. Each SVG supports light and dark mode.
+Review both themes after changes, including the mobile layouts where supplied.
+Body text uses <a href="https://github.com/google/fonts/tree/main/ofl/splinesans">Spline Sans</a>,
+with its SIL Open Font License bundled in <code>assets/</code>.</p></main><aside class="page-toc" aria-label="On this page"><p>On this page</p><nav id="rustdoc"><ul>
 <li><a href="#files" title="Files">Files</a><ul></ul></li>
 <li><a href="#design" title="Design">Design</a><ul></ul></li>
 <li><a href="#re-render" title="Re-render">Re-render</a><ul></ul></li>
-<li><a href="#asset-provenance" title="Asset provenance">Asset provenance</a><ul></ul></li></ul></nav></aside></div>
+<li><a href="#asset-provenance" title="Asset provenance">Asset provenance</a><ul></ul></li>
+<li><a href="#workflow-diagrams" title="Workflow diagrams">Workflow diagrams</a><ul></ul></li></ul></nav></aside></div>
 <footer class="site-footer"><div>© The Open Engine
 <a href="https://github.com/the-open-engine/opcore">Opcore on GitHub ↗</a></div></footer></body></html>
