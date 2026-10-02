@@ -69,3 +69,21 @@ Review both exports at full resolution and README display width before committin
   downloaded October 2, 2026. Their SIL Open Font Licenses are bundled beside them.
   Upstream: [Fraunces](https://github.com/google/fonts/tree/main/ofl/fraunces),
   [Reenie Beanie](https://github.com/google/fonts/tree/main/ofl/reeniebeanie).
+
+## Workflow diagrams
+
+The hook loop and ASP diagrams include desktop and mobile layouts.
+Editable SVG labels and shapes live in `diagram-sources/`. Run the exporter after
+editing them:
+
+```sh
+python3 -m venv /tmp/open-engine-diagram-tools
+/tmp/open-engine-diagram-tools/bin/pip install fonttools==4.63.0
+/tmp/open-engine-diagram-tools/bin/python docs/brand/outline-diagrams.py
+```
+
+Exports land in `docs/assets/`. Text becomes vector paths, retaining accessible
+labels, so GitHub needs no external fonts. Each SVG supports light and dark mode.
+Review both themes after changes, including the mobile layouts where supplied.
+Body text uses [Spline Sans](https://github.com/google/fonts/tree/main/ofl/splinesans),
+with its SIL Open Font License bundled in `assets/`.

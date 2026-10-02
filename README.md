@@ -9,6 +9,8 @@
 
 Opcore gives coding agents specific feedback while they edit source. Its installed hook checks the current Git changes and returns the file, location, rule, and evidence when something needs repair.
 
+Use [Zeroshot](https://github.com/the-open-engine/zeroshot) to coordinate implementation, independent review, repair, and delivery.
+
 > [!IMPORTANT]
 > **Opcore 0.3.0 is a full rewrite.** We narrowed the old graph, search, and editing toolkit to focus on dependable verification during agent work:
 >
