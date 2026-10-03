@@ -5,7 +5,7 @@
 
 # Opcore
 
-[![Opcore full repository verification][opcore-badge]][opcore-workflow]
+[![Opcore full repository verification][opcore-badge]][opcore-workflow] [![Discord](https://img.shields.io/discord/1435269500634140884?style=flat&label=discord&logo=discord&logoColor=white&labelColor=171411&color=C2240C)](https://discord.gg/fZyzf2Cut9)
 
 <a href="https://discord.gg/fZyzf2Cut9"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/brand/social/discord-cta-dark.png"><img alt="Join The Open Engine community on Discord" src="docs/brand/social/discord-cta-light.png" height="30"></picture></a>
 
