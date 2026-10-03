@@ -7,6 +7,8 @@
 
 [![Opcore full repository verification][opcore-badge]][opcore-workflow]
 
+<a href="https://discord.gg/fZyzf2Cut9"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/brand/social/discord-cta-dark.png"><img alt="Join The Open Engine community on Discord" src="docs/brand/social/discord-cta-light.png" height="30"></picture></a>
+
 Opcore gives coding agents specific feedback while they edit source. Its installed hook checks the current Git changes and returns the file, location, rule, and evidence when something needs repair.
 
 The automatic checks never run your project's code. Compiler and type-checker checks are opt-in for pre-commit and CI.
