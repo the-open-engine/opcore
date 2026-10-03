@@ -71,7 +71,7 @@ class DocumentationVersions(unittest.TestCase):
         site = self.publish()
         self.assertEqual("# Opcore dev\n", (site / "llms.txt").read_text())
         (self.snapshot / "llms.txt").write_text("# Opcore 0.3\n")
-        site = self.publish("v0.3.0", stable=True)
+        self.publish("v0.3.0", stable=True)
         (self.snapshot / "llms.txt").write_text("# Opcore later dev\n")
         site = self.publish(commit="c" * 40)
         self.assertEqual("# Opcore 0.3\n", (site / "llms.txt").read_text())
