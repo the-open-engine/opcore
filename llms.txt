@@ -44,3 +44,4 @@ Needs Node.js 18+, npm, Bash, and Git. The installer sets up the post-edit hook 
 - [Examples](https://the-open-engine.github.io/opcore/dev/docs/examples.html)
 - [Agent Server Protocol v1.0](https://the-open-engine.github.io/opcore/dev/asp/README.html)
 - [Source](https://github.com/the-open-engine/opcore)
+- [Discord community](https://discord.gg/fZyzf2Cut9)
