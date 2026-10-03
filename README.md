@@ -13,6 +13,8 @@ The automatic checks never run your project's code. Compiler and type-checker ch
 
 Opcore pairs with [Zeroshot](https://github.com/the-open-engine/zeroshot): Opcore checks each edit while an agent writes code, and Zeroshot has independent agents review the whole change before it lands.
 
+Questions or feedback? Join [The Open Engine community on Discord](https://discord.gg/fZyzf2Cut9).
+
 > [!IMPORTANT]
 > **Opcore 0.3.0 is a full rewrite.** The `graph`, `inspect`, and `edit` commands are gone. Upgrading from 0.2.x? Follow the [migration instructions](docs/getting-started.md#upgrade-from-an-earlier-installation).
 
@@ -420,11 +422,11 @@ Opcore includes the Agent Server Protocol (ASP) v1.0 definition and four check p
 
 Opcore's bundled local runner reports `allow`, `deny`, or `indeterminate` for local use. Its result has advisory assurance and doesn't issue an ASP receipt. Read the [protocol definition](asp/README.md) for integration contracts.
 
-## Documentation and help
+## Documentation, community, and help
 
 Read the [development documentation](https://the-open-engine.github.io/opcore/dev/), including the [CLI reference](https://the-open-engine.github.io/opcore/dev/cli.html), [public Rust API](https://the-open-engine.github.io/opcore/dev/api/opcore/api/index.html), and ASP specification. To build the site from a source checkout, see [Contributing](CONTRIBUTING.md).
 
-Report reproducible problems in [GitHub Issues](https://github.com/the-open-engine/opcore/issues). [Contributing](CONTRIBUTING.md) explains useful report details and the development checks.
+Ask questions and talk to the team on [Discord](https://discord.gg/fZyzf2Cut9). Report reproducible problems in [GitHub Issues](https://github.com/the-open-engine/opcore/issues). [Contributing](CONTRIBUTING.md) explains useful report details and the development checks.
 
 Before removing an npm installation, clean up its agent integrations:
 
