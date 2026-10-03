@@ -9,17 +9,26 @@
 
 Opcore gives coding agents specific feedback while they edit source. Its installed hook checks the current Git changes and returns the file, location, rule, and evidence when something needs repair.
 
-Use [Zeroshot](https://github.com/the-open-engine/zeroshot) to coordinate implementation, independent review, repair, and delivery.
+The automatic checks never run your project's code. Compiler and type-checker checks are opt-in for pre-commit and CI.
+
+Opcore pairs with [Zeroshot](https://github.com/the-open-engine/zeroshot): Opcore checks each edit while an agent writes code, and Zeroshot has independent agents review the whole change before it lands.
 
 > [!IMPORTANT]
-> **Opcore 0.3.0 is a full rewrite.** We narrowed the old graph, search, and editing toolkit to focus on dependable verification during agent work:
->
-> - One Rust engine reuses parsed source facts, removing graph databases and repeated snapshot builds from routine checks.
-> - Feedback follows completed edits, including supported shell and MCP calls, so coverage depends less on tool-specific patch formats.
-> - Rules use explicit evidence and report coverage gaps; documentation ownership no longer depends on filename mentions.
-> - Automatic checks never execute project code. Compiler checks are opt-in for pre-commit and CI.
->
-> The old `graph`, `inspect`, and `edit` commands are retired. Install `@the-open-engine-company/opcore` and follow the new setup instructions.
+> **Opcore 0.3.0 is a full rewrite.** The `graph`, `inspect`, and `edit` commands are gone. Upgrading from 0.2.x? Follow the [migration instructions](docs/getting-started.md#upgrade-from-an-earlier-installation).
+
+## When to use it
+
+Opcore fits when:
+
+- Codex or Claude Code edits your repository and you want problems caught during the session, with the file, location, rule, and evidence the agent needs to fix them;
+- you want the same checks as a pre-commit hook and a CI gate;
+- your code is JavaScript or TypeScript, Python, Rust, Go, HCL-based infrastructure, Shell, or Protocol Buffers.
+
+It is not:
+
+- a test runner, or a replacement for your existing linters and tests. Run it alongside them;
+- a code search, navigation, or refactoring tool;
+- available as published binaries for Windows, Linux ARM64, or Intel macOS yet.
 
 ## Examples
 
@@ -266,7 +275,7 @@ Opcore reads only the exact source-to-document binding. It does not guess owners
 
 ### Native checks
 
-These opt-in checks also need the project setup and explicit execution authorization described in [Providers](docs/providers.md). The diagnostics below illustrate typical compiler or type-checker output.
+These opt-in checks also need the project setup and explicit execution authorization described in [Providers](docs/providers.md). The diagnostics below illustrate typical output; exact wording comes from the installed toolchain or checker version.
 
 <details>
 <summary>Rust-native: a return value has the wrong type</summary>
@@ -283,8 +292,6 @@ fn count() -> u32 {
 E0308: mismatched types
 ```
 
-Spans and added help come from the installed Rust toolchain.
-
 </details>
 
 <details>
@@ -300,8 +307,6 @@ const label: string = 42;
 Type 'number' is not assignable to type 'string'.
 ```
 
-Exact text belongs to the installed project-local `tsc`.
-
 </details>
 
 <details>
@@ -313,13 +318,12 @@ value: str = 1
 
 **Pyright rule:** `opcore-python-native/type-check/reportAssignmentType`
 
-The parser test form is:
 
 ```text
 number is not assignable to str
 ```
 
-With mypy fallback, the rule is `opcore-python-native/type-check/assignment`, commonly with `Incompatible types`. Exact wording belongs to the selected checker version.
+With mypy fallback, the rule is `opcore-python-native/type-check/assignment`, commonly with `Incompatible types`.
 
 </details>
 
@@ -335,7 +339,7 @@ Run `opcore rules` to see every built-in rule and its default policy field.
 
 **Project Sense** compares repository relationships with the Git baseline. It reports introduced runtime cycles, exact duplication, growing interface violations, and documentation obligations. Unchanged or reduced baseline debt doesn't block.
 
-The default checks read a captured Git view and verify that it stayed unchanged. They don't execute repository code or alter source and Git state. The installed post-edit hook sends Verify and Sense findings back to the agent for repair. Commit hooks and CI provide the final checks.
+The default checks read a snapshot of your Git changes. They don't run repository code or change source or Git state. The installed post-edit hook sends Verify and Sense findings back to the agent for repair. Commit hooks and CI provide the final checks.
 
 ## Get started
 
@@ -364,10 +368,10 @@ See [Getting started](docs/getting-started.md) for source and archive installs, 
 ## Workflows
 
 ```sh
-opcore run post-edit                         # current changes against HEAD
-opcore run pre-commit                        # full staged Verify and introduced Sense
-opcore run ci --base <base-commit>            # full committed Verify and introduced Sense
-opcore run pre-commit --comparison introduced # Fast brownfield gate; native needs a safe baseline
+opcore run post-edit                          # uncommitted changes against HEAD
+opcore run pre-commit                         # all staged source; Sense reports what the commit introduces
+opcore run ci --base <base-commit>            # the committed tree; Sense reports what changed since the base
+opcore run pre-commit --comparison introduced # existing codebases: report only issues this commit introduces
 ```
 
 Add the pre-commit workflow to your Git hook and require the CI workflow alongside existing tests and linters. Configure the applicable native providers for compiler or type-checker coverage; those runs also require explicit host authorization. The [setup guide](docs/getting-started.md#add-pre-commit-and-ci-checks) has recipes.
@@ -391,9 +395,9 @@ The [examples above](#examples) show findings in every supported language family
 
 ### Troubleshoot Sense coverage
 
-Sense resolves only uniquely confirmed local dependencies; bare Node packages, missing, dotted, or colliding Python absolute imports, Cargo-configured Rust roots, external Go modules, and HCL/Shell/Protobuf loading semantics remain deliberately unresolved. A one-component Python import does resolve when it has exactly one sibling module or package target. `effectivePolicy.importantFanIn` is the configured direct-dependent threshold for important modules. Fixed duplicate-analysis limits such as `dedup_region_file_limit` cannot be raised at runtime. For generated or vendored trees, use literal repository-relative exclusions such as `{"schemaVersion":1,"targets":{"exclude":["generated","vendor"]}}`; `targets.exclude` does not accept globs.
+Sense follows only local dependencies it can confirm uniquely, so some imports (for example bare Node packages or external Go modules) stay unresolved and show up as partial coverage. The [Sense reference](https://the-open-engine.github.io/opcore/dev/docs/sense.html#dependency-envelope) lists what each language resolves, the fixed limits, and what each JSON coverage field means.
 
-In JSON, `documentationCoverage.evaluated: false` means no qualifying documentation obligation was evaluated, while a registry state of `not_read` means the registry was not needed for that view. `publicSurfaceAuthoritative: false` means Opcore could not establish a complete explicit public surface. The fetchable [Sense reference](https://the-open-engine.github.io/opcore/dev/docs/sense.html#dependency-envelope) has the full resolution table and limits; [configuration](https://the-open-engine.github.io/opcore/dev/docs/configuration.html#select-targets) defines exclusions. Release bundles rewrite these development links to their exact `vX.Y` documentation archive.
+For generated or vendored trees, add literal repository-relative exclusions such as `{"schemaVersion":1,"targets":{"exclude":["generated","vendor"]}}`; `targets.exclude` does not accept globs. See [configuration](https://the-open-engine.github.io/opcore/dev/docs/configuration.html#select-targets).
 
 ## Providers
 
@@ -408,7 +412,7 @@ Native checks are opt-in. They may execute repository-controlled build scripts, 
 
 ## Agent Server Protocol
 
-Opcore includes the complete Agent Server Protocol (ASP) v1.0 definition and four check providers. A calling tool supplies exact file contents and grants read access. Each provider returns findings, coverage, and evidence; the calling tool owns the decision and any ASP receipt.
+Opcore includes the Agent Server Protocol (ASP) v1.0 definition and four check providers. A calling tool supplies exact file contents and grants read access. Each provider returns findings, coverage, and evidence; the calling tool owns the decision and any ASP receipt.
 
 ![ASP v1.0 flow: the calling tool grants access to selected contents, receives the checker's assessment, and records its decision](docs/assets/asp-overview.svg)
 
@@ -418,13 +422,7 @@ Opcore's bundled local runner reports `allow`, `deny`, or `indeterminate` for lo
 
 ## Documentation and help
 
-Read the [development documentation](https://the-open-engine.github.io/opcore/dev/), including the [CLI reference](https://the-open-engine.github.io/opcore/dev/cli.html), [public Rust API](https://the-open-engine.github.io/opcore/dev/api/opcore/api/index.html), and ASP specification. These pages contain complete static HTML without requiring JavaScript; release bundles point to their exact minor archive. In a source checkout, generate the same site from the Rust definitions:
-
-```sh
-./scripts/build-docs.sh
-```
-
-Open `target/site/index.html` in a browser. CI checks the generated site on every pull request and publishes the passing `main` build to GitHub Pages. Running the local build only writes `target/site/`.
+Read the [development documentation](https://the-open-engine.github.io/opcore/dev/), including the [CLI reference](https://the-open-engine.github.io/opcore/dev/cli.html), [public Rust API](https://the-open-engine.github.io/opcore/dev/api/opcore/api/index.html), and ASP specification. To build the site from a source checkout, see [Contributing](CONTRIBUTING.md).
 
 Report reproducible problems in [GitHub Issues](https://github.com/the-open-engine/opcore/issues). [Contributing](CONTRIBUTING.md) explains useful report details and the development checks.
 
