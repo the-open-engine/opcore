@@ -66,6 +66,24 @@ class DocumentationVersions(unittest.TestCase):
         self.assertIn('aria-label="Documentation version"', page)
         self.assertIn("Development", (site / "versions.html").read_text())
 
+    def test_root_llms_follows_the_default_version(self):
+        (self.snapshot / "llms.txt").write_text("# Opcore dev\n")
+        site = self.publish()
+        self.assertEqual("# Opcore dev\n", (site / "llms.txt").read_text())
+        (self.snapshot / "llms.txt").write_text("# Opcore 0.3\n")
+        site = self.publish("v0.3.0", stable=True)
+        (self.snapshot / "llms.txt").write_text("# Opcore later dev\n")
+        site = self.publish(commit="c" * 40)
+        self.assertEqual("# Opcore 0.3\n", (site / "llms.txt").read_text())
+        self.assertEqual("# Opcore later dev\n", (site / "dev/llms.txt").read_text())
+
+    def test_root_llms_is_removed_when_the_default_version_has_none(self):
+        (self.snapshot / "llms.txt").write_text("# Opcore dev\n")
+        self.publish()
+        (self.snapshot / "llms.txt").unlink()
+        site = self.publish(commit="c" * 40)
+        self.assertFalse((site / "llms.txt").exists())
+
     def test_release_and_later_dev_preserve_stable_bytes(self):
         self.publish()
         site = self.publish("v0.3.0", stable=True)

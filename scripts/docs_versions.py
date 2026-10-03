@@ -290,6 +290,16 @@ def versions_page(site, entries):
     (site / "versions.html").write_text(page, encoding="utf-8")
 
 
+def root_llms(site):
+    # Agents look for llms.txt at the site root; serve the default version's copy there.
+    source = site / read_json(site / STATE)["default"] / "llms.txt"
+    target = site / "llms.txt"
+    if source.is_file():
+        shutil.copyfile(source, target)
+    else:
+        target.unlink(missing_ok=True)
+
+
 def compose(options):
     if options.output.exists():
         raise ValueError("output must be a new directory")
@@ -309,6 +319,7 @@ def compose(options):
         write_aliases(site, state, entries)
         write_json(site / "versions.json", entries)
         versions_page(site, entries)
+        root_llms(site)
         (site / ".nojekyll").touch()
         site.rename(options.output)
 

@@ -211,7 +211,7 @@ def build(api, reference, output):
         prepare_api(site / "api", site)
         shutil.copytree(ROOT / "docs", site / "docs")
         shutil.copytree(ROOT / "asp", site / "asp")
-        for name in ("README.md", "CONTRIBUTING.md", "CODE_OF_CONDUCT.md", "SECURITY.md", "LICENSE"):
+        for name in ("README.md", "CONTRIBUTING.md", "CODE_OF_CONDUCT.md", "SECURITY.md", "LICENSE", "llms.txt"):
             shutil.copy2(ROOT / name, site / name)
         sources = [ROOT / name for name in ("README.md", "CONTRIBUTING.md", "CODE_OF_CONDUCT.md", "SECURITY.md")]
         sources += sorted((ROOT / "docs").rglob("*.md")) + sorted((ROOT / "asp").rglob("*.md"))
