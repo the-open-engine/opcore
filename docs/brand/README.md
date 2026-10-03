@@ -87,3 +87,38 @@ labels, so GitHub needs no external fonts. Each SVG supports light and dark mode
 Review both themes after changes, including the mobile layouts where supplied.
 Body text uses [Spline Sans](https://github.com/google/fonts/tree/main/ofl/splinesans),
 with its SIL Open Font License bundled in `assets/`.
+
+## Discord button
+
+`social/buttons.html` is the source for the README's Discord call to action: a filled
+rust button in the same style as the Zeroshot README's social row. Exports are 70 px
+tall (35 px at 2×) and are displayed at `height="30"`.
+
+Re-render both themes with the Playwright install above:
+
+```sh
+NODE_PATH=/tmp/open-engine-banner-tools/node_modules node <<'JS'
+const { chromium } = require('playwright');
+const { resolve } = require('node:path');
+const { pathToFileURL } = require('node:url');
+(async () => {
+  const browser = await chromium.launch();
+  try {
+    const page = await browser.newPage({ viewport: { width: 480, height: 160 }, deviceScaleFactor: 2 });
+    for (const theme of ['light', 'dark']) {
+      await page.goto(pathToFileURL(resolve('docs/brand/social/buttons.html')).href);
+      await page.evaluate(t => { document.documentElement.dataset.theme = t; }, theme);
+      await page.evaluate(() => document.fonts.ready);
+      for (const id of ['discord-cta']) {
+        await page.locator(`#${id}`).screenshot({
+          path: resolve(`docs/brand/social/${id}-${theme}.png`),
+          omitBackground: true,
+        });
+      }
+    }
+  } finally {
+    await browser.close();
+  }
+})().catch(error => { console.error(error); process.exitCode = 1; });
+JS
+```
