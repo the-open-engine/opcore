@@ -1,0 +1,47 @@
+# Opcore
+
+> Opcore checks a coding agent's edits while it works. An installed hook runs after each edit in Codex or Claude Code, checks the current Git changes, and returns the file, location, rule, and evidence when something needs repair. The same checks run as a pre-commit hook and a CI gate. The automatic checks never run your project's code. Single Rust binary, installed through npm, for Linux x86-64 (glibc 2.39+) and Apple silicon macOS.
+
+## What it checks
+
+- Verify (`opcore check`): syntax and source hygiene for JavaScript and TypeScript, Python, Rust, Go, HCL-based infrastructure code, Shell, and Protocol Buffers. JavaScript, TypeScript, Python, Rust, and Go also get function size and complexity limits (for example, too many parameters or cyclomatic complexity over the configured maximum).
+- Project Sense (`opcore sense`): compares the change with the Git baseline and reports newly introduced runtime import cycles, exact file duplication, modules whose public interface grows past a limit, and registered documentation that wasn't updated with its source. Existing debt that doesn't grow doesn't block.
+- Native checks (opt-in, pre-commit and CI only): Cargo check for Rust, project-local TypeScript for Node, Pyright or mypy for Python. These may run repository build scripts, so they require explicit authorization.
+- Every finding names the rule and evidence. Run `opcore rules` for the full rule list.
+
+## When to use it
+
+- A coding agent edits your repository and you want problems caught during the session rather than at review.
+- You want one tool as the agent hook, the pre-commit hook, and the CI gate, configured in one `.opcore.json`.
+
+## When not to use it
+
+- As a test runner or a replacement for your linters and tests; run it alongside them.
+- For code search, navigation, or refactoring. Opcore 0.3 removed those commands.
+- On Windows, Linux ARM64, or Intel macOS: no published binaries yet.
+- For reviewing a whole change with independent agents: that is Zeroshot (https://github.com/the-open-engine/zeroshot), which pairs with Opcore.
+
+## Install
+
+```sh
+npm install -g --foreground-scripts @the-open-engine-company/opcore
+opcore doctor --repo .
+opcore check --repo . --all
+```
+
+Needs Node.js 18+, npm, Bash, and Git. The installer sets up the post-edit hook for every detected agent (Codex or Claude Code) at user scope.
+
+## Docs
+
+- [Getting started](https://the-open-engine.github.io/opcore/dev/docs/getting-started.html): install, hook activation, pre-commit and CI setup, reading results
+- [Configuration](https://the-open-engine.github.io/opcore/dev/docs/configuration.html): `.opcore.json`, thresholds, exclusions, workflows
+- [Project Sense](https://the-open-engine.github.io/opcore/dev/docs/sense.html): what each language resolves and the limits
+- [Providers](https://the-open-engine.github.io/opcore/dev/docs/providers.html): native compiler and type-checker setup
+- [CLI reference](https://the-open-engine.github.io/opcore/dev/cli.html)
+
+## Optional
+
+- [Examples](https://the-open-engine.github.io/opcore/dev/docs/examples.html)
+- [Agent Server Protocol v1.0](https://the-open-engine.github.io/opcore/dev/asp/README.html)
+- [Source](https://github.com/the-open-engine/opcore)
+- [Discord community](https://discord.gg/fZyzf2Cut9)

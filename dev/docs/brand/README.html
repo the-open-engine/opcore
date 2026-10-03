@@ -89,11 +89,41 @@ editing them:</p>
 labels, so GitHub needs no external fonts. Each SVG supports light and dark mode.
 Review both themes after changes, including the mobile layouts where supplied.
 Body text uses <a href="https://github.com/google/fonts/tree/main/ofl/splinesans">Spline Sans</a>,
-with its SIL Open Font License bundled in <code>assets/</code>.</p></main><aside class="page-toc" aria-label="On this page"><p>On this page</p><nav id="rustdoc"><ul>
+with its SIL Open Font License bundled in <code>assets/</code>.</p>
+<h2 id="discord-button"><a class="doc-anchor" href="#discord-button">§</a>Discord button</h2>
+<p><code>social/buttons.html</code> is the source for the README’s Discord call to action: a filled
+rust button in the same style as the Zeroshot README’s social row. Exports are 70 px
+tall (35 px at 2×) and are displayed at <code>height="30"</code>.</p>
+<p>Re-render both themes with the Playwright install above:</p>
+<div class="example-wrap"><pre class="language-sh"><code>NODE_PATH=/tmp/open-engine-banner-tools/node_modules node &lt;&lt;&#39;JS&#39;
+const { chromium } = require(&#39;playwright&#39;);
+const { resolve } = require(&#39;node:path&#39;);
+const { pathToFileURL } = require(&#39;node:url&#39;);
+(async () =&gt; {
+  const browser = await chromium.launch();
+  try {
+    const page = await browser.newPage({ viewport: { width: 480, height: 160 }, deviceScaleFactor: 2 });
+    for (const theme of [&#39;light&#39;, &#39;dark&#39;]) {
+      await page.goto(pathToFileURL(resolve(&#39;docs/brand/social/buttons.html&#39;)).href);
+      await page.evaluate(t =&gt; { document.documentElement.dataset.theme = t; }, theme);
+      await page.evaluate(() =&gt; document.fonts.ready);
+      for (const id of [&#39;discord-cta&#39;]) {
+        await page.locator(`#${id}`).screenshot({
+          path: resolve(`docs/brand/social/${id}-${theme}.png`),
+          omitBackground: true,
+        });
+      }
+    }
+  } finally {
+    await browser.close();
+  }
+})().catch(error =&gt; { console.error(error); process.exitCode = 1; });
+JS</code></pre></div></main><aside class="page-toc" aria-label="On this page"><p>On this page</p><nav id="rustdoc"><ul>
 <li><a href="#files" title="Files">Files</a><ul></ul></li>
 <li><a href="#design" title="Design">Design</a><ul></ul></li>
 <li><a href="#re-render" title="Re-render">Re-render</a><ul></ul></li>
 <li><a href="#asset-provenance" title="Asset provenance">Asset provenance</a><ul></ul></li>
-<li><a href="#workflow-diagrams" title="Workflow diagrams">Workflow diagrams</a><ul></ul></li></ul></nav></aside></div>
+<li><a href="#workflow-diagrams" title="Workflow diagrams">Workflow diagrams</a><ul></ul></li>
+<li><a href="#discord-button" title="Discord button">Discord button</a><ul></ul></li></ul></nav></aside></div>
 <footer class="site-footer"><div>© The Open Engine
 <a href="https://github.com/the-open-engine/opcore">Opcore on GitHub ↗</a></div></footer></body></html>
