@@ -1,8 +1,8 @@
 {
-  "contentDigest": "sha256:1ceacb06399e7c79be6a06ae80207b8ac24ce97893a2146e6acddf3b596dd535",
+  "contentDigest": "sha256:e8f856c546079171289c1537cf4b9d729f60df5411f9090c91f3a1afecf59fc0",
   "docsVersion": "dev",
   "productVersion": null,
-  "publisherCommit": "60b5452fd75ec3221439d368d187506a3060a7bf",
+  "publisherCommit": "c93f0294a8bb561a7d70f196a5b915814e1fbe4a",
   "routes": {
     "asp": "asp/README.html",
     "cli": "cli.html",
@@ -14,5 +14,5 @@
     "rustApi": "api/opcore/api/index.html"
   },
   "schemaVersion": 1,
-  "sourceCommit": "60b5452fd75ec3221439d368d187506a3060a7bf"
+  "sourceCommit": "c93f0294a8bb561a7d70f196a5b915814e1fbe4a"
 }
