@@ -5,9 +5,8 @@
 
 # Opcore
 
-[![Opcore full repository verification][opcore-badge]][opcore-workflow] [![Discord](https://img.shields.io/discord/1435269500634140884?style=flat&label=discord&logo=discord&logoColor=white&labelColor=171411&color=C2240C)](https://discord.gg/fZyzf2Cut9)
-
-<a href="https://discord.gg/fZyzf2Cut9"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/brand/social/discord-cta-dark.png"><img alt="Join The Open Engine community on Discord" src="docs/brand/social/discord-cta-light.png" height="30"></picture></a>
+<a href="https://github.com/the-open-engine/opcore/actions/workflows/opcore.yml?query=branch%3Amain+event%3Apush"><img alt="Opcore full repository verification" src="https://raw.githubusercontent.com/the-open-engine/opcore/opcore-badge/opcore.svg" height="34"></a>
+<a href="https://discord.gg/fZyzf2Cut9"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/brand/social/discord-cta-dark.png"><img alt="Join The Open Engine community on Discord" src="docs/brand/social/discord-cta-light.png" height="34"></picture></a>
 
 Opcore gives coding agents specific feedback while they edit source. Its installed hook checks the current Git changes and returns the file, location, rule, and evidence when something needs repair.
 
@@ -438,6 +437,3 @@ npm uninstall -g @the-open-engine-company/opcore
 ```
 
 [Update and removal instructions](docs/getting-started.md#update-or-remove) cover source installs and recovery after an interrupted setup.
-
-[opcore-badge]: https://raw.githubusercontent.com/the-open-engine/opcore/opcore-badge/opcore.svg
-[opcore-workflow]: https://github.com/the-open-engine/opcore/actions/workflows/opcore.yml?query=branch%3Amain+event%3Apush
