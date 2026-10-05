@@ -12,9 +12,9 @@ Opcore gives coding agents specific feedback while they edit source. Its install
 
 The automatic checks never run your project's code. Compiler and type-checker checks are opt-in for pre-commit and CI.
 
-Opcore pairs with [Zeroshot](https://github.com/the-open-engine/zeroshot): Opcore checks each edit while an agent writes code, and Zeroshot has independent agents review the whole change before it lands.
+Opcore pairs with [Zeroshot](https://zeroshot.sh/?utm_source=github&utm_medium=readme&utm_campaign=opcore): Opcore checks each edit while an agent writes code, and Zeroshot has independent agents review the whole change before it lands.
 
-Questions or feedback? Join [The Open Engine community on Discord](https://discord.gg/fZyzf2Cut9).
+Opcore is built by [The Open Engine](https://theopenengine.com/?utm_source=github&utm_medium=readme&utm_campaign=opcore). Questions or feedback? Join [The Open Engine community on Discord](https://discord.gg/fZyzf2Cut9).
 
 > [!IMPORTANT]
 > **Opcore 0.3.0 is a full rewrite.** The `graph`, `inspect`, and `edit` commands are gone. Upgrading from 0.2.x? Follow the [migration instructions](docs/getting-started.md#upgrade-from-an-earlier-installation).
