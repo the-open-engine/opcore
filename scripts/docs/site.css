@@ -159,6 +159,8 @@ button { font: inherit; cursor: pointer; }
 .guide-content h1 { font-size: clamp(3rem, 5vw, 4rem); line-height: 1; margin: 0 0 1.5rem; }
 .guide-content h2 { border-top: 1px solid var(--oe-rule); font-size: 2.75rem; line-height: 1.05; margin: 1.3em 0 .5em; padding-top: .55em; }
 .guide-content .title + h2 { margin-top: .6em; }
+/* The overview opens with the hero image, which already carries the name. */
+.guide-content .title:has(+ picture) { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .guide-content h3 { font-size: 1.25rem; font-weight: 600; letter-spacing: -.005em; line-height: 1.35; margin: 1.8em 0 .7em; }
 .guide-content :is(h1, h2) code { font-size: .5em; vertical-align: .2em; }
 .guide-content h4 { font-size: 1rem; margin: 1.5rem 0 .5rem; }
