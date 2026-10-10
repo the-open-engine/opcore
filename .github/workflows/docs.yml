@@ -85,6 +85,8 @@ jobs:
         with:
           path: source
           ref: ${{ env.SOURCE_COMMIT }}
+          # Pages are dated by the last commit to their source.
+          fetch-depth: 0
           persist-credentials: false
 
       - name: Build and check the source snapshot

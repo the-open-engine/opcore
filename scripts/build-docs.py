@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Assemble rustdoc API, source-derived CLI help, and guides into a portable static site."""
 
+from datetime import date
 import json
 from html.parser import HTMLParser
 import os
@@ -48,9 +49,26 @@ def rewrite_links(markdown, relative, pages):
     return "".join(pieces), bool(historical)
 
 
+def last_updated(source, root=ROOT):
+    """Date a page by the last commit to its source; say nothing when history cannot tell."""
+    def git(*arguments):
+        return subprocess.run(["git", *arguments], cwd=root, check=True, capture_output=True, text=True).stdout.strip()
+
+    try:
+        # A shallow clone credits every file to its one visible commit.
+        if git("rev-parse", "--is-shallow-repository") != "false":
+            return ""
+        day = date.fromisoformat(git("log", "-1", "--format=%cs", "--", str(source)))
+    except (OSError, subprocess.CalledProcessError, ValueError):
+        return ""
+    return (f'\n\n<p class="page-updated">Last updated <time datetime="{day.isoformat()}">'
+            f'{day.day} {day:%B %Y}</time></p>\n')
+
+
 def render_page(source, destination, site, pages, temporary):
     relative = source.relative_to(ROOT)
     text, historical = rewrite_links(source.read_text(), relative, pages)
+    text += last_updated(source)
     notice = (
         "Historical implementation and evidence links on this page point to the original "
         "upstream repository and may require repository access. Those files are outside the "
@@ -235,7 +253,8 @@ def build(api, reference, output):
         for source in sources:
             render_page(source, site / pages[source.resolve()], site, pages, temporary)
         cli = subprocess.check_output([str(reference)], text=True)
-        render_markdown(cli, site / "cli.html", site, temporary)
+        # The CLI reference is generated from the argument definitions, so it is as current as they are.
+        render_markdown(cli + last_updated(ROOT / "src/cli_args.rs"), site / "cli.html", site, temporary)
         render_markdown(
             "# API reference\n\n[Opcore public API](opcore/api/index.html)\n",
             site / "api/index.html", site, temporary,

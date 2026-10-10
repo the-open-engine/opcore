@@ -206,6 +206,7 @@ button { font: inherit; cursor: pointer; }
 .guide-content .admonition p { margin: .6em 0; }
 .guide-content details { border: 1px solid var(--oe-rule); border-radius: .35rem; padding: .7rem 1rem; margin: 1rem 0; }
 .guide-content summary { cursor: pointer; font-weight: 500; }
+.guide-content .page-updated { margin: 3rem 0 0; color: var(--oe-muted); font: 400 .68rem/1.5 var(--oe-mono); letter-spacing: .14em; text-transform: uppercase; }
 .page-sequence { display: flex; justify-content: space-between; gap: 2rem; margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--oe-rule); }
 .page-sequence a { text-decoration: none; font-weight: 500; }
 .page-sequence a:last-child { margin-left: auto; text-align: right; }
