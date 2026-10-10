@@ -182,8 +182,7 @@ export const b = a + 1;</code></pre></div>
 </details>
 <p>Run <code>opcore rules</code> to see every built-in rule and its default policy field.</p>
 </details>
-<p><img src="docs/assets/opcore-hook-loop.svg" alt="Opcore post-write loop: an agent edits code, an automatic check finds an issue, and findings return to the agent for repair" /></p>
-<p><a href="docs/assets/opcore-hook-loop-mobile.svg">Open the phone-sized hook diagram</a></p>
+<p><picture class="diagram"><source media="(max-width: 760px)" srcset="docs/assets/opcore-hook-loop-mobile.svg"><img src="docs/assets/opcore-hook-loop.svg" alt="Opcore post-write loop: an agent edits code, an automatic check finds an issue, and findings return to the agent for repair" /></picture></p>
 <p><strong>Verify</strong>, available as <code>opcore check</code>, checks syntax and source hygiene for JavaScript and TypeScript, Python, Rust, Go, HCL-based infrastructure code, Shell, and Protocol Buffers. JavaScript, TypeScript, Python, Rust, and Go also receive callable size and complexity checks.</p>
 <p><strong>Project Sense</strong> compares repository relationships with the Git baseline. It reports introduced runtime cycles, exact duplication, growing interface violations, and documentation obligations. Unchanged or reduced baseline debt doesn’t block.</p>
 <p>The default checks read a snapshot of your Git changes. They don’t run repository code or change source or Git state. The installed post-edit hook sends Verify and Sense findings back to the agent for repair. Commit hooks and CI provide the final checks.</p>
@@ -229,8 +228,7 @@ opcore run pre-commit --comparison introduced # existing codebases: report only 
 <p>Native checks are opt-in. They may execute repository-controlled build scripts, wrappers, or checker plugins with the current account’s access to host files and the network. Their temporary copy doesn’t isolate that execution; automatic hooks always use the default checks. See <a href="docs/providers.html">Provider setup and usage</a> before selecting native profiles.</p>
 <h2 id="agent-server-protocol"><a class="doc-anchor" href="#agent-server-protocol">§</a>Agent Server Protocol</h2>
 <p>Opcore includes the Agent Server Protocol (ASP) v1.0 definition and four check providers. A calling tool supplies exact file contents and grants read access. Each provider returns findings, coverage, and evidence; the calling tool owns the decision and any ASP receipt.</p>
-<p><img src="docs/assets/asp-overview.svg" alt="ASP v1.0 flow: the calling tool grants access to selected contents, receives the checker’s assessment, and records its decision" /></p>
-<p><a href="docs/assets/asp-overview-mobile.svg">Open the phone-sized ASP diagram</a></p>
+<p><picture class="diagram"><source media="(max-width: 760px)" srcset="docs/assets/asp-overview-mobile.svg"><img src="docs/assets/asp-overview.svg" alt="ASP v1.0 flow: the calling tool grants access to selected contents, receives the checker’s assessment, and records its decision" /></picture></p>
 <p>Opcore’s bundled local runner reports <code>allow</code>, <code>deny</code>, or <code>indeterminate</code> for local use. Its result has advisory assurance and doesn’t issue an ASP receipt. Read the <a href="asp/README.html">protocol definition</a> for integration contracts.</p>
 <h2 id="documentation-community-and-help"><a class="doc-anchor" href="#documentation-community-and-help">§</a>Documentation, community, and help</h2>
 <p>Read the <a href="https://the-open-engine.github.io/opcore/dev/">development documentation</a>, including the <a href="https://the-open-engine.github.io/opcore/dev/cli.html">CLI reference</a>, <a href="https://the-open-engine.github.io/opcore/dev/api/opcore/api/index.html">public Rust API</a>, and ASP specification. To build the site from a source checkout, see <a href="CONTRIBUTING.html">Contributing</a>.</p>
