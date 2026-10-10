@@ -88,6 +88,10 @@ def guide_body(rendered):
     body = re.sub(r'<p><a [^>]+>Overview</a> · .*?</p>', "", body, count=1)
     body = re.sub(r'<blockquote>\s*<p>\[!IMPORTANT\](?:<br\s*/?>)?\s*',
                   '<blockquote class="admonition"><p class="admonition-title">Important</p><p>', body)
+    # A diagram followed by a link to its phone-sized drawing shows that drawing on phones.
+    body = re.sub(r'<p>(<img src="([^"]+)\.svg"[^>]*>)</p>\s*<p><a href="\2-mobile\.svg">[^<]*</a></p>',
+                  r'<p><picture class="diagram"><source media="(max-width: 760px)" srcset="\2-mobile.svg">'
+                  r'\1</picture></p>', body)
     return body, contents
 
 

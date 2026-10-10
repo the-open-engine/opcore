@@ -121,6 +121,8 @@ class LocalLinks(HTMLParser):
         for name, value in attrs:
             if name in ("href", "src") and value:
                 self.links.append(value)
+            if name == "srcset" and value:
+                self.links.extend(candidate.split()[0] for candidate in value.split(",") if candidate.strip())
             if value and (name == "id" or (tag == "a" and name == "name")):
                 self.anchors.add(value)
 
