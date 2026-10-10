@@ -2,7 +2,9 @@
 
 import importlib.util
 import json
+import os
 from pathlib import Path
+import subprocess
 import tempfile
 from types import SimpleNamespace
 import unittest
@@ -241,6 +243,43 @@ class DocumentationVersions(unittest.TestCase):
         (site / "v0.3/api/src/opcore/api.rs.html").write_text('<span id="1">one</span>')
         with self.assertRaisesRegex(ValueError, "missing anchor"):
             builder.check_links(site)
+
+    def test_pages_are_dated_by_the_last_commit_to_their_source(self):
+        spec = importlib.util.spec_from_file_location(
+            "docs_builder", Path(__file__).with_name("build-docs.py")
+        )
+        builder = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(builder)
+        repository = self.root / "repository"
+        repository.mkdir()
+
+        def git(*arguments, when="2026-01-01T12:00:00+00:00"):
+            env = {**os.environ, "GIT_AUTHOR_DATE": when, "GIT_COMMITTER_DATE": when}
+            subprocess.run(
+                ["git", "-c", "user.name=t", "-c", "user.email=t@example.com", *arguments],
+                cwd=repository, check=True, capture_output=True, env=env,
+            )
+
+        git("init", "--quiet")
+        page, other = repository / "page.md", repository / "other.md"
+        page.write_text("first\n")
+        other.write_text("first\n")
+        git("add", "page.md", "other.md")
+        git("commit", "--quiet", "-m", "first", when="2026-03-04T12:00:00+00:00")
+        other.write_text("second\n")
+        git("commit", "--quiet", "-am", "second", when="2026-05-06T12:00:00+00:00")
+
+        self.assertIn('<time datetime="2026-03-04">4 March 2026</time>', builder.last_updated(page, repository))
+        self.assertIn('<time datetime="2026-05-06">6 May 2026</time>', builder.last_updated(other, repository))
+        self.assertEqual(builder.last_updated(repository / "untracked.md", repository), "")
+        # A shallow clone sees one commit, which would date every page the same.
+        shallow = self.root / "shallow"
+        subprocess.run(
+            ["git", "clone", "--quiet", "--depth", "1", repository.as_uri(), str(shallow)],
+            check=True, capture_output=True,
+        )
+        self.assertEqual(builder.last_updated(shallow / "page.md", shallow), "")
+        self.assertEqual(builder.last_updated(self.root / "page.md", self.root), "")
 
     def test_development_cannot_be_stable(self):
         with self.assertRaisesRegex(ValueError, "cannot become stable"):
