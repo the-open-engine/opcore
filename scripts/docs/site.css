@@ -252,6 +252,7 @@ button { font: inherit; cursor: pointer; }
   .page-toc { display: none; }
 }
 @media (max-width: 760px) {
+  .guide-content .diagram img { max-width: min(100%, 26rem); margin-inline: auto; }
   .header-label { display: none; }
   .repository-link { letter-spacing: .08em; }
   .header-actions { gap: .7rem; }

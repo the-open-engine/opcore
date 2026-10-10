@@ -109,6 +109,15 @@ def prepare_api(api, site):
             page.write_text(updated)
 
 
+def link_values(name, value):
+    """Return the destinations named by one link-bearing attribute."""
+    if name in ("href", "src"):
+        return [value]
+    if name == "srcset":
+        return [candidate.split()[0] for candidate in value.split(",") if candidate.strip()]
+    return []
+
+
 class LocalLinks(HTMLParser):
     """Collect browser-local link and asset destinations in rendered HTML."""
 
@@ -119,8 +128,8 @@ class LocalLinks(HTMLParser):
 
     def handle_starttag(self, tag, attrs):
         for name, value in attrs:
-            if name in ("href", "src") and value:
-                self.links.append(value)
+            if value:
+                self.links.extend(link_values(name, value))
             if value and (name == "id" or (tag == "a" and name == "name")):
                 self.anchors.add(value)
 
