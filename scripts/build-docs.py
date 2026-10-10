@@ -69,7 +69,12 @@ def render_markdown(markdown, destination, site, temporary, notice=""):
         metadata = "<details><summary>Specification metadata</summary>\n\n```yaml\n"
         markdown = heading + "\n\n" + metadata + frontmatter.group(1) + "\n```\n</details>\n" + body
     if not markdown.startswith(("# ", "%")):
-        markdown = f"# {destination.stem}\n\n{markdown}"
+        # A page may open with artwork; its first heading is still the title.
+        heading = re.search(r"^# .+\n", markdown.split("```", 1)[0], flags=re.MULTILINE)
+        if heading:
+            markdown = heading.group(0) + "\n" + markdown[:heading.start()] + markdown[heading.end():]
+        else:
+            markdown = f"# {destination.stem}\n\n{markdown}"
     if notice:
         heading, _, body = markdown.partition("\n")
         markdown = heading + "\n\n> " + notice + "\n" + body

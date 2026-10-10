@@ -1,5 +1,5 @@
 .docs-version { display: inline-flex; align-items: center; font-size: 14px; }
-.docs-version select { max-width: 13rem; padding: .3rem; border: 1px solid #706960; border-radius: .2rem; background: #171411; color: #faf7f1; font: inherit; }
+.docs-version select { max-width: 13rem; padding: .3rem; border: 1px solid var(--oe-rule); border-radius: .35rem; background: var(--oe-field); color: var(--oe-fg); font: 400 .72rem/1.4 var(--oe-mono); }
 .docs-version [hidden] { display: none; }
 @media (max-width: 760px) {
   .docs-version { font-size: 12px; }

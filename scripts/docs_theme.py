@@ -57,7 +57,7 @@ def site_header(destination, site):
 <header class="site-header"><div class="header-inner">
 <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-navigation">Menu</button>
 <a class="brand" href="{root}"><img src="{logo}" alt="" width="32" height="36"><span>Opcore</span></a>
-<a class="header-label" href="{root}">Documentation</a>
+<a class="header-label" href="{root}">Docs</a>
 <div class="header-actions"><button class="theme-toggle" type="button" aria-label="Use dark mode" title="Use dark mode"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20.8 13.1A9 9 0 0 1 10.9 3.2 9 9 0 1 0 20.8 13.1Z"/></svg></button>
 <a class="repository-link" href="https://github.com/the-open-engine/opcore">GitHub <span aria-hidden="true">↗</span></a></div>
 </div></header>'''
