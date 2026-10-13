@@ -11,6 +11,10 @@ handwritten headings and diagrams, yellow notes, and the company mascot.
 - `hero.css`: shared layout and theme tokens.
 - `opcore-hero-light.png` and `opcore-hero-dark.png`: 2560 × 800 exports
   from a 1280 × 400 canvas at 2× scale.
+- `opcore-hero-mobile-light.png` and `opcore-hero-mobile-dark.png`: 1024 × 1280
+  portrait exports from a 512 × 640 canvas at 2× scale. The same HTML sources use
+  the mobile rules in `hero.css`. The README selects these below 641px, before
+  the desktop sources. Larger text and a stacked layout replace the sticky note.
 - `assets/`: local fonts, font licenses, and the website mascot. Rendering needs
   no network requests.
 
@@ -40,16 +44,22 @@ const { pathToFileURL } = require('node:url');
       viewport: { width: 1280, height: 400 },
       deviceScaleFactor: 2,
     });
-    for (const theme of ['light', 'dark']) {
-      const stem = resolve(`docs/brand/opcore-hero-${theme}`);
-      await page.goto(pathToFileURL(`${stem}.html`).href);
-      await page.evaluate(() => document.fonts.ready);
-      const ready = await page.evaluate(() =>
-        [...document.fonts].every(font => font.status === 'loaded') &&
-        [...document.images].every(image => image.complete && image.naturalWidth > 0)
-      );
-      if (!ready) throw new Error('Banner assets failed to load');
-      await page.locator('.hero').screenshot({ path: `${stem}.png` });
+    for (const layout of ['desktop', 'mobile']) {
+      await page.setViewportSize(layout === 'mobile'
+        ? { width: 512, height: 640 }
+        : { width: 1280, height: 400 });
+      for (const theme of ['light', 'dark']) {
+        const stem = resolve(`docs/brand/opcore-hero-${theme}`);
+        await page.goto(pathToFileURL(`${stem}.html`).href);
+        await page.evaluate(() => document.fonts.ready);
+        const ready = await page.evaluate(() =>
+          [...document.fonts].every(font => font.status === 'loaded') &&
+          [...document.images].every(image => image.complete && image.naturalWidth > 0)
+        );
+        if (!ready) throw new Error('Banner assets failed to load');
+        const output = resolve(`docs/brand/opcore-hero-${layout === 'mobile' ? 'mobile-' : ''}${theme}.png`);
+        await page.locator('.hero').screenshot({ path: output });
+      }
     }
   } finally {
     await browser.close();
@@ -58,7 +68,8 @@ const { pathToFileURL } = require('node:url');
 JS
 ```
 
-Review both exports at full resolution and README display width before committing.
+Review all four exports at full resolution and their intended README display widths
+before committing, including 390px in both themes.
 
 ## Asset provenance
 
