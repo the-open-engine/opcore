@@ -27,6 +27,10 @@ handwritten headings and diagrams, yellow notes, and the company mascot.</p>
 <li><code>hero.css</code>: shared layout and theme tokens.</li>
 <li><code>opcore-hero-light.png</code> and <code>opcore-hero-dark.png</code>: 2560 × 800 exports
 from a 1280 × 400 canvas at 2× scale.</li>
+<li><code>opcore-hero-mobile-light.png</code> and <code>opcore-hero-mobile-dark.png</code>: 1024 × 1280
+portrait exports from a 512 × 640 canvas at 2× scale. The same HTML sources use
+the mobile rules in <code>hero.css</code>. The README selects these below 641px, before
+the desktop sources. Larger text and a stacked layout replace the sticky note.</li>
 <li><code>assets/</code>: local fonts, font licenses, and the website mascot. Rendering needs
 no network requests.</li>
 </ul>
@@ -51,23 +55,30 @@ const { pathToFileURL } = require(&#39;node:url&#39;);
       viewport: { width: 1280, height: 400 },
       deviceScaleFactor: 2,
     });
-    for (const theme of [&#39;light&#39;, &#39;dark&#39;]) {
-      const stem = resolve(`docs/brand/opcore-hero-${theme}`);
-      await page.goto(pathToFileURL(`${stem}.html`).href);
-      await page.evaluate(() =&gt; document.fonts.ready);
-      const ready = await page.evaluate(() =&gt;
-        [...document.fonts].every(font =&gt; font.status === &#39;loaded&#39;) &amp;&amp;
-        [...document.images].every(image =&gt; image.complete &amp;&amp; image.naturalWidth &gt; 0)
-      );
-      if (!ready) throw new Error(&#39;Banner assets failed to load&#39;);
-      await page.locator(&#39;.hero&#39;).screenshot({ path: `${stem}.png` });
+    for (const layout of [&#39;desktop&#39;, &#39;mobile&#39;]) {
+      await page.setViewportSize(layout === &#39;mobile&#39;
+        ? { width: 512, height: 640 }
+        : { width: 1280, height: 400 });
+      for (const theme of [&#39;light&#39;, &#39;dark&#39;]) {
+        const stem = resolve(`docs/brand/opcore-hero-${theme}`);
+        await page.goto(pathToFileURL(`${stem}.html`).href);
+        await page.evaluate(() =&gt; document.fonts.ready);
+        const ready = await page.evaluate(() =&gt;
+          [...document.fonts].every(font =&gt; font.status === &#39;loaded&#39;) &amp;&amp;
+          [...document.images].every(image =&gt; image.complete &amp;&amp; image.naturalWidth &gt; 0)
+        );
+        if (!ready) throw new Error(&#39;Banner assets failed to load&#39;);
+        const output = resolve(`docs/brand/opcore-hero-${layout === &#39;mobile&#39; ? &#39;mobile-&#39; : &#39;&#39;}${theme}.png`);
+        await page.locator(&#39;.hero&#39;).screenshot({ path: output });
+      }
     }
   } finally {
     await browser.close();
   }
 })().catch(error =&gt; { console.error(error); process.exitCode = 1; });
 JS</code></pre></div>
-<p>Review both exports at full resolution and README display width before committing.</p>
+<p>Review all four exports at full resolution and their intended README display widths
+before committing, including 390px in both themes.</p>
 <h2 id="asset-provenance"><a class="doc-anchor" href="#asset-provenance">§</a>Asset provenance</h2>
 <ul>
 <li><code>assets/oec-mascot.png</code>: unchanged copy of
@@ -118,7 +129,7 @@ const { pathToFileURL } = require(&#39;node:url&#39;);
     await browser.close();
   }
 })().catch(error =&gt; { console.error(error); process.exitCode = 1; });
-JS</code></pre></div><p class="page-updated">Last updated <time datetime="2026-10-03">3 October 2026</time></p></main><aside class="page-toc" aria-label="On this page"><p>On this page</p><nav id="rustdoc"><ul>
+JS</code></pre></div><p class="page-updated">Last updated <time datetime="2026-10-13">13 October 2026</time></p></main><aside class="page-toc" aria-label="On this page"><p>On this page</p><nav id="rustdoc"><ul>
 <li><a href="#files" title="Files">Files</a><ul></ul></li>
 <li><a href="#design" title="Design">Design</a><ul></ul></li>
 <li><a href="#re-render" title="Re-render">Re-render</a><ul></ul></li>

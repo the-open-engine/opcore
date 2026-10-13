@@ -1,4 +1,6 @@
 <picture>
+  <source media="(max-width: 640px) and (prefers-color-scheme: dark)" srcset="docs/brand/opcore-hero-mobile-dark.png">
+  <source media="(max-width: 640px)" srcset="docs/brand/opcore-hero-mobile-light.png">
   <source media="(prefers-color-scheme: dark)" srcset="docs/brand/opcore-hero-dark.png">
   <img alt="Opcore: specific feedback for coding agents while they edit. Check the change and show the evidence." src="docs/brand/opcore-hero-light.png" width="100%">
 </picture>
