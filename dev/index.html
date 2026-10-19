@@ -24,11 +24,11 @@
   <img alt="Opcore: specific feedback for coding agents while they edit. Check the change and show the evidence." src="docs/brand/opcore-hero-light.png" width="100%">
 </picture>
 <p><a href="https://github.com/the-open-engine/opcore/actions/workflows/opcore.yml?query=branch%3Amain+event%3Apush"><img alt="Opcore full repository verification" src="https://raw.githubusercontent.com/the-open-engine/opcore/opcore-badge/opcore.svg" height="34"></a>
-<a href="https://discord.gg/fZyzf2Cut9"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/brand/social/discord-cta-dark.png"><img alt="Join The Open Engine community on Discord" src="docs/brand/social/discord-cta-light.png" height="34"></picture></a></p>
+<a href="https://theopenengine.com/discord"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/brand/social/discord-cta-dark.png"><img alt="Join The Open Engine community on Discord" src="docs/brand/social/discord-cta-light.png" height="34"></picture></a></p>
 <p>Opcore gives coding agents specific feedback while they edit source. Its installed hook checks the current Git changes and returns the file, location, rule, and evidence when something needs repair.</p>
 <p>The automatic checks never run your project’s code. Compiler and type-checker checks are opt-in for pre-commit and CI.</p>
 <p>Opcore pairs with <a href="https://zeroshot.sh/?utm_source=github&amp;utm_medium=readme&amp;utm_campaign=opcore">Zeroshot</a>: Opcore checks each edit while an agent writes code, and Zeroshot has independent agents review the whole change before it lands.</p>
-<p>Opcore is built by <a href="https://theopenengine.com/?utm_source=github&amp;utm_medium=readme&amp;utm_campaign=opcore">The Open Engine</a>. Questions or feedback? Join <a href="https://discord.gg/fZyzf2Cut9">The Open Engine community on Discord</a>.</p>
+<p>Opcore is built by <a href="https://theopenengine.com/?utm_source=github&amp;utm_medium=readme&amp;utm_campaign=opcore">The Open Engine</a>. Questions or feedback? Join <a href="https://theopenengine.com/discord">The Open Engine community on Discord</a>.</p>
 <blockquote class="admonition"><p class="admonition-title">Important</p><p><strong>Opcore 0.3.0 is a full rewrite.</strong> The <code>graph</code>, <code>inspect</code>, and <code>edit</code> commands are gone. Upgrading from 0.2.x? Follow the <a href="docs/getting-started.html#upgrade-from-an-earlier-installation">migration instructions</a>.</p>
 </blockquote>
 <h2 id="when-to-use-it"><a class="doc-anchor" href="#when-to-use-it">§</a>When to use it</h2>
@@ -234,12 +234,12 @@ opcore run pre-commit --comparison introduced # existing codebases: report only 
 <p>Opcore’s bundled local runner reports <code>allow</code>, <code>deny</code>, or <code>indeterminate</code> for local use. Its result has advisory assurance and doesn’t issue an ASP receipt. Read the <a href="asp/README.html">protocol definition</a> for integration contracts.</p>
 <h2 id="documentation-community-and-help"><a class="doc-anchor" href="#documentation-community-and-help">§</a>Documentation, community, and help</h2>
 <p>Read the <a href="https://the-open-engine.github.io/opcore/dev/">development documentation</a>, including the <a href="https://the-open-engine.github.io/opcore/dev/cli.html">CLI reference</a>, <a href="https://the-open-engine.github.io/opcore/dev/api/opcore/api/index.html">public Rust API</a>, and ASP specification. To build the site from a source checkout, see <a href="CONTRIBUTING.html">Contributing</a>.</p>
-<p>Ask questions and talk to the team on <a href="https://discord.gg/fZyzf2Cut9">Discord</a>. Report reproducible problems in <a href="https://github.com/the-open-engine/opcore/issues">GitHub Issues</a>. <a href="CONTRIBUTING.html">Contributing</a> explains useful report details and the development checks.</p>
+<p>Ask questions and talk to the team on <a href="https://theopenengine.com/discord">Discord</a>. Report reproducible problems in <a href="https://github.com/the-open-engine/opcore/issues">GitHub Issues</a>. <a href="CONTRIBUTING.html">Contributing</a> explains useful report details and the development checks.</p>
 <p>Before removing an npm installation, clean up its agent integrations:</p>
 <div class="example-wrap"><pre class="language-sh"><code>opcore uninstall
 npm uninstall -g @the-open-engine-company/opcore</code></pre></div>
 <p><a href="docs/getting-started.html#update-or-remove">Update and removal instructions</a> cover source installs and recovery after an interrupted setup.</p>
-<p class="page-updated">Last updated <time datetime="2026-10-13">13 October 2026</time></p><nav class="page-sequence" aria-label="Adjacent pages"><a href="docs/getting-started.html"><span>Next</span>Installation and first check</a></nav></main><aside class="page-toc" aria-label="On this page"><p>On this page</p><nav id="rustdoc"><ul>
+<p class="page-updated">Last updated <time datetime="2026-10-19">19 October 2026</time></p><nav class="page-sequence" aria-label="Adjacent pages"><a href="docs/getting-started.html"><span>Next</span>Installation and first check</a></nav></main><aside class="page-toc" aria-label="On this page"><p>On this page</p><nav id="rustdoc"><ul>
 <li><a href="#when-to-use-it" title="When to use it">When to use it</a><ul></ul></li>
 <li><a href="#examples" title="Examples">Examples</a><ul>
 <li><a href="#fast-verify" title="Fast Verify">Fast Verify</a><ul></ul></li>
