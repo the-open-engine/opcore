@@ -8,7 +8,7 @@
 # Opcore
 
 <a href="https://github.com/the-open-engine/opcore/actions/workflows/opcore.yml?query=branch%3Amain+event%3Apush"><img alt="Opcore full repository verification" src="https://raw.githubusercontent.com/the-open-engine/opcore/opcore-badge/opcore.svg" height="34"></a>
-<a href="https://discord.gg/fZyzf2Cut9"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/brand/social/discord-cta-dark.png"><img alt="Join The Open Engine community on Discord" src="docs/brand/social/discord-cta-light.png" height="34"></picture></a>
+<a href="https://theopenengine.com/discord"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/brand/social/discord-cta-dark.png"><img alt="Join The Open Engine community on Discord" src="docs/brand/social/discord-cta-light.png" height="34"></picture></a>
 
 Opcore gives coding agents specific feedback while they edit source. Its installed hook checks the current Git changes and returns the file, location, rule, and evidence when something needs repair.
 
@@ -16,7 +16,7 @@ The automatic checks never run your project's code. Compiler and type-checker ch
 
 Opcore pairs with [Zeroshot](https://zeroshot.sh/?utm_source=github&utm_medium=readme&utm_campaign=opcore): Opcore checks each edit while an agent writes code, and Zeroshot has independent agents review the whole change before it lands.
 
-Opcore is built by [The Open Engine](https://theopenengine.com/?utm_source=github&utm_medium=readme&utm_campaign=opcore). Questions or feedback? Join [The Open Engine community on Discord](https://discord.gg/fZyzf2Cut9).
+Opcore is built by [The Open Engine](https://theopenengine.com/?utm_source=github&utm_medium=readme&utm_campaign=opcore). Questions or feedback? Join [The Open Engine community on Discord](https://theopenengine.com/discord).
 
 > [!IMPORTANT]
 > **Opcore 0.3.0 is a full rewrite.** The `graph`, `inspect`, and `edit` commands are gone. Upgrading from 0.2.x? Follow the [migration instructions](docs/getting-started.md#upgrade-from-an-earlier-installation).
@@ -429,7 +429,7 @@ Opcore's bundled local runner reports `allow`, `deny`, or `indeterminate` for lo
 
 Read the [development documentation](https://the-open-engine.github.io/opcore/dev/), including the [CLI reference](https://the-open-engine.github.io/opcore/dev/cli.html), [public Rust API](https://the-open-engine.github.io/opcore/dev/api/opcore/api/index.html), and ASP specification. To build the site from a source checkout, see [Contributing](CONTRIBUTING.md).
 
-Ask questions and talk to the team on [Discord](https://discord.gg/fZyzf2Cut9). Report reproducible problems in [GitHub Issues](https://github.com/the-open-engine/opcore/issues). [Contributing](CONTRIBUTING.md) explains useful report details and the development checks.
+Ask questions and talk to the team on [Discord](https://theopenengine.com/discord). Report reproducible problems in [GitHub Issues](https://github.com/the-open-engine/opcore/issues). [Contributing](CONTRIBUTING.md) explains useful report details and the development checks.
 
 Before removing an npm installation, clean up its agent integrations:
 
