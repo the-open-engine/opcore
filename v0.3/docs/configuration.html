@@ -10,7 +10,7 @@
 <header class="site-header"><div class="header-inner">
 <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-navigation">Menu</button>
 <a class="brand" href="../index.html"><img src="../assets/oec-crow.png" alt="" width="32" height="36"><span>Opcore</span></a>
-<a class="header-label" href="../index.html">Documentation</a>
+<a class="header-label" href="../index.html">Docs</a>
 <div class="header-actions"><div class="docs-version" data-site-root="../../" data-page-path="docs/configuration.html" data-version="v0.3"><a href="../../versions.html">v0.3 ▾</a><select hidden aria-label="Documentation version"><option>v0.3</option></select></div><button class="theme-toggle" type="button" aria-label="Use dark mode" title="Use dark mode"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20.8 13.1A9 9 0 0 1 10.9 3.2 9 9 0 1 0 20.8 13.1Z"/></svg></button>
 <a class="repository-link" href="https://github.com/the-open-engine/opcore">GitHub <span aria-hidden="true">↗</span></a></div>
 </div></header>
@@ -96,7 +96,8 @@ opcore doctor --workflow pre-commit</code></pre></div>
     { &quot;action&quot;: &quot;delete&quot;, &quot;path&quot;: &quot;src/old-counter.ts&quot; }
   ]
 }</code></pre></div><div class="example-wrap"><pre class="language-sh"><code>opcore sense --hypothetical proposed-changes.json --json</code></pre></div>
-<p>Use <code>--hypothetical -</code> to read stdin. Writes contain complete UTF-8 contents, including the final newline; deletes have no <code>content</code>. Each path must be unique and normalized. The request may change supported source, relevant <code>go.mod</code> files, documents, and <code>documentation.bindings</code> in the configuration. Other configuration settings must remain unchanged. This mode cannot combine with staged or committed selection; hypothetical Verify uses <a href="../asp/README.html">ASP</a>.</p><nav class="page-sequence" aria-label="Adjacent pages"><a href="getting-started.html"><span>Previous</span>Installation and first check</a><a href="providers.html"><span>Next</span>Providers</a></nav></main><aside class="page-toc" aria-label="On this page"><p>On this page</p><nav id="rustdoc"><ul>
+<p>Use <code>--hypothetical -</code> to read stdin. Writes contain complete UTF-8 contents, including the final newline; deletes have no <code>content</code>. Each path must be unique and normalized. The request may change supported source, relevant <code>go.mod</code> files, documents, and <code>documentation.bindings</code> in the configuration. Other configuration settings must remain unchanged. This mode cannot combine with staged or committed selection; hypothetical Verify uses <a href="../asp/README.html">ASP</a>.</p>
+<p class="page-updated">Last updated <time datetime="2026-09-25">25 September 2026</time></p><nav class="page-sequence" aria-label="Adjacent pages"><a href="getting-started.html"><span>Previous</span>Installation and first check</a><a href="providers.html"><span>Next</span>Providers</a></nav></main><aside class="page-toc" aria-label="On this page"><p>On this page</p><nav id="rustdoc"><ul>
 <li><a href="#one-repository-file" title="One repository file">One repository file</a><ul></ul></li>
 <li><a href="#workflow-overrides" title="Workflow overrides">Workflow overrides</a><ul></ul></li>
 <li><a href="#select-targets" title="Select targets">Select targets</a><ul></ul></li>

@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="1310" viewBox="0 0 720 1310" role="img" aria-labelledby="title desc"><title id="title">ASP: the calling tool freezes a proposed change, grants a checker access, validates its evidence, and records a decision and receipt. The checker never decides.</title><desc id="desc">ASP: the calling tool freezes a proposed change, grants a checker access, validates its evidence, and records a decision and receipt. The checker never decides.</desc><defs><style>svg{--paper:#faf7f1;--ink:#26221c;--muted:#6f675a;--accent:#c2240c;--card:#fffdf8;--border:#6f675a}.paper{fill:var(--paper)}.ink{fill:var(--ink)}.muted{fill:var(--muted)}.accent{fill:var(--accent)}.card{fill:var(--card);stroke:var(--ink);stroke-width:1.8;stroke-linejoin:round}.note{fill:#f5e777;stroke:#b5a650;stroke-width:.7}.note-ink{fill:#26221c}.wire{fill:none;stroke:var(--ink);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.retry{fill:none;stroke:var(--accent);stroke-width:2;stroke-dasharray:7 7;stroke-linecap:round;stroke-linejoin:round}.divider{fill:none;stroke:var(--border);stroke-width:1;opacity:.35}.arrow{fill:none;stroke:var(--ink);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}.retry-arrow{fill:none;stroke:var(--accent);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}@media(prefers-color-scheme:dark){svg{--paper:#171411;--ink:#faf7f1;--muted:#b9b0a2;--accent:#ed6b55;--card:#211d18;--border:#948b7c}}</style><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M1 1 L8 5 L1 9" class="arrow"/></marker><marker id="retry-arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M1 1 L8 5 L1 9" class="retry-arrow"/></marker></defs><rect class="paper" width="720" height="1310"/>
+<text x="36" y="44" data-font="body" font-size="17" class="muted" text-anchor="start">AGENT SERVER PROTOCOL / v1.0</text>
+<text x="36" y="102" data-font="hand" font-size="56" class="ink" text-anchor="start">the checker reports.</text>
+<text x="36" y="158" data-font="hand" font-size="56" class="ink" text-anchor="start">the host decides.</text>
+<path  class="card" d="M100 212 L618 210 L620 328 L101 330 Z"/>
+<text x="128" y="258" data-font="hand" font-size="43" class="ink" text-anchor="start">coding agent</text>
+<text x="128" y="303" data-font="body" font-size="23" class="ink" text-anchor="start">Proposes a change.</text>
+<path class="wire" marker-end="url(#arrow)" d="M360 342 V384"/>
+<text x="384" y="373" data-font="hand" font-size="28" class="ink" text-anchor="start">change</text>
+<path  class="note" d="M100 402 L618 400 L620 703 L101 705 Z"/>
+<text x="128" y="459" data-font="hand" font-size="48" class="note-ink" text-anchor="start">calling tool / host</text>
+<text x="128" y="510" data-font="body" font-size="22" class="note-ink" text-anchor="start">Freezes the change. Grants file access.</text>
+<text x="128" y="550" data-font="body" font-size="22" class="note-ink" text-anchor="start">Chooses checks and validates evidence.</text>
+<text x="128" y="635" data-font="hand" font-size="45" class="note-ink" text-anchor="start">makes the decision</text>
+<text x="128" y="674" data-font="body" font-size="22" class="note-ink" text-anchor="start">Returns the decision and receipt.</text>
+<path class="wire" marker-end="url(#arrow)" d="M260 717 V780"/>
+<text x="176" y="756" data-font="hand" font-size="27" class="ink" text-anchor="start">check</text>
+<path class="retry" marker-end="url(#retry-arrow)" d="M490 780 V717"/>
+<text x="510" y="756" data-font="hand" font-size="27" class="accent" text-anchor="start">evidence</text>
+<path  class="card" d="M100 797 L618 795 L620 1038 L101 1040 Z"/>
+<text x="128" y="849" data-font="hand" font-size="45" class="ink" text-anchor="start">independent checker</text>
+<text x="128" y="899" data-font="body" font-size="22" class="ink" text-anchor="start">Reads authorized files. Returns findings,</text>
+<text x="128" y="937" data-font="body" font-size="22" class="ink" text-anchor="start">coverage, and evidence.</text>
+<text x="128" y="1004" data-font="hand" font-size="38" class="ink" text-anchor="start">never decides</text>
+<path class="retry" marker-end="url(#retry-arrow)" d="M87 610 H48 V270 H87"/>
+<text x="360" y="1130" data-font="hand" font-size="38" class="ink" text-anchor="middle">allow · deny · unable to decide</text>
+<text x="360" y="1185" data-font="body" font-size="23" class="muted" text-anchor="middle">The receipt binds the change, rules,</text>
+<text x="360" y="1222" data-font="body" font-size="23" class="muted" text-anchor="middle">evidence, and decision.</text>
+</svg>

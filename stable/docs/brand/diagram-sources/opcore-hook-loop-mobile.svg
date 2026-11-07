@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="1240" viewBox="0 0 720 1240" role="img" aria-labelledby="title desc"><title id="title">Opcore: edits are checked, findings return to the agent, and repairs are checked again.</title><desc id="desc">Opcore: edits are checked, findings return to the agent, and repairs are checked again.</desc><defs><style>svg{--paper:#faf7f1;--ink:#26221c;--muted:#6f675a;--accent:#c2240c;--card:#fffdf8;--border:#6f675a}.paper{fill:var(--paper)}.ink{fill:var(--ink)}.muted{fill:var(--muted)}.accent{fill:var(--accent)}.card{fill:var(--card);stroke:var(--ink);stroke-width:1.8;stroke-linejoin:round}.note{fill:#f5e777;stroke:#b5a650;stroke-width:.7}.note-ink{fill:#26221c}.wire{fill:none;stroke:var(--ink);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.retry{fill:none;stroke:var(--accent);stroke-width:2;stroke-dasharray:7 7;stroke-linecap:round;stroke-linejoin:round}.divider{fill:none;stroke:var(--border);stroke-width:1;opacity:.35}.arrow{fill:none;stroke:var(--ink);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}.retry-arrow{fill:none;stroke:var(--accent);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}@media(prefers-color-scheme:dark){svg{--paper:#171411;--ink:#faf7f1;--muted:#b9b0a2;--accent:#ed6b55;--card:#211d18;--border:#948b7c}}</style><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M1 1 L8 5 L1 9" class="arrow"/></marker><marker id="retry-arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M1 1 L8 5 L1 9" class="retry-arrow"/></marker></defs><rect class="paper" width="720" height="1240"/>
+<text x="36" y="44" data-font="body" font-size="17" class="muted" text-anchor="start">OPCORE / POST-EDIT CHECKS</text>
+<text x="36" y="103" data-font="hand" font-size="57" class="ink" text-anchor="start">check the edit.</text>
+<text x="36" y="159" data-font="hand" font-size="45" class="ink" text-anchor="start">show what needs fixing.</text>
+<path  class="card" d="M100 212 L618 210 L620 328 L101 330 Z"/>
+<text x="128" y="260" data-font="hand" font-size="43" class="ink" text-anchor="start">agent edits</text>
+<text x="128" y="301" data-font="body" font-size="23" class="muted" text-anchor="start">The file is already written.</text>
+<path  class="card" d="M100 382 L618 380 L620 498 L101 500 Z"/>
+<text x="128" y="430" data-font="hand" font-size="43" class="ink" text-anchor="start">hook runs</text>
+<text x="128" y="471" data-font="body" font-size="23" class="muted" text-anchor="start">PostToolUse</text>
+<path  class="card" d="M100 552 L618 550 L620 668 L101 670 Z"/>
+<text x="128" y="600" data-font="hand" font-size="43" class="ink" text-anchor="start">capture changes</text>
+<text x="128" y="641" data-font="body" font-size="23" class="muted" text-anchor="start">Baseline + changed files</text>
+<path class="wire" marker-end="url(#arrow)" d="M360 340 V369"/>
+<path class="wire" marker-end="url(#arrow)" d="M360 510 V539"/>
+<path class="wire" marker-end="url(#arrow)" d="M360 680 V709"/>
+<path  class="note" d="M100 722 L618 720 L620 888 L101 890 Z"/>
+<text x="360" y="775" data-font="hand" font-size="46" class="note-ink" text-anchor="middle">Verify + Project Sense</text>
+<text x="360" y="820" data-font="body" font-size="21" class="note-ink" text-anchor="middle">syntax · code shape · dependencies</text>
+<text x="360" y="857" data-font="body" font-size="21" class="note-ink" text-anchor="middle">duplication · no project code runs</text>
+<path class="wire" marker-end="url(#arrow)" d="M230 902 V949"/>
+<path class="wire" marker-end="url(#arrow)" d="M495 902 V949"/>
+<text x="126" y="933" data-font="hand" font-size="27" class="accent" text-anchor="start">findings</text>
+<text x="450" y="933" data-font="hand" font-size="27" class="ink" text-anchor="start">none</text>
+<path  class="card" d="M75 967 L348 965 L350 1113 L76 1115 Z"/>
+<text x="97" y="1006" data-font="hand" font-size="33" class="ink" text-anchor="start">repair with evidence</text>
+<text x="97" y="1047" data-font="body" font-size="20" class="muted" text-anchor="start">file · line · rule</text>
+<text x="97" y="1083" data-font="body" font-size="20" class="muted" text-anchor="start">message · exit 2</text>
+<path  class="card" d="M380 967 L643 965 L645 1113 L381 1115 Z"/>
+<text x="404" y="1006" data-font="hand" font-size="33" class="ink" text-anchor="start">keep working</text>
+<text x="404" y="1047" data-font="body" font-size="20" class="muted" text-anchor="start">exit 0</text>
+<text x="404" y="1083" data-font="body" font-size="20" class="muted" text-anchor="start">gaps stay visible</text>
+<path class="retry" marker-end="url(#retry-arrow)" d="M63 1040 H35 V270 H87"/>
+<text x="360" y="1174" data-font="hand" font-size="32" class="muted" text-anchor="middle">a repair triggers the check again</text>
+</svg>
