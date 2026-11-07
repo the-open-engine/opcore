@@ -1,6 +1,8 @@
 use std::{
+    cell::RefCell,
     collections::{BTreeMap, BTreeSet},
     ops::Range,
+    rc::Rc,
     sync::Arc,
 };
 
@@ -8,22 +10,25 @@ use crate::{
     facts,
     identity::{FileFactKey, hash_domain},
     limits::{
-        DEDUP_REGION_KGRAM_TOKENS, MAX_DEDUP_TOKEN_COMPARISONS, MAX_OBSERVATION_PATHS,
-        MAX_REGION_FINGERPRINTS_PER_FILE, MIN_DEDUP_REGION_TOKENS,
+        DEDUP_REGION_KGRAM_TOKENS, MAX_DEDUP_DECODE_BYTES, MAX_DEDUP_TOKEN_COMPARISONS,
+        MAX_OBSERVATION_PATHS, MAX_REGION_FINGERPRINTS_PER_BATCH, MAX_REGION_FINGERPRINTS_PER_FILE,
+        MIN_DEDUP_REGION_TOKENS,
     },
     model::{FingerprintExtractionStatus, RegionFingerprintFacts, SourceFile, SourceRange},
     path::RepoPath,
     source::snapshot::SourceSnapshot,
 };
 
+mod batches;
 mod evidence;
+mod view;
 
 use evidence::DecodedTokens;
 
 use super::{
     DedupLimitStage, DuplicateKind, DuplicateOccurrence, FactKeyLookup, FingerprintCoverage,
     IntroducedDuplicate, SenseIssue, SenseView, bound_occurrences, lookup_file_fact, path_counts,
-    paths_with_growth, prospective_region_anchor_total,
+    paths_with_growth,
 };
 
 type AnchorKey = (u64, u64);
@@ -34,8 +39,44 @@ enum EvidenceState {
     Malformed,
 }
 
-#[derive(Default)]
-struct DecodedEvidence(BTreeMap<FileFactKey, EvidenceState>);
+impl EvidenceState {
+    fn decoded(self) -> Option<Arc<DecodedTokens>> {
+        match self {
+            Self::Decoded(decoded) => Some(decoded),
+            Self::Validated | Self::Malformed => None,
+        }
+    }
+}
+
+struct DecodedEvidence {
+    states: BTreeMap<FileFactKey, EvidenceState>,
+    orders: BTreeMap<FileFactKey, Arc<[u16]>>,
+    recent: Vec<FileFactKey>,
+    decode_remaining: usize,
+    decode_limit: usize,
+    decode_exhausted: bool,
+    #[cfg(test)]
+    live: Arc<evidence::LiveDecodes>,
+    #[cfg(test)]
+    decodes: usize,
+}
+
+impl Default for DecodedEvidence {
+    fn default() -> Self {
+        Self {
+            states: BTreeMap::new(),
+            orders: BTreeMap::new(),
+            recent: Vec::new(),
+            decode_remaining: MAX_DEDUP_DECODE_BYTES,
+            decode_limit: MAX_DEDUP_DECODE_BYTES,
+            decode_exhausted: false,
+            #[cfg(test)]
+            decodes: 0,
+            #[cfg(test)]
+            live: Arc::default(),
+        }
+    }
+}
 
 impl DecodedEvidence {
     fn state(
@@ -45,40 +86,79 @@ impl DecodedEvidence {
         facts: &RegionFingerprintFacts,
         retain: bool,
     ) -> EvidenceState {
-        let state = self.0.entry(fact_key).or_insert_with(|| {
-            if retain {
-                DecodedTokens::decode(source, facts)
-                    .map(Arc::new)
-                    .map_or(EvidenceState::Malformed, EvidenceState::Decoded)
-            } else if DecodedTokens::validate(source, facts) {
+        self.states.entry(fact_key).or_insert_with(|| {
+            if DecodedTokens::validate(source, facts) {
                 EvidenceState::Validated
             } else {
                 EvidenceState::Malformed
             }
         });
-        if retain && matches!(state, EvidenceState::Validated) {
-            *state = DecodedTokens::decode(source, facts)
+        if retain && matches!(self.states[&fact_key], EvidenceState::Validated) {
+            let cost = DecodedTokens::decode_cost(source, facts);
+            if cost > self.decode_remaining {
+                self.decode_exhausted = true;
+                return EvidenceState::Validated;
+            }
+            self.decode_remaining -= cost;
+            self.touch(fact_key);
+            let decoded = DecodedTokens::decode(source, facts);
+            #[cfg(test)]
+            let decoded = decoded.map(|decoded| decoded.tracked(Arc::clone(&self.live)));
+            let decoded = decoded
                 .map(Arc::new)
                 .map_or(EvidenceState::Malformed, EvidenceState::Decoded);
+            self.states.insert(fact_key, decoded);
+            #[cfg(test)]
+            {
+                self.decodes += 1;
+            }
         }
-        state.clone()
+        if retain && matches!(self.states[&fact_key], EvidenceState::Decoded(_)) {
+            self.touch(fact_key);
+        }
+        self.states[&fact_key].clone()
     }
 
-    fn malformed_fact_keys(&self) -> BTreeSet<FileFactKey> {
-        self.0
-            .iter()
-            .filter_map(|(key, state)| matches!(state, EvidenceState::Malformed).then_some(*key))
-            .collect()
+    fn touch(&mut self, fact_key: FileFactKey) {
+        // Exact comparisons need two files. Evict before decoding the next file.
+        if let Some(position) = self.recent.iter().position(|key| *key == fact_key) {
+            self.recent.remove(position);
+        } else if self.recent.len() == 2 {
+            let expired = self.recent.remove(0);
+            self.states.insert(expired, EvidenceState::Validated);
+        }
+        self.recent.push(fact_key);
+    }
+
+    fn anchor_order(
+        &mut self,
+        key: FileFactKey,
+        facts: &RegionFingerprintFacts,
+    ) -> Option<Arc<[u16]>> {
+        if let Some(order) = self.orders.get(&key) {
+            return Some(Arc::clone(order));
+        }
+        let mut order = (0..facts.anchors.len())
+            .map(u16::try_from)
+            .collect::<Result<Vec<_>, _>>()
+            .ok()?;
+        order.sort_by_key(|index| {
+            let anchor = &facts.anchors[usize::from(*index)];
+            (anchor.hash_one, anchor.hash_two)
+        });
+        let order: Arc<[u16]> = order.into();
+        self.orders.insert(key, Arc::clone(&order));
+        Some(order)
     }
 }
 
-struct RegionViewInputs<'source, 'request, 'cache> {
+struct RegionViewInputs<'source, 'request> {
     view: SenseView,
     snapshot: &'source SourceSnapshot,
     file_facts: &'request facts::FactMap,
     fact_keys: &'request FactKeyLookup,
     continuity: &'request BTreeMap<RepoPath, RepoPath>,
-    decoded_evidence: &'cache mut DecodedEvidence,
+    decoded_evidence: Rc<RefCell<DecodedEvidence>>,
 }
 
 #[derive(Clone, Copy)]
@@ -100,10 +180,9 @@ pub(super) struct RegionResult {
     pub before: RegionCoverage,
     pub after: RegionCoverage,
     pub comparison_issues: Vec<SenseIssue>,
-    pub malformed_fact_keys: BTreeSet<FileFactKey>,
 }
 
-#[derive(Default)]
+#[derive(Debug, Default, Eq, PartialEq)]
 pub(super) struct RegionCoverage {
     anchors: usize,
     tokens: usize,
@@ -112,6 +191,14 @@ pub(super) struct RegionCoverage {
 }
 
 impl RegionCoverage {
+    fn include_comparison(&mut self, comparison: &ComparisonState, view: SenseView) {
+        if comparison.views.contains(&view) {
+            self.request_truncated |=
+                comparison.limit_reached || comparison.decode_processed.is_some();
+            self.malformed_evidence |= comparison.malformed_evidence;
+        }
+    }
+
     pub(super) fn apply(self, coverage: &mut FingerprintCoverage) {
         coverage.region_anchors = self.anchors;
         coverage.region_tokens = self.tokens;
@@ -121,51 +208,48 @@ impl RegionCoverage {
 }
 
 pub(super) fn region_findings(inputs: RegionInputs<'_>) -> RegionResult {
-    let mut decoded_evidence = DecodedEvidence::default();
-    let before = RegionView::new(RegionViewInputs {
+    region_findings_bounded(inputs, MAX_REGION_FINGERPRINTS_PER_BATCH)
+}
+
+fn region_findings_bounded(inputs: RegionInputs<'_>, anchor_limit: usize) -> RegionResult {
+    let decoded = Rc::new(RefCell::new(DecodedEvidence::default()));
+    let mut state = EvaluationState::default();
+    let before = RegionView::new(&RegionViewInputs {
         view: SenseView::Before,
         snapshot: inputs.before,
         file_facts: inputs.file_facts,
         fact_keys: inputs.fact_keys,
         continuity: inputs.continuity,
-        decoded_evidence: &mut decoded_evidence,
+        decoded_evidence: Rc::clone(&decoded),
     });
-    let after = RegionView::new(RegionViewInputs {
+    let after = RegionView::new(&RegionViewInputs {
         view: SenseView::After,
         snapshot: inputs.after,
         file_facts: inputs.file_facts,
         fact_keys: inputs.fact_keys,
         continuity: &BTreeMap::new(),
-        decoded_evidence: &mut decoded_evidence,
+        decoded_evidence: decoded,
     });
-    let context = EvaluationContext {
-        inputs,
-        before: &before,
-        after: &after,
-    };
-    let mut state = EvaluationState::default();
     state.comparison.observe_malformed_view(&before);
     state.comparison.observe_malformed_view(&after);
+    state.before = before.coverage(&state.comparison);
+    state.after = after.coverage(&state.comparison);
     if !state.comparison.incomplete {
-        'families: for (family, groups) in &context.after.groups {
-            for (anchor, after_occurrences) in groups {
-                state.evaluate_group(context, family, *anchor, after_occurrences);
-                if state.comparison.incomplete {
-                    break 'families;
-                }
-            }
-        }
+        batches::evaluate(inputs, anchor_limit, &mut [before, after], &mut state);
     }
-
-    let comparison_issues = state.comparison.issues();
-    let malformed_fact_keys = decoded_evidence.malformed_fact_keys();
+    state
+        .before
+        .include_comparison(&state.comparison, SenseView::Before);
+    state
+        .after
+        .include_comparison(&state.comparison, SenseView::After);
+    state.issues.extend(state.comparison.issues());
     RegionResult {
         findings: state.findings,
         findings_truncated: state.comparison.findings_truncated,
-        before: before.coverage(&state.comparison),
-        after: after.coverage(&state.comparison),
-        comparison_issues,
-        malformed_fact_keys,
+        before: state.before,
+        after: state.after,
+        comparison_issues: state.issues,
     }
 }
 
@@ -173,15 +257,15 @@ pub(super) fn validate_identical_snapshot(
     snapshot: &SourceSnapshot,
     file_facts: &facts::FactMap,
     fact_keys: &FactKeyLookup,
-) -> (RegionCoverage, Vec<SenseIssue>, BTreeSet<FileFactKey>) {
-    let mut decoded_evidence = DecodedEvidence::default();
-    let view = RegionView::new(RegionViewInputs {
+) -> (RegionCoverage, Vec<SenseIssue>) {
+    let decoded_evidence = Rc::new(RefCell::new(DecodedEvidence::default()));
+    let view = RegionView::new(&RegionViewInputs {
         view: SenseView::Before,
         snapshot,
         file_facts,
         fact_keys,
         continuity: &BTreeMap::new(),
-        decoded_evidence: &mut decoded_evidence,
+        decoded_evidence,
     });
     let mut comparison = ComparisonState::default();
     comparison.observe_malformed_view(&view);
@@ -189,11 +273,7 @@ pub(super) fn validate_identical_snapshot(
         comparison.views.insert(SenseView::After);
     }
     let coverage = view.coverage(&comparison);
-    (
-        coverage,
-        comparison.issues(),
-        decoded_evidence.malformed_fact_keys(),
-    )
+    (coverage, comparison.issues())
 }
 
 #[derive(Clone, Copy)]
@@ -206,6 +286,9 @@ struct EvaluationContext<'view, 'data> {
 #[derive(Default)]
 struct EvaluationState {
     comparison: ComparisonState,
+    before: RegionCoverage,
+    after: RegionCoverage,
+    issues: Vec<SenseIssue>,
     findings: Vec<IntroducedDuplicate>,
     reported_classes: BTreeSet<(String, String)>,
     covered: BTreeMap<usize, Vec<Range<usize>>>,
@@ -742,7 +825,7 @@ fn exact_occurrences(
             continue;
         }
         let file = &inputs.target.files[anchor.file];
-        let Some(range) = file.range(start..end) else {
+        let Some(range) = inputs.target.region_range(anchor.file, start..end) else {
             comparison.mark_malformed_location(inputs.target, anchor.file);
             return None;
         };
@@ -809,150 +892,11 @@ struct RegionView<'a> {
     groups: BTreeMap<&'static str, BTreeMap<AnchorKey, Vec<AnchorOccurrence>>>,
     retained_anchors: usize,
     retained_tokens: usize,
-    request_truncated: bool,
+    decoded_evidence: Rc<RefCell<DecodedEvidence>>,
+    #[cfg(test)]
+    indexed: usize,
     malformed_paths: BTreeSet<RepoPath>,
     malformed_paths_truncated: bool,
-}
-
-impl<'a> RegionView<'a> {
-    fn new(inputs: RegionViewInputs<'a, '_, '_>) -> Self {
-        let RegionViewInputs {
-            view: sense_view,
-            snapshot,
-            file_facts,
-            fact_keys,
-            continuity,
-            decoded_evidence,
-        } = inputs;
-        let mut view = Self {
-            view: sense_view,
-            files: Vec::new(),
-            groups: BTreeMap::new(),
-            retained_anchors: 0,
-            retained_tokens: 0,
-            request_truncated: false,
-            malformed_paths: BTreeSet::new(),
-            malformed_paths_truncated: false,
-        };
-        for source in snapshot.files() {
-            let Some((fact_key, facts)) = lookup_file_fact(source, file_facts, fact_keys) else {
-                continue;
-            };
-            if facts.region_fingerprints.status != FingerprintExtractionStatus::Complete {
-                continue;
-            }
-            let path = continuity
-                .get(&source.path)
-                .cloned()
-                .unwrap_or_else(|| source.path.clone());
-            let file_bounded =
-                facts.region_fingerprints.anchors.len() <= MAX_REGION_FINGERPRINTS_PER_FILE;
-            let retained_anchors = file_bounded
-                .then(|| {
-                    prospective_region_anchor_total(
-                        view.retained_anchors,
-                        facts.region_fingerprints.anchors.len(),
-                    )
-                })
-                .flatten();
-            let state = decoded_evidence.state(
-                fact_key,
-                source,
-                &facts.region_fingerprints,
-                retained_anchors.is_some(),
-            );
-            let EvidenceState::Decoded(decoded) = state else {
-                if matches!(state, EvidenceState::Malformed) {
-                    record_bounded_path(
-                        &mut view.malformed_paths,
-                        &mut view.malformed_paths_truncated,
-                        path,
-                    );
-                } else if file_bounded {
-                    view.request_truncated = true;
-                }
-                continue;
-            };
-            let Some(retained_anchors) = retained_anchors else {
-                view.request_truncated = true;
-                continue;
-            };
-            view.retained_anchors = retained_anchors;
-            let file = view.files.len();
-            view.retained_tokens = view.retained_tokens.saturating_add(
-                usize::try_from(facts.region_fingerprints.token_count).unwrap_or(usize::MAX),
-            );
-            view.files.push(RegionFile {
-                source,
-                path,
-                decoded,
-            });
-            for anchor in &facts.region_fingerprints.anchors {
-                view.groups
-                    .entry(source.language.family())
-                    .or_default()
-                    .entry((anchor.hash_one, anchor.hash_two))
-                    .or_default()
-                    .push(AnchorOccurrence {
-                        file,
-                        token_index: anchor.token_index,
-                    });
-            }
-        }
-        for occurrences in view.groups.values_mut().flat_map(BTreeMap::values_mut) {
-            occurrences.sort_by(|left, right| {
-                (&view.files[left.file].path, left.token_index)
-                    .cmp(&(&view.files[right.file].path, right.token_index))
-            });
-        }
-        view
-    }
-
-    fn coverage(&self, comparison: &ComparisonState) -> RegionCoverage {
-        RegionCoverage {
-            anchors: self.retained_anchors,
-            tokens: self.retained_tokens,
-            request_truncated: self.request_truncated
-                || (comparison.limit_reached && comparison.views.contains(&self.view)),
-            malformed_evidence: !self.malformed_paths.is_empty()
-                || self.malformed_paths_truncated
-                || (comparison.malformed_evidence && comparison.views.contains(&self.view)),
-        }
-    }
-
-    fn exact_token(&self, location: TokenLocation) -> Option<ExactToken<'_>> {
-        let file = self.files.get(location.file)?;
-        let decoded = file.tokens();
-        let token = decoded.tokens.get(location.token)?;
-        Some(ExactToken {
-            tag: token.tag,
-            prefix: decoded.bytes.get(token.prefix.clone())?,
-            text: file.source.bytes.get(token.start..token.end)?,
-        })
-    }
-
-    fn region_digest(&self, file: usize, range: Range<usize>) -> Option<String> {
-        let file = self.files.get(file)?;
-        let decoded = file.tokens();
-        let mut encoded = Vec::new();
-        for token in decoded.tokens.get(range)? {
-            let prefix = decoded.bytes.get(token.prefix.clone())?;
-            encoded.extend_from_slice(
-                &u32::try_from(prefix.len())
-                    .unwrap_or(u32::MAX)
-                    .to_be_bytes(),
-            );
-            encoded.extend_from_slice(prefix);
-            encoded.push(token.tag);
-            let text = file.source.bytes.get(token.start..token.end)?;
-            encoded.extend_from_slice(&u32::try_from(text.len()).unwrap_or(u32::MAX).to_be_bytes());
-            encoded.extend_from_slice(text);
-        }
-        Some(hex::encode(hash_domain(
-            "dedup-token-region/v1",
-            &[file.source.language.family().as_bytes(), &encoded],
-        )))
-    }
 }
 
 fn record_bounded_path(paths: &mut BTreeSet<RepoPath>, paths_truncated: &mut bool, path: RepoPath) {
@@ -976,23 +920,9 @@ struct ExactToken<'a> {
 struct RegionFile<'a> {
     source: &'a SourceFile,
     path: RepoPath,
-    decoded: Arc<DecodedTokens>,
-}
-
-impl RegionFile<'_> {
-    fn tokens(&self) -> &DecodedTokens {
-        &self.decoded
-    }
-
-    fn range(&self, tokens: Range<usize>) -> Option<SourceRange> {
-        let decoded = self.tokens();
-        let first = decoded.tokens.get(tokens.start)?;
-        let last = decoded.tokens.get(tokens.end.checked_sub(1)?)?;
-        Some(SourceRange {
-            start: decoded.position(first.start),
-            end: decoded.position(last.end),
-        })
-    }
+    fact_key: FileFactKey,
+    facts: Arc<crate::model::FileFacts>,
+    anchor_order: Arc<[u16]>,
 }
 
 #[expect(
@@ -1004,6 +934,7 @@ struct ComparisonState {
     incomplete: bool,
     findings_truncated: bool,
     limit_reached: bool,
+    decode_processed: Option<(usize, usize)>,
     malformed_evidence: bool,
     views: BTreeSet<SenseView>,
     limit_paths: BTreeSet<RepoPath>,
@@ -1018,6 +949,7 @@ impl Default for ComparisonState {
             incomplete: false,
             findings_truncated: false,
             limit_reached: false,
+            decode_processed: None,
             malformed_evidence: false,
             views: BTreeSet::new(),
             limit_paths: BTreeSet::new(),
@@ -1061,6 +993,16 @@ impl ComparisonState {
     }
 
     fn mark_malformed_location(&mut self, view: &RegionView<'_>, file: usize) {
+        let cache = view.decoded_evidence.borrow();
+        if cache.decode_exhausted {
+            self.incomplete = true;
+            self.decode_processed = Some((
+                cache.decode_limit,
+                cache.decode_limit - cache.decode_remaining,
+            ));
+            self.record_limit_location(view, file);
+            return;
+        }
         self.incomplete = true;
         self.malformed_evidence = true;
         self.views.insert(view.view);
@@ -1100,19 +1042,36 @@ impl ComparisonState {
     }
 
     fn limit_issue(&self) -> Option<SenseIssue> {
-        if !self.limit_reached {
-            return None;
-        }
+        let (code, stage, limit, processed, work) =
+            if let Some((limit, processed)) = self.decode_processed {
+                (
+                    "dedup_exact_decode_limit",
+                    DedupLimitStage::ExactEvidenceDecoding,
+                    limit,
+                    processed,
+                    "exact evidence decoding",
+                )
+            } else if self.limit_reached {
+                (
+                    "dedup_exact_comparison_limit",
+                    DedupLimitStage::ExactTokenComparison,
+                    MAX_DEDUP_TOKEN_COMPARISONS,
+                    MAX_DEDUP_TOKEN_COMPARISONS,
+                    "exact token comparison",
+                )
+            } else {
+                return None;
+            };
         let mut issue = SenseIssue::new(
-            "dedup_exact_comparison_limit",
+            code,
             format!(
-                "exact token comparison reached the fixed limit of {MAX_DEDUP_TOKEN_COMPARISONS}; candidate duplicate regions remain unchecked"
+                "{work} reached the fixed work limit of {limit}; candidate duplicate regions remain unchecked"
             ),
         );
-        issue.stage = Some(DedupLimitStage::ExactTokenComparison);
+        issue.stage = Some(stage);
         issue.views = self.views.iter().copied().collect();
-        issue.limit = Some(MAX_DEDUP_TOKEN_COMPARISONS);
-        issue.processed = Some(MAX_DEDUP_TOKEN_COMPARISONS);
+        issue.limit = Some(limit);
+        issue.processed = Some(processed);
         issue.paths = self.limit_paths.iter().cloned().collect();
         // Evaluation stops at the exhausted comparison. Paths from unchecked candidates are
         // intentionally unknown, so this remains a bounded sample rather than complete evidence.
@@ -1131,11 +1090,10 @@ impl ComparisonState {
     }
 
     fn token_exists(&mut self, view: &RegionView<'_>, file_index: usize, token: usize) -> bool {
-        let Some(file) = view.files.get(file_index) else {
+        let Some(tokens) = view.tokens(file_index) else {
             self.mark_malformed_location(view, file_index);
             return false;
         };
-        let tokens = file.tokens();
         token < tokens.tokens.len()
     }
 
@@ -1147,11 +1105,19 @@ impl ComparisonState {
             return None;
         }
         self.remaining = self.remaining.saturating_sub(1);
-        let Some(left) = pair.left_view.exact_token(pair.left) else {
+        let Some(left_tokens) = pair.left_view.tokens(pair.left.file) else {
             self.mark_malformed_location(pair.left_view, pair.left.file);
             return None;
         };
-        let Some(right) = pair.right_view.exact_token(pair.right) else {
+        let Some(right_tokens) = pair.right_view.tokens(pair.right.file) else {
+            self.mark_malformed_location(pair.right_view, pair.right.file);
+            return None;
+        };
+        let Some(left) = pair.left_view.exact_token(pair.left, &left_tokens) else {
+            self.mark_malformed_location(pair.left_view, pair.left.file);
+            return None;
+        };
+        let Some(right) = pair.right_view.exact_token(pair.right, &right_tokens) else {
             self.mark_malformed_location(pair.right_view, pair.right.file);
             return None;
         };
@@ -1194,298 +1160,4 @@ impl ComparisonState {
 }
 
 #[cfg(test)]
-mod tests {
-    use std::{fmt::Write as _, sync::Arc};
-
-    use super::*;
-    use crate::{analysis, cancel::CancelToken, limits::RuleLimits, model::Language};
-
-    fn evaluate_regions<'a>(
-        before: &'a SourceSnapshot,
-        after: &'a SourceSnapshot,
-        file_facts: &'a facts::FactMap,
-        fact_keys: &'a FactKeyLookup,
-        changed_paths: &'a BTreeSet<RepoPath>,
-    ) -> RegionResult {
-        region_findings(RegionInputs {
-            before,
-            after,
-            file_facts,
-            fact_keys,
-            changed_paths,
-            continuity: &BTreeMap::new(),
-            suppressed_paths: &BTreeSet::new(),
-            callable_findings: &[],
-            finding_limit: 32,
-        })
-    }
-
-    fn source(path: &str, prefix: &str) -> SourceFile {
-        let mut text = format!("export function {prefix}() {{\n  let value = 0;\n");
-        for index in 0..20 {
-            writeln!(text, "  value = value + {prefix}_{index};").unwrap();
-        }
-        text.push_str("  return value;\n}\n");
-        SourceFile::new(
-            RepoPath::from_protocol(path).unwrap(),
-            text.into_bytes(),
-            Language::TypeScript,
-            "typescript".into(),
-        )
-    }
-
-    fn single_file_region_state(
-        file: &SourceFile,
-    ) -> (SourceSnapshot, facts::FactMap, FactKeyLookup) {
-        let options = serde_json::to_vec(&RuleLimits::default()).unwrap();
-        let analyzed =
-            analysis::analyze(file, &RuleLimits::default(), &CancelToken::new()).unwrap();
-        let snapshot = SourceSnapshot::new([file.clone()]);
-        let key = facts::key(file, &options);
-        let file_facts = facts::FactMap::from([(key, Arc::new(analyzed))]);
-        let fact_keys = FactKeyLookup::from([(
-            file.content_id,
-            BTreeMap::from([(file.language_mode.clone(), key)]),
-        )]);
-        (snapshot, file_facts, fact_keys)
-    }
-
-    #[test]
-    fn exact_comparison_limit_reports_bounded_paths_and_recovery() {
-        let files = (0..6)
-            .map(|index| source(&format!("path-{index}.ts"), "alpha"))
-            .collect::<Vec<_>>();
-        let options = serde_json::to_vec(&RuleLimits::default()).unwrap();
-        let snapshot = SourceSnapshot::new(files.clone());
-        let mut file_facts = facts::FactMap::new();
-        let mut fact_keys = FactKeyLookup::new();
-        for file in &files {
-            let analyzed =
-                analysis::analyze(file, &RuleLimits::default(), &CancelToken::new()).unwrap();
-            let key = facts::key(file, &options);
-            file_facts.insert(key, Arc::new(analyzed));
-            fact_keys.insert(
-                file.content_id,
-                BTreeMap::from([(file.language_mode.clone(), key)]),
-            );
-        }
-        let mut decoded_evidence = DecodedEvidence::default();
-        let view = RegionView::new(RegionViewInputs {
-            view: SenseView::After,
-            snapshot: &snapshot,
-            file_facts: &file_facts,
-            fact_keys: &fact_keys,
-            continuity: &BTreeMap::new(),
-            decoded_evidence: &mut decoded_evidence,
-        });
-        let mut comparison = ComparisonState {
-            remaining: 0,
-            ..ComparisonState::default()
-        };
-        for file in 0..files.len() {
-            let location = TokenLocation { file, token: 0 };
-            assert_eq!(
-                comparison.tokens_equal(TokenPair::same_view(&view, location, location)),
-                None
-            );
-        }
-
-        let issue = comparison.limit_issue().unwrap();
-        assert_eq!(
-            issue.paths,
-            files
-                .into_iter()
-                .take(MAX_OBSERVATION_PATHS)
-                .map(|file| file.path)
-                .collect::<Vec<_>>()
-        );
-        assert_eq!(issue.stage, Some(DedupLimitStage::ExactTokenComparison));
-        assert_eq!(issue.views, vec![SenseView::After]);
-        assert_eq!(issue.limit, Some(MAX_DEDUP_TOKEN_COMPARISONS));
-        assert_eq!(issue.processed, Some(MAX_DEDUP_TOKEN_COMPARISONS));
-        assert!(issue.paths_truncated);
-        let next_step = issue.next_step.unwrap();
-        assert!(next_step.contains("targets.exclude"));
-        let docs_route = format!(
-            "/v{}.{}/docs/configuration.html#select-targets",
-            env!("CARGO_PKG_VERSION_MAJOR"),
-            env!("CARGO_PKG_VERSION_MINOR")
-        );
-        assert!(next_step.contains(&docs_route));
-    }
-
-    #[test]
-    fn malformed_exact_token_evidence_has_a_distinct_fail_closed_issue() {
-        let alpha = source("alpha.ts", "alpha");
-        let options = serde_json::to_vec(&RuleLimits::default()).unwrap();
-        let mut analyzed =
-            analysis::analyze(&alpha, &RuleLimits::default(), &CancelToken::new()).unwrap();
-        assert!(!analyzed.region_fingerprints.anchors.is_empty());
-        analyzed.region_fingerprints.encoded_tokens = "not-base64".into();
-        let snapshot = SourceSnapshot::new([alpha.clone()]);
-        let key = facts::key(&alpha, &options);
-        let file_facts = facts::FactMap::from([(key, Arc::new(analyzed))]);
-        let fact_keys = FactKeyLookup::from([(
-            alpha.content_id,
-            BTreeMap::from([(alpha.language_mode.clone(), key)]),
-        )]);
-        let result = evaluate_regions(
-            &SourceSnapshot::new([]),
-            &snapshot,
-            &file_facts,
-            &fact_keys,
-            &BTreeSet::from([alpha.path.clone()]),
-        );
-
-        assert!(result.findings.is_empty());
-        assert_eq!(result.comparison_issues.len(), 1);
-        assert_eq!(
-            result.comparison_issues[0].code,
-            "dedup_exact_evidence_malformed"
-        );
-        assert_eq!(result.comparison_issues[0].views, vec![SenseView::After]);
-        assert_eq!(result.comparison_issues[0].paths, vec![alpha.path]);
-        assert!(result.after.malformed_evidence);
-        assert_eq!(result.after.anchors, 0);
-        assert!(!result.after.request_truncated);
-    }
-
-    #[test]
-    fn malformed_token_location_marks_only_the_failing_view() {
-        let before_file = source("before.ts", "before");
-        let after_file = source("after.ts", "after");
-        let (before_snapshot, before_facts, before_keys) = single_file_region_state(&before_file);
-        let (after_snapshot, after_facts, after_keys) = single_file_region_state(&after_file);
-        let mut decoded_evidence = DecodedEvidence::default();
-        let before = RegionView::new(RegionViewInputs {
-            view: SenseView::Before,
-            snapshot: &before_snapshot,
-            file_facts: &before_facts,
-            fact_keys: &before_keys,
-            continuity: &BTreeMap::new(),
-            decoded_evidence: &mut decoded_evidence,
-        });
-        let after = RegionView::new(RegionViewInputs {
-            view: SenseView::After,
-            snapshot: &after_snapshot,
-            file_facts: &after_facts,
-            fact_keys: &after_keys,
-            continuity: &BTreeMap::new(),
-            decoded_evidence: &mut decoded_evidence,
-        });
-        let mut comparison = ComparisonState::default();
-
-        assert_eq!(
-            comparison.tokens_equal(TokenPair {
-                left_view: &before,
-                left: TokenLocation {
-                    file: 0,
-                    token: usize::MAX,
-                },
-                right_view: &after,
-                right: TokenLocation { file: 0, token: 0 },
-            }),
-            None
-        );
-        let issue = comparison.issues().pop().unwrap();
-        assert_eq!(issue.views, vec![SenseView::Before]);
-        assert_eq!(issue.paths, vec![before_file.path]);
-
-        let mut before_coverage = FingerprintCoverage::default();
-        before.coverage(&comparison).apply(&mut before_coverage);
-        let mut after_coverage = FingerprintCoverage::default();
-        after.coverage(&comparison).apply(&mut after_coverage);
-        assert!(before_coverage.malformed_evidence);
-        assert!(!after_coverage.malformed_evidence);
-    }
-
-    #[test]
-    fn anchor_hash_collision_cannot_become_a_region_finding() {
-        let alpha = source("alpha.ts", "alpha");
-        let beta = source("beta.ts", "beta");
-        let options = serde_json::to_vec(&RuleLimits::default()).unwrap();
-        let mut alpha_facts =
-            analysis::analyze(&alpha, &RuleLimits::default(), &CancelToken::new()).unwrap();
-        let mut beta_facts =
-            analysis::analyze(&beta, &RuleLimits::default(), &CancelToken::new()).unwrap();
-        let alpha_anchor = alpha_facts.region_fingerprints.anchors[0];
-        let beta_anchor = beta_facts.region_fingerprints.anchors[0];
-        alpha_facts.region_fingerprints.anchors = vec![alpha_anchor];
-        beta_facts.region_fingerprints.anchors = vec![crate::model::RegionFingerprint {
-            hash_one: alpha_anchor.hash_one,
-            hash_two: alpha_anchor.hash_two,
-            token_index: beta_anchor.token_index,
-        }];
-
-        let after = SourceSnapshot::new([alpha.clone(), beta.clone()]);
-        let before = SourceSnapshot::new([]);
-        let mut file_facts = facts::FactMap::new();
-        file_facts.insert(facts::key(&alpha, &options), Arc::new(alpha_facts));
-        file_facts.insert(facts::key(&beta, &options), Arc::new(beta_facts));
-        let mut fact_keys = FactKeyLookup::new();
-        for file in [&alpha, &beta] {
-            fact_keys
-                .entry(file.content_id)
-                .or_default()
-                .insert(file.language_mode.clone(), facts::key(file, &options));
-        }
-        let changed_paths = BTreeSet::from([alpha.path.clone(), beta.path.clone()]);
-        let result = evaluate_regions(&before, &after, &file_facts, &fact_keys, &changed_paths);
-
-        assert!(result.findings.is_empty());
-        assert!(!result.after.request_truncated);
-    }
-
-    #[test]
-    fn unchanged_anchor_count_cannot_hide_an_introduced_exact_region() {
-        let alpha = source("alpha.ts", "shared");
-        let before_beta = source("beta.ts", "different");
-        let after_beta = SourceFile::new(
-            before_beta.path.clone(),
-            alpha.bytes.clone(),
-            alpha.language,
-            alpha.language_mode.clone(),
-        );
-        let options = serde_json::to_vec(&RuleLimits::default()).unwrap();
-        let alpha_facts =
-            analysis::analyze(&alpha, &RuleLimits::default(), &CancelToken::new()).unwrap();
-        let mut before_beta_facts =
-            analysis::analyze(&before_beta, &RuleLimits::default(), &CancelToken::new()).unwrap();
-        assert_eq!(
-            alpha_facts.region_fingerprints.anchors.len(),
-            before_beta_facts.region_fingerprints.anchors.len()
-        );
-        for (anchor, replacement) in before_beta_facts
-            .region_fingerprints
-            .anchors
-            .iter_mut()
-            .zip(&alpha_facts.region_fingerprints.anchors)
-        {
-            anchor.hash_one = replacement.hash_one;
-            anchor.hash_two = replacement.hash_two;
-        }
-
-        let before = SourceSnapshot::new([alpha.clone(), before_beta.clone()]);
-        let after = SourceSnapshot::new([alpha.clone(), after_beta.clone()]);
-        let mut file_facts = facts::FactMap::new();
-        file_facts.insert(facts::key(&alpha, &options), Arc::new(alpha_facts.clone()));
-        file_facts.insert(
-            facts::key(&before_beta, &options),
-            Arc::new(before_beta_facts),
-        );
-        let mut fact_keys = FactKeyLookup::new();
-        for file in [&alpha, &before_beta, &after_beta] {
-            fact_keys
-                .entry(file.content_id)
-                .or_default()
-                .insert(file.language_mode.clone(), facts::key(file, &options));
-        }
-        let changed_paths = BTreeSet::from([after_beta.path.clone()]);
-        let result = evaluate_regions(&before, &after, &file_facts, &fact_keys, &changed_paths);
-
-        assert_eq!(result.findings.len(), 1);
-        assert_eq!(result.findings[0].before_count, 1);
-        assert_eq!(result.findings[0].after_count, 2);
-        assert!(!result.after.request_truncated);
-    }
-}
+mod tests;

@@ -823,3 +823,114 @@ fn dense_file(index: usize, files: usize, fan_out: usize) -> SourceFile {
         "node".into(),
     )
 }
+
+fn anchor_dense_source(file: usize) -> String {
+    let mut text = String::new();
+    for index in 0..1_024 {
+        writeln!(
+            text,
+            "const item_{file}_{index} = [{file}, {index}, {}];",
+            file * 1_024 + index
+        )
+        .unwrap();
+    }
+    text
+}
+
+fn copied_region() -> String {
+    let mut text = "let copied_total = 0;\n".to_owned();
+    for index in 0..30 {
+        writeln!(text, "copied_total += {index} * {};", index + 7).unwrap();
+    }
+    text
+}
+
+fn staged_region_profile(binary: &Path, repo: &Path, cache: &Path) -> ProfiledOutput {
+    run_profiled_with_timeout(
+        binary,
+        &[
+            OsStr::new("sense"),
+            OsStr::new("--repo"),
+            repo.as_os_str(),
+            OsStr::new("--staged"),
+            OsStr::new("--json"),
+        ],
+        cache,
+        Duration::from_mins(1),
+    )
+}
+
+#[test]
+#[ignore = "explicit >200k-anchor staged comparison and cache proof"]
+fn region_anchor_batches_cover_large_repositories_and_cross_directory_copies() {
+    let repository = tempfile::tempdir().unwrap();
+    let facts_cache = tempfile::tempdir().unwrap();
+    let repo = repository.path();
+    let cache = facts_cache.path();
+    initialize_fixture(repo, 1);
+    for directory in ["early", "late"] {
+        fs::create_dir_all(repo.join(directory)).unwrap();
+    }
+    for file in 0..256 {
+        let directory = if file == 0 { "early" } else { "late" };
+        let mut text = anchor_dense_source(file);
+        if file == 0 {
+            text.push_str(&copied_region());
+        }
+        fs::write(repo.join(format!("{directory}/f{file:03}.ts")), text).unwrap();
+    }
+    git(repo, &["add", "."]);
+    git(repo, &["commit", "-qm", "large anchor baseline"]);
+    let changed = repo.join("late/f255.ts");
+    let mut text = anchor_dense_source(255);
+    text.push_str("// harmless staged change\n");
+    fs::write(&changed, &text).unwrap();
+    git(repo, &["add", "."]);
+    let binary = assert_cmd::cargo::cargo_bin!("opcore");
+    let cold = staged_region_profile(binary, repo, cache);
+    let warm = staged_region_profile(binary, repo, cache);
+    assert_success(&cold);
+    assert_success(&warm);
+    let cold_report = report(&cold);
+    let warm_report = report(&warm);
+    assert_eq!(cold_report["status"], "clean");
+    assert!(
+        cold_report["dedupCoverage"]["after"]["regionAnchors"]
+            .as_u64()
+            .unwrap()
+            > 200_000
+    );
+    assert_eq!(cold_report["dedupCoverage"], warm_report["dedupCoverage"]);
+    assert_eq!(warm_report["cache"]["misses"], 0);
+    assert!(cold_report["issues"].as_array().unwrap().is_empty());
+    assert_eq!(cold_report["introducedDuplicates"], json!([]));
+    // Keep all unrelated bytes unchanged and copy only a region across directories.
+    text.push_str(&copied_region());
+    fs::write(&changed, text).unwrap();
+    git(repo, &["add", "."]);
+    let copied = staged_region_profile(binary, repo, cache);
+    assert!(!copied.output.status.success());
+    let copied_report = report(&copied);
+    assert_eq!(copied_report["status"], "findings");
+    let duplicates = copied_report["introducedDuplicates"].as_array().unwrap();
+    assert_eq!(duplicates.len(), 1);
+    assert_eq!(duplicates[0]["kind"], "token_region");
+    assert_eq!(duplicates[0]["beforeCount"], 1);
+    assert_eq!(duplicates[0]["afterCount"], 2);
+    let paths = duplicates[0]["occurrences"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|occurrence| occurrence["path"].as_str().unwrap())
+        .collect::<BTreeSet<_>>();
+    assert_eq!(paths, BTreeSet::from(["early/f000.ts", "late/f255.ts"]));
+    let copied_warm = staged_region_profile(binary, repo, cache);
+    assert_eq!(
+        copied_report["introducedDuplicates"],
+        report(&copied_warm)["introducedDuplicates"]
+    );
+    println!(
+        "{}",
+        json!({"regionBatches": {"cold": measurement(&cold), "warm": measurement(&warm), "copied": measurement(&copied)}})
+    );
+}
