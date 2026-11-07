@@ -343,6 +343,7 @@ pub enum DedupLimitStage {
     CallableRequestCollection,
     TokenRegionRequestCollection,
     ExactTokenComparison,
+    ExactEvidenceDecoding,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]

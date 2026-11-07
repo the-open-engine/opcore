@@ -6,7 +6,6 @@ use crate::{
     limits::{
         MAX_CALLABLE_FINGERPRINTS_PER_FILE, MAX_CALLABLE_FINGERPRINTS_PER_REQUEST,
         MAX_OBSERVATION_PATHS, MAX_REGION_FINGERPRINTS_PER_FILE,
-        MAX_REGION_FINGERPRINTS_PER_REQUEST,
     },
     model::{CallableKind, FileFacts, FingerprintExtractionStatus, SourceRange},
     path::RepoPath,
@@ -96,14 +95,12 @@ pub(super) fn introduced_duplicates(inputs: DedupInputs<'_>) -> DedupResult {
         inputs.file_facts,
         inputs.fact_keys,
         &[SenseView::Before],
-        &region_result.malformed_fact_keys,
     ));
     issues.extend(snapshot_limit_issues(
         inputs.after,
         inputs.file_facts,
         inputs.fact_keys,
         &[SenseView::After],
-        &region_result.malformed_fact_keys,
     ));
     findings.extend(region_result.findings);
     findings_truncated |= region_result.findings_truncated;
@@ -125,14 +122,13 @@ pub(super) fn introduced_duplicates(inputs: DedupInputs<'_>) -> DedupResult {
 
 fn identical_snapshot_result(inputs: DedupInputs<'_>) -> DedupResult {
     let mut coverage = fingerprint_coverage(inputs.before, inputs.file_facts, inputs.fact_keys);
-    let (region_coverage, region_issues, malformed_fact_keys) =
+    let (region_coverage, region_issues) =
         regions::validate_identical_snapshot(inputs.before, inputs.file_facts, inputs.fact_keys);
     let mut issues = snapshot_limit_issues(
         inputs.before,
         inputs.file_facts,
         inputs.fact_keys,
         &[SenseView::Before, SenseView::After],
-        &malformed_fact_keys,
     );
     region_coverage.apply(&mut coverage);
     issues.extend(region_issues);
@@ -165,9 +161,7 @@ struct SnapshotLimitState {
     callable_files: AffectedPaths,
     region_files: AffectedPaths,
     callable_request: AffectedPaths,
-    region_request: AffectedPaths,
     callables: usize,
-    regions: usize,
 }
 
 fn snapshot_limit_issues(
@@ -175,20 +169,14 @@ fn snapshot_limit_issues(
     file_facts: &facts::FactMap,
     fact_keys: &FactKeyLookup,
     views: &[SenseView],
-    malformed_fact_keys: &BTreeSet<FileFactKey>,
 ) -> Vec<SenseIssue> {
     let mut state = SnapshotLimitState::default();
     for file in snapshot.files() {
-        let Some((fact_key, file_facts)) = lookup_file_fact(file, file_facts, fact_keys) else {
+        let Some((_, file_facts)) = lookup_file_fact(file, file_facts, fact_keys) else {
             continue;
         };
         observe_callable_limits(&mut state, &file.path, file_facts);
-        observe_region_limits(
-            &mut state,
-            &file.path,
-            file_facts,
-            malformed_fact_keys.contains(&fact_key),
-        );
+        observe_region_limits(&mut state, &file.path, file_facts);
     }
     render_snapshot_limit_issues(state, views)
 }
@@ -215,23 +203,11 @@ fn observe_callable_limits(
     state.callables = state.callables.saturating_add(count.min(remaining));
 }
 
-fn observe_region_limits(
-    state: &mut SnapshotLimitState,
-    path: &RepoPath,
-    file_facts: &FileFacts,
-    malformed: bool,
-) {
+fn observe_region_limits(state: &mut SnapshotLimitState, path: &RepoPath, file_facts: &FileFacts) {
     let count = file_facts.region_fingerprints.anchors.len();
     let bounded = count <= MAX_REGION_FINGERPRINTS_PER_FILE;
     if file_facts.region_fingerprints.status == FingerprintExtractionStatus::Truncated || !bounded {
         state.region_files.push(path);
-    }
-    if bounded
-        && !malformed
-        && file_facts.region_fingerprints.status == FingerprintExtractionStatus::Complete
-        && !admit_region_anchors(&mut state.regions, count)
-    {
-        state.region_request.push(path);
     }
 }
 
@@ -273,32 +249,7 @@ fn render_snapshot_limit_issues(state: SnapshotLimitState, views: &[SenseView]) 
             message: "request-wide callable duplicate collection is incomplete",
         },
     );
-    push_limit_issue(
-        &mut issues,
-        state.region_request,
-        LimitIssueSpec {
-            code: "dedup_region_request_limit",
-            stage: DedupLimitStage::TokenRegionRequestCollection,
-            views,
-            limit: MAX_REGION_FINGERPRINTS_PER_REQUEST,
-            processed: state.regions,
-            message: "request-wide token-region duplicate collection is incomplete",
-        },
-    );
     issues
-}
-
-fn admit_region_anchors(retained: &mut usize, count: usize) -> bool {
-    let Some(total) = prospective_region_anchor_total(*retained, count) else {
-        return false;
-    };
-    *retained = total;
-    true
-}
-
-fn prospective_region_anchor_total(retained: usize, count: usize) -> Option<usize> {
-    (count <= MAX_REGION_FINGERPRINTS_PER_REQUEST.saturating_sub(retained))
-        .then(|| retained.saturating_add(count))
 }
 
 #[derive(Clone, Copy)]
@@ -842,13 +793,7 @@ mod tests {
         let facts_by_file =
             facts::FactMap::from([(facts::key(&file, &options), Arc::new(file_facts))]);
         let fact_keys = fact_key_lookup(&[&snapshot], &options);
-        snapshot_limit_issues(
-            &snapshot,
-            &facts_by_file,
-            &fact_keys,
-            &[SenseView::After],
-            &BTreeSet::new(),
-        )
+        snapshot_limit_issues(&snapshot, &facts_by_file, &fact_keys, &[SenseView::After])
     }
 
     fn request_limit_snapshot() -> SourceSnapshot {
@@ -1082,24 +1027,6 @@ mod tests {
         assert!(!identical.coverage.after.request_truncated);
     }
 
-    fn region_request_limit_issue(
-        snapshot: &SourceSnapshot,
-        facts_by_file: &facts::FactMap,
-        options: &[u8],
-    ) -> SenseIssue {
-        let fact_keys = fact_key_lookup(&[snapshot], options);
-        snapshot_limit_issues(
-            snapshot,
-            facts_by_file,
-            &fact_keys,
-            &[SenseView::After],
-            &BTreeSet::new(),
-        )
-        .into_iter()
-        .find(|issue| issue.code == "dedup_region_request_limit")
-        .unwrap()
-    }
-
     #[test]
     fn request_wide_callable_limit_keeps_complete_deterministic_paths() {
         let snapshot = request_limit_snapshot();
@@ -1116,106 +1043,15 @@ mod tests {
             }),
         )]);
         let fact_keys = fact_key_lookup(&[&snapshot], &options);
-        let issue = snapshot_limit_issues(
-            &snapshot,
-            &facts_by_file,
-            &fact_keys,
-            &[SenseView::After],
-            &BTreeSet::new(),
-        )
-        .into_iter()
-        .find(|issue| issue.code == "dedup_callable_request_limit")
-        .unwrap();
+        let issue =
+            snapshot_limit_issues(&snapshot, &facts_by_file, &fact_keys, &[SenseView::After])
+                .into_iter()
+                .find(|issue| issue.code == "dedup_callable_request_limit")
+                .unwrap();
 
         assert_eq!(issue.paths, vec![path("file-48.ts"), path("file-49.ts")]);
         assert_eq!(issue.processed, Some(MAX_CALLABLE_FINGERPRINTS_PER_REQUEST));
         assert!(!issue.paths_truncated);
-    }
-
-    #[test]
-    fn request_wide_region_limit_names_the_stage_and_affected_paths() {
-        let snapshot = request_limit_snapshot();
-        let options = parser_options();
-        let file = snapshot.read(&path("file-00.ts")).unwrap();
-        let anchors = (0..MAX_REGION_FINGERPRINTS_PER_FILE)
-            .map(|index| RegionFingerprint {
-                hash_one: u64::try_from(index).unwrap(),
-                hash_two: u64::try_from(index).unwrap(),
-                token_index: u32::try_from(index).unwrap(),
-            })
-            .collect();
-        let mut facts_by_file = facts::FactMap::new();
-        facts_by_file.insert(
-            facts::key(&file, &options),
-            Arc::new(FileFacts {
-                region_fingerprints: RegionFingerprintFacts {
-                    status: FingerprintExtractionStatus::Complete,
-                    token_count: u32::try_from(MAX_REGION_FINGERPRINTS_PER_FILE).unwrap(),
-                    encoded_tokens: String::new(),
-                    anchors,
-                },
-                ..FileFacts::default()
-            }),
-        );
-        let issue = region_request_limit_issue(&snapshot, &facts_by_file, &options);
-
-        assert_eq!(
-            issue.stage,
-            Some(DedupLimitStage::TokenRegionRequestCollection)
-        );
-        assert_eq!(issue.limit, Some(MAX_REGION_FINGERPRINTS_PER_REQUEST));
-        assert_eq!(issue.processed, Some(48 * MAX_REGION_FINGERPRINTS_PER_FILE));
-        assert_eq!(issue.views, vec![SenseView::After]);
-        assert_eq!(issue.paths, vec![path("file-48.ts"), path("file-49.ts")]);
-        assert!(!issue.paths_truncated);
-    }
-
-    #[test]
-    fn region_request_limit_skips_an_overlarge_file_but_admits_a_later_small_file() {
-        let counts = (0..48)
-            .map(|_| MAX_REGION_FINGERPRINTS_PER_FILE)
-            .chain([4_000, 100])
-            .collect::<Vec<_>>();
-        let snapshot = SourceSnapshot::new(counts.iter().enumerate().map(|(index, _)| {
-            source(
-                &format!("file-{index:02}.ts"),
-                &format!("export const value{index} = true;"),
-                Language::TypeScript,
-            )
-        }));
-        let options = parser_options();
-        let mut facts_by_file = facts::FactMap::new();
-        for (file_index, count) in counts.into_iter().enumerate() {
-            let path = path(&format!("file-{file_index:02}.ts"));
-            let file = snapshot.read(&path).unwrap();
-            let anchors = (0..count)
-                .map(|anchor_index| RegionFingerprint {
-                    hash_one: u64::try_from(file_index).unwrap(),
-                    hash_two: u64::try_from(anchor_index).unwrap(),
-                    token_index: u32::try_from(anchor_index).unwrap(),
-                })
-                .collect();
-            facts_by_file.insert(
-                facts::key(&file, &options),
-                Arc::new(FileFacts {
-                    region_fingerprints: RegionFingerprintFacts {
-                        status: FingerprintExtractionStatus::Complete,
-                        token_count: u32::try_from(count).unwrap(),
-                        encoded_tokens: String::new(),
-                        anchors,
-                    },
-                    ..FileFacts::default()
-                }),
-            );
-        }
-        let issue = region_request_limit_issue(&snapshot, &facts_by_file, &options);
-
-        assert_eq!(issue.paths, vec![path("file-48.ts")]);
-        assert_eq!(
-            issue.processed,
-            Some(48 * MAX_REGION_FINGERPRINTS_PER_FILE + 100)
-        );
-        assert!(!issue.processed_is_lower_bound);
     }
 
     #[test]

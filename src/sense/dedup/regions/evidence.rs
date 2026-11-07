@@ -4,7 +4,7 @@ use base64::Engine as _;
 
 use crate::{
     limits::DEDUP_REGION_KGRAM_TOKENS,
-    model::{Position, RegionFingerprintFacts, SourceFile},
+    model::{Position, RegionFingerprintFacts, SourceFile, SourceRange},
 };
 
 const MIN_ENCODED_TOKEN_BYTES: usize = 11;
@@ -13,9 +13,21 @@ pub(super) struct DecodedTokens {
     pub(super) bytes: Vec<u8>,
     pub(super) tokens: Vec<DecodedToken>,
     line_starts: Vec<usize>,
+    #[cfg(test)]
+    live: Option<std::sync::Arc<LiveDecodes>>,
 }
 
 impl DecodedTokens {
+    pub(super) fn decode_cost(source: &SourceFile, facts: &RegionFingerprintFacts) -> usize {
+        // Charge the complete source scan, encoded evidence, and token allocation on every miss.
+        let tokens = usize::try_from(facts.token_count).unwrap_or(usize::MAX);
+        source
+            .bytes
+            .len()
+            .saturating_add(facts.encoded_tokens.len())
+            .saturating_add(tokens.saturating_mul(std::mem::size_of::<DecodedToken>()))
+    }
+
     pub(super) fn decode(source: &SourceFile, facts: &RegionFingerprintFacts) -> Option<Self> {
         Self::read(source, facts, true)
     }
@@ -50,6 +62,26 @@ impl DecodedTokens {
             bytes: if retain { bytes } else { Vec::new() },
             tokens,
             line_starts,
+            #[cfg(test)]
+            live: None,
+        })
+    }
+
+    #[cfg(test)]
+    pub(super) fn tracked(mut self, live: std::sync::Arc<LiveDecodes>) -> Self {
+        use std::sync::atomic::Ordering;
+        let current = live.current.fetch_add(1, Ordering::Relaxed) + 1;
+        live.peak.fetch_max(current, Ordering::Relaxed);
+        self.live = Some(live);
+        self
+    }
+
+    pub(super) fn source_range(&self, tokens: Range<usize>) -> Option<SourceRange> {
+        let first = self.tokens.get(tokens.start)?;
+        let last = self.tokens.get(tokens.end.checked_sub(1)?)?;
+        Some(SourceRange {
+            start: self.position(first.start),
+            end: self.position(last.end),
         })
     }
 
@@ -186,5 +218,22 @@ mod tests {
         let mut zero_width = Vec::new();
         record(&mut zero_width, 4, 4);
         assert!(decode_token_records(&zero_width, 12, 1, false).is_none());
+    }
+}
+
+#[cfg(test)]
+#[derive(Default)]
+pub(super) struct LiveDecodes {
+    pub(super) current: std::sync::atomic::AtomicUsize,
+    pub(super) peak: std::sync::atomic::AtomicUsize,
+}
+
+#[cfg(test)]
+impl Drop for DecodedTokens {
+    fn drop(&mut self) {
+        if let Some(live) = &self.live {
+            live.current
+                .fetch_sub(1, std::sync::atomic::Ordering::Relaxed);
+        }
     }
 }
