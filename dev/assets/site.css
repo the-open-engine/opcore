@@ -214,6 +214,8 @@ button { font: inherit; cursor: pointer; }
 /* Footer: a hairline and mono labels, no ink bar. */
 .site-footer { border-top: 1px solid var(--oe-rule); color: var(--oe-muted); font: 400 .7rem/1.5 var(--oe-mono); letter-spacing: .14em; text-transform: uppercase; padding: 1.5rem 0 2.5rem; }
 .site-footer > div { max-width: 1188px; margin: auto; display: flex; justify-content: space-between; gap: 1rem; }
+.site-footer > div > a { flex: none; }
+.site-footer ul { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .35rem 1.25rem; list-style: none; margin: 0; padding: 0; }
 .site-footer a { color: inherit; text-decoration: none; }
 .site-footer a:hover { color: var(--oe-accent); }
 
@@ -267,6 +269,7 @@ button { font: inherit; cursor: pointer; }
   .guide-content pre { font-size: 12px; }
   .page-sequence { font-size: 14px; gap: 1rem; }
   .site-footer > div { flex-wrap: wrap; }
+  .site-footer ul { justify-content: flex-start; }
   .api-page rustdoc-topbar { top: 3.6rem; background: var(--oe-bg); }
   body.api-page.rustdoc main { top: 0; padding-top: 5rem; }
   .api-page .main-heading h1 { font-size: 2.4rem; }
