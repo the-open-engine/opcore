@@ -31,6 +31,16 @@ NAVIGATION = (
         ("Security", "SECURITY.html"),
     )),
 )
+COMPANY_HOME = "https://theopenengine.com/?utm_source=github&utm_medium=docs&utm_campaign=opcore"
+COMMUNITY = (
+    ("Zeroshot", "https://github.com/the-open-engine/zeroshot"),
+    ("Research blog", "https://zeroshot.sh/blog/?utm_source=github&utm_medium=docs&utm_campaign=opcore"),
+    ("Discord", "https://theopenengine.com/discord"),
+    ("X", "https://x.com/OpenEngineHQ"),
+    ("LinkedIn", "https://www.linkedin.com/company/the-open-engine-company/"),
+    ("Instagram", "https://www.instagram.com/theopenengine/"),
+    ("Opcore on GitHub", "https://github.com/the-open-engine/opcore"),
+)
 
 
 def relative_link(path, destination, site):
@@ -74,8 +84,10 @@ def site_head(destination, site):
 
 
 def site_footer():
-    return '''<footer class="site-footer"><div>© The Open Engine
-<a href="https://github.com/the-open-engine/opcore">Opcore on GitHub ↗</a></div></footer>'''
+    home = html.escape(COMPANY_HOME, quote=True)
+    links = "".join(f'<li><a href="{html.escape(url, quote=True)}">{label}</a></li>' for label, url in COMMUNITY)
+    return f'''<footer class="site-footer"><div><a href="{home}">© The Open Engine</a>
+<ul aria-label="The Open Engine links">{links}</ul></div></footer>'''
 
 
 def guide_body(rendered):

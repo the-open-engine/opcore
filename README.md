@@ -431,6 +431,8 @@ Read the [development documentation](https://the-open-engine.github.io/opcore/de
 
 Ask questions and talk to the team on [Discord](https://theopenengine.com/discord). Report reproducible problems in [GitHub Issues](https://github.com/the-open-engine/opcore/issues). [Contributing](CONTRIBUTING.md) explains useful report details and the development checks.
 
+[The Open Engine](https://theopenengine.com/?utm_source=github&utm_medium=readme&utm_campaign=opcore) · [Zeroshot](https://github.com/the-open-engine/zeroshot) · [Research blog](https://zeroshot.sh/blog/?utm_source=github&utm_medium=readme&utm_campaign=opcore) · [Discord](https://theopenengine.com/discord) · [X](https://x.com/OpenEngineHQ) · [LinkedIn](https://www.linkedin.com/company/the-open-engine-company/) · [Instagram](https://www.instagram.com/theopenengine/)
+
 Before removing an npm installation, clean up its agent integrations:
 
 ```sh
