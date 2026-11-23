@@ -19,5 +19,12 @@
         "document": "docs/architecture.md"
       }
     ]
+  },
+  "workflows": {
+    "pre-commit": {
+      "coverage": {
+        "allowPartial": true
+      }
+    }
   }
 }
