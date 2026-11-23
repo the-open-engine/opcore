@@ -304,3 +304,58 @@ fn duplicate_file_limit_keeps_complete_json_paths_and_samples_human_output() {
     assert!(!affected.contains(&expected_paths[5]), "{affected}");
     assert!(affected.contains("showing 5 of 12"), "{affected}");
 }
+
+/// A repository with one regular source file and `alias.js`, a staged symlink to it.
+fn fixture_with_staged_source_link() -> RepositoryFixture {
+    let fixture = RepositoryFixture::new(&[("main.js", "export const value = 1;\n")]);
+    std::os::unix::fs::symlink("main.js", fixture.repo().join("alias.js")).unwrap();
+    git(fixture.repo(), &["add", "alias.js"]);
+    fixture
+}
+
+#[test]
+fn tracked_source_symlink_is_unsupported_coverage_not_a_capture_failure() {
+    let fixture = fixture_with_staged_source_link();
+    git(fixture.repo(), &["commit", "-qm", "link"]);
+    fixture.write("main.js", "export const value = 2;\n");
+
+    let worktree = json(&opcore_json(&fixture, "sense", &[]));
+    git(fixture.repo(), &["add", "main.js"]);
+    let staged = json(&opcore_json(&fixture, "sense", &["--staged"]));
+    for report in [&worktree, &staged] {
+        assert_eq!(report["status"], "partial", "{report}");
+        assert!(report["issues"].as_array().unwrap().is_empty(), "{report}");
+        for view in ["before", "after"] {
+            let coverage = &report[view]["coverage"];
+            assert_eq!(coverage["files"], 2, "{report}");
+            assert_eq!(
+                coverage["completeFiles"], 1,
+                "the regular file is still analyzed: {report}"
+            );
+            assert_eq!(
+                coverage["unsupportedFiles"], 1,
+                "the link is never followed: {report}"
+            );
+        }
+        assert_eq!(
+            report["changedFiles"], 1,
+            "an unchanged link is not a change: {report}"
+        );
+    }
+}
+
+#[test]
+fn a_staged_source_symlink_counts_as_an_unsupported_change() {
+    let fixture = fixture_with_staged_source_link();
+    let staged = json(&opcore_json(&fixture, "sense", &["--staged"]));
+    assert_eq!(staged["status"], "partial", "{staged}");
+    assert_eq!(staged["changedFiles"], 1, "{staged}");
+    assert_eq!(
+        staged["before"]["coverage"]["unsupportedFiles"], 0,
+        "{staged}"
+    );
+    assert_eq!(
+        staged["after"]["coverage"]["unsupportedFiles"], 1,
+        "{staged}"
+    );
+}
