@@ -13,9 +13,10 @@ use crate::{
 };
 
 use super::{
-    CAPTURE_ATTEMPTS, GitRepository, GitScope, Sentinel, detect_language, files_from_git_objects,
-    generation_state, is_dependency_capture_candidate, is_dependency_source_candidate,
-    metadata_state, reject_unmerged, source_file, sparse_paths, special_index_paths,
+    CAPTURE_ATTEMPTS, GitRepository, GitScope, Sentinel, TreeEntry, detect_language,
+    files_from_git_objects, generation_state, is_dependency_capture_candidate,
+    is_dependency_source_candidate, metadata_state, reject_unmerged, source_file, sparse_paths,
+    special_index_paths,
 };
 
 pub struct GitWorkspaceCapture {
@@ -181,8 +182,14 @@ impl GitRepository {
         require_path_bound(&paths)?;
 
         let after_paths = workspace_after_paths(&self.root, &before_paths, &sentinel.paths)?;
-        let before_unsupported_files = unsupported_count(&before_paths);
-        let after_unsupported_files = unsupported_count(&after_paths);
+        let links = take_source_links(&mut entries);
+        let unchanged_links = links
+            .keys()
+            .filter(|path| after_paths.contains(*path) && !sentinel.paths.contains(*path))
+            .count();
+        let before_unsupported_files = unsupported_count(&before_paths).saturating_add(links.len());
+        let after_unsupported_files =
+            unsupported_count(&after_paths).saturating_add(unchanged_links);
         let unsupported_changed_files = sentinel
             .git
             .worktree_paths
@@ -236,8 +243,19 @@ impl GitRepository {
         let paths = before_paths.union(&after_paths).cloned().collect();
         require_path_bound(&paths)?;
 
-        let before_unsupported_files = unsupported_count(&before_paths);
-        let after_unsupported_files = unsupported_count(&after_paths);
+        let before_links = take_source_links(&mut before_entries);
+        let after_links = take_source_links(&mut after_entries);
+        let changed_links = before_links
+            .keys()
+            .chain(after_links.keys())
+            .collect::<BTreeSet<_>>()
+            .into_iter()
+            .filter(|path| before_links.get(*path) != after_links.get(*path))
+            .count();
+        let before_unsupported_files =
+            unsupported_count(&before_paths).saturating_add(before_links.len());
+        let after_unsupported_files =
+            unsupported_count(&after_paths).saturating_add(after_links.len());
         let unsupported_changed_files = paths
             .iter()
             .filter(|path| {
@@ -245,7 +263,8 @@ impl GitRepository {
                     && detect_language(path).is_none()
                     && before_entries.get(*path) != after_entries.get(*path)
             })
-            .count();
+            .count()
+            .saturating_add(changed_links);
         let after_source_paths = after_entries
             .keys()
             .filter(|path| detect_language(path).is_some())
@@ -385,6 +404,23 @@ impl GitWorkspaceCapture {
         .to_string();
         Ok(self)
     }
+}
+
+/// Removes tracked symlinks and gitlinks at analyzable source paths. Sense never follows a link or reads a
+/// submodule, so these paths are unsupported coverage: the report stays partial instead of the whole capture
+/// failing on one link while every regular file goes unanalyzed (opcore#352).
+fn take_source_links(entries: &mut BTreeMap<RepoPath, TreeEntry>) -> BTreeMap<RepoPath, TreeEntry> {
+    let links = entries
+        .iter()
+        .filter(|(path, entry)| is_link_mode(&entry.mode) && detect_language(path).is_some())
+        .map(|(path, entry)| (path.clone(), entry.clone()))
+        .collect::<BTreeMap<_, _>>();
+    entries.retain(|path, _| !links.contains_key(path));
+    links
+}
+
+fn is_link_mode(mode: &str) -> bool {
+    matches!(mode, "120000" | "160000")
 }
 
 fn unsupported_count(paths: &BTreeSet<RepoPath>) -> usize {
